@@ -505,6 +505,19 @@ function etDatetimeToUnix(datetime: string): number {
   return Math.floor(Date.UTC(year, month - 1, day, hour - etOffsetH, minute, second) / 1000);
 }
 
+const _etDatetimeFmt = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York',
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit',
+  hour12: false,
+});
+
+/** "YYYY-MM-DD HH:MM:SS" in US Eastern time, the zone every time_series request below uses. */
+function toETDatetime(unixSec: number): string {
+  const p = Object.fromEntries(_etDatetimeFmt.formatToParts(new Date(unixSec * 1000)).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day} ${p.hour === '24' ? '00' : p.hour}:${p.minute}:${p.second}`;
+}
+
 export async function getStockCandles(
   symbol: string,
   from: number,
@@ -513,14 +526,23 @@ export async function getStockCandles(
   options?: { extendedHours?: boolean; startDate?: string; endDate?: string }
 ): Promise<StockCandles> {
   const interval = RESOLUTION_MAP[resolution];
-  const startDate = options?.startDate ?? new Date(from * 1000).toISOString().slice(0, 10);
-  const endDate = options?.endDate ?? new Date(to * 1000).toISOString().slice(0, 10);
+  // Exact datetimes, not bare dates: a bare end_date means midnight at the
+  // START of that day, which silently dropped today from every range but 1D
+  // (a 1W chart ended at last night's after-hours bar, and check-price-moves
+  // "verified" today's move against yesterday's).
+  const startDate = options?.startDate ?? toETDatetime(from);
+  const endDate = options?.endDate ?? toETDatetime(to + 60);
 
   const url = buildUrl('/time_series', {
     symbol: symbol.toUpperCase(),
     interval,
     start_date: startDate,
     end_date: endDate,
+    // Pin the zone for input dates AND output datetimes. The default is the
+    // exchange's own (UTC for crypto and forex, Europe/Oslo for OSE...), but
+    // etDatetimeToUnix reads everything as Eastern: a BTC chart was 4 hours
+    // off and its "last 24h" window ended at midnight ET.
+    timezone: 'America/New_York',
     outputsize: 5000,
     order: 'asc',
     prepost: options?.extendedHours ? '1' : undefined, // TwelveData param for pre/post market
