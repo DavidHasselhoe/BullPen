@@ -189,7 +189,7 @@ function MoverRow({ mover, why, onWhy }: { mover: HomeMover; why: InlineWhy | 'l
           <ClampedText lines={2} className="min-w-0 flex-1">
             <span className="sr-only">{t('homeWhyLabel', { ticker: mover.symbol })} </span>
             {bullets(explained).map((b, i) => (
-              <span key={i} className="block">{b}</span>
+              <span key={i} className={cn('block', i > 0 && 'mt-1')}>{b}</span>
             ))}
           </ClampedText>
         </div>
