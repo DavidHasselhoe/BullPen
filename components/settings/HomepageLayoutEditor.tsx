@@ -2,7 +2,6 @@
 
 import { Reorder } from 'framer-motion';
 import { Eye, EyeOff, GripVertical, RotateCcw } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_ORDER,
@@ -61,11 +60,6 @@ export function HomepageLayoutEditor({ order, hidden, onChange }: Props) {
             >
               <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-sm flex-1 min-w-0 truncate">{widget.label}</span>
-              {widget.requiresPro && (
-                <Badge variant="secondary" className="text-[11px] px-1.5 py-0 h-4">
-                  Pro
-                </Badge>
-              )}
               <button
                 type="button"
                 onClick={() => toggleHidden(id)}

@@ -46,7 +46,6 @@ import {
   findHomepageOption,
 } from '@/lib/navigation/homepage-options';
 import { HomepageLayoutEditor } from '@/components/settings/HomepageLayoutEditor';
-import { MarketContextVisibilityEditor } from '@/components/settings/MarketContextVisibilityEditor';
 import { DEFAULT_ORDER as DEFAULT_WIDGET_ORDER } from '@/lib/dashboard/widgets';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { ChartPrefsControls } from '@/components/stock/ChartPrefsControls';
@@ -195,7 +194,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGET_ORDER);
   const [widgetHidden, setWidgetHidden] = useState<string[]>([]);
-  const [marketContextHidden, setMarketContextHidden] = useState<string[]>([]);
   // AI settings state
   const [riskProfile, setRiskProfile] = useState<'conservative' | 'balanced' | 'aggressive' | null>(null);
   const [investmentHorizon, setInvestmentHorizon] = useState<'short' | 'medium' | 'long' | null>(null);
@@ -277,7 +275,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setHoldingsPublic(settings.holdings_public !== false);
       setWidgetOrder(Array.isArray(settings.homepage_widget_order) ? settings.homepage_widget_order : DEFAULT_WIDGET_ORDER);
       setWidgetHidden(Array.isArray(settings.homepage_widget_hidden) ? settings.homepage_widget_hidden : []);
-      setMarketContextHidden(Array.isArray(settings.market_context_hidden) ? settings.market_context_hidden : []);
       // AI settings
       setRiskProfile(user.risk_profile ?? null);
       setInvestmentHorizon((settings.investment_horizon as 'short' | 'medium' | 'long') ?? null);
@@ -298,7 +295,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       const supabase = createBrowserClient();
       // Read the freshest settings before merging so we never clobber values
       // written by other surfaces between modal open and save — chart_prefs (the
-      // stock-page chart popover) and market_hours_exchanges (the in-card editor).
+      // stock-page chart popover) and anything else saved outside this modal.
       const { data: latest } = await supabase
         .from('users')
         .select('settings')
@@ -323,7 +320,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         allow_holdings_context: allowHoldingsContext,
         homepage_widget_order: widgetOrder,
         homepage_widget_hidden: widgetHidden,
-        market_context_hidden: marketContextHidden,
       };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -377,7 +373,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden, marketContextHidden]);
+  }, [defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden]);
 
   const handleDeleteAccount = async (): Promise<string | null> => {
     if (!user) return t('errorDeleteAccount');
@@ -959,22 +955,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       }}
                     />
                   </div>
-
-                  {!widgetHidden.includes('market_context') && (
-                    <div className="space-y-3 pt-1">
-                      <Label className="flex items-center gap-2">
-                        <LayoutGrid className="h-4 w-4" />
-                        {t('customizeMarketContextLabel')}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {t('customizeMarketContextHint')}
-                      </p>
-                      <MarketContextVisibilityEditor
-                        hidden={marketContextHidden}
-                        onChange={setMarketContextHidden}
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* ── Charts ────────────────────────────────────────── */}

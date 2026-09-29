@@ -1,41 +1,26 @@
 export interface DashboardWidget {
   id: string;
   label: string;
-  requiresAuth?: boolean;
-  requiresPro?: boolean;
-}
-
-export const DASHBOARD_WIDGETS: DashboardWidget[] = [
-  { id: 'recently_viewed',      label: 'Recently viewed' },
-  { id: 'performance_calendar', label: 'Daily performance' },
-  { id: 'daily_brief',          label: 'Daily Brief', requiresPro: true },
-  { id: 'why_today',            label: 'Why Today?' },
-  { id: 'market_context',       label: 'Market Context' },
-  { id: 'earnings_calendar',    label: 'Earnings calendar' },
-  { id: 'hot_picks',            label: 'Hot Picks' },
-  { id: 'crypto_market',        label: 'Crypto & Commodities' },
-  { id: 'investing_quote',      label: 'Investing quote' },
-];
-
-export const DEFAULT_ORDER: string[] = DASHBOARD_WIDGETS.map((w) => w.id);
-
-export interface MarketContextItem {
-  id: string;
-  label: string;
 }
 
 /**
- * The "Market Context" widget bundles four cards. Unlike the top-level
- * DASHBOARD_WIDGETS, these are visibility-only (no reordering) — Market Hours
- * and Tool Shortcuts share a layout column, and Top Movers/Market News share
- * a holdings-derived data mode, so a free drag order isn't meaningful here.
+ * The reorderable, hideable sections of Home, below the fixed greeting and
+ * portfolio. Everything here is about the person looking at it; market-wide
+ * modules live on Discover. Ids that were removed (market_context, hot_picks,
+ * crypto_market, ...) are dropped from stored layouts by resolveWidgetOrder.
+ *
+ * `pick_up` was `recently_viewed`, which led the old default order: saving
+ * Settings stored that order for accounts that never reordered anything, and
+ * keeping the id would have put this section above the Brief for all of them.
  */
-export const MARKET_CONTEXT_ITEMS: MarketContextItem[] = [
-  { id: 'market_hours',    label: 'Market Hours' },
-  { id: 'tools_shortcuts', label: 'Tool Shortcuts' },
-  { id: 'top_movers',      label: 'Top Movers' },
-  { id: 'market_news',     label: 'Market News' },
+export const DASHBOARD_WIDGETS: DashboardWidget[] = [
+  { id: 'daily_brief',     label: 'Daily Brief' },
+  { id: 'coming_up',       label: 'Coming up for your stocks' },
+  { id: 'your_news',       label: 'News about your stocks' },
+  { id: 'pick_up',         label: 'Pick up where you left off' },
 ];
+
+export const DEFAULT_ORDER: string[] = DASHBOARD_WIDGETS.map((w) => w.id);
 
 const WIDGETS_BY_ID = new Map(DASHBOARD_WIDGETS.map((w) => [w.id, w]));
 
@@ -47,9 +32,8 @@ export function getWidget(id: string): DashboardWidget | undefined {
  * Insert widgets that aren't in `known` yet (e.g. a widget added to
  * DASHBOARD_WIDGETS after a user last customized their layout) right after
  * their nearest canonical predecessor that IS present — not blindly at the
- * end. Otherwise a brand-new widget gets buried below everything a user
- * already reordered, including low-priority items like the investing quote,
- * for every account that customized their layout before the widget existed.
+ * end, where a brand-new widget would be buried below everything a user
+ * already reordered.
  */
 export function mergeNewWidgets(known: string[]): string[] {
   const result = [...known];

@@ -2,50 +2,27 @@
  * Dashboard shell.
  *
  * The dashboard itself stays a client component — it is almost entirely
- * interactive, per-user and live. What this server component adds is the two
- * slowest things on it that are the same for everybody: top movers (1059ms in
- * production) and Hot Picks (746ms), both fetched here and handed over already
- * resolved.
+ * interactive, per-user and live. What this server component adds is what is
+ * the same for everybody and needed above the fold: the index quotes behind the
+ * header's market line (one shared 60 s Redis entry with Discover), plus the
+ * greeting, so neither waits on the browser.
  *
- * Neither depends on who is signed in, which is what makes them safe to render
- * on the server and to cache. Everything user-specific — holdings, watchlist,
- * the daily brief — still loads on the client where the session lives.
+ * Everything user-specific — holdings, watchlist, the daily brief — still loads
+ * on the client where the session lives.
  *
  * loading.tsx streams the shell so this never costs a blank screen.
  */
 
-import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
-import { getEnrichedMovers } from '@/lib/market-data/movers-enriched';
-import { getHotPicks } from '@/lib/discover/hot-picks';
-import { HOT_PICKS_QUERY_KEY } from '@/lib/discover/hot-picks-query';
+import { getMarketIndices } from '@/lib/discover/indices';
 import { getInitialWelcome } from '@/lib/dashboard/initial-welcome';
 import DashboardClient from './DashboardClient';
 
 export default async function DashboardPage() {
-  const queryClient = new QueryClient();
-
-  // Prefetched in parallel and individually non-fatal: a failure here just means
-  // the client asks for that one itself, exactly as it did before.
-  // The greeting is resolved alongside the prefetches, never after them: it is
-  // the page's largest text, so it should not wait on anything slower than itself.
-  const welcomePromise = getInitialWelcome();
-  await Promise.allSettled([
-    queryClient.prefetchQuery({
-      // Must match useTopMoversWithStream(5, null) — ['market','movers','rest',limit,symbolsKey]
-      // with an empty symbols key for the all-markets mode the dashboard
-      // defaults to. Holdings mode is per-user and stays on the client.
-      queryKey: ['market', 'movers', 'rest', 5, ''],
-      queryFn: () => getEnrichedMovers(5, null),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: HOT_PICKS_QUERY_KEY,
-      queryFn: () => getHotPicks(168, 8),
-    }),
+  // Individually non-fatal: no indices just means no market line.
+  const [welcome, indices] = await Promise.all([
+    getInitialWelcome(),
+    getMarketIndices().catch(() => []),
   ]);
 
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <DashboardClient initialWelcome={await welcomePromise} />
-    </HydrationBoundary>
-  );
+  return <DashboardClient initialWelcome={welcome} indices={indices} />;
 }

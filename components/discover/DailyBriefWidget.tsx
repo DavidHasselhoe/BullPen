@@ -13,6 +13,8 @@ import { Sparkline } from '@/components/viz/Sparkline';
 import { TickerPreview } from '@/components/company/TickerPreview';
 import { useAuth } from '@/hooks/use-auth';
 import { useSymbolIndex } from '@/hooks/use-symbol-index';
+import { ClampedText } from '@/components/ui/ClampedText';
+import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
 
 interface BriefSource {
   url: string;
@@ -819,6 +821,10 @@ function BriefReader({
 
 // ── widget (dashboard entry point) ──────────────────────────────────────────
 
+/**
+ * Home's daily ritual. Everyone gets today's title and TL;DR (the API cuts the
+ * rest for free accounts on the server); the full read and the archive are Pro.
+ */
 export function DailyBriefWidget() {
   const { t } = useTranslation('discover');
   const locale = useIntlLocale();
@@ -828,141 +834,104 @@ export function DailyBriefWidget() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['daily-brief-today'],
-    queryFn: async (): Promise<{ brief: DailyBrief | null; locked?: boolean; is_today?: boolean }> => {
+    queryFn: async (): Promise<{ brief: DailyBrief | null; locked: boolean; is_today?: boolean }> => {
       const res = await fetch('/api/briefs/today');
-      if (res.status === 403) return { brief: null, locked: true };
       if (!res.ok) throw new Error('Failed to fetch brief');
       const json = await res.json();
-      return { brief: json.brief, is_today: json.is_today };
+      return { brief: json.brief ?? null, locked: json.locked === true, is_today: json.is_today };
     },
-    // Signed-out visitors never even fetch — avoids a pointless 401 round
-    // trip and, more importantly, means there's nothing here for `brief`/
-    // `isLocked` below to fall back to.
     enabled: !authLoading && isAuthenticated,
     staleTime: 5 * 60_000,
     retry: false,
     // Keep polling until today's brief actually exists. The 06:30 UTC cron can
-    // land any time after that, and staleTime + no refetchOnWindowFocus
-    // trigger alone left a tab open through the morning stuck showing
-    // yesterday's brief (or the "check back after..." placeholder) until the
-    // user manually reloaded. Stops polling as soon as a real today's brief
-    // is in hand — no need to keep checking once it's there.
+    // land any time after that, and a tab left open through the morning would
+    // otherwise sit on yesterday's brief until a manual reload.
     refetchInterval: (query) => {
       const d = query.state.data;
-      if (!d || d.locked) return false;
-      if (d.brief === null || d.is_today === false) return 5 * 60_000;
-      return false;
+      if (!d) return false;
+      return d.brief === null || d.is_today === false ? 5 * 60_000 : false;
     },
   });
 
-  if (error) return null;
+  // `data` can outlive a sign-out in the query cache; signed-out always wins.
+  if (!authLoading && !isAuthenticated) return null;
 
-  // `data` can still hold a previously-authenticated session's real brief —
-  // TanStack Query doesn't clear cached results just because a query goes
-  // from enabled to disabled. Signing out (or never having signed in) must
-  // always win over whatever is sitting in cache, so this reads `isAuthenticated`
-  // live rather than trusting the query's own success/locked state.
-  const isLocked = !isAuthenticated || data?.locked === true;
-  const brief = isAuthenticated ? (data?.brief ?? null) : null;
-  const isToday = data?.is_today !== false;
-
-  if (authLoading || (isAuthenticated && isLoading)) {
+  if (error) {
     return (
-      <div className="min-w-0">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">{t('briefWidgetLabel')}</span>
-          <div className="flex-1 h-px bg-border/50" />
-        </div>
-        <div className="h-4 w-72 animate-shimmer rounded mb-2" />
-        <div className="h-3 w-40 animate-shimmer rounded" />
-      </div>
+      <HomeSection title={t('briefWidgetLabel')}>
+        <p className={cn(homePanel, 'p-5 text-sm text-muted-foreground')}>{t('briefLoadError')}</p>
+      </HomeSection>
     );
   }
 
-  if (isLocked) {
+  if (authLoading || isLoading || !data) {
     return (
-      <div className="min-w-0">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">{t('briefWidgetLabel')}</span>
-          <div className="flex-1 h-px bg-border/50" />
+      <HomeSection title={t('briefWidgetLabel')}>
+        <div className={cn(homePanel, 'space-y-2.5 p-5')} aria-hidden>
+          <div className="h-4 w-3/4 animate-shimmer rounded" />
+          <div className="h-3 w-full animate-shimmer rounded" />
+          <div className="h-3 w-5/6 animate-shimmer rounded" />
         </div>
-        <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-border/30 bg-muted/10">
-          {/* Illustrative placeholder, not real content — hidden from assistive tech so
-              screen readers land on the "Upgrade" CTA instead of a fake blurred preview. */}
-          <div className="space-y-1 min-w-0" aria-hidden="true">
-            <p className="text-sm font-medium text-foreground/30 blur-sm select-none truncate">
-              {t('briefLockedPreviewHeadline')}
-            </p>
-            <p className="text-xs text-muted-foreground blur-sm select-none">{t('briefLockedPreviewSections')}</p>
-          </div>
-          <Link
-            href="/upgrade"
-            className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            {t('briefUpgradeCta')} <ArrowUpRight className="h-3 w-3" />
-          </Link>
-        </div>
-      </div>
+      </HomeSection>
     );
   }
 
+  const { brief, locked } = data;
   if (brief === null) {
     return (
-      <div className="min-w-0">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">{t('briefWidgetLabel')}</span>
-          <div className="flex-1 h-px bg-border/50" />
-        </div>
-        <p className="text-sm text-muted-foreground">
+      <HomeSection title={t('briefWidgetLabel')}>
+        <p className={cn(homePanel, 'p-5 text-sm text-muted-foreground')}>
           {t('briefGenerating', { time: getNextBriefLocalTime(locale) })}
         </p>
-      </div>
+      </HomeSection>
     );
   }
 
-  const topTickers = (brief.featured_tickers ?? [])
-    .filter((t) => t.length >= 2 && t.length <= 5 && isKnownTicker(t, known))
-    .slice(0, 5);
+  const isToday = data.is_today !== false;
+  const tldr = parseSections(brief.content).find((s) => /^tl;?dr$/i.test(s.heading))?.body ?? '';
 
   return (
-    <>
-      <div className="min-w-0">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground shrink-0">
-            {isToday ? t('briefWidgetLabel') : t('briefYesterdayLabel')}
-          </span>
-          <div className="flex-1 h-px bg-border/50" />
-          <span className="text-[11px] font-mono text-muted-foreground tracking-wider shrink-0">
-            {formatRelativeTime(brief.generated_at, t)}
-          </span>
+    <HomeSection
+      title={isToday ? t('briefWidgetLabel') : t('briefYesterdayLabel')}
+      aside={
+        <span className="shrink-0 text-xs text-muted-foreground">{formatRelativeTime(brief.generated_at, t)}</span>
+      }
+    >
+      <div className={cn(homePanel, 'p-5')}>
+        <p className="text-sm font-semibold leading-snug text-foreground">{renderInline(brief.title, known)}</p>
+        {tldr && (
+          <ClampedText lines={3} className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {renderInline(tldr.replace(/\s*\n+\s*/g, ' '), known)}
+          </ClampedText>
+        )}
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          {locked ? (
+            <Link
+              href="/upgrade"
+              className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              {t('briefReadFullPro')}
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsOpen(true)}
+                className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                {t('briefReadFull')}
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+              </button>
+              <span className="text-xs text-muted-foreground">
+                {t('briefMinRead', { minutes: estimateReadingTime(brief.content) })}
+              </span>
+            </>
+          )}
         </div>
-
-        <button
-          onClick={() => setIsOpen(true)}
-          className="w-full text-left group flex items-start justify-between gap-4 rounded-lg border border-border/30 bg-muted/10 hover:bg-muted/20 hover:border-border/50 transition-all duration-200 px-4 py-3 active:scale-[0.997]"
-        >
-          <div className="min-w-0 space-y-2">
-            <p className="text-sm font-semibold text-foreground leading-snug">
-              {brief.title}
-            </p>
-            {topTickers.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {topTickers.map((ticker) => (
-                  <span
-                    key={ticker}
-                    className="text-[11px] font-mono font-medium text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded"
-                  >
-                    ${ticker}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0 mt-0.5 transition-all duration-150" />
-        </button>
       </div>
 
-      <BriefReader brief={brief} open={isOpen} onOpenChange={setIsOpen} />
-    </>
+      {!locked && <BriefReader brief={brief} open={isOpen} onOpenChange={setIsOpen} />}
+    </HomeSection>
   );
 }

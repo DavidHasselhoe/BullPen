@@ -1,85 +1,59 @@
 'use client';
 
-import { Pencil } from 'lucide-react';
+import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
+import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { HomepageRedirect } from '@/components/navigation/HomepageRedirect';
-import { CommandBar } from '@/components/command-palette/CommandBar';
-import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
 import type { InitialWelcome } from '@/lib/dashboard/greeting';
-import { Button } from '@/components/ui/button';
+import type { IndexQuote } from '@/lib/discover/discover-config';
 import { useBackground } from '@/hooks/use-background';
-import { MarketContextSection } from '@/components/market/MarketContextSection';
-import { HotPicksCard } from '@/components/discover/HotPicksCard';
-import { RecentlyViewedInline } from '@/components/discover/RecentlyViewedInline';
-import { PortfolioSummaryWidget } from '@/components/discover/PortfolioSummaryWidget';
-import { EarningsCalendarWidget } from '@/components/discover/EarningsCalendarWidget';
-import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
-import { WhyTodayWidget } from '@/components/discover/WhyTodayWidget';
-import { QuoteDisplay } from '@/components/ui/QuoteDisplay';
 import { useUserSettings } from '@/hooks/use-user-settings';
-import { CryptoMarketCard } from '@/components/asset/CryptoMarketCard';
+import { useHomePortfolio } from '@/hooks/use-home-portfolio';
+import { HomeHeader } from '@/components/dashboard/HomeHeader';
+import { PortfolioHero } from '@/components/dashboard/PortfolioHero';
+import { ComingUp } from '@/components/dashboard/ComingUp';
+import { YourNews } from '@/components/dashboard/YourNews';
+import { PickUp } from '@/components/dashboard/PickUp';
+import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
 import { GettingStartedCard } from '@/components/onboarding/GettingStartedCard';
-import { PerformanceCalendarWidget } from '@/components/discover/PerformanceCalendarWidget';
-import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
 import { TrialStartedModal } from '@/components/billing/TrialStartedModal';
+import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
 
 function WidgetSlot({ id }: { id: string }) {
   switch (id) {
-    case 'recently_viewed':
-      return <RecentlyViewedInline />;
-    case 'performance_calendar':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <PerformanceCalendarWidget />
-        </section>
-      );
     case 'daily_brief':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <DailyBriefWidget />
-        </section>
-      );
-    case 'why_today':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <WhyTodayWidget />
-        </section>
-      );
-    case 'market_context':
-      return <MarketContextSection />;
-    case 'earnings_calendar':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <EarningsCalendarWidget />
-        </section>
-      );
-    case 'hot_picks':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <HotPicksCard />
-        </section>
-      );
-    case 'crypto_market':
-      return (
-        <section className="min-w-0 overflow-hidden">
-          <CryptoMarketCard />
-        </section>
-      );
-    case 'investing_quote':
-      return (
-        <footer className="min-w-0">
-          <QuoteDisplay enabled />
-        </footer>
-      );
+      return <DailyBriefWidget />;
+    case 'coming_up':
+      return <ComingUp />;
+    case 'your_news':
+      return <YourNews />;
+    case 'pick_up':
+      return <PickUp />;
     default:
       return null;
   }
 }
 
-export default function DashboardClient({ initialWelcome }: { initialWelcome?: InitialWelcome | null }) {
+/**
+ * Home answers three questions in order: am I okay (greeting sentence and
+ * portfolio), what do I need to know today (brief, what's coming up for my
+ * stocks, their news), and where was I (recents, Academy). It ends, on
+ * purpose: "all caught up" is the signal that the check-in is done. The wider
+ * market lives on Discover.
+ */
+export default function DashboardClient({
+  initialWelcome,
+  indices,
+}: {
+  initialWelcome?: InitialWelcome | null;
+  indices: IndexQuote[];
+}) {
+  const { t } = useTranslation('discover');
   const { hasAnimatedBackground } = useBackground();
   const { showWelcomeText, homepageWidgetOrder, homepageWidgetHidden } = useUserSettings();
+  const { isNew } = useHomePortfolio();
 
-  const resolvedOrder = resolveWidgetOrder(homepageWidgetOrder, homepageWidgetHidden);
+  const order = resolveWidgetOrder(homepageWidgetOrder, homepageWidgetHidden);
 
   const openCustomize = () => {
     window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'customize' } }));
@@ -87,51 +61,40 @@ export default function DashboardClient({ initialWelcome }: { initialWelcome?: I
 
   return (
     <HomepageRedirect>
-    <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
-      <TrialStartedModal />
-      <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0">
-        {/* SECTION: Search / Command bar — fixed header, not reorderable */}
-        <section className="mb-10">
-          <div className="flex flex-col gap-4">
-            {showWelcomeText && <WelcomeMessage initial={initialWelcome} />}
-            <div className="flex flex-col sm:flex-row gap-4 items-stretch">
-              <div className="flex-1 min-w-0">
-                <CommandBar />
-              </div>
-              <div className="sm:w-72 shrink-0">
-                <PortfolioSummaryWidget />
-              </div>
-            </div>
+      <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
+        <TrialStartedModal />
+        <main className="container mx-auto min-w-0 max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+          <HomeHeader initialWelcome={initialWelcome} showWelcome={showWelcomeText !== false}indices={indices} />
+
+          <div className="mt-8 space-y-10">
+            {isNew ? <GettingStartedCard /> : <PortfolioHero />}
+            {order.map((id) => (
+              <WidgetSlot key={id} id={id} />
+            ))}
           </div>
-        </section>
 
-        {/* Customize control */}
-        <div className="flex justify-end mb-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={openCustomize}
-            className="gap-1.5 h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Pencil className="h-3 w-3" />
-            Customize
-          </Button>
-        </div>
-
-        {/* Getting-started card — self-hides once the user has any holding or
-            watchlist item, so it only greets genuinely new accounts. Margin
-            lives on the card itself (not this wrapper) so hidden state
-            doesn't leave a dead gap for returning users. */}
-        <GettingStartedCard />
-
-        {/* Reorderable widget stack */}
-        <div className="space-y-16">
-          {resolvedOrder.map((id) => (
-            <WidgetSlot key={id} id={id} />
-          ))}
-        </div>
-      </main>
-    </div>
+          <footer className="mt-12 flex flex-col gap-4 border-t border-border/60 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">{t('homeCaughtUp')}</p>
+              <Link
+                href="/discover"
+                className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t('homeExploreMarket')}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </div>
+            <button
+              type="button"
+              onClick={openCustomize}
+              className="inline-flex items-center gap-1.5 self-start py-2 text-xs text-muted-foreground transition-colors hover:text-foreground sm:self-auto"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+              {t('homeCustomize')}
+            </button>
+          </footer>
+        </main>
+      </div>
     </HomepageRedirect>
   );
 }
