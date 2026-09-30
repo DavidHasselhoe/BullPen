@@ -9,6 +9,7 @@ import { humanizeError } from '@/lib/errors/humanize';
 import { LivePriceContext } from './LivePriceContext';
 import { DiscoverHeader } from './DiscoverHeader';
 import { MarketPulse } from './MarketPulse';
+import { MarketMovers } from './MarketMovers';
 import { SectorPerformance } from './SectorPerformance';
 import { ThemeGrid } from './ThemeGrid';
 import { IdeaCollections } from './IdeaCollections';
@@ -23,9 +24,10 @@ const FEED_QUERY_KEY = ['discover-feed'];
  * Discover: read the market in ten seconds, then find one thing worth researching.
  *
  * The page reads top-to-bottom as a funnel of decreasing commitment — one
- * high-conviction pick, then how the market feels, then where money moved, then
- * specific names to dig into. The dashboard already owns the personalised daily
- * check-in, so movers and news deliberately live there and not here.
+ * high-conviction pick, then how the market feels, then which names moved it,
+ * then where money moved, then specific names to dig into. Home is only about
+ * the user's own holdings and watchlist (2026-09-29), so market-wide movers
+ * live here.
  */
 export function DiscoverClient() {
   const { t } = useTranslation('discover');
@@ -90,6 +92,7 @@ export function DiscoverClient() {
       <DiscoverHeader />
       <WeeklyPickHero />
       <MarketPulse indices={feed.indices} />
+      <MarketMovers />
       <SectorPerformance sectors={feed.sectors} />
       <ThemeGrid />
       <IdeaCollections collections={feed.collections} />

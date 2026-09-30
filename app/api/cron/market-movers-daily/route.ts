@@ -21,10 +21,11 @@
  * there's always a top 10/top 10 by rank, so this always stages a post.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { getClosedHolidays } from '@/lib/market/exchange-holidays';
+import { refreshIndexMovers } from '@/lib/market-data/index-movers';
 import { generateMarketMoversContent } from '@/lib/instagram/content/market-movers';
 import { stageAndPublishMovers, type StagedMovers } from '@/lib/instagram/movers-stage';
 import type { MarketMoversSlides } from '@/lib/instagram/content/schema';
@@ -66,6 +67,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const sp = request.nextUrl.searchParams;
   const preMarket = sp.get('preMarket') === 'true';
   const contextNote = sp.get('contextNote') ?? undefined;
+
+  // Seed the app's own movers list (Discover, Daily Brief) with the session
+  // that just closed, independent of whether the Instagram post below runs.
+  // Paced against the same credit budget as the post's quote fetch.
+  if (!preMarket) after(() => refreshIndexMovers());
 
   const basePeriodKey = todayEtDateKey();
   const periodKey = preMarket ? `${basePeriodKey}-premarket` : basePeriodKey;

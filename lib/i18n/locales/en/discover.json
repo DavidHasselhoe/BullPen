@@ -151,5 +151,11 @@
   "timeframeYtd": "This year",
   "whyTodayWidgetFeatureName": "Why Today",
   "whyTodayWidgetWhyButton": "Why?",
-  "homeChartTooltipPl": "P/L"
+  "homeChartTooltipPl": "P/L",
+  "moversHeading": "Biggest movers",
+  "moversSubtitleLive": "S&P 500 and Nasdaq-100 stocks moving most today",
+  "moversSubtitleLast": "S&P 500 and Nasdaq-100 stocks that moved most on {{day}}",
+  "moversGainers": "Top gainers",
+  "moversLosers": "Top losers",
+  "moversFooterNote": "Ranked by % change over the regular trading session. Pre-market and after-hours moves are not included."
 }

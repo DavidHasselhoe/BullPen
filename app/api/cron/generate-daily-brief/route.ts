@@ -10,7 +10,8 @@
  * ~650-word brief is ~2K output tokens. Each search round resends the accumulated
  * context, so cost scales with the NUMBER of searches: uncapped runs measured
  * ~194–277K input tokens ($0.61–0.86). `max_uses` is the lever that bounds it.
- * TwelveData credit cost: ~60–100 credits (earnings calendar x3 + movers + market quotes).
+ * TwelveData credit cost: ~60–100 credits (earnings calendar x3 + market quotes), plus ~517 for
+ * movers when the shared index-movers cache is cold (lib/market-data/index-movers.ts).
  */
 
 import { NextRequest, NextResponse, after } from 'next/server';
@@ -21,7 +22,8 @@ import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 import { getEconomicEvents } from '@/lib/market-data/economic-calendar';
 import { ECONOMIC_KINDS } from '@/lib/market-data/economic-kinds';
 import { getCalendarDay } from '@/lib/market-data/calendar-days';
-import { getTopMovers, getStockQuotes } from '@/lib/market-data';
+import { getStockQuotes } from '@/lib/market-data';
+import { getIndexMovers } from '@/lib/market-data/index-movers';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 import { createDailyBriefReadyNotification } from '@/lib/notifications/notification-creators';
@@ -376,7 +378,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     withTimeout<EarningsCalendarItem[] | null>(getCalendarDay<EarningsCalendarItem>('earnings', yesterdayET), DATA_GATHER_TIMEOUT_MS),
     withTimeout<EarningsCalendarItem[] | null>(getCalendarDay<EarningsCalendarItem>('earnings', todayET), DATA_GATHER_TIMEOUT_MS),
     withTimeout<EarningsCalendarItem[] | null>(getCalendarDay<EarningsCalendarItem>('earnings', tomorrowET), DATA_GATHER_TIMEOUT_MS),
-    withTimeout<Awaited<ReturnType<typeof getTopMovers>>>(getTopMovers(5), DATA_GATHER_TIMEOUT_MS),
+    // Same definition and shared cache as Discover's movers: S&P 500 +
+    // Nasdaq-100, last regular session. Was a hand-picked list of 50 mega caps.
+    withTimeout<Awaited<ReturnType<typeof getIndexMovers>>>(getIndexMovers(), DATA_GATHER_TIMEOUT_MS),
     withTimeout<{ data: { title: string; content: string } | null }>(
       (async () =>
         supabase
@@ -398,7 +402,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const yesterdayEarningsData = (yesterdayEarnings.status === 'fulfilled' ? yesterdayEarnings.value : []) ?? [];
   const todayEarningsData = (todayEarnings.status === 'fulfilled' ? todayEarnings.value : []) ?? [];
   const tomorrowEarningsData = (tomorrowEarnings.status === 'fulfilled' ? tomorrowEarnings.value : []) ?? [];
-  const movers = moversResult.status === 'fulfilled' ? moversResult.value : { gainers: [], losers: [] };
+  const movers = (moversResult.status === 'fulfilled' ? moversResult.value : null) ?? { gainers: [], losers: [] };
 
   // Scheduled releases from the official agency calendars (our own table, no
   // credits), so "Watch Today" / "Next 24 Hours" get exact times instead of
