@@ -1,5 +1,54 @@
 [
   {
+    "date": "2026-09-30",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "The Financial Health Score has been rebuilt to measure how sound a business is: profits, debt, cash flow, growth and volatility. The share price no longer counts, so a great company isn't marked down for being expensive. Banks, utilities and real estate are judged by the standards of their industry, and companies we don't have full financial statements for show no score instead of a misleading low one"
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull which stocks lead on health score, valuation, dividends and more, and it answers from the screener's own data. On the screener, Bull can see your filters and the stocks on screen, suggests what to look for and points out filters that are holding your results back"
+      },
+      {
+        "type": "new",
+        "text": "Market movers are back, now on Discover: the biggest gainers and losers in the S&P 500 and Nasdaq-100 from the regular trading session"
+      },
+      {
+        "type": "new",
+        "text": "Stock pages show your own position when you hold the stock, and work properly on phones, with the Watch, Alert and Deep Dive buttons always in reach"
+      },
+      {
+        "type": "improved",
+        "text": "My Holdings opens with your positions, and total profit and loss now includes gains from shares you've sold, so the summary and the chart always agree"
+      },
+      {
+        "type": "improved",
+        "text": "Hovering the portfolio chart on Home shows your value and gain at that point, just like My Holdings"
+      },
+      {
+        "type": "improved",
+        "text": "Portfolio Risk Analysis opens on your latest saved result instead of an empty screen"
+      },
+      {
+        "type": "fixed",
+        "text": "Filtering the screener by sector now finds every company in that sector. Most stocks were missing their sector, so filters like Technology hid companies such as Micron"
+      },
+      {
+        "type": "fixed",
+        "text": "Removing a stock from your watchlist from its stock page works again"
+      },
+      {
+        "type": "fixed",
+        "text": "The Community and Tools menus in the top bar stay open when you move the mouse into them slowly, and open properly with a tap on tablets"
+      },
+      {
+        "type": "fixed",
+        "text": "Dates at the ends of chart timelines are no longer cut off"
+      }
+    ]
+  },
+  {
     "date": "2026-09-29",
     "entries": [
       {
