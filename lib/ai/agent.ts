@@ -18,7 +18,13 @@ interface AIContext {
   tickers: string[];
   label?: string;
   /** Mirrors ScreenerAIContext in AIPanelProvider.tsx. Client-supplied, so sanitized before it reaches the prompt. */
-  screener?: { scope?: string; tickers?: string[]; filters?: Record<string, unknown>; resultCount?: number };
+  screener?: {
+    scope?: string;
+    tickers?: string[];
+    filters?: Record<string, unknown>;
+    resultCount?: number;
+    shown?: { tickers?: unknown[]; sortKey?: unknown; sortDir?: unknown };
+  };
 }
 
 /** Turns the screener page's state into the exact screenStocks arguments that reproduce it. */
@@ -34,8 +40,18 @@ function screenerContextPrefix(s: NonNullable<AIContext['screener']>): string {
     const n = Number(v);
     args[k] = k === 'sector' || k === 'industry' ? String(v).slice(0, 80) : Number.isFinite(n) ? n : undefined;
   }
+  const hasFilters = Object.keys(args).some((k) => k !== 'scope' && k !== 'tickers');
   const count = typeof s.resultCount === 'number' ? `${s.resultCount} ` : '';
-  return `[Current page context: The user is on the stock screener looking at ${count}stocks. "Which", "top", "best" or "highest" questions that do not name another set refer to these results: answer them with screenStocks using exactly these arguments, adding sortBy/order/limit: ${JSON.stringify(args)}]\n\n`;
+  const shownTickers = (s.shown?.tickers ?? [])
+    .filter((t): t is string => typeof t === 'string')
+    .slice(0, 50)
+    .map((t) => t.slice(0, 20));
+  const sortKey = typeof s.shown?.sortKey === 'string' ? s.shown.sortKey.slice(0, 40) : null;
+  const sortDir = s.shown?.sortDir === 'asc' ? 'ascending' : 'descending';
+  const shown = shownTickers.length > 0
+    ? ` The rows on their screen, top to bottom${sortKey ? ` (sorted by ${sortKey}, ${sortDir})` : ''}: ${shownTickers.join(', ')}.`
+    : '';
+  return `[Current page context: The user is on the stock screener looking at ${count}stocks. ${hasFilters ? 'Their filters are in the arguments below.' : 'They have not set any filters.'}${shown} "Which", "top", "best" or "highest" questions that do not name another set refer to these results: answer them with screenStocks using exactly these arguments, adding sortBy/order/limit: ${JSON.stringify(args)}]\n\n`;
 }
 
 export async function runAgent(

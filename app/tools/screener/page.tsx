@@ -27,7 +27,7 @@ import { useWatchlist, useWatchlistItems } from '@/hooks/use-watchlist';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useScreenerViews, useUpdateScreenerView, type ScreenerView } from '@/hooks/use-screener-views';
 import { useAuth } from '@/hooks/use-auth';
-import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvider';
 import { isAdmin, tierFromUser } from '@/lib/billing/tier';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
@@ -197,6 +197,8 @@ function ScreenerContent() {
   // the filters. Bull re-runs the same view + filters through screenStocks.
   const { setAIContext } = useAIPanel();
   const resultCount = data?.total;
+  // The current page's rows in display order, reported by ScreenerResults.
+  const [shown, setShown] = useState<ScreenerAIContext['shown']>();
   useEffect(() => {
     const tickers = symbolsFilter && symbolsFilter !== '__none__' ? symbolsFilter.split(',') : undefined;
     setAIContext({
@@ -207,10 +209,12 @@ function ScreenerContent() {
         tickers,
         filters: Object.fromEntries(Object.entries(debouncedFilters).filter(([, v]) => v)),
         resultCount,
+        // ScreenerResults is not mounted with zero results, so its last report would be stale.
+        shown: resultCount ? shown : undefined,
       },
     });
     return () => setAIContext(null);
-  }, [symbolsFilter, activeView.type, debouncedFilters, resultCount, setAIContext, t]);
+  }, [symbolsFilter, activeView.type, debouncedFilters, resultCount, shown, setAIContext, t]);
 
   // Full database ticker count, decoupled from the active view/filters — powers
   // the "View all (N)" pill, which must show the same number no matter which
@@ -549,6 +553,7 @@ function ScreenerContent() {
                 pageSize={pageSize}
                 onPageChange={setPage}
                 onPageSizeChange={(sz) => { setPageSize(sz); setPage(1); }}
+                onVisibleRowsChange={setShown}
               />
               {/* Inline add row — only for custom views with stocks */}
               {isCustomView && (

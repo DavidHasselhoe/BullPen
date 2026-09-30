@@ -67,6 +67,8 @@ interface ScreenerResultsProps {
    *  `key` change rather than expect these to react to a later prop update. */
   initialSortKey?: string;
   initialSortDir?: SortDir;
+  /** Reports the rows on the current page in display order, and the sort behind them. Feeds Bull's page context. */
+  onVisibleRowsChange?: (view: { tickers: string[]; sortKey: string; sortDir: SortDir }) => void;
 }
 
 export function ScreenerResults({
@@ -79,6 +81,7 @@ export function ScreenerResults({
   onPageSizeChange,
   initialSortKey = 'market_cap',
   initialSortDir = 'desc',
+  onVisibleRowsChange,
 }: ScreenerResultsProps) {
   const { t } = useTranslation('tools');
   const router = useRouter();
@@ -130,6 +133,13 @@ export function ScreenerResults({
     () => sorted.slice((page - 1) * pageSize, page * pageSize),
     [sorted, page, pageSize]
   );
+
+  // Keyed on the ticker string, not the array: sorting by a live price column
+  // re-sorts on every tick, and the order rarely actually changes.
+  const visibleTickers = paginated.map((r) => r.ticker).join(',');
+  useEffect(() => {
+    onVisibleRowsChange?.({ tickers: visibleTickers ? visibleTickers.split(',') : [], sortKey, sortDir });
+  }, [visibleTickers, sortKey, sortDir, onVisibleRowsChange]);
 
   const allOnPageSelected = paginated.length > 0 && paginated.every((r) => selected.has(r.ticker));
   const toggleSelectAllOnPage = useCallback(() => {

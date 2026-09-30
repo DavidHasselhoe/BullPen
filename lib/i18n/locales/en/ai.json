@@ -118,5 +118,7 @@
   "chatRateLimitedWithWait": "Bull is handling a lot of requests right now. Please try again in about {{seconds}} seconds.",
   "chatScreenerPromptHealthiest": "Which of these has the highest health score?",
   "chatScreenerPromptCheapest": "Which of these is cheapest by P/E?",
-  "chatScreenerPromptDividend": "Which of these pays the biggest dividend?"
+  "chatScreenerPromptWhatToLookFor": "What should I look for in a stock?",
+  "chatScreenerPromptCandidates": "Show me some strong candidates",
+  "chatScreenerPromptReviewFilters": "Are my filters any good?"
 }

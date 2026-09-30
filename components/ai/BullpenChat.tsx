@@ -389,11 +389,17 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
 
   // Context-aware prompts when viewing the screener, a company or a comparison
   const contextPrompts = aiContext?.screener
-    ? [
-        t('chatScreenerPromptHealthiest'),
-        t('chatScreenerPromptCheapest'),
-        t('chatScreenerPromptDividend'),
-      ]
+    ? Object.keys(aiContext.screener.filters).length === 0
+      ? [
+          t('chatScreenerPromptWhatToLookFor'),
+          t('chatScreenerPromptCandidates'),
+          t('chatScreenerPromptHealthiest'),
+        ]
+      : [
+          t('chatScreenerPromptReviewFilters'),
+          t('chatScreenerPromptHealthiest'),
+          t('chatScreenerPromptCheapest'),
+        ]
     : aiContext?.tickers.length
     ? aiContext.tickers.length >= 2
       ? [

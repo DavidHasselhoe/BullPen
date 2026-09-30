@@ -619,7 +619,9 @@ export const screenStocks = tool({
     'user has on screen: pass them unchanged so "which of these" means those results. Scores are refreshed nightly; do ' +
     'not re-check the results with getHealthScore, which costs credits. A question about one named company still goes ' +
     'to getHealthScore. Tickers the screener does not track come back in notCovered; use getHealthScore for those ' +
-    'rather than saying they have no score.',
+    'rather than saying they have no score. When filters are set, filterImpact lists how many stocks would match ' +
+    'without each one, largest first: the filter with the biggest jump over matchedFilters is the bottleneck. A stock ' +
+    'missing a value (no dividend, no sector on record) fails any filter on that value.',
   inputSchema: jsonSchema<ScreenerToolFilters & {
     sortBy?: ScreenSortKey;
     order?: 'desc' | 'asc';
@@ -672,9 +674,30 @@ export const screenStocks = tool({
     const notCovered = symbols?.filter((t) => !present.has(t)) ?? [];
     const oldest = ranked.reduce<string | null>((min, r) => (!min || r.updated_at < min ? r.updated_at : min), null);
 
+    // For each active filter, how many stocks would match without it. The
+    // biggest jump is the bottleneck, which is what lets Bull critique a filter
+    // setup with numbers instead of opinion.
+    const activeGroups = [...new Set(
+      (Object.keys(params) as (keyof ScreenerFilterParams)[])
+        .filter((k) => params[k] != null && params[k] !== '')
+        .map((k) => k.replace(/(Min|Max)$/, '')),
+    )];
+    const filterImpact = activeGroups.length > 0
+      ? activeGroups
+          .map((group) => {
+            const without = Object.fromEntries(
+              Object.entries(params).filter(([k]) => k.replace(/(Min|Max)$/, '') !== group),
+            ) as ScreenerFilterParams;
+            return { filter: group, matchesWithoutIt: rows.filter((r) => matchesScreenerFilters(r, without)).length };
+          })
+          .sort((a, b) => b.matchesWithoutIt - a.matchesWithoutIt)
+      : undefined;
+
     return {
       universe: symbols ? `${symbols.length} given tickers` : scope === 'all' ? 'all tracked stocks' : 'S&P 500',
+      universeSize: rows.length,
       matchedFilters: matched.length,
+      ...(filterImpact ? { filterImpact } : {}),
       rankedBy: sortBy,
       order,
       dataAsOf: oldest?.slice(0, 10) ?? null,

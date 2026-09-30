@@ -40,7 +40,12 @@ interface Case {
   context?: Parameters<typeof runAgent>[1];
   /** Arguments the first screenStocks call must carry, e.g. the screener's on-screen filters. */
   expectScreenArgs?: Record<string, unknown>;
+  /** The reply must not match this, e.g. buy advice. */
+  rejectText?: RegExp;
 }
+
+/** Recommendation language the Boundaries section rules out. */
+const BUY_ADVICE = /\b(you should buy|worth buying|good buy|is a buy|strong buy|i recommend buying)\b/i;
 
 const CASES: Case[] = [
   {
@@ -115,6 +120,32 @@ const CASES: Case[] = [
     expectNone: ['getHealthScore'],
     expectScreenArgs: { sector: 'Technology', divYieldMin: 1 },
   },
+  {
+    name: 'a new user on an unfiltered screener gets coached with real examples',
+    prompt: 'What should I look for in a stock?',
+    context: {
+      tickers: [],
+      label: 'the stocks on your screen',
+      screener: { scope: 'sp500', filters: {}, resultCount: 500 },
+    },
+    expectOneOf: ['screenStocks'],
+    expectNone: ['getHealthScore'],
+    rejectText: BUY_ADVICE,
+  },
+  {
+    name: 'a filter setup gets critiqued from filterImpact',
+    prompt: 'Are my filters any good?',
+    context: {
+      tickers: [],
+      label: 'the stocks on your screen',
+      // 9% yield + P/E under 8: a yield-trap hunt that leaves almost nothing.
+      screener: { scope: 'sp500', filters: { divYieldMin: '9', peMax: '8' }, resultCount: 1 },
+    },
+    expectOneOf: ['screenStocks'],
+    expectScreenArgs: { divYieldMin: 9, peMax: 8 },
+    expectText: /(yield|dividend)/i,
+    rejectText: BUY_ADVICE,
+  },
 ];
 
 function ask(text: string): UIMessage[] {
@@ -139,6 +170,9 @@ async function run(c: Case) {
   }
   if (c.expectText && !c.expectText.test(text)) {
     problems.push(`reply did not match ${c.expectText}`);
+  }
+  if (c.rejectText && c.rejectText.test(text)) {
+    problems.push(`reply matched ${c.rejectText}, which it should not`);
   }
   if (c.expectDestination) {
     const nav = calls.find((t) => t.toolName === 'navigateTo');

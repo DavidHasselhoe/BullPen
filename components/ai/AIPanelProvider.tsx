@@ -17,6 +17,8 @@ export interface ScreenerAIContext {
   /** Active filters in the screener's own units (market cap in billions, percents 0-100). */
   filters: Record<string, string>;
   resultCount?: number;
+  /** The current results page in display order, and the column it is sorted by (a screener column key, e.g. health_score). */
+  shown?: { tickers: string[]; sortKey: string; sortDir: 'asc' | 'desc' };
 }
 
 export interface WhyTodayPayload {
