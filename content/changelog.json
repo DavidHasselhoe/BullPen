@@ -3,6 +3,22 @@
     "date": "2026-09-30",
     "entries": [
       {
+        "type": "fixed",
+        "text": "After the market closes, Home and My Holdings now show the whole day's change. Before, the day's move was replaced by the after-hours move alone, so a stock that fell 4% and recovered a little after the close looked like it was up"
+      },
+      {
+        "type": "fixed",
+        "text": "Market movers on Discover show the official closing price, including in the first half hour after the bell"
+      },
+      {
+        "type": "improved",
+        "text": "Your profile has a single name field. The Home greeting uses your full name, and your profile link is made from it automatically"
+      },
+      {
+        "type": "improved",
+        "text": "Dark mode is now a simple switch in Settings"
+      },
+      {
         "type": "improved",
         "text": "The Financial Health Score has been rebuilt to measure how sound a business is: profits, debt, cash flow, growth and volatility. The share price no longer counts, so a great company isn't marked down for being expensive. Banks, utilities and real estate are judged by the standards of their industry, and companies we don't have full financial statements for show no score instead of a misleading low one"
       },
