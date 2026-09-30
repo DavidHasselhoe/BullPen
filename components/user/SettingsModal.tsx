@@ -799,26 +799,13 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="theme" className="flex items-center gap-2">
-                      <Moon className="h-4 w-4" />
-                      {t('theme')}
-                    </Label>
-                    <Select
-                      value={theme}
-                      onValueChange={(value: ThemeValue) => setTheme(value)}
-                    >
-                      <SelectTrigger id="theme">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="dark">{t('themeDark')}</SelectItem>
-                        <SelectItem value="light">{t('themeLight')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   <SettingsCard>
+                    <ToggleSetting
+                      icon={Moon}
+                      label={t('darkMode')}
+                      checked={theme === 'dark'}
+                      onCheckedChange={(on) => setTheme(on ? 'dark' : 'light')}
+                    />
                     <ToggleSetting
                       icon={Hash}
                       label={t('roundNumbers')}

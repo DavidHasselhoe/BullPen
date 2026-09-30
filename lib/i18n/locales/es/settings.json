@@ -176,6 +176,7 @@
   "theme": "Tema",
   "themeDark": "Oscuro",
   "themeLight": "Claro",
+  "darkMode": "Modo oscuro",
   "title": "Configuración",
   "notifEconomicEventsLabel": "Lanzamientos Económicos",
   "notifEconomicEventsDescription": "Un aviso por la mañana en días con un lanzamiento económico de EE.UU. que sigues, con la hora en tu zona horaria. Elige qué lanzamientos deseas seguir en Economic en el Market Calendar.",

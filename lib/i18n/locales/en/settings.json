@@ -177,6 +177,7 @@
   "theme": "Theme",
   "themeDark": "Dark",
   "themeLight": "Light",
+  "darkMode": "Dark mode",
   "title": "Settings",
   "notifEconomicEventsLabel": "Economic Releases",
   "notifEconomicEventsDescription": "A morning heads-up on days with a US economic release you follow, with the time in your time zone. Choose which releases under Economic in the Market Calendar.",

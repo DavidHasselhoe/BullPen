@@ -177,6 +177,7 @@
   "theme": "Thème",
   "themeDark": "Sombre",
   "themeLight": "Clair",
+  "darkMode": "Mode sombre",
   "title": "Paramètres",
   "notifEconomicEventsLabel": "Annonces Économiques",
   "notifEconomicEventsDescription": "Une notification le matin des jours avec un communiqué économique américain que vous suivez, avec l'heure dans votre fuseau horaire. Choisissez les communiqués à suivre sous Économie dans le Calendrier de marché.",

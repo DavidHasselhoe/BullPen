@@ -176,6 +176,7 @@
   "theme": "Tema",
   "themeDark": "Mørk",
   "themeLight": "Lys",
+  "darkMode": "Mørk modus",
   "title": "Innstillinger",
   "notifEconomicEventsLabel": "Økonomiske nøkkeltall",
   "notifEconomicEventsDescription": "Et morgenvarsel på dager med en amerikansk økonomisk rapport du følger, med klokkeslettet i din tidssone. Velg hvilke rapporter under Økonomisk i Markedskalenderen.",

@@ -177,6 +177,7 @@
   "theme": "主题",
   "themeDark": "深色",
   "themeLight": "浅色",
+  "darkMode": "深色模式",
   "title": "设置",
   "notifEconomicEventsLabel": "经济数据发布",
   "notifEconomicEventsDescription": "在有您关注的美国经济数据发布的日子，早上提醒您，并显示您所在时区的时间。您可以在Market Calendar中的Economic下选择要关注的数据发布。",

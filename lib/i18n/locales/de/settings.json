@@ -176,6 +176,7 @@
   "theme": "Design",
   "themeDark": "Dunkel",
   "themeLight": "Hell",
+  "darkMode": "Dunkler Modus",
   "title": "Einstellungen",
   "notifEconomicEventsLabel": "Wirtschaftliche Veröffentlichungen",
   "notifEconomicEventsDescription": "Eine morgendliche Benachrichtigung an Tagen mit einer US-Wirtschaftsveröffentlichung, die du verfolgst, mit der Zeit in deiner Zeitzone. Wähle unter Economic im Market Calendar, welche Veröffentlichungen du sehen möchtest.",

@@ -177,6 +177,7 @@
   "theme": "テーマ",
   "themeDark": "ダーク",
   "themeLight": "ライト",
+  "darkMode": "ダークモード",
   "title": "設定",
   "notifEconomicEventsLabel": "経済統計",
   "notifEconomicEventsDescription": "フォローしている米国経済指標が発表される日の朝に通知を受け取ります。時間はあなたのタイムゾーンで表示されます。Market Calendarの「Economic」で通知する指標を選択できます。",
