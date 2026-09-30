@@ -3,8 +3,8 @@ import { createServerClient } from '@/lib/supabase/client';
 import { withRateLimit } from '@/lib/security/api-security';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
 import { TwelveDataRateLimitError, getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
-import { SP500_TICKERS } from '@/lib/market-data/sp500';
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
+import { fetchAllPages, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
 import { getLastPrices, cacheLastPrice, type LastPriceSeed } from '@/lib/market-data/last-price-cache';
 
 export const dynamic = 'force-dynamic';
@@ -107,65 +107,10 @@ export interface ScreenerRow {
   last_change_pct?: number | null;
 }
 
-/**
- * PostgREST caps an unbounded `select()` at 1000 rows and says nothing about
- * it. Three queries in this file were silently truncating because of that: the
- * "All" view returned 997 of 3053 rows, the default active view 1000 of 1219,
- * and the `countOnly` query behind the "View all (N)" pill read 999. The first
- * two reached the Pro CSV/PDF export, so a paid file was quietly missing two
- * thirds of the universe, which is the worst way for a paid feature to fail.
- *
- * Lives at module scope on purpose: as a `const` inside the handler, `PAGE` sat
- * in a temporal dead zone for the `countOnly` branch that runs above it, and
- * the hoisted function threw "Cannot access 'PAGE' before initialization".
- *
- * Callers must supply a stable sort. `market_cap` is not unique, so every call
- * site adds `ticker` as a tiebreaker to stop rows shifting between pages.
- */
-const PAGE = 1000;
-
-async function fetchAllPages<T>(
-  build: () => PromiseLike<{ data: T[] | null; error: { message: string } | null }> & {
-    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-  }
-): Promise<{ rows: T[]; error: string | null }> {
-  const rows: T[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await build().range(from, from + PAGE - 1);
-    if (error) return { rows, error: error.message };
-    const page = data ?? [];
-    rows.push(...page);
-    if (page.length < PAGE) return { rows, error: null };
-  }
-}
-
 function parseNum(val: string | null): number | undefined {
   if (val == null) return undefined;
   const n = parseFloat(val);
   return isFinite(n) ? n : undefined;
-}
-
-function inRange(value: number | null, min: number | undefined, max: number | undefined): boolean {
-  if (value == null) return min == null && max == null;
-  if (min != null && value < min) return false;
-  if (max != null && value > max) return false;
-  return true;
-}
-
-/**
- * screener_stats stores dividend_yield/profit_margin/payout_ratio as
- * TwelveData's raw 0..1 fraction, but filter inputs from the UI are
- * percent-scale (0..100) — see the matching comment in screener-columns.tsx.
- * Route every fraction-stored field's range check through this helper rather
- * than hand-writing `* 100`; that repetition is exactly how the dividend
- * yield filter (625cc70) and the identical payout-ratio display bug happened.
- */
-function inRangeFractionAsPct(
-  value: number | null,
-  min: number | undefined,
-  max: number | undefined
-): boolean {
-  return inRange(value != null ? value * 100 : null, min, max);
 }
 
 async function handler(request: NextRequest) {
@@ -227,66 +172,14 @@ async function handler(request: NextRequest) {
   const week52ChangeMin = parseNum(sp.get('week52ChangeMin'));
   const week52ChangeMax = parseNum(sp.get('week52ChangeMax'));
 
-  // Fetch base rows. Two scoped queries instead of loading the whole table:
-  //  - symbol views (holdings/watchlist/custom): just the requested tickers.
-  //  - default view: the active universe (tier 1) via the screener_active_rows()
-  //    join, so the on-demand/discovery long tail in screener_stats never bloats
-  //    the default screen.
-  let baseRows: ScreenerRow[];
-  if (symbolAllowlist && symbolAllowlist.size > 0) {
-    const { data, error } = await supabase
-      .from('screener_stats')
-      .select('*')
-      .in('ticker', [...symbolAllowlist])
-      .order('market_cap', { ascending: false, nullsFirst: false });
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-    baseRows = (data ?? []) as ScreenerRow[];
-  } else if (scopeSp500) {
-    // "S&P 500" view — only the real index constituents (committee-curated list).
-    const { data, error } = await supabase
-      .from('screener_stats')
-      .select('*')
-      .in('ticker', SP500_TICKERS)
-      .order('market_cap', { ascending: false, nullsFirst: false });
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-    baseRows = (data ?? []) as ScreenerRow[];
-  } else if (scopeAll) {
-    // "All" view — every row in screener_stats, no tier restriction.
-    const { rows, error } = await fetchAllPages<ScreenerRow>(() =>
-      supabase
-        .from('screener_stats')
-        .select('*')
-        .order('market_cap', { ascending: false, nullsFirst: false })
-        .order('ticker', { ascending: true })
-    );
-    if (error) {
-      return NextResponse.json({ success: false, error }, { status: 500 });
-    }
-    baseRows = rows;
-  } else {
-    const { rows, error } = await fetchAllPages<ScreenerRow>(() =>
-      supabase
-        .rpc('screener_active_rows')
-        .order('market_cap', { ascending: false, nullsFirst: false })
-        .order('ticker', { ascending: true })
-    );
-    if (error) {
-      return NextResponse.json({ success: false, error }, { status: 500 });
-    }
-    baseRows = rows;
+  const universe = await loadScreenerUniverse(supabase, {
+    symbols: symbolAllowlist ? [...symbolAllowlist] : undefined,
+    scope: scopeSp500 ? 'sp500' : scopeAll ? 'all' : 'active',
+  });
+  if (universe.error) {
+    return NextResponse.json({ success: false, error: universe.error }, { status: 500 });
   }
-
-  // Dual-class pairs (GOOG/GOOGL, FOX/FOXA, NWS/NWSA...) are both real index
-  // constituents, so they both land in these broad universes — collapse to one
-  // row per company here. Symbol-scoped views (holdings/watchlist) are exempt:
-  // a user may specifically hold the non-canonical class.
-  if (!symbolAllowlist) {
-    baseRows = baseRows.filter((r) => !isDuplicateShareClass(r.ticker));
-  }
+  const baseRows = universe.rows;
 
   let results: ScreenerRow[] = baseRows;
 
@@ -315,32 +208,13 @@ async function handler(request: NextRequest) {
   }
 
   // --- Apply filters ---
-  results = results.filter((r) => {
-    if (sector && r.sector !== sector) return false;
-    if (industry && r.industry !== industry) return false;
-    if (!inRange(r.health_score, healthScoreMin, healthScoreMax)) return false;
-
-    // Market cap: client sends billions, DB stores raw (e.g. 3e12 for $3T)
-    if (!inRange(r.market_cap, marketCapMin, marketCapMax)) return false;
-    if (!inRange(r.pe_ratio, peMin, peMax)) return false;
-    if (!inRange(r.pb_ratio, pbMin, pbMax)) return false;
-    if (!inRange(r.beta, betaMin, betaMax)) return false;
-
-    // Dividend yield and profit margin are both stored as 0..1
-    // (TwelveData's own scale) — filter inputs are percent (0..100).
-    if (!inRangeFractionAsPct(r.dividend_yield, divYieldMin, divYieldMax)) return false;
-    if (!inRangeFractionAsPct(r.profit_margin, profitMarginMin, profitMarginMax)) return false;
-
-    if (!inRange(r.revenue_growth_yoy, revenueGrowthMin, revenueGrowthMax)) return false;
-
-    // 52-week range relative to 52w high (how far below high, as %)
-    if ((week52ChangeMin != null || week52ChangeMax != null) && r.week52_high && r.week52_low) {
-      const range52Pct = ((r.week52_high - r.week52_low) / r.week52_high) * 100;
-      if (!inRange(range52Pct, week52ChangeMin, week52ChangeMax)) return false;
-    }
-
-    return true;
-  });
+  const filters: ScreenerFilterParams = {
+    sector, industry, healthScoreMin, healthScoreMax, marketCapMin, marketCapMax,
+    peMin, peMax, pbMin, pbMax, betaMin, betaMax, divYieldMin, divYieldMax,
+    profitMarginMin, profitMarginMax, revenueGrowthMin, revenueGrowthMax,
+    week52ChangeMin, week52ChangeMax,
+  };
+  results = results.filter((r) => matchesScreenerFilters(r, filters));
 
   // Collect unique sectors and industries for filter dropdowns
   // (include any rows fetched on-demand so their sectors appear).

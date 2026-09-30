@@ -17,6 +17,25 @@ import { assertNoMutatingToolsWithExternalContent } from './tool-boundary';
 interface AIContext {
   tickers: string[];
   label?: string;
+  /** Mirrors ScreenerAIContext in AIPanelProvider.tsx. Client-supplied, so sanitized before it reaches the prompt. */
+  screener?: { scope?: string; tickers?: string[]; filters?: Record<string, unknown>; resultCount?: number };
+}
+
+/** Turns the screener page's state into the exact screenStocks arguments that reproduce it. */
+function screenerContextPrefix(s: NonNullable<AIContext['screener']>): string {
+  const args: Record<string, unknown> = {};
+  if (Array.isArray(s.tickers) && s.tickers.length > 0) {
+    args.tickers = s.tickers.filter((t) => typeof t === 'string').slice(0, 250).map((t) => t.slice(0, 20));
+  } else {
+    args.scope = s.scope === 'all' ? 'all' : 'sp500';
+  }
+  for (const [k, v] of Object.entries(s.filters ?? {}).slice(0, 25)) {
+    if (!/^[a-zA-Z0-9]{2,30}$/.test(k) || (typeof v !== 'string' && typeof v !== 'number') || v === '') continue;
+    const n = Number(v);
+    args[k] = k === 'sector' || k === 'industry' ? String(v).slice(0, 80) : Number.isFinite(n) ? n : undefined;
+  }
+  const count = typeof s.resultCount === 'number' ? `${s.resultCount} ` : '';
+  return `[Current page context: The user is on the stock screener looking at ${count}stocks. "Which", "top", "best" or "highest" questions that do not name another set refer to these results: answer them with screenStocks using exactly these arguments, adding sortBy/order/limit: ${JSON.stringify(args)}]\n\n`;
 }
 
 export async function runAgent(
@@ -68,8 +87,10 @@ export async function runAgent(
 
   // Prepend a context block when the user is viewing a specific stock/comparison page.
   const contextLabel = context?.label ?? context?.tickers?.join(', ') ?? '';
-  const contextPrefix = context?.tickers?.length
-    ? `[Current page context: The user is viewing "${contextLabel}" (${context.tickers.join(', ')}). Unless the user specifies a different company, answer questions about ${context.tickers.join(' and ')} first.]\n\n`
+  const contextPrefix = context?.screener
+    ? screenerContextPrefix(context.screener)
+    : context?.tickers?.length
+    ?`[Current page context: The user is viewing "${contextLabel}" (${context.tickers.join(', ')}). Unless the user specifies a different company, answer questions about ${context.tickers.join(' and ')} first.]\n\n`
     : '';
 
   // createAlert needs userId to check the free-tier alert limit server-side —

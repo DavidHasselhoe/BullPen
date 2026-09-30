@@ -21,7 +21,7 @@ import { useAlerts } from '@/hooks/use-alerts';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useInvalidateQuota } from '@/hooks/use-quota';
-import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, useNavigateConfirmations, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
@@ -38,6 +38,7 @@ function getDefaultStarterPrompts(t: TFunction): string[] {
 export interface AIContextProp {
   tickers: string[];
   label?: string;
+  screener?: ScreenerAIContext;
 }
 
 interface BullpenChatProps {
@@ -386,8 +387,14 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     onConsumedQuery?.();
   }, [initialQuery, open, sendMessage, onConsumedQuery]);
 
-  // Context-aware prompts when viewing a company or comparison
-  const contextPrompts = aiContext
+  // Context-aware prompts when viewing the screener, a company or a comparison
+  const contextPrompts = aiContext?.screener
+    ? [
+        t('chatScreenerPromptHealthiest'),
+        t('chatScreenerPromptCheapest'),
+        t('chatScreenerPromptDividend'),
+      ]
+    : aiContext?.tickers.length
     ? aiContext.tickers.length >= 2
       ? [
           t('chatContextPromptProfitability'),

@@ -36,6 +36,10 @@ interface Case {
    * was called says almost nothing. This pins which destination it picked.
    */
   expectDestination?: string;
+  /** Page context, as the client would send it. */
+  context?: Parameters<typeof runAgent>[1];
+  /** Arguments the first screenStocks call must carry, e.g. the screener's on-screen filters. */
+  expectScreenArgs?: Record<string, unknown>;
 }
 
 const CASES: Case[] = [
@@ -92,6 +96,25 @@ const CASES: Case[] = [
     // correct "I don't have visibility into your account details".
     expectText: /(can['’]?t|cannot|don['’]?t|do not|unable|no)[^.]{0,40}(see|access|visibility|view)/i,
   },
+  {
+    name: 'a ranking question is answered in chat, not sent back to the filters',
+    prompt: 'Which stock has the highest health score?',
+    expectOneOf: ['screenStocks'],
+    // ~250 credits each, and the screener data already has the score.
+    expectNone: ['getHealthScore'],
+  },
+  {
+    name: 'on the screener, "which of these" ranks what is on screen',
+    prompt: 'Which of these has the highest health score?',
+    context: {
+      tickers: [],
+      label: 'the stocks on your screen',
+      screener: { scope: 'sp500', filters: { sector: 'Technology', divYieldMin: '1' }, resultCount: 21 },
+    },
+    expectOneOf: ['screenStocks'],
+    expectNone: ['getHealthScore'],
+    expectScreenArgs: { sector: 'Technology', divYieldMin: 1 },
+  },
 ];
 
 function ask(text: string): UIMessage[] {
@@ -99,7 +122,7 @@ function ask(text: string): UIMessage[] {
 }
 
 async function run(c: Case) {
-  const result = await runAgent(ask(c.prompt), null, 'intermediate', 'en', null, null, null, null, false);
+  const result = await runAgent(ask(c.prompt), c.context ?? null, 'intermediate', 'en', null, null, null, null, false);
 
   let text = '';
   for await (const chunk of result.textStream) text += chunk;
@@ -123,6 +146,13 @@ async function run(c: Case) {
     const got = (nav?.input as any)?.destination;
     if (got !== c.expectDestination) {
       problems.push(`destination was ${got ?? '(none)'}, expected ${c.expectDestination}`);
+    }
+  }
+  if (c.expectScreenArgs) {
+    const screen = calls.find((t) => t.toolName === 'screenStocks');
+    const input = (screen?.input ?? {}) as Record<string, unknown>;
+    for (const [k, v] of Object.entries(c.expectScreenArgs)) {
+      if (input[k] !== v) problems.push(`screenStocks ${k} was ${JSON.stringify(input[k])}, expected ${JSON.stringify(v)}`);
     }
   }
 

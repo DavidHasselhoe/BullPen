@@ -6,6 +6,17 @@ import { AISidePanel } from './AISidePanel';
 export interface AIContext {
   tickers: string[];
   label?: string;
+  /** Set by the screener page: what is on screen, so Bull can answer "which of these" with screenStocks. */
+  screener?: ScreenerAIContext;
+}
+
+export interface ScreenerAIContext {
+  /** The list view. Absent when the view is a ticker set (holdings, watchlist, custom, picked). */
+  scope?: 'sp500' | 'all';
+  tickers?: string[];
+  /** Active filters in the screener's own units (market cap in billions, percents 0-100). */
+  filters: Record<string, string>;
+  resultCount?: number;
 }
 
 export interface WhyTodayPayload {

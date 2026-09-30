@@ -27,6 +27,7 @@ import { useWatchlist, useWatchlistItems } from '@/hooks/use-watchlist';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useScreenerViews, useUpdateScreenerView, type ScreenerView } from '@/hooks/use-screener-views';
 import { useAuth } from '@/hooks/use-auth';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { isAdmin, tierFromUser } from '@/lib/billing/tier';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
@@ -190,6 +191,26 @@ function ScreenerContent() {
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
+
+  // Tell Bull what is on screen, so "which of these has the highest health
+  // score?" is answered from these results instead of sending the user back to
+  // the filters. Bull re-runs the same view + filters through screenStocks.
+  const { setAIContext } = useAIPanel();
+  const resultCount = data?.total;
+  useEffect(() => {
+    const tickers = symbolsFilter && symbolsFilter !== '__none__' ? symbolsFilter.split(',') : undefined;
+    setAIContext({
+      tickers: [],
+      label: t('screenerAiContextLabel', 'the stocks on your screen'),
+      screener: {
+        scope: tickers ? undefined : activeView.type === 'all' ? 'all' : 'sp500',
+        tickers,
+        filters: Object.fromEntries(Object.entries(debouncedFilters).filter(([, v]) => v)),
+        resultCount,
+      },
+    });
+    return () => setAIContext(null);
+  }, [symbolsFilter, activeView.type, debouncedFilters, resultCount, setAIContext, t]);
 
   // Full database ticker count, decoupled from the active view/filters — powers
   // the "View all (N)" pill, which must show the same number no matter which

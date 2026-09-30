@@ -34,6 +34,8 @@ import { AlertTypeSchema, alertTypeLabel, describeAlert, FREE_ACTIVE_ALERT_LIMIT
 import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
 import { getHoldings } from '@/lib/holdings/holdings-db';
 import { APP_DESTINATION_IDS, resolveDestination, type AppDestinationId } from '@/lib/ai/app-destinations';
+import { loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
+import type { ScreenerRow } from '@/app/api/screener/route';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -474,6 +476,53 @@ function navigateAction(path: string, label: string, explicitUserRequest: boolea
   return clientAction({ type: 'navigate', path, label, requiresConfirmation: !explicitUserRequest });
 }
 
+/** Filter params shared by openScreener and screenStocks. Market cap is in billions, percents are 0-100. */
+type ScreenerToolFilters = {
+  sector?: string;
+  industry?: string;
+  healthScoreMin?: number;
+  healthScoreMax?: number;
+  marketCapMin?: number;
+  marketCapMax?: number;
+  peMin?: number;
+  peMax?: number;
+  pbMin?: number;
+  pbMax?: number;
+  betaMin?: number;
+  betaMax?: number;
+  divYieldMin?: number;
+  divYieldMax?: number;
+  profitMarginMin?: number;
+  profitMarginMax?: number;
+  revenueGrowthMin?: number;
+  revenueGrowthMax?: number;
+  week52ChangeMin?: number;
+  week52ChangeMax?: number;
+};
+
+const SCREENER_FILTER_PROPERTIES = {
+  sector:           { type: 'string', description: 'Sector name, e.g. "Technology", "Healthcare", "Energy", "Financials", "Consumer Cyclical"' },
+  industry:         { type: 'string', description: 'Industry within the sector, e.g. "Semiconductors", "Software—Application", "Biotechnology"' },
+  healthScoreMin:   { type: 'number', description: 'Min BullPen Health Score, 0-100 (profitability, balance sheet strength, valuation, growth, market risk combined into one number) — e.g. 70 for financially healthy companies' },
+  healthScoreMax:   { type: 'number', description: 'Max BullPen Health Score, 0-100' },
+  marketCapMin:     { type: 'number', description: 'Min market cap in billions USD (e.g. 10 = $10B, 200 = $200B)' },
+  marketCapMax:     { type: 'number', description: 'Max market cap in billions USD' },
+  peMin:            { type: 'number', description: 'Min P/E ratio (TTM)' },
+  peMax:            { type: 'number', description: 'Max P/E ratio (TTM) — e.g. 15 for value / cheap stocks' },
+  pbMin:            { type: 'number', description: 'Min Price-to-Book ratio' },
+  pbMax:            { type: 'number', description: 'Max Price-to-Book ratio — e.g. 2 for deep value' },
+  betaMin:          { type: 'number', description: 'Min beta — e.g. 1.5 for high-volatility / aggressive stocks' },
+  betaMax:          { type: 'number', description: 'Max beta — e.g. 0.8 for low-volatility / defensive stocks' },
+  divYieldMin:      { type: 'number', description: 'Min dividend yield as a percentage — e.g. 2.5 for 2.5% yield' },
+  divYieldMax:      { type: 'number', description: 'Max dividend yield as a percentage' },
+  profitMarginMin:  { type: 'number', description: 'Min profit margin as a percentage — e.g. 15 for 15% margin' },
+  profitMarginMax:  { type: 'number', description: 'Max profit margin as a percentage' },
+  revenueGrowthMin: { type: 'number', description: 'Min revenue growth YoY as a percentage — e.g. 15 for 15% growth' },
+  revenueGrowthMax: { type: 'number', description: 'Max revenue growth YoY as a percentage' },
+  week52ChangeMin:  { type: 'number', description: 'Min gap between the 52-week low and high, as a percentage of the high (0-100) — NOT the stock\'s price return. A high value means the stock traded across a wide range this year (more volatile); e.g. 50 for stocks that swung across a very wide range.' },
+  week52ChangeMax:  { type: 'number', description: 'Max gap between the 52-week low and high, as a percentage of the high (0-100) — e.g. 10 for stocks that stayed in a tight trading range all year.' },
+} as const;
+
 export const openScreener = tool({
   description:
     'Open the BullPen stock screener, optionally pre-applying filters so the user sees results immediately. ' +
@@ -488,51 +537,12 @@ export const openScreener = tool({
     '"low volatility" → betaMax=0.8, "high volatility" → betaMin=1.5, ' +
     '"financially healthy" / "strong fundamentals" / "well-run companies" → healthScoreMin=70. ' +
     'To compare a named set of companies side by side instead, use navigateTo with destination "compare".',
-  inputSchema: jsonSchema<{
-    sector?: string;
-    industry?: string;
-    healthScoreMin?: number;
-    healthScoreMax?: number;
-    marketCapMin?: number;
-    marketCapMax?: number;
-    peMin?: number;
-    peMax?: number;
-    pbMin?: number;
-    pbMax?: number;
-    betaMin?: number;
-    betaMax?: number;
-    divYieldMin?: number;
-    divYieldMax?: number;
-    profitMarginMin?: number;
-    profitMarginMax?: number;
-    revenueGrowthMin?: number;
-    revenueGrowthMax?: number;
-    week52ChangeMin?: number;
-    week52ChangeMax?: number;
+  inputSchema: jsonSchema<ScreenerToolFilters & {
     explicitUserRequest: boolean;
   }>({
     type: 'object',
     properties: {
-      sector:           { type: 'string', description: 'Sector name, e.g. "Technology", "Healthcare", "Energy", "Financials", "Consumer Cyclical"' },
-      industry:         { type: 'string', description: 'Industry within the sector, e.g. "Semiconductors", "Software—Application", "Biotechnology"' },
-      healthScoreMin:   { type: 'number', description: 'Min BullPen Health Score, 0-100 (profitability, balance sheet strength, valuation, growth, market risk combined into one number) — e.g. 70 for financially healthy companies' },
-      healthScoreMax:   { type: 'number', description: 'Max BullPen Health Score, 0-100' },
-      marketCapMin:     { type: 'number', description: 'Min market cap in billions USD (e.g. 10 = $10B, 200 = $200B)' },
-      marketCapMax:     { type: 'number', description: 'Max market cap in billions USD' },
-      peMin:            { type: 'number', description: 'Min P/E ratio (TTM)' },
-      peMax:            { type: 'number', description: 'Max P/E ratio (TTM) — e.g. 15 for value / cheap stocks' },
-      pbMin:            { type: 'number', description: 'Min Price-to-Book ratio' },
-      pbMax:            { type: 'number', description: 'Max Price-to-Book ratio — e.g. 2 for deep value' },
-      betaMin:          { type: 'number', description: 'Min beta — e.g. 1.5 for high-volatility / aggressive stocks' },
-      betaMax:          { type: 'number', description: 'Max beta — e.g. 0.8 for low-volatility / defensive stocks' },
-      divYieldMin:      { type: 'number', description: 'Min dividend yield as a percentage — e.g. 2.5 for 2.5% yield' },
-      divYieldMax:      { type: 'number', description: 'Max dividend yield as a percentage' },
-      profitMarginMin:  { type: 'number', description: 'Min profit margin as a percentage — e.g. 15 for 15% margin' },
-      profitMarginMax:  { type: 'number', description: 'Max profit margin as a percentage' },
-      revenueGrowthMin: { type: 'number', description: 'Min revenue growth YoY as a percentage — e.g. 15 for 15% growth' },
-      revenueGrowthMax: { type: 'number', description: 'Max revenue growth YoY as a percentage' },
-      week52ChangeMin:  { type: 'number', description: 'Min gap between the 52-week low and high, as a percentage of the high (0-100) — NOT the stock\'s price return. A high value means the stock traded across a wide range this year (more volatile); e.g. 50 for stocks that swung across a very wide range.' },
-      week52ChangeMax:  { type: 'number', description: 'Max gap between the 52-week low and high, as a percentage of the high (0-100) — e.g. 10 for stocks that stayed in a tight trading range all year.' },
+      ...SCREENER_FILTER_PROPERTIES,
       explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
     },
     required: ['explicitUserRequest'],
@@ -570,6 +580,121 @@ export const openScreener = tool({
     return {
       ...navigateAction(path, 'the stock screener', filters.explicitUserRequest),
       ...(appliedCount > 0 ? { filtersApplied: appliedCount, description: `Screener opened with ${appliedCount} filter(s)` } : {}),
+    };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tool: Screen Stocks (answers ranking questions from screener_stats, no credits)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SCREEN_SORT_COLUMNS = {
+  healthScore: 'health_score',
+  marketCap: 'market_cap',
+  pe: 'pe_ratio',
+  pb: 'pb_ratio',
+  dividendYield: 'dividend_yield',
+  profitMargin: 'profit_margin',
+  revenueGrowth: 'revenue_growth_yoy',
+  beta: 'beta',
+} as const satisfies Record<string, keyof ScreenerRow>;
+type ScreenSortKey = keyof typeof SCREEN_SORT_COLUMNS;
+
+/** A negative P/E or P/B is a loss or negative equity, not "cheapest". Ranking by them only counts positive values. */
+const POSITIVE_ONLY_SORTS = new Set<ScreenSortKey>(['pe', 'pb']);
+
+/** Holdings, a watchlist, a custom screener view. Well above any real portfolio. */
+const SCREEN_TICKER_CAP = 250;
+
+const round1 = (n: number | null) => (n == null ? null : Math.round(n * 10) / 10);
+
+export const screenStocks = tool({
+  description:
+    'Answer a "which stock" or ranking question directly from the screener\'s data: "which stock has the highest health ' +
+    'score", "top 5 dividend payers in tech", "cheapest large-caps by P/E", "which of my holdings is healthiest". ' +
+    'Takes the same filters as openScreener (same units, same phrase mappings) plus sortBy, order and limit, and returns ' +
+    'the top matches with health score and key metrics. Free: reads the nightly-refreshed screener table, no API credits. ' +
+    'Use this when the user wants an answer and openScreener when they want to browse a list; after answering you may ' +
+    'offer the screener with the same filters. On the screener page, the page context carries the view and filters the ' +
+    'user has on screen: pass them unchanged so "which of these" means those results. Scores are refreshed nightly; do ' +
+    'not re-check the results with getHealthScore, which costs credits. A question about one named company still goes ' +
+    'to getHealthScore. Tickers the screener does not track come back in notCovered; use getHealthScore for those ' +
+    'rather than saying they have no score.',
+  inputSchema: jsonSchema<ScreenerToolFilters & {
+    sortBy?: ScreenSortKey;
+    order?: 'desc' | 'asc';
+    limit?: number;
+    scope?: 'sp500' | 'all';
+    tickers?: string[];
+  }>({
+    type: 'object',
+    properties: {
+      ...SCREENER_FILTER_PROPERTIES,
+      sortBy: { type: 'string', enum: Object.keys(SCREEN_SORT_COLUMNS), description: 'What to rank by. Default healthScore.' },
+      order: { type: 'string', enum: ['desc', 'asc'], description: 'desc = highest first (default). Use asc for "lowest", "cheapest", "least volatile".' },
+      limit: { type: 'number', minimum: 1, maximum: 20, description: 'How many to return. Default 5.' },
+      scope: {
+        type: 'string',
+        enum: ['sp500', 'all'],
+        description: 'sp500 = the S&P 500, the screener\'s default view (default). all = every stock BullPen tracks, about 3,000 including smaller companies. Ignored when tickers is set.',
+      },
+      tickers: {
+        type: 'array',
+        items: { type: 'string' },
+        maxItems: SCREEN_TICKER_CAP,
+        description: 'Rank only within these tickers, e.g. the user\'s holdings or a named set of companies.',
+      },
+    },
+    additionalProperties: false,
+  }),
+  execute: async ({ sortBy = 'healthScore', order = 'desc', limit = 5, scope = 'sp500', tickers, ...filters }) => {
+    const symbols = tickers
+      ? [...new Set(tickers.map((t) => t.trim().toUpperCase()).filter(Boolean))].slice(0, SCREEN_TICKER_CAP)
+      : undefined;
+    const { rows, error } = await loadScreenerUniverse(supabase(), { symbols, scope });
+    if (error) return { error: 'Could not load screener data.' };
+
+    const params: ScreenerFilterParams = {
+      ...filters,
+      marketCapMin: filters.marketCapMin != null ? filters.marketCapMin * 1e9 : undefined,
+      marketCapMax: filters.marketCapMax != null ? filters.marketCapMax * 1e9 : undefined,
+    };
+    const col = SCREEN_SORT_COLUMNS[sortBy] ?? 'health_score';
+    const value = (r: ScreenerRow) => r[col] as number | null;
+    const matched = rows.filter((r) => matchesScreenerFilters(r, params));
+    const ranked = matched
+      .filter((r) => { const v = value(r); return v != null && (!POSITIVE_ONLY_SORTS.has(sortBy) || v > 0); })
+      // Health scores tie often; the bigger company wins the tie, same order the screener lists them in.
+      .sort((a, b) => (order === 'asc' ? value(a)! - value(b)! : value(b)! - value(a)!) || (b.market_cap ?? 0) - (a.market_cap ?? 0))
+      .slice(0, Math.min(Math.max(Math.round(limit), 1), 20));
+
+    const present = new Set(rows.map((r) => r.ticker.toUpperCase()));
+    const notCovered = symbols?.filter((t) => !present.has(t)) ?? [];
+    const oldest = ranked.reduce<string | null>((min, r) => (!min || r.updated_at < min ? r.updated_at : min), null);
+
+    return {
+      universe: symbols ? `${symbols.length} given tickers` : scope === 'all' ? 'all tracked stocks' : 'S&P 500',
+      matchedFilters: matched.length,
+      rankedBy: sortBy,
+      order,
+      dataAsOf: oldest?.slice(0, 10) ?? null,
+      ...(notCovered.length > 0 ? { notCovered } : {}),
+      results: ranked.map((r, i) => ({
+        rank: i + 1,
+        ticker: r.ticker,
+        name: r.name,
+        sector: r.sector,
+        healthScore: r.health_score,
+        healthGrade: r.health_score_grade,
+        marketCap: fmt(r.market_cap),
+        pe: round1(r.pe_ratio),
+        pb: round1(r.pb_ratio),
+        beta: round1(r.beta),
+        // screener_stats stores these three as 0..1 fractions
+        dividendYieldPct: round1(r.dividend_yield != null ? r.dividend_yield * 100 : null),
+        profitMarginPct: round1(r.profit_margin != null ? r.profit_margin * 100 : null),
+        revenueGrowthPct: round1(r.revenue_growth_yoy),
+      })),
     };
   },
 });
@@ -1525,6 +1650,8 @@ export const BULLPEN_TOOLS = {
   navigateTo,
   openScreener,
   openDividendCalculator,
+  // Answers ranking questions from screener_stats (free)
+  screenStocks,
   // Portfolio management
   addHolding,
   updateHolding,
