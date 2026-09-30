@@ -1,6 +1,7 @@
 // components/holdings/risk-analysis/AnalysisHistory.tsx
 'use client';
 
+import { useState } from 'react';
 import { Trash2, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -9,13 +10,15 @@ import { Sparkline } from '@/components/viz/Sparkline';
 import type { SavedRiskAnalysis } from '@/app/api/holdings/risk-analysis/history/route';
 import { levelTier, tierTextClass } from './colors';
 
+const SHOWN = 3;
+
 interface Props {
   items: SavedRiskAnalysis[];
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-function formatAgo(iso: string, t: TFunction): string {
+function formatAgo(iso: string, t: TFunction, locale: string): string {
   const d = new Date(iso);
   const diff = Date.now() - d.getTime();
   const mins = Math.floor(diff / 60_000);
@@ -23,12 +26,16 @@ function formatAgo(iso: string, t: TFunction): string {
   if (mins < 60) return t('analysisHistoryMinsAgo', { mins });
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return t('analysisHistoryHrsAgo', { hrs });
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 
 export function AnalysisHistory({ items, onRestore, onDelete }: Props) {
-  const { t } = useTranslation('holdings');
+  const { t, i18n } = useTranslation('holdings');
+  // Nine always-open rows pushed the page's end a screen further for a list
+  // most people read the top of.
+  const [showAll, setShowAll] = useState(false);
   if (items.length === 0) return null;
+  const visible = showAll ? items : items.slice(0, SHOWN);
   // history is created_at DESC (history/route.ts:28) — Sparkline wants oldest->newest.
   const scoresOldestFirst = [...items].reverse().map((h) => h.overallRiskScore);
 
@@ -54,25 +61,34 @@ export function AnalysisHistory({ items, onRestore, onDelete }: Props) {
         )}
       </div>
       <div className="space-y-1">
-        {items.map((item) => (
+        {visible.map((item) => (
           <div key={item.id} className="group flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-muted/30">
             <button onClick={() => onRestore(item.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
               <span className={cn('font-mono text-sm font-semibold tabular-nums', tierTextClass(levelTier(item.riskLevel)))}>
                 {item.overallRiskScore}
               </span>
               <span className="text-[13px] text-muted-foreground">{item.riskLevel}</span>
-              <span className="ml-auto shrink-0 text-[12px] tabular-nums text-muted-foreground">{formatAgo(item.createdAt, t)}</span>
+              <span className="ml-auto shrink-0 text-[12px] tabular-nums text-muted-foreground">{formatAgo(item.createdAt, t, i18n.language)}</span>
             </button>
             <button
               onClick={() => onDelete(item.id)}
               aria-label={t('analysisHistoryDeleteAriaLabel')}
-              className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-red-500/10 group-hover:opacity-100"
+              className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-red-500/10 group-hover:opacity-100 focus-visible:opacity-100 max-md:opacity-100"
             >
               <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-red-400" />
             </button>
           </div>
         ))}
       </div>
+      {items.length > SHOWN && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-1 px-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {showAll ? t('analysisHistoryShowLess') : t('analysisHistoryShowAll', { count: items.length })}
+        </button>
+      )}
     </div>
   );
 }

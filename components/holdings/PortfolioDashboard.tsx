@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TermTooltip } from '@/components/ui/TermTooltip';
 import { ShareSheet } from './ShareSheet';
 import type { HoldingWithPrice } from './types';
+import { totalReturn, type TotalReturn } from '@/lib/holdings/total-return';
 
 interface PortfolioDashboardProps {
   holdings: HoldingWithPrice[];
@@ -17,17 +18,20 @@ interface PortfolioDashboardProps {
   isLoading?: boolean;
   /** Manually entered cash, display currency. Added to Total Value only, never to P/L or cost basis. */
   cashValue?: number;
+  /** Unrealized + realized, over everything invested (lib/holdings/total-return.ts).
+   *  Omitted by the Academy demo, which has no sales: computed from holdings then. */
+  total?: TotalReturn;
 }
 
-export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cashValue = 0 }: PortfolioDashboardProps) {
+export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cashValue = 0, total: totalProp }: PortfolioDashboardProps) {
   const { t } = useTranslation('holdings');
   const { roundNumbers } = useUserSettings();
   const fmt = (value: number) =>
     formatCurrency(value, currency, roundNumbers ? { round: true } : undefined);
+  const total = useMemo(() => totalProp ?? totalReturn(holdings, [], 1), [totalProp, holdings]);
   const stats = useMemo(() => {
     let totalValue = 0;
     let todayDollar = 0;
-    let totalPL = 0;
     let valuedPositions = 0;
 
     for (const h of holdings) {
@@ -43,17 +47,11 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cash
       ) {
         todayDollar += h.dayChange * h.quantity;
       }
-      if (h.unrealizedPL !== undefined) {
-        totalPL += h.unrealizedPL;
-      }
     }
 
     const yesterdayValue = totalValue - todayDollar;
     const todayPct = yesterdayValue > 0 ? (todayDollar / yesterdayValue) * 100 : 0;
-    const costBasis = totalValue - totalPL;
-    const totalPLPct = costBasis > 0 ? (totalPL / costBasis) * 100 : 0;
-
-    return { totalValue, todayDollar, todayPct, totalPL, totalPLPct, costBasis, valuedPositions };
+    return { totalValue, todayDollar, todayPct, valuedPositions };
   }, [holdings]);
 
   if (isLoading) {
@@ -73,7 +71,7 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cash
   if (stats.valuedPositions === 0) return null;
 
   const todayPositive = stats.todayDollar >= 0;
-  const plPositive = stats.totalPL >= 0;
+  const plPositive = total.total >= 0;
 
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -103,7 +101,7 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cash
       >
         <div className="mb-2 flex items-center justify-between">
           <TermTooltip
-            term="Today P&L"
+            term="Today P/L"
             className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
           />
           <ShareSheet disabled={stats.todayDollar === 0 && stats.todayPct === 0} />
@@ -159,8 +157,8 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cash
               : 'text-red-600 dark:text-red-400'
           )}
         >
-          {stats.totalPL >= 0 ? '+' : ''}
-          {fmt(stats.totalPL)}
+          {total.total >= 0 ? '+' : ''}
+          {fmt(total.total)}
         </p>
         <p
           className={cn(
@@ -170,8 +168,13 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cash
               : 'text-red-600/70 dark:text-red-400/70'
           )}
         >
-          {t('portfolioDashboardAllTime', { pct: formatPercent(stats.totalPLPct, roundNumbers) })}
+          {t('portfolioDashboardAllTime', { pct: formatPercent(total.pct, roundNumbers) })}
         </p>
+        {total.realized !== 0 && (
+          <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+            {t('portfolioDashboardFromSales', { amount: `${total.realized > 0 ? '+' : '−'}${fmt(Math.abs(total.realized))}` })}
+          </p>
+        )}
       </div>
 
       {/* Cost Basis */}
@@ -183,7 +186,7 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cash
           />
         </div>
         <p className="text-2xl font-bold text-foreground tabular-nums">
-          {fmt(stats.costBasis)}
+          {fmt(total.invested)}
         </p>
         <p className="text-xs text-muted-foreground mt-1.5">
           {t('portfolioDashboardLifetimeInvested')}

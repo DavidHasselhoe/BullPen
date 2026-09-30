@@ -36,7 +36,7 @@ export function PerformanceCalendarCard({ currency = 'USD', fxRate = 1, liveToda
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+        <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-base font-semibold">
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
           {t('perfCalTitle')}
         </CardTitle>

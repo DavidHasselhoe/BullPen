@@ -317,7 +317,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Cost Basis': {
     plainLabel: 'What You Paid',
-    description: 'The total amount you originally spent to buy your holdings. Comparing this to today\'s value tells you if you\'re up or down.',
+    description: 'Everything you have put in: what you paid for the holdings you still own, plus what you paid for shares you have since sold.',
   },
   'Market Value': {
     plainLabel: 'Current Worth',
@@ -329,9 +329,9 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Total P/L': {
     plainLabel: 'Total Gain / Loss',
-    description: 'Your overall profit or loss across all holdings versus what you paid for them, combining every position.',
+    description: 'Everything you have made or lost: the paper gain on what you still own, plus the gains you locked in by selling. The percentage compares it with everything you have put in.',
   },
-  'Today P&L': {
+  'Today P/L': {
     plainLabel: "Today's Gain / Loss",
     description: 'How much your holdings have gone up or down just today, based on each position\'s price move since yesterday\'s close.',
   },
@@ -565,7 +565,7 @@ export const GLOSSARY_CATEGORIES: { name: string; terms: string[] }[] = [
   { name: 'Balance Sheet', terms: ['Total Assets', 'Current Assets', 'Cash & Equivalents', 'Goodwill & Intangibles', 'Total Liabilities', 'Current Liabilities', 'Long-Term Debt', "Stockholders' Equity", 'Retained Earnings'] },
   { name: 'Cash Flow', terms: ['Operating Cash Flow', 'Capital Expenditures', 'Free Cash Flow', 'FCF', 'D&A', 'Investing Activities', 'Financing Activities', 'Dividends Paid'] },
   { name: 'Technical Indicators', terms: ['SMA 50', 'SMA 200', 'EMA 20', 'BB', 'RSI', 'MACD'] },
-  { name: 'Portfolio & Holdings', terms: ['Total Value', 'Cost Basis', 'Market Value', 'Unrealized P/L', 'Total P/L', 'Today P&L', 'Day Change', 'Avg Price', 'Allocation', 'Earnings', 'Thesis'] },
+  { name: 'Portfolio & Holdings', terms: ['Total Value', 'Cost Basis', 'Market Value', 'Unrealized P/L', 'Total P/L', 'Today P/L', 'Day Change', 'Avg Price', 'Allocation', 'Earnings', 'Thesis'] },
   { name: 'Health Score', terms: ['Health', 'Profitability', 'Financial Strength', 'Valuation', 'Growth', 'Market Risk', 'Current Ratio', 'Debt-to-Equity'] },
   { name: 'Price Panel', terms: ['Open', 'High', 'Low', 'Prev Close'] },
   { name: 'Revenue Flow', terms: ['Cost of Revenue', 'Other OpEx', 'Tax & Other', 'Other Income', 'Total Costs'] },

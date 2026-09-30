@@ -299,7 +299,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <CardHeader className="pb-3 border-b border-border/20">
           <div className="flex items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+            <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-sm font-semibold">
               <ShieldAlert className="h-4 w-4 text-primary" />
               {t('riskAnalysisTitle')}
               <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded-full">

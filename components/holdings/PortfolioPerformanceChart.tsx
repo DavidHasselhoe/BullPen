@@ -17,6 +17,7 @@ import { ChartTooltip } from '@/components/charts/tooltip';
 import type { HoldingWithPrice } from './types';
 import type { CurrencyCode } from '@/lib/currency/currency-conversion';
 import type { HoldingSale } from '@/lib/types/database';
+import type { TotalReturn } from '@/lib/holdings/total-return';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -66,12 +67,17 @@ interface Props {
    *  chart's raw P/L into the user's display currency the same way the header stats do. */
   fxRate?: number;
   isLoading?: boolean;
+  /** The stat card's total return. The all-time line ends on it, at live prices,
+   *  instead of on the last daily close, so the two figures always match. */
+  liveTotal?: TotalReturn;
 }
 
-export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate = 1, isLoading: holdingsLoading }: Props) {
+export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate = 1, isLoading: holdingsLoading, liveTotal }: Props) {
   const { t } = useTranslation('holdings');
   const [range, setRange]           = useState<Range>('MAX');
   const [showBenchmark, setShowBenchmark] = useState(false);
+  // When the page opened: the all-time line's live end point sits here.
+  const [openedAt] = useState(() => Math.floor(Date.now() / 1000));
 
   const { data: allSales } = useHoldingSales();
 
@@ -260,7 +266,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
 
     const basis = periodBasis > 0 ? periodBasis : 1;
 
-    return Array.from(plByTime.entries())
+    const points = Array.from(plByTime.entries())
       .sort(([a], [b]) => a - b)
       .map(([ts, pl]) => ({
         time: ts,
@@ -269,7 +275,14 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
         pl: pl * fxRate,
         plPct: (pl / basis) * 100,
       }));
-  }, [candleResults, salesBySymbol, fxRate]);
+
+    // All-time: end on "now" at live prices, the stat card's own figure. Other
+    // ranges measure a window's move, not the total, so they keep their line.
+    if (range === 'MAX' && liveTotal && points.length > 0 && openedAt > points[points.length - 1].time) {
+      points.push({ time: openedAt, pl: liveTotal.total, plPct: liveTotal.pct });
+    }
+    return points;
+  }, [candleResults, salesBySymbol, fxRate, range, liveTotal, openedAt]);
 
   // Enrich chart points with SPY % return, normalized from the first portfolio timestamp
   const enrichedData = useMemo<ChartPoint[]>(() => {
@@ -336,7 +349,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
 
         {/* Row 1 — title + range selector */}
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-base font-semibold">
             {isPositive
               ? <TrendingUp  className="h-4 w-4 text-emerald-500" />
               : <TrendingDown className="h-4 w-4 text-red-500" />}

@@ -354,5 +354,20 @@
   "addHoldingChange": "Change",
   "addHoldingKeep": "Keep {{ticker}}",
   "addHoldingTypeCrypto": "Crypto",
-  "addHoldingTypeFund": "Fund"
+  "addHoldingTypeFund": "Fund",
+  "portfolioDashboardFromSales": "{{amount}} from shares you sold",
+  "holdingsGateTitle": "Sign in to view your holdings",
+  "holdingsGateBody": "Track positions, performance, and risk across your whole portfolio in real time.",
+  "holdingsBadgePreMarket": "Pre-market",
+  "holdingsBadgeLive": "Live",
+  "holdingsSubtitlePreMarket": "Showing pre-market prices. Updates every 3 seconds.",
+  "holdingsSubtitle": "Track your positions, performance, and risk in real time.",
+  "holdingsConnectBrokerage": "Connect brokerage",
+  "holdingsConnectBrokeragePro": "Connect brokerage (Pro)",
+  "holdingsTableActionsFor": "Actions for {{symbol}}",
+  "holdingsTableColTrend30d": "30 days",
+  "holdingsTableTrend30dLabel": "{{symbol}} over the last 30 days",
+  "analysisHistoryShowAll": "Show all {{count}}",
+  "analysisHistoryShowLess": "Show less",
+  "holdingsTablePositionsTitle": "Positions"
 }

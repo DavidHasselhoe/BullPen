@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthGate } from '@/components/ui/AuthGate';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
@@ -14,7 +15,8 @@ import { PortfolioPerformanceChart } from '@/components/holdings/PortfolioPerfor
 import { PerformanceCalendarCard } from '@/components/holdings/performance-calendar/PerformanceCalendarCard';
 import { liveDay } from '@/lib/holdings/daily-performance';
 import { todayET } from '@/lib/dates/calendar-format';
-import { useHoldings } from '@/hooks/use-holdings';
+import { useHoldings, useHoldingSales } from '@/hooks/use-holdings';
+import { totalReturn } from '@/lib/holdings/total-return';
 import { useTradingSession } from '@/hooks/use-trading-session';
 import { fetchHoldingQuotes } from '@/lib/holdings/holding-quotes';
 import { useCashValue } from '@/hooks/use-cash-value';
@@ -35,6 +37,7 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 import { CashBalanceDialog } from '@/components/holdings/CashBalanceDialog';
 
 export default function HoldingsPage() {
+  const { t } = useTranslation('holdings');
   const { user, isAuthenticated } = useAuth();
   const { data: allHoldings, isLoading: holdingsLoading } = useHoldings();
 
@@ -284,6 +287,10 @@ export default function HoldingsPage() {
   const hasPricedHoldings = throttledHoldings.some((h) => h.currentPrice !== undefined);
   const statsLoading = holdingsLoading || quotesData.isLoading || (!!holdings?.length && !hasPricedHoldings);
 
+  // One "total P/L" for the stat card and the chart's all-time view.
+  const { data: sales } = useHoldingSales();
+  const total = useMemo(() => totalReturn(throttledHoldings, sales, currentFxRate), [throttledHoldings, sales, currentFxRate]);
+
   // Today's calendar cell from the same numbers as the Day Change column. Only
   // while a session is live: after the close the fetched daily bar is the real
   // close, and overnight/weekends have no session to show.
@@ -296,39 +303,38 @@ export default function HoldingsPage() {
     return (
       <AuthGate
         icon={<BarChart2 className="h-7 w-7" />}
-        title="Sign in to view your holdings"
-        description="Track positions, performance, and risk across your whole portfolio in real time."
+        title={t('holdingsGateTitle')}
+        description={t('holdingsGateBody')}
       />
     );
   }
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      {/* Header. Stacks on phones: side by side, the brokerage button ran
+          past the right edge and squeezed the title onto two lines. */}
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
             <Briefcase className="h-5 w-5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2.5 mb-0.5">
-              <h1 className="text-2xl font-bold tracking-tight">My Holdings</h1>
+              <h1 className="text-2xl font-bold tracking-tight">{t('holdingsTableTitle')}</h1>
               {isPreMarket ? (
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  Pre-Market
+                  {t('holdingsBadgePreMarket')}
                 </span>
               ) : session === 'regular' && livePrices.size > 0 ? (
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
                   <Radio className="h-3 w-3 animate-pulse" />
-                  LIVE
+                  {t('holdingsBadgeLive')}
                 </span>
               ) : null}
             </div>
             <p className="text-sm text-muted-foreground">
-              {isPreMarket
-                ? 'Showing pre-market prices · Updates every 3s'
-                : 'Track your positions, performance, and risk in real time.'}
+              {isPreMarket ? t('holdingsSubtitlePreMarket') : t('holdingsSubtitle')}
             </p>
           </div>
         </div>
@@ -346,10 +352,10 @@ export default function HoldingsPage() {
               ) : (
                 <Link2 className="h-3.5 w-3.5" />
               )}
-              Connect Brokerage
+              {t('holdingsConnectBrokerage')}
             </button>
           ) : (
-            <UpgradeCTA label="Connect Brokerage (Pro)" variant="outline" />
+            <UpgradeCTA label={t('holdingsConnectBrokeragePro')} variant="outline" />
           )
         )}
       </div>
@@ -361,31 +367,11 @@ export default function HoldingsPage() {
       {brokerageConfigured && isBrokerageConnected && <BrokerageConnect />}
 
       {/* Stats row — 4 cards */}
-      <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} isLoading={statsLoading} cashValue={cashValue} />
+      <PortfolioDashboard holdings={throttledHoldings} currency={userCurrency} isLoading={statsLoading} cashValue={cashValue} total={total} />
 
-      {/* Portfolio-level Financial Health bloom */}
-      {(statsLoading || throttledHoldings.length > 0) && (
-        <PortfolioHealthCard holdings={throttledHoldings} isLoading={statsLoading} />
-      )}
-
-      {/* Performance chart + Allocation side-by-side */}
-      {(statsLoading || throttledHoldings.length > 0) && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
-          <div className="xl:col-span-2 flex flex-col">
-            <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} fxRate={currentFxRate} isLoading={statsLoading} />
-          </div>
-          <div className="flex flex-col">
-            <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} isLoading={statsLoading} cashValue={cashValue} />
-          </div>
-        </div>
-      )}
-
-      {/* Day-by-day performance calendar */}
-      {throttledHoldings.length > 0 && (
-        <PerformanceCalendarCard currency={userCurrency} fxRate={currentFxRate} liveToday={liveToday} />
-      )}
-
-      {/* Holdings table */}
+      {/* Positions come straight after the totals: this page is where you
+          manage them, and Home already covers the at-a-glance view. They sat
+          fifth, 1,463px down on desktop. */}
       <HoldingsTable
         holdingsWithPrices={holdingsWithPrices}
         isPricesLoading={quotesData.isLoading}
@@ -395,6 +381,29 @@ export default function HoldingsPage() {
         cashValue={cashBalance ? cashValue : null}
         onCashClick={() => setIsCashDialogOpen(true)}
       />
+
+
+      {/* Performance chart + Allocation side-by-side */}
+      {(statsLoading || throttledHoldings.length > 0) && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
+          <div className="xl:col-span-2 flex flex-col">
+            <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} fxRate={currentFxRate} isLoading={statsLoading} liveTotal={total} />
+          </div>
+          <div className="flex flex-col">
+            <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} isLoading={statsLoading} cashValue={cashValue} />
+          </div>
+        </div>
+      )}
+
+      {/* Portfolio-level Financial Health bloom */}
+      {(statsLoading || throttledHoldings.length > 0) && (
+        <PortfolioHealthCard holdings={throttledHoldings} isLoading={statsLoading} />
+      )}
+
+      {/* Day-by-day performance calendar */}
+      {throttledHoldings.length > 0 && (
+        <PerformanceCalendarCard currency={userCurrency} fxRate={currentFxRate} liveToday={liveToday} />
+      )}
 
       {/* AI risk analysis */}
       {throttledHoldings.length > 0 && (

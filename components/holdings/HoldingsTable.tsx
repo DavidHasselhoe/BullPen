@@ -14,7 +14,8 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { SoldPositionsModal } from '@/components/holdings/SoldPositionsModal';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2, Edit2, DollarSign, PlusCircle, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Banknote } from 'lucide-react';
+import { Trash2, Edit2, DollarSign, PlusCircle, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Banknote, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { logger } from '@/lib/utils/logger';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
@@ -44,7 +45,9 @@ function buildSparkPath(prices: number[], w: number, h: number): string {
 
 // SparklineCell is now a pure display component — data comes from the parent's
 // single batch query instead of N individual per-row useQuery calls.
-function SparklineCell({ prices }: { prices: number[] | null | undefined }) {
+/** Last 30 daily closes (app/api/holdings/sparklines). Coloured by that window's own
+ *  move, which is why a stock up today can draw red: the column header says "30 days". */
+function SparklineCell({ prices, label }: { prices: number[] | null | undefined; label: string }) {
   if (!prices || prices.length < 2) return <div className="w-16 h-7" />;
 
   // Downsample to at most 60 points for a clean line.
@@ -56,7 +59,8 @@ function SparklineCell({ prices }: { prices: number[] | null | undefined }) {
   const path = buildSparkPath(pts, 64, 28);
 
   return (
-    <svg width={64} height={28} className="overflow-visible">
+    <svg width={64} height={28} className="overflow-visible" role="img" aria-label={label}>
+      <title>{label}</title>
       <path d={path} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -431,56 +435,20 @@ const HoldingRow = memo(function HoldingRow({
           extras, so they give way below xl and the table still fits a 1024px
           laptop instead of scrolling sideways. */}
       <td className="hidden xl:table-cell py-4 px-2 xl:px-3">
-        <SparklineCell prices={sparklinePrices} />
+        <SparklineCell prices={sparklinePrices} label={t('holdingsTableTrend30dLabel', { symbol: holding.symbol })} />
       </td>
       <td className="py-4 px-2 xl:px-3">
-        {/* icon-sm, not sm: sm pads a lone icon to 36px, and four of them
-            made this the widest column in the table (200px). */}
-        <div className="flex items-center justify-end gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => onEdit(holding)}
-            disabled={anyPending || isEditModalOpen}
-            title={t('holdingsTableEditHolding')}
-            aria-label={t('holdingsTableEditHolding')}
-          >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-          {holding.source === 'manual' && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => onSell(holding)}
-              disabled={anyPending}
-              title={t('holdingsTableSellShares')}
-              aria-label={t('holdingsTableSellShares')}
-            >
-              <DollarSign className="h-4 w-4" />
-            </Button>
-          )}
-          {holding.source === 'manual' && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => onAddPurchase(holding)}
-              disabled={anyPending}
-              title={t('holdingsTableAddPurchase')}
-              aria-label={t('holdingsTableAddPurchase')}
-            >
-              <PlusCircle className="h-4 w-4" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => onRemove({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })}
+        <div className="flex items-center justify-end">
+          <HoldingActionsMenu
+            holding={holding}
             disabled={anyPending}
-            title={isDeletingThis ? t('holdingsTableRemoving') : t('holdingsTableRemoveHolding')}
-            aria-label={isDeletingThis ? t('holdingsTableRemoving') : t('holdingsTableRemoveHolding')}
-          >
-            {isDeletingThis ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-          </Button>
+            editDisabled={isEditModalOpen}
+            busy={isDeletingThis}
+            onEdit={() => onEdit(holding)}
+            onSell={() => onSell(holding)}
+            onAddPurchase={() => onAddPurchase(holding)}
+            onRemove={() => onRemove({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })}
+          />
         </div>
       </td>
     </tr>
@@ -822,7 +790,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                     <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">{t('holdingsTableColMarketValue')}</th>
                     <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground"><TermTooltip term="Unrealized P/L" /></th>
                     <th className="text-left py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">{t('holdingsTableColAllocation')}</th>
-                    <th className="hidden xl:table-cell py-3 px-2 xl:px-3" />
+                    <th className="hidden xl:table-cell py-3 px-2 xl:px-3 text-left text-sm font-medium text-muted-foreground">{t('holdingsTableColTrend30d')}</th>
                     <th className="text-right py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">{t('holdingsTableColActions')}</th>
                   </tr>
                 </thead>
@@ -894,8 +862,9 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle>{t('holdingsTableTitle')}</CardTitle>
-          <div className="flex items-center gap-2">
+          <CardTitle role="heading" aria-level={2}>{t('holdingsTablePositionsTitle')}</CardTitle>
+          {/* Wraps: in one row the full-width search box ran off phone screens. */}
+          <div className="flex flex-wrap items-center gap-2">
             {onImportClick && (
               <button
                 onClick={onImportClick}
@@ -929,7 +898,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
             )}
             <SoldPositionsModal />
           {/* Search */}
-          <div className="relative w-full sm:w-56">
+          <div className="relative basis-full sm:basis-auto sm:w-56">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <input
               type="text"
@@ -976,24 +945,17 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                       <span className="block truncate text-xs text-muted-foreground">{holding.company_name}</span>
                     </div>
                   </Link>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button onClick={() => handleEditRow(holding)} disabled={removeHolding.isPending || isEditModalOpen} title={t('holdingsTableEditHolding')} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    {holding.source === 'manual' && (
-                      <button onClick={() => handleSellRow(holding)} disabled={removeHolding.isPending} title={t('holdingsTableSellShares')} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
-                        <DollarSign className="h-4 w-4" />
-                      </button>
-                    )}
-                    {holding.source === 'manual' && (
-                      <button onClick={() => handleAddPurchaseRow(holding)} disabled={removeHolding.isPending} title={t('holdingsTableAddPurchase')} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground">
-                        <PlusCircle className="h-4 w-4" />
-                      </button>
-                    )}
-                    <button onClick={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })} disabled={removeHolding.isPending} title={t('holdingsTableRemoveHolding')} className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-400">
-                      {removeHolding.isPending && deletingHolding?.id === holding.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    </button>
-                  </div>
+                  <HoldingActionsMenu
+                    holding={holding}
+                    disabled={removeHolding.isPending}
+                    editDisabled={isEditModalOpen}
+                    busy={removeHolding.isPending && deletingHolding?.id === holding.id}
+                    triggerClassName="h-10 w-10 shrink-0"
+                    onEdit={() => handleEditRow(holding)}
+                    onSell={() => handleSellRow(holding)}
+                    onAddPurchase={() => handleAddPurchaseRow(holding)}
+                    onRemove={() => handleRemoveRow({ id: holding.id, symbol: holding.symbol, companyName: holding.company_name, quantity: holding.quantity ?? 0 })}
+                  />
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                   <HoldingField
@@ -1078,7 +1040,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                     {t('holdingsTableColAllocation')}
                   </button>
                 </th>
-                <th className="hidden xl:table-cell py-3 px-2 xl:px-3" />
+                <th className="hidden xl:table-cell py-3 px-2 xl:px-3 text-left text-sm font-medium text-muted-foreground">{t('holdingsTableColTrend30d')}</th>
                 <th className="text-right py-3 px-2 xl:px-3 text-sm font-medium text-muted-foreground">
                   {t('holdingsTableColActions')}
                 </th>
@@ -1204,5 +1166,75 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
       )}
     </Card>
     </>
+  );
+}
+
+/**
+ * A row's actions as one labelled menu. They were four bare icons (pencil,
+ * "$" for sell, "⊕" for add purchase, trash) with Remove sitting among the
+ * everyday ones; on phones, where there is no hover title, "$" and "⊕" were
+ * guesswork, and the icons squeezed company names to "Microsoft C…".
+ * Non-modal, so it never blocks the page (Radix defaults to modal).
+ */
+function HoldingActionsMenu({
+  holding,
+  disabled,
+  editDisabled,
+  busy,
+  triggerClassName,
+  onEdit,
+  onSell,
+  onAddPurchase,
+  onRemove,
+}: {
+  holding: Pick<HoldingWithPrice, 'symbol' | 'source'>;
+  disabled: boolean;
+  editDisabled: boolean;
+  busy: boolean;
+  triggerClassName?: string;
+  onEdit: () => void;
+  onSell: () => void;
+  onAddPurchase: () => void;
+  onRemove: () => void;
+}) {
+  const { t } = useTranslation('holdings');
+  const manual = holding.source === 'manual';
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={disabled}
+          className={triggerClassName}
+          aria-label={busy ? t('holdingsTableRemoving') : t('holdingsTableActionsFor', { symbol: holding.symbol })}
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        {manual && (
+          <DropdownMenuItem onSelect={onAddPurchase}>
+            <PlusCircle />
+            {t('holdingsTableAddPurchase')}
+          </DropdownMenuItem>
+        )}
+        {manual && (
+          <DropdownMenuItem onSelect={onSell}>
+            <DollarSign />
+            {t('holdingsTableSellShares')}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onSelect={onEdit} disabled={editDisabled}>
+          <Edit2 />
+          {t('holdingsTableEditHolding')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onSelect={onRemove}>
+          <Trash2 />
+          {t('holdingsTableRemoveHolding')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
