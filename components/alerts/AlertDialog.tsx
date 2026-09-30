@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Bell, Plus, ExternalLink, Pause, Play, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +29,7 @@ interface Props {
 export function AlertDialog({ symbol, companyName, trigger }: Props) {
   const { t } = useTranslation('alerts');
   const { isAuthenticated } = useAuth();
+  const pathname = usePathname();
   const { alerts, isLoading, create, toggle, remove } = useAlerts();
   const [composerOpen, setComposerOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
           <div className="py-6 text-center space-y-3">
             <p className="text-sm text-muted-foreground">{t('signInPrompt')}</p>
             <Button asChild size="sm">
-              <Link href={`/login?redirectTo=/stock/${symbol}`}>{t('signInButton')}</Link>
+              <Link href={`/login?redirect=${encodeURIComponent(pathname || `/stock/${symbol}`)}`}>{t('signInButton')}</Link>
             </Button>
           </div>
         ) : (

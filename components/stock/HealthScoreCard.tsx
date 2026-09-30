@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
-import { HelpCircle, X, Sparkles, ArrowUpRight, ArrowDownRight, Minus, History } from 'lucide-react';
+import { HelpCircle, X, Sparkles, ArrowUpRight, ArrowDownRight, History } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
@@ -294,9 +294,9 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
   return (
     <Card className="mb-8">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CardTitle role="heading" aria-level={2} className="text-base font-semibold">{t('healthCardTitle')}</CardTitle>
+            <CardTitle role="heading" aria-level={2} className="whitespace-nowrap text-base font-semibold">{t('healthCardTitle')}</CardTitle>
             {/* ? button — explains methodology */}
             <button
               ref={helpButtonRef}
@@ -323,7 +323,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
               <button
                 onClick={() => setHistoryOpen(true)}
                 className={cn(
-                  'flex items-center gap-1 text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full border transition-colors',
+                  'flex items-center gap-1 whitespace-nowrap text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full border transition-colors',
                   trend > 0
                     ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
                     : trend < 0
@@ -333,9 +333,16 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                 aria-label={t('healthHistoryAriaLabel')}
                 title={t('healthHistoryTitleTooltip')}
               >
-                <History className="h-3 w-3" />
-                {trend > 0 ? <ArrowUpRight className="h-3 w-3" /> : trend < 0 ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                {Math.abs(trend)}
+                <History className="h-3 w-3" aria-hidden />
+                {/* Was "− 0" for no change, which read as a minus sign. */}
+                {trend === 0 ? (
+                  t('healthNoChange')
+                ) : (
+                  <>
+                    {trend > 0 ? <ArrowUpRight className="h-3 w-3" aria-hidden /> : <ArrowDownRight className="h-3 w-3" aria-hidden />}
+                    {trend > 0 ? '+' : '−'}{Math.abs(trend)}
+                  </>
+                )}
               </button>
             )}
             <span className={cn(
@@ -386,10 +393,12 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                 const textColor = sig === 'positive' ? 'text-emerald-500' : sig === 'neutral' ? 'text-amber-400' : 'text-red-500';
                 return (
                   <div key={cat.name} className="space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-foreground">
-                        <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', unavailable ? 'bg-muted-foreground/30' : barColor)} />
-                        <TermTooltip term={cat.name} className="truncate" />
+                    {/* Wraps rather than truncates: Simple mode's plain-language names
+                        ("How Well It Makes Money") were cut mid-word on phones. */}
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="flex min-w-0 items-start gap-1.5 text-xs font-medium leading-snug text-foreground">
+                        <span className={cn('mt-1 h-1.5 w-1.5 shrink-0 rounded-full', unavailable ? 'bg-muted-foreground/30' : barColor)} />
+                        <TermTooltip term={cat.name} />
                       </span>
                       {unavailable ? (
                         <span className="text-[11px] font-medium text-muted-foreground shrink-0">{t('healthNotAvailable')}</span>

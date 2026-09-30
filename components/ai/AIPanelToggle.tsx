@@ -45,22 +45,22 @@ export function AIPanelToggle() {
     return () => document.body.classList.remove('has-ask-bull');
   }, [visible]);
 
-  // On phones the button sits exactly where rows keep their numbers and
-  // actions, so it steps aside while you scroll down and comes back on any
-  // scroll up, near the top, or at the end of the page. Keyed by path so a
-  // new page always starts with it showing.
+  // The button sits exactly where rows keep their numbers and actions (on
+  // desktop too: on the stock page it covered "My Holdings", the P/S scale's
+  // end label and "See all Washington trading"), so it steps aside while you
+  // scroll down and comes back on any scroll up, near the top, or at the end
+  // of the page. Keyed by path so a new page always starts with it showing.
   const [tuckedOn, setTuckedOn] = useState<string | null>(null);
   const tucked = tuckedOn === pathname;
   useEffect(() => {
     if (!visible) return;
     const el = document.querySelector<HTMLElement>('.app-scroll');
     if (!el) return;
-    const phone = window.matchMedia('(max-width: 767px)');
     let last = el.scrollTop;
     const onScroll = () => {
       const y = el.scrollTop;
       const atEnd = y + el.clientHeight >= el.scrollHeight - 8;
-      if (!phone.matches || y < 80 || atEnd || y < last - 6) setTuckedOn(null);
+      if (y < 80 || atEnd || y < last - 6) setTuckedOn(null);
       else if (y > last + 6) setTuckedOn(pathname);
       last = y;
     };

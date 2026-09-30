@@ -88,7 +88,7 @@
   "healthHistoryEmpty": "We just started tracking history for this company. Check back after the next earnings report.",
   "healthHistoryScoreGrade": "{{score}}/100 · {{grade}}",
   "healthHistoryTitle": "{{ticker}} Financial Health History",
-  "healthHistoryTitleTooltip": "View score history",
+  "healthHistoryTitleTooltip": "Change since the previous quarter. Select to see the full history.",
   "healthMethodologyDisclaimer": "This score is educational and does not constitute investment advice.",
   "healthMethodologyFinancialStrength": "Current ratio, debt-to-equity, free cash flow",
   "healthMethodologyGrowth": "Revenue growth TTM, EPS growth TTM",
@@ -322,7 +322,7 @@
   "statisticsGridRevGrowthLabel": "Rev Growth",
   "statisticsGridRevGrowthSrLabel": "Revenue growth {{value}}",
   "statisticsGridShowFullStatistics": "Show full statistics",
-  "statisticsGridSimplifiedHint": "The most important numbers to evaluate this company. Hover any label for an explanation.",
+  "statisticsGridSimplifiedHint": "The most important numbers to evaluate this company. Tap or hover any label for an explanation.",
   "statisticsGridTitle": "Key Numbers",
   "statisticsGridUpdatedOn": "Updated {{date}} at {{time}}",
   "statisticsGridUpdatedToday": "Updated today at {{time}}",
@@ -428,5 +428,6 @@
   "positionAvgCost": "Average cost",
   "positionPerShare": "per share",
   "washingtonTradeCount_one": "{{count}} trade",
-  "washingtonTradeCount_other": "{{count}} trades"
+  "washingtonTradeCount_other": "{{count}} trades",
+  "healthNoChange": "No change"
 }

@@ -404,12 +404,15 @@ export function StatisticsGrid({
     );
   }
 
+  // No signal chip or coloured meter here: the Health Score does not score
+  // dividends (its dividendYield signal is just "pays any dividend"), so a
+  // "Strength" chip claimed a verdict that does not exist and sat beside
+  // "Pays less than most payers".
   cards.push(
     <MetricCard
       key="div"
       label="Dividend Yield"
       value={s.dividendYield != null && s.dividendYield > 0 ? fmt(s.dividendYield, 'percent') : t('statisticsGridDividendNone')}
-      signal={s.dividendYield != null && s.dividendYield > 0 ? sig('dividendYield') : undefined}
       insight={dividendInsight(s.dividendYield)}
       context={s.dividendYield != null && s.dividendYield > 0 ? sectorContext(s.dividendYield, dist('dividend_yield'), 'yield', benchmarkLabel) : ''}
       tourId="stat-dividend-yield"
@@ -421,7 +424,6 @@ export function StatisticsGrid({
           value={s.dividendYield}
           min={YIELD_DOMAIN.min}
           max={YIELD_DOMAIN.max}
-          signal={sig('dividendYield')}
           benchmark={dist('dividend_yield') ? { value: dist('dividend_yield')!.median, label: t('statisticsGridBenchmarkTypical') } : undefined}
           srLabel={t('statisticsGridDividendSrLabel', { value: fmt(s.dividendYield, 'percent') })}
           minLabel="0%"
@@ -541,11 +543,12 @@ export function StatisticsGrid({
   return (
     <Card className="mb-8">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-baseline gap-3 min-w-0">
+        {/* Wraps on phones: the freshness stamp used to truncate to "Updated t…". */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
             <CardTitle role="heading" aria-level={2} className="text-base font-semibold shrink-0">{t('statisticsGridTitle')}</CardTitle>
             {updatedLabel && (
-              <span className="text-xs text-muted-foreground font-mono tracking-wide truncate">
+              <span className="text-xs text-muted-foreground font-mono tracking-wide">
                 {updatedLabel}
               </span>
             )}

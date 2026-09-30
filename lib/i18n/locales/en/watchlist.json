@@ -60,5 +60,8 @@
   "watchlistStartFromTemplate": "Start from a template",
   "watchlistBrowseHotPicks": "Browse Hot Picks on Discover",
   "watchlistSparklinePreviousLabel": "Last session",
-  "watchlistSparklinePreviousAriaLabel": "{{symbol}} price trend in the last trading session"
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}} price trend in the last trading session",
+  "watchlistSignInPrompt": "Create a free account to keep {{ticker}} on your watchlist and hear when it moves.",
+  "watchlistSignUp": "Create free account",
+  "watchlistSignIn": "Sign in"
 }

@@ -45,6 +45,17 @@ export function useIsWatched(symbol: string) {
   return (data ?? []).some((item) => item.symbol === symbol.toUpperCase());
 }
 
+/**
+ * Put a cache back the way it was before an optimistic update. "Was empty"
+ * counts: skipping the rollback when there had been no cached list left a
+ * signed-out visitor's failed add showing as "Watching" for good, because the
+ * query is disabled without a session and the invalidate never refetches it.
+ */
+function restore(queryClient: ReturnType<typeof useQueryClient>, key: unknown[], previous: WatchlistItem[] | undefined) {
+  if (previous === undefined) queryClient.removeQueries({ queryKey: key, exact: true });
+  else queryClient.setQueryData(key, previous);
+}
+
 /** Add a symbol to the watchlist (optionally scoped to a specific list) */
 export function useAddToWatchlist() {
   const queryClient = useQueryClient();
@@ -87,10 +98,8 @@ export function useAddToWatchlist() {
       return { previousAll, previousList, listId };
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previousAll !== undefined) queryClient.setQueryData(['watchlist'], ctx.previousAll);
-      if (ctx?.listId && ctx?.previousList !== undefined) {
-        queryClient.setQueryData(['watchlist-items', ctx.listId], ctx.previousList);
-      }
+      restore(queryClient, ['watchlist'], ctx?.previousAll);
+      if (ctx?.listId) restore(queryClient, ['watchlist-items', ctx.listId], ctx.previousList);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
@@ -166,10 +175,8 @@ export function useRemoveFromWatchlist() {
       return { previousAll, previousList, listId };
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previousAll !== undefined) queryClient.setQueryData(['watchlist'], ctx.previousAll);
-      if (ctx?.listId && ctx?.previousList !== undefined) {
-        queryClient.setQueryData(['watchlist-items', ctx.listId], ctx.previousList);
-      }
+      restore(queryClient, ['watchlist'], ctx?.previousAll);
+      if (ctx?.listId) restore(queryClient, ['watchlist-items', ctx.listId], ctx.previousList);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
