@@ -60,12 +60,16 @@ async function recordMiss(
  * `tracked` covers the symbols users hold or watch. Those were classified only
  * when someone happened to open the holdings page and trigger the lazy
  * /profile path, so a watchlist nobody visited stayed unclassified forever.
+ *
+ * `screener` covers screener_stats rows no table knows a sector for, largest
+ * market cap first (migration 158).
  */
-export type SectorSource = 'institutional' | 'tracked';
+export type SectorSource = 'institutional' | 'tracked' | 'screener';
 
 const CANDIDATE_RPC: Record<SectorSource, string> = {
   institutional: 'institutional_symbols_missing_sector',
   tracked: 'tracked_symbols_missing_sector',
+  screener: 'screener_symbols_missing_sector',
 };
 
 export async function enrichHoldingSectors(
@@ -86,7 +90,16 @@ export async function enrichHoldingSectors(
     await Promise.all(
       batch.map(async (symbol) => {
         try {
-          const sector = normalizeSector((await getCompanyProfile(symbol)).sector);
+          const profile = await getCompanyProfile(symbol);
+          // TwelveData resolves an ambiguous ticker to whichever listing shares
+          // it ("CTRA" came back as an Indonesian company). A foreign currency
+          // means it is not our company, and a wrong sector is worse than none.
+          if (profile.currency && profile.currency !== 'USD') {
+            result.noSector++;
+            await recordMiss(supabase, symbol, 'no_sector');
+            return;
+          }
+          const sector = normalizeSector(profile.sector);
           if (!sector) {
             result.noSector++;
             await recordMiss(supabase, symbol, 'no_sector');
@@ -95,8 +108,18 @@ export async function enrichHoldingSectors(
           const { error: upsertError } = await supabase
             .from('ticker_sectors')
             .upsert({ ticker: symbol, sector, updated_at: new Date().toISOString() } as never, { onConflict: 'ticker' });
-          if (upsertError) result.failed++;
-          else result.resolved++;
+          if (upsertError) {
+            result.failed++;
+            return;
+          }
+          result.resolved++;
+          // The screener reads sectors from its own row; fill it now rather
+          // than on the row's next refresh, which for the long tail can be weeks.
+          await supabase
+            .from('screener_stats')
+            .update({ sector } as never)
+            .eq('ticker', symbol)
+            .is('sector', null);
         } catch (err) {
           if (err instanceof TwelveDataRateLimitError) {
             result.rateLimited = true;

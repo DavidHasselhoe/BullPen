@@ -56,6 +56,7 @@ import {
 import { getCached, getCachedStale } from '@/lib/cache/market-data-cache';
 import { computeHealthScore, categoriesToColumns } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
+import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { notifyHealthScoreChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
 import type { ScreenerRow } from '@/app/api/screener/route';
@@ -272,15 +273,28 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
   const symbolsToFetch = uniqueSymbols.filter((s) => !freshSet.has(s));
   if (symbolsToFetch.length === 0) return [];
 
-  // Company metadata (name / sector / industry / logo) for all symbols in one query.
-  const { data: companies } = await supabase
-    .from('companies')
-    .select('ticker, name, sector, industry, logo_url')
-    .in('ticker', symbolsToFetch);
+  // Company metadata (name / sector / industry / logo) for all symbols.
+  //
+  // Sector precedence matches attachSectors() in lib/holdings/portfolio-positions.ts:
+  // ticker_sectors (a live /profile lookup) over the row's own previous value
+  // over companies. Reading only `companies`, a 39-row hand-seeded table, is
+  // how 2,822 of 3,058 screener rows ended up with no sector: every refresh
+  // wrote null over whatever the row had.
+  const [{ data: companies }, { data: cachedSectors }, { data: priorMeta }] = await Promise.all([
+    supabase.from('companies').select('ticker, name, sector, industry, logo_url').in('ticker', symbolsToFetch),
+    supabase.from('ticker_sectors').select('ticker, sector').in('ticker', symbolsToFetch),
+    supabase.from('screener_stats').select('ticker, sector, industry').in('ticker', symbolsToFetch),
+  ]);
   const companyMap = new Map(
     (companies ?? []).map((c) => [(c as { ticker: string }).ticker, c as {
       ticker: string; name: string | null; sector: string | null; industry: string | null; logo_url: string | null;
     }])
+  );
+  const cachedSectorMap = new Map(
+    ((cachedSectors ?? []) as { ticker: string; sector: string | null }[]).map((r) => [r.ticker, r.sector])
+  );
+  const priorMetaMap = new Map(
+    ((priorMeta ?? []) as { ticker: string; sector: string | null; industry: string | null }[]).map((r) => [r.ticker, r])
   );
 
   const rows: ScreenerRow[] = [];
@@ -345,8 +359,12 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
         // meta.name comes back in the same /statistics response we already paid for,
         // so it costs nothing and covers every ticker with no companies row.
         name: company?.name ?? statsRaw.meta?.name ?? sym,
-        sector: company?.sector ?? null,
-        industry: company?.industry ?? null,
+        sector:
+          normalizeSector(cachedSectorMap.get(sym)) ??
+          normalizeSector(priorMetaMap.get(sym)?.sector) ??
+          normalizeSector(company?.sector),
+        // Nothing but `companies` knows industries, so at least never erase one.
+        industry: priorMetaMap.get(sym)?.industry || company?.industry || null,
         logo_url: company?.logo_url ?? null,
         exchange: null,
         health_score: healthScore.score,

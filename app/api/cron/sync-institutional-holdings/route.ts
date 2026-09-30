@@ -141,5 +141,17 @@ export async function GET(request: NextRequest) {
     console.error('[sync-institutional-holdings] tracked sector enrichment failed:', err);
   }
 
-  return NextResponse.json({ success: true, results, firstFiled, sectors, trackedSectors });
+  // And the screener universe, so newly listed tickers get a sector and the
+  // sector filter keeps covering them. 20 lookups (200 credits, ~30s at the
+  // cron credit share) keeps pace with new listings without pushing the three
+  // passes past maxDuration; the one-off catch-up is
+  // scripts/enrich-screener-sectors.ts.
+  let screenerSectors = null;
+  try {
+    screenerSectors = await enrichHoldingSectors(supabase, { limit: 20, source: 'screener' });
+  } catch (err) {
+    console.error('[sync-institutional-holdings] screener sector enrichment failed:', err);
+  }
+
+  return NextResponse.json({ success: true, results, firstFiled, sectors, trackedSectors, screenerSectors });
 }

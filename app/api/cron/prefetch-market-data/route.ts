@@ -56,6 +56,7 @@ import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { getActiveUniverse } from '@/lib/market-data/screener-universe';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { parseStats as parseScreenerStatsRow, type TwelveDataStatisticsRaw } from '@/lib/market-data/screener-stats';
+import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 
 export const maxDuration = 60;
 
@@ -334,7 +335,7 @@ async function handleStatsBatch(
         screenerRowsBatch.push({
           ...screenerRow,
           name: profile?.name ?? statsRaw.meta?.name ?? sym,
-          sector: profile?.sector ?? null,
+          sector: normalizeSector(profile?.sector),
           industry: profile?.industry ?? null,
           logo_url: profile?.logoUrl ?? null,
         });
