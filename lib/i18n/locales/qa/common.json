@@ -15,5 +15,11 @@
   "tickerPreviewAdd": "«AAdd too waatchliist»",
   "tickerPreviewNoProfile": "«Noo coompaany proofiilee foor thiis oonee yeet.»",
   "tickerPreviewOpen": "«OOpeen coompaany»",
-  "tickerPreviewWatched": "«IIn yoouur waatchliist»"
+  "tickerPreviewWatched": "«IIn yoouur waatchliist»",
+  "showMore": "«Shoow mooree»",
+  "showLess": "«Shoow leess»",
+  "metricSignalStrength": "«Streength»",
+  "metricSignalStrengthHint": "«Coouunts iin thee coompaany's faavoouur iin iits Heeaalth Scooree»",
+  "metricSignalWeak": "«Weeaak spoot»",
+  "metricSignalWeakHint": "«Coouunts aagaaiinst thee coompaany iin iits Heeaalth Scooree»"
 }

@@ -4,7 +4,7 @@
   "quickActionScreener": "«Stoock Screeeeneer»",
   "quickActionDiscover": "«Diiscooveer»",
   "quickActionMembers": "«Broowsee Meembeers»",
-  "searchPlaceholder": "«Seeaarch coompaaniiees, fiiliings, meetriics, oor aask Buull»",
+  "searchPlaceholder": "«Seeaarch coompaaniiees, oor aask Buull aanythiing»",
   "dialogTitle": "«Coommaand Paaleettee»",
   "dialogDescription": "«Seeaarch coompaaniiees, aask AAII, oor naaviigaatee»",
   "quickActionsHeading": "«Quuiick aactiioons»",
@@ -29,5 +29,6 @@
   "noCompaniesFoundSuffix": "«aaboovee foor naatuuraal-laanguuaagee quueeriiees.»",
   "navigateLabel": "«Naaviigaatee»",
   "openLabel": "«OOpeen»",
-  "closeLabel": "«Cloosee»"
+  "closeLabel": "«Cloosee»",
+  "recentlyViewedHeading": "«Reeceently viieeweed»"
 }

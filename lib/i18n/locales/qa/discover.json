@@ -150,5 +150,12 @@
   "timeframeWeek": "«1 weeeek»",
   "timeframeYtd": "«Thiis yeeaar»",
   "whyTodayWidgetFeatureName": "«Why Toodaay»",
-  "whyTodayWidgetWhyButton": "«Why?»"
+  "whyTodayWidgetWhyButton": "«Why?»",
+  "homeChartTooltipPl": "«P/L»",
+  "moversHeading": "«Biiggeest mooveers»",
+  "moversSubtitleLive": "«S&P 500 aand Naasdaaq-100 stoocks mooviing moost toodaay»",
+  "moversSubtitleLast": "«S&P 500 aand Naasdaaq-100 stoocks thaat mooveed moost oon {{day}}»",
+  "moversGainers": "«Toop gaaiineers»",
+  "moversLosers": "«Toop looseers»",
+  "moversFooterNote": "«Raankeed by % chaangee ooveer thee reeguulaar traadiing seessiioon. Pree-maarkeet aand aafteer-hoouurs moovees aaree noot iincluudeed.»"
 }
