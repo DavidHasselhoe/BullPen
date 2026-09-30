@@ -150,5 +150,6 @@
   "timeframeWeek": "1 week",
   "timeframeYtd": "This year",
   "whyTodayWidgetFeatureName": "Why Today",
-  "whyTodayWidgetWhyButton": "Why?"
+  "whyTodayWidgetWhyButton": "Why?",
+  "homeChartTooltipPl": "P/L"
 }

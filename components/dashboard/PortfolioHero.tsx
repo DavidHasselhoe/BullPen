@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import { LineChart } from '@/components/charts/line-chart';
+import { Area } from '@/components/charts/area';
+import { ChartTooltip } from '@/components/charts/tooltip';
 import { ArrowDown, ArrowRight, ArrowUp, Minus, Sparkles } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
@@ -235,6 +237,12 @@ export function PortfolioHero() {
   // 1D by default: the line then ends at the "today" figure right above it.
   const [range, setRange] = useState<SeriesRange>('1D');
   const series = useRangeSeries(home.holdings, range, home.quotes);
+  // The series is in USD; the headline above is in the user's currency, so the
+  // tooltip converts the same way the headline does.
+  const chartData = useMemo(
+    () => series.points.map((pt) => ({ date: new Date(pt.t * 1000), pl: pt.pl * home.usdRate, plPct: pt.plPct })),
+    [series.points, home.usdRate],
+  );
   const whyFor = useInlineWhy(home.movers);
   const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
   const canWhy = useEntitlements().can('why_today');
@@ -338,18 +346,37 @@ export function PortfolioHero() {
                 </div>
               </div>
               <div className="mt-2 min-h-20 flex-1" aria-hidden>
-                {series.points.length > 1 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={series.points} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-                      <defs>
-                        <linearGradient id="home-series-fill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
-                          <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <Area type="monotone" dataKey="pl" stroke={chartColor} strokeWidth={1.5} fill="url(#home-series-fill)" dot={false} isAnimationActive={false} />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                {chartData.length > 1 ? (
+                  // Same chart kit and tooltip as the Holdings performance chart, kept
+                  // compact: no grid or axis. pan-y (the kit sets touch-action: none)
+                  // so a vertical swipe starting on the chart still scrolls Home,
+                  // while a horizontal drag scrubs the tooltip.
+                  <LineChart
+                    key={range}
+                    data={chartData}
+                    margin={{ top: 2, right: 0, bottom: 0, left: 0 }}
+                    aspectRatio=""
+                    className="h-full min-h-20"
+                    style={{ touchAction: 'pan-y' }}
+                    zeroBaseline={false}
+                  >
+                    <Area dataKey="pl" stroke={chartColor} strokeWidth={1.5} fill={chartColor} fillOpacity={0.2} showMarkers={false} />
+                    <ChartTooltip
+                      showTime={range === '1D' || range === '1W'}
+                      showYear={range === '1Y'}
+                      rows={(point) => {
+                        const pl = point.pl as number;
+                        const pct = point.plPct as number;
+                        const sign = pct > 0.005 ? '+' : pct < -0.005 ? '−' : '';
+                        const money = formatCurrency(Math.abs(pl), home.currency, roundNumbers ? { round: true } : undefined);
+                        return [{
+                          label: t('homeChartTooltipPl'),
+                          value: `${sign}${money} (${sign}${Math.abs(pct).toFixed(2)}%)`,
+                          color: chartColor,
+                        }];
+                      }}
+                    />
+                  </LineChart>
                 ) : series.isLoading ? (
                   <div className="h-full min-h-20 w-full animate-shimmer rounded" />
                 ) : (
