@@ -28,7 +28,7 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env
 });
 
 type Row = {
-  ticker: string; sector: string | null; market_cap: number | null;
+  ticker: string; name: string; sector: string | null; market_cap: number | null;
   pe_ratio: number | null; pb_ratio: number | null; ev_to_ebitda: number | null; beta: number | null;
   profit_margin: number | null; revenue_growth_yoy: number | null; earnings_growth_yoy: number | null;
   dividend_yield: number | null; health_score: number | null; health_score_grade: string | null;
@@ -39,7 +39,7 @@ async function allRows(): Promise<Row[]> {
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
       .from('screener_stats')
-      .select('ticker, sector, market_cap, pe_ratio, pb_ratio, ev_to_ebitda, beta, profit_margin, revenue_growth_yoy, earnings_growth_yoy, dividend_yield, health_score, health_score_grade')
+      .select('ticker, name, sector, market_cap, pe_ratio, pb_ratio, ev_to_ebitda, beta, profit_margin, revenue_growth_yoy, earnings_growth_yoy, dividend_yield, health_score, health_score_grade')
       .order('ticker')
       .range(from, from + 999);
     if (error) throw new Error(error.message);
@@ -120,7 +120,8 @@ async function main() {
   for (let i = 0; i < results.length; i += 500) {
     const batch = results.slice(i, i + 500);
     const { error } = await supabase.from('screener_stats').upsert(
-      batch.map(({ row, hs }) => ({ ticker: row.ticker, ...healthColumns(hs) })),
+      // An upsert inserts first, so NOT NULL columns must ride along; name is unchanged.
+      batch.map(({ row, hs }) => ({ ticker: row.ticker, name: row.name, ...healthColumns(hs) })),
       { onConflict: 'ticker' },
     );
     if (error) throw new Error(error.message);
