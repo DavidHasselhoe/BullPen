@@ -36,6 +36,8 @@ interface XAxisLabelProps {
   isHovering: boolean;
   tickerHalfWidth: number;
   animatePosition: boolean;
+  /** Where the label sits relative to its tick. Edge ticks anchor inward. */
+  align: "start" | "center" | "end";
 }
 
 function XAxisLabel({
@@ -46,6 +48,7 @@ function XAxisLabel({
   isHovering,
   tickerHalfWidth,
   animatePosition,
+  align,
 }: XAxisLabelProps) {
   const fadeBuffer = 20;
   const fadeRadius = tickerHalfWidth + fadeBuffer;
@@ -70,7 +73,7 @@ function XAxisLabel({
         bottom: 12,
         width: 0,
         display: "flex",
-        justifyContent: "center",
+        justifyContent: align === "start" ? "flex-start" : align === "end" ? "flex-end" : "center",
         transition: animatePosition
           ? `left ${X_AXIS_POSITION_TWEEN_MS}ms cubic-bezier(${LINE_LOADING_PULSE_EASE.join(", ")})`
           : undefined,
@@ -90,6 +93,13 @@ function XAxisLabel({
 }
 
 const MAX_GAP_LAYOUTS = 400;
+
+/**
+ * A label centred on a tick this close to either edge hangs past the chart
+ * and gets clipped by the card (Holdings read "an 19" and "Sep 2"). Roughly
+ * half a short date label ("Mar 23") at text-xs.
+ */
+const EDGE_ANCHOR_PX = 28;
 
 function binomial(n: number, k: number): number {
   if (k < 0 || k > n) {
@@ -643,10 +653,13 @@ const XAxisInner = memo(function XAxisInner({
         shortDateFmt.format(xAccessor(tooltipData.point)))
       : null;
 
+  const width = container.clientWidth;
+
   return createPortal(
     <div className="pointer-events-none absolute inset-0">
       {labelsToShow.map((item) => (
         <XAxisLabel
+          align={item.x < EDGE_ANCHOR_PX ? "start" : item.x > width - EDGE_ANCHOR_PX ? "end" : "center"}
           animatePosition={xDomain == null}
           crosshairX={crosshairX}
           hoveredLabel={hoveredLabel}

@@ -25,6 +25,8 @@ import type { SavedRiskAnalysis } from '@/app/api/holdings/risk-analysis/history
 import type { RiskAnalysis } from './risk-analysis/types';
 import { RiskAnalysisResult } from './risk-analysis/RiskAnalysisResult';
 import { AnalysisHistory } from './risk-analysis/AnalysisHistory';
+import { levelTier, tierTextClass } from './risk-analysis/colors';
+import { cn } from '@/lib/utils';
 
 type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'unknown';
 
@@ -317,7 +319,47 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
 
         <CardContent className="pt-4">
           {/* ── Idle ───────────────────────────────────────────────────────── */}
-          {state === 'idle' && (
+          {state === 'idle' && history.length > 0 && (
+            <div className="space-y-5 py-1">
+              {/* The latest result leads instead of an empty "Run Analysis"
+                  screen, but only as a dated summary: it is never shown as if
+                  it described today's holdings. A changed position count is
+                  the one drift a saved run records, so that gets said. */}
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border/40 p-4">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">
+                    {t('riskLatestLabel', {
+                      date: new Date(history[0].createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' }),
+                    })}
+                  </p>
+                  <p className="mt-1 flex items-baseline gap-2">
+                    <span className={cn('font-mono text-3xl font-semibold tabular-nums', tierTextClass(levelTier(history[0].riskLevel)))}>
+                      {history[0].overallRiskScore}
+                    </span>
+                    <span className="text-sm text-muted-foreground">{history[0].riskLevel}</span>
+                  </p>
+                  {history[0].holdingsCount != null && history[0].holdingsCount !== holdings.length && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t('riskLatestHoldingsChanged', { then: history[0].holdingsCount, now: holdings.length })}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => void restoreAnalysis(history[0].id)}>
+                    {t('riskLatestView')}
+                  </Button>
+                  <Button onClick={analyze} size="sm" className="gap-1.5 rounded-full animate-ai-pill-shine">
+                    <ShieldAlert className="h-3.5 w-3.5" /> {t('riskLatestRunNew')}
+                  </Button>
+                </div>
+              </div>
+              <div className="border-t border-border/20 pt-4">
+                <AnalysisHistory items={history} onRestore={restoreAnalysis} onDelete={(id) => deleteMutation.mutate(id)} />
+              </div>
+            </div>
+          )}
+
+          {state === 'idle' && history.length === 0 && (
             <div className="space-y-6 py-2">
               <EmptyState
                 pose="thinking"
@@ -336,12 +378,6 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
                   </Button>
                 </div>
               </EmptyState>
-
-              {history.length > 0 && (
-                <div className="border-t border-border/20 pt-4">
-                  <AnalysisHistory items={history} onRestore={restoreAnalysis} onDelete={(id) => deleteMutation.mutate(id)} />
-                </div>
-              )}
             </div>
           )}
 

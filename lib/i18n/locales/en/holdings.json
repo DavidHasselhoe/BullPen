@@ -369,5 +369,9 @@
   "holdingsTableTrend30dLabel": "{{symbol}} over the last 30 days",
   "analysisHistoryShowAll": "Show all {{count}}",
   "analysisHistoryShowLess": "Show less",
-  "holdingsTablePositionsTitle": "Positions"
+  "holdingsTablePositionsTitle": "Positions",
+  "riskLatestLabel": "Latest analysis, {{date}}",
+  "riskLatestHoldingsChanged": "You had {{then}} positions then and have {{now}} now. Run a new analysis for an up-to-date view.",
+  "riskLatestView": "View full analysis",
+  "riskLatestRunNew": "Run new analysis"
 }
