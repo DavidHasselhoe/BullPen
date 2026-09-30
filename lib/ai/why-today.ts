@@ -85,7 +85,10 @@ export function whyTodayRequest(move: WhyTodayMove, language: string) {
     max_tokens: 600,
     thinking: { type: 'disabled' as const },
     betas: ['web-search-2025-03-05'],
-    tools: [{ type: 'web_search_20250305' as const, name: 'web_search' as const }],
+    // Search results are ~80% of the cost (avg 34k input tokens uncapped).
+    // Two leaves room for one follow-up, e.g. a sympathy move whose catalyst
+    // is another company's news.
+    tools: [{ type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: 2 }],
     system:
       languagePrefix +
       'You are a concise financial analyst. Explain why a stock moved today using only what you find in current news. ' +
@@ -96,7 +99,7 @@ export function whyTodayRequest(move: WhyTodayMove, language: string) {
     messages: [{
       role: 'user' as const,
       content:
-        `$${move.ticker} is ${direction} ${Math.abs(move.changePct).toFixed(2)}% ($${Math.abs(move.change).toFixed(2)}) today. ` +
+        `$${move.ticker} is ${direction} ${Math.abs(move.changePct).toFixed(2)}% ($${Math.abs(move.change).toFixed(2)}) today, ${whyTodaySessionDate(move.ticker)}. ` +
         `Current price: $${move.price.toFixed(2)}. ` +
         `Search for the specific news or catalyst driving this move right now.`,
     }],
