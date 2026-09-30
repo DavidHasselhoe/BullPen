@@ -60,5 +60,8 @@
   "watchlistStartFromTemplate": "从模板开始",
   "watchlistBrowseHotPicks": "在发现中浏览热门精选",
   "watchlistSparklinePreviousLabel": "上一个交易日",
-  "watchlistSparklinePreviousAriaLabel": "{{symbol}} 上一个交易日的价格走势"
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}} 上一个交易日的价格走势",
+  "watchlistSignInPrompt": "创建免费账户，将 {{ticker}} 加入关注列表，并在它波动时接收通知。",
+  "watchlistSignUp": "创建免费账户",
+  "watchlistSignIn": "登录"
 }

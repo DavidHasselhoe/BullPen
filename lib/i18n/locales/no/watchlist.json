@@ -57,8 +57,11 @@
   "watchlistEmptySubtitle": "Søk ovenfor for å legge til en aksje, eller kom i gang med noen populære:",
   "watchlistStartFromTemplate": "Start fra en mal",
   "watchlistBrowseHotPicks": "Bla gjennom Hot Picks på Discover",
-  "watchlistColSymbol": "Symbol",
-  "watchlistTableEarningsInDays": "{{days}}d",
   "watchlistSparklinePreviousLabel": "Forrige handelsdag",
-  "watchlistSparklinePreviousAriaLabel": "{{symbol}} pristrend i forrige handelsøkt"
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}} pristrend i forrige handelsøkt",
+  "watchlistSignInPrompt": "Opprett en gratis konto for å holde {{ticker}} på favorittlisten din og få beskjed når den beveger seg.",
+  "watchlistSignUp": "Opprett gratis konto",
+  "watchlistSignIn": "Logg inn",
+  "watchlistColSymbol": "Symbol",
+  "watchlistTableEarningsInDays": "{{days}}d"
 }

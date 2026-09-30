@@ -107,9 +107,9 @@
   "upgradeCompareFree": "Gratis",
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "Preguntas",
-  "whyTodayPreviewTicker": "$NVDA",
-  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
   "paywallBenefitUnlimitedAlerts": "Alertas de precio en acciones ilimitadas",
   "alertsPreviewSource": "Alerta BullPen · ahora",
-  "alertsPreviewFallbackCondition": "Nuevo máximo histórico"
+  "alertsPreviewFallbackCondition": "Nuevo máximo histórico",
+  "whyTodayPreviewTicker": "$NVDA",
+  "deepDivePreviewFor": "Análisis Profundo: {{ticker}}"
 }

@@ -716,6 +716,8 @@
   "economicExplainWhat_pce": "Der Personal Income and Outlays-Bericht zeigt, wie viel Amerikaner im letzten Monat verdient und ausgegeben haben. Er enthält den PCE-Preisindex, ein weiteres Inflationsmass.",
   "economicExplainWhy_pce": "PCE ist das Inflationsmass, das die Fed für ihr 2%-Ziel nutzt, daher hat es großes Gewicht bei Zinsentscheidungen.",
   "economicExplainWatch_pce": "Beobachte Core PCE, das Lebensmittel und Energie ausschliesst. CPI wird normalerweise zuerst veröffentlicht, daher bewegt PCE Märkte am meisten, wenn es eine andere Geschichte erzählt.",
+  "comparePopularTitle": "Beliebte Vergleiche",
+  "screenerAiContextLabel": "die Aktien auf deinem Bildschirm",
   "calendarFilterIpos": "IPOs",
   "compareDefinitionLabel": "Definition:",
   "compareMetricInfoAriaLabel": "Info: {{label}}",
@@ -736,6 +738,5 @@
   "economicShort_ppi": "PPI",
   "economicShort_jolts": "JOLTS",
   "economicShort_pce": "PCE",
-  "economicEtTime": "{{time}} ET",
-  "comparePopularTitle": "Beliebte Vergleiche"
+  "economicEtTime": "{{time}} ET"
 }

@@ -17,5 +17,9 @@
   "tickerPreviewOpen": "企業を開く",
   "tickerPreviewWatched": "ウォッチリストに追加済み",
   "showMore": "もっと見る",
-  "showLess": "一部を隠す"
+  "showLess": "一部を隠す",
+  "metricSignalStrength": "強み",
+  "metricSignalStrengthHint": "企業のヘルススコアに有利に働きます",
+  "metricSignalWeak": "弱点",
+  "metricSignalWeakHint": "企業のヘルススコアに不利に働きます"
 }

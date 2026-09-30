@@ -17,5 +17,9 @@
   "tickerPreviewOpen": "打开公司详情",
   "tickerPreviewWatched": "已在您的关注列表中",
   "showMore": "显示更多",
-  "showLess": "显示更少"
+  "showLess": "显示更少",
+  "metricSignalStrength": "强势",
+  "metricSignalStrengthHint": "在公司健康评分中加分",
+  "metricSignalWeak": "弱点",
+  "metricSignalWeakHint": "在公司健康评分中扣分"
 }

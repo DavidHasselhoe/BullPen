@@ -191,7 +191,7 @@
   "deleteDialogConfirm": "Mein Konto löschen",
   "notifPoliticianTradesLabel": "Politiker-Trades",
   "notifPoliticianTradesDescription": "Erhalte eine Benachrichtigung, wenn ein Politiker, dem du folgst, neue Aktiengeschäfte offenbart",
-  "sectionPlanLabel": "Plan",
   "notifPoliticianHoldingsLabel": "Politiker handeln deine Aktien",
-  "notifPoliticianHoldingsDescription": "Pro: Erhalte eine Benachrichtigung, wenn ein überwachter Politiker eine Aktie handelt, die du besitzt oder beobachtest"
+  "notifPoliticianHoldingsDescription": "Pro: Erhalte eine Benachrichtigung, wenn ein überwachter Politiker eine Aktie handelt, die du besitzt oder beobachtest",
+  "sectionPlanLabel": "Plan"
 }

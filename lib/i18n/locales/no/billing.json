@@ -107,9 +107,9 @@
   "upgradeCompareFree": "Gratis",
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "Spørsmål",
-  "whyTodayPreviewTicker": "$NVDA",
-  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
   "paywallBenefitUnlimitedAlerts": "Prisvarslinger på ubegrenset antall aksjer",
   "alertsPreviewSource": "BullPen-varsling · nå",
-  "alertsPreviewFallbackCondition": "Nytt historisk høyt nivå"
+  "alertsPreviewFallbackCondition": "Nytt historisk høyt nivå",
+  "whyTodayPreviewTicker": "$NVDA",
+  "deepDivePreviewFor": "Deep Dive: {{ticker}}"
 }

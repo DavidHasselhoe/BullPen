@@ -112,8 +112,13 @@
   "whyTodaySearching": "正在网络搜索 ${{ticker}} 今天的新闻……",
   "whyTodayUpgradeCta": "升级到 Pro →",
   "whyTodayUpgradeNotice": "实时 AI 新闻分析是 <pro>Pro</pro> 功能。",
+  "chatRateLimitedWithWait": "Bull 现在处理请求较多。请在约 {{seconds}} 秒后重试。",
+  "chatScreenerPromptHealthiest": "其中哪一个的健康分数最高?",
+  "chatScreenerPromptCheapest": "按P/E比率哪一个最便宜?",
+  "chatScreenerPromptWhatToLookFor": "我应该在股票中寻找什么?",
+  "chatScreenerPromptCandidates": "给我展示一些强劲的候选股票",
+  "chatScreenerPromptReviewFilters": "我的筛选条件好吗?",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta",
-  "chatRateLimitedWithWait": "Bull 现在处理请求较多。请在约 {{seconds}} 秒后重试。"
+  "termsGateBeta": "Beta"
 }

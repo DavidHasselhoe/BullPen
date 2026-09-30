@@ -110,10 +110,15 @@
   "whyTodaySearching": "Buscando noticias de hoy sobre ${{ticker}} en la web…",
   "whyTodayUpgradeCta": "Actualiza a Pro →",
   "whyTodayUpgradeNotice": "El análisis de noticias en tiempo real con IA es una función de <pro>Pro</pro>.",
+  "chatRateLimitedWithWait": "Bull está procesando muchas solicitudes en este momento. Por favor, intenta de nuevo en aproximadamente {{seconds}} segundos.",
+  "chatScreenerPromptHealthiest": "¿Cuál de estos tiene la puntuación de salud más alta?",
+  "chatScreenerPromptCheapest": "¿Cuál es el más barato por P/E?",
+  "chatScreenerPromptWhatToLookFor": "¿Qué debo buscar en una acción?",
+  "chatScreenerPromptCandidates": "Muéstrame algunos candidatos sólidos",
+  "chatScreenerPromptReviewFilters": "¿Son buenos mis filtros?",
   "financialsCapex": "CapEx",
   "navigateNo": "No",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta",
-  "chatRateLimitedWithWait": "Bull está procesando muchas solicitudes en este momento. Por favor, intenta de nuevo en aproximadamente {{seconds}} segundos."
+  "termsGateBeta": "Beta"
 }

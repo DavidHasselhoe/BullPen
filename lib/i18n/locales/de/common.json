@@ -17,5 +17,9 @@
   "tickerPreviewOpen": "Unternehmen öffnen",
   "tickerPreviewWatched": "In deiner Beobachtungsliste",
   "showMore": "Mehr anzeigen",
-  "showLess": "Weniger anzeigen"
+  "showLess": "Weniger anzeigen",
+  "metricSignalStrength": "Stärke",
+  "metricSignalStrengthHint": "Spricht für das Unternehmen in seinem Health Score",
+  "metricSignalWeak": "Schwachstelle",
+  "metricSignalWeakHint": "Spricht gegen das Unternehmen in seinem Health Score"
 }

@@ -4,6 +4,7 @@
   "quickActionScreener": "Aksjefilter",
   "quickActionDiscover": "Oppdagelser",
   "quickActionMembers": "Se medlemmer",
+  "searchPlaceholder": "Søk etter selskaper, eller spør Bull om hva som helst",
   "dialogTitle": "Kommandopallett",
   "dialogDescription": "Søk etter selskaper, spør AI, eller naviger",
   "quickActionsHeading": "Hurtighandlinger",
@@ -13,6 +14,7 @@
   "groupStocksEtfs": "Aksjer og ETFer",
   "actionsForTicker": "Handlinger for {{ticker}}",
   "tellMeAboutQuery": "Fortell meg om {{ticker}}",
+  "deepDiveLabel": "Dypdykk",
   "compareLabel": "Sammenlign",
   "setPriceAlertForLabel": "Angi prisvarsel for",
   "askBullLabel": "Ask Bull",
@@ -27,8 +29,6 @@
   "navigateLabel": "Naviger",
   "openLabel": "Åpne",
   "closeLabel": "Lukk",
-  "searchPlaceholder": "Søk etter selskaper, eller spør Bull om hva som helst",
-  "deepDiveLabel": "Deep dive",
-  "askBullAboutLabel": "Ask Bull about",
-  "recentlyViewedHeading": "Nylig besøkt"
+  "recentlyViewedHeading": "Nylig besøkt",
+  "askBullAboutLabel": "Ask Bull about"
 }

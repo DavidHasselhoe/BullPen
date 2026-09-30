@@ -60,5 +60,8 @@
   "watchlistStartFromTemplate": "テンプレートから始める",
   "watchlistBrowseHotPicks": "Discoverでホットピックスを閲覧",
   "watchlistSparklinePreviousLabel": "前回のセッション",
-  "watchlistSparklinePreviousAriaLabel": "{{symbol}}の前回の取引セッションでの価格推移"
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}}の前回の取引セッションでの価格推移",
+  "watchlistSignInPrompt": "無料アカウントを作成して、{{ticker}}をウォッチリストに追加し、値動きがあったときに通知を受け取りましょう。",
+  "watchlistSignUp": "無料アカウントを作成",
+  "watchlistSignIn": "ログイン"
 }

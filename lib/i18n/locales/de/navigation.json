@@ -40,12 +40,12 @@
   "navAiCosts": "KI-Kosten",
   "navReportBugOrIdea": "Fehler oder Idee melden",
   "navSignOut": "Abmelden",
+  "navTryProFree": "Probiere Pro {{days}} Tage kostenlos",
+  "navTryProFreeSub": "$0 heute. Jederzeit kündbar.",
   "navCommunityLabel": "Community",
   "navToolsLabel": "Tools",
   "navSectionTools": "Tools",
   "navSectionCommunity": "Community",
   "navAdminLabel": "Admin",
-  "navFeedbackLabel": "Feedback",
-  "navTryProFree": "Probiere Pro {{days}} Tage kostenlos",
-  "navTryProFreeSub": "$0 heute. Jederzeit kündbar."
+  "navFeedbackLabel": "Feedback"
 }

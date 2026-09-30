@@ -62,6 +62,7 @@
   "profileModalUploadHint": "Image JPEG, PNG ou WebP (max. 5 Mo)",
   "profileModalUploadPicture": "Télécharger la photo de profil",
   "profileModalUsernameLabel": "Nom d'utilisateur",
+  "profileModalUsernamePlaceholder": "jean_dupont",
   "publicHoldingsEmpty": "Aucune position publique.",
   "publicProfileAnonymous": "Anonyme",
   "publicProfileExperienceAdvanced": "Avancé",
@@ -74,6 +75,5 @@
   "publicProfileStockCount_other": "{{count}} actions",
   "publicProfileTierMember": "Membre",
   "publicProfileTierPro": "Pro",
-  "profileAvatarTierNormal": "Normal",
-  "profileModalUsernamePlaceholder": "jean_dupont"
+  "profileAvatarTierNormal": "Normal"
 }

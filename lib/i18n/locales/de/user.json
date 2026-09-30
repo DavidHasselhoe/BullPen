@@ -25,6 +25,7 @@
   "profileModalBadgesHint": "Wird in deinem öffentlichen Profil angezeigt, basierend auf den Einstellungen unten.",
   "profileModalBadgesLabel": "Profil-Abzeichen",
   "profileModalBioCharCount": "{{count}}/500 Zeichen",
+  "profileModalBioLabel": "Biografie",
   "profileModalBioPlaceholder": "Erzähl uns von dir...",
   "profileModalChangePicture": "Profilbild ändern",
   "profileModalChangesSaveAutomatically": "Änderungen werden automatisch gespeichert",
@@ -74,6 +75,5 @@
   "publicProfileTierMember": "Mitglied",
   "publicProfileTierPro": "Pro",
   "profileAvatarTierGold": "Gold",
-  "profileAvatarTierNormal": "Normal",
-  "profileModalBioLabel": "Biografie"
+  "profileAvatarTierNormal": "Normal"
 }

@@ -57,8 +57,11 @@
   "watchlistEmptySubtitle": "Suche oben, um eine beliebige Aktie hinzuzufügen, oder starte mit ein paar beliebten:",
   "watchlistStartFromTemplate": "Von einer Vorlage starten",
   "watchlistBrowseHotPicks": "Entdecke Hot Picks unter Discover",
-  "watchlistColSymbol": "Symbol",
-  "watchlistLiveLabel": "Live",
   "watchlistSparklinePreviousLabel": "Letzte Sitzung",
-  "watchlistSparklinePreviousAriaLabel": "{{symbol}} Kurstrend in der letzten Handelssitzung"
+  "watchlistSparklinePreviousAriaLabel": "{{symbol}} Kurstrend in der letzten Handelssitzung",
+  "watchlistSignInPrompt": "Erstelle ein kostenloses Konto, um {{ticker}} auf deiner Watchlist zu speichern und Benachrichtigungen zu erhalten, wenn sich der Kurs bewegt.",
+  "watchlistSignUp": "Kostenloses Konto erstellen",
+  "watchlistSignIn": "Anmelden",
+  "watchlistColSymbol": "Symbol",
+  "watchlistLiveLabel": "Live"
 }

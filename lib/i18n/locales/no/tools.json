@@ -725,6 +725,8 @@
   "economicExplainWhat_pce": "Rapporten om personlig inntekt og utgifter viser hvor mye amerikanere tjente og brukte forrige måned. Den inkluderer PCE-prisindeksen, som er et annet inflasjonsmål.",
   "economicExplainWhy_pce": "PCE er inflasjonsmålet som Federal Reserve bruker for sitt 2%-mål, så det veier tungt i rentevedtak.",
   "economicExplainWatch_pce": "Pass på kjerne-PCE, som utelukker mat og energi. KPI kommer vanligvis først, så PCE påvirker markeder mest når det forteller en annen historie.",
+  "comparePopularTitle": "Populære sammenligninger",
+  "screenerAiContextLabel": "aksjene på skjermen din",
   "screenerBetaLabel": "Beta",
   "screenerColBetaLabel": "Beta",
   "screenerColMarginLabel": "Margin",
@@ -736,6 +738,5 @@
   "economicShort_jolts": "JOLTS",
   "economicShort_fomc": "Fed",
   "economicShort_pce": "PCE",
-  "economicEtTime": "{{time}} ET",
-  "comparePopularTitle": "Populære sammenligninger"
+  "economicEtTime": "{{time}} ET"
 }

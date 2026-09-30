@@ -110,10 +110,15 @@
   "whyTodaySearching": "Suche im Web nach heutigen Nachrichten zu ${{ticker}}…",
   "whyTodayUpgradeCta": "Upgrade auf Pro →",
   "whyTodayUpgradeNotice": "Echtzeit-KI-Nachrichtenanalyse ist eine <pro>Pro</pro>-Funktion.",
+  "chatRateLimitedWithWait": "Bull bearbeitet gerade viele Anfragen. Versuche es in etwa {{seconds}} Sekunden erneut.",
+  "chatScreenerPromptHealthiest": "Welche hat den höchsten Health Score?",
+  "chatScreenerPromptCheapest": "Welche ist am günstigsten nach P/E?",
+  "chatScreenerPromptWhatToLookFor": "Worauf sollte ich bei einer Aktie achten?",
+  "chatScreenerPromptCandidates": "Zeig mir ein paar starke Kandidaten",
+  "chatScreenerPromptReviewFilters": "Sind meine Filter in Ordnung?",
   "financialsCapex": "CapEx",
   "financialsOperatingCf": "Operating CF",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta",
-  "chatRateLimitedWithWait": "Bull bearbeitet gerade viele Anfragen. Versuche es in etwa {{seconds}} Sekunden erneut."
+  "termsGateBeta": "Beta"
 }

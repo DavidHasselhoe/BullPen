@@ -15,7 +15,11 @@
   "tickerPreviewNoProfile": "Aún no hay perfil de empresa para este.",
   "tickerPreviewOpen": "Abrir empresa",
   "tickerPreviewWatched": "En tu lista de observación",
-  "error": "Error",
   "showMore": "Mostrar más",
-  "showLess": "Mostrar menos"
+  "showLess": "Mostrar menos",
+  "metricSignalStrength": "Fortaleza",
+  "metricSignalStrengthHint": "Cuenta a favor de la empresa en su Puntuación de Salud",
+  "metricSignalWeak": "Punto débil",
+  "metricSignalWeakHint": "Cuenta en contra de la empresa en su Puntuación de Salud",
+  "error": "Error"
 }

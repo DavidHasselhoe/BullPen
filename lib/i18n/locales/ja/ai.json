@@ -110,10 +110,15 @@
   "whyTodaySearching": "${{ticker}} の本日のニュースをウェブで検索中…",
   "whyTodayUpgradeCta": "Pro にアップグレード →",
   "whyTodayUpgradeNotice": "リアルタイム AI ニュース分析は <pro>Pro</pro> 機能です。",
-  "financialsCapex": "CapEx",
+  "chatRateLimitedWithWait": "Bullはリクエストを多く処理中です。約{{seconds}}秒後にお試しください。",
+  "chatScreenerPromptHealthiest": "これらの中で最も健全性スコアが高いのはどれですか？",
+  "chatScreenerPromptCheapest": "これらの中でP/Eが最も低いのはどれですか？",
+  "chatScreenerPromptWhatToLookFor": "株を選ぶときは何を見ればいいですか？",
+  "chatScreenerPromptCandidates": "強力な候補銘柄を見せてください",
+  "chatScreenerPromptReviewFilters": "私のフィルター設定は良いですか？",
+  "financialsCapex": "資本支出",
   "healthScoreNotAvailable": "N/A",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta",
-  "chatRateLimitedWithWait": "Bullはリクエストを多く処理中です。約{{seconds}}秒後にお試しください。"
+  "termsGateBeta": "Beta"
 }

@@ -15,7 +15,11 @@
   "tickerPreviewNoProfile": "Vi har ikke et selskapsproﬁl for denne ennå.",
   "tickerPreviewOpen": "Åpne selskap",
   "tickerPreviewWatched": "I favorittlisten din",
-  "filter": "Filter",
   "showMore": "Vis mer",
-  "showLess": "Vis mindre"
+  "showLess": "Vis mindre",
+  "metricSignalStrength": "Styrke",
+  "metricSignalStrengthHint": "Teller i selskapets favør i Health Score",
+  "metricSignalWeak": "Svakt punkt",
+  "metricSignalWeakHint": "Teller mot selskapet i Health Score",
+  "filter": "Filter"
 }

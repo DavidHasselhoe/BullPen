@@ -107,9 +107,9 @@
   "upgradeCompareFree": "無料",
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "ご質問",
-  "whyTodayPreviewTicker": "$NVDA",
-  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
   "paywallBenefitUnlimitedAlerts": "無制限の銘柄に対する価格アラート",
   "alertsPreviewSource": "BullPen アラート · 今",
-  "alertsPreviewFallbackCondition": "新しい過去最高値"
+  "alertsPreviewFallbackCondition": "新しい過去最高値",
+  "whyTodayPreviewTicker": "$NVDA",
+  "deepDivePreviewFor": "Deep Dive: {{ticker}}"
 }

@@ -1,5 +1,6 @@
 {
   "groupPrice": "Prix",
+  "groupMomentum": "Dynamique",
   "groupProximity": "Proximité",
   "groupMilestone": "Jalon",
   "typePriceAbove": "Prix au-dessus de",
@@ -50,16 +51,15 @@
   "stepThresholdPercent": "Seuil (%)",
   "searchStockPlaceholder": "Rechercher une action (ex. AAPL)",
   "previewLabel": "Aperçu",
+  "previewText": "Alerte pour {{ticker}} : {{description}}.",
   "genericCreateError": "Impossible de créer l'alerte. Veuillez réessayer.",
+  "limitReachedTitle": "Vous avez des alertes sur {{limit}} actions, la limite du plan gratuit",
   "cancelButton": "Annuler",
   "creatingButton": "Création…",
   "submitCreateButton": "Créer l'alerte",
-  "groupMomentum": "Momentum",
+  "limitReachedNote": "Ou mettez en pause chaque alerte sur une action pour libérer une place.",
   "actionPause": "Pause",
   "conditionCount_one": "{{count}} condition",
   "conditionCount_other": "{{count}} conditions",
-  "stepCondition": "Condition",
-  "previewText": "Alerte pour {{ticker}} : {{description}}.",
-  "limitReachedTitle": "Vous avez des alertes sur {{limit}} actions, la limite du plan gratuit",
-  "limitReachedNote": "Ou mettez en pause chaque alerte sur une action pour libérer une place."
+  "stepCondition": "Condition"
 }

@@ -27,6 +27,7 @@
   "relativeDaysAgo_other": "vor {{count}}d",
   "relativeMonthsAgo_one": "vor {{count}}Mon",
   "relativeMonthsAgo_other": "vor {{count}}Mon",
+  "actionPause": "Pausieren",
   "actionResume": "Fortsetzen",
   "actionDelete": "Löschen",
   "triggerButtonLabel": "Benachrichtigung",
@@ -53,13 +54,12 @@
   "stepThresholdPercent": "Schwellenwert (%)",
   "searchStockPlaceholder": "Aktie durchsuchen (z. B. AAPL)",
   "previewLabel": "Vorschau",
+  "previewText": "Benachrichtigung für {{ticker}}: {{description}}.",
   "genericCreateError": "Benachrichtigung konnte nicht erstellt werden. Bitte versuche es erneut.",
+  "limitReachedTitle": "Du hast Benachrichtigungen für {{limit}} Aktien, das ist das Limit des kostenlosen Plans",
   "cancelButton": "Abbrechen",
   "creatingButton": "Wird erstellt…",
   "submitCreateButton": "Benachrichtigung erstellen",
-  "groupMomentum": "Momentum",
-  "actionPause": "Pausieren",
-  "previewText": "Benachrichtigung für {{ticker}}: {{description}}.",
-  "limitReachedTitle": "Du hast Benachrichtigungen für {{limit}} Aktien, das ist das Limit des kostenlosen Plans",
-  "limitReachedNote": "Oder pausiere alle Benachrichtigungen für eine Aktie, um einen Platz freizugeben."
+  "limitReachedNote": "Oder pausiere alle Benachrichtigungen für eine Aktie, um einen Platz freizugeben.",
+  "groupMomentum": "Dynamik"
 }

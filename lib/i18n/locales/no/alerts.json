@@ -53,13 +53,13 @@
   "stepThresholdPercent": "Terskel (%)",
   "searchStockPlaceholder": "Søk etter en aksje (f.eks. AAPL)",
   "previewLabel": "Forhåndsvisning",
+  "previewText": "Varsel for {{ticker}}: {{description}}.",
   "genericCreateError": "Kunne ikke opprette varslet. Prøv igjen.",
+  "limitReachedTitle": "Du har varsler på {{limit}} aksjer, grensen for gratisplanen",
   "cancelButton": "Avbryt",
   "creatingButton": "Oppretter…",
   "submitCreateButton": "Opprett varsel",
+  "limitReachedNote": "Eller sett alle varsler på en aksje på pause for å frigjøre en plass.",
   "groupMomentum": "Momentum",
-  "actionPause": "Pause",
-  "previewText": "Varsel for {{ticker}}: {{description}}.",
-  "limitReachedTitle": "Du har varsler på {{limit}} aksjer, grensen for gratisplanen",
-  "limitReachedNote": "Eller sett alle varsler på en aksje på pause for å frigjøre en plass."
+  "actionPause": "Pause"
 }

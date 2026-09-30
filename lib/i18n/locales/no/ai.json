@@ -111,9 +111,14 @@
   "whyTodaySearching": "Søker etter dagens nyheter om ${{ticker}}…",
   "whyTodayUpgradeCta": "Oppgrader til Pro →",
   "whyTodayUpgradeNotice": "Sanntids AI-nyhetsanalyse er en <pro>Pro</pro>-funksjon.",
+  "chatRateLimitedWithWait": "Bull håndterer mange forespørsler akkurat nå. Prøv igjen om cirka {{seconds}} sekunder.",
+  "chatScreenerPromptHealthiest": "Hvilken av disse har høyest helsescore?",
+  "chatScreenerPromptCheapest": "Hvilken av disse er billigst målt på P/E?",
+  "chatScreenerPromptWhatToLookFor": "Hva bør jeg se etter i en aksje?",
+  "chatScreenerPromptCandidates": "Vis meg noen sterke kandidater",
+  "chatScreenerPromptReviewFilters": "Er filtrene mine gode?",
   "financialsCapex": "CapEx",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta",
-  "chatRateLimitedWithWait": "Bull håndterer mange forespørsler akkurat nå. Prøv igjen om cirka {{seconds}} sekunder."
+  "termsGateBeta": "Beta"
 }

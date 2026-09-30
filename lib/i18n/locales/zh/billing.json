@@ -19,6 +19,7 @@
   "deepDivePreviewGrowth": "增长",
   "deepDivePreviewValuation": "估值",
   "deepDivePreviewFinancialHealth": "财务状况",
+  "deepDivePreviewFor": "深度分析: {{ticker}}",
   "riskAnalysisPreviewLevel": "高风险",
   "riskAnalysisPreviewTechConcentration": "科技集中度",
   "riskAnalysisPreviewSectorDiversification": "行业多样化",
@@ -107,9 +108,8 @@
   "upgradeCompareFree": "免费版",
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "有问题吗？",
-  "whyTodayPreviewTicker": "$NVDA",
-  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
   "paywallBenefitUnlimitedAlerts": "无限股票的价格提醒",
   "alertsPreviewSource": "BullPen 提醒 · 刚刚",
-  "alertsPreviewFallbackCondition": "创历史新高"
+  "alertsPreviewFallbackCondition": "创历史新高",
+  "whyTodayPreviewTicker": "$NVDA"
 }

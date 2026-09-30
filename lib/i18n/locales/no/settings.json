@@ -191,7 +191,7 @@
   "deleteDialogConfirm": "Slett kontoen min",
   "notifPoliticianTradesLabel": "Politikertransaksjoner",
   "notifPoliticianTradesDescription": "Få varsel når en politiker du følger avslører nye aksjehandler",
-  "sectionPlanLabel": "Plan",
   "notifPoliticianHoldingsLabel": "Politikertransaksjoner i dine aksjer",
-  "notifPoliticianHoldingsDescription": "Pro: få varsel når en fulgt politiker handler en aksje du eier eller følger"
+  "notifPoliticianHoldingsDescription": "Pro: få varsel når en fulgt politiker handler en aksje du eier eller følger",
+  "sectionPlanLabel": "Plan"
 }

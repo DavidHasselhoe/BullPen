@@ -26,6 +26,7 @@
   "profileModalBadgesHint": "Vises på din offentlige profil, basert på innstillingene du setter nedenfor.",
   "profileModalBadgesLabel": "Profilbadger",
   "profileModalBioCharCount": "{{count}}/500 tegn",
+  "profileModalBioLabel": "Biografi",
   "profileModalBioPlaceholder": "Fortell oss om deg selv...",
   "profileModalChangePicture": "Endre profilbilde",
   "profileModalChangesSaveAutomatically": "Endringer lagres automatisk",
@@ -73,7 +74,6 @@
   "publicProfileTierMember": "Medlem",
   "publicProfileTierPro": "Pro",
   "profileAvatarTierNormal": "Normal",
-  "profileModalBioLabel": "Biografi",
   "profileModalDisplayNamePlaceholder": "John Doe",
   "profileModalUsernamePlaceholder": "johndoe"
 }

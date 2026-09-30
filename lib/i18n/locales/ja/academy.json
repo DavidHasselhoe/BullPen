@@ -15,6 +15,7 @@
   "stockStatsDemoTitle": "{{ticker}} の基礎情報",
   "stockStatsDemoDescription": "BullPen がこの企業の基礎情報をどのように表示するのか、実際の見方をご覧ください。",
   "marketMoodDemoEyebrow": "デモ · 市場センチメントを読む",
+  "marketMoodDemoTitle": "マーケット・ムード",
   "marketMoodDemoDescription": "これは BullPen の実際の Market Mood ツールで、現在の市場全体における恐怖と欲望を測定する市場シグナルのリアルタイム合成指標です。",
   "portfolioDemoEyebrow": "デモ · ポートフォリオを構築する",
   "portfolioDemoTitle": "ポートフォリオ例",
@@ -130,12 +131,11 @@
   "courseOverviewCourseComplete": "コース完了",
   "courseOverviewPassedQuizMessage": "最終クイズに合格しました。ホームページから次のコースに進みましょう。",
   "courseOverviewFinishedLessonsMessage": "すべてのレッスンが完了しました。ホームページから次のコースに進みましょう。",
-  "marketMoodDemoTitle": "マーケット・ムード",
   "xpBarXpSuffix": " XP",
   "readLessonAskAiForMore": "Ask Bull for more",
   "pathNodePro": "PRO",
   "lessonPlayerXpReward": "{{xp}} XP",
   "dailyChallengeXpReward": "+{{xp}} XP",
-  "leaderboardLevel": "Lvl {{level}}",
+  "leaderboardLevel": "レベル {{level}}",
   "leaderboardXpUnit": "XP"
 }

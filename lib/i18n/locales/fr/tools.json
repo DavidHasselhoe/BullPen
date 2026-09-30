@@ -717,6 +717,8 @@
   "economicExplainWhat_pce": "Le rapport sur le revenu personnel et les dépenses montre combien les Américains ont gagné et dépensé le mois dernier. Il inclut l'indice des prix PCE, une autre mesure de l'inflation.",
   "economicExplainWhy_pce": "Le PCE est la mesure d'inflation que la Fed utilise pour sa cible de 2 %, donc il porte beaucoup de poids dans les décisions de taux d'intérêt.",
   "economicExplainWatch_pce": "Regardez le PCE de base, qui exclut l'alimentation et l'énergie. L'IPC sort généralement en premier, donc le PCE fait bouger les marchés le plus quand il raconte une histoire différente.",
+  "comparePopularTitle": "Comparaisons populaires",
+  "screenerAiContextLabel": "les actions affichées à l'écran",
   "calendarEpsEstLabel": "EPS est.",
   "calendarEstPrefix": "est.",
   "heatmapTooltipVolume": "Volume",
@@ -736,6 +738,5 @@
   "economicShort_ppi": "PPI",
   "economicShort_jolts": "JOLTS",
   "economicShort_fomc": "Fed",
-  "economicShort_pce": "PCE",
-  "comparePopularTitle": "Comparaisons populaires"
+  "economicShort_pce": "PCE"
 }

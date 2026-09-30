@@ -17,5 +17,9 @@
   "tickerPreviewOpen": "Ouvrir l'entreprise",
   "tickerPreviewWatched": "Dans votre liste de suivi",
   "showMore": "Afficher plus",
-  "showLess": "Afficher moins"
+  "showLess": "Afficher moins",
+  "metricSignalStrength": "Force",
+  "metricSignalStrengthHint": "Joue en faveur de l'entreprise dans son Score de Santé",
+  "metricSignalWeak": "Point faible",
+  "metricSignalWeakHint": "Joue contre l'entreprise dans son Score de Santé"
 }
