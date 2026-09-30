@@ -51,46 +51,65 @@ export function Navigation() {
     window.addEventListener('settings:open', handler);
     return () => window.removeEventListener('settings:open', handler);
   }, []);
-  const [toolsOpen, setToolsOpen] = useState(false);
-  const [communityOpen, setCommunityOpen] = useState(false);
-  const toolsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const communityCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Community and Tools open on hover. One shared state so only one is ever
+  // open and moving between them switches instantly. Hover intent:
+  // - opening waits briefly, so sweeping the cursor across the nav doesn't pop menus;
+  // - closing waits long enough to cross the gap to the menu slowly (80ms did not);
+  // - mouse only: a tap fires pointerenter then pointerdown, which opened and
+  //   immediately toggled the menu shut on touch screens. Taps use Radix's click.
+  const [hoverMenu, setHoverMenuState] = useState<'community' | 'tools' | null>(null);
+  const hoverMenuRef = useRef<'community' | 'tools' | null>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toolsOpen = hoverMenu === 'tools';
+  const communityOpen = hoverMenu === 'community';
   const isToolsActive = pathname?.startsWith('/tools');
   const isCommunityActive = ['/social', '/users'].some((p) => pathname?.startsWith(p));
 
-  const clearToolsCloseTimer = useCallback(() => {
-    if (toolsCloseTimerRef.current) {
-      clearTimeout(toolsCloseTimerRef.current);
-      toolsCloseTimerRef.current = null;
-    }
+  const setHoverMenu = useCallback((menu: 'community' | 'tools' | null) => {
+    hoverMenuRef.current = menu;
+    setHoverMenuState(menu);
   }, []);
 
-  const scheduleToolsClose = useCallback(() => {
-    clearToolsCloseTimer();
-    toolsCloseTimerRef.current = setTimeout(() => setToolsOpen(false), 80);
-  }, [clearToolsCloseTimer]);
-
-  const handleToolsOpen = useCallback(() => {
-    clearToolsCloseTimer();
-    setToolsOpen(true);
-  }, [clearToolsCloseTimer]);
-
-  const clearCommunityCloseTimer = useCallback(() => {
-    if (communityCloseTimerRef.current) {
-      clearTimeout(communityCloseTimerRef.current);
-      communityCloseTimerRef.current = null;
-    }
+  const clearHoverTimer = useCallback(() => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = null;
   }, []);
 
-  const scheduleCommunityClose = useCallback(() => {
-    clearCommunityCloseTimer();
-    communityCloseTimerRef.current = setTimeout(() => setCommunityOpen(false), 80);
-  }, [clearCommunityCloseTimer]);
+  const hoverIn = useCallback((menu: 'community' | 'tools') => (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse') return;
+    clearHoverTimer();
+    if (hoverMenuRef.current === menu) return;
+    if (hoverMenuRef.current) setHoverMenu(menu);
+    else hoverTimerRef.current = setTimeout(() => setHoverMenu(menu), 90);
+  }, [clearHoverTimer, setHoverMenu]);
 
-  const handleCommunityOpen = useCallback(() => {
-    clearCommunityCloseTimer();
-    setCommunityOpen(true);
-  }, [clearCommunityCloseTimer]);
+  const hoverOut = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse') return;
+    clearHoverTimer();
+    hoverTimerRef.current = setTimeout(() => setHoverMenu(null), 250);
+  }, [clearHoverTimer, setHoverMenu]);
+
+  // Radix still owns click, Enter/Space, Escape and outside-click.
+  const menuOpenChange = useCallback((menu: 'community' | 'tools') => (open: boolean) => {
+    clearHoverTimer();
+    if (open) setHoverMenu(menu);
+    else if (hoverMenuRef.current === menu) setHoverMenu(null);
+  }, [clearHoverTimer, setHoverMenu]);
+
+  // A click on a trigger the hover already opened should leave it open, not
+  // toggle it shut under the cursor.
+  const keepHoverOpen = useCallback((menu: 'community' | 'tools') => (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && hoverMenuRef.current === menu) e.preventDefault();
+  }, []);
+
+  // Radix treats the trigger as outside the menu, so pressing it dismissed a
+  // hover-opened menu even with the toggle suppressed above. Menu state is
+  // exclusive, so pressing the other trigger still switches menus.
+  const ignoreTriggerPress = useCallback((e: Event) => {
+    if ((e.target as Element | null)?.closest?.('[data-nav-hover-menu]')) e.preventDefault();
+  }, []);
+
+  useEffect(() => clearHoverTimer, [clearHoverTimer]);
 
 
   const navItems = getNavItems(t);
@@ -111,7 +130,9 @@ export function Navigation() {
           </Link>
 
           {/* Navigation - Centered */}
-          <div className="flex items-center justify-center min-w-0 overflow-x-auto scrollbar-hide">
+          {/* self-stretch: overflow-x-auto also clips vertically, and at content height it clipped
+              the strip between a dropdown trigger and its menu, so the cursor crossed dead space. */}
+          <div className="flex items-center justify-center self-stretch min-w-0 overflow-x-auto scrollbar-hide">
             {/* Navigation Links */}
             <nav className="hidden items-center gap-2 md:flex shrink-0">
               {navItems.map((item) => {
@@ -136,9 +157,9 @@ export function Navigation() {
               })}
 
               {/* Community Dropdown */}
-              <div onPointerEnter={handleCommunityOpen} onPointerLeave={scheduleCommunityClose}>
-                <DropdownMenu open={communityOpen} onOpenChange={setCommunityOpen} modal={false}>
-                  <DropdownMenuTrigger asChild>
+              <div data-nav-hover-menu className="-mb-1 pb-1" onPointerEnter={hoverIn('community')} onPointerLeave={hoverOut}>
+                <DropdownMenu open={communityOpen} onOpenChange={menuOpenChange('community')} modal={false}>
+                  <DropdownMenuTrigger asChild onPointerDown={keepHoverOpen('community')}>
                     <button
                       className={cn(
                         'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
@@ -159,8 +180,9 @@ export function Navigation() {
                     align="center"
                     sideOffset={4}
                     className="min-w-[220px] [animation-duration:100ms]"
-                    onPointerEnter={clearCommunityCloseTimer}
-                    onPointerLeave={scheduleCommunityClose}
+                    onPointerEnter={hoverIn('community')}
+                    onPointerLeave={hoverOut}
+                    onPointerDownOutside={ignoreTriggerPress}
                   >
                     {COMMUNITY_LINKS.map((link) => {
                       const Icon = link.icon;
@@ -183,9 +205,9 @@ export function Navigation() {
               </div>
 
               {/* Tools Dropdown — hover region wraps trigger + content so there's no gap */}
-              <div onPointerEnter={handleToolsOpen} onPointerLeave={scheduleToolsClose}>
-                <DropdownMenu open={toolsOpen} onOpenChange={setToolsOpen} modal={false}>
-                <DropdownMenuTrigger asChild>
+              <div data-nav-hover-menu className="-mb-1 pb-1" onPointerEnter={hoverIn('tools')} onPointerLeave={hoverOut}>
+                <DropdownMenu open={toolsOpen} onOpenChange={menuOpenChange('tools')} modal={false}>
+                <DropdownMenuTrigger asChild onPointerDown={keepHoverOpen('tools')}>
                   <button
                     className={cn(
                       'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
@@ -206,8 +228,9 @@ export function Navigation() {
                   align="center"
                   sideOffset={4}
                   className="min-w-[220px] [animation-duration:100ms]"
-                  onPointerEnter={clearToolsCloseTimer}
-                  onPointerLeave={scheduleToolsClose}
+                  onPointerEnter={hoverIn('tools')}
+                  onPointerLeave={hoverOut}
+                  onPointerDownOutside={ignoreTriggerPress}
                 >
                   {TOOLS.map((tool) => {
                     const Icon = tool.icon;
