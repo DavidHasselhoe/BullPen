@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
-import { GREETING_KEY, TZ_COOKIE, displayFirstName, greetingForHour, type InitialWelcome } from '@/lib/dashboard/greeting';
+import { GREETING_KEY, TZ_COOKIE, greetingName, greetingForHour, type InitialWelcome } from '@/lib/dashboard/greeting';
 
 const noopSubscribe = () => () => {};
 
@@ -33,7 +33,7 @@ export function WelcomeMessage({ initial }: { initial?: InitialWelcome | null })
     return null;
   }
 
-  const displayName = user ? displayFirstName(user) : initial!.name;
+  const displayName = user ? greetingName(user) : initial!.name;
   const greeting = t(GREETING_KEY[hydrated ? greetingForHour(new Date().getHours()) : (initial?.greeting ?? 'back')]);
 
   return (

@@ -78,7 +78,6 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
   // Form state
   const [fullName, setFullName] = useState('');
-  const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [experienceLevel, setExperienceLevel] = useState<'beginner' | 'intermediate' | 'advanced' | ''>('');
   const [marketFocus, setMarketFocus] = useState<'US' | 'EU' | 'BOTH' | ''>('');
@@ -93,14 +92,13 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   // saves when something actually changed (typing pattern, not click pattern —
   // see docs/… best-practice split: discrete controls autosave on change,
   // text fields save on blur).
-  const savedTextRef = useRef({ fullName: '', username: '', bio: '' });
+  const savedTextRef = useRef({ fullName: '', bio: '' });
 
   // Load user data
   useEffect(() => {
     isInitializedRef.current = false;
     if (user && open) {
       setFullName(user.full_name || '');
-      setUsername(user.username || '');
       setBio(user.bio || '');
       setExperienceLevel(user.experience_level || '');
       setMarketFocus(user.market_focus || '');
@@ -109,7 +107,6 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       setError(null);
       savedTextRef.current = {
         fullName: user.full_name || '',
-        username: user.username || '',
         bio: user.bio || '',
       };
       const t = setTimeout(() => {
@@ -157,7 +154,6 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
       const updateData = {
         full_name: fullName.trim() || null,
-        username: username.trim() || null,
         bio: bio.trim() || null,
         experience_level: experienceLevel || null,
         market_focus: marketFocus || null,
@@ -175,7 +171,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         throw new Error(updateError.message || t('profileModalUpdateDbFailed'));
       }
 
-      savedTextRef.current = { fullName, username, bio };
+      savedTextRef.current = { fullName, bio };
       window.dispatchEvent(new Event('auth:refresh'));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('profileModalUpdateFailed');
@@ -188,7 +184,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   });
 
   // Autosave — debounced 500 ms after a discrete-control change (selects, avatar
-  // upload). Free-text fields (name/username/bio) save on blur instead, below —
+  // upload). Free-text fields (name/bio) save on blur instead, below —
   // see handleTextFieldBlur.
   useEffect(() => {
     if (!isInitializedRef.current || !user) return;
@@ -212,7 +208,6 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     if (!isInitializedRef.current || !user) return;
     const unchanged =
       fullName === savedTextRef.current.fullName &&
-      username === savedTextRef.current.username &&
       bio === savedTextRef.current.bio;
     if (unchanged || !persistProfileRef.current) return;
     setSaveStatus('saving');
@@ -230,13 +225,13 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         .toUpperCase()
         .slice(0, 2);
     }
-    if (username) {
-      return username.slice(0, 2).toUpperCase();
+    if (user?.username) {
+      return user.username.slice(0, 2).toUpperCase();
     }
     return user?.email.slice(0, 2).toUpperCase() || t('profileAvatarDefaultName').slice(0, 1).toUpperCase();
   };
 
-  const displayName = fullName || username || user?.email.split('@')[0] || t('profileAvatarDefaultName');
+  const displayName = fullName || user?.username || user?.email.split('@')[0] || t('profileAvatarDefaultName');
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : '';
@@ -427,17 +422,6 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                         placeholder={t('profileModalDisplayNamePlaceholder')}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        onBlur={handleTextFieldBlur}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="username">{t('profileModalUsernameLabel')}</Label>
-                      <Input
-                        id="username"
-                        placeholder={t('profileModalUsernamePlaceholder')}
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
                         onBlur={handleTextFieldBlur}
                       />
                     </div>

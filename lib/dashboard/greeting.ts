@@ -19,10 +19,9 @@ export function greetingForHour(hour: number): Greeting {
   return 'evening';
 }
 
-/** "Good morning, David", not "Good morning, David Hasselø": a greeting uses the first name. */
-export function displayFirstName(u: { full_name?: string | null; username?: string | null; email?: string | null }): string {
-  const first = u.full_name?.trim().split(/\s+/)[0];
-  return first || u.username || u.email?.split('@')[0] || 'User';
+/** The name the person set in their profile, in full. */
+export function greetingName(u: { full_name?: string | null; username?: string | null; email?: string | null }): string {
+  return u.full_name?.trim() || u.username || u.email?.split('@')[0] || 'User';
 }
 
 export interface InitialWelcome {
