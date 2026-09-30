@@ -166,9 +166,15 @@ export async function refreshIndexMovers(): Promise<IndexMovers | null> {
       console.warn(`[index-movers] only ${movers.ranked}/${UNIVERSE.length} quoted, keeping the last good list`);
       return null;
     }
-    const open = getMarketSession() === 'regular';
+    // The closing auction print reaches TwelveData a few minutes after 4pm, so
+    // a list computed right after the bell carries pre-close prices (CEG
+    // 253.59 vs its 253.97 close on 2026-09-30). Keep the short TTL until then.
+    const session = getMarketSession();
+    const etHHMM = Number(new Date().toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }).replace(':', ''));
+    const settling = session === 'extended' && etHHMM >= 1600 && etHHMM < 1630;
+    const open = session === 'regular';
     await Promise.all([
-      rset(FRESH_KEY, movers, open ? 5 * 60 : 30 * 60),
+      rset(FRESH_KEY, movers, open || settling ? 5 * 60 : 30 * 60),
       rset(STALE_KEY, movers, 7 * 24 * 60 * 60),
     ]);
     return movers;

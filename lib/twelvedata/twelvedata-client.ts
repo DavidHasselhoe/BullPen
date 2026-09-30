@@ -241,12 +241,13 @@ interface TwelveDataQuoteResponse {
   extended_price?: string;
   extended_change?: string;
   extended_percent_change?: string;
+  extended_timestamp?: number;
   status?: string;
   code?: number;
   message?: string;
 }
 
-function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useExtended = false): StockQuote {
+export function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useExtended = false): StockQuote {
   if (data.code || data.status === 'error') {
     const msg = data.message || `Twelve Data API error for ${symbol}`;
     const isRateLimit =
@@ -285,17 +286,26 @@ function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useEx
   const timestamp = data.timestamp ?? Math.floor(Date.now() / 1000);
 
   // When prepost was requested and market is closed, prefer the extended-hours price.
+  // The day's change is always from the previous regular close. TwelveData's
+  // extended_* fields are measured from `close`, which is only right before
+  // the open: after 4pm `close` is TODAY's close, so extended_percent_change is
+  // the after-hours move alone and the regular session's move vanished (CEG on
+  // 2026-09-30: -4.01% day, +2.77% after hours, Home showed +2.77% "today").
+  // An extended print on the same ET date as the regular session is after it.
   if (useExtended && data.is_market_open === false) {
     const extPrice = parseFloat(data.extended_price ?? '0');
     if (extPrice) {
+      const afterClose = havePrevClose && data.extended_timestamp != null && data.datetime != null &&
+        new Date(data.extended_timestamp * 1000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) === data.datetime;
+      const base = afterClose ? rawPrevClose : close;
       return {
         c: extPrice,
-        d: parseFloat(data.extended_change ?? '0'),
-        dp: parseFloat(data.extended_percent_change ?? '0'),
+        d: extPrice - base,
+        dp: base > 0 ? ((extPrice - base) / base) * 100 : 0,
         h: parseFloat(data.high || String(close)),
         l: parseFloat(data.low || String(close)),
         o: parseFloat(data.open || String(close)),
-        pc: close, // regular session close becomes prev-close baseline
+        pc: base,
         t: timestamp,
       };
     }
