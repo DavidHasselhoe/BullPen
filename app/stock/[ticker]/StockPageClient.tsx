@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MessageSquare, Telescope } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, Telescope } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
 import Link from 'next/link';
 import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
@@ -24,6 +25,8 @@ import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
 import { PinToggleButton } from '@/components/navigation/PinToggleButton';
 import { ThesisSection } from '@/components/social/ThesisSection';
 import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
+import { useHoldings } from '@/hooks/use-holdings';
+import { YourPositionCard } from '@/components/stock/YourPositionCard';
 import dynamic from 'next/dynamic';
 import type { Company } from '@/lib/types/database';
 import type { SignalValue } from '@/lib/finance/health-score';
@@ -86,7 +89,7 @@ interface CompanyResponse {
 export default function StockPageClient() {
   const params = useParams();
   const router = useRouter();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation('stock');
   const rawTicker = (params.ticker as string) ?? '';
   const ticker = rawTicker.toUpperCase();
 
@@ -103,7 +106,11 @@ export default function StockPageClient() {
 
   const { hasAnimatedBackground } = useBackground();
   const { add: addRecentlyViewed } = useRecentlyViewed();
-  const { open: openAIPanel, setAIContext } = useAIPanel();
+  const { setAIContext } = useAIPanel();
+  // Holders get their position right under the price. Fully sold rows keep a
+  // zero quantity for history, so they don't count.
+  const { data: holdings } = useHoldings();
+  const isHeld = !!holdings?.some((h) => h.symbol.toUpperCase() === ticker && (h.quantity ?? 0) > 1e-9);
 
   // Signals flow: HealthScoreCard → signals state → StatisticsGrid (no extra fetch needed)
   const [metricSignals, setMetricSignals] = useState<Record<string, SignalValue> | undefined>(undefined);
@@ -252,18 +259,18 @@ export default function StockPageClient() {
   // page gets from live price ticks — a fresh array identity here every few
   // seconds was making that effect's own bottom-of-page detection racier.
   const navSections: StockNavSection[] = useMemo(() => [
-    { id: 'nav-overview',    label: 'Overview' },
-    ...(showFundamentals ? [{ id: 'nav-health', label: 'Health Score' }] : []),
-    { id: 'nav-statistics',  label: 'Key Numbers' },
+    { id: 'nav-overview',    label: t('stockNavOverview') },
+    ...(showFundamentals ? [{ id: 'nav-health', label: t('stockNavHealth') }] : []),
+    { id: 'nav-statistics',  label: t('stockNavKeyNumbers') },
     ...(showFundamentals ? [
-      { id: 'nav-financials', label: 'Financials' },
-      { id: 'nav-revenue',    label: 'Revenue' },
-      { id: 'nav-earnings',   label: 'Earnings' },
-      { id: 'nav-insiders',   label: 'Insiders' },
+      { id: 'nav-financials', label: t('stockNavFinancials') },
+      { id: 'nav-revenue',    label: t('stockNavRevenue') },
+      { id: 'nav-earnings',   label: t('stockNavEarnings') },
+      { id: 'nav-insiders',   label: t('stockNavInsiders') },
     ] : []),
-    { id: 'nav-profile',    label: 'Profile' },
-    { id: 'nav-community', label: 'Community' },
-  ], [showFundamentals]);
+    { id: 'nav-profile',    label: t('stockNavProfile') },
+    { id: 'nav-community', label: t('stockNavCommunity') },
+  ], [showFundamentals, t]);
 
   if (isNotFound) {
     return (
@@ -275,16 +282,16 @@ export default function StockPageClient() {
               className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t('stockBack')}
             </button>
           </div>
           <div className="py-20">
             <EmptyState
               pose="error"
-              title={`“${ticker}” not found`}
-              description="We couldn't find a stock with that symbol. Double-check the ticker, or search for a company name."
+              title={t('stockNotFoundTitle', { ticker })}
+              description={t('stockNotFoundBody')}
             >
-              <Button onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
+              <Button onClick={() => router.push('/dashboard')}>{t('stockNotFoundCta')}</Button>
             </EmptyState>
           </div>
         </div>
@@ -340,8 +347,10 @@ export default function StockPageClient() {
               {(company || (!companyLoading && ticker)) && (
                 <Card className="mb-8">
                   <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
+                    {/* Stacks on phones: side by side, the action row was pushed
+                        past the right edge and clipped (x 449-924 at 390px). */}
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3">
                           <CompanyLogo
                             name={displayName}
@@ -367,23 +376,33 @@ export default function StockPageClient() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
-                        <ExperienceLevelToggle />
-                        <PinToggleButton symbol={ticker} />
+                      {/* Watch leads: it is the everyday action. Ask Bull lives in the
+                          floating button on every page, so it is not repeated here. */}
+                      <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end [&_button]:max-sm:h-10 [&_a]:max-sm:h-10">
                         <AddToListPicker symbol={ticker} companyName={displayName} />
                         <AlertDialog symbol={ticker} companyName={displayName} />
-                        <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
-                          <MessageSquare className="h-4 w-4" />
-                          Ask Bull
-                        </Button>
                         {showFundamentals && (
-                          <Button asChild size="sm" className="gap-2">
+                          <Button asChild variant="outline" size="sm" className="gap-2">
                             <Link href={`/tools/deep-dive/${ticker}?new=1`}>
                               <Telescope className="h-4 w-4" />
-                              Deep Dive
+                              {t('stockDeepDive')}
                             </Link>
                           </Button>
                         )}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="px-2 max-sm:w-10" aria-label={t('stockMoreActions')}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-60 space-y-3 p-3">
+                            <div className="space-y-1.5">
+                              <p className="text-xs font-medium text-muted-foreground">{t('stockViewMode')}</p>
+                              <ExperienceLevelToggle className="w-fit" />
+                            </div>
+                            <PinToggleButton symbol={ticker} />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </CardHeader>
@@ -398,6 +417,7 @@ export default function StockPageClient() {
 
               {/* Price panel — needs only ticker, not DB record */}
               <StockPricePanel ticker={ticker} />
+              {isHeld && <YourPositionCard ticker={ticker} />}
             </div>
 
             {/* Financial Health Score — only for stocks with financials */}

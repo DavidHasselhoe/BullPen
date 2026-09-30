@@ -47,6 +47,10 @@ function pos(v: number, min: number, max: number): number {
 // that both labels would overlap — drop "0" and keep the benchmark's, since
 // "typical" is the more useful of the two at a glance.
 const LABEL_COLLISION_THRESHOLD = 10;
+// A benchmark label ("typical") this close to either end would run into the
+// endpoint label (EV/EBITDA rendered "typic30"). The endpoint label yields, and
+// the benchmark label anchors inward so it cannot spill past the bar.
+const EDGE_THRESHOLD = 15;
 
 export function MeterBar({ value, min, max, signal, benchmark, srLabel, className, minLabel, maxLabel }: MeterBarProps) {
   const zero = min < 0 ? pos(0, min, max) : 0;
@@ -57,6 +61,8 @@ export function MeterBar({ value, min, max, signal, benchmark, srLabel, classNam
 
   const benchmarkPos = benchmark ? pos(benchmark.value, min, max) : null;
   const showZeroLabel = min < 0 && (benchmarkPos == null || Math.abs(benchmarkPos - zero) > LABEL_COLLISION_THRESHOLD);
+  const benchNearMin = benchmarkPos != null && benchmarkPos < EDGE_THRESHOLD;
+  const benchNearMax = benchmarkPos != null && benchmarkPos > 100 - EDGE_THRESHOLD;
   const showLabelRow = minLabel != null || maxLabel != null || showZeroLabel || benchmark != null;
 
   return (
@@ -80,8 +86,8 @@ export function MeterBar({ value, min, max, signal, benchmark, srLabel, classNam
       </div>
       {showLabelRow && (
         <div className="relative mt-1 h-3.5 text-xs leading-none text-muted-foreground">
-          {minLabel != null && <span className="absolute left-0">{minLabel}</span>}
-          {maxLabel != null && <span className="absolute right-0">{maxLabel}</span>}
+          {minLabel != null && !benchNearMin && <span className="absolute left-0">{minLabel}</span>}
+          {maxLabel != null && !benchNearMax && <span className="absolute right-0">{maxLabel}</span>}
           {showZeroLabel && (
             <span className="absolute -translate-x-1/2 text-muted-foreground" style={{ left: `${zero}%` }}>
               0
@@ -89,7 +95,10 @@ export function MeterBar({ value, min, max, signal, benchmark, srLabel, classNam
           )}
           {benchmark && (
             <span
-              className="absolute -translate-x-1/2 text-muted-foreground"
+              className={cn(
+                'absolute whitespace-nowrap text-muted-foreground',
+                benchNearMax ? '-translate-x-full' : benchNearMin ? '' : '-translate-x-1/2',
+              )}
               style={{ left: `${benchmarkPos}%` }}
             >
               {benchmark.label}

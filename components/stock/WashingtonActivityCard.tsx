@@ -52,12 +52,12 @@ export function WashingtonActivityCard({ ticker }: { ticker: string }) {
   return (
     <Card className="mb-8">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-base">
           <Landmark className="h-4 w-4 text-muted-foreground" aria-hidden />
           {t('washingtonTitle')}
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          {t('washingtonSummary', { count: members, ticker })}{' '}
+          {t('washingtonSummary', { count: members, ticker, trades: t('washingtonTradeCount', { count: data.length }) })}{' '}
           <span className="tabular-nums">{t('washingtonBuyersSellers', { buyers, sellers })}</span>
         </p>
       </CardHeader>

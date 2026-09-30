@@ -31,6 +31,9 @@ import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useHoldings, useHoldingSales, useHoldingPurchases } from '@/hooks/use-holdings';
 import { buildTransactionMarkers } from '@/lib/holdings/transaction-markers';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
+import { ClampedText } from '@/components/ui/ClampedText';
+import { WHY_TODAY_MIN_MOVE, whyBullets } from '@/lib/ai/why-today-shared';
 import type { ExtendedHoursQuote, IndicatorValue, CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 
 // Fullscreen advanced chart is loaded on demand so lightweight-charts stays out
@@ -123,6 +126,15 @@ function hasSessionSplit(range: Range): boolean {
 function fmtPrice(n: number): string {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+/** Under half a cent of a percent is no move: shown as 0.00% in neutral grey, never red. */
+const isFlat = (pct: number) => Math.abs(pct) < 0.005;
+function fmtMove(diff: number, pct: number): string {
+  if (isFlat(pct)) return `${fmtPrice(0)} (0.00%)`;
+  return `${diff > 0 ? '+' : ''}${fmtPrice(diff)} (${pct > 0 ? '+' : ''}${pct.toFixed(2)}%)`;
+}
+function moveTone(pct: number): string {
+  return isFlat(pct) ? 'text-muted-foreground' : pct > 0 ? 'text-emerald-400' : 'text-red-400';
+}
 function fmtVol(v: number): string {
   if (v >= 1e9) return `${(v / 1e9).toFixed(1)}B`;
   if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
@@ -144,7 +156,8 @@ function StatItem({ label, value, valueClass }: { label: string; value: string; 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function StockPricePanel({ ticker }: { ticker: string }) {
-  const { t } = useTranslation('stock');
+  const { t, i18n } = useTranslation('stock');
+  const { isAuthenticated } = useAuth();
   const RANGE_LABEL = getRangeLabel(t);
   const { prefs, setPref, setPrefs, reset: resetPrefs } = useChartPrefs();
   const [range, setRange] = useState<Range>(prefs.defaultRange as Range);
@@ -266,7 +279,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const closePrice = restClose;
   const closeChange = restChange;
   const closePct = restPct;
-  const closeIsPos = closePct >= 0;
 
   // Single-mode current price (regular hours, live during 9:30–4)
   const price     = livePrice ?? restClose;
@@ -274,7 +286,6 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const changePct = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : restPct;
 
   const isPositive = changePct >= 0;
-  const priceColor = isPositive ? 'text-emerald-400' : 'text-red-400';
 
   // ── Candle data ───────────────────────────────────────────────────────────
   const { data: candleData, isLoading: candleLoading, isFetching, isError: candleError } = useQuery<{
@@ -514,6 +525,26 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const perfPct   = range === '1D' ? (showDual ? extPct    : changePct)  : chartPct;
   const perfDiff  = range === '1D' ? (showDual ? extDiff   : change)     : chartDiff;
 
+  // Today's explanation, only when someone already paid for it (Home's inline
+  // explanations and the Why? panel share one cache). Never generates.
+  const dayPct = showDual ? closePct : changePct;
+  const { data: cachedWhy } = useQuery<{ why: { text: string; changePct: number } | null }>({
+    queryKey: ['why-today-cached', ticker, i18n.language, Math.round(dayPct)],
+    queryFn: async () => {
+      const qs = new URLSearchParams({ lang: i18n.language, pct: dayPct.toFixed(2) });
+      const res = await fetch(`/api/stock/${encodeURIComponent(ticker)}/why-today-cached?${qs}`);
+      if (!res.ok) return { why: null };
+      return res.json();
+    },
+    enabled: isAuthenticated && Math.abs(dayPct) >= WHY_TODAY_MIN_MOVE,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  // A pre/post-market block only earns its place once a trade has moved the
+  // price off the close. Before that it repeated the close with a red "-$0.00".
+  const extActive = showDual && !isFlat(extPct);
+
   if (quoteLoading && !restQuote && !live) {
     return (
       <div className="mb-8 rounded-2xl border border-border bg-card p-6 space-y-4">
@@ -538,58 +569,41 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
           {/* Left: price block(s) + change row */}
           <div className="min-w-0">
             {showDual ? (
-              <div className="flex flex-wrap items-stretch gap-x-4 gap-y-3 sm:gap-x-8">
-                {/* Regular session close */}
-                <div className="min-w-0">
-                  <div className="text-[32px] sm:text-[40px] font-bold tracking-tight text-foreground tabular-nums leading-none">
-                    {fmtPrice(closePrice)}
-                  </div>
-                  <div className={cn(
-                    'text-sm font-medium tabular-nums mt-2',
-                    closeIsPos ? 'text-emerald-400' : 'text-red-400'
-                  )}>
-                    {closeIsPos ? '+' : ''}{fmtPrice(closeChange)} ({closeIsPos ? '+' : ''}{closePct.toFixed(2)}%)
-                  </div>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
-                      {t('stockPricePanelAtClose')}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => requestWhyToday({ ticker, price, change, changePct })}
-                      className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
-                    >
-                      <Sparkles className="h-3 w-3" />
-                      {t('stockPricePanelWhyButton')}
-                    </button>
-                  </div>
+              // One price leads: the latest trade. The regular close sits under
+              // it as context instead of competing at the same size.
+              <>
+                <div className="text-[40px] sm:text-[52px] font-bold tracking-tight text-foreground tabular-nums leading-none">
+                  {fmtPrice(extActive ? extPriceVal : closePrice)}
                 </div>
-
-                {/* Vertical divider */}
-                <div className="w-px self-stretch bg-border/50" />
-
-                {/* Pre-market or after-hours, live-updating */}
-                <div className="min-w-0">
-                  <div className="text-[32px] sm:text-[40px] font-bold tracking-tight text-foreground tabular-nums leading-none">
-                    {fmtPrice(extPriceVal)}
-                  </div>
-                  <div className={cn(
-                    'text-sm font-medium tabular-nums mt-2',
-                    extIsPos ? 'text-emerald-400' : 'text-red-400'
-                  )}>
-                    {extIsPos ? '+' : ''}{fmtPrice(extDiff)} ({extIsPos ? '+' : ''}{extPct.toFixed(2)}%)
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    {isLive && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5">
+                  <span className={cn('text-sm font-medium tabular-nums', moveTone(extActive ? extPct : closePct))}>
+                    {extActive ? fmtMove(extDiff, extPct) : fmtMove(closeChange, closePct)}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
+                    {extActive && isLive && (
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     )}
-                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
-                      {extHours!.pre_or_post === 'pre' ? t('stockPricePanelPreMarket') : t('stockPricePanelAfterHours')}
-                    </span>
-                  </div>
+                    {extActive
+                      ? (extHours!.pre_or_post === 'pre' ? t('stockPricePanelPreMarket') : t('stockPricePanelAfterHours'))
+                      : t('stockPricePanelAtClose')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => requestWhyToday({ ticker, price, change, changePct })}
+                    className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {t('stockPricePanelWhyButton')}
+                  </button>
                 </div>
-
-              </div>
+                {extActive && (
+                  <p className="mt-1.5 text-xs tabular-nums text-muted-foreground">
+                    {t('stockPricePanelAtClose')}{' '}
+                    <span className="text-foreground">{fmtPrice(closePrice)}</span>{' '}
+                    <span className={moveTone(closePct)}>{fmtMove(closeChange, closePct)}</span>
+                  </p>
+                )}
+              </>
             ) : (
               <>
                 <div className="text-[40px] sm:text-[52px] font-bold tracking-tight text-foreground tabular-nums leading-none">
@@ -597,8 +611,8 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5">
-                  <span className={cn('text-sm font-medium tabular-nums', priceColor)}>
-                    {isPositive ? '+' : ''}{fmtPrice(change)} ({isPositive ? '+' : ''}{changePct.toFixed(2)}%) {RANGE_LABEL['1D']}
+                  <span className={cn('text-sm font-medium tabular-nums', moveTone(changePct))}>
+                    {fmtMove(change, changePct)} {RANGE_LABEL['1D']}
                   </span>
 
                   {range === '1D' && (
@@ -623,12 +637,14 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
             )}
           </div>
 
-          {/* Right: performance banner + range tabs + indicators */}
-          <div className="flex flex-col items-end gap-2 shrink-0 pt-1">
+          {/* Right: performance banner + range tabs + indicators. Full width and
+              left-aligned on phones: as a right-aligned shrink-0 column it sized
+              to its widest row and ran past the screen edge. */}
+          <div className="flex w-full flex-col items-start gap-2 pt-1 sm:w-auto sm:shrink-0 sm:items-end">
 
             {/* Period performance — shown above the tabs for any range */}
             {hasChart && (
-              <div className={cn('text-right tabular-nums', perfIsPos ? 'text-emerald-400' : 'text-red-400')}>
+              <div className={cn('tabular-nums sm:text-right', perfIsPos ? 'text-emerald-400' : 'text-red-400')}>
                 <span className="text-sm font-semibold">
                   {perfIsPos ? '+' : ''}{fmtPrice(perfDiff)}
                   {' '}
@@ -640,13 +656,13 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
             )}
 
             {/* Range tabs + settings gear */}
-            <div className="flex items-center gap-0.5">
+            <div className="flex flex-wrap items-center gap-0.5">
               {RANGES.map((r) => (
                 <button
                   key={r}
                   onClick={() => { setRange(r); if (r === '1D') setActiveIndicators(new Set()); }}
                   className={cn(
-                    'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
+                    'rounded-md px-2.5 py-1 text-xs font-medium transition-all max-sm:py-2.5',
                     range === r
                       ? 'text-foreground font-semibold'
                       : 'text-muted-foreground hover:text-muted-foreground'
@@ -681,13 +697,13 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
 
             {/* Indicators — advanced users, non-1D only */}
             {!isSimplified && range !== '1D' && (
-              <div className="flex items-center gap-1 flex-wrap justify-end">
+              <div className="flex flex-wrap items-center gap-1 sm:justify-end">
                 {INDICATORS.map(({ key, label }) => (
                   <button
                     key={key}
                     onClick={() => toggleIndicator(key)}
                     className={cn(
-                      'rounded-full px-2 py-0.5 text-[11px] font-medium transition-all border',
+                      'rounded-full px-2 py-0.5 text-[11px] font-medium transition-all border max-sm:px-3 max-sm:py-1.5',
                       activeIndicators.has(key)
                         ? 'bg-primary text-primary-foreground border-primary'
                         : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-foreground/30'
@@ -709,6 +725,17 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
             )}
           </div>
         </div>
+
+        {cachedWhy?.why && (
+          <div className="mt-4 flex max-w-3xl gap-2 text-sm leading-relaxed text-muted-foreground">
+            <Sparkles className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <ClampedText lines={2} className="min-w-0 flex-1">
+              {whyBullets(cachedWhy.why.text).map((b, i) => (
+                <span key={i} className={cn('block', i > 0 && 'mt-1')}>{b}</span>
+              ))}
+            </ClampedText>
+          </div>
+        )}
       </div>
 
       {/* ── Price chart (Bklit UI) ───────────────────────────────────────── */}

@@ -13,7 +13,7 @@ import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { ClampedText } from '@/components/ui/ClampedText';
 import { AskBullChips } from '@/components/dashboard/AskBullChips';
 import { useEntitlements } from '@/hooks/use-entitlements';
-import { WHY_TODAY_MIN_MOVE, type InlineWhy } from '@/lib/ai/why-today-shared';
+import { WHY_TODAY_MIN_MOVE, whyBullets, type InlineWhy } from '@/lib/ai/why-today-shared';
 import { SERIES_RANGES, buildPortfolioSeries, type SeriesRange } from '@/lib/dashboard/portfolio-series';
 import { trackEvent } from '@/lib/analytics/track';
 import type { BatchQuote } from '@/lib/market-data/quote-batcher';
@@ -145,12 +145,6 @@ function useInlineWhy(movers: HomeMover[]) {
   };
 }
 
-/** "• one\n• two" → ["one", "two"]; text without bullets stays one item. */
-function bullets(text: string): string[] {
-  const items = text.split(/\n+/).map((l) => l.replace(/^\s*[•\-*]\s*/, '').trim()).filter(Boolean);
-  return items.length > 0 ? items : [text.trim()];
-}
-
 function MoverRow({ mover, why, onWhy }: { mover: HomeMover; why: InlineWhy | 'loading' | null; onWhy: () => void }) {
   const { t } = useTranslation('discover');
   const explained = why !== null && why !== 'loading' && why.status === 'ready' ? why.text : null;
@@ -194,7 +188,7 @@ function MoverRow({ mover, why, onWhy }: { mover: HomeMover; why: InlineWhy | 'l
             onToggle={(open) => open && trackEvent('home_why_inline_expanded', { ticker: mover.symbol })}
           >
             <span className="sr-only">{t('homeWhyLabel', { ticker: mover.symbol })} </span>
-            {bullets(explained).map((b, i) => (
+            {whyBullets(explained).map((b, i) => (
               <span key={i} className={cn('block', i > 0 && 'mt-1')}>{b}</span>
             ))}
           </ClampedText>

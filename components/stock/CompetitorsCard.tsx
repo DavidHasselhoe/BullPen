@@ -32,7 +32,7 @@ export function CompetitorPills({ ticker }: { ticker: string }) {
         <button
           key={c.ticker}
           onClick={() => router.push(slugToAssetPath(c.ticker))}
-          className="flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:border-primary/40"
+          className="flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:border-primary/40 max-sm:px-2.5 max-sm:py-1.5"
         >
           <CompanyLogo name={c.name} ticker={c.ticker} logoUrl={c.logoUrl} size={14} />
           {c.ticker}

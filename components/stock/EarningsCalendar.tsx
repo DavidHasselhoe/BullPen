@@ -49,7 +49,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
     return (
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-base font-semibold">
             <CalendarIcon className="h-4 w-4" /> {t('earningsCardTitle')}
           </CardTitle>
         </CardHeader>
@@ -67,7 +67,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
     return (
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-base font-semibold">
             <CalendarIcon className="h-4 w-4" /> {t('earningsCardTitle')}
           </CardTitle>
         </CardHeader>
@@ -110,7 +110,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
   return (
     <Card className="mb-8">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+        <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-base font-semibold">
           <CalendarIcon className="h-4 w-4" /> {t('earningsCardTitle')}
         </CardTitle>
         {isSimplified && (

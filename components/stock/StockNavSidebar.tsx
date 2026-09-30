@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
@@ -12,22 +12,15 @@ export interface StockNavSection {
 export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
   const { t } = useTranslation('stock');
   const [activeId, setActiveId] = useState<string | null>(sections[0]?.id ?? null);
-  const intersectingIds = useRef(new Set<string>());
 
   useEffect(() => {
     if (sections.length === 0) return;
 
     const lastId = sections[sections.length - 1].id;
 
-    // A short final section can finish scrolling past without ever
-    // entering the observer's trigger band below — the page runs out of
-    // room to scroll before the section's top reaches it. Both the
-    // IntersectionObserver callback and the scroll listener route through
-    // this one function (rather than each calling setActiveId
-    // independently) so the "at bottom" check is always the last word —
-    // two independent setActiveId callers race, and whichever fired most
-    // recently wins, which let the observer's own band-based pick clobber
-    // the bottom override right back to an earlier section.
+    // A short final section can never reach the reading line below: the
+    // page runs out of room to scroll first. So once the last section's
+    // bottom is on screen, it wins.
     //
     // The "at bottom" check itself is deliberately NOT window.scrollY vs
     // document.documentElement.scrollHeight — this app's shared shell
@@ -37,35 +30,27 @@ export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
     // always viewport-relative regardless of which ancestor actually owns
     // the scrollbar, so checking whether the last section's own bottom
     // edge has scrolled into view works no matter which element scrolls.
+    //
+    // The section being read is the last one whose top has passed a reading
+    // line a quarter of the way down the viewport. This replaced an
+    // IntersectionObserver band (12-25% of the viewport) that only updated
+    // while some section's box overlapped the band: scrolling through a part
+    // of the page the nav doesn't list (Washington activity) left it empty,
+    // so the highlight stuck on an earlier section.
     function computeActive() {
       const lastEl = document.getElementById(lastId);
       if (lastEl && lastEl.getBoundingClientRect().bottom <= window.innerHeight + 4) {
         setActiveId(lastId);
         return;
       }
-      // Always highlight the topmost visible section in document order
-      const first = sections.find((s) => intersectingIds.current.has(s.id));
-      if (first) setActiveId(first.id);
+      const line = window.innerHeight * 0.25;
+      let current = sections[0].id;
+      for (const { id } of sections) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= line) current = id;
+      }
+      setActiveId(current);
     }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            intersectingIds.current.add(entry.target.id);
-          } else {
-            intersectingIds.current.delete(entry.target.id);
-          }
-        });
-        computeActive();
-      },
-      { rootMargin: '-12% 0px -75% 0px', threshold: 0 }
-    );
-
-    sections.forEach(({ id }) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
 
     // "scroll" doesn't bubble, so a listener on window in the bubble phase
     // never sees it fire on a nested scrollable ancestor. A capture-phase
@@ -76,7 +61,6 @@ export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
     computeActive();
 
     return () => {
-      observer.disconnect();
       window.removeEventListener('scroll', computeActive, { capture: true });
     };
   }, [sections]);

@@ -177,7 +177,7 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
           <div className="flex items-center gap-2.5 min-w-0">
             <Users className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <p role="heading" aria-level={2} className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                 {t('insiderCardTitle')}
                 {!isPro && <ProBadge />}
               </p>
@@ -212,7 +212,7 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
     return (
       <Card className="mb-8">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <CardTitle role="heading" aria-level={2} className="text-base font-semibold flex items-center gap-2">
             <Users className="h-4 w-4" />
             {t('insiderCardTitle')}
           </CardTitle>
@@ -278,7 +278,7 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div>
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <CardTitle role="heading" aria-level={2} className="text-base font-semibold flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
               {t('insiderCardTitle')}
             </CardTitle>

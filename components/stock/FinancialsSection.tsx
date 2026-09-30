@@ -580,7 +580,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     <Card className="mb-8">
       <CardHeader className="pb-0">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-base font-semibold">{t('financialsCardTitle')}</CardTitle>
+          <CardTitle role="heading" aria-level={2} className="text-base font-semibold">{t('financialsCardTitle')}</CardTitle>
 
           {activeTab !== 'dividends' && activeTab !== 'splits' && (
             <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5 self-start">

@@ -296,7 +296,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold">{t('healthCardTitle')}</CardTitle>
+            <CardTitle role="heading" aria-level={2} className="text-base font-semibold">{t('healthCardTitle')}</CardTitle>
             {/* ? button — explains methodology */}
             <button
               ref={helpButtonRef}

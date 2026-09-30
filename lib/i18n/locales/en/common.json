@@ -17,5 +17,9 @@
   "tickerPreviewOpen": "Open company",
   "tickerPreviewWatched": "In your watchlist",
   "showMore": "Show more",
-  "showLess": "Show less"
+  "showLess": "Show less",
+  "metricSignalStrength": "Strength",
+  "metricSignalStrengthHint": "Counts in the company's favour in its Health Score",
+  "metricSignalWeak": "Weak spot",
+  "metricSignalWeakHint": "Counts against the company in its Health Score"
 }

@@ -210,7 +210,7 @@ export function StatisticsGrid({
   if (isLoading) {
     return (
       <Card className="mb-8">
-        <CardHeader><CardTitle className="text-base font-semibold">{t('statisticsGridTitle')}</CardTitle></CardHeader>
+        <CardHeader><CardTitle role="heading" aria-level={2} className="text-base font-semibold">{t('statisticsGridTitle')}</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -226,7 +226,7 @@ export function StatisticsGrid({
     if (data?.error === 'plan_restricted') {
       return (
         <Card className="mb-8">
-          <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">{t('statisticsGridTitle')}</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle role="heading" aria-level={2} className="text-base font-semibold">{t('statisticsGridTitle')}</CardTitle></CardHeader>
           <CardContent className="pt-0">
             <p className="text-sm text-muted-foreground py-6 text-center">{t('statisticsGridEnterprisePlanRequired')}</p>
           </CardContent>
@@ -543,7 +543,7 @@ export function StatisticsGrid({
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-baseline gap-3 min-w-0">
-            <CardTitle className="text-base font-semibold shrink-0">{t('statisticsGridTitle')}</CardTitle>
+            <CardTitle role="heading" aria-level={2} className="text-base font-semibold shrink-0">{t('statisticsGridTitle')}</CardTitle>
             {updatedLabel && (
               <span className="text-xs text-muted-foreground font-mono tracking-wide truncate">
                 {updatedLabel}

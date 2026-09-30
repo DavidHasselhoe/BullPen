@@ -104,7 +104,7 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
   return (
     <Card className="mb-8">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold">{t('companyProfileTitle')}</CardTitle>
+        <CardTitle role="heading" aria-level={2} className="text-base font-semibold">{t('companyProfileTitle')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
 

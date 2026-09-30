@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { TermTooltip } from '@/components/ui/TermTooltip';
 import type { SignalValue } from '@/lib/finance/health-score';
@@ -32,14 +33,28 @@ interface MetricCardProps {
   className?: string;
 }
 
-const GLYPH: Record<SignalValue, { char: string; cls: string; title: string }> = {
-  positive: { char: '▲', cls: 'text-emerald-500', title: 'Positive signal' },
-  neutral: { char: '●', cls: 'text-amber-400', title: 'Neutral' },
-  negative: { char: '▼', cls: 'text-red-500', title: 'Watch this metric' },
+/**
+ * The Health Score's verdict on this metric, as words. It used to be a bare
+ * ▲/▼, which read as "went up/down" and contradicted the copy under it
+ * (Dividend Yield 0.23% ▲ above "Pays less than most payers"). Neutral shows
+ * nothing: a chip that says "fine" on every card is noise.
+ */
+const CHIP: Record<Exclude<SignalValue, 'neutral'>, { label: string; hint: string; cls: string }> = {
+  positive: {
+    label: 'metricSignalStrength',
+    hint: 'metricSignalStrengthHint',
+    cls: 'border-emerald-500/30 text-emerald-700 dark:text-emerald-400',
+  },
+  negative: {
+    label: 'metricSignalWeak',
+    hint: 'metricSignalWeakHint',
+    cls: 'border-red-500/30 text-red-600 dark:text-red-400',
+  },
 };
 
 export function MetricCard({ label, value, signal, insight, context, tourId, ticker, onAskAI, children, className }: MetricCardProps) {
-  const glyph = signal ? GLYPH[signal] : null;
+  const { t } = useTranslation('common');
+  const chip = signal && signal !== 'neutral' ? CHIP[signal] : null;
   return (
     <div
       data-tour={tourId}
@@ -53,9 +68,12 @@ export function MetricCard({ label, value, signal, insight, context, tourId, tic
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className="text-xl font-semibold leading-none tabular-nums text-foreground">{value}</span>
-        {glyph && value !== '—' && (
-          <span className={cn('text-xs leading-none', glyph.cls)} title={glyph.title} aria-label={glyph.title}>
-            {glyph.char}
+        {chip && value !== '—' && (
+          <span
+            className={cn('self-center rounded-full border px-1.5 py-0.5 text-xs font-medium leading-none', chip.cls)}
+            title={t(chip.hint)}
+          >
+            {t(chip.label)}
           </span>
         )}
       </div>

@@ -9,3 +9,9 @@ export type InlineWhy =
   | { status: 'ready'; text: string; changePct: number }
   | { status: 'pending' }
   | { status: 'skipped' };
+
+/** "• one\n• two" → ["one", "two"]; text without bullets stays one item. */
+export function whyBullets(text: string): string[] {
+  const items = text.split(/\n+/).map((l) => l.replace(/^\s*[•\-*]\s*/, '').trim()).filter(Boolean);
+  return items.length > 0 ? items : [text.trim()];
+}
