@@ -360,7 +360,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Health': {
     plainLabel: 'Financial Health Score',
-    description: 'BullPen\'s A–F grade of a company\'s financial strength, from profitability and debt to growth and valuation. Higher grades = sturdier finances.',
+    description: 'BullPen\'s A to F grade of how sound a business is: profits, debt, cash flow, growth and volatility. It leaves the share price out, so a healthy company can still be an expensive stock.',
   },
   'Earnings': {
     plainLabel: 'Next Earnings Date',
@@ -375,11 +375,15 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
 
   'Profitability': {
     plainLabel: 'How Well It Makes Money',
-    description: 'Whether the company actually turns sales into profit: profit margin, net income, and revenue growth. The single biggest driver of the health score.',
+    description: 'Whether the company turns sales into profit: profitable over the past year, profit margin, and profit earned on everything it owns. The single biggest driver of the health score.',
   },
   'Financial Strength': {
     plainLabel: 'How Sturdy Its Finances Are',
-    description: 'Whether the company can pay its bills and isn\'t buried in debt: cash vs. short-term obligations, debt levels, and free cash flow.',
+    description: 'Whether the company can carry its debt: how easily profits cover interest, how many years of earnings the debt would take to repay, and whether it can pay the next year\'s bills.',
+  },
+  'Cash Flow': {
+    plainLabel: 'Whether Profits Turn Into Cash',
+    description: 'Whether the business brings in real cash, not just accounting profit: cash from operations, cash left after investment, and how much of each sale ends up as spare cash.',
   },
   'Valuation': {
     plainLabel: 'Whether the Price Is Fair',
@@ -391,7 +395,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   'Market Risk': {
     plainLabel: 'How Bumpy the Ride Is',
-    description: 'How volatile the stock tends to be: its beta versus the market and how heavily it\'s bet against (short interest).',
+    description: 'How bumpy owning it tends to be: whether the stock swings much more than the market (beta), and whether profits hold up quarter after quarter.',
   },
   'Current Ratio': {
     plainLabel: 'Can It Pay Its Bills?',
@@ -560,13 +564,13 @@ export function getGlossaryEntry(term: string): GlossaryEntry | undefined {
  * sync when adding a new section above.
  */
 export const GLOSSARY_CATEGORIES: { name: string; terms: string[] }[] = [
-  { name: 'Statistics & Valuation', terms: ['Market Cap', 'Enterprise Value', 'Beta', 'Avg Volume', 'Shares Float', 'P/E (TTM)', 'P/E', 'Forward P/E', 'TTM', 'NTM', 'P/S', 'P/B', 'EV/EBITDA', 'Short Ratio', '52W Range', '52W High', '52W Low', 'Dividend Yield', 'Profit Margin', 'Gross Margin', 'Operating Margin', 'Rev Growth', 'YoY', 'Constant Currency'] },
+  { name: 'Statistics & Valuation', terms: ['Valuation', 'Market Cap', 'Enterprise Value', 'Beta', 'Avg Volume', 'Shares Float', 'P/E (TTM)', 'P/E', 'Forward P/E', 'TTM', 'NTM', 'P/S', 'P/B', 'EV/EBITDA', 'Short Ratio', '52W Range', '52W High', '52W Low', 'Dividend Yield', 'Profit Margin', 'Gross Margin', 'Operating Margin', 'Rev Growth', 'YoY', 'Constant Currency'] },
   { name: 'Income Statement', terms: ['Revenue', 'RPO', 'Gross Profit', 'Operating Income', 'EBITDA', 'Net Income', 'EPS (Diluted)', 'EPS (Basic)', 'R&D Expenses', 'SG&A Expenses', 'Interest Expense', 'Income Tax'] },
   { name: 'Balance Sheet', terms: ['Total Assets', 'Current Assets', 'Cash & Equivalents', 'Goodwill & Intangibles', 'Total Liabilities', 'Current Liabilities', 'Long-Term Debt', "Stockholders' Equity", 'Retained Earnings'] },
   { name: 'Cash Flow', terms: ['Operating Cash Flow', 'Capital Expenditures', 'Free Cash Flow', 'FCF', 'D&A', 'Investing Activities', 'Financing Activities', 'Dividends Paid'] },
   { name: 'Technical Indicators', terms: ['SMA 50', 'SMA 200', 'EMA 20', 'BB', 'RSI', 'MACD'] },
   { name: 'Portfolio & Holdings', terms: ['Total Value', 'Cost Basis', 'Market Value', 'Unrealized P/L', 'Total P/L', 'Today P/L', 'Day Change', 'Avg Price', 'Allocation', 'Earnings', 'Thesis'] },
-  { name: 'Health Score', terms: ['Health', 'Profitability', 'Financial Strength', 'Valuation', 'Growth', 'Market Risk', 'Current Ratio', 'Debt-to-Equity'] },
+  { name: 'Health Score', terms: ['Health', 'Profitability', 'Financial Strength', 'Cash Flow', 'Growth', 'Market Risk', 'Current Ratio', 'Debt-to-Equity'] },
   { name: 'Price Panel', terms: ['Open', 'High', 'Low', 'Prev Close'] },
   { name: 'Revenue Flow', terms: ['Cost of Revenue', 'Other OpEx', 'Tax & Other', 'Other Income', 'Total Costs'] },
   { name: 'Macro & Economy', terms: ['Federal Reserve', 'Interest Rate', 'Jobs Report', 'Inflation', 'CPI', 'Unemployment Rate', 'Oil Price', 'Discount Rate', 'Growth Stock', 'Value Stock', 'Yield Curve', 'Yield Curve Inversion', 'Credit Spread', 'Sector Rotation', 'Recession'] },

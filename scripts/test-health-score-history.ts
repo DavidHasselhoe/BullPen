@@ -10,7 +10,7 @@ config({ path: resolve(process.cwd(), '.env.local') });
 
 import { createServerClient } from '../lib/supabase/client';
 import { recordHealthScoreSnapshot } from '../lib/finance/health-score-history';
-import type { HealthScore } from '../lib/finance/health-score';
+import { HEALTH_SCORE_METHOD, type HealthScore } from '../lib/finance/health-score';
 
 const TEST_TICKER = 'ZZZTEST';
 
@@ -24,6 +24,9 @@ function fakeScore(score: number, grade: HealthScore['grade']): HealthScore {
       { name: 'Profitability', score: score * 0.3, max: 30, label: 'Test' },
     ],
     metricSignals: {},
+    valuation: 0,
+    method: HEALTH_SCORE_METHOD,
+    insufficientData: false,
   };
 }
 

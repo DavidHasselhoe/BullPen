@@ -3,7 +3,7 @@ import { type ReactNode } from 'react';
 /**
  * HealthRing — BullPen's signature health-score mark.
  *
- * Five pillars (Profitability, Financial Strength, Valuation, Growth, Market
+ * Five pillars (Profitability, Financial Strength, Cash Flow, Growth, Market
  * Risk) drawn as arcs around one central grade. Pass `pillars` for the full
  * five-arc mark (stock page); omit it for the compact single-arc badge used
  * where only the aggregate score is available (screener rows, watchlist).

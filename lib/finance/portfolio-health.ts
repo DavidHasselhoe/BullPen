@@ -1,13 +1,4 @@
-import { catLabel, type CategoryScore, type HealthGrade } from '@/lib/finance/health-score';
-
-const CATEGORY_ORDER = ['Profitability', 'Financial Strength', 'Valuation', 'Growth', 'Market Risk'] as const;
-const CATEGORY_MAX: Record<string, number> = {
-  'Profitability': 30,
-  'Financial Strength': 25,
-  'Valuation': 20,
-  'Growth': 15,
-  'Market Risk': 10,
-};
+import { catLabel, HEALTH_CATEGORIES, type CategoryScore, type HealthGrade } from '@/lib/finance/health-score';
 
 export interface TickerHealth {
   score: number;
@@ -59,8 +50,7 @@ export function computePortfolioHealth(
   // known but whose category breakdown hasn't synced yet (see
   // health-summary/route.ts's dataAvailable flag) must not drag a category's
   // average toward zero just for being present in the portfolio.
-  const categories: CategoryScore[] = CATEGORY_ORDER.map((name) => {
-    const max = CATEGORY_MAX[name];
+  const categories: CategoryScore[] = HEALTH_CATEGORIES.map(({ name, max }) => {
     const withCategory = covered.filter((h) => {
       const cat = healthBySymbol.get(h.symbol)!.categories.find((c) => c.name === name);
       return cat && cat.dataAvailable !== false;

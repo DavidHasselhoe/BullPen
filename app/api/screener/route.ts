@@ -93,9 +93,12 @@ export interface ScreenerRow {
   health_score_grade: string | null;
   health_profitability: number | null;
   health_financial_strength: number | null;
+  health_cash_flow: number | null;
+  /** Informational "how cheap" read, 0-20. Not part of health_score since method 2. */
   health_valuation: number | null;
   health_growth: number | null;
   health_market_risk: number | null;
+  health_score_version: number;
   updated_at: string;
   /**
    * Last-known price/change from the most recent quote — hydrated only in the

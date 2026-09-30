@@ -88,10 +88,11 @@ export async function gatherDeepDiveData(symbol: string): Promise<DeepDiveData> 
     } catch { /* leave empty */ }
   }
 
-  const health =
+  const computedHealth =
     stats && (income.length || balance.length || cashflow.length)
       ? (await computeAndSyncHealthScore(sym, stats, income, balance, cashflow, false)).healthScore
       : null;
+  const health = computedHealth?.insufficientData ? null : computedHealth;
 
   const dataAsOf = income[0]?.fiscal_date || balance[0]?.fiscal_date || null;
 

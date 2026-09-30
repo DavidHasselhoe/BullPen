@@ -52,7 +52,7 @@ function getMethodology(t: TFunction) {
   return [
     { name: 'Profitability', max: 30, desc: t('healthMethodologyProfitability') },
     { name: 'Financial Strength', max: 25, desc: t('healthMethodologyFinancialStrength') },
-    { name: 'Valuation', max: 20, desc: t('healthMethodologyValuation') },
+    { name: 'Cash Flow', max: 20, desc: t('healthMethodologyCashFlow') },
     { name: 'Growth', max: 15, desc: t('healthMethodologyGrowth') },
     { name: 'Market Risk', max: 10, desc: t('healthMethodologyMarketRisk') },
   ];
@@ -184,7 +184,7 @@ ${catLines}
 **${ticker} — Financial Health: ${hs.score}/100 (${hs.grade})**
 
 **Bottom Line**
-2 sentences max. First: overall quality. Second: key tension (e.g. strong company but expensive).
+2 sentences max. First: overall quality. Second: key tension (e.g. very profitable but carrying heavy debt). The score leaves the share price out, so do not call it cheap or expensive.
 
 **What's Driving the Score**
 
@@ -209,7 +209,7 @@ Risk Profile:
 - Max ~220 words total
 - No filler, no definitions, no repeated sentence structure
 - Every sentence must add new information
-- Adapt tone: high growth + high valuation → expectations risk; strong balance sheet → resilience; weak profitability → question business quality
+- Adapt tone: profits not turning into cash → question earnings quality; strong balance sheet → resilience; weak profitability → question business quality
 - Do NOT explain what metrics measure — assume the reader is smart`;
 }
 
@@ -287,7 +287,8 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
     );
   }
 
-  if (!data?.success || !data.data) return null;
+  // No balance sheet or cash flow statement: nothing honest to grade.
+  if (!data?.success || !data.data || data.data.insufficientData) return null;
 
   const hs = data.data;
 

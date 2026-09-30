@@ -10,6 +10,7 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { HealthBloom, HealthBloomLegendRow } from '@/components/finance/HealthBloom';
 import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { computePortfolioHealth, getCategoryContributors } from '@/lib/finance/portfolio-health';
+import { HEALTH_CATEGORIES } from '@/lib/finance/health-score';
 import type { TickerHealth } from '@/app/api/holdings/health-summary/route';
 import type { HoldingWithPrice } from './types';
 
@@ -18,7 +19,7 @@ interface PortfolioHealthCardProps {
   isLoading?: boolean;
 }
 
-const CATEGORY_ORDER = ['Profitability', 'Financial Strength', 'Valuation', 'Growth', 'Market Risk'];
+const CATEGORY_ORDER = HEALTH_CATEGORIES.map((c) => c.name);
 
 const GRADE_THRESHOLDS: { grade: string; range: string; labelKey: string }[] = [
   { grade: 'A', range: '85–100', labelKey: 'portfolioHealthGradeStrong' },

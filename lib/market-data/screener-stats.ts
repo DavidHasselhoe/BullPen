@@ -54,7 +54,7 @@ import {
   type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedStale } from '@/lib/cache/market-data-cache';
-import { computeHealthScore, categoriesToColumns } from '@/lib/finance/health-score';
+import { computeHealthScore, healthColumns, HEALTH_SCORE_METHOD } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
@@ -343,14 +343,18 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       const companyStats = rawToCompanyStats(statsRaw, sym);
       const { income, balance, cashflow, degraded } = financialsMap.get(sym) ?? { income: [], balance: [], cashflow: [], degraded: false };
       if (degraded) degradedSymbols.add(sym);
-      const healthScore = computeHealthScore(companyStats, income, balance, cashflow);
+      const sector =
+        normalizeSector(cachedSectorMap.get(sym)) ??
+        normalizeSector(priorMetaMap.get(sym)?.sector) ??
+        normalizeSector(company?.sector);
+      const healthScore = computeHealthScore(companyStats, income, balance, cashflow, { sector });
 
       // Fire-and-forget: record a history snapshot only when we have complete,
       // non-degraded financials AND a real fiscal quarter identifier. This
       // overwrites the row for the current quarter (see health-score-history.ts)
       // so it stays in sync whether this cron or a user visiting the stock page
       // computed it most recently.
-      if (!degraded && income[0]?.fiscal_date) {
+      if (!degraded && !healthScore.insufficientData && income[0]?.fiscal_date) {
         void recordHealthScoreSnapshot(sym, healthScore, income[0].fiscal_date);
       }
 
@@ -359,17 +363,12 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
         // meta.name comes back in the same /statistics response we already paid for,
         // so it costs nothing and covers every ticker with no companies row.
         name: company?.name ?? statsRaw.meta?.name ?? sym,
-        sector:
-          normalizeSector(cachedSectorMap.get(sym)) ??
-          normalizeSector(priorMetaMap.get(sym)?.sector) ??
-          normalizeSector(company?.sector),
+        sector,
         // Nothing but `companies` knows industries, so at least never erase one.
         industry: priorMetaMap.get(sym)?.industry || company?.industry || null,
         logo_url: company?.logo_url ?? null,
         exchange: null,
-        health_score: healthScore.score,
-        health_score_grade: healthScore.grade,
-        ...categoriesToColumns(healthScore.categories),
+        ...healthColumns(healthScore),
       } as ScreenerRow);
     }
   }
@@ -381,16 +380,18 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
   if (rows.length > 0) {
     const { data: priorRows } = await supabase
       .from('screener_stats')
-      .select('ticker, health_score, health_score_grade, health_profitability, health_financial_strength, health_valuation, health_growth, health_market_risk')
+      .select('ticker, health_score, health_score_grade, health_profitability, health_financial_strength, health_cash_flow, health_valuation, health_growth, health_market_risk, health_score_version')
       .in('ticker', rows.map((r) => r.ticker));
     type PriorHealthRow = {
       health_score: number | null;
       health_score_grade: string | null;
       health_profitability: number | null;
       health_financial_strength: number | null;
+      health_cash_flow: number | null;
       health_valuation: number | null;
       health_growth: number | null;
       health_market_risk: number | null;
+      health_score_version: number;
     };
     const priorMap = new Map(
       (priorRows ?? []).map((r) => [(r as { ticker: string }).ticker, r as PriorHealthRow])
@@ -406,19 +407,23 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       // previously persisted score instead of overwriting a good one with a
       // falsely low one. Degraded rows never count as a real grade change.
       if (degradedSymbols.has(row.ticker)) {
-        if (prior && prior.health_score != null) {
+        if (prior && prior.health_score != null && prior.health_score_version === HEALTH_SCORE_METHOD) {
           row.health_score = prior.health_score;
           row.health_score_grade = prior.health_score_grade as ScreenerRow['health_score_grade'];
           row.health_profitability = prior.health_profitability;
           row.health_financial_strength = prior.health_financial_strength;
+          row.health_cash_flow = prior.health_cash_flow;
           row.health_valuation = prior.health_valuation;
           row.health_growth = prior.health_growth;
           row.health_market_risk = prior.health_market_risk;
+          row.health_score_version = prior.health_score_version;
         }
         continue;
       }
 
+      // A grade that moved because the scoring method changed is not news about the company.
       if (
+        prior?.health_score_version === HEALTH_SCORE_METHOD &&
         prior?.health_score_grade != null &&
         row.health_score_grade != null &&
         prior.health_score_grade !== row.health_score_grade

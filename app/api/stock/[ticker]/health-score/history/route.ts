@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { HEALTH_SCORE_METHOD } from '@/lib/finance/health-score';
 
 interface HealthScoreHistoryRow {
   fiscal_date: string;
@@ -19,10 +20,13 @@ async function handler(
 
   try {
     const supabase = createServerClient();
+    // Only snapshots from the current method: a score that moved because the
+    // method changed would read as the company getting better or worse.
     const { data, error } = await supabase
       .from('health_score_history')
       .select('fiscal_date, snapshot_date, score, grade, categories')
       .eq('ticker', symbol)
+      .eq('method', HEALTH_SCORE_METHOD)
       .order('snapshot_date', { ascending: true });
 
     if (error) throw new Error(error.message);

@@ -21,7 +21,7 @@ import { createNotification, isNotificationEnabled } from '@/lib/notifications/n
 import { createServerClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
-import { catLabel, type HealthGrade } from '@/lib/finance/health-score';
+import { catLabel, HEALTH_CATEGORIES, type HealthGrade } from '@/lib/finance/health-score';
 import { buildRiskScenario, type RiskScenario } from '@/lib/ai/risk-scenario';
 import { parseScenarioShare } from '@/lib/ai/risk-scenario-shares';
 import { computePortfolioHealth, type TickerHealth } from '@/lib/finance/portfolio-health';
@@ -106,13 +106,7 @@ Scoring guidelines:
 - Use professional financial language; do not sugarcoat high-risk findings
 - In all string fields, never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.`;
 
-const HEALTH_CATEGORY_COLUMNS = [
-  ['Profitability', 'health_profitability', 30],
-  ['Financial Strength', 'health_financial_strength', 25],
-  ['Valuation', 'health_valuation', 20],
-  ['Growth', 'health_growth', 15],
-  ['Market Risk', 'health_market_risk', 10],
-] as const;
+const HEALTH_CATEGORY_COLUMNS = HEALTH_CATEGORIES.map((c) => [c.name, c.column, c.max] as const);
 
 type HealthCategoryColumn = (typeof HEALTH_CATEGORY_COLUMNS)[number][1];
 

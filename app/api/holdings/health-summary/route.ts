@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
-import { catLabel, type CategoryScore, type HealthGrade } from '@/lib/finance/health-score';
+import { catLabel, HEALTH_CATEGORIES, type CategoryScore, type HealthGrade } from '@/lib/finance/health-score';
 
 export interface TickerHealth {
   score: number;
@@ -37,8 +37,9 @@ async function handler(req: NextRequest): Promise<NextResponse> {
 
   const { data, error } = await createServerClient()
     .from('screener_stats')
-    .select('ticker, health_score, health_score_grade, health_profitability, health_financial_strength, health_valuation, health_growth, health_market_risk')
-    .in('ticker', symbols);
+    .select(`ticker, health_score, health_score_grade, ${HEALTH_CATEGORIES.map((c) => c.column).join(', ')}`)
+    .in('ticker', symbols)
+    .returns<({ ticker: string; health_score: number | null; health_score_grade: string | null } & Record<(typeof HEALTH_CATEGORIES)[number]['column'], number | null>)[]>();
 
   if (error) {
     return addSecurityHeaders(NextResponse.json({ success: false, error: 'query_failed' }, { status: 500 }));
@@ -55,21 +56,16 @@ async function handler(req: NextRequest): Promise<NextResponse> {
       // backfill — see migration 122). Mark those explicitly unavailable
       // rather than defaulting to 0, so portfolio aggregation excludes them
       // from that category's weighting instead of dragging it toward zero.
-      categories: (
-        [
-          ['Profitability', row.health_profitability, 30],
-          ['Financial Strength', row.health_financial_strength, 25],
-          ['Valuation', row.health_valuation, 20],
-          ['Growth', row.health_growth, 15],
-          ['Market Risk', row.health_market_risk, 10],
-        ] as const
-      ).map(([name, score, max]) => ({
-        name,
-        score: score ?? 0,
-        max,
-        label: score == null ? 'Unavailable' : catLabel(score, max),
-        dataAvailable: score != null,
-      })),
+      categories: HEALTH_CATEGORIES.map(({ name, max, column }) => {
+        const score = row[column];
+        return {
+          name,
+          score: score ?? 0,
+          max,
+          label: score == null ? 'Unavailable' : catLabel(score, max),
+          dataAvailable: score != null,
+        };
+      }),
     };
   }
 

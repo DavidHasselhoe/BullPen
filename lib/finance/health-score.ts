@@ -1,15 +1,36 @@
 /**
- * Financial Health Score
+ * Financial Health Score, method 2 (2026-09-30).
  *
- * Computes a 0–100 score from TwelveData statistics and financial statements.
- * Pure function — no API calls, no side effects.
+ * Answers one question: is this a financially sound business? It is a
+ * quality-and-safety score, not a "should I buy it" score, so the share price
+ * plays no part. Pure function, no API calls.
  *
- * Five categories:
- *   Profitability   30 pts
- *   Financial Strength 25 pts
- *   Valuation       20 pts
- *   Growth          15 pts
- *   Market Risk     10 pts
+ *   Profitability       30  profitable over the year, net margin, return on assets
+ *   Financial Strength  25  interest coverage, net debt / EBITDA, liquidity
+ *                           (banks: equity / assets, since deposits read as debt)
+ *   Cash Flow           20  operating and free cash flow, cash backing earnings,
+ *                           free cash flow margin
+ *   Growth              15  revenue and EPS growth
+ *   Market Risk         10  high volatility, earnings consistency
+ *
+ * Why method 1 was replaced (measured across 2,801 stocks, 2026-09-30):
+ * - 53% of stocks graded F; Visa, Walmart, P&G and Coca-Cola scored C/D while
+ *   gold miners on a price windfall topped the market at 94-98.
+ * - Valuation was 20% of "health", so quality (which usually trades at a
+ *   premium) was marked down for its price. Piotroski's F-Score, MSCI's
+ *   quality factor and Simply Wall St's health checks all leave price out.
+ * - Revenue growth was counted twice (Profitability and Growth).
+ * - Low beta lost points, so stable defensives were scored as risky.
+ * - A current ratio above 2 was required for full marks, and negative equity
+ *   from buybacks (McDonald's, Lowe's) read as a red flag; banks, whose
+ *   deposits look like debt, scored 3-5 of 25 on strength.
+ * - Single-quarter figures stood in for the year, and missing statements
+ *   scored zero, so data coverage moved the score.
+ *
+ * Data: the latest four quarterly statements (trailing twelve months where a
+ * metric needs a year) plus TwelveData /statistics. A pillar with no usable
+ * inputs is left out and the total re-weighted over the pillars that have
+ * data, rather than counting missing data as a failure.
  */
 
 import type {
@@ -18,6 +39,18 @@ import type {
   BalanceSheetPeriod,
   CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
+
+/** Stored alongside every score and history snapshot. Bump when the method changes. */
+export const HEALTH_SCORE_METHOD = 2;
+
+/** The five pillars in display order, with their screener_stats column. */
+export const HEALTH_CATEGORIES = [
+  { name: 'Profitability', max: 30, column: 'health_profitability' },
+  { name: 'Financial Strength', max: 25, column: 'health_financial_strength' },
+  { name: 'Cash Flow', max: 20, column: 'health_cash_flow' },
+  { name: 'Growth', max: 15, column: 'health_growth' },
+  { name: 'Market Risk', max: 10, column: 'health_market_risk' },
+] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -31,7 +64,7 @@ export interface CategoryScore {
   max: number;
   /** Plain-English label for this category's performance */
   label: string;
-  /** False when the underlying data was unavailable — score of 0 is not meaningful */
+  /** False when the underlying data was unavailable: the pillar is left out of the total. */
   dataAvailable?: boolean;
 }
 
@@ -49,19 +82,28 @@ export interface HealthScore {
   /** Breakdown by category */
   categories: CategoryScore[];
   /**
-   * Per-metric signals keyed by CompanyStatistics field name.
-   * Only metrics where a meaningful signal can be computed are included.
+   * Per-metric signals keyed by CompanyStatistics field name, only for metrics
+   * the score actually uses (the Key Numbers chips say "counts in the Health
+   * Score", so a metric that does not count must not get one).
    */
   metricSignals: Record<string, SignalValue>;
+  /**
+   * How cheap the stock looks, 0-20. NOT part of the score: kept for the
+   * theme "Value" sort (screener_stats.health_valuation).
+   */
+  valuation: number;
+  method: number;
+  /**
+   * Neither Financial Strength nor Cash Flow had data (no balance sheet or
+   * cash flow statement). A score from margins and growth alone ignores debt
+   * entirely, so writers store no score rather than a guess.
+   */
+  insufficientData: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
-function pct(n: number | null): number {
-  return n != null ? n * 100 : 0;
-}
 
 export function catLabel(score: number, max: number): string {
   const ratio = max > 0 ? score / max : 0;
@@ -82,255 +124,294 @@ export function scoreToGrade(score: number): HealthGrade {
   return 'F';
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Category scorers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function scoreProfitability(
-  stats: CompanyStatistics,
-  income: IncomeStatementPeriod[]
-): { score: number; signals: Record<string, SignalValue> } {
-  let score = 0;
-  const signals: Record<string, SignalValue> = {};
-
-  // Profit margin (12 pts)
-  const margin = stats.profitMargin != null ? stats.profitMargin : null;
-  if (margin != null) {
-    const m = pct(margin);
-    if (m > 20) { score += 12; signals['profitMargin'] = 'positive'; }
-    else if (m > 10) { score += 8; signals['profitMargin'] = 'positive'; }
-    else if (m > 0) { score += 4; signals['profitMargin'] = 'neutral'; }
-    else { score += 0; signals['profitMargin'] = 'negative'; }
-  } else {
-    signals['profitMargin'] = 'neutral';
-  }
-
-  // Net income positive from latest period (10 pts)
-  const latestIncome = income[0];
-  if (latestIncome?.net_income != null) {
-    if (latestIncome.net_income > 0) score += 10;
-  }
-
-  // Revenue growth TTM (8 pts) — used here and in Growth category
-  const revGrowth = stats.revenueGrowthTTM;
-  if (revGrowth != null) {
-    const g = pct(revGrowth);
-    if (g > 20) { score += 8; signals['revenueGrowthTTM'] = 'positive'; }
-    else if (g > 10) { score += 5; signals['revenueGrowthTTM'] = 'positive'; }
-    else if (g > 0) { score += 2; signals['revenueGrowthTTM'] = 'neutral'; }
-    else { score += 0; signals['revenueGrowthTTM'] = 'negative'; }
-  } else {
-    signals['revenueGrowthTTM'] = 'neutral';
-  }
-
-  return { score: Math.min(score, 30), signals };
+/**
+ * A year of a quarterly figure: the latest four quarters summed or, when one
+ * of them lacks the field, the other three annualised. TwelveData often
+ * leaves one quarter's line blank (Amazon's latest quarter had no operating
+ * income), and requiring all four dropped whole metrics.
+ */
+function ttm<T>(rows: T[], get: (r: T) => number | null | undefined): number | null {
+  const vals = rows
+    .slice(0, 4)
+    .map(get)
+    .filter((v): v is number => v != null && Number.isFinite(v));
+  if (vals.length < 3) return null;
+  const sum = vals.reduce((a, b) => a + b, 0);
+  return vals.length === 4 ? sum : (sum / vals.length) * 4;
 }
 
-function scoreFinancialStrength(
+/** Points earned out of points that had data, per pillar. */
+class Tally {
+  points = 0;
+  possible = 0;
+  add(max: number, earned: number) {
+    this.possible += max;
+    this.points += Math.max(0, Math.min(max, earned));
+  }
+  scaled(max: number): number {
+    return this.possible > 0 ? Math.round((this.points / this.possible) * max) : 0;
+  }
+  get available() {
+    return this.possible > 0;
+  }
+}
+
+function tier(value: number, steps: [number, number][], otherwise = 0): number {
+  for (const [atLeast, pts] of steps) if (value >= atLeast) return pts;
+  return otherwise;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Derived fundamentals
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface Fundamentals {
+  revenue: number | null;
+  netIncome: number | null;
+  operatingIncome: number | null;
+  ebitda: number | null;
+  interest: number | null;
+  ocf: number | null;
+  fcf: number | null;
+  /** Share of the last four quarters (3+ reported) that were profitable, 0-1. */
+  profitableQuarters: number | null;
+  /** Operating income, or pre-tax profit plus interest when TD has no operating line (insurers, Berkshire). */
+  ebit: number | null;
+  b: BalanceSheetPeriod | undefined;
+  /**
+   * Mostly liabilities, with no current/non-current split or a financial
+   * sector: banks and brokers. Deposits read as debt and interest expense is
+   * their cost of goods, so leverage and coverage need their own measures.
+   */
+  bankLike: boolean;
+  /** Regulated, asset-heavy sectors where high leverage is the normal, financed-by-design state. */
+  heavyAssets: boolean;
+}
+
+const HEAVY_ASSET_SECTORS = new Set(['Utilities', 'Real Estate']);
+
+function fundamentals(
+  income: IncomeStatementPeriod[],
   balance: BalanceSheetPeriod[],
-  cashflow: CashFlowPeriod[]
-): { score: number; dataAvailable: boolean; signals: Record<string, SignalValue> } {
-  if (balance.length === 0 && cashflow.length === 0) {
-    return { score: 0, dataAvailable: false, signals: {} };
+  cashflow: CashFlowPeriod[],
+  sector: string | null,
+): Fundamentals {
+  const b = balance.find((r) => r.total_assets != null) ?? balance[0];
+  const liabilitiesShare =
+    b?.total_assets != null && b.total_liabilities != null && b.total_assets > 0
+      ? b.total_liabilities / b.total_assets
+      : null;
+  const bankLike =
+    liabilitiesShare != null &&
+    liabilitiesShare > 0.85 &&
+    ((b!.total_current_assets == null && b!.total_current_liabilities == null) || sector === 'Financial Services');
+
+  const fcfDirect = ttm(cashflow, (c) => c.free_cash_flow);
+  const ocf = ttm(cashflow, (c) => c.operating_cash_flow);
+  const capex = ttm(cashflow, (c) => c.capital_expenditures);
+
+  const netIncome = ttm(income, (q) => q.net_income);
+  const operatingIncome = ttm(income, (q) => q.operating_income);
+  // Missing interest expense usually means none was reported.
+  const interest = income.length >= 3 ? ttm(income, (q) => q.interest_expense ?? 0) : null;
+  const tax = ttm(income, (q) => q.income_tax_expense);
+  const quarters = income.slice(0, 4).filter((q) => q.net_income != null);
+  return {
+    revenue: ttm(income, (q) => q.revenue),
+    netIncome,
+    operatingIncome,
+    ebitda: ttm(income, (q) => q.ebitda),
+    interest,
+    ebit: operatingIncome ?? (netIncome != null && interest != null ? netIncome + (tax ?? 0) + Math.abs(interest) : null),
+    ocf,
+    // capex is reported negative; FCF = OCF + capex when TD omits the FCF line.
+    fcf: fcfDirect ?? (ocf != null && capex != null ? ocf + capex : null),
+    profitableQuarters: quarters.length >= 3 ? quarters.filter((q) => q.net_income! > 0).length / quarters.length : null,
+    b,
+    bankLike,
+    heavyAssets: sector != null && HEAVY_ASSET_SECTORS.has(sector),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pillars
+// ─────────────────────────────────────────────────────────────────────────────
+
+type Signals = Record<string, SignalValue>;
+
+function scoreProfitability(stats: CompanyStatistics, f: Fundamentals, signals: Signals): Tally {
+  const t = new Tally();
+
+  // Profitable over the last year (8)
+  const annualProfit = f.netIncome ?? (stats.profitMargin != null ? stats.profitMargin : null);
+  if (annualProfit != null) t.add(8, annualProfit > 0 ? 8 : 0);
+
+  // Net margin (10): statements first, TwelveData's TTM figure otherwise
+  const margin =
+    f.netIncome != null && f.revenue != null && f.revenue > 0 ? f.netIncome / f.revenue : stats.profitMargin;
+  if (margin != null) {
+    const pts = tier(margin, [[0.25, 10], [0.15, 8], [0.08, 5], [0.03, 3], [0.0001, 1]]);
+    t.add(10, pts);
+    signals.profitMargin = pts >= 8 ? 'positive' : pts >= 3 ? 'neutral' : 'negative';
   }
 
-  let score = 0;
-  const signals: Record<string, SignalValue> = {};
+  // Return on assets (12). Banks run on thin assets returns, so their bar is lower.
+  if (f.netIncome != null && f.b?.total_assets != null && f.b.total_assets > 0) {
+    const roa = f.netIncome / f.b.total_assets;
+    t.add(12, f.bankLike
+      ? tier(roa, [[0.015, 12], [0.011, 10], [0.008, 7], [0.004, 4], [0.0001, 2]])
+      : tier(roa, [[0.12, 12], [0.08, 10], [0.05, 7], [0.02, 4], [0.0001, 2]]));
+  }
+  return t;
+}
 
-  const b = balance[0];
-  const cf = cashflow[0];
+function scoreFinancialStrength(f: Fundamentals, signals: Signals): Tally {
+  const t = new Tally();
+  const b = f.b;
+  if (!b) return t;
 
-  // Current ratio (10 pts)
-  if (b?.total_current_assets != null && b.total_current_liabilities != null && b.total_current_liabilities > 0) {
+  if (f.bankLike) {
+    // Capital cushion: equity as a share of assets. Large US banks run 6-10%.
+    if (b.total_stockholders_equity != null && b.total_assets != null && b.total_assets > 0) {
+      const ratio = b.total_stockholders_equity / b.total_assets;
+      t.add(25, tier(ratio, [[0.1, 25], [0.08, 21], [0.06, 16], [0.045, 10], [0.03, 4]]));
+    }
+    return t;
+  }
+
+  // Interest coverage (10): operating profit over interest expense. Utilities
+  // and real estate borrow by design against regulated or contracted income.
+  if (f.ebit != null && f.interest != null) {
+    const interest = Math.abs(f.interest);
+    const steps: [number, number][] = f.heavyAssets
+      ? [[6, 10], [4, 8], [2.8, 6], [2, 3], [1.2, 1]]
+      : [[15, 10], [8, 8], [4, 6], [2, 3], [1, 1]];
+    t.add(10, f.ebit <= 0 ? 0 : interest < 1 ? 10 : tier(f.ebit / interest, steps));
+  }
+
+  // Debt load (10): net debt over a year of EBITDA. Measured against earnings,
+  // not equity, so buyback-driven negative equity is not mistaken for distress.
+  // With no EBITDA line (insurers, Berkshire) debt against equity stands in.
+  if (b.long_term_debt != null) {
+    const netDebt = b.long_term_debt - (b.cash_and_equivalents ?? 0);
+    let pts: number | null = null;
+    if (netDebt <= 0) pts = 10;
+    else if (f.ebitda != null) {
+      const steps: [number, number][] = f.heavyAssets
+        ? [[-4, 9], [-5, 7], [-6, 5], [-7, 2]]
+        : [[-1, 9], [-2, 7], [-3, 5], [-4, 2]];
+      pts = f.ebitda <= 0 ? 0 : tier(-(netDebt / f.ebitda), steps);
+    } else if (b.total_stockholders_equity != null && b.total_stockholders_equity > 0) {
+      pts = tier(-(b.long_term_debt / b.total_stockholders_equity), [[-0.3, 10], [-0.6, 8], [-1, 6], [-2, 3]]);
+    }
+    if (pts != null) {
+      t.add(10, pts);
+      signals.debtToEquity = pts >= 7 ? 'positive' : pts >= 2 ? 'neutral' : 'negative';
+    }
+  }
+
+  // Liquidity (5): can it cover the next year's bills? A ratio near 1 is normal
+  // for efficient businesses (Visa, Coca-Cola), so the bar is 1, not 2.
+  if (b.total_current_assets != null && b.total_current_liabilities != null && b.total_current_liabilities > 0) {
     const cr = b.total_current_assets / b.total_current_liabilities;
-    if (cr > 2) { score += 10; signals['currentRatio'] = 'positive'; }
-    else if (cr >= 1.5) { score += 7; signals['currentRatio'] = 'positive'; }
-    else if (cr >= 1) { score += 4; signals['currentRatio'] = 'neutral'; }
-    else { score += 0; signals['currentRatio'] = 'negative'; }
-  } else {
-    signals['currentRatio'] = 'neutral';
+    const pts = tier(cr, f.heavyAssets ? [[0.9, 5], [0.7, 4], [0.5, 2]] : [[1.2, 5], [1, 4], [0.8, 2]]);
+    t.add(5, pts);
+    signals.currentRatio = pts >= 4 ? 'positive' : pts >= 2 ? 'neutral' : 'negative';
   }
-
-  // Debt-to-equity (10 pts)
-  if (b?.long_term_debt != null && b.total_stockholders_equity != null && b.total_stockholders_equity > 0) {
-    const de = b.long_term_debt / b.total_stockholders_equity;
-    if (de < 0.3) { score += 10; signals['debtToEquity'] = 'positive'; }
-    else if (de < 0.7) { score += 7; signals['debtToEquity'] = 'positive'; }
-    else if (de < 1.5) { score += 3; signals['debtToEquity'] = 'neutral'; }
-    else { score += 0; signals['debtToEquity'] = 'negative'; }
-  } else if (b?.total_stockholders_equity != null && b.total_stockholders_equity < 0) {
-    // Negative equity is a red flag
-    signals['debtToEquity'] = 'negative';
-  } else {
-    signals['debtToEquity'] = 'neutral';
-  }
-
-  // Free cash flow positive (5 pts)
-  if (cf?.free_cash_flow != null) {
-    if (cf.free_cash_flow > 0) { score += 5; signals['freeCashFlow'] = 'positive'; }
-    else { signals['freeCashFlow'] = 'negative'; }
-  } else {
-    signals['freeCashFlow'] = 'neutral';
-  }
-
-  return { score: Math.min(score, 25), dataAvailable: true, signals };
+  return t;
 }
 
-function scoreValuation(
-  stats: CompanyStatistics
-): { score: number; signals: Record<string, SignalValue> } {
-  let score = 0;
-  const signals: Record<string, SignalValue> = {};
+function scoreCashFlow(f: Fundamentals, signals: Signals): Tally {
+  const t = new Tally();
+  // Deposit flows swamp a bank's operating cash flow; the measure means nothing there.
+  if (f.bankLike) return t;
 
-  // P/E TTM (8 pts)
+  if (f.ocf != null) t.add(6, f.ocf > 0 ? 6 : 0);
+  if (f.fcf != null) {
+    t.add(5, f.fcf > 0 ? 5 : 0);
+    signals.freeCashFlow = f.fcf > 0 ? 'positive' : 'negative';
+  }
+  // Cash backs up earnings (4): Piotroski's accruals test.
+  if (f.ocf != null && f.netIncome != null) t.add(4, f.ocf >= f.netIncome && f.ocf > 0 ? 4 : 0);
+  // Free cash flow margin (5)
+  if (f.fcf != null && f.revenue != null && f.revenue > 0) {
+    t.add(5, tier(f.fcf / f.revenue, [[0.2, 5], [0.1, 3], [0.03, 2], [0.0001, 1]]));
+  }
+  return t;
+}
+
+function scoreGrowth(stats: CompanyStatistics, signals: Signals): Tally {
+  const t = new Tally();
+  // Latest quarter, year over year (TwelveData's quarterly_revenue_growth).
+  if (stats.revenueGrowthTTM != null) {
+    const pts = tier(stats.revenueGrowthTTM, [[0.2, 9], [0.1, 7], [0.05, 5], [0.0001, 3], [-0.05, 1]]);
+    t.add(9, pts);
+    signals.revenueGrowthTTM = pts >= 7 ? 'positive' : pts >= 3 ? 'neutral' : 'negative';
+  }
+  if (stats.epsGrowthTTM != null) {
+    const pts = tier(stats.epsGrowthTTM, [[0.2, 6], [0.08, 4], [0.0001, 2]]);
+    t.add(6, pts);
+    signals.epsGrowthTTM = pts >= 4 ? 'positive' : pts >= 2 ? 'neutral' : 'negative';
+  }
+  return t;
+}
+
+function scoreMarketRisk(stats: CompanyStatistics, f: Fundamentals, signals: Signals): Tally {
+  const t = new Tally();
+  // Only high volatility costs points; a calm, low-beta stock is not a risk.
+  if (stats.beta != null) {
+    const pts = stats.beta <= 1 ? 6 : stats.beta <= 1.3 ? 5 : stats.beta <= 1.6 ? 3 : stats.beta <= 2 ? 1 : 0;
+    t.add(6, pts);
+    signals.beta = pts >= 5 ? 'positive' : pts >= 3 ? 'neutral' : 'negative';
+  }
+  // Earnings consistency (4): every reported quarter of the last four in profit, or all but one.
+  if (f.profitableQuarters != null) t.add(4, f.profitableQuarters === 1 ? 4 : f.profitableQuarters >= 0.66 ? 2 : 0);
+  return t;
+}
+
+/** How cheap the stock looks, 0-20. Informational only, never part of the score. */
+function valuationScore(stats: CompanyStatistics): number {
+  let score = 0;
   const pe = stats.peRatioTTM;
-  if (pe != null) {
-    if (pe > 0 && pe <= 20) { score += 8; signals['peRatioTTM'] = 'positive'; }
-    else if (pe <= 35) { score += 5; signals['peRatioTTM'] = 'neutral'; }
-    else if (pe > 35) { score += 2; signals['peRatioTTM'] = 'negative'; }
-    else { score += 2; signals['peRatioTTM'] = 'negative'; } // negative P/E = loss-making
-  } else {
-    // No P/E — company may be pre-profit; don't penalise
-    score += 4;
-    signals['peRatioTTM'] = 'neutral';
-  }
-
-  // P/B (7 pts)
+  score += pe == null ? 4 : pe > 0 && pe <= 20 ? 8 : pe > 0 && pe <= 35 ? 5 : 2;
   const pb = stats.pbRatio;
-  if (pb != null) {
-    if (pb < 1) { score += 7; signals['pbRatio'] = 'positive'; }
-    else if (pb < 3) { score += 5; signals['pbRatio'] = 'positive'; }
-    else if (pb < 6) { score += 3; signals['pbRatio'] = 'neutral'; }
-    else { score += 1; signals['pbRatio'] = 'negative'; }
-  } else {
-    signals['pbRatio'] = 'neutral';
-  }
-
-  // EV/EBITDA (5 pts)
+  if (pb != null) score += pb < 1 ? 7 : pb < 3 ? 5 : pb < 6 ? 3 : 1;
   const ev = stats.evToEbitda;
-  if (ev != null && ev > 0) {
-    if (ev < 10) { score += 5; signals['evToEbitda'] = 'positive'; }
-    else if (ev < 20) { score += 3; signals['evToEbitda'] = 'neutral'; }
-    else { score += 1; signals['evToEbitda'] = 'negative'; }
-  } else {
-    signals['evToEbitda'] = 'neutral';
-  }
-
-  return { score: Math.min(score, 20), signals };
-}
-
-function scoreGrowth(
-  stats: CompanyStatistics
-): { score: number; signals: Record<string, SignalValue> } {
-  let score = 0;
-  const signals: Record<string, SignalValue> = {};
-
-  // Revenue growth TTM (9 pts) — note: also scored in Profitability; here we reward growth itself
-  const rg = stats.revenueGrowthTTM;
-  if (rg != null) {
-    const g = pct(rg);
-    if (g > 20) score += 9;
-    else if (g > 10) score += 6;
-    else if (g > 0) score += 3;
-    // signals already set by profitability scorer
-  }
-
-  // EPS growth TTM (6 pts)
-  const eg = stats.epsGrowthTTM;
-  if (eg != null) {
-    const g = pct(eg);
-    if (g > 20) { score += 6; signals['epsGrowthTTM'] = 'positive'; }
-    else if (g > 10) { score += 4; signals['epsGrowthTTM'] = 'positive'; }
-    else if (g > 0) { score += 2; signals['epsGrowthTTM'] = 'neutral'; }
-    else { score += 0; signals['epsGrowthTTM'] = 'negative'; }
-  } else {
-    signals['epsGrowthTTM'] = 'neutral';
-  }
-
-  return { score: Math.min(score, 15), signals };
-}
-
-function scoreMarketRisk(
-  stats: CompanyStatistics
-): { score: number; signals: Record<string, SignalValue> } {
-  let score = 0;
-  const signals: Record<string, SignalValue> = {};
-
-  // Beta (6 pts) — moderate beta is healthy; extreme in either direction adds risk
-  const beta = stats.beta;
-  if (beta != null) {
-    if (beta >= 0.5 && beta <= 1.2) { score += 6; signals['beta'] = 'positive'; }
-    else if (beta > 1.2 && beta <= 1.8) { score += 4; signals['beta'] = 'neutral'; }
-    else { score += 2; signals['beta'] = 'negative'; }
-  } else {
-    signals['beta'] = 'neutral';
-  }
-
-  // Short ratio (4 pts) — high short interest signals market doubt
-  const sr = stats.shortRatio;
-  if (sr != null) {
-    if (sr < 2) { score += 4; signals['shortRatio'] = 'positive'; }
-    else if (sr < 5) { score += 2; signals['shortRatio'] = 'neutral'; }
-    else { score += 0; signals['shortRatio'] = 'negative'; }
-  } else {
-    signals['shortRatio'] = 'neutral';
-  }
-
-  // Dividend yield signal (informational — not scored, but users like seeing it)
-  if (stats.dividendYield != null) {
-    signals['dividendYield'] = stats.dividendYield > 0 ? 'positive' : 'neutral';
-  } else {
-    signals['dividendYield'] = 'neutral';
-  }
-
-  return { score: Math.min(score, 10), signals };
+  if (ev != null && ev > 0) score += ev < 10 ? 5 : ev < 20 ? 3 : 1;
+  return Math.min(score, 20);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Summary generation
+// Summary
 // ─────────────────────────────────────────────────────────────────────────────
 
-function buildSummary(
-  score: number,
-  cats: CategoryScore[],
-  stats: CompanyStatistics
-): string {
-  const profCat = cats.find((c) => c.name === 'Profitability')!;
-  const strCat  = cats.find((c) => c.name === 'Financial Strength')!;
-  const valCat  = cats.find((c) => c.name === 'Valuation')!;
-  const grwCat  = cats.find((c) => c.name === 'Growth')!;
+function buildSummary(score: number, cats: CategoryScore[]): string {
+  const ratio = (name: string) => {
+    const c = cats.find((x) => x.name === name);
+    return c && c.dataAvailable !== false ? c.score / c.max : null;
+  };
+  const prof = ratio('Profitability');
+  const strength = ratio('Financial Strength');
+  const cash = ratio('Cash Flow');
+  const growth = ratio('Growth');
 
-  const isProfit   = profCat.score / profCat.max >= 0.6;
-  const isStrong   = strCat.dataAvailable === false ? true : strCat.score / strCat.max >= 0.6;
-  const isCheap    = valCat.score / valCat.max >= 0.6;
-  const isGrowing  = grwCat.score / grwCat.max >= 0.6;
-  const margin     = stats.profitMargin != null ? pct(stats.profitMargin) : null;
-
-  if (score >= 85) {
-    return 'Across-the-board strong fundamentals — profitable, well-funded, and growing.';
-  }
+  if (score >= 85) return 'Highly profitable, cash generative and financially secure.';
   if (score >= 70) {
-    if (isProfit && isStrong)
-      return 'Healthy profitability with a solid balance sheet; valuation is the key variable to watch.';
-    if (isGrowing && !isCheap)
-      return 'Strong growth profile, though the current price reflects high expectations already baked in.';
-    return 'Solid fundamentals overall with minor areas to monitor.';
+    if (growth != null && growth < 0.4) return 'A sound, profitable business. Growth has slowed, which is the main thing to watch.';
+    if (strength != null && strength < 0.6) return 'Profitable and cash generative, with more debt than the strongest companies carry.';
+    return 'Healthy fundamentals: profitable, cash generative and on solid footing.';
   }
   if (score >= 55) {
-    if (!isProfit && isGrowing)
-      return 'A growth-stage company — revenue is expanding but profitability has not yet arrived.';
-    if (isProfit && !isStrong)
-      return 'Profitable business, but elevated debt or low liquidity deserves a closer look.';
-    if (isCheap && !isProfit)
-      return 'Trading at a low valuation, likely reflecting concerns about profitability.';
-    return 'Mixed signals — some strengths offset by areas that warrant monitoring.';
+    if (prof != null && prof < 0.5 && growth != null && growth >= 0.6) return 'Growing quickly, but profits have not caught up yet.';
+    if (cash != null && cash < 0.5) return 'Profitable on paper, but not yet turning that into much cash.';
+    if (strength != null && strength < 0.5) return 'A decent business carrying a heavy debt load, which deserves a closer look.';
+    return 'Mixed: real strengths, with some areas that need watching.';
   }
   if (score >= 40) {
-    if (margin != null && margin < 0)
-      return 'The company is currently unprofitable; recovery trajectory and cash runway are the key factors.';
-    return 'Below-average fundamentals — this carries higher risk and requires careful due diligence.';
+    if (prof != null && prof < 0.3) return 'Not reliably profitable right now. Cash runway and a path to profit are what matter.';
+    return 'Below-average fundamentals. This carries more risk and needs careful research.';
   }
-  return 'Significant risk signals across multiple areas. High-risk profile — research thoroughly before investing.';
+  return 'Weak across several areas: losses, strained finances or both. High risk.';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -338,22 +419,38 @@ function buildSummary(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CategoryColumns {
-  health_profitability: number;
-  health_financial_strength: number;
-  health_valuation: number;
-  health_growth: number;
-  health_market_risk: number;
+  health_profitability: number | null;
+  health_financial_strength: number | null;
+  health_cash_flow: number | null;
+  health_growth: number | null;
+  health_market_risk: number | null;
+  health_valuation: number | null;
+  health_score_version: number;
 }
 
-/** Maps by category name, not array position — safe if computeHealthScore ever reorders categories. */
-export function categoriesToColumns(categories: CategoryScore[]): CategoryColumns {
-  const byName = new Map(categories.map((c) => [c.name, c.score]));
+/** Maps by category name. A pillar with no data stores null, not 0. */
+export function categoriesToColumns(categories: CategoryScore[], valuation: number | null = null): CategoryColumns {
+  const col = (name: string) => {
+    const c = categories.find((x) => x.name === name);
+    return c && c.dataAvailable !== false ? c.score : null;
+  };
   return {
-    health_profitability: byName.get('Profitability') ?? 0,
-    health_financial_strength: byName.get('Financial Strength') ?? 0,
-    health_valuation: byName.get('Valuation') ?? 0,
-    health_growth: byName.get('Growth') ?? 0,
-    health_market_risk: byName.get('Market Risk') ?? 0,
+    health_profitability: col('Profitability'),
+    health_financial_strength: col('Financial Strength'),
+    health_cash_flow: col('Cash Flow'),
+    health_growth: col('Growth'),
+    health_market_risk: col('Market Risk'),
+    health_valuation: valuation,
+    health_score_version: HEALTH_SCORE_METHOD,
+  };
+}
+
+/** Every screener_stats health column for a computed score. Insufficient data stores no score. */
+export function healthColumns(hs: HealthScore) {
+  return {
+    health_score: hs.insufficientData ? null : hs.score,
+    health_score_grade: hs.insufficientData ? null : hs.grade,
+    ...categoriesToColumns(hs.categories, hs.valuation),
   };
 }
 
@@ -365,42 +462,46 @@ export function computeHealthScore(
   stats: CompanyStatistics,
   income: IncomeStatementPeriod[],
   balance: BalanceSheetPeriod[],
-  cashflow: CashFlowPeriod[]
+  cashflow: CashFlowPeriod[],
+  opts: { sector?: string | null } = {},
 ): HealthScore {
-  const prof = scoreProfitability(stats, income);
-  const str  = scoreFinancialStrength(balance, cashflow);
-  const val  = scoreValuation(stats);
-  const grw  = scoreGrowth(stats);
-  const mkt  = scoreMarketRisk(stats);
+  const f = fundamentals(income, balance, cashflow, opts.sector ?? null);
+  const signals: Signals = {};
 
-  const total = prof.score + str.score + val.score + grw.score + mkt.score;
-
-  const categories: CategoryScore[] = [
-    { name: 'Profitability',        score: prof.score, max: 30, label: catLabel(prof.score, 30) },
-    { name: 'Financial Strength',   score: str.score,  max: 25, label: catLabel(str.score, 25), dataAvailable: str.dataAvailable },
-    { name: 'Valuation',            score: val.score,  max: 20, label: catLabel(val.score, 20) },
-    { name: 'Growth',               score: grw.score,  max: 15, label: catLabel(grw.score, 15) },
-    { name: 'Market Risk',          score: mkt.score,  max: 10, label: catLabel(mkt.score, 10) },
+  const pillars: [string, number, Tally][] = [
+    ['Profitability', 30, scoreProfitability(stats, f, signals)],
+    ['Financial Strength', 25, scoreFinancialStrength(f, signals)],
+    ['Cash Flow', 20, scoreCashFlow(f, signals)],
+    ['Growth', 15, scoreGrowth(stats, signals)],
+    ['Market Risk', 10, scoreMarketRisk(stats, f, signals)],
   ];
 
-  const grade: HealthScore['grade'] = scoreToGrade(total);
+  const categories: CategoryScore[] = pillars.map(([name, max, t]) => {
+    const score = t.scaled(max);
+    return { name, score, max, label: t.available ? catLabel(score, max) : 'No data', dataAvailable: t.available };
+  });
 
+  // Re-weight over the pillars that had data.
+  const availableMax = categories.filter((c) => c.dataAvailable).reduce((s, c) => s + c.max, 0);
+  const earned = categories.filter((c) => c.dataAvailable).reduce((s, c) => s + c.score, 0);
+  const total = availableMax > 0 ? Math.round((earned / availableMax) * 100) : 0;
+
+  const grade = scoreToGrade(total);
   const label =
     total >= 85 ? 'Strong' :
     total >= 70 ? 'Good' :
     total >= 55 ? 'Fair' :
     total >= 40 ? 'Weak' : 'At Risk';
 
-  // Merge all signals
-  const metricSignals: Record<string, SignalValue> = {
-    ...prof.signals,
-    ...str.signals,
-    ...val.signals,
-    ...grw.signals,
-    ...mkt.signals,
+  return {
+    score: total,
+    grade,
+    label,
+    summary: buildSummary(total, categories),
+    categories,
+    metricSignals: signals,
+    valuation: valuationScore(stats),
+    method: HEALTH_SCORE_METHOD,
+    insufficientData: !categories[1].dataAvailable && !categories[2].dataAvailable,
   };
-
-  const summary = buildSummary(total, categories, stats);
-
-  return { score: total, grade, label, summary, categories, metricSignals };
 }

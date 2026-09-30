@@ -22,7 +22,7 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { coalesce } from '@/lib/cache/request-coalesce';
-import { computeHealthScore, categoriesToColumns, type HealthScore } from '@/lib/finance/health-score';
+import { computeHealthScore, healthColumns, HEALTH_SCORE_METHOD, type HealthScore } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { createServerClient } from '@/lib/supabase/client';
 
@@ -61,35 +61,37 @@ export async function computeAndSyncHealthScore(
   degraded: boolean
 ): Promise<HealthScoreResult> {
   const sym = symbol.toUpperCase();
-  const computed = computeHealthScore(stats, income, balance, cashflow);
+  // Sector sets the leverage bar (utilities, real estate) and the persisted
+  // score is the degraded fallback, so one read serves both.
+  const { data: persisted } = await createServerClient()
+    .from('screener_stats')
+    .select('sector, health_score, health_score_grade, health_score_version')
+    .eq('ticker', sym)
+    .maybeSingle();
+  const computed = computeHealthScore(stats, income, balance, cashflow, { sector: persisted?.sector ?? null });
 
   if (!degraded) {
     void createServerClient()
       .from('screener_stats')
-      .update({
-        health_score: computed.score,
-        health_score_grade: computed.grade,
-        ...categoriesToColumns(computed.categories),
-      })
+      .update(healthColumns(computed))
       .eq('ticker', sym)
       .then(({ error }) => {
         if (error) console.warn('[health-score] screener_stats sync failed:', error.message);
       });
-    void recordHealthScoreSnapshot(sym, computed, income[0]?.fiscal_date);
+    if (!computed.insufficientData) void recordHealthScoreSnapshot(sym, computed, income[0]?.fiscal_date);
     return { healthScore: computed, degraded: false };
   }
 
   // Degraded — don't serve a score built on incomplete data. Fall back to the
   // last known-good persisted score for this ticker so this surface matches
   // what every other page shows, rather than an artificially low number
-  // driven by a transient fetch failure.
-  const { data: persisted } = await createServerClient()
-    .from('screener_stats')
-    .select('health_score, health_score_grade')
-    .eq('ticker', sym)
-    .maybeSingle();
-
-  if (persisted?.health_score != null && persisted.health_score_grade) {
+  // driven by a transient fetch failure. Only a score from the current
+  // method counts: an old-method number would disagree with the breakdown.
+  if (
+    persisted?.health_score != null &&
+    persisted.health_score_grade &&
+    persisted.health_score_version === HEALTH_SCORE_METHOD
+  ) {
     const grade = persisted.health_score_grade as HealthScore['grade'];
     return {
       healthScore: {
@@ -97,6 +99,7 @@ export async function computeAndSyncHealthScore(
         score: persisted.health_score,
         grade,
         label: gradeLabel(grade),
+        insufficientData: false,
       },
       degraded: true,
     };

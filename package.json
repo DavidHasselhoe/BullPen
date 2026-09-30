@@ -16,6 +16,8 @@
     "i18n:pseudo": "node scripts/generate-pseudo-locale.mjs",
     "i18n:translate": "tsx scripts/translate-locales.ts",
     "test-ai": "tsx scripts/test-ai-analysis.ts",
+    "test-health-score": "tsx scripts/test-health-score.ts",
+    "rescore-health": "tsx scripts/rescore-health.ts",
     "test-calendar-market-cap": "tsx scripts/test-calendar-market-cap.ts",
     "test-calendar-day-model": "tsx scripts/test-calendar-day-model.ts",
     "test-trends": "tsx scripts/test-trends.ts",

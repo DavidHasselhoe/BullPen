@@ -1542,7 +1542,8 @@ const getHealthScore = tool({
   description:
     'Fetch BullPen\'s computed Financial Health score (0-100, grade A-F) for a stock — the same score ' +
     'shown on the stock page\'s Financial Health card, broken into Profitability, Financial Strength, ' +
-    'Valuation, Growth, and Market Risk. Use this whenever the user asks about a company\'s "financial health", ' +
+    'Cash Flow, Growth, and Market Risk. It measures business quality and safety, not price: a healthy company ' +
+    'can still be expensive. Use this whenever the user asks about a company\'s "financial health", ' +
     '"financial strength", overall quality/fundamentals, or asks for a health score/grade. ' +
     'Works for any ticker globally. Costs ~250 API credits on a cold cache (free once cached for the day).',
   inputSchema: jsonSchema<{ ticker: string }>({
@@ -1556,6 +1557,9 @@ const getHealthScore = tool({
     const symbol = ticker.toUpperCase();
     try {
       const { healthScore: hs } = await getHealthScoreForSymbol(symbol);
+      if (hs.insufficientData) {
+        return { ticker: symbol, error: 'No health score: BullPen has no balance sheet or cash flow statement for this company.' };
+      }
       return {
         ticker: symbol,
         score: hs.score,
