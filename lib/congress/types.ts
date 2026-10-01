@@ -16,7 +16,8 @@ export interface CongressTradeRow {
   amountRange: string;
   amountLow: number | null;
   amountHigh: number | null;
-  transactionDate: string;
+  /** Null when the filed date is impossible (see isPlausibleTradeDate). */
+  transactionDate: string | null;
   disclosureDate: string | null;
   daysToDisclose: number | null;
   sector: string | null;
@@ -32,6 +33,17 @@ export interface CongressTradeRow {
 export function moveBeforeDisclosure(t: Pick<CongressTradeRow, 'priceAtTrade' | 'priceAtDisclosure'>): number | null {
   if (!t.priceAtTrade || t.priceAtDisclosure == null) return null;
   return ((t.priceAtDisclosure - t.priceAtTrade) / t.priceAtTrade) * 100;
+}
+
+/**
+ * A trade cannot be dated after the filing that reports it. Some filings carry
+ * a bond's coupon or maturity date, or a placeholder, in the trade-date field:
+ * Khanna's Aug 24 filing listed Sep 1 for 15 sales, Hern's Sep 25 one listed
+ * Nov 1. That date is unknown, not slightly off, so nothing derived from it
+ * (days to disclose, the price on the trade date) holds either.
+ */
+export function isPlausibleTradeDate(transactionDate: string | null, disclosureDate: string | null): boolean {
+  return !!transactionDate && (!disclosureDate || transactionDate <= disclosureDate);
 }
 
 /** The STOCK Act filing deadline. Past this, a disclosure was filed late. */

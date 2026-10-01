@@ -42,6 +42,11 @@ function compactUsd(n: number): string {
   return `$${Math.round(n)}`;
 }
 
+/** The trade's year, or its filing's when the trade date is unknown. */
+function tradeYear(t: CongressTradeRow): string {
+  return (t.transactionDate ?? t.disclosureDate ?? '').slice(0, 4);
+}
+
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
@@ -135,7 +140,9 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
           </p>
         </div>
         <p className="mt-0.5 text-right text-xs tabular-nums text-muted-foreground">
-          {formatDate(t.transactionDate)}
+          {/* A filed date after the filing itself is unknown (isPlausibleTradeDate),
+              so the row says when it was reported instead of inventing a trade day. */}
+          {t.transactionDate ? formatDate(t.transactionDate) : `Trade date not given · reported ${formatDate(t.disclosureDate) ?? 'undated'}`}
           {t.daysToDisclose != null && (
             <span className={cn('ml-1.5', late && 'text-amber-600 dark:text-amber-400')}>
               {late ? `filed ${t.daysToDisclose}d late` : `filed ${t.daysToDisclose}d later`}
@@ -222,7 +229,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
   /** Years present in this member's trades, newest first. Derived, never a
    *  fixed range: members' histories start and end in different years. */
   const yearOptions = useMemo(() => {
-    const years = [...new Set(tradesWithTicker.map((t) => t.transactionDate.slice(0, 4)))]
+    const years = [...new Set(tradesWithTicker.map((t) => tradeYear(t)))]
       .filter(Boolean)
       .sort()
       .reverse();
@@ -243,7 +250,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
     return tradesWithTicker.filter(
       (t) =>
         (filter === 'all' || tradeDirection(t.tradeType) === filter) &&
-        (year === ALL_YEARS || t.transactionDate.startsWith(year)) &&
+        (year === ALL_YEARS || tradeYear(t) === year) &&
         (!q ||
           t.symbol.toLowerCase().includes(q) ||
           t.assetDescription.toLowerCase().includes(q)),

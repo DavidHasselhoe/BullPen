@@ -14,7 +14,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { getStockCandles, getStockQuotes } from '@/lib/twelvedata/twelvedata-client';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
-import { tradeDirection } from './types';
+import { isPlausibleTradeDate, tradeDirection } from './types';
 
 export interface ActivityTrade {
   slug: string;
@@ -84,7 +84,10 @@ export async function getTradesForSymbols(symbols: string[], sinceDays: number, 
     .order('transaction_date', { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return ((data ?? []) as unknown as TradeJoinRow[]).map(toActivity);
+  // These rows read "Traded {date}", so a trade without a believable date is left out.
+  return ((data ?? []) as unknown as TradeJoinRow[])
+    .filter((r) => isPlausibleTradeDate(r.transaction_date, r.disclosure_date))
+    .map(toActivity);
 }
 
 // ─── Scorecard ──────────────────────────────────────────────────────────────

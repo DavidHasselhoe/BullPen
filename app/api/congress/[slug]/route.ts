@@ -15,7 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
-import type { CongressTradeRow } from '@/lib/congress/types';
+import { isPlausibleTradeDate, type CongressTradeRow } from '@/lib/congress/types';
 
 /** Trades shown on a member page. Deep history lives behind the vendor, not
  *  here — we only store the most recent 100 per member (see ingest-trades). */
@@ -125,7 +125,11 @@ async function handler(_request: NextRequest, context?: unknown) {
         firstBuyDate: (h.first_buy_date as unknown as string) ?? null,
         lastActivityDate: (h.last_activity_date as unknown as string) ?? null,
       })),
-      trades: ((trades ?? []) as Record<string, never>[]).map((t) => ({
+      trades: ((trades ?? []) as Record<string, never>[]).map((t) => {
+        const transactionDate = t.transaction_date as unknown as string;
+        const disclosureDate = (t.disclosure_date as unknown as string) ?? null;
+        const plausible = isPlausibleTradeDate(transactionDate, disclosureDate);
+        return {
         id: t.id as unknown as string,
         symbol: (t.symbol as unknown as string) ?? null,
         assetDescription: (t.asset_description as unknown as string) ?? '',
@@ -134,13 +138,14 @@ async function handler(_request: NextRequest, context?: unknown) {
         amountRange: t.amount_range as unknown as string,
         amountLow: num(t.amount_low),
         amountHigh: num(t.amount_high),
-        transactionDate: t.transaction_date as unknown as string,
-        disclosureDate: (t.disclosure_date as unknown as string) ?? null,
-        daysToDisclose: num(t.days_to_disclose),
+        transactionDate: plausible ? transactionDate : null,
+        disclosureDate,
+        daysToDisclose: plausible ? num(t.days_to_disclose) : null,
         sector: (t.sector as unknown as string) ?? null,
-        priceAtTrade: num(t.price_at_trade),
+        priceAtTrade: plausible ? num(t.price_at_trade) : null,
         priceAtDisclosure: num(t.price_at_disclosure),
-      })),
+        };
+      }),
     };
 
     // Public, identical for every visitor, and only changes when the weekly
