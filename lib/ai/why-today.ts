@@ -60,7 +60,7 @@ export function whyTodaySessionDate(ticker: string, now = new Date()): string {
 
 /** A holding pinned to a listing (mic_code) keeps its own entry: bare KOG is Kroger, not Kongsberg. */
 export function whyTodayKey(ticker: string, language: string, mic?: string | null): string {
-  return `whytoday:v1:${whyTodaySessionDate(ticker)}:${language}:${ticker}${mic ? `@${mic}` : ''}`;
+  return `whytoday:v2:${whyTodaySessionDate(ticker)}:${language}:${ticker}${mic ? `@${mic}` : ''}`;
 }
 
 export const whyTodayLockKey = (key: string) => `${key}:lock`;
@@ -80,7 +80,7 @@ export function whyTodayRequest(move: WhyTodayMove, language: string) {
   const direction = move.changePct >= 0 ? 'up' : 'down';
   return {
     model: WHY_TODAY_MODEL,
-    // Thinking is off: max_tokens is sized for 2-3 bullets, and Sonnet 5's
+    // Thinking is off: max_tokens is sized for a two-sentence answer, and Sonnet 5's
     // default adaptive thinking would spend the same budget and could cut them.
     max_tokens: 600,
     thinking: { type: 'disabled' as const },
@@ -91,10 +91,17 @@ export function whyTodayRequest(move: WhyTodayMove, language: string) {
     tools: [{ type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: 2 }],
     system:
       languagePrefix +
-      'You are a concise financial analyst. Explain why a stock moved today using only what you find in current news. ' +
-      'Respond with exactly 2–3 bullet points (each starting with "• "). ' +
-      'Name the specific catalyst, event, or news item. Keep each bullet under 25 words. ' +
-      'Do not use headers, bold text, or generic market commentary. ' +
+      'Explain why a stock moved today, using only what you find in current news. Search first and write nothing ' +
+      'before your searches are done: only your final answer is shown. ' +
+      'The answer is one or two short sentences, 35 words at most, plain text with no bullets, headers or bold. ' +
+      'Lead with the cause: "Piper Sandler raised its price target to $400, citing cloud demand." ' +
+      'Write like a news ticker. Never refer to yourself, the search, or the question: no "I", "let me", "based on", ' +
+      '"it appears", "no specific catalyst was found". The reader already sees the ticker, the date and the percent ' +
+      'move, so do not restate them. ' +
+      'When no company news explains the move, say what it moved with instead, in the same direct voice: a sector or ' +
+      'peer move, the broader market, or follow-through on an earlier move. For example "No company news today. ' +
+      'Shares are giving back part of Tuesday\'s 11% surge." or "No company news today. Shares rose with other ' +
+      'nuclear power stocks." Name a sector or market cause only if you found it in the news. Never invent a cause. ' +
       'Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.',
     messages: [{
       role: 'user' as const,
@@ -112,7 +119,10 @@ let anthropic: Anthropic | null = null;
 export async function generateWhyToday(move: WhyTodayMove, language: string) {
   anthropic ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const res = await anthropic.beta.messages.create(whyTodayRequest(move, language));
+  // Anything written before the last search result is narration ("Let me search..."), not the answer.
+  const lastSearch = res.content.findLastIndex((b) => b.type === 'web_search_tool_result');
   const text = res.content
+    .slice(lastSearch + 1)
     .map((b) => (b.type === 'text' ? b.text : ''))
     .join('')
     .trim();

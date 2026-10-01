@@ -109,7 +109,10 @@ async function handler(
       let text = '';
 
       for await (const event of stream) {
-        if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
+        // Web search arrives as server_tool_use. Text before a search is narration
+        // ("Let me search..."), so drop it here and on the client.
+        if (event.type === 'content_block_start' && event.content_block.type === 'server_tool_use') {
+          text = '';
           send({ type: 'searching' });
         }
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {

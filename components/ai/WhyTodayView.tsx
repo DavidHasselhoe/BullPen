@@ -63,7 +63,10 @@ export function WhyTodayView({ ticker, price, change, changePct }: Props) {
             if (!line.startsWith('data: ')) continue;
             try {
               const event = JSON.parse(line.slice(6));
-              if (event.type === 'searching') setStatus('searching');
+              if (event.type === 'searching') {
+                setStatus('searching');
+                setText('');
+              }
               if (event.type === 'text') {
                 setStatus('streaming');
                 setText((t) => t + event.delta);
