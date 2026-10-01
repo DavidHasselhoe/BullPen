@@ -63,8 +63,16 @@ async function fetchCompanyMeta(tickers: string[]): Promise<Map<string, CompanyM
       .in('ticker', upper)
       .returns<Array<{ ticker: string; name: string }>>(),
   ]);
-  const meta = new Map<string, CompanyMeta>((indexRows ?? []).map((r) => [r.ticker, { name: r.name, logo_url: null }]));
-  for (const c of data ?? []) meta.set(c.ticker, { name: c.name || meta.get(c.ticker)?.name || c.ticker, logo_url: c.logo_url });
+  // Some catalogue names carry the share class ("Microsoft Corporation Common Stock").
+  const catalogueName = (n: string) => n.replace(/ Common Stock$/, '');
+  const meta = new Map<string, CompanyMeta>((indexRows ?? []).map((r) => [r.ticker, { name: catalogueName(r.name), logo_url: null }]));
+  for (const c of data ?? []) {
+    // 20 of the 39 `companies` names are SEC filing caps ("ORACLE CORP"), which
+    // sat beside "Broadcom Inc." on the same row; the catalogue has them cased.
+    const shouting = !!c.name && c.name === c.name.toUpperCase();
+    const name = (shouting && meta.get(c.ticker)?.name) || c.name || meta.get(c.ticker)?.name || c.ticker;
+    meta.set(c.ticker, { name, logo_url: c.logo_url });
+  }
   return meta;
 }
 
