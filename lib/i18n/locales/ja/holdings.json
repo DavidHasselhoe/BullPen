@@ -373,5 +373,8 @@
   "riskLatestLabel": "最新分析、{{date}}",
   "riskLatestHoldingsChanged": "その時点では{{then}}ポジション保有していて、現在{{now}}ポジション保有しています。最新の分析を実行してください。",
   "riskLatestView": "全分析を表示",
-  "riskLatestRunNew": "新しい分析を実行"
+  "riskLatestRunNew": "新しい分析を実行",
+  "portfolioHealthCoverageValue": "ポートフォリオ評価額の{{pct}}%を対象としています。スコアなし: {{symbols}}。",
+  "portfolioHealthUnscoredMore": "ほか{{count}}件",
+  "portfolioHealthExplainUnscored": "暗号資産、大半のファンド、財務諸表を公開していない企業にはヘルススコアがないため、平均から除外しています。"
 }

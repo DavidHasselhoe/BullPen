@@ -373,5 +373,8 @@
   "riskLatestLabel": "Análisis más reciente, {{date}}",
   "riskLatestHoldingsChanged": "Tenías {{then}} posiciones entonces y ahora tienes {{now}}. Ejecuta un nuevo análisis para una vista actualizada.",
   "riskLatestView": "Ver análisis completo",
-  "riskLatestRunNew": "Ejecutar nuevo análisis"
+  "riskLatestRunNew": "Ejecutar nuevo análisis",
+  "portfolioHealthCoverageValue": "Cubre el {{pct}}% del valor de tu cartera. Sin puntuar: {{symbols}}.",
+  "portfolioHealthUnscoredMore": "y {{count}} más",
+  "portfolioHealthExplainUnscored": "Las criptomonedas, la mayoría de fondos y las empresas sin estados financieros publicados no tienen puntuación de salud, así que quedan fuera del promedio."
 }

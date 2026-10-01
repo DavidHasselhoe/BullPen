@@ -117,12 +117,21 @@ export function catLabel(score: number, max: number): string {
  *  one place to convert a bare 0-100 score (e.g. a theme basket's average)
  *  into the letter grade HealthRing needs to color itself correctly. */
 export function scoreToGrade(score: number): HealthGrade {
-  if (score >= 85) return 'A';
-  if (score >= 70) return 'B';
-  if (score >= 55) return 'C';
-  if (score >= 40) return 'D';
-  return 'F';
+  return GRADE_CUTOFFS.find((c) => score >= c.min)?.grade ?? 'F';
 }
+
+/**
+ * Lowest score for each grade, best first. The one copy: the portfolio card's
+ * grade explainer derives its ranges from this, so a future method that moves
+ * a cut-off cannot leave the explainer describing the old ones.
+ */
+export const GRADE_CUTOFFS: readonly { grade: HealthGrade; min: number }[] = [
+  { grade: 'A', min: 85 },
+  { grade: 'B', min: 70 },
+  { grade: 'C', min: 55 },
+  { grade: 'D', min: 40 },
+  { grade: 'F', min: 0 },
+];
 
 /**
  * A year of a quarterly figure: the latest four quarters summed or, when one

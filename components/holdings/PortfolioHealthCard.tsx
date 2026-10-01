@@ -10,7 +10,7 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { HealthBloom, HealthBloomLegendRow } from '@/components/finance/HealthBloom';
 import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { computePortfolioHealth, getCategoryContributors } from '@/lib/finance/portfolio-health';
-import { HEALTH_CATEGORIES } from '@/lib/finance/health-score';
+import { GRADE_CUTOFFS, HEALTH_CATEGORIES } from '@/lib/finance/health-score';
 import type { TickerHealth } from '@/app/api/holdings/health-summary/route';
 import type { HoldingWithPrice } from './types';
 
@@ -21,13 +21,20 @@ interface PortfolioHealthCardProps {
 
 const CATEGORY_ORDER = HEALTH_CATEGORIES.map((c) => c.name);
 
-const GRADE_THRESHOLDS: { grade: string; range: string; labelKey: string }[] = [
-  { grade: 'A', range: '85–100', labelKey: 'portfolioHealthGradeStrong' },
-  { grade: 'B', range: '70–84', labelKey: 'portfolioHealthGradeGood' },
-  { grade: 'C', range: '55–69', labelKey: 'portfolioHealthGradeFair' },
-  { grade: 'D', range: '40–54', labelKey: 'portfolioHealthGradeWeak' },
-  { grade: 'F', range: '0–39', labelKey: 'portfolioHealthGradeAtRisk' },
-];
+const GRADE_LABEL_KEYS: Record<string, string> = {
+  A: 'portfolioHealthGradeStrong',
+  B: 'portfolioHealthGradeGood',
+  C: 'portfolioHealthGradeFair',
+  D: 'portfolioHealthGradeWeak',
+  F: 'portfolioHealthGradeAtRisk',
+};
+
+/** Ranges read off the scoring's own cut-offs, best first: A is 85-100, B 70-84... */
+const GRADE_THRESHOLDS = GRADE_CUTOFFS.map(({ grade, min }, i) => ({
+  grade,
+  range: `${min}–${i === 0 ? 100 : GRADE_CUTOFFS[i - 1].min - 1}`,
+  labelKey: GRADE_LABEL_KEYS[grade],
+}));
 
 export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCardProps) {
   const { t } = useTranslation('holdings');
@@ -108,6 +115,7 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
           <div>
             <p className="text-xs font-semibold text-foreground">{t('portfolioHealthExplainHeading')}</p>
             <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{t('portfolioHealthExplainIntro')}</p>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{t('portfolioHealthExplainUnscored')}</p>
           </div>
           <div className="space-y-2">
             {CATEGORY_ORDER.map((name) => (
@@ -205,7 +213,16 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
             </PopoverContent>
           </Popover>
           <p className="text-xs text-muted-foreground pt-1 border-t border-border/40">
-            {t('portfolioHealthCoverage', { covered: portfolioHealth.coveredCount, total: portfolioHealth.totalCount })}
+            {portfolioHealth.unscored.length === 0
+              ? t('portfolioHealthCoverage', { covered: portfolioHealth.coveredCount, total: portfolioHealth.totalCount })
+              : t('portfolioHealthCoverageValue', {
+                  pct: portfolioHealth.coveredValuePct,
+                  symbols:
+                    portfolioHealth.unscored.slice(0, 3).join(', ') +
+                    (portfolioHealth.unscored.length > 3
+                      ? ` ${t('portfolioHealthUnscoredMore', { count: portfolioHealth.unscored.length - 3 })}`
+                      : ''),
+                })}
           </p>
         </div>
       </div>

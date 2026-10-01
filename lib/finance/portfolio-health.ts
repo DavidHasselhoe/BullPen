@@ -1,4 +1,4 @@
-import { catLabel, HEALTH_CATEGORIES, type CategoryScore, type HealthGrade } from '@/lib/finance/health-score';
+import { catLabel, HEALTH_CATEGORIES, scoreToGrade, type CategoryScore, type HealthGrade } from '@/lib/finance/health-score';
 
 export interface TickerHealth {
   score: number;
@@ -12,14 +12,15 @@ export interface PortfolioHealth {
   categories: CategoryScore[];
   coveredCount: number;
   totalCount: number;
-}
-
-function gradeForScore(score: number): HealthGrade {
-  if (score >= 85) return 'A';
-  if (score >= 70) return 'B';
-  if (score >= 55) return 'C';
-  if (score >= 40) return 'D';
-  return 'F';
+  /**
+   * Share of the portfolio's market value the score covers, 0-100. The count
+   * alone hid how much was left out: "9 of 10 holdings scored" was true of a
+   * book whose unscored Bitcoin was 18.5% of it. Crypto, most ETFs and small
+   * caps without statements have no health score by design.
+   */
+  coveredValuePct: number;
+  /** Held but unscored, largest first, so the card can name them. */
+  unscored: string[];
 }
 
 /**
@@ -34,6 +35,7 @@ export function computePortfolioHealth(
 ): PortfolioHealth | null {
   const covered = holdings.filter((h) => h.marketValue && h.marketValue > 0 && healthBySymbol.has(h.symbol));
   const totalValue = covered.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
+  const allValue = holdings.reduce((sum, h) => sum + (h.marketValue && h.marketValue > 0 ? h.marketValue : 0), 0);
 
   if (covered.length === 0 || totalValue <= 0) {
     return null;
@@ -74,10 +76,15 @@ export function computePortfolioHealth(
 
   return {
     score: roundedScore,
-    grade: gradeForScore(roundedScore),
+    grade: scoreToGrade(roundedScore),
     categories,
     coveredCount: covered.length,
     totalCount: holdings.length,
+    coveredValuePct: allValue > 0 ? Math.round((totalValue / allValue) * 100) : 100,
+    unscored: holdings
+      .filter((h) => !healthBySymbol.has(h.symbol))
+      .sort((a, b) => (b.marketValue ?? 0) - (a.marketValue ?? 0))
+      .map((h) => h.symbol),
   };
 }
 
