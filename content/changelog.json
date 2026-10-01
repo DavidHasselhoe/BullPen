@@ -1,5 +1,50 @@
 [
   {
+    "date": "2026-10-01",
+    "entries": [
+      {
+        "type": "new",
+        "text": "The earnings calendar now shows upcoming reports up to six weeks ahead, and dates a company hasn't confirmed yet are marked as estimated on the calendar, Home and the stock page"
+      },
+      {
+        "type": "improved",
+        "text": "When you ask Bull to rank stocks, the answer comes as a tidy list with company logos and health scores instead of a wide table, and every row links to the stock"
+      },
+      {
+        "type": "improved",
+        "text": "Discover is shorter and easier to scan. The market tiles say which fund each index figure comes from, sections have clear headings, and institutional holdings and politicians' trades show a preview with a link to the full list"
+      },
+      {
+        "type": "improved",
+        "text": "Institutional holdings and Washington Trading, including each fund's and politician's page, are now available in all seven languages"
+      },
+      {
+        "type": "improved",
+        "text": "Portfolio Health on My Holdings shows how much of your portfolio's value it covers and names any holdings without a score, such as crypto"
+      },
+      {
+        "type": "improved",
+        "text": "The Ask Bull button takes up less room on phones, and the top menu no longer cuts off links in longer languages"
+      },
+      {
+        "type": "fixed",
+        "text": "Why Today explanations are one or two direct sentences, without the assistant talking about its own search"
+      },
+      {
+        "type": "fixed",
+        "text": "The earnings calendar no longer shows made-up results for companies that didn't report, and stock pages now show recent reports the calendar already knew about, such as Micron's"
+      },
+      {
+        "type": "fixed",
+        "text": "A company that spun off part of its business is no longer listed as hitting a 52-week low, and politicians' trades with an impossible date show when they were reported instead"
+      },
+      {
+        "type": "fixed",
+        "text": "Company names on Discover no longer appear in all capital letters"
+      }
+    ]
+  },
+  {
     "date": "2026-09-30",
     "entries": [
       {
