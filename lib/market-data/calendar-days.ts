@@ -44,6 +44,7 @@ import {
   getSplitsCalendar,
   getIPOCalendar,
   earningsResponseLooksTruncated,
+  reportDateToFiscalQuarter,
   TwelveDataRateLimitError,
   type EarningsCalendarItem,
   type DividendsCalendarItem,
@@ -54,6 +55,7 @@ import { fetchNasdaqEarningsDay, type NasdaqEarningsRow } from './nasdaq-earning
 import { getCachedMany, getCachedManyStale, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveCredits, waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
+import type { EarningsCalendar } from '@/lib/finnhub/finnhub-client';
 
 export type CalendarKind = 'earnings' | 'dividends' | 'splits' | 'ipo';
 
@@ -176,58 +178,66 @@ const MIN_STUB_GROUP_SIZE = 3;
  * any field TD came back empty for.
  */
 export function stripFabricatedEpsStubs(rows: EarningsCalendarItem[]): EarningsCalendarItem[] {
+  const fabricated = findFabricatedEps(rows);
+  if (fabricated.size === 0) return rows;
+  return rows.map((row) => (fabricated.has(row) ? blankEps(row) : row));
+}
+
+const blankEps = (row: EarningsCalendarItem): EarningsCalendarItem => ({ ...row, eps_estimate: null, eps_actual: null, surprise: null });
+
+/**
+ * Rows in a group of MIN_STUB_GROUP_SIZE+ sharing one (date, estimate,
+ * actual). The first variant found (2026-09-09) had estimate = actual and
+ * zero surprise; the far commoner one, found 2026-10-01, clones one real
+ * company's beat onto dozens: 2026-09-30 gave DHR, HIG, CM and 24 others
+ * the same 4.08 / 4.40, and every cached day back to mid-August had at
+ * least one such batch (CSCO, IBM, BBY on Sep 1; BAC on Aug 27). Two real
+ * companies on the same estimate and actual stay below the threshold.
+ */
+function findFabricatedEps(rows: EarningsCalendarItem[]): Set<EarningsCalendarItem> {
   const groups = new Map<string, EarningsCalendarItem[]>();
   for (const row of rows) {
     if (row.eps_estimate == null || row.eps_actual == null) continue;
-    if (row.eps_estimate !== row.eps_actual) continue;
-    if ((row.surprise ?? 0) !== 0) continue;
     // Per date: the range path passes several days in one array, and the
-    // fingerprint is "same figure on the same day", not across a week.
-    const key = `${row.date}|${row.eps_estimate}`;
+    // fingerprint is "same figures on the same day", not across a week.
+    const key = `${row.date}|${row.eps_estimate}|${row.eps_actual}`;
     const group = groups.get(key);
     if (group) group.push(row);
     else groups.set(key, [row]);
   }
-
   const fabricated = new Set<EarningsCalendarItem>();
   for (const group of groups.values()) {
     if (group.length >= MIN_STUB_GROUP_SIZE) for (const row of group) fabricated.add(row);
   }
-  if (fabricated.size === 0) return rows;
-
-  return rows.map((row) =>
-    fabricated.has(row) ? { ...row, eps_estimate: null, eps_actual: null, surprise: null } : row
-  );
+  return fabricated;
 }
 
 /**
- * Merges TD's /earnings_calendar rows with Nasdaq's free calendar for one
- * day, near-term future or recent past. TD's rows are sanitized against the
- * fabricated-stub fingerprint (stripFabricatedEpsStubs) before anything else
- * happens, so a stubbed TD row is treated exactly like a genuinely empty one
- * for the merge below. TD stays the base row for any symbol it has (so its
- * other fields — notably revenue_estimate/revenue_actual, which Nasdaq's
- * feed doesn't carry — are kept when present); Nasdaq fills in any symbol TD
- * is missing entirely, and backfills whatever TD came back empty for (fake
- * or otherwise): `time`/`eps_estimate` always (TD's /earnings_calendar
- * returns `time: ""` on effectively every row — see components/tools/
- * calendar/EventRows.tsx's dead-code-removal comment), plus `eps_actual`/
- * `surprise` for a past date via Nasdaq's "PAST-DATE BONUS" (see nasdaq-
- * earnings-calendar.ts's file header). Nasdaq's own fetch fails soft (see
- * its file header), so a scrape breakage degrades this to "TD-only for that
- * day" (fabricated fields still stripped, just left blank instead of
- * backfilled), never a thrown error.
+ * One earnings day: TD's rows (or a cached day being repaired) merged with
+ * Nasdaq's rows for the same date. Pure, so the live fetch and
+ * scripts/repair-earnings-calendar-cache.ts run the same logic.
+ *
+ * A row in a fabricated batch loses its numbers, and when Nasdaq answered for
+ * the day and does not list the company, the row goes entirely: a cloned row
+ * nobody else confirms has a made-up date too (DHR does not report on
+ * Sep 30). Nasdaq's EPS beats TD's for any symbol both list, because TD's
+ * calendar actuals are the ones getting cloned and misfiled (MU's Sep 30
+ * report was cached as $2.86 against Nasdaq's $33.19).
  */
-async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCalendarItem[]> {
-  const [tdRowsRaw, nasdaqRows] = await Promise.all([
-    getEarningsCalendarRange(date, date, COUNTRY),
-    fetchNasdaqEarningsDay(date),
-  ]);
-  const tdRows = stripFabricatedEpsStubs(tdRowsRaw);
+export function mergeNasdaqIntoEarningsDay(
+  tdRowsRaw: EarningsCalendarItem[],
+  nasdaqRows: NasdaqEarningsRow[],
+  date: string
+): EarningsCalendarItem[] {
+  const listed = new Set(nasdaqRows.map((r) => r.symbol));
+  const fabricated = findFabricatedEps(tdRowsRaw);
 
   const bySymbol = new Map<string, EarningsCalendarItem>();
-  for (const row of tdRows) {
-    if (row.symbol) bySymbol.set(row.symbol.toUpperCase(), row);
+  for (const row of tdRowsRaw) {
+    if (!row.symbol) continue;
+    const sym = row.symbol.toUpperCase();
+    if (!fabricated.has(row)) bySymbol.set(sym, row);
+    else if (listed.size === 0 || listed.has(sym)) bySymbol.set(sym, blankEps(row));
   }
 
   for (const nRow of nasdaqRows) {
@@ -240,14 +250,34 @@ async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCal
       ...existing,
       name: existing.name || nRow.name,
       time: existing.time || nRow.time || '',
-      eps_estimate: existing.eps_estimate ?? nRow.epsEstimate,
-      eps_actual: existing.eps_actual ?? nRow.epsActual,
-      surprise: existing.surprise ?? nRow.surprisePercent,
+      eps_estimate: nRow.epsEstimate ?? existing.eps_estimate,
+      eps_actual: nRow.epsActual ?? existing.eps_actual,
+      surprise: nRow.surprisePercent ?? existing.surprise,
       nasdaq_confirmed: true,
     });
   }
 
   return [...bySymbol.values()];
+}
+
+/**
+ * Merges TD's /earnings_calendar rows with Nasdaq's free calendar for one
+ * day, near-term future or recent past (see mergeNasdaqIntoEarningsDay for
+ * the rules). TD stays the base row for any symbol it has, so revenue
+ * fields Nasdaq's feed doesn't carry are kept; Nasdaq adds any symbol TD is
+ * missing, fills `time` (TD returns "" on effectively every row), and its
+ * EPS, including a past date's actual via the "PAST-DATE BONUS" (see
+ * nasdaq-earnings-calendar.ts's file header), wins. Nasdaq's own fetch fails soft (see
+ * its file header), so a scrape breakage degrades this to "TD-only for that
+ * day" (fabricated fields still stripped, just left blank instead of
+ * backfilled), never a thrown error.
+ */
+async function fetchEarningsDayWithNasdaqFill(date: string): Promise<EarningsCalendarItem[]> {
+  const [tdRowsRaw, nasdaqRows] = await Promise.all([
+    getEarningsCalendarRange(date, date, COUNTRY),
+    fetchNasdaqEarningsDay(date),
+  ]);
+  return mergeNasdaqIntoEarningsDay(tdRowsRaw, nasdaqRows, date);
 }
 
 /**
@@ -365,6 +395,8 @@ async function fetchFromProvider(
       }
       // Outside the merge window there's no Nasdaq row to fall back to, so a
       // fabricated field just ends up blank rather than backfilled.
+      // ponytail: a blanked clone keeps its (likely fake) date here, and a past
+      // day's merge with its cached rows keeps it too. Drop instead if they show up.
       return stripFabricatedEpsStubs(await getEarningsCalendarRange(from, to, COUNTRY));
     case 'dividends':
       return getDividendsCalendar(from, to, DIVIDENDS_OUTPUTSIZE);
@@ -670,4 +702,60 @@ export async function warmCalendarUnit(
   await waitForCronCreditBudget(CALENDAR_CREDITS_PER_REQUEST);
   const byDate = await fetchAndCacheUnit(unit.kind, unit.from, unit.to, today);
   return { warmed: byDate.size, skipped: false };
+}
+
+// ── Stock page ───────────────────────────────────────────────────────────────
+
+/**
+ * Folds a company's Nasdaq-confirmed calendar rows into its per-symbol
+ * /earnings history for the stock page. That feed lags: on 2026-10-01 MU's
+ * had nothing after Jun 24, while the market calendar had its Sep 30 report
+ * from Nasdaq. A calendar row within MISDATED_WINDOW_DAYS of a history row is
+ * the same report and corrects its date, estimate, actual and timing;
+ * otherwise it is added, one fiscal quarter after the history row before it.
+ * TD-only calendar rows are skipped, they are what gets fabricated.
+ */
+export function mergeCalendarIntoSymbolEarnings(
+  history: EarningsCalendar[],
+  calendarRows: EarningsCalendarItem[],
+  symbol: string,
+): EarningsCalendar[] {
+  const rows = [...history];
+  for (const c of calendarRows) {
+    if (!isNasdaqConfirmed(c)) continue;
+    const i = rows.findIndex((r) => Math.abs(dayDeltaFromToday(r.date, c.date)) <= MISDATED_WINDOW_DAYS);
+    const base = i >= 0 ? rows[i] : newHistoryRow(rows, c, symbol);
+    const merged: EarningsCalendar = {
+      ...base,
+      date: c.date,
+      epsEstimate: c.eps_estimate ?? base.epsEstimate,
+      epsActual: c.eps_actual ?? base.epsActual,
+      hour: c.time || base.hour,
+    };
+    if (i >= 0) rows[i] = merged;
+    else rows.push(merged);
+  }
+  return rows;
+}
+
+function newHistoryRow(rows: EarningsCalendar[], c: EarningsCalendarItem, symbol: string): EarningsCalendar {
+  const prev = rows
+    .filter((r) => r.date < c.date && r.quarter != null && r.year != null)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  const { quarter, year } = prev
+    ? { quarter: prev.quarter === 4 ? 1 : prev.quarter! + 1, year: prev.quarter === 4 ? prev.year! + 1 : prev.year! }
+    : reportDateToFiscalQuarter(c.date);
+  return {
+    date: c.date,
+    epsActual: null,
+    epsEstimate: null,
+    hour: '',
+    quarter,
+    year,
+    revenueActual: null,
+    revenueEstimate: null,
+    symbol,
+    // Same meaning as the history feed's flag: reported, not yet matched to a filed statement.
+    unconfirmed: c.eps_actual != null,
+  };
 }
