@@ -48,7 +48,7 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
   // Half the track is available on each side of the zero line.
   const width = pct != null && scale > 0 ? Math.min(50, (Math.abs(pct) / scale) * 50) : 0;
 
-  const { data, isLoading } = useQuery<{ success: boolean; items: TickerItem[] }>({
+  const { data, isLoading, refetch } = useQuery<{ success: boolean; items: TickerItem[] }>({
     queryKey: ['discover-sector', sector.key],
     queryFn: async () => {
       const res = await fetch(`/api/discover/sector/${sector.key}`);
@@ -85,7 +85,9 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
             aria-hidden
           />
           {Icon && <Icon className="hidden h-3.5 w-3.5 shrink-0 text-muted-foreground sm:block" aria-hidden />}
-          <span className="truncate text-[13px] font-medium text-foreground">{sector.label}</span>
+          {/* Wraps rather than truncating: at phone width "Consumer Discretionary"
+              read as "Consumer Di…", leaving three of eleven sectors unreadable. */}
+          <span className="text-[13px] font-medium leading-tight text-foreground">{sector.label}</span>
         </span>
 
         {/* Diverging bar. Decorative — the signed percentage beside it carries
@@ -95,7 +97,7 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
           <span
             className={cn(
               'absolute top-1/2 h-2.5 -translate-y-1/2 rounded-sm transition-transform duration-300 ease-out',
-              positive ? 'left-1/2 origin-left bg-emerald-400/85' : 'right-1/2 origin-right bg-red-400/85',
+              positive ? 'left-1/2 origin-left bg-emerald-500/85 dark:bg-emerald-400/85' : 'right-1/2 origin-right bg-red-500/85 dark:bg-red-400/85',
             )}
             style={{
               width: `${width}%`,
@@ -112,8 +114,8 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
             pct == null
               ? 'text-muted-foreground'
               : positive
-                ? 'text-emerald-400'
-                : 'text-red-400',
+                ? 'text-emerald-700 dark:text-emerald-400'
+                : 'text-red-600 dark:text-red-400',
           )}
         >
           {fmtPct(pct)}
@@ -139,7 +141,7 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
           >
             <div className="px-3 pb-4 pt-1 sm:px-4">
               {entry?.tagline && (
-                <p className="mb-2.5 text-[11px] text-muted-foreground">
+                <p className="mb-2.5 text-xs text-muted-foreground">
                   {t('sectorRowTaglineSuffix', { tagline: entry.tagline })}
                 </p>
               )}
@@ -163,9 +165,16 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
               )}
 
               {!isLoading && (!data?.items || data.items.length === 0) && (
-                <p className="text-xs text-muted-foreground">
-                  {t('sectorRowLoadError')}
-                </p>
+                <div>
+                  <p className="text-xs text-muted-foreground">{t('sectorRowLoadError')}</p>
+                  <button
+              type="button"
+              onClick={() => void refetch()}
+              className="mt-3 inline-flex min-h-[36px] items-center rounded-md border border-border/60 px-3 text-sm text-foreground transition-colors hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {t('discoverRetry')}
+            </button>
+                </div>
               )}
             </div>
           </motion.div>

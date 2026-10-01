@@ -17,8 +17,8 @@ export function directionOf(pct: number | null | undefined): Direction {
 }
 
 export const DIRECTION_TEXT: Record<Direction, string> = {
-  up: 'text-emerald-400',
-  down: 'text-red-400',
+  up: 'text-emerald-700 dark:text-emerald-400',
+  down: 'text-red-600 dark:text-red-400',
   flat: 'text-muted-foreground',
 };
 

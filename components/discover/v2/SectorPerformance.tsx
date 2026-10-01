@@ -75,7 +75,7 @@ export function SectorPerformance({ sectors }: Props) {
         <div className="min-w-0">
           <h2
             id="sectors-heading"
-            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+            className="text-lg font-semibold tracking-tight text-foreground"
           >
             {t('sectorPerfHeading')}
           </h2>
@@ -99,7 +99,8 @@ export function SectorPerformance({ sectors }: Props) {
               aria-selected={tf === timeframe}
               onClick={() => setTimeframe(tf)}
               className={cn(
-                'rounded px-2.5 py-1 text-[11px] font-medium tabular-nums transition-colors duration-150',
+                // 40px tall on phones (was ~24px); the desktop pill stays compact.
+                'min-h-10 rounded px-3 text-xs font-medium tabular-nums transition-colors duration-150 sm:min-h-0 sm:px-2.5 sm:py-1',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background',
                 tf === timeframe
                   ? 'bg-background text-foreground shadow-sm'
@@ -130,7 +131,7 @@ export function SectorPerformance({ sectors }: Props) {
         </ul>
       </div>
 
-      <p className="mt-2 text-[11px] text-muted-foreground">
+      <p className="mt-2 text-xs text-muted-foreground">
         {t('sectorPerfFooterNote')}
       </p>
     </section>

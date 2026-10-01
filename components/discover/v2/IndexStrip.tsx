@@ -1,14 +1,21 @@
 'use client';
 
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { Sparkline } from '@/components/viz/Sparkline';
 import { cn } from '@/lib/utils';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
 import type { IndexQuote } from '@/lib/discover/discover-config';
 
 /**
  * The four numbers that answer "what is the market doing right now".
+ *
+ * Each is the price of a fund that tracks the index, not the index level: SPY
+ * trades at about a tenth of the S&P 500, and a tile reading
+ * "S&P 500 762.63" told a beginner the market was a tenth of what the news
+ * said. So the tile names its fund and the hint says it is one.
  *
  * Each tile carries a plain-language hint in visible copy rather than a hover
  * tooltip — "Russell 2000" means nothing to the beginner-to-intermediate reader
@@ -64,12 +71,18 @@ function IndexTile({ index, series }: { index: IndexQuote; series?: number[] }) 
   const down = pct != null && pct < -0.005;
   const DirIcon = up ? ArrowUp : down ? ArrowDown : Minus;
 
-  const tone = up ? 'text-emerald-400' : down ? 'text-red-400' : 'text-muted-foreground';
+  const tone = up ? 'text-emerald-700 dark:text-emerald-400' : down ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground';
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-colors duration-200 hover:border-border">
+    <Link
+      href={slugToAssetPath(index.symbol)}
+      className={cn(
+        'block rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-colors duration-200 hover:border-border',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+      )}
+    >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-medium text-muted-foreground">{index.label}</span>
+        <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">{index.label}</span>
         {series && series.length > 1 && (
           <Sparkline
             data={series}
@@ -92,7 +105,13 @@ function IndexTile({ index, series }: { index: IndexQuote; series?: number[] }) 
         </span>
       </div>
 
-      <p className="mt-1 text-[11px] leading-tight text-muted-foreground">{index.hint}</p>
-    </div>
+      {/* The fund's ticker leads the hint rather than sitting beside the label,
+          where "Russell 2000 IWM" broke the label across two lines. */}
+      <p className="mt-1 text-xs leading-snug text-muted-foreground">
+        <span className="font-mono font-medium text-foreground/80">{index.symbol}</span>
+        {' · '}
+        {t(`indexHint_${index.symbol}`, { defaultValue: index.hint })}
+      </p>
+    </Link>
   );
 }

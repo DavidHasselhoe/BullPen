@@ -169,10 +169,10 @@ export interface IndexEntry {
 // shouldn't have to discover that a label is hoverable to learn what it means,
 // and hover hints don't exist on touch at all.
 export const MARKET_INDICES: IndexEntry[] = [
-  { symbol: 'SPY', label: 'S&P 500', hint: '500 largest US companies' },
-  { symbol: 'QQQ', label: 'Nasdaq 100', hint: '100 biggest Nasdaq names' },
-  { symbol: 'DIA', label: 'Dow Jones', hint: '30 established US giants' },
-  { symbol: 'IWM', label: 'Russell 2000', hint: 'Smaller US companies' },
+  { symbol: 'SPY', label: 'S&P 500', hint: 'Fund tracking the 500 largest US companies' },
+  { symbol: 'QQQ', label: 'Nasdaq 100', hint: 'Fund tracking the 100 biggest Nasdaq names' },
+  { symbol: 'DIA', label: 'Dow Jones', hint: 'Fund tracking 30 established US giants' },
+  { symbol: 'IWM', label: 'Russell 2000', hint: 'Fund tracking 2,000 smaller US companies' },
 ];
 
 /**

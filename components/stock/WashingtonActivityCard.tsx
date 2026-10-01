@@ -120,7 +120,7 @@ export function WashingtonActivityCard({ ticker }: { ticker: string }) {
             </button>
           ) : <span />}
           <Link
-            href="/discover#washington-trading"
+            href="/discover/politicians"
             className="rounded-sm text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {t('washingtonSeeAll')}

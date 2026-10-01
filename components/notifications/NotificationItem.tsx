@@ -227,7 +227,7 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   }
   // Pro holdings/watchlist summary, not tied to one member.
   if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician-holdings:')) {
-    return { label: 'Washington Trading', href: '/discover#washington-trading' };
+    return { label: 'Washington Trading', href: '/discover/politicians' };
   }
   // entity_id is "politician:<slug>:<newest dc_trade_id>".
   if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician:')) {

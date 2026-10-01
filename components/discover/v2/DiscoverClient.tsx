@@ -35,7 +35,7 @@ export function DiscoverClient() {
   // request — read here only to fold the pick's symbol into the SSE list below.
   const { data: pickData } = useQuery(CURRENT_PICK_QUERY);
 
-  const { data, isLoading, error } = useQuery<{ success: boolean; feed?: DiscoverFeed }>({
+  const { data, isLoading, error, refetch } = useQuery<{ success: boolean; feed?: DiscoverFeed }>({
     queryKey: FEED_QUERY_KEY,
     queryFn: async () => {
       const res = await fetch('/api/discover/feed');
@@ -79,6 +79,13 @@ export function DiscoverClient() {
           <div>
             <h2 className="text-sm font-semibold text-foreground">{t('discoverClientLoadError')}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{humanizeError(error)}</p>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="mt-3 inline-flex min-h-[36px] items-center rounded-md border border-border/60 px-3 text-sm text-foreground transition-colors hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {t('discoverRetry')}
+            </button>
           </div>
         </div>
       </>
@@ -96,8 +103,8 @@ export function DiscoverClient() {
       <SectorPerformance sectors={feed.sectors} />
       <ThemeGrid />
       <IdeaCollections collections={feed.collections} />
-      <InstitutionalHoldingsSection />
-      <CongressSection />
+      <InstitutionalHoldingsSection preview />
+      <CongressSection preview />
     </LivePriceContext.Provider>
   );
 }

@@ -16,13 +16,17 @@ export function MarketPulse({ indices }: { indices: IndexQuote[] }) {
     <section aria-labelledby="pulse-heading" className="mb-10">
       <h2
         id="pulse-heading"
-        className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+        className="mb-3 text-lg font-semibold tracking-tight text-foreground"
       >
         {t('marketPulseHeading')}
       </h2>
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-        <IndexStrip indices={indices} />
+      {/* Flex rather than a 3fr/1fr grid: when the mood read is unavailable its
+          tile renders nothing, and the grid kept an empty quarter-width column. */}
+      <div className="flex flex-col gap-3 lg:flex-row">
+        <div className="min-w-0 lg:flex-[3]">
+          <IndexStrip indices={indices} />
+        </div>
         <MoodCompact />
       </div>
     </section>

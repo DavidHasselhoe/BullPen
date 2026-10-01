@@ -25,7 +25,7 @@ export function ThemeCard({ theme, icon: Icon, companiesLabel }: Props) {
         'group flex h-full w-full min-w-0 flex-col justify-between gap-3',
         'min-h-[140px] rounded-xl border border-border/50 bg-card/50',
         'p-4 transition-all duration-200',
-        'hover:border-border hover:bg-card hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20',
+        'hover:border-border hover:bg-card hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/20',
         'active:scale-[0.97] active:shadow-none active:translate-y-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
       )}

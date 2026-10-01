@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
-import { useLivePrice } from './LivePriceContext';
+import { useLivePrice, useLivePricesArrived } from './LivePriceContext';
 import type { TickerItem } from '@/lib/discover/discover-config';
 
 interface Props {
@@ -35,8 +35,8 @@ function formatPrice(p: number): string {
 }
 
 function formatPct(p: number): string {
-  const sign = p > 0 ? '+' : '';
-  return `${sign}${p.toFixed(2)}%`;
+  const sign = p > 0 ? '+' : p < 0 ? '−' : '';
+  return `${sign}${Math.abs(p).toFixed(2)}%`;
 }
 
 /** Subtle shimmer placeholder used while live prices haven't streamed in yet. */
@@ -54,6 +54,7 @@ function PriceSkeleton({ wide = false }: { wide?: boolean }) {
 
 export function TickerCard({ item, href, showReason = false }: Props) {
   const live = useLivePrice(item.symbol);
+  const pricesArrived = useLivePricesArrived();
   const queryClient = useQueryClient();
   const prefetch = useCallback(() => {
     queryClient.prefetchQuery({
@@ -75,9 +76,9 @@ export function TickerCard({ item, href, showReason = false }: Props) {
 
   const dirClass =
     direction === 'up'
-      ? 'text-emerald-400'
+      ? 'text-emerald-700 dark:text-emerald-400'
       : direction === 'down'
-      ? 'text-red-400'
+      ? 'text-red-600 dark:text-red-400'
       : 'text-muted-foreground';
 
   const DirIcon = direction === 'up' ? ArrowUp : direction === 'down' ? ArrowDown : Minus;
@@ -96,7 +97,7 @@ export function TickerCard({ item, href, showReason = false }: Props) {
         'group flex h-full w-full min-w-0 flex-col justify-between',
         'min-h-[100px] rounded-xl border border-border/50 bg-card/50',
         'p-3 transition-all duration-200',
-        'hover:border-border hover:bg-card hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20',
+        'hover:border-border hover:bg-card hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/20',
         'active:scale-[0.97] active:shadow-none active:translate-y-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
       )}
@@ -115,20 +116,22 @@ export function TickerCard({ item, href, showReason = false }: Props) {
       </div>
 
       {showReason && item.reason ? (
-        <div className="text-[11px] leading-tight text-muted-foreground line-clamp-2" title={item.reason}>
+        <div className="text-xs leading-snug text-muted-foreground line-clamp-2" title={item.reason}>
           {item.reason}
         </div>
       ) : (
-        <div className="text-[11px] text-muted-foreground truncate" title={item.name}>
+        <div className="text-xs text-muted-foreground truncate" title={item.name}>
           {item.name}
         </div>
       )}
 
       <div className="flex items-baseline justify-between gap-1.5">
         {price != null ? (
-          <span className="text-sm font-semibold tabular-nums text-foreground/90">
+          <span className="font-mono text-sm font-semibold tabular-nums text-foreground/90">
             {formatPrice(price)}
           </span>
+        ) : pricesArrived ? (
+          <span className="font-mono text-sm text-muted-foreground">—</span>
         ) : (
           <PriceSkeleton wide />
         )}
@@ -136,14 +139,14 @@ export function TickerCard({ item, href, showReason = false }: Props) {
         {changePct != null ? (
           <span
             className={cn(
-              'inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums',
+              'inline-flex items-center gap-0.5 font-mono text-xs font-semibold tabular-nums',
               dirClass,
             )}
           >
             <DirIcon className="h-3 w-3" strokeWidth={2.5} aria-hidden />
             {formatPct(changePct)}
           </span>
-        ) : (
+        ) : pricesArrived ? null : (
           <PriceSkeleton />
         )}
       </div>

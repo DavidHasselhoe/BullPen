@@ -158,5 +158,10 @@
   "moversLosers": "Top Verlierer",
   "moversFooterNote": "Sortiert nach % Veränderung während der regulären Handelszeit. Bewegungen im Pre-Market und nach Handelsschluss sind nicht enthalten.",
   "starterAskBull": "Ask Bull anything",
-  "homeComingEarningsEstimated": "{{ticker}} berichtet möglicherweise (Termin nicht bestätigt)"
+  "homeComingEarningsEstimated": "{{ticker}} berichtet möglicherweise (Termin nicht bestätigt)",
+  "indexHint_SPY": "Fonds, der die 500 größten US-Unternehmen abbildet",
+  "indexHint_QQQ": "Fonds, der die 100 größten Nasdaq-Werte abbildet",
+  "indexHint_DIA": "Fonds, der 30 etablierte US-Konzerne abbildet",
+  "indexHint_IWM": "Fonds, der 2.000 kleinere US-Unternehmen abbildet",
+  "discoverRetry": "Erneut versuchen"
 }

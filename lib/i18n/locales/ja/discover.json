@@ -158,5 +158,10 @@
   "moversGainers": "上昇トップ",
   "moversLosers": "下落トップ",
   "moversFooterNote": "通常取引時間での変動率でランク付け。プレマーケット及びアフターアワーズの変動は含まれません。",
-  "homeComingEarningsEstimated": "{{ticker}}が決算を発表する可能性があります（日付未確定）"
+  "homeComingEarningsEstimated": "{{ticker}}が決算を発表する可能性があります（日付未確定）",
+  "indexHint_SPY": "米国大手500社に連動するファンド",
+  "indexHint_QQQ": "ナスダック上位100銘柄に連動するファンド",
+  "indexHint_DIA": "米国の代表的な大企業30社に連動するファンド",
+  "indexHint_IWM": "米国の中小型株2,000社に連動するファンド",
+  "discoverRetry": "再試行"
 }

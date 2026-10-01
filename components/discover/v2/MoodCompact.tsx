@@ -46,12 +46,15 @@ export function MoodCompact() {
   });
 
   if (isLoading) {
-    return <div className="h-[104px] rounded-xl border border-border/30 animate-shimmer" aria-hidden />;
+    return <div className="h-[104px] rounded-xl border border-border/30 animate-shimmer lg:min-w-0 lg:flex-1" aria-hidden />;
   }
   // A missing mood shouldn't leave a hole at the top of the page.
   if (!data) return null;
 
   const color = moodColor(data.composite);
+  // Text gets the hue pulled toward the ink colour: on a light theme the raw
+  // wheat and sage read at about 2:1 on white. The marker keeps the raw hue.
+  const textColor = `color-mix(in oklab, ${color} 65%, var(--foreground))`;
   // The heaviest-weighted signal is listed first by the API; its detail line is
   // the most useful single sentence we can show in this much space.
   const headline = data.signals[0]?.detail ?? null;
@@ -60,13 +63,13 @@ export function MoodCompact() {
     <Link
       href="/tools/market-mood"
       className={cn(
-        'group block rounded-xl border border-border/50 bg-card/40 px-4 py-3.5',
+        'group block rounded-xl border border-border/50 bg-card/40 px-4 py-3.5 lg:min-w-0 lg:flex-1',
         'transition-colors duration-200 hover:border-border',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[11px] font-medium text-muted-foreground">{t('moodCompactLabel')}</span>
+        <span className="text-xs font-medium text-muted-foreground">{t('moodCompactLabel')}</span>
         <ArrowUpRight
           className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-muted-foreground/85"
           aria-hidden
@@ -74,13 +77,13 @@ export function MoodCompact() {
       </div>
 
       <div className="mt-1.5 flex items-baseline gap-2">
-        <span className="font-mono text-2xl font-bold leading-none tabular-nums" style={{ color }}>
+        <span className="font-mono text-2xl font-bold leading-none tabular-nums" style={{ color: textColor }}>
           {data.composite}
         </span>
-        <span className="text-[11px] text-muted-foreground">/100</span>
+        <span className="text-xs text-muted-foreground">/100</span>
         <span
           className="text-sm font-semibold"
-          style={{ color }}
+          style={{ color: textColor }}
         >
           {data.label}
         </span>
@@ -104,7 +107,7 @@ export function MoodCompact() {
       </div>
 
       {headline && (
-        <p className="mt-2.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="mt-2.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
           {headline}
         </p>
       )}

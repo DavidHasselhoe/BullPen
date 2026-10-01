@@ -158,5 +158,10 @@
   "moversLosers": "Største faller",
   "moversFooterNote": "Rangert etter % endring over ordinær handelsøkt. Bevegelser før markedsåpning og etter stenging er ikke inkludert.",
   "starterAskBull": "Ask Bull anything",
-  "homeComingEarningsEstimated": "{{ticker}} kan legge frem resultater (dato ikke bekreftet)"
+  "homeComingEarningsEstimated": "{{ticker}} kan legge frem resultater (dato ikke bekreftet)",
+  "indexHint_SPY": "Fond som følger de 500 største amerikanske selskapene",
+  "indexHint_QQQ": "Fond som følger de 100 største Nasdaq-aksjene",
+  "indexHint_DIA": "Fond som følger 30 etablerte amerikanske giganter",
+  "indexHint_IWM": "Fond som følger 2 000 mindre amerikanske selskaper",
+  "discoverRetry": "Prøv igjen"
 }

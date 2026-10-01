@@ -158,5 +158,10 @@
   "moversGainers": "Top gainers",
   "moversLosers": "Top losers",
   "moversFooterNote": "Ranked by % change over the regular trading session. Pre-market and after-hours moves are not included.",
-  "homeComingEarningsEstimated": "{{ticker}} may report earnings (date not confirmed)"
+  "homeComingEarningsEstimated": "{{ticker}} may report earnings (date not confirmed)",
+  "indexHint_SPY": "Fund tracking the 500 largest US companies",
+  "indexHint_QQQ": "Fund tracking the 100 biggest Nasdaq names",
+  "indexHint_DIA": "Fund tracking 30 established US giants",
+  "indexHint_IWM": "Fund tracking 2,000 smaller US companies",
+  "discoverRetry": "Try again"
 }

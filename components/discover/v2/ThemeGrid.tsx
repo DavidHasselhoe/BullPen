@@ -66,7 +66,9 @@ export function ThemeGrid() {
     if (!highlight) return null;
     const base = themes.find((th) => th.slug === highlight.slug);
     if (!base) return null;
-    return { ...base, title: t('ideasThemeBecauseYouOwn', { ticker: highlight.ticker }) };
+    // The basket keeps its name; the reason replaces its tagline. It used to be
+    // a second card titled "Because you own NVDA" beside the same basket's own.
+    return { ...base, tagline: t('ideasThemeBecauseYouOwn', { ticker: highlight.ticker }) };
   }, [highlight, themes, t]);
 
   if (themes.length === 0) return null;
@@ -75,7 +77,7 @@ export function ThemeGrid() {
     <section aria-labelledby="ideas-themes-heading" className="mb-10">
       <h2
         id="ideas-themes-heading"
-        className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+        className="mb-3 text-lg font-semibold tracking-tight text-foreground"
       >
         {t('ideasThemesHeading')}
       </h2>
@@ -91,7 +93,7 @@ export function ThemeGrid() {
         )}
         {themes.map((theme) => {
           const icon = iconBySlug.get(theme.slug);
-          if (!icon) return null;
+          if (!icon || theme.slug === personalizedCard?.slug) return null;
           return (
             <ThemeCard
               key={theme.slug}

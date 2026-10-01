@@ -14,3 +14,9 @@ export function useLivePrice(symbol: string) {
   const map = useContext(LivePriceContext);
   return map.get(symbol);
 }
+
+/** True once the stream has delivered any price. A card still without one after
+ *  that is not loading, it has none (MCD sat on a skeleton indefinitely). */
+export function useLivePricesArrived() {
+  return useContext(LivePriceContext).size > 0;
+}

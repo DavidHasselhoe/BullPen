@@ -158,5 +158,10 @@
   "briefTocSectionsAriaLabel": "Sections",
   "starterAskBull": "Ask Bull anything",
   "homeChartTooltipPl": "P/L",
-  "homeComingEarningsEstimated": "{{ticker}} pourrait publier ses résultats (date non confirmée)"
+  "homeComingEarningsEstimated": "{{ticker}} pourrait publier ses résultats (date non confirmée)",
+  "indexHint_SPY": "Fonds qui suit les 500 plus grandes entreprises américaines",
+  "indexHint_QQQ": "Fonds qui suit les 100 plus grandes valeurs du Nasdaq",
+  "indexHint_DIA": "Fonds qui suit 30 géants américains établis",
+  "indexHint_IWM": "Fonds qui suit 2 000 petites entreprises américaines",
+  "discoverRetry": "Réessayer"
 }

@@ -158,5 +158,10 @@
   "moversLosers": "Top perdedores",
   "moversFooterNote": "Clasificado por % de cambio durante la sesión de negociación regular. Los movimientos previos a la apertura y después del horario no se incluyen.",
   "starterAskBull": "Ask Bull anything",
-  "homeComingEarningsEstimated": "{{ticker}} podría publicar resultados (fecha sin confirmar)"
+  "homeComingEarningsEstimated": "{{ticker}} podría publicar resultados (fecha sin confirmar)",
+  "indexHint_SPY": "Fondo que replica las 500 mayores empresas de EE. UU.",
+  "indexHint_QQQ": "Fondo que replica los 100 mayores valores del Nasdaq",
+  "indexHint_DIA": "Fondo que replica 30 gigantes consolidados de EE. UU.",
+  "indexHint_IWM": "Fondo que replica 2.000 empresas pequeñas de EE. UU.",
+  "discoverRetry": "Reintentar"
 }

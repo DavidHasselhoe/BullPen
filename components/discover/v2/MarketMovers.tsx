@@ -53,7 +53,7 @@ export function MarketMovers() {
   return (
     <section aria-labelledby="movers-heading" className="mb-10">
       <div className="mb-3">
-        <h2 id="movers-heading" className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+        <h2 id="movers-heading" className="text-lg font-semibold tracking-tight text-foreground">
           {t('moversHeading')}
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -66,7 +66,7 @@ export function MarketMovers() {
         <MoverList title={t('moversLosers')} rows={movers.losers.slice(0, SHOWN)} className="border-t border-border/50 md:border-t-0" />
       </div>
 
-      <p className="mt-2 text-[11px] text-muted-foreground">{t('moversFooterNote')}</p>
+      <p className="mt-2 text-xs text-muted-foreground">{t('moversFooterNote')}</p>
     </section>
   );
 }

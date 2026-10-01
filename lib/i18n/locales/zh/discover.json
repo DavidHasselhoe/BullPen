@@ -158,5 +158,10 @@
   "moversGainers": "涨幅最大",
   "moversLosers": "跌幅最大",
   "moversFooterNote": "按常规交易时段的百分比涨跌排名。不包括盘前和盘后波动。",
-  "homeComingEarningsEstimated": "{{ticker}} 可能发布财报（日期未确认）"
+  "homeComingEarningsEstimated": "{{ticker}} 可能发布财报（日期未确认）",
+  "indexHint_SPY": "追踪美国 500 家最大公司的基金",
+  "indexHint_QQQ": "追踪纳斯达克 100 只最大股票的基金",
+  "indexHint_DIA": "追踪 30 家美国老牌巨头的基金",
+  "indexHint_IWM": "追踪 2,000 家美国小型公司的基金",
+  "discoverRetry": "重试"
 }

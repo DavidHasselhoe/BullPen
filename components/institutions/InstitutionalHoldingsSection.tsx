@@ -241,7 +241,9 @@ function metricLine(row: FundRow, sort: SortKey): ReactNode {
  * to open on a tap: Radix tooltips are hover/focus only, and this sits on a
  * card grid people mostly meet on a phone.
  */
-function ConcentrationDots({ read, color }: { read: ConcentrationRead; color: string }) {
+/** Neutral dots: the fund's palette color stays on its avatar, where it marks
+ *  identity. In the dots it read as if it meant something about concentration. */
+function ConcentrationDots({ read }: { read: ConcentrationRead }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -260,7 +262,7 @@ function ConcentrationDots({ read, color }: { read: ConcentrationRead; color: st
                 className="h-1.5 w-1.5 rounded-full"
                 style={
                   i < read.filled
-                    ? { backgroundColor: color }
+                    ? { backgroundColor: 'var(--foreground)', opacity: 0.7 }
                     : { backgroundColor: 'var(--muted-foreground)', opacity: 0.25 }
                 }
               />
@@ -297,14 +299,21 @@ function ConcentrationDots({ read, color }: { read: ConcentrationRead; color: st
  * Each card gets a color from the shared allocation palette, assigned by
  * position in the (stable, sort_order'd) list, and carried through to the
  * fund's detail page so arriving there reads as the same fund. It is spent on
- * the concentration dots and the initials only: tinting every card and haloing
+ * the initials only: tinting every card and haloing
  * every avatar made the grid read as decoration rather than as a dozen funds,
  * and the color means nothing beyond "not the one next to it".
  *
  * Sorting and filtering happen here, on the list already fetched: sixteen
  * funds do not need a round trip per control change.
+ *
+ * `preview` is the Discover teaser: no controls, the funds you follow first,
+ * one row, and a link to the full list at /discover/institutions. Discover
+ * used to carry every fund card, which with Washington Trading below it made
+ * the page 13 phone screens long.
  */
-export function InstitutionalHoldingsSection() {
+const PREVIEW_COUNT = 3;
+
+export function InstitutionalHoldingsSection({ preview = false }: { preview?: boolean }) {
   const { data, isLoading, error } = useQuery(FUNDS_QUERY);
   const { isAuthenticated } = useAuth();
   const { data: followedSlugs } = useFollowedFunds();
@@ -384,6 +393,13 @@ export function InstitutionalHoldingsSection() {
     return sortRows(filtered, sort);
   }, [rows, activeSector, activeConcentration, showFollowing, followed, sort]);
 
+  const previewRows = useMemo(() => {
+    const ordered = sortRows(rows, 'suggested');
+    return [...ordered.filter((r) => followed.has(r.fund.slug)), ...ordered.filter((r) => !followed.has(r.fund.slug))]
+      .slice(0, PREVIEW_COUNT);
+  }, [rows, followed]);
+  const cards = preview ? previewRows : visible;
+
   if (isLoading) return <SectionSkeleton />;
   if (error || !data?.funds?.length) return null;
 
@@ -403,7 +419,7 @@ export function InstitutionalHoldingsSection() {
         <div className="flex items-center gap-2">
           <h2
             id="institutional-holdings-heading"
-            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+            className="text-lg font-semibold tracking-tight text-foreground"
           >
             Institutional Holdings
           </h2>
@@ -412,10 +428,10 @@ export function InstitutionalHoldingsSection() {
       </div>
       <div className="mb-3 space-y-1.5">
         <Filing13FDisclaimer compact />
-        <NextFilingNote />
+        {!preview && <NextFilingNote />}
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      {!preview && <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <ControlSelect
           id="fund-sort"
           label="Sort"
@@ -471,9 +487,9 @@ export function InstitutionalHoldingsSection() {
         <p className="ml-auto text-xs tabular-nums text-muted-foreground" aria-live="polite">
           {visible.length === rows.length ? `${rows.length} funds` : `${visible.length} of ${rows.length} funds`}
         </p>
-      </div>
+      </div>}
 
-      {visible.length === 0 ? (
+      {cards.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
           <p className="text-sm text-foreground">
             {followsEmpty ? 'You are not following any funds yet.' : 'No funds match these filters.'}
@@ -493,7 +509,7 @@ export function InstitutionalHoldingsSection() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map((row) => {
+          {cards.map((row) => {
             const { fund, color, concentration: read } = row;
             const quarter = formatQuarter(fund.lastPeriodOfReport);
             const filed = formatFiledDate(fund.lastFiledDate);
@@ -531,7 +547,7 @@ export function InstitutionalHoldingsSection() {
                     title={filed ? `${fund.totalPositions ?? '?'} positions · filed ${filed}` : undefined}
                   >
                     {read ? (
-                      <ConcentrationDots read={read} color={color} />
+                      <ConcentrationDots read={read} />
                     ) : (
                       'Filing not yet ingested'
                     )}
@@ -562,6 +578,16 @@ export function InstitutionalHoldingsSection() {
             );
           })}
         </div>
+      )}
+
+      {preview && rows.length > cards.length && (
+        <Link
+          href="/discover/institutions"
+          className="mt-3 inline-flex min-h-[44px] items-center gap-1 rounded-md text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          See all {rows.length} funds
+          <ArrowUpRight className="h-4 w-4" aria-hidden />
+        </Link>
       )}
     </section>
   );

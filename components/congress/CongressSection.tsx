@@ -10,6 +10,7 @@ import { DisclosureNote } from './DisclosureNote';
 import { PoliticianAvatar } from './PoliticianAvatar';
 import { YourStocksInWashington } from './YourStocksInWashington';
 import { FollowFundButton } from '@/components/institutions/FollowFundButton';
+import { useFollowedSlugs } from '@/hooks/use-institution-follow';
 import type { CongressMemberSummary } from '@/app/api/congress/route';
 
 const ALL = 'all';
@@ -66,9 +67,13 @@ function SectionSkeleton() {
   );
 }
 
-export function CongressSection() {
+/** On Discover: members you follow first, one row, then a link to /discover/politicians. */
+const PREVIEW_COUNT = 3;
+
+export function CongressSection({ preview = false }: { preview?: boolean }) {
   const { data, isLoading, error } = useQuery(MEMBERS_QUERY);
   const members = useMemo(() => data?.members ?? [], [data]);
+  const { data: followedSlugs } = useFollowedSlugs('politician');
 
   const [party, setParty] = useState(ALL);
   const [chamber, setChamber] = useState(ALL);
@@ -98,6 +103,12 @@ export function CongressSection() {
     [members, party, chamber, state],
   );
 
+  const previewMembers = useMemo(() => {
+    const followed = new Set(followedSlugs ?? []);
+    return [...members.filter((m) => followed.has(m.slug)), ...members.filter((m) => !followed.has(m.slug))].slice(0, PREVIEW_COUNT);
+  }, [members, followedSlugs]);
+  const cards = preview ? previewMembers : visible;
+
   const filtersActive = party !== ALL || chamber !== ALL || state !== ALL;
   const clearFilters = () => {
     setParty(ALL);
@@ -112,18 +123,18 @@ export function CongressSection() {
     <section id="washington-trading" aria-labelledby="washington-heading" className="mt-12 mb-10 scroll-mt-20">
       <h2
         id="washington-heading"
-        className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+        className="mb-1 text-lg font-semibold tracking-tight text-foreground"
       >
         Washington Trading
       </h2>
 
       <div className="mb-3">
-        <DisclosureNote />
+        <DisclosureNote compact={preview} />
       </div>
 
       <YourStocksInWashington />
 
-      {!isLoading && (
+      {!isLoading && !preview && (
         <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           {/* Only offered when there is something to choose between. With one
               chamber in the roster a chamber filter is decoration. */}
@@ -176,7 +187,7 @@ export function CongressSection() {
 
       {isLoading ? (
         <SectionSkeleton />
-      ) : visible.length === 0 ? (
+      ) : cards.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
           <p className="text-sm text-foreground">No members match these filters.</p>
           <button
@@ -189,7 +200,7 @@ export function CongressSection() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map((m) => {
+          {cards.map((m) => {
             const lastTrade = formatDate(m.lastTradeDate);
             return (
               <div
@@ -241,6 +252,16 @@ export function CongressSection() {
             );
           })}
         </div>
+      )}
+
+      {preview && members.length > cards.length && (
+        <Link
+          href="/discover/politicians"
+          className="mt-3 inline-flex min-h-[44px] items-center gap-1 rounded-md text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          See all {members.length} members
+          <ArrowUpRight className="h-4 w-4" aria-hidden />
+        </Link>
       )}
     </section>
   );

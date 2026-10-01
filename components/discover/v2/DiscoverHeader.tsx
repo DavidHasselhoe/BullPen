@@ -13,7 +13,7 @@ export function DiscoverHeader() {
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('headerTitle')}</h1>
       </div>
-      <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+      <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
         {t('headerDescription')}
       </p>
     </header>

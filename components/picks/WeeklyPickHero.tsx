@@ -70,13 +70,13 @@ export function WeeklyPickHero() {
       <div className="flex items-end justify-between mb-3 gap-3">
         <h2
           id="weekly-pick-heading"
-          className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+          className="text-lg font-semibold tracking-tight text-foreground"
         >
           Bull&apos;s Weekly Pick
         </h2>
         <Link
           href="/picks"
-          className="text-[11px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           Track record <ArrowUpRight className="h-3 w-3" />
         </Link>
@@ -116,11 +116,14 @@ export function WeeklyPickHero() {
             <h3 className="text-lg sm:text-xl font-semibold text-foreground leading-snug tracking-tight text-balance">
               {pick.headline}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground max-w-prose">
+            {/* Phones get the headline and the numbers; the summary and chips are one
+                tap away in the thesis. Shown in full they filled the first screen, and
+                the market read Discover opens with started below the fold. */}
+            <p className="mt-2 hidden text-sm leading-relaxed text-muted-foreground max-w-prose sm:block">
               {pick.oneLiner}
             </p>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-4 hidden flex-wrap items-center gap-2 sm:flex">
               <Chip>{CATALYST_LABELS[pick.catalystType]}</Chip>
               <Chip>{HORIZON_LABELS[pick.horizon]}</Chip>
               <ConvictionMeter value={pick.conviction} />
@@ -136,7 +139,7 @@ export function WeeklyPickHero() {
                 <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
               {pick.locked && (
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {pick.lockReason === 'anonymous'
                     ? 'Sign up free for one thesis a month'
                     : pick.lockReason === 'free_quota_used'
@@ -151,7 +154,7 @@ export function WeeklyPickHero() {
           <div className="shrink-0 lg:w-56 lg:border-l lg:border-border/40 lg:pl-6">
             <dl className="grid grid-cols-3 gap-4 lg:grid-cols-1 lg:gap-3">
               <div>
-                <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                <dt className="text-xs font-medium text-muted-foreground">
                   Picked
                 </dt>
                 <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
@@ -159,7 +162,7 @@ export function WeeklyPickHero() {
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                <dt className="text-xs font-medium text-muted-foreground">
                   Entry
                 </dt>
                 <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
@@ -171,7 +174,7 @@ export function WeeklyPickHero() {
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                <dt className="text-xs font-medium text-muted-foreground">
                   Since pick
                 </dt>
                 <dd
@@ -189,12 +192,12 @@ export function WeeklyPickHero() {
             </dl>
 
             {pending && (
-              <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                 Entry price is set from the first market open after we publish.
               </p>
             )}
             {!pending && pick.benchmarkReturnPct != null && (
-              <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                 S&amp;P 500 over the same stretch:{' '}
                 <span className="font-mono tabular-nums text-muted-foreground">
                   {fmtPct(pick.benchmarkReturnPct)}

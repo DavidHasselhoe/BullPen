@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { CollectionGrid } from './CollectionGrid';
 import type { DiscoverFeed } from '@/lib/discover/discover-config';
 
+/** Cards per row at desktop width (the grid is lg:grid-cols-6). */
+const ROW = 6;
+
 /**
  * The "find something new" zone.
  *
@@ -29,12 +32,17 @@ export function IdeaCollections({ collections }: { collections: DiscoverFeed['co
   if (!hasAny) return null;
 
   const trendingTitle = trending.mode === 'personalized' ? t('ideasTrendingPersonalized') : t('ideasTrendingToday');
+  // One row, and no name a reasoned list below already carries: HD sat in
+  // "Because of what you follow" and again in "Near 52-week lows", where it at
+  // least said why. The lists with a reason keep it.
+  const reasoned = new Set([...qualityDiscount, ...near52High, ...near52Low].map((i) => i.symbol));
+  const trendingItems = trending.items.filter((i) => !reasoned.has(i.symbol)).slice(0, ROW);
 
   return (
     <section aria-labelledby="ideas-heading">
       <h2
         id="ideas-heading"
-        className="mb-4 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+        className="mb-4 text-lg font-semibold tracking-tight text-foreground"
       >
         {t('ideasHeading')}
       </h2>
@@ -42,7 +50,7 @@ export function IdeaCollections({ collections }: { collections: DiscoverFeed['co
       <div className="space-y-8">
         <CollectionGrid
           title={trendingTitle}
-          items={trending.items}
+          items={trendingItems}
           help={
             trending.explanation
               ? { label: t('ideasFaqWhyTrending', { title: trendingTitle }), body: trending.explanation }
