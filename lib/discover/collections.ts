@@ -165,6 +165,11 @@ export async function getFiftyTwoWeekExtremes(): Promise<Extremes> {
     const high = row.week52_high;
     const low = row.week52_low;
     if (!q || high == null || low == null || high <= 0 || low <= 0) continue;
+    // A price far outside its own band is a corporate action the band has not
+    // been adjusted for, not a record: Corteva spun off Vylor on 2026-10-01 and
+    // traded at $15 against a $60.53-$90.97 range, listed as "At a new 52-week
+    // low" at -80%. A real new low or high lands just past the band.
+    if (q.price < low * 0.7 || q.price > high * 1.3) continue;
     // Guard against a stale band the price has already broken through: a price
     // above its recorded high is a new high, which is 0% away, not negative.
     scored.push({

@@ -17,7 +17,7 @@ import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 
-const CACHE_KEY = 'congress:member-list:v1';
+const CACHE_KEY = 'congress:member-list:v4';
 const CACHE_TTL_SECONDS = 60 * 60;
 
 /** Same list for every visitor: let the CDN answer before the DB cache is even asked. */
@@ -73,7 +73,7 @@ async function handler(_request: NextRequest) {
     // Run across members in parallel, not member-by-member.
     const summaries = await Promise.all(
       ((rows ?? []) as MemberRow[]).map(async (m): Promise<CongressMemberSummary> => {
-        const [{ count: tradeCount }, { count: positionCount }, { data: latest }] = await Promise.all([
+        const [{ count: tradeCount }, { count: positionCount }, { data: newest }] = await Promise.all([
         supabase
           .from('congress_trades')
           .select('id', { count: 'exact', head: true })
@@ -84,12 +84,20 @@ async function handler(_request: NextRequest) {
           .eq('politician_id', m.id),
         supabase
           .from('congress_trades')
-          .select('transaction_date')
+          .select('transaction_date, disclosure_date')
           .eq('politician_id', m.id)
           .order('transaction_date', { ascending: false })
-          .limit(1)
-          .maybeSingle<{ transaction_date: string }>(),
+          // ponytail: newest 50 cover today's worst case (Khanna, 15 such rows);
+          // a SQL view with transaction_date <= disclosure_date if one ever has more.
+          .limit(50)
+          .returns<{ transaction_date: string; disclosure_date: string | null }[]>(),
         ]);
+        // Source rows occasionally carry a date after their own disclosure (a
+        // bond's coupon or maturity date in place of the trade date): Hern's
+        // filing of Sep 25 listed Oct 1 and Nov 1, shown as "to Nov 2026". A
+        // trade cannot postdate the report of it, and PostgREST cannot compare
+        // two columns, so the newest rows are checked here.
+        const latest = (newest ?? []).find((t) => !t.disclosure_date || t.transaction_date <= t.disclosure_date);
 
         return {
           slug: m.slug,
