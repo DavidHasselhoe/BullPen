@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -111,8 +111,20 @@ const MARKDOWN_CLS = cn(
   '[&_code]:bg-muted-foreground/20 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs',
   '[&_pre]:bg-muted-foreground/10 [&_pre]:p-2 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-2',
   '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
-  '[&_a]:underline [&_a]:hover:opacity-80'
+  '[&_a]:underline [&_a]:hover:opacity-80',
+  '[&_table]:w-full [&_table]:text-xs [&_table]:tabular-nums',
+  '[&_th]:px-2 [&_th]:py-1 [&_th]:text-left [&_th]:font-semibold [&_th]:whitespace-nowrap [&_th]:border-b [&_th]:border-border',
+  '[&_td]:px-2 [&_td]:py-1 [&_td]:align-top [&_td]:border-b [&_td]:border-border/50'
 );
+
+/** Tables scroll inside the bubble instead of pushing it past the panel edge. */
+const MARKDOWN_COMPONENTS: Components = {
+  table: ({ node: _node, ...props }) => (
+    <div className="my-2 -mx-1 overflow-x-auto">
+      <table {...props} />
+    </div>
+  ),
+};
 
 /**
  * Markdown renders while streaming too, so bold, lists and headings format as
@@ -132,7 +144,7 @@ const AssistantMessageContent = memo(function AssistantMessageContent({
       // `[&>p:last-child]:inline` keeps the caret on the same line as the last
       // paragraph instead of dropping it onto a line of its own.
       <div className={cn(MARKDOWN_CLS, '[&>p:last-child]:inline')}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
         <motion.span
           className="inline-block w-[2px] h-[1em] bg-current ml-0.5 align-middle rounded-full"
           animate={{ opacity: [1, 0] }}
@@ -145,7 +157,7 @@ const AssistantMessageContent = memo(function AssistantMessageContent({
 
   return (
     <div className={MARKDOWN_CLS}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
     </div>
   );
 });
@@ -560,7 +572,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               {!isUser && <BullAiIcon pose="idle" size={32} className="mb-0.5" />}
               <div
                 className={cn(
-                  'max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
+                  'min-w-0 max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
                   isUser
                     ? 'rounded-br-sm bg-primary text-primary-foreground'
                     : 'rounded-bl-sm bg-muted text-foreground'

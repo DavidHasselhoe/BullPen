@@ -40,6 +40,8 @@
   "financialsRevenue": "Umsatz",
   "financialsTotalAssets": "Gesamtvermögen",
   "financialsTotalLiabilities": "Gesamtverbindlichkeiten",
+  "screenDataAsOf": "Stand {{date}}",
+  "screenRankedBy": "Sortiert nach {{metric}}",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreNotAvailable": "k. A.",
   "healthScoreTitle": "{{ticker}} Finanzielle Gesundheit",

@@ -41,6 +41,8 @@
   "financialsRevenue": "売上高",
   "financialsTotalAssets": "総資産",
   "financialsTotalLiabilities": "総負債",
+  "screenDataAsOf": "{{date}}時点",
+  "screenRankedBy": "{{metric}}順",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreTitle": "{{ticker}}の財務健全性",
   "insiderActivityTitle": "{{ticker}}のインサイダー取引",

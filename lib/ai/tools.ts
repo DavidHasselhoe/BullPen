@@ -621,7 +621,9 @@ export const screenStocks = tool({
     'to getHealthScore. Tickers the screener does not track come back in notCovered; use getHealthScore for those ' +
     'rather than saying they have no score. When filters are set, filterImpact lists how many stocks would match ' +
     'without each one, largest first: the filter with the biggest jump over matchedFilters is the bottleneck. A stock ' +
-    'missing a value (no dividend, no sector on record) fails any filter on that value.',
+    'missing a value (no dividend, no sector on record) fails any filter on that value. The user already sees the ' +
+    'results as a ranked list with logos, health scores and the ranked metric: do not repeat them as a table or list. ' +
+    'Reply with what the ranking means, citing a figure only where it makes a point.',
   inputSchema: jsonSchema<ScreenerToolFilters & {
     sortBy?: ScreenSortKey;
     order?: 'desc' | 'asc';

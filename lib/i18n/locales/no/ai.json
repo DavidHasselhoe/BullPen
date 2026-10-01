@@ -41,6 +41,8 @@
   "financialsRevenue": "Inntekter",
   "financialsTotalAssets": "Totale eiendeler",
   "financialsTotalLiabilities": "Totale gjeld",
+  "screenDataAsOf": "Per {{date}}",
+  "screenRankedBy": "Rangert etter {{metric}}",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreNotAvailable": "I.A.",
   "healthScoreTitle": "{{ticker}} finansiell helse",

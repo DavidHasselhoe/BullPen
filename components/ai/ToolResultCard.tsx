@@ -9,6 +9,7 @@ import { EarningsResultCard, type EarningsRow } from './cards/EarningsResultCard
 import { CompanyMetricsResultCard, type CompanyMetricsOutput } from './cards/CompanyMetricsResultCard';
 import { ComparisonResultCard, type ComparisonOutput } from './cards/ComparisonResultCard';
 import { InsiderActivityResultCard, type InsiderActivityOutput } from './cards/InsiderActivityResultCard';
+import { ScreenStocksResultCard, type ScreenStocksOutput } from './cards/ScreenStocksResultCard';
 import { ActionReceiptCard } from './cards/ActionReceiptCard';
 import { NavigateConfirmCard } from './cards/NavigateConfirmCard';
 import type { ClientAction, ActionOutcome, NavigateDecision } from '@/lib/ai/tool-ux';
@@ -134,6 +135,11 @@ export function ToolResultCard({
       const o = output as Partial<InsiderActivityOutput>;
       if (!o.tradeCount) return null;
       return <InsiderActivityResultCard output={o as InsiderActivityOutput} />;
+    }
+    case 'screenStocks': {
+      const o = output as Partial<ScreenStocksOutput>;
+      if (!Array.isArray(o.results) || o.results.length === 0) return null;
+      return <ScreenStocksResultCard output={o as ScreenStocksOutput} />;
     }
     default:
       return null;

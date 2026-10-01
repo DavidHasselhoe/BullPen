@@ -39,6 +39,8 @@
   "financialsRevenue": "Chiffre d'affaires",
   "financialsTotalAssets": "Actif total",
   "financialsTotalLiabilities": "Passif total",
+  "screenDataAsOf": "Au {{date}}",
+  "screenRankedBy": "Classé par {{metric}}",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreNotAvailable": "S/O",
   "healthScoreTitle": "Santé financière de {{ticker}}",

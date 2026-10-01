@@ -42,6 +42,8 @@
   "financialsRevenue": "Revenue",
   "financialsTotalAssets": "Total Assets",
   "financialsTotalLiabilities": "Total Liabilities",
+  "screenRankedBy": "Ranked by {{metric}}",
+  "screenDataAsOf": "As of {{date}}",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreNotAvailable": "N/A",
   "healthScoreTitle": "{{ticker}} Financial Health",
