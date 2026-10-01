@@ -738,5 +738,7 @@
   "economicShort_jolts": "JOLTS",
   "economicShort_gdp": "GDP",
   "economicShort_pce": "PCE",
-  "economicEtTime": "{{time}} ET"
+  "economicEtTime": "{{time}} ET",
+  "calendarEstimatedDate": "预估",
+  "calendarEstimatedDateHint": "根据过往发布日期推算。公司尚未公布。"
 }

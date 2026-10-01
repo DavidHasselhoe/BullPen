@@ -21,7 +21,7 @@ const MAX_ROWS = 6;
 const HOME_KINDS: EconomicKind[] = ['fomc', 'cpi', 'jobs', 'pce', 'gdp'];
 
 type Row =
-  | { kind: 'earnings'; date: string; symbol: string; name: string; logoUrl: string | null; time?: string }
+  | { kind: 'earnings'; date: string; symbol: string; name: string; logoUrl: string | null; time?: string; estimated?: boolean }
   | { kind: 'dividend'; date: string; symbol: string; name: string; logoUrl: string | null }
   | { kind: 'economic'; date: string; event: EconomicEvent };
 
@@ -61,7 +61,7 @@ export function ComingUp() {
       const mine = symbolsParam ? `&symbols=${encodeURIComponent(symbolsParam)}` : '';
       const [earnings, dividends, economic] = await Promise.all([
         mine
-          ? getRows<{ symbol: string; name?: string; date: string; time?: string; logo_url?: string | null }>(`/api/calendar/earnings?${range}${mine}`)
+          ? getRows<{ symbol: string; name?: string; date: string; time?: string; date_estimated?: boolean; logo_url?: string | null }>(`/api/calendar/earnings?${range}${mine}`)
           : [],
         mine
           ? getRows<{ symbol: string; name?: string; ex_dividend_date: string; logo_url?: string | null }>(`/api/calendar/dividends?${range}${mine}`)
@@ -69,7 +69,7 @@ export function ComingUp() {
         getRows<EconomicEvent>(`/api/calendar/economic?${range}`),
       ]);
       return [
-        ...earnings.map((e): Row => ({ kind: 'earnings', date: e.date, symbol: e.symbol, name: e.name || e.symbol, logoUrl: e.logo_url ?? null, time: e.time })),
+        ...earnings.map((e): Row => ({ kind: 'earnings', date: e.date, symbol: e.symbol, name: e.name || e.symbol, logoUrl: e.logo_url ?? null, time: e.time, estimated: e.date_estimated })),
         ...dividends.map((d): Row => ({ kind: 'dividend', date: d.ex_dividend_date, symbol: d.symbol, name: d.name || d.symbol, logoUrl: d.logo_url ?? null })),
         ...economic.filter((e) => HOME_KINDS.includes(e.kind)).map((e): Row => ({ kind: 'economic', date: e.date, event: e })),
       ];
@@ -99,6 +99,7 @@ export function ComingUp() {
       return t('homeComingEconomic', { name: tTools(`economicName_${r.event.kind}`), time: fmtReleaseTimeShort(r.event.release_at) });
     }
     if (r.kind === 'dividend') return t('homeComingDividend', { ticker: r.symbol });
+    if (r.estimated) return t('homeComingEarningsEstimated', { ticker: r.symbol });
     const s = sessionRank(r.time);
     return t(s === 0 ? 'homeComingEarningsBeforeOpen' : s === 2 ? 'homeComingEarningsAfterClose' : 'homeComingEarnings', { ticker: r.symbol });
   };

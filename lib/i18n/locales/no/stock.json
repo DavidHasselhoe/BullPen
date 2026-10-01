@@ -112,7 +112,7 @@
   "earningsStreakBeat": "Overgikk forventninger {{count}} av siste {{total}} kvartaler",
   "earningsStreakMiss": "Kom under forventninger {{count}} av siste {{total}} kvartaler",
   "earningsToday": "I dag",
-  "earningsUnconfirmed": "Ubekreftet",
+  "earningsUnconfirmed": "Venter på innlevering",
   "employeesLabel": "Ansatte",
   "exchangeLabel": "Børs",
   "financialsCardTitle": "Finanser",
@@ -429,5 +429,7 @@
   "statisticsGridBandMega": "Mega",
   "statisticsGridForwardPe": "Forward P/E {{value}}",
   "stockPricePanelTooltipVol": "Vol",
-  "stockDeepDive": "Deep Dive"
+  "stockDeepDive": "Deep Dive",
+  "earningsEstimatedDate": "Anslått dato",
+  "earningsEstimatedDateHint": "Beregnet ut fra tidligere rapportdatoer. Selskapet har ikke kunngjort den ennå."
 }

@@ -400,8 +400,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // when a day cannot be filled, so `status === 'fulfilled'` alone would let a
   // null through into the .filter() calls below.
   const yesterdayEarningsData = (yesterdayEarnings.status === 'fulfilled' ? yesterdayEarnings.value : []) ?? [];
-  const todayEarningsData = (todayEarnings.status === 'fulfilled' ? todayEarnings.value : []) ?? [];
-  const tomorrowEarningsData = (tomorrowEarnings.status === 'fulfilled' ? tomorrowEarnings.value : []) ?? [];
+  // A projected date (date_estimated) is not a scheduled report: the brief would announce one that may not happen.
+  const todayEarningsData = ((todayEarnings.status === 'fulfilled' ? todayEarnings.value : []) ?? []).filter((e) => !e.date_estimated);
+  const tomorrowEarningsData = ((tomorrowEarnings.status === 'fulfilled' ? tomorrowEarnings.value : []) ?? []).filter((e) => !e.date_estimated);
   const movers = (moversResult.status === 'fulfilled' ? moversResult.value : null) ?? { gainers: [], losers: [] };
 
   // Scheduled releases from the official agency calendars (our own table, no

@@ -85,11 +85,15 @@ const COUNTRY = 'United States';
  * that this leaves the whole near-term window returning 0-2 US rows/day —
  * even known quarterly reporters (FDX, NKE) had no forward date anywhere in
  * TD's data — while Nasdaq's calendar returned 50+ rows for the same days,
- * including megacaps with real EPS estimates and BMO/AMC timing. 21 days
- * gives a few days of margin past TD's own "near future" TTL bucket (7 days)
- * without reaching into the range TD is more likely to have picked up.
+ * including megacaps with real EPS estimates and BMO/AMC timing.
+ *
+ * Was 21 until 2026-10-01, on the theory TD covers the range beyond it. It
+ * doesn't: 22-45 days out TD had 2 S&P 500 reporters cached, Nasdaq 344
+ * (agreeing on both of TD's). Matches WARM_DAYS_FORWARD, the whole range the
+ * cron keeps warm. Many of those dates are Zacks projections, which the rows
+ * carry as date_estimated (see isEstimatedNasdaqDate).
  */
-const NASDAQ_MERGE_DAYS_AHEAD = 21;
+export const NASDAQ_MERGE_DAYS_AHEAD = 45;
 
 /**
  * Rolling window the pre-warm cron keeps hot.
@@ -132,6 +136,18 @@ function isWithinNasdaqMergeWindow(date: string, today: string): boolean {
   return delta >= -NASDAQ_MERGE_DAYS_BACK && delta <= NASDAQ_MERGE_DAYS_AHEAD;
 }
 
+/**
+ * Nasdaq's calendar mixes dates companies announced with Zacks' projections
+ * from past reporting dates, and only its per-company page says which (GOOG on
+ * 2026-11-04: "estimated... derived from an algorithm"). The calendar feed's
+ * tell is timing: checked 2026-10-01 against that page for 29 upcoming S&P 500
+ * rows, every one without a before-open/after-close time was a projection and
+ * every one with a time was confirmed. A row with an actual has already reported.
+ */
+function isEstimatedNasdaqDate(row: NasdaqEarningsRow): boolean {
+  return row.time == null && row.epsActual == null;
+}
+
 function mapNasdaqRowToEarningsItem(row: NasdaqEarningsRow, date: string): EarningsCalendarItem {
   return {
     symbol: row.symbol,
@@ -139,6 +155,7 @@ function mapNasdaqRowToEarningsItem(row: NasdaqEarningsRow, date: string): Earni
     date,
     time: row.time ?? '',
     nasdaq_confirmed: true,
+    date_estimated: isEstimatedNasdaqDate(row),
     eps_estimate: row.epsEstimate,
     eps_actual: row.epsActual,
     revenue_estimate: null,
@@ -254,6 +271,7 @@ export function mergeNasdaqIntoEarningsDay(
       eps_actual: nRow.epsActual ?? existing.eps_actual,
       surprise: nRow.surprisePercent ?? existing.surprise,
       nasdaq_confirmed: true,
+      date_estimated: isEstimatedNasdaqDate(nRow),
     });
   }
 
@@ -731,6 +749,7 @@ export function mergeCalendarIntoSymbolEarnings(
       epsEstimate: c.eps_estimate ?? base.epsEstimate,
       epsActual: c.eps_actual ?? base.epsActual,
       hour: c.time || base.hour,
+      estimated: c.date_estimated,
     };
     if (i >= 0) rows[i] = merged;
     else rows.push(merged);

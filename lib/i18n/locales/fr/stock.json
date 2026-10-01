@@ -111,7 +111,7 @@
   "earningsStreakBeat": "Dépassé les attentes {{count}} des {{total}} derniers trimestres",
   "earningsStreakMiss": "Manqué les attentes {{count}} des {{total}} derniers trimestres",
   "earningsToday": "Aujourd'hui",
-  "earningsUnconfirmed": "Non confirmé",
+  "earningsUnconfirmed": "En attente de dépôt",
   "employeesLabel": "Employés",
   "exchangeLabel": "Bourse",
   "financialsCardTitle": "Finances",
@@ -429,5 +429,7 @@
   "statisticsGridBandMicro": "Micro",
   "stockPricePanelVolumeLabel": "Volume",
   "washingtonPublic": "public {{date}}",
-  "stockDeepDive": "Deep Dive"
+  "stockDeepDive": "Deep Dive",
+  "earningsEstimatedDate": "Date estimée",
+  "earningsEstimatedDateHint": "Calculée à partir des dates de publication passées. L'entreprise ne l'a pas encore annoncée."
 }

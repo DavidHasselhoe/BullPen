@@ -260,6 +260,8 @@ export interface EarningsCalendar {
   year: number | null;
   /** Reported recently but not yet cross-checked against a filed income statement. */
   unconfirmed?: boolean;
+  /** An upcoming date projected from past reporting dates, not announced by the company yet. */
+  estimated?: boolean;
 }
 
 /**

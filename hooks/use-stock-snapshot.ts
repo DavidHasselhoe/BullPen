@@ -2,14 +2,15 @@
  * useStockSnapshot — fires ONE batch request (/api/stock/[ticker]/snapshot)
  * that hits TwelveData /batch for quote + statistics + earnings in a single
  * round-trip, then seeds each component's individual query cache so they
- * render immediately without making their own API calls.
+ * render immediately without making their own API calls. The earnings in the
+ * response are not seeded: the earnings card has its own route, and the server
+ * fetches them to fill the cache the watchlist and Deep Dive read.
  */
 
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { StockQuote } from '@/lib/finnhub/finnhub-client';
 import type { CompanyStatistics } from '@/lib/twelvedata/twelvedata-client';
-import type { EarningsCalendar } from '@/lib/finnhub/finnhub-client';
 
 interface SnapshotResponse {
   success: boolean;
@@ -22,10 +23,6 @@ interface SnapshotResponse {
   quoteConfirmedInvalid?: boolean;
   statistics: CompanyStatistics | null;
   statsFetchedAt: string | null;
-  earnings: {
-    date: string; time: string; epsEstimate: number | null; epsActual: number | null;
-    quarter: number; year: number;
-  }[];
   instrumentType: string | null;
 }
 
@@ -46,7 +43,7 @@ export function useStockSnapshot(ticker: string | null) {
   // Seed individual component caches so they skip their own requests
   useEffect(() => {
     if (!query.data?.success || !ticker) return;
-    const { quote, statistics, statsFetchedAt, earnings } = query.data;
+    const { quote, statistics, statsFetchedAt } = query.data;
 
     // StockQuoteCard — useStockQuote uses ['stock-quote', ticker]
     if (quote) {
@@ -71,24 +68,6 @@ export function useStockSnapshot(ticker: string | null) {
       );
     }
 
-    // EarningsCalendar — uses ['earnings-calendar', ticker]
-    if (earnings.length > 0) {
-      const mapped: EarningsCalendar[] = earnings.map((e) => ({
-        date: e.date,
-        epsActual: e.epsActual,
-        epsEstimate: e.epsEstimate,
-        hour: e.time,
-        quarter: e.quarter,
-        revenueActual: null,
-        revenueEstimate: null,
-        symbol: ticker,
-        year: e.year,
-      }));
-      queryClient.setQueryData(
-        ['earnings-calendar', ticker],
-        (old: EarningsCalendar[] | undefined) => old ?? mapped
-      );
-    }
   }, [query.data, ticker, queryClient]);
 
   return query;

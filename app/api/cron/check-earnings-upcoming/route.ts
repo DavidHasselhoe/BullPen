@@ -96,7 +96,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // skip everyone's email with no error recorded.
     const calendar = await getCalendarDay<EarningsCalendarItem>('earnings', todayStr);
     if (calendar) {
-      earningsEvents = calendar.map((e) => ({ symbol: e.symbol, date: e.date }));
+      // A projected date is not a scheduled report; "reports today" would be a guess.
+      earningsEvents = calendar.filter((e) => !e.date_estimated).map((e) => ({ symbol: e.symbol, date: e.date }));
       summary.earningsFound = earningsEvents.length;
     } else {
       summary.errors.push(`Earnings calendar unavailable for ${todayStr} (fetch failed or budget exhausted)`);

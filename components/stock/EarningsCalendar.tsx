@@ -142,6 +142,11 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
                     <p className="text-sm font-medium tabular-nums">${nextEvent.epsEstimate.toFixed(2)}</p>
                   </div>
                 )}
+                {nextEvent.estimated && (
+                  <Badge variant="outline" className="text-xs shrink-0 border-dashed" title={t('earningsEstimatedDateHint')}>
+                    {t('earningsEstimatedDate')}
+                  </Badge>
+                )}
                 {formatHour(nextEvent.hour, t) && (
                   <Badge variant="outline" className="text-xs shrink-0">
                     {formatHour(nextEvent.hour, t)}

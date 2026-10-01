@@ -6,6 +6,7 @@
 
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
+import { fetchNasdaqEarningsDay } from '@/lib/market-data/nasdaq-earnings-calendar';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
@@ -896,9 +897,17 @@ export async function getEarningsCalendar(
       // the confirmation here — requiring the two EPS conventions to also agree
       // was rejecting real reports, not catching fake ones.
       matchByItem.set(candidates[0], period);
+    } else {
+      // Several competing dates, none matching the filed EPS (MU: its real Dec 17
+      // report plus a fabricated Jan 16 copy, which used to drop both). Nasdaq's
+      // archive lists a company only on the day it actually reported, so it picks.
+      // Free, and only reached on this rare path. Still ambiguous: leave unmatched.
+      const listed = await Promise.all(
+        candidates.map(async (c) => (await fetchNasdaqEarningsDay(c.date)).some((r) => r.symbol === symbol.toUpperCase()))
+      );
+      const real = candidates.filter((_, i) => listed[i]);
+      if (real.length === 1) matchByItem.set(real[0], period);
     }
-    // else: multiple competing candidates, none with an exact EPS match —
-    // ambiguous/corrupted data, leave all of them unmatched.
   }
 
   return rawItems.flatMap((item) => {
@@ -2080,6 +2089,9 @@ export interface EarningsCalendarItem {
   /** Set by calendar-days.ts's merge when Nasdaq's calendar also lists this
    *  symbol on this date. Not from TwelveData. See dropMisdatedEarnings. */
   nasdaq_confirmed?: boolean;
+  /** Nasdaq's date is Zacks' projection from past reporting dates, not one the
+   *  company announced. Set by calendar-days.ts; see isEstimatedNasdaqDate. */
+  date_estimated?: boolean;
 }
 
 /**

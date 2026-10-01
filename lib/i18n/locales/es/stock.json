@@ -111,7 +111,7 @@
   "earningsStreakBeat": "Superó expectativas {{count}} de los últimos {{total}} trimestres",
   "earningsStreakMiss": "No cumplió expectativas {{count}} de los últimos {{total}} trimestres",
   "earningsToday": "Hoy",
-  "earningsUnconfirmed": "No confirmado",
+  "earningsUnconfirmed": "Pendiente de presentación",
   "employeesLabel": "Empleados",
   "exchangeLabel": "Bolsa",
   "financialsCardTitle": "Finanzas",
@@ -429,5 +429,7 @@
   "stockPricePanelTooltipVol": "Vol",
   "thesisSentimentNeutral": "Neutral",
   "stockDeepDive": "Deep Dive",
-  "stockNavInsiders": "Insiders"
+  "stockNavInsiders": "Insiders",
+  "earningsEstimatedDate": "Fecha estimada",
+  "earningsEstimatedDateHint": "Calculada a partir de fechas de informes anteriores. La empresa aún no la ha anunciado."
 }

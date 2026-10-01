@@ -119,7 +119,7 @@
   "earningsStreakBeat": "Beat expectations {{count}} of the last {{total}} quarters",
   "earningsStreakMiss": "Missed expectations {{count}} of the last {{total}} quarters",
   "earningsToday": "Today",
-  "earningsUnconfirmed": "Unconfirmed",
+  "earningsUnconfirmed": "Awaiting filing",
   "employeesLabel": "Employees",
   "exchangeLabel": "Exchange",
   "financialsCardTitle": "Financials",
@@ -429,5 +429,7 @@
   "positionPerShare": "per share",
   "washingtonTradeCount_one": "{{count}} trade",
   "washingtonTradeCount_other": "{{count}} trades",
-  "healthNoChange": "No change"
+  "healthNoChange": "No change",
+  "earningsEstimatedDate": "Estimated date",
+  "earningsEstimatedDateHint": "Projected from past reporting dates. The company hasn't announced it yet."
 }

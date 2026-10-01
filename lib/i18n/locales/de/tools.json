@@ -738,5 +738,7 @@
   "economicShort_ppi": "PPI",
   "economicShort_jolts": "JOLTS",
   "economicShort_pce": "PCE",
-  "economicEtTime": "{{time}} ET"
+  "economicEtTime": "{{time}} ET",
+  "calendarEstimatedDate": "Geschätzt",
+  "calendarEstimatedDateHint": "Aus früheren Berichtsterminen hochgerechnet. Das Unternehmen hat es noch nicht bekanntgegeben."
 }

@@ -103,6 +103,14 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
                   {t('calendarAfterClose')}
                 </span>
               )}
+              {e.date_estimated && (
+                <span
+                  className="shrink-0 text-[10px] font-medium px-1 py-px border border-dashed border-border rounded text-muted-foreground"
+                  title={t('calendarEstimatedDateHint')}
+                >
+                  {t('calendarEstimatedDate')}
+                </span>
+              )}
             </div>
           </div>
         </div>

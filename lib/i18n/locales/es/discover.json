@@ -157,5 +157,6 @@
   "moversGainers": "Top ganadores",
   "moversLosers": "Top perdedores",
   "moversFooterNote": "Clasificado por % de cambio durante la sesión de negociación regular. Los movimientos previos a la apertura y después del horario no se incluyen.",
-  "starterAskBull": "Ask Bull anything"
+  "starterAskBull": "Ask Bull anything",
+  "homeComingEarningsEstimated": "{{ticker}} podría publicar resultados (fecha sin confirmar)"
 }

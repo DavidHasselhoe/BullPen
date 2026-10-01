@@ -113,7 +113,7 @@
   "earningsStreakBeat": "過去{{total}}四半期中{{count}}回予想を上回った",
   "earningsStreakMiss": "過去{{total}}四半期中{{count}}回予想を下回った",
   "earningsToday": "本日",
-  "earningsUnconfirmed": "未確認",
+  "earningsUnconfirmed": "提出待ち",
   "employeesLabel": "従業員数",
   "exchangeLabel": "上場取引所",
   "financialsCardTitle": "財務",
@@ -429,5 +429,7 @@
   "healthMethodologyIntro": "直近4四半期のレポートから、ビジネスがいかに健全かを評価しています。株価は考慮しないため、健全な企業でも割高な株式である可能性があります。",
   "healthMethodologyMarketRisk": "ベータ（ボラティリティ）、四半期連続の黒字化",
   "healthMethodologyProfitability": "年間黒字、純利益率、総資産利益率",
-  "stockDeepDive": "Deep Dive"
+  "stockDeepDive": "Deep Dive",
+  "earningsEstimatedDate": "推定日",
+  "earningsEstimatedDateHint": "過去の発表日から推定した日付です。会社はまだ発表していません。"
 }

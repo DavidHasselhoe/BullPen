@@ -116,3 +116,23 @@ assert.equal(jun.date, '2026-06-25', 'Nasdaq\'s date wins for the same report');
 assert.equal(jun.hour, 'AMC');
 
 console.log('mergeNasdaqIntoEarningsDay + mergeCalendarIntoSymbolEarnings: all assertions passed');
+
+// ── Estimated dates: Nasdaq rows with no timing and no actual are Zacks projections ──
+const future = mergeNasdaqIntoEarningsDay(
+  [{ symbol: 'JPM', date: '2026-11-04', time: 'Pre Market', eps_estimate: 5.8, eps_actual: null }],
+  [
+    { symbol: 'GOOG', time: null, epsEstimate: 2.95, epsActual: null, surprisePercent: null },
+    { symbol: 'JPM', time: null, epsEstimate: 5.88, epsActual: null, surprisePercent: null },
+    { symbol: 'KO', time: 'BMO', epsEstimate: 0.8, epsActual: null, surprisePercent: null },
+  ],
+  '2026-11-04',
+);
+const f = new Map(future.map((r) => [r.symbol, r]));
+assert.equal(f.get('GOOG')!.date_estimated, true, 'no timing on Nasdaq = projected date');
+assert.equal(f.get('JPM')!.date_estimated, true, 'TD\'s timing does not make Nasdaq\'s projection confirmed');
+assert.equal(f.get('KO')!.date_estimated, false, 'a before-open time = the company announced it');
+assert.equal(m.get('MU')!.date_estimated, false, 'a reported actual is never an estimate');
+const estPage = mergeCalendarIntoSymbolEarnings([], [{ ...f.get('GOOG')! }], 'GOOG');
+assert.equal(estPage[0].estimated, true, 'the stock page carries the flag');
+
+console.log('estimated dates: all assertions passed');

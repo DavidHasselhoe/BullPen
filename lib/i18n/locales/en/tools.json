@@ -738,5 +738,7 @@
   "economicExplainWhy_pce": "PCE is the inflation measure the Fed uses for its 2% target, so it carries a lot of weight in interest rate decisions.",
   "economicExplainWatch_pce": "Watch core PCE, which leaves out food and energy. CPI usually comes out first, so PCE moves markets most when it tells a different story.",
   "comparePopularTitle": "Popular comparisons",
-  "screenerAiContextLabel": "the stocks on your screen"
+  "screenerAiContextLabel": "the stocks on your screen",
+  "calendarEstimatedDate": "Estimated",
+  "calendarEstimatedDateHint": "Projected from past reporting dates. The company hasn't announced it yet."
 }

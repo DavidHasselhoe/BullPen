@@ -157,5 +157,6 @@
   "briefSourceCount_other": "{{count}} sources",
   "briefTocSectionsAriaLabel": "Sections",
   "starterAskBull": "Ask Bull anything",
-  "homeChartTooltipPl": "P/L"
+  "homeChartTooltipPl": "P/L",
+  "homeComingEarningsEstimated": "{{ticker}} pourrait publier ses résultats (date non confirmée)"
 }

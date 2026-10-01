@@ -738,5 +738,7 @@
   "economicShort_jolts": "JOLTS",
   "economicShort_fomc": "Fed",
   "economicShort_pce": "PCE",
-  "economicEtTime": "{{time}} ET"
+  "economicEtTime": "{{time}} ET",
+  "calendarEstimatedDate": "Estimada",
+  "calendarEstimatedDateHint": "Calculada a partir de fechas de informes anteriores. La empresa aún no la ha anunciado."
 }

@@ -113,7 +113,7 @@
   "earningsStreakBeat": "过去 {{total}} 个季度中超过预期 {{count}} 次",
   "earningsStreakMiss": "过去 {{total}} 个季度中未达预期 {{count}} 次",
   "earningsToday": "今天",
-  "earningsUnconfirmed": "未确认",
+  "earningsUnconfirmed": "等待提交",
   "employeesLabel": "员工数",
   "exchangeLabel": "交易所",
   "financialsCardTitle": "财务数据",
@@ -429,5 +429,7 @@
   "healthMethodologyGrowth": "收入增长、EPS增长",
   "healthMethodologyIntro": "我们根据最近四份季度报告评估企业的健全程度。股价不计在内，所以一家健康的公司仍然可能是一只昂贵的股票。",
   "healthMethodologyMarketRisk": "Beta（波动率）、季度利润稳定",
-  "healthMethodologyProfitability": "全年盈利、净利率、资产回报率"
+  "healthMethodologyProfitability": "全年盈利、净利率、资产回报率",
+  "earningsEstimatedDate": "预估日期",
+  "earningsEstimatedDateHint": "根据过往发布日期推算。公司尚未公布。"
 }

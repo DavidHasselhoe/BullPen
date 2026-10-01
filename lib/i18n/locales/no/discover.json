@@ -157,5 +157,6 @@
   "moversGainers": "Største stiger",
   "moversLosers": "Største faller",
   "moversFooterNote": "Rangert etter % endring over ordinær handelsøkt. Bevegelser før markedsåpning og etter stenging er ikke inkludert.",
-  "starterAskBull": "Ask Bull anything"
+  "starterAskBull": "Ask Bull anything",
+  "homeComingEarningsEstimated": "{{ticker}} kan legge frem resultater (dato ikke bekreftet)"
 }

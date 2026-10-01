@@ -738,5 +738,7 @@
   "economicShort_jolts": "JOLTS",
   "economicShort_gdp": "GDP",
   "economicShort_pce": "PCE",
-  "economicEtTime": "{{time}} ET"
+  "economicEtTime": "{{time}} ET",
+  "calendarEstimatedDate": "推定",
+  "calendarEstimatedDateHint": "過去の発表日から推定した日付です。会社はまだ発表していません。"
 }

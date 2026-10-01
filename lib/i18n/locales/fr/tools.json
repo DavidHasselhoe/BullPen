@@ -738,5 +738,7 @@
   "economicShort_ppi": "IPP",
   "economicShort_jolts": "JOLTS",
   "economicShort_fomc": "Fed",
-  "economicShort_pce": "PCE"
+  "economicShort_pce": "PCE",
+  "calendarEstimatedDate": "Estimée",
+  "calendarEstimatedDateHint": "Calculée à partir des dates de publication passées. L'entreprise ne l'a pas encore annoncée."
 }

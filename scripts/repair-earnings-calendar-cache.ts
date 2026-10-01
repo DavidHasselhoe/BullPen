@@ -13,10 +13,10 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 import { createClient } from '@supabase/supabase-js';
-import { mergeNasdaqIntoEarningsDay } from '../lib/market-data/calendar-days';
+import { mergeNasdaqIntoEarningsDay, NASDAQ_MERGE_DAYS_AHEAD } from '../lib/market-data/calendar-days';
 import { fetchNasdaqEarningsDay } from '../lib/market-data/nasdaq-earnings-calendar';
 import type { EarningsCalendarItem } from '../lib/twelvedata/twelvedata-client';
-import { todayET } from '../lib/dates/calendar-format';
+import { addDays, todayET } from '../lib/dates/calendar-format';
 
 const apply = process.argv.includes('--apply');
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -38,8 +38,8 @@ async function main() {
     const date = cache_key.slice(-10);
     const rows = payload as EarningsCalendarItem[];
     if (!Array.isArray(rows) || rows.length === 0) continue;
-    // Future days refresh on their own, and past the Nasdaq merge window a refresh would undo this.
-    if (date > todayET()) continue;
+    // Past the Nasdaq merge window a refresh is TD-only and would undo this.
+    if (date > addDays(todayET(), NASDAQ_MERGE_DAYS_AHEAD)) continue;
 
     const nasdaq = await fetchNasdaqEarningsDay(date);
     const fixed = mergeNasdaqIntoEarningsDay(rows, nasdaq, date);
@@ -48,13 +48,13 @@ async function main() {
     const dropped = rows.filter((r) => !after.has(r.symbol.toUpperCase())).map((r) => r.symbol);
     const changed = rows.flatMap((r) => {
       const a = after.get(r.symbol.toUpperCase());
-      return a && eps(a) !== eps(r) ? [`${r.symbol} ${eps(r)} -> ${eps(a)}`] : [];
+      return a && (eps(a) !== eps(r) || !!a.date_estimated !== !!r.date_estimated) ? [`${r.symbol} ${eps(r)} -> ${eps(a)}${a.date_estimated ? ' (estimated)' : ''}`] : [];
     });
     const added = fixed.length - (rows.length - dropped.length);
     if (dropped.length === 0 && changed.length === 0 && added === 0) continue;
 
     changedDays++;
-    console.log(`${date}  nasdaq=${nasdaq.length}  dropped ${dropped.length}, eps changed ${changed.length}, added ${added}`);
+    console.log(`${date}  nasdaq=${nasdaq.length}  dropped ${dropped.length}, eps/flag changed ${changed.length}, added ${added}`);
     if (dropped.length) console.log(`  dropped: ${dropped.slice(0, 15).join(',')}${dropped.length > 15 ? ',…' : ''}`);
     for (const c of changed.slice(0, 8)) console.log(`  ${c}`);
 

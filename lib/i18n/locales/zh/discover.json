@@ -157,5 +157,6 @@
   "moversSubtitleLast": "{{day}} 波动最大的 S&P 500 和纳斯达克100股票",
   "moversGainers": "涨幅最大",
   "moversLosers": "跌幅最大",
-  "moversFooterNote": "按常规交易时段的百分比涨跌排名。不包括盘前和盘后波动。"
+  "moversFooterNote": "按常规交易时段的百分比涨跌排名。不包括盘前和盘后波动。",
+  "homeComingEarningsEstimated": "{{ticker}} 可能发布财报（日期未确认）"
 }
