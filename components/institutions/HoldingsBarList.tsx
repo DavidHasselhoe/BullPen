@@ -15,6 +15,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import {
   Accordion,
@@ -49,12 +50,13 @@ interface QoqChange {
  * obviously a split, not a conviction buy (see compute-diff.ts).
  */
 function QoqBadge({ status, change, hasDiff }: QoqChange & { hasDiff: boolean }) {
+  const { t } = useTranslation('discover');
   if (!hasDiff) return null;
 
   if (status === 'new') {
     return (
       <span className="shrink-0 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-        New Buy
+        {t('barNewBuy')}
       </span>
     );
   }
@@ -62,7 +64,7 @@ function QoqBadge({ status, change, hasDiff }: QoqChange & { hasDiff: boolean })
   if (status === 'unchanged' || !change) {
     return (
       <span className="shrink-0 rounded-full bg-muted/60 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-        Unchanged
+        {t('barUnchanged')}
       </span>
     );
   }
@@ -75,10 +77,10 @@ function QoqBadge({ status, change, hasDiff }: QoqChange & { hasDiff: boolean })
       className={`inline-flex shrink-0 items-center gap-0.5 font-mono text-xs tabular-nums ${
         up ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
       }`}
-      title={
-        `${up ? 'Increased' : 'Reduced'} shares ${Math.abs(pct).toFixed(1)}% since last quarter ` +
-        `(value ${change.valueChangePct >= 0 ? '+' : ''}${change.valueChangePct.toFixed(1)}%)`
-      }
+      title={t(up ? 'barChangeUpTitle' : 'barChangeDownTitle', {
+        pct: Math.abs(pct).toFixed(1),
+        value: `${change.valueChangePct >= 0 ? '+' : ''}${change.valueChangePct.toFixed(1)}`,
+      })}
     >
       <Icon className="h-3 w-3" aria-hidden />
       {up ? '+' : ''}
@@ -89,14 +91,15 @@ function QoqBadge({ status, change, hasDiff }: QoqChange & { hasDiff: boolean })
 
 /** Put or Call, spelled out: the one fact that flips what an options row means. */
 function PutCallTag({ putCall }: { putCall: DiffableHolding['putCall'] }) {
+  const { t } = useTranslation('discover');
   if (!putCall) return null;
   const put = putCall === 'PUT';
   return (
     <span
       className="ml-2 shrink-0 rounded-full border border-border/60 px-1.5 py-0.5 align-middle text-xs font-semibold uppercase tracking-wide leading-none text-muted-foreground"
-      title={put ? 'A put pays off if the stock falls' : 'A call pays off if the stock rises'}
+      title={put ? t('barPutTitle') : t('barCallTitle')}
     >
-      {put ? 'Put' : 'Call'}
+      {put ? t('barPut') : t('barCall')}
     </span>
   );
 }
@@ -119,6 +122,7 @@ interface HoldingRowProps {
 }
 
 function HoldingRow({ entry, hasDiff, owned, maxPct, change, highlighted, onHighlight }: HoldingRowProps) {
+  const { t } = useTranslation('discover');
   const barPct = Math.max(MIN_BAR_PCT, maxPct > 0 ? (entry.pct / maxPct) * 100 : 0);
 
   return (
@@ -153,9 +157,9 @@ function HoldingRow({ entry, hasDiff, owned, maxPct, change, highlighted, onHigh
             {owned && (
               <span
                 className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-primary"
-                title="This is in your portfolio"
+                title={t('barYouOwnTitle')}
               >
-                You own this
+                {t('congOverlapYouOwn')}
               </span>
             )}
             {/* The issuer name is the first thing dropped as width tightens:
@@ -196,6 +200,7 @@ interface HoldingsBarListProps {
 }
 
 export function HoldingsBarList({ allocation, options, diff, highlightedKey, onHighlight }: HoldingsBarListProps) {
+  const { t } = useTranslation('discover');
   const [expanded, setExpanded] = useState(false);
   const [visibleRest, setVisibleRest] = useState(REST_PAGE_SIZE);
   const [visibleExited, setVisibleExited] = useState(REST_PAGE_SIZE);
@@ -225,9 +230,9 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
   return (
     <div className="overflow-hidden rounded-xl border border-border/50">
       <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Holding</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('barHeaderHolding')}</span>
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          % of portfolio
+          {t('barHeaderPct')}
         </span>
       </div>
 
@@ -271,8 +276,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                 <ChevronDown className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0 flex-1 text-sm text-foreground/85">
-                {allocation.rest.length.toLocaleString()} more position
-                {allocation.rest.length === 1 ? '' : 's'}
+                {t('barMorePositions', { count: allocation.rest.length, formatted: allocation.rest.length.toLocaleString('en-US') })}
                 <span className="ml-2 text-xs text-muted-foreground">
                   <span className="font-mono tabular-nums">{fmtUsd(allocation.restValue)}</span>
                 </span>
@@ -291,7 +295,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                 }}
                 className="rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                Show less
+                {t('showLess')}
               </button>
               {hiddenRestCount > 0 && (
                 <button
@@ -299,9 +303,9 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                   onClick={() => setVisibleRest((n) => n + REST_PAGE_SIZE)}
                   className="rounded-md text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  Show {Math.min(REST_PAGE_SIZE, hiddenRestCount)} more
+                  {t('barShowMore', { count: Math.min(REST_PAGE_SIZE, hiddenRestCount) })}
                   <span className="ml-1.5 font-normal text-muted-foreground">
-                    ({hiddenRestCount.toLocaleString()} left)
+                    {t('barLeft', { formatted: hiddenRestCount.toLocaleString('en-US') })}
                   </span>
                 </button>
               )}
@@ -321,15 +325,14 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
           >
             <AccordionItem value="options" className="border-none">
               <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
-                Options
+                {t('barOptions')}
                 <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground">
                   {options.length}
                 </span>
               </AccordionTrigger>
               <AccordionContent className="pb-0">
                 <p className="border-t border-border/20 px-4 py-2.5 text-xs text-muted-foreground">
-                  Shown at the value of the shares each contract covers, which is how 13F filings report
-                  them. Not counted in the portfolio percentages above.
+                  {t('barOptionsNote')}
                 </p>
                 <ul className="divide-y divide-border/20 border-t border-border/20">
                   {options.slice(0, visibleOptions).map((h) => {
@@ -373,9 +376,9 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                     onClick={() => setVisibleOptions((n) => n + REST_PAGE_SIZE)}
                     className="w-full border-t border-border/20 px-4 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                   >
-                    Show {Math.min(REST_PAGE_SIZE, options.length - visibleOptions)} more
+                    {t('barShowMore', { count: Math.min(REST_PAGE_SIZE, options.length - visibleOptions) })}
                     <span className="ml-1.5 font-normal text-muted-foreground">
-                      ({(options.length - visibleOptions).toLocaleString()} left)
+                      {t('barLeft', { formatted: (options.length - visibleOptions).toLocaleString('en-US') })}
                     </span>
                   </button>
                 )}
@@ -393,7 +396,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
           <Accordion type="single" collapsible>
             <AccordionItem value="exited" className="border-none">
               <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
-                Exited positions this quarter
+                {t('barExited')}
                 <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground">
                   {exited.length}
                 </span>
@@ -427,7 +430,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                           of the portfolio" says how much the fund cared about
                           this name in a way a raw figure does not. */}
                       <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                        {h.portfolioPct != null ? `was ${h.portfolioPct.toFixed(2)}%` : `was ${fmtUsd(h.valueUsd)}`}
+                        {t('barWas', { value: h.portfolioPct != null ? `${h.portfolioPct.toFixed(2)}%` : fmtUsd(h.valueUsd) })}
                       </span>
                     </li>
                   ))}
@@ -438,9 +441,9 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                     onClick={() => setVisibleExited((n) => n + REST_PAGE_SIZE)}
                     className="w-full border-t border-border/20 px-4 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                   >
-                    Show {Math.min(REST_PAGE_SIZE, exited.length - visibleExited)} more
+                    {t('barShowMore', { count: Math.min(REST_PAGE_SIZE, exited.length - visibleExited) })}
                     <span className="ml-1.5 font-normal text-muted-foreground">
-                      ({(exited.length - visibleExited).toLocaleString()} left)
+                      {t('barLeft', { formatted: (exited.length - visibleExited).toLocaleString('en-US') })}
                     </span>
                   </button>
                 )}

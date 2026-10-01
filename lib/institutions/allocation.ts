@@ -113,6 +113,9 @@ export function friendlyIssuerName(name: string): string {
   while (words.length > 1 && NAME_SUFFIXES.has(words[words.length - 1].toUpperCase())) {
     words.pop();
   }
+  // "AMAZON.COM, INC" loses its suffix but kept the comma before it, which
+  // read "Amazon.com, and Forge Investments, alone make up..." in a headline.
+  words[words.length - 1] = words[words.length - 1].replace(/,+$/, '');
   return words
     .map((w, i) => {
       const upper = w.toUpperCase();
@@ -124,28 +127,50 @@ export function friendlyIssuerName(name: string): string {
 }
 
 /**
+ * Optional translation for the two headline builders: the 'discover' t and the
+ * reader's language, for its list joining. Server callers (the filing
+ * notification) pass nothing and get English.
+ */
+export interface HeadlineTranslator {
+  t: (key: string, opts?: Record<string, unknown>) => string;
+  lang: string;
+}
+
+/** "A, B and C" in the reader's language, or English without a translator. */
+function joinList(items: string[], tr?: HeadlineTranslator): string {
+  if (tr) return new Intl.ListFormat(tr.lang, { type: 'conjunction' }).format(items);
+  return items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0];
+}
+
+/**
  * One plain-language read on how concentrated the fund is — the thing a
  * beginner should take away before parsing any individual number. Deliberately
  * describes shape ("concentrated" vs "spread out"), never advice.
  */
-export function allocationHeadline(allocation: Allocation): string | null {
+export function allocationHeadline(allocation: Allocation, tr?: HeadlineTranslator): string | null {
   const { top, total } = allocation;
   if (total <= 0 || top.length === 0) return null;
 
   const leaders = top.slice(0, 3);
   const leaderPct = leaders.reduce((sum, h) => sum + h.pct, 0);
   const names = leaders.map((h) => friendlyIssuerName(h.name));
-  const nameList =
-    names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+  const nameList = joinList(names, tr);
   const rounded = Math.round(leaderPct);
 
   if (leaderPct >= 50) {
-    return `Highly concentrated. ${nameList} alone make up ${rounded}% of the portfolio.`;
+    return tr
+      ? tr.t('fundHeadHigh', { names: nameList, pct: rounded })
+      : `Highly concentrated. ${nameList} alone make up ${rounded}% of the portfolio.`;
   }
   if (leaderPct >= 25) {
-    return `Fairly concentrated. ${nameList} are ${rounded}% of the portfolio between them.`;
+    return tr
+      ? tr.t('fundHeadFair', { names: nameList, pct: rounded })
+      : `Fairly concentrated. ${nameList} are ${rounded}% of the portfolio between them.`;
   }
-  return `Spread out. Even the largest position, ${names[0]}, is only ${top[0].pct.toFixed(1)}% of the portfolio.`;
+  const largest = top[0].pct.toFixed(1);
+  return tr
+    ? tr.t('fundHeadSpread', { name: names[0], pct: largest })
+    : `Spread out. Even the largest position, ${names[0]}, is only ${largest}% of the portfolio.`;
 }
 
 export type ConcentrationLevel = 'concentrated' | 'focused' | 'diversified' | 'broad';
@@ -261,7 +286,8 @@ export function concentrationRead(
 export function quarterHeadline(
   diff: HoldingsDiff | null,
   allocation: Allocation,
-  sharesHistory: Record<string, number[]> = {}
+  sharesHistory: Record<string, number[]> = {},
+  tr?: HeadlineTranslator
 ): string | null {
   if (!diff) return null;
 
@@ -286,11 +312,30 @@ export function quarterHeadline(
     return top && weight(top) >= NOTABLE_WEIGHT_PCT ? top : undefined;
   };
 
-  const clauses: string[] = [];
+  // Each clause is a whole phrase, streak included, so a translation can put
+  // the streak wherever its grammar needs it rather than after the name.
+  const clauses: { text: string; streak: boolean }[] = [];
+  const moveClause = (kind: 'trimmed' | 'added', name: string, moves: number) => {
+    const streak = moves >= 2;
+    if (tr) {
+      return {
+        text: streak
+          ? tr.t(`fundMove_${kind}Streak`, { name, count: moves, ordinal: true })
+          : tr.t(`fundMove_${kind}`, { name }),
+        streak,
+      };
+    }
+    const verb = kind === 'trimmed' ? 'trimmed' : 'added to';
+    return { text: `${verb} ${name}${streak ? englishStreak(moves) : ''}`, streak };
+  };
+  const plainClause = (kind: 'opened' | 'sold', name: string) => ({
+    text: tr ? tr.t(`fundMove_${kind}`, { name }) : kind === 'opened' ? `opened a new position in ${name}` : `sold out of ${name}`,
+    streak: false,
+  });
 
   const trim = notable(diff.decreased);
   if (trim) {
-    clauses.push(`trimmed ${friendlyIssuerName(trim.nameOfIssuer)}${streakSuffix(sharesHistory[holdingKey(trim)], 'down')}`);
+    clauses.push(moveClause('trimmed', friendlyIssuerName(trim.nameOfIssuer), streakMoves(sharesHistory[holdingKey(trim)], 'down')));
   }
 
   // A brand-new position is more notable than adding to an existing one, so
@@ -298,9 +343,9 @@ export function quarterHeadline(
   const opened = notable(diff.newPositions);
   const added = notable(diff.increased);
   if (opened) {
-    clauses.push(`opened a new position in ${friendlyIssuerName(opened.nameOfIssuer)}`);
+    clauses.push(plainClause('opened', friendlyIssuerName(opened.nameOfIssuer)));
   } else if (added) {
-    clauses.push(`added to ${friendlyIssuerName(added.nameOfIssuer)}${streakSuffix(sharesHistory[holdingKey(added)], 'up')}`);
+    clauses.push(moveClause('added', friendlyIssuerName(added.nameOfIssuer), streakMoves(sharesHistory[holdingKey(added)], 'up')));
   }
 
   // An exited position has no current weight, so rank it by what it was worth
@@ -308,7 +353,7 @@ export function quarterHeadline(
   if (clauses.length === 0) {
     const exit = diff.exited.filter((h) => !h.putCall).sort((a, b) => (b.portfolioPct ?? 0) - (a.portfolioPct ?? 0))[0];
     if (exit && (exit.portfolioPct ?? 0) >= NOTABLE_WEIGHT_PCT) {
-      clauses.push(`sold out of ${friendlyIssuerName(exit.nameOfIssuer)}`);
+      clauses.push(plainClause('sold', friendlyIssuerName(exit.nameOfIssuer)));
     }
   }
 
@@ -318,31 +363,32 @@ export function quarterHeadline(
   // of the sentence, where "trimmed X and added to Y for the second straight
   // quarter" reads as if the streak covers both halves. Fronting it keeps the
   // suffix next to the position it describes.
-  const ordered = [...clauses].sort(
-    (a, b) => Number(b.includes(STREAK_MARKER)) - Number(a.includes(STREAK_MARKER))
-  );
+  const ordered = [...clauses].sort((a, b) => Number(b.streak) - Number(a.streak)).map((c) => c.text);
 
-  const sentence = ordered.join(' and ');
   // A name can already end the sentence with its own dot ("Nebius Group N.V.").
-  return sentence[0].toUpperCase() + sentence.slice(1) + (sentence.endsWith('.') ? '' : '.');
+  const joined = joinList(ordered, tr).replace(/\.$/, '');
+  const sentence = tr ? tr.t('fundHeadlineSentence', { clauses: joined }) : `${joined}.`;
+  return sentence[0].toUpperCase() + sentence.slice(1);
 }
 
 
-
-const STREAK_MARKER = ' straight quarter';
 
 /** Ordinals for the streak clause. Beyond this a reader stops counting and
  *  "for years" would be the honest phrasing, which needs data we don't keep. */
 const ORDINALS = ['', '', 'second', 'third', 'fourth', 'fifth', 'sixth'];
 
+/** " for the third straight quarter": the English streak phrase. */
+function englishStreak(moves: number): string {
+  return ` for the ${ORDINALS[Math.min(moves, ORDINALS.length - 1)]} straight quarter`;
+}
+
 /**
- * " for the third straight quarter", when the fund has moved this position the
- * same way in consecutive filings. Needs at least three data points (two
- * moves) to say anything, and returns '' rather than guessing when the history
- * is short — the sentence still reads fine without it.
+ * How many consecutive filings moved this position the same way. Needs at
+ * least three data points (two moves) to matter, and anything under 2 means no
+ * streak: the sentence still reads fine without one.
  */
-function streakSuffix(series: number[] | undefined, direction: 'up' | 'down'): string {
-  if (!series || series.length < 3) return '';
+function streakMoves(series: number[] | undefined, direction: 'up' | 'down'): number {
+  if (!series || series.length < 3) return 0;
 
   // series is newest-first, so each pair is (newer, older).
   let moves = 0;
@@ -358,7 +404,5 @@ function streakSuffix(series: number[] | undefined, direction: 'up' | 'down'): s
     moves++;
   }
 
-  if (moves < 2) return '';
-  const ordinal = ORDINALS[Math.min(moves, ORDINALS.length - 1)];
-  return ` for the ${ordinal} straight quarter`;
+  return moves;
 }

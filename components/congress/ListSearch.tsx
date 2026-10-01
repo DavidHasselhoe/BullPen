@@ -1,6 +1,7 @@
 'use client';
 
 import { Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Inline filter box for a list that is already on screen.
@@ -23,6 +24,7 @@ export function ListSearch({
   /** Screen-reader name. The magnifier alone names nothing. */
   label: string;
 }) {
+  const { t } = useTranslation('discover');
   return (
     <div className="flex h-8 items-center gap-2 rounded-md border border-border/60 bg-transparent px-2.5 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 sm:w-[220px]">
       <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
@@ -48,7 +50,7 @@ export function ListSearch({
         <button
           type="button"
           onClick={() => onChange('')}
-          aria-label="Clear search"
+          aria-label={t('searchClear')}
           className="shrink-0 rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <X className="h-3.5 w-3.5" aria-hidden />

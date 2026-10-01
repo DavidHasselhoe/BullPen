@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { FundAvatar } from './FundAvatar';
@@ -32,8 +33,8 @@ interface HoldingsResponse {
   error?: string;
 }
 
-function fmtDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
+function fmtDate(iso: string, locale: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -42,6 +43,7 @@ function fmtDate(iso: string): string {
 }
 
 export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
+  const { t, i18n } = useTranslation('discover');
   const { isAuthenticated } = useAuth();
   const [paywallOpen, setPaywallOpen] = useState(false);
 
@@ -117,7 +119,7 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to Discover
+        {t('backToDiscover')}
       </Link>
 
       <div className="mb-2 flex items-center gap-3">
@@ -137,10 +139,13 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
       {unlocked && holdingsData?.filing && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            Filed {fmtDate(holdingsData.filing.filedDate)} for the quarter ended{' '}
-            {fmtDate(holdingsData.filing.periodOfReport)} · {fmtUsd(holdingsData.filing.totalValueUsd ?? 0)} across{' '}
-            {holdingsData.filing.totalPositions} positions
-            {options.length > 0 && <>, plus {fmtUsd(optionsValue)} in options</>}
+            {t('fundFiledSummary', {
+              filed: fmtDate(holdingsData.filing.filedDate, i18n.language),
+              period: fmtDate(holdingsData.filing.periodOfReport, i18n.language),
+              value: fmtUsd(holdingsData.filing.totalValueUsd ?? 0),
+              count: holdingsData.filing.totalPositions ?? 0,
+            })}
+            {options.length > 0 && t('fundFiledOptions', { value: fmtUsd(optionsValue) })}
           </p>
           <QuarterPicker
             quarters={holdingsData.availableQuarters ?? []}
@@ -159,18 +164,21 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
       {locked && (
         <div className="rounded-xl border border-border/50 bg-card/40 p-8 text-center">
           <Lock className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden />
-          <p className="mb-1 font-medium text-foreground">Full holdings are a Pro feature</p>
+          <p className="mb-1 font-medium text-foreground">{t('fundLockedTitle')}</p>
           <p className="mb-4 text-sm text-muted-foreground">
             {fundSummary?.lastFiledDate
-              ? `Last filed ${fmtDate(fundSummary.lastFiledDate)} · ${fundSummary.totalPositions ?? '—'} positions`
-              : 'See every position, sized by portfolio weight, updated every quarter.'}
+              ? t('fundLockedLastFiled', {
+                  date: fmtDate(fundSummary.lastFiledDate, i18n.language),
+                  positions: fundSummary.totalPositions ?? '—',
+                })
+              : t('fundLockedPitch')}
           </p>
           <button
             type="button"
             onClick={() => setPaywallOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.97]"
           >
-            Unlock full holdings
+            {t('fundUnlock')}
           </button>
         </div>
       )}
@@ -217,7 +225,7 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
       <AiPaywallDialog
         open={paywallOpen}
         onOpenChange={setPaywallOpen}
-        featureName="Institutional Holdings"
+        featureName={t('instHeading')}
         quota={{ allowed: false, used: 0, limit: 0, period: 'month', resetsAt: new Date().toISOString(), reason: 'pro_only' }}
         previewContext={{ fundName: displayName }}
       />

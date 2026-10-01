@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
 import { ArrowDownRight, ArrowLeft, ArrowUpRight, ChevronDown, Info } from 'lucide-react';
 import { InstitutionalHoldingsPieChart } from '@/components/institutions/InstitutionalHoldingsPieChart';
 import { ALLOCATION_TOP_N, buildAllocation } from '@/lib/institutions/allocation';
@@ -25,11 +26,8 @@ const ALL_YEARS = 'all';
 /** How many more positions each "Show more" reveals. */
 const REST_PAGE = 25;
 
-const FILTERS: { key: TradeFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'buy', label: 'Buys' },
-  { key: 'sell', label: 'Sells' },
-];
+/** Labels are discover.json's memberFilter_<key>. */
+const FILTERS: TradeFilter[] = ['all', 'buy', 'sell'];
 
 function compactUsd(n: number): string {
   // Estimated values only (see migration 150) — rendered compactly on purpose.
@@ -47,9 +45,9 @@ function tradeYear(t: CongressTradeRow): string {
   return (t.transactionDate ?? t.disclosureDate ?? '').slice(0, 4);
 }
 
-function formatDate(iso: string | null): string | null {
+function formatDate(iso: string | null, locale: string): string | null {
   if (!iso) return null;
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -90,6 +88,7 @@ function toDiffable(h: CongressHoldingRow) {
 }
 
 function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
+  const { t: tr, i18n } = useTranslation('discover');
   const dir = tradeDirection(t.tradeType);
   const isBuy = dir === 'buy';
   const isSell = dir === 'sell';
@@ -114,7 +113,7 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
         )}
       >
         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        {isBuy ? 'Bought' : isSell ? 'Sold' : t.tradeType}
+        {isBuy ? tr('memberBought') : isSell ? tr('memberSold') : t.tradeType}
       </span>
 
       <div className="min-w-0 flex-1">
@@ -142,19 +141,21 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
         <p className="mt-0.5 text-right text-xs tabular-nums text-muted-foreground">
           {/* A filed date after the filing itself is unknown (isPlausibleTradeDate),
               so the row says when it was reported instead of inventing a trade day. */}
-          {t.transactionDate ? formatDate(t.transactionDate) : `Trade date not given · reported ${formatDate(t.disclosureDate) ?? 'undated'}`}
+          {t.transactionDate
+            ? formatDate(t.transactionDate, i18n.language)
+            : tr('memberDateUnknown', { date: formatDate(t.disclosureDate, i18n.language) ?? tr('memberUndated') })}
           {t.daysToDisclose != null && (
             <span className={cn('ml-1.5', late && 'text-amber-600 dark:text-amber-400')}>
-              {late ? `filed ${t.daysToDisclose}d late` : `filed ${t.daysToDisclose}d later`}
+              {tr(late ? 'memberFiledLate' : 'memberFiledLater', { count: t.daysToDisclose })}
             </span>
           )}
         </p>
         {move != null && (
           <p
             className="mt-0.5 text-right text-xs tabular-nums text-muted-foreground"
-            title="Closing price on the trade date, then on the day the trade was disclosed"
+            title={tr('memberMoveTitle')}
           >
-            ${t.priceAtTrade!.toFixed(2)} → ${t.priceAtDisclosure!.toFixed(2)} when public{' '}
+            {tr('memberMoveWhenPublic', { from: t.priceAtTrade!.toFixed(2), to: t.priceAtDisclosure!.toFixed(2) })}{' '}
             <span className={cn('font-medium', move >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
               {move >= 0 ? '+' : ''}{move.toFixed(1)}%
             </span>
@@ -166,6 +167,7 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
 }
 
 export function CongressMemberDetailClient({ slug }: { slug: string }) {
+  const { t } = useTranslation('discover');
   const [filter, setFilter] = useState<TradeFilter>('all');
   const [year, setYear] = useState(ALL_YEARS);
   const [tradeQuery, setTradeQuery] = useState('');
@@ -233,8 +235,8 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
       .filter(Boolean)
       .sort()
       .reverse();
-    return [{ value: ALL_YEARS, label: 'All years' }, ...years.map((y) => ({ value: y, label: y }))];
-  }, [tradesWithTicker]);
+    return [{ value: ALL_YEARS, label: t('memberAllYears') }, ...years.map((y) => ({ value: y, label: y }))];
+  }, [tradesWithTicker, t]);
 
   const counts = useMemo(
     () => ({
@@ -286,12 +288,12 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
   if (error || !member) {
     return (
       <div className="rounded-xl border border-dashed border-border/60 px-6 py-12 text-center">
-        <p className="text-sm text-foreground">We could not load this member right now.</p>
+        <p className="text-sm text-foreground">{t('memberLoadError')}</p>
         <Link
           href="/discover"
           className="mt-3 inline-block text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
         >
-          Back to Discover
+          {t('backToDiscover')}
         </Link>
       </div>
     );
@@ -304,7 +306,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
         className="mb-5 inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
-        Discover
+        {t('headerTitle')}
       </Link>
 
       <header className="mb-6 flex items-center gap-4">
@@ -315,7 +317,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
           <h1 className="text-xl font-bold tracking-tight text-foreground">
             {member.displayName}
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">{positionLine(member)}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{positionLine(member, t)}</p>
         </div>
         <FollowFundButton kind="politician" slug={member.slug} displayName={member.displayName} />
       </header>
@@ -328,7 +330,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
           id="congress-holdings-heading"
           className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
         >
-          Estimated portfolio
+          {t('memberEstimatedPortfolio')}
         </h2>
 
         {allocation ? (
@@ -352,26 +354,26 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
               // Not a 13F. Calling a bracket-midpoint reconstruction the same
               // thing as a filed institutional value would be the exact
               // category error migration 150 warns about.
-              centerLabel="Estimated value"
+              centerLabel={t('memberEstimatedValue')}
             />
             <div className="mt-4 mb-2 flex flex-wrap items-center justify-between gap-2">
               <ListSearch
                 id="congress-holdings-search"
                 value={holdingQuery}
                 onChange={setHoldingQuery}
-                placeholder="Filter by ticker or company"
-                label="Filter positions by ticker or company"
+                placeholder={t('memberFilterPlaceholder')}
+                label={t('memberFilterPositionsLabel')}
               />
               <p className="text-xs tabular-nums text-muted-foreground" aria-live="polite">
                 {holdingQuery
-                  ? `${visibleHoldings.length} of ${allHoldings.length} positions`
-                  : `${allHoldings.length} positions`}
+                  ? t('memberPositionsFiltered', { count: allHoldings.length, shown: visibleHoldings.length })
+                  : t('memberPositions', { count: allHoldings.length })}
               </p>
             </div>
 
             {visibleHoldings.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border/60 px-6 py-8 text-center text-sm text-foreground">
-                No positions match “{holdingQuery}”.
+                {t('memberNoPositionMatch', { query: holdingQuery })}
               </p>
             ) : (
             <ul className="space-y-1.5">
@@ -420,17 +422,16 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 onClick={() => setHoldingsShown((n) => n + REST_PAGE)}
                 // The remaining count is a second visual column, so without
                 // this the name concatenates to "...positions25 remaining".
-                aria-label={`Show ${Math.min(hiddenHoldings, REST_PAGE)} more positions, ${hiddenHoldings} remaining`}
+                aria-label={t('memberShowMoreAria', { count: Math.min(hiddenHoldings, REST_PAGE), remaining: hiddenHoldings })}
                 className="mt-2 flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
                   <ChevronDown className="h-3.5 w-3.5" aria-hidden />
                 </span>
                 <span className="text-sm text-foreground/85">
-                  Show {Math.min(hiddenHoldings, REST_PAGE).toLocaleString('en-US')} more position
-                  {Math.min(hiddenHoldings, REST_PAGE) === 1 ? '' : 's'}
+                  {t('memberShowMore', { count: Math.min(hiddenHoldings, REST_PAGE) })}
                   <span className="ml-2 text-xs text-muted-foreground">
-                    {hiddenHoldings.toLocaleString('en-US')} remaining
+                    {t('memberRemaining', { formatted: hiddenHoldings.toLocaleString('en-US') })}
                   </span>
                 </span>
               </button>
@@ -442,7 +443,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 onClick={() => setHoldingsShown(ALLOCATION_TOP_N)}
                 className="mt-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                Show less
+                {t('showLess')}
               </button>
             )}
 
@@ -453,21 +454,16 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
               <p className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
                 <span>
-                  Not shown above:{' '}
-                  {optionPositions.map((h) => h.companyName ?? h.symbol).join(', ')}. Options are
-                  left out of the allocation because their value is not comparable to a share
-                  position, so charting them together would make a bet on a stock read as owning
-                  it.
+                  {t('memberOptionsNote', { names: optionPositions.map((h) => h.companyName ?? h.symbol).join(', ') })}
                 </span>
               </p>
             )}
           </>
         ) : (
           <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
-            <p className="text-sm text-foreground">No position estimate for this member yet.</p>
+            <p className="text-sm text-foreground">{t('memberNoEstimate')}</p>
             <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-muted-foreground">
-              Their disclosed trades are below. A portfolio estimate is built separately and has
-              not been generated for them yet.
+              {t('memberNoEstimateHint')}
             </p>
           </div>
         )}
@@ -480,7 +476,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
             id="congress-trades-heading"
             className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
           >
-            Disclosed trades
+            {t('memberDisclosedTrades')}
           </h2>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -488,40 +484,40 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
               id="congress-trades-search"
               value={tradeQuery}
               onChange={setTradeQuery}
-              placeholder="Filter by ticker or company"
-              label="Filter trades by ticker or company"
+              placeholder={t('memberFilterPlaceholder')}
+              label={t('memberFilterTradesLabel')}
             />
             {yearOptions.length > 2 && (
               <ControlSelect
                 id="congress-trade-year"
-                label="Year"
+                label={t('memberYearLabel')}
                 value={year}
                 onChange={setYear}
                 options={yearOptions}
                 width="sm:w-[130px]"
               />
             )}
-          <div className="flex items-center gap-1" role="group" aria-label="Filter by direction">
+          <div className="flex items-center gap-1" role="group" aria-label={t('memberDirectionGroup')}>
             {FILTERS.map((f) => (
               <button
-                key={f.key}
+                key={f}
                 type="button"
-                onClick={() => setFilter(f.key)}
-                aria-pressed={filter === f.key}
+                onClick={() => setFilter(f)}
+                aria-pressed={filter === f}
                 // Without this the accessible name concatenates to "Buys55".
                 // The count is a separate visual column, not part of the word.
-                aria-label={`${f.label}, ${counts[f.key]} trades`}
+                aria-label={t('memberDirectionAria', { label: t(`memberFilter_${f}`), count: counts[f] })}
                 className={cn(
                   'inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-sm transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  filter === f.key
+                  filter === f
                     ? 'border-border bg-muted/60 text-foreground'
                     : 'border-border/60 text-muted-foreground hover:border-border hover:text-foreground',
                 )}
               >
-                {f.label}
+                {t(`memberFilter_${f}`)}
                 <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                  {counts[f.key]}
+                  {counts[f]}
                 </span>
               </button>
             ))}
@@ -538,11 +534,19 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
 
         {buyGap && (
           <p className="mb-4 text-sm text-muted-foreground">
-            By the time these buys were made public, the stock had already moved a median of{' '}
-            <span className={cn('font-mono font-semibold tabular-nums', buyGap.median >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-              {buyGap.median >= 0 ? '+' : ''}{buyGap.median.toFixed(1)}%
-            </span>{' '}
-            <span className="tabular-nums">({buyGap.count} buys with prices on both dates).</span>
+            <Trans
+              t={t}
+              i18nKey="memberBuyGap"
+              count={buyGap.count}
+              values={{ pct: `${buyGap.median >= 0 ? '+' : ''}${buyGap.median.toFixed(1)}%` }}
+              components={[
+                <span
+                  key="pct"
+                  className={cn('font-mono font-semibold tabular-nums', buyGap.median >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}
+                />,
+                <span key="count" className="tabular-nums" />,
+              ]}
+            />
           </p>
         )}
 
@@ -551,9 +555,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
             {/* Separates "we hold nothing for this member" from "your filters
                 excluded everything", which need different recoveries. */}
             <p className="text-sm text-foreground">
-              {tradeFiltersActive
-                ? 'No trades match these filters.'
-                : 'No disclosed stock trades for this member yet.'}
+              {tradeFiltersActive ? t('memberNoTradesMatch') : t('memberNoTrades')}
             </p>
             {tradeFiltersActive && (
               <button
@@ -565,7 +567,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                 }}
                 className="mt-2 text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                Clear filters
+                {t('discoverClearFilters')}
               </button>
             )}
           </div>

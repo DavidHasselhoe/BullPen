@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ALLOCATION_OTHER_COLOR } from '@/lib/charts/allocation-colors';
 import { allocationHeadline, quarterHeadline } from '@/lib/institutions/allocation';
+import { useTranslation } from 'react-i18next';
 import { fmtUsd } from '@/lib/institutions/format';
 import type { Allocation } from '@/lib/institutions/allocation';
 import type { HoldingsDiff } from '@/lib/institutions/compute-diff';
@@ -35,7 +36,7 @@ interface Slice {
   [key: string]: unknown;
 }
 
-function toSlices(allocation: Allocation): Slice[] {
+function toSlices(moreLabel: string, allocation: Allocation): Slice[] {
   const slices: Slice[] = allocation.top.map((h) => ({
     key: h.key,
     symbol: h.symbol,
@@ -50,7 +51,7 @@ function toSlices(allocation: Allocation): Slice[] {
     slices.push({
       key: OTHER_KEY,
       symbol: null,
-      name: `${allocation.rest.length.toLocaleString()} more position${allocation.rest.length === 1 ? '' : 's'}`,
+      name: moreLabel,
       value: allocation.restValue,
       pct: allocation.restPct,
       color: ALLOCATION_OTHER_COLOR,
@@ -89,8 +90,9 @@ export function InstitutionalHoldingsPieChart({
   highlightedKey,
   onHighlight,
   className,
-  centerLabel = 'Total 13F Value',
+  centerLabel,
 }: InstitutionalHoldingsPieChartProps) {
+  const { t, i18n } = useTranslation('discover');
   const [reducedMotion, setReducedMotion] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
@@ -109,13 +111,19 @@ export function InstitutionalHoldingsPieChart({
   // to 7000+ rows) lives above this component, so without this it recomputed
   // on every mouse move over the holdings list.
   const headline = useMemo(
-    () => quarterHeadline(diff ?? null, allocation, sharesHistory ?? {}) ?? allocationHeadline(allocation),
-    [diff, allocation, sharesHistory]
+    () => {
+      const tr = { t, lang: i18n.language };
+      return quarterHeadline(diff ?? null, allocation, sharesHistory ?? {}, tr) ?? allocationHeadline(allocation, tr);
+    },
+    [diff, allocation, sharesHistory, t, i18n.language]
   );
 
   if (allocation.top.length === 0) return null;
 
-  const slices = toSlices(allocation);
+  const slices = toSlices(
+    t('barMorePositions', { count: allocation.rest.length, formatted: allocation.rest.length.toLocaleString('en-US') }),
+    allocation,
+  );
   const centerValue = totalValueUsd ?? allocation.total;
   const topSlice = slices[0];
   const positionCount = allocation.top.length + allocation.rest.length;
@@ -124,9 +132,11 @@ export function InstitutionalHoldingsPieChart({
   // where it landed on top of the total and made both unreadable.
   const hovered = slices.find((s) => s.key === highlightedKey) ?? null;
 
-  const ariaLabel = `Portfolio allocation. Largest holding: ${topSlice.symbol ?? topSlice.name} at ${topSlice.pct.toFixed(1)}% of the portfolio${
-    slices.length > 1 ? `, plus ${slices.length - 1} more shown` : ''
-  }. Full breakdown in the list below.`;
+  const ariaLabel = t('chartAria', {
+    name: topSlice.symbol ?? topSlice.name,
+    pct: topSlice.pct.toFixed(1),
+    more: slices.length > 1 ? t('chartAriaMore', { count: slices.length - 1 }) : '',
+  });
 
   return (
     <Card className={className}>
@@ -182,15 +192,15 @@ export function InstitutionalHoldingsPieChart({
                 swaps the numbers without the block growing and shrinking. */}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-14 text-center">
               <span className="w-full truncate text-xs font-semibold tracking-wide text-muted-foreground">
-                {hovered ? (hovered.symbol ?? 'Everything else') : centerLabel}
+                {hovered ? (hovered.symbol ?? t('chartEverythingElse')) : (centerLabel ?? t('chartTotal13f'))}
               </span>
               <span className="mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground">
                 {fmtUsd(hovered ? hovered.value : centerValue)}
               </span>
               <span className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
                 {hovered
-                  ? `${hovered.pct.toFixed(1)}% of portfolio`
-                  : `${positionCount.toLocaleString()} position${positionCount === 1 ? '' : 's'}`}
+                  ? t('chartPctOfPortfolio', { pct: hovered.pct.toFixed(1) })
+                  : t('chartPositions', { count: positionCount, formatted: positionCount.toLocaleString('en-US') })}
               </span>
             </div>
           </div>

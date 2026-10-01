@@ -12,6 +12,7 @@
  * backfill ran that was every fund.
  */
 
+import { useTranslation } from 'react-i18next';
 import {
   Select,
   SelectContent,
@@ -38,6 +39,7 @@ interface QuarterPickerProps {
 }
 
 export function QuarterPicker({ quarters, value, onChange, busy }: QuarterPickerProps) {
+  const { t } = useTranslation('discover');
   if (quarters.length < 2) return null;
 
   const selected = value ?? quarters[0];
@@ -45,14 +47,14 @@ export function QuarterPicker({ quarters, value, onChange, busy }: QuarterPicker
   return (
     <div className="flex items-center gap-2">
       <label htmlFor="quarter-picker" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        Quarter
+        {t('fundQuarterLabel')}
       </label>
       <Select value={selected} onValueChange={onChange}>
         <SelectTrigger
           id="quarter-picker"
           size="sm"
           className="w-[140px] font-mono tabular-nums"
-          aria-label="Choose which quarter's holdings to show"
+          aria-label={t('fundQuarterAria')}
         >
           {/* Explicit children: with none, Radix clones the selected item's
               content into the trigger, dragging the "Latest" marker with it. */}
@@ -62,14 +64,14 @@ export function QuarterPicker({ quarters, value, onChange, busy }: QuarterPicker
           {quarters.map((q, i) => (
             <SelectItem key={q} value={q} className="font-mono tabular-nums">
               {quarterLabel(q)}
-              {i === 0 && <span className="ml-2 font-sans text-xs text-muted-foreground">Latest</span>}
+              {i === 0 && <span className="ml-2 font-sans text-xs text-muted-foreground">{t('fundQuarterLatest')}</span>}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
       {busy && (
         <span className="text-xs text-muted-foreground" role="status">
-          Loading…
+          {t('fundLoading')}
         </span>
       )}
     </div>

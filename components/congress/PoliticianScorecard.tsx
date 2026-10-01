@@ -10,6 +10,7 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ProBadge } from '@/components/billing/ProBadge';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import type { Scorecard } from '@/lib/congress/insights';
@@ -36,6 +37,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'up
 }
 
 export function PoliticianScorecard({ slug, displayName }: { slug: string; displayName: string }) {
+  const { t } = useTranslation('discover');
   const { isPro } = useEntitlements();
 
   const { data, isLoading } = useQuery({
@@ -58,10 +60,10 @@ export function PoliticianScorecard({ slug, displayName }: { slug: string; displ
           <LineChart className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-              Scorecard <ProBadge />
+              {t('scoreTitle')} <ProBadge />
             </p>
             <p className="text-xs text-muted-foreground">
-              What buying {displayName}&apos;s trades the day they became public would have returned, against the S&amp;P 500.
+              {t('scoreLockedPitch', { name: displayName })}
             </p>
           </div>
         </div>
@@ -69,7 +71,7 @@ export function PoliticianScorecard({ slug, displayName }: { slug: string; displ
           href="/upgrade"
           className="shrink-0 whitespace-nowrap rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
         >
-          Unlock
+          {t('scoreUnlock')}
         </Link>
       </section>
     );
@@ -78,10 +80,10 @@ export function PoliticianScorecard({ slug, displayName }: { slug: string; displ
   return (
     <section aria-labelledby="congress-scorecard-heading" className="mb-10">
       <h2 id="congress-scorecard-heading" className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-        Scorecard
+        {t('scoreTitle')}
       </h2>
       <p className="mb-3 text-sm text-muted-foreground">
-        If you had bought each of their buys the day it became public and held it until today.
+        {t('scoreIntro')}
       </p>
 
       {isLoading ? (
@@ -90,19 +92,18 @@ export function PoliticianScorecard({ slug, displayName }: { slug: string; displ
         </div>
       ) : !data ? (
         <p className="rounded-xl border border-dashed border-border/60 px-4 py-6 text-center text-sm text-muted-foreground">
-          Not enough buys with prices on the disclosure date to score yet.
+          {t('scoreNotEnough')}
         </p>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Stat label="Median return" value={pct(data.medianReturnPct)} tone={data.medianReturnPct >= 0 ? 'up' : 'down'} />
-            <Stat label="Median vs S&P 500" value={pct(data.medianExcessPct)} tone={data.medianExcessPct >= 0 ? 'up' : 'down'} />
-            <Stat label="Beat the S&P 500" value={`${Math.round(data.beatSpyPct)}%`} />
-            <Stat label="Median time held" value={`${data.medianDaysHeld} days`} />
+            <Stat label={t('scoreMedianReturn')} value={pct(data.medianReturnPct)} tone={data.medianReturnPct >= 0 ? 'up' : 'down'} />
+            <Stat label={t('scoreMedianVsSpx')} value={pct(data.medianExcessPct)} tone={data.medianExcessPct >= 0 ? 'up' : 'down'} />
+            <Stat label={t('scoreBeat')} value={`${Math.round(data.beatSpyPct)}%`} />
+            <Stat label={t('scoreMedianHeld')} value={t('scoreDays', { count: data.medianDaysHeld })} />
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {data.count} buys. Bought at the close on each disclosure day, every trade weighted equally because filings only give an amount range.
-            Compared with the S&amp;P 500 (SPY) over each trade&apos;s own window. Past results say nothing about future ones.
+            {t('scoreFootnote', { count: data.count })}
           </p>
         </>
       )}

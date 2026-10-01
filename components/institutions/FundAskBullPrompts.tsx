@@ -18,6 +18,7 @@
  * model receives the whole thing.
  */
 
+import { useTranslation } from 'react-i18next';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useOwnedSymbols } from '@/hooks/use-owned-symbols';
 import { friendlyIssuerName } from '@/lib/institutions/allocation';
@@ -49,6 +50,7 @@ export function FundAskBullPrompts({
   positionCount,
   className,
 }: FundAskBullPromptsProps) {
+  const { t } = useTranslation('discover');
   const { open: openAIPanel } = useAIPanel();
   const ownedSymbols = useOwnedSymbols();
 
@@ -83,11 +85,13 @@ export function FundAskBullPrompts({
 
   const prompts: Array<{ label: string; question: string }> = [
     {
-      label: `Why so much ${topHolding.symbol ?? topName}?`,
+      // Labels are what the reader sees (and the chat echoes); the question is
+      // model input, kept English. Bull answers in the reader's language.
+      label: t('fundAskWhy', { name: topHolding.symbol ?? topName }),
       question: `Why would ${fundName} hold ${topPct}% of its portfolio in ${topName}? Explain the likely investment case in plain language for someone new to investing.`,
     },
     {
-      label: `Is ${topPct}% in one stock risky?`,
+      label: t('fundAskRisk', { pct: topPct }),
       question: `Is putting ${topPct}% of a portfolio into a single stock, as ${fundName} has with ${topName}, too risky for a beginner? Explain what that concentration means for someone with a much smaller portfolio.`,
     },
   ];
@@ -96,7 +100,7 @@ export function FundAskBullPrompts({
   // never opened on a question it has no way to answer.
   if (ownedSymbols.size > 0) {
     prompts.push({
-      label: `Compare to my portfolio`,
+      label: t('fundAskCompare'),
       question: `I hold: ${[...ownedSymbols].join(', ')}. How does my portfolio compare to ${fundName}'s 13F holdings above? Point out overlaps, and where our concentration differs.`,
     });
   }
@@ -104,7 +108,7 @@ export function FundAskBullPrompts({
   return (
     <div className={className}>
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        Ask Bull about this fund
+        {t('fundAskHeading')}
       </p>
       <div className="flex flex-wrap gap-2">
         {prompts.map((p) => (
