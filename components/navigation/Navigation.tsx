@@ -132,7 +132,11 @@ export function Navigation() {
           {/* Navigation - Centered */}
           {/* self-stretch: overflow-x-auto also clips vertically, and at content height it clipped
               the strip between a dropdown trigger and its menu, so the cursor crossed dead space. */}
-          <div className="flex items-center justify-center self-stretch min-w-0 overflow-x-auto scrollbar-hide">
+          {/* @container + safe centring: signed out at 1440px the links needed 907px of a
+              790px strip, and plain justify-center pushed "Home" off the left edge, out of
+              scroll reach ("me"). The icons drop first when the strip is narrower than the
+              full row, and if it still overflows it starts at the left instead. */}
+          <div className="@container flex items-center [justify-content:safe_center] self-stretch min-w-0 overflow-x-auto scrollbar-hide">
             {/* Navigation Links */}
             <nav className="hidden items-center gap-2 md:flex shrink-0">
               {navItems.map((item) => {
@@ -150,7 +154,7 @@ export function Navigation() {
                         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4 @max-[57rem]:hidden" />
                     {item.name}
                   </Link>
                 );
@@ -168,7 +172,7 @@ export function Navigation() {
                           : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
                       )}
                     >
-                      <Users className="h-4 w-4" />
+                      <Users className="h-4 w-4 @max-[57rem]:hidden" />
                       {t('navCommunityLabel')}
                       <ChevronDown className={cn(
                         'h-3.5 w-3.5 opacity-60 transition-transform duration-200',
@@ -216,7 +220,7 @@ export function Navigation() {
                         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
                     )}
                   >
-                    <Wrench className="h-4 w-4" />
+                    <Wrench className="h-4 w-4 @max-[57rem]:hidden" />
                     {t('navToolsLabel')}
                     <ChevronDown className={cn(
                       'h-3.5 w-3.5 opacity-60 transition-transform duration-200',
