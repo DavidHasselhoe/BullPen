@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ArrowUpRight } from 'lucide-react';
 import { ControlSelect } from '@/components/ui/ControlSelect';
 import { PARTY_LABEL, positionLine } from '@/lib/congress/member-list';
@@ -42,9 +43,9 @@ const MEMBERS_QUERY = {
   refetchOnWindowFocus: false,
 };
 
-function formatDate(iso: string | null): string | null {
+function formatDate(iso: string | null, locale: string): string | null {
   if (!iso) return null;
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, {
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',
@@ -71,6 +72,7 @@ function SectionSkeleton() {
 const PREVIEW_COUNT = 3;
 
 export function CongressSection({ preview = false }: { preview?: boolean }) {
+  const { t, i18n } = useTranslation('discover');
   const { data, isLoading, error } = useQuery(MEMBERS_QUERY);
   const members = useMemo(() => data?.members ?? [], [data]);
   const { data: followedSlugs } = useFollowedSlugs('politician');
@@ -80,16 +82,22 @@ export function CongressSection({ preview = false }: { preview?: boolean }) {
   const [state, setState] = useState(ALL);
 
   const partyOptions = useMemo(
-    () => optionsFrom(members, (m) => m.party, (v) => PARTY_LABEL[v] ?? v, 'All parties'),
-    [members],
+    () =>
+      optionsFrom(
+        members,
+        (m) => m.party,
+        (v) => t(`congParty_${v}`, { defaultValue: PARTY_LABEL[v] ?? v }),
+        t('congAllParties'),
+      ),
+    [members, t],
   );
   const chamberOptions = useMemo(
-    () => optionsFrom(members, (m) => m.chamber, (v) => v, 'All chambers'),
-    [members],
+    () => optionsFrom(members, (m) => m.chamber, (v) => t(`congChamber_${v}`, { defaultValue: v }), t('congAllChambers')),
+    [members, t],
   );
   const stateOptions = useMemo(
-    () => optionsFrom(members, (m) => m.state, (v) => v, 'All states'),
-    [members],
+    () => optionsFrom(members, (m) => m.state, (v) => v, t('congAllStates')),
+    [members, t],
   );
 
   const visible = useMemo(
@@ -125,7 +133,7 @@ export function CongressSection({ preview = false }: { preview?: boolean }) {
         id="washington-heading"
         className="mb-1 text-lg font-semibold tracking-tight text-foreground"
       >
-        Washington Trading
+        {t('congHeading')}
       </h2>
 
       <div className="mb-3">
@@ -141,7 +149,7 @@ export function CongressSection({ preview = false }: { preview?: boolean }) {
           {partyOptions.length > 2 && (
             <ControlSelect
               id="congress-party"
-              label="Party"
+              label={t('congPartyLabel')}
               value={party}
               onChange={setParty}
               options={partyOptions}
@@ -151,7 +159,7 @@ export function CongressSection({ preview = false }: { preview?: boolean }) {
           {chamberOptions.length > 2 && (
             <ControlSelect
               id="congress-chamber"
-              label="Chamber"
+              label={t('congChamberLabel')}
               value={chamber}
               onChange={setChamber}
               options={chamberOptions}
@@ -161,7 +169,7 @@ export function CongressSection({ preview = false }: { preview?: boolean }) {
           {stateOptions.length > 2 && (
             <ControlSelect
               id="congress-state"
-              label="State"
+              label={t('congStateLabel')}
               value={state}
               onChange={setState}
               options={stateOptions}
@@ -174,13 +182,13 @@ export function CongressSection({ preview = false }: { preview?: boolean }) {
               onClick={clearFilters}
               className="inline-flex h-8 items-center rounded-md px-2 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Clear filters
+              {t('discoverClearFilters')}
             </button>
           )}
           <p className="ml-auto text-xs tabular-nums text-muted-foreground" aria-live="polite">
             {visible.length === members.length
-              ? `${members.length} members`
-              : `${visible.length} of ${members.length} members`}
+              ? t('congMemberCount', { count: members.length })
+              : t('congMemberCountFiltered', { count: members.length, shown: visible.length })}
           </p>
         </div>
       )}
@@ -189,19 +197,19 @@ export function CongressSection({ preview = false }: { preview?: boolean }) {
         <SectionSkeleton />
       ) : cards.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
-          <p className="text-sm text-foreground">No members match these filters.</p>
+          <p className="text-sm text-foreground">{t('congEmptyFilters')}</p>
           <button
             type="button"
             onClick={clearFilters}
             className="mt-2 text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Clear filters
+            {t('discoverClearFilters')}
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((m) => {
-            const lastTrade = formatDate(m.lastTradeDate);
+            const lastTrade = formatDate(m.lastTradeDate, i18n.language);
             return (
               <div
                 key={m.slug}
@@ -215,27 +223,27 @@ export function CongressSection({ preview = false }: { preview?: boolean }) {
                 <PoliticianAvatar displayName={m.displayName} slug={m.slug} size={44} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium leading-snug text-foreground">{m.displayName}</p>
-                  <p className="truncate text-xs text-muted-foreground">{positionLine(m)}</p>
+                  <p className="truncate text-xs text-muted-foreground">{positionLine(m, t)}</p>
                   <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs tabular-nums text-muted-foreground">
                     {/* Locale pinned, as everywhere else in this file. Bare
                         toLocaleString() follows the viewer's browser, which
                         rendered Khanna's 1,577 positions as "1 577". */}
-                    <span>
-                      {m.tradeCount.toLocaleString('en-US')} trade{m.tradeCount === 1 ? '' : 's'}
-                    </span>
+                    <span>{t('congTradeCount', { count: m.tradeCount, formatted: m.tradeCount.toLocaleString('en-US') })}</span>
                     {/* null means no snapshot has been taken, which is a
                         different claim from "holds nothing" — say neither
                         rather than showing a 0 that looks measured. */}
                     {m.positionCount != null && (
                       <>
                         <span aria-hidden>·</span>
-                        <span>{m.positionCount.toLocaleString('en-US')} positions</span>
+                        <span>
+                          {t('congPositionCount', { count: m.positionCount, formatted: m.positionCount.toLocaleString('en-US') })}
+                        </span>
                       </>
                     )}
                     {lastTrade && (
                       <>
                         <span aria-hidden>·</span>
-                        <span>to {lastTrade}</span>
+                        <span>{t('congLastTrade', { date: lastTrade })}</span>
                       </>
                     )}
                   </p>
@@ -259,7 +267,7 @@ export function CongressSection({ preview = false }: { preview?: boolean }) {
           href="/discover/politicians"
           className="mt-3 inline-flex min-h-[44px] items-center gap-1 rounded-md text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          See all {members.length} members
+          {t('congSeeAll', { count: members.length })}
           <ArrowUpRight className="h-4 w-4" aria-hidden />
         </Link>
       )}

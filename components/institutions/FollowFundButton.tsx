@@ -13,6 +13,7 @@
  */
 
 import { Check, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsFollowing, useToggleFollow, type FollowKind } from '@/hooks/use-institution-follow';
 import { cn } from '@/lib/utils';
@@ -32,13 +33,14 @@ interface FollowFundButtonProps {
 }
 
 export function FollowFundButton({ slug, displayName, compact, className, kind = 'institution' }: FollowFundButtonProps) {
+  const { t } = useTranslation('discover');
   const { isAuthenticated } = useAuth();
   const following = useIsFollowing(kind, slug);
   const toggle = useToggleFollow(kind, slug);
 
   if (!isAuthenticated) return null;
 
-  const label = following ? `Stop following ${displayName}` : `Follow ${displayName}`;
+  const label = following ? t('followStopAria', { name: displayName }) : t('followAria', { name: displayName });
 
   return (
     <button
@@ -68,7 +70,7 @@ export function FollowFundButton({ slug, displayName, compact, className, kind =
       ) : (
         <Plus className="h-3.5 w-3.5" aria-hidden />
       )}
-      {!compact && (following ? 'Following' : 'Follow')}
+      {!compact && (following ? t('followFollowing') : t('followFollow'))}
     </button>
   );
 }

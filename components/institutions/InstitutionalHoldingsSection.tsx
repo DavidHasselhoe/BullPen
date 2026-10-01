@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { ArrowUpRight, Check, HelpCircle } from 'lucide-react';
 import { ProBadge } from '@/components/billing/ProBadge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -40,9 +42,9 @@ function formatQuarter(iso: string | null): string | null {
   return `Q${Math.floor((month - 1) / 3) + 1} ${year}`;
 }
 
-function formatFiledDate(iso: string | null): string | null {
+function formatFiledDate(iso: string | null, locale: string): string | null {
   if (!iso) return null;
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -95,12 +97,13 @@ function changeRatioOf(fund: InstitutionalFundSummary): number | null {
 
 type SortKey = 'suggested' | 'value' | 'positions' | 'history' | 'change';
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'suggested', label: 'Suggested' },
-  { key: 'value', label: 'Largest portfolio' },
-  { key: 'positions', label: 'Most holdings' },
-  { key: 'history', label: 'Filing the longest' },
-  { key: 'change', label: 'Most changed last quarter' },
+/** Labels are discover.json's instSort_<key>. */
+const SORT_OPTIONS: { key: SortKey }[] = [
+  { key: 'suggested' },
+  { key: 'value' },
+  { key: 'positions' },
+  { key: 'history' },
+  { key: 'change' },
 ];
 
 const CONCENTRATION_ORDER: ConcentrationRead['level'][] = ['concentrated', 'focused', 'diversified', 'broad'];
@@ -183,47 +186,56 @@ function sortRows(rows: FundRow[], sort: SortKey): FundRow[] {
 }
 
 /** A figure inside a sentence: Geist Mono, per DESIGN.md's Tabular Numerals Rule. */
-function Figure({ children }: { children: ReactNode }) {
+function Figure({ children }: { children?: ReactNode }) {
   return <span className="font-mono tabular-nums text-foreground/90">{children}</span>;
 }
 
 /** The one extra line a card carries: whatever the list is sorted by, so the
  *  order on screen explains itself. With no sort, the top sector. */
-function metricLine(row: FundRow, sort: SortKey): ReactNode {
+function metricLine(row: FundRow, sort: SortKey, t: TFunction): ReactNode {
   const { fund } = row;
+  const fig = [<Figure key="a" />, <Figure key="b" />];
   switch (sort) {
     case 'value':
       return fund.totalValueUsd != null ? (
-        <>
-          <Figure>{compactUsd.format(fund.totalValueUsd)}</Figure> in reported holdings
-        </>
+        <Trans t={t} i18nKey="instMetricValue" values={{ value: compactUsd.format(fund.totalValueUsd) }} components={fig} />
       ) : null;
     case 'positions':
       return fund.totalPositions != null ? (
-        <>
-          <Figure>{fund.totalPositions.toLocaleString('en-US')}</Figure> positions
-        </>
+        <Trans
+          t={t}
+          i18nKey="instMetricPositions"
+          count={fund.totalPositions}
+          values={{ formatted: fund.totalPositions.toLocaleString('en-US') }}
+          components={fig}
+        />
       ) : null;
     case 'history':
       return fund.firstFiledDate ? (
-        <>
-          Filing 13Fs since <Figure>{fund.firstFiledDate.slice(0, 4)}</Figure>
-        </>
+        <Trans t={t} i18nKey="instMetricHistory" values={{ year: fund.firstFiledDate.slice(0, 4) }} components={fig} />
       ) : null;
     case 'change':
       return fund.quarterChange ? (
-        <>
-          <Figure>{fund.quarterChange.newPositions.toLocaleString('en-US')}</Figure> new,{' '}
-          <Figure>{fund.quarterChange.exitedPositions.toLocaleString('en-US')}</Figure> sold out
-        </>
+        <Trans
+          t={t}
+          i18nKey="instMetricChange"
+          values={{
+            added: fund.quarterChange.newPositions.toLocaleString('en-US'),
+            exited: fund.quarterChange.exitedPositions.toLocaleString('en-US'),
+          }}
+          components={fig}
+        />
       ) : (
-        'No earlier quarter to compare'
+        t('instMetricNoCompare')
       );
     case 'suggested':
       return row.topSector ? (
-        <>
-          Top sector: {row.topSector.sector} <Figure>{Math.round(row.topSector.pct)}%</Figure>
-        </>
+        <Trans
+          t={t}
+          i18nKey="instMetricTopSector"
+          values={{ sector: row.topSector.sector, pct: Math.round(row.topSector.pct) }}
+          components={fig}
+        />
       ) : null;
   }
 }
@@ -244,6 +256,8 @@ function metricLine(row: FundRow, sort: SortKey): ReactNode {
 /** Neutral dots: the fund's palette color stays on its avatar, where it marks
  *  identity. In the dots it read as if it meant something about concentration. */
 function ConcentrationDots({ read }: { read: ConcentrationRead }) {
+  const { t } = useTranslation('discover');
+  const label = t(`instConcentration_${read.level}`, { defaultValue: read.label });
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -252,7 +266,7 @@ function ConcentrationDots({ read }: { read: ConcentrationRead }) {
           // The card is one big link behind this row, so a click here must not
           // also navigate to the fund.
           onClick={(e) => e.stopPropagation()}
-          aria-label={`What "${read.label}" means`}
+          aria-label={t('instConcentrationAria', { label })}
           className="group/conc relative z-10 -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="flex items-center gap-[3px]" aria-hidden>
@@ -268,7 +282,7 @@ function ConcentrationDots({ read }: { read: ConcentrationRead }) {
               />
             ))}
           </span>
-          {read.label}
+          {label}
           <HelpCircle
             className="h-3 w-3 shrink-0 opacity-40 transition-opacity group-hover/conc:opacity-90"
             aria-hidden
@@ -279,8 +293,10 @@ function ConcentrationDots({ read }: { read: ConcentrationRead }) {
           which is the one thing you need to still see. Radix flips it back up
           on the bottom row. */}
       <PopoverContent side="bottom" align="start" sideOffset={6} className="w-64 p-3">
-        <p className="text-xs font-semibold text-foreground">{read.label}</p>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{read.blurb}</p>
+        <p className="text-xs font-semibold text-foreground">{label}</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          {t(`instConcentrationBlurb_${read.level}`, { defaultValue: read.blurb })}
+        </p>
       </PopoverContent>
     </Popover>
   );
@@ -314,6 +330,7 @@ function ConcentrationDots({ read }: { read: ConcentrationRead }) {
 const PREVIEW_COUNT = 3;
 
 export function InstitutionalHoldingsSection({ preview = false }: { preview?: boolean }) {
+  const { t, i18n } = useTranslation('discover');
   const { data, isLoading, error } = useQuery(FUNDS_QUERY);
   const { isAuthenticated } = useAuth();
   const { data: followedSlugs } = useFollowedFunds();
@@ -350,29 +367,32 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
     const counts = new Map<string, number>();
     for (const r of rows) if (r.topSector) counts.set(r.topSector.sector, (counts.get(r.topSector.sector) ?? 0) + 1);
     return [
-      { value: 'all', label: 'All sectors' },
+      { value: 'all', label: t('instAllSectors') },
       ...[...counts.entries()]
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
         .map(([name, n]) => ({ value: name, label: `${name} (${n})` })),
     ];
-  }, [rows]);
+  }, [rows, t]);
 
   const concentrationOptions = useMemo(() => {
     const byLevel = new Map<string, { label: string; n: number }>();
     for (const r of rows) {
       if (!r.concentration) continue;
-      const entry = byLevel.get(r.concentration.level) ?? { label: r.concentration.label, n: 0 };
+      const entry = byLevel.get(r.concentration.level) ?? {
+        label: t(`instConcentration_${r.concentration.level}`, { defaultValue: r.concentration.label }),
+        n: 0,
+      };
       entry.n++;
       byLevel.set(r.concentration.level, entry);
     }
     return [
-      { value: 'all', label: 'Any' },
+      { value: 'all', label: t('instConcentrationAny') },
       ...CONCENTRATION_ORDER.filter((level) => byLevel.has(level)).map((level) => ({
         value: level,
         label: `${byLevel.get(level)!.label} (${byLevel.get(level)!.n})`,
       })),
     ];
-  }, [rows]);
+  }, [rows, t]);
 
   // A saved choice that no longer matches any fund (a sector that dropped out
   // after new filings) counts as "all". Otherwise the grid would sit empty
@@ -421,7 +441,7 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
             id="institutional-holdings-heading"
             className="text-lg font-semibold tracking-tight text-foreground"
           >
-            Institutional Holdings
+            {t('instHeading')}
           </h2>
           <ProBadge />
         </div>
@@ -434,16 +454,16 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
       {!preview && <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <ControlSelect
           id="fund-sort"
-          label="Sort"
+          label={t('instSortLabel')}
           value={sort}
           onChange={(v) => setSort(v as SortKey)}
-          options={SORT_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
+          options={SORT_OPTIONS.map((o) => ({ value: o.key, label: t(`instSort_${o.key}`) }))}
           width="sm:w-[210px]"
         />
         {sectorOptions.length > 1 && (
           <ControlSelect
             id="fund-sector"
-            label="Top sector"
+            label={t('instTopSectorLabel')}
             value={activeSector}
             onChange={setSector}
             options={sectorOptions}
@@ -452,7 +472,7 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
         )}
         <ControlSelect
           id="fund-concentration"
-          label="Concentration"
+          label={t('instConcentrationLabel')}
           value={activeConcentration}
           onChange={setConcentration}
           options={concentrationOptions}
@@ -472,7 +492,7 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
             )}
           >
             {followingOnly && <Check className="h-3.5 w-3.5" aria-hidden />}
-            Following
+            {t('instFollowingFilter')}
           </button>
         )}
         {filtersActive && (
@@ -481,30 +501,30 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
             onClick={clearFilters}
             className="inline-flex h-8 items-center rounded-md px-2 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Clear filters
+            {t('discoverClearFilters')}
           </button>
         )}
         <p className="ml-auto text-xs tabular-nums text-muted-foreground" aria-live="polite">
-          {visible.length === rows.length ? `${rows.length} funds` : `${visible.length} of ${rows.length} funds`}
+          {visible.length === rows.length
+            ? t('instFundCount', { count: rows.length })
+            : t('instFundCountFiltered', { count: rows.length, shown: visible.length })}
         </p>
       </div>}
 
       {cards.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
           <p className="text-sm text-foreground">
-            {followsEmpty ? 'You are not following any funds yet.' : 'No funds match these filters.'}
+            {followsEmpty ? t('instEmptyFollowing') : t('instEmptyFilters')}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {followsEmpty
-              ? 'Follow a fund to get notified when it files its next 13F.'
-              : 'Try a different sector or concentration.'}
+            {followsEmpty ? t('instEmptyFollowingHint') : t('instEmptyFiltersHint')}
           </p>
           <button
             type="button"
             onClick={clearFilters}
             className="mt-4 inline-flex h-8 items-center rounded-md border border-border/60 px-3 text-sm text-foreground transition-colors hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Clear filters
+            {t('discoverClearFilters')}
           </button>
         </div>
       ) : (
@@ -512,9 +532,9 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
           {cards.map((row) => {
             const { fund, color, concentration: read } = row;
             const quarter = formatQuarter(fund.lastPeriodOfReport);
-            const filed = formatFiledDate(fund.lastFiledDate);
+            const filed = formatFiledDate(fund.lastFiledDate, i18n.language);
             const stale = isStaleQuarter(fund.lastPeriodOfReport);
-            const metric = metricLine(row, sort);
+            const metric = metricLine(row, sort, t);
 
             // The whole card is the link, but the concentration label inside it
             // is its own button, and a <button> may not live inside an <a>. So
@@ -544,12 +564,12 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
                   <p className="truncate text-xs text-muted-foreground">{fund.managerName ?? ' '}</p>
                   <p
                     className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground"
-                    title={filed ? `${fund.totalPositions ?? '?'} positions · filed ${filed}` : undefined}
+                    title={filed ? t('instFiledTitle', { positions: fund.totalPositions ?? '?', date: filed }) : undefined}
                   >
                     {read ? (
                       <ConcentrationDots read={read} />
                     ) : (
-                      'Filing not yet ingested'
+                      t('instNotIngested')
                     )}
                     {quarter && read && (
                       <>
@@ -557,7 +577,7 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
                         <span className={`font-mono tabular-nums ${stale ? 'text-amber-600 dark:text-amber-400' : ''}`}>
                           {quarter}
                         </span>
-                        {stale && <span className="text-amber-600 dark:text-amber-400">Outdated</span>}
+                        {stale && <span className="text-amber-600 dark:text-amber-400">{t('instOutdated')}</span>}
                       </>
                     )}
                   </p>
@@ -585,7 +605,7 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
           href="/discover/institutions"
           className="mt-3 inline-flex min-h-[44px] items-center gap-1 rounded-md text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          See all {rows.length} funds
+          {t('instSeeAll', { count: rows.length })}
           <ArrowUpRight className="h-4 w-4" aria-hidden />
         </Link>
       )}

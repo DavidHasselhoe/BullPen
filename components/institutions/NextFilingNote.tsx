@@ -1,6 +1,7 @@
 'use client';
 
 import { CalendarClock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { nextFilingDeadline, daysUntil, isInFilingWindow } from '@/lib/institutions/filing-schedule';
 import { cn } from '@/lib/utils';
 
@@ -18,11 +19,12 @@ import { cn } from '@/lib/utils';
  * itself.
  */
 export function NextFilingNote({ className }: { className?: string }) {
+  const { t, i18n } = useTranslation('discover');
   const { deadline } = nextFilingDeadline();
   const days = daysUntil(deadline);
   const imminent = isInFilingWindow();
 
-  const when = new Date(`${deadline}T12:00:00Z`).toLocaleDateString('en-US', {
+  const when = new Date(`${deadline}T12:00:00Z`).toLocaleDateString(i18n.language, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -32,12 +34,7 @@ export function NextFilingNote({ className }: { className?: string }) {
   return (
     <p className={cn('flex items-center gap-1.5 text-xs text-muted-foreground', className)}>
       <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-      <span>
-        Next 13F due {when}
-        {imminent
-          ? '. Most funds file on the deadline day, so new holdings can land any day now.'
-          : `, in ${days} days. Every fund files on the same quarterly deadline.`}
-      </span>
+      <span>{imminent ? t('instNextFilingImminent', { date: when }) : t('instNextFilingIn', { date: when, count: days })}</span>
     </p>
   );
 }

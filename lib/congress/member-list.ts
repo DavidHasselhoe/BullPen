@@ -10,15 +10,17 @@ export const PARTY_LABEL: Record<string, string> = {
   I: 'Independent',
 };
 
-/** "Democrat · Senate · AL" — the member's position, as a card subtitle. */
-export function positionLine(member: {
-  party: string | null;
-  chamber: string | null;
-  state: string | null;
-}): string {
+/** "Democrat · Senate · AL" — the member's position, as a card subtitle.
+ *  Pass the 'discover' t to translate party and chamber; without it (server
+ *  metadata) the line stays English. */
+export function positionLine(
+  member: { party: string | null; chamber: string | null; state: string | null },
+  t?: (key: string, opts: { defaultValue: string }) => string,
+): string {
+  const party = member.party ? (PARTY_LABEL[member.party] ?? member.party) : null;
   return [
-    member.party ? (PARTY_LABEL[member.party] ?? member.party) : null,
-    member.chamber,
+    party && t ? t(`congParty_${member.party}`, { defaultValue: party }) : party,
+    member.chamber && t ? t(`congChamber_${member.chamber}`, { defaultValue: member.chamber }) : member.chamber,
     member.state,
   ]
     .filter(Boolean)
