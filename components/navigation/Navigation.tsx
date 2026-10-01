@@ -138,7 +138,7 @@ export function Navigation() {
               full row, and if it still overflows it starts at the left instead. */}
           <div className="@container flex items-center [justify-content:safe_center] self-stretch min-w-0 overflow-x-auto scrollbar-hide">
             {/* Navigation Links */}
-            <nav className="hidden items-center gap-2 md:flex shrink-0">
+            <nav className="hidden items-center gap-2 @max-[57rem]:gap-1 md:flex shrink-0">
               {navItems.map((item) => {
                 const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
                 const Icon = item.icon;
@@ -148,7 +148,7 @@ export function Navigation() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
+                      'flex items-center gap-2 rounded-md px-4 @max-[57rem]:px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
                       isActive
                         ? 'bg-primary/10 text-primary border border-primary/20'
                         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
@@ -166,7 +166,7 @@ export function Navigation() {
                   <DropdownMenuTrigger asChild onPointerDown={keepHoverOpen('community')}>
                     <button
                       className={cn(
-                        'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
+                        'flex items-center gap-2 rounded-md px-4 @max-[57rem]:px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
                         isCommunityActive
                           ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
                           : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
@@ -214,7 +214,7 @@ export function Navigation() {
                 <DropdownMenuTrigger asChild onPointerDown={keepHoverOpen('tools')}>
                   <button
                     className={cn(
-                      'flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
+                      'flex items-center gap-2 rounded-md px-4 @max-[57rem]:px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97]',
                       isToolsActive
                         ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
                         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
