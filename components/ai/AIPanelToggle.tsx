@@ -90,7 +90,10 @@ export function AIPanelToggle() {
         // Below md, MobileTabBar occupies ~3.5rem + safe-area at the bottom
         // (see .has-mobile-tabbar in globals.css) — clear it instead of overlapping.
         'bottom-5 max-md:[bottom:calc(3.5rem+1.25rem+env(safe-area-inset-bottom))]',
-        'flex flex-col items-center gap-1 md:gap-1.5',
+        // Phones: one 44px-tall pill, label beside the icon. Stacked, the 64px
+        // circle and its label stood ~90px tall over the first screen's content
+        // (it covered the Weekly Pick's return on Discover).
+        'flex flex-row-reverse items-center gap-1.5 md:flex-col',
         'transition-[transform,opacity] duration-200 ease-out',
         tucked && 'pointer-events-none translate-y-[140%] opacity-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-2xl'
@@ -102,15 +105,15 @@ export function AIPanelToggle() {
           definition against arbitrary page content instead of a heavy filled ring. */}
       <span
         className={cn(
-          // 64px on phones, where 96px took a quarter of the screen's width over the content.
-          'flex items-center justify-center h-16 w-16 md:h-24 md:w-24 rounded-full shrink-0',
+          // 44px on phones (was 64, and 96 before that, a quarter of the screen's width).
+          'flex items-center justify-center h-11 w-11 md:h-24 md:w-24 rounded-full shrink-0',
           'bg-background border border-border/60 shadow-lg shadow-black/20',
           'group-hover:border-primary/40 group-hover:shadow-xl group-active:scale-[0.96]',
           'transition-all duration-200'
         )}
       >
         {/* size is an inline style, so the phone size needs an important utility to win */}
-        <BullAiIcon pose="glass" size={92} className="max-md:h-[60px]! max-md:w-[60px]!" />
+        <BullAiIcon pose="glass" size={92} className="max-md:h-[40px]! max-md:w-[40px]!" />
       </span>
       <span
         className={cn(
