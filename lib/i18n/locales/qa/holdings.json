@@ -373,5 +373,9 @@
   "riskLatestLabel": "«Laateest aanaalysiis, {{date}}»",
   "riskLatestHoldingsChanged": "«Yoouu haad {{then}} poosiitiioons theen aand haavee {{now}} noow. Ruun aa neew aanaalysiis foor aan uup-too-daatee viieew.»",
   "riskLatestView": "«Viieew fuull aanaalysiis»",
-  "riskLatestRunNew": "«Ruun neew aanaalysiis»"
+  "riskLatestRunNew": "«Ruun neew aanaalysiis»",
+  "portfolioHealthCoverageValue": "«Cooveers {{pct}}% oof yoouur poortfooliioo's vaaluuee. Noot scooreed: {{symbols}}.»",
+  "portfolioHealthUnscoredMore": "«aand {{count}} mooree»",
+  "portfolioHealthExplainUnscored": "«Cryptoo, moost fuunds aand coompaaniiees wiithoouut puubliisheed fiinaanciiaal staateemeents haavee noo heeaalth scooree, soo theey aaree leeft oouut oof thee aaveeraagee.»",
+  "portfolioDashboardPricedOf": "«{{count}} oof {{total}} poosiitiioons priiceed soo faar»"
 }

@@ -138,3 +138,21 @@ export function fundLabel(instrumentType?: string): string {
   if (instrumentType === 'Exchange-Traded Note') return 'ETN';
   return 'ETF';
 }
+
+/**
+ * US exchange MICs. A holding pinned to one is the same listing a bare symbol
+ * already resolves to, so the pin protects nothing.
+ */
+const US_MICS = new Set(['XNAS', 'XNGS', 'XNMS', 'XNCM', 'XNYS', 'ARCX', 'BATS', 'XASE', 'IEXG']);
+
+/**
+ * The mic_code worth honouring, or null. Pins exist so a foreign listing never
+ * borrows a US ticker's price (bare KOG is Kroger, not Kongsberg), and pinned
+ * symbols skip the live stream and the last-price fallback for that reason.
+ * A US pin got the same treatment for no benefit: a QA holding of MSFT pinned
+ * to XNGS lost its price whenever the pinned pre-market quote dropped, and
+ * Holdings showed a total missing ~$4,100 until the next refetch.
+ */
+export function listingMic(mic: string | null | undefined): string | null {
+  return mic && !US_MICS.has(mic.toUpperCase()) ? mic : null;
+}

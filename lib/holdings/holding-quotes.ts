@@ -1,5 +1,6 @@
 import type { BatchQuote } from '@/lib/market-data/quote-batcher';
 import type { UserHolding } from '@/lib/types/database';
+import { listingMic } from '@/lib/assets/asset-type';
 
 /**
  * The quote request behind every "what is my portfolio worth" number: My
@@ -20,7 +21,7 @@ export async function fetchHoldingQuotes(
   if (symbols.length === 0) return {};
 
   const micCodes: Record<string, string> = {};
-  for (const h of holdings) if (h.mic_code) micCodes[h.symbol] = h.mic_code;
+  for (const h of holdings) { const mic = listingMic(h.mic_code); if (mic) micCodes[h.symbol] = mic; }
 
   const res = await fetch('/api/quotes/batch', {
     method: 'POST',

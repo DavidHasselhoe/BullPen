@@ -177,7 +177,9 @@ export default function StockPageClient() {
   });
 
   // Prefer TwelveData short name over the full legal name in Supabase
-  const displayName = profileData?.profile?.name ?? company?.name ?? ticker;
+  // Some profile names carry the share class ("Reddit Inc. Class A Common Stock"); Discover and the
+  // Screener already drop the trailing "Common Stock", so the page title matches them.
+  const displayName = (profileData?.profile?.name ?? company?.name ?? ticker).replace(/ Common Stock$/, '');
 
   // Prefer the TwelveData profile for sector/industry — the Supabase `companies`
   // row is scoped to SEC-filing-ingested companies (a small hand-ingested
@@ -347,9 +349,11 @@ export default function StockPageClient() {
               {(company || (!companyLoading && ticker)) && (
                 <Card className="mb-8">
                   <CardHeader>
-                    {/* Stacks on phones: side by side, the action row was pushed
-                        past the right edge and clipped (x 449-924 at 390px). */}
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    {/* Stacks when the card is narrow, measured on the card itself:
+                        side by side, the action row was clipped on phones (x 449-924
+                        at 390px), and with the Why panel open a wide screen left a
+                        ~540px card that squeezed the name onto four lines. */}
+                    <div className="flex flex-col gap-4 @2xl:flex-row @2xl:items-start @2xl:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3">
                           <CompanyLogo
@@ -378,7 +382,7 @@ export default function StockPageClient() {
                       </div>
                       {/* Watch leads: it is the everyday action. Ask Bull lives in the
                           floating button on every page, so it is not repeated here. */}
-                      <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end [&_button]:max-sm:h-10 [&_a]:max-sm:h-10">
+                      <div className="flex flex-wrap items-center gap-2 @2xl:shrink-0 @2xl:justify-end [&_button]:max-sm:h-10 [&_a]:max-sm:h-10">
                         <AddToListPicker symbol={ticker} companyName={displayName} />
                         <AlertDialog symbol={ticker} companyName={displayName} />
                         {showFundamentals && (

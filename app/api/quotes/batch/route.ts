@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getStockQuotes, TwelveDataRateLimitError } from '@/lib/market-data';
+import { listingMic } from '@/lib/assets/asset-type';
 import { getStockQuote } from '@/lib/market-data';
 import { logger } from '@/lib/utils/logger';
 import { withRateLimit } from '@/lib/security/api-security';
@@ -73,7 +74,7 @@ async function handler(request: NextRequest) {
       const out: Record<string, string> = {};
       for (const sym of capped) {
         const mic = (rawMicCodes as Record<string, unknown>)[sym];
-        if (typeof mic === 'string' && MIC_CODE_RE.test(mic)) out[sym] = mic;
+        if (typeof mic === 'string' && MIC_CODE_RE.test(mic) && listingMic(mic)) out[sym] = mic;
       }
       return Object.keys(out).length > 0 ? out : undefined;
     })();

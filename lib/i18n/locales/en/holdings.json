@@ -376,5 +376,6 @@
   "riskLatestRunNew": "Run new analysis",
   "portfolioHealthCoverageValue": "Covers {{pct}}% of your portfolio's value. Not scored: {{symbols}}.",
   "portfolioHealthUnscoredMore": "and {{count}} more",
-  "portfolioHealthExplainUnscored": "Crypto, most funds and companies without published financial statements have no health score, so they are left out of the average."
+  "portfolioHealthExplainUnscored": "Crypto, most funds and companies without published financial statements have no health score, so they are left out of the average.",
+  "portfolioDashboardPricedOf": "{{count}} of {{total}} positions priced so far"
 }

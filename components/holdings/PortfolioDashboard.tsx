@@ -33,8 +33,10 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cash
     let totalValue = 0;
     let todayDollar = 0;
     let valuedPositions = 0;
+    let heldPositions = 0;
 
     for (const h of holdings) {
+      if (h.quantity != null && h.quantity > 0) heldPositions++;
       if (h.marketValue !== undefined && h.marketValue > 0) {
         totalValue += h.marketValue;
         valuedPositions++;
@@ -51,7 +53,7 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cash
 
     const yesterdayValue = totalValue - todayDollar;
     const todayPct = yesterdayValue > 0 ? (todayDollar / yesterdayValue) * 100 : 0;
-    return { totalValue, todayDollar, todayPct, valuedPositions };
+    return { totalValue, todayDollar, todayPct, valuedPositions, heldPositions };
   }, [holdings]);
 
   if (isLoading) {
@@ -87,7 +89,11 @@ export function PortfolioDashboard({ holdings, currency = 'USD', isLoading, cash
           {fmt(stats.totalValue + cashValue)}
         </p>
         <p className="text-xs text-muted-foreground mt-1.5">
-          {t('portfolioDashboardAcrossPositions', { count: stats.valuedPositions })}
+          {/* Every card here sums only priced positions, so say when that is not
+              all of them rather than present a short total as the whole. */}
+          {stats.valuedPositions < stats.heldPositions
+            ? t('portfolioDashboardPricedOf', { count: stats.valuedPositions, total: stats.heldPositions })
+            : t('portfolioDashboardAcrossPositions', { count: stats.valuedPositions })}
           {cashValue > 0 && ` · ${t('portfolioDashboardPlusCash', { amount: fmt(cashValue) })}`}
         </p>
       </div>

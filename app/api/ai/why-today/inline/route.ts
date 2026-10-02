@@ -34,6 +34,7 @@ import {
   type CachedWhyToday,
   type InlineWhy,
 } from '@/lib/ai/why-today';
+import { listingMic } from '@/lib/assets/asset-type';
 
 // A generation with web search takes 10-25 s.
 export const maxDuration = 60;
@@ -86,7 +87,7 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
   if (tickers.length === 0) return addSecurityHeaders(NextResponse.json({ explanations }));
 
   const micCodes: Record<string, string> = {};
-  for (const t of tickers) if (mics.get(t)) micCodes[t] = mics.get(t)!;
+  for (const t of tickers) { const mic = listingMic(mics.get(t)); if (mic) micCodes[t] = mic; }
   let quotes = new Map<string, { c: number; d: number; dp: number }>();
   try {
     quotes = await withRateLimitRetry(() => getStockQuotes(tickers, { prepost: isOutsideRegularSessionET(), micCodes }));

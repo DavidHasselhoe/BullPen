@@ -359,6 +359,7 @@
   "holdingsGateTitle": "保有銘柄を表示するにはサインインしてください",
   "holdingsGateBody": "ポートフォリオ全体のポジション、パフォーマンス、リスクをリアルタイムで管理できます。",
   "holdingsBadgePreMarket": "市場前",
+  "holdingsBadgeLive": "ライブ",
   "holdingsSubtitlePreMarket": "市場前の株価を表示しています。3秒ごとに更新されます。",
   "holdingsSubtitle": "ポジション、パフォーマンス、リスクをリアルタイムで追跡できます。",
   "holdingsConnectBrokerage": "証券会社を連携する",
@@ -369,12 +370,12 @@
   "analysisHistoryShowAll": "すべての{{count}}件を表示",
   "analysisHistoryShowLess": "非表示にする",
   "holdingsTablePositionsTitle": "ポジション",
-  "holdingsBadgeLive": "ライブ",
   "riskLatestLabel": "最新分析、{{date}}",
   "riskLatestHoldingsChanged": "その時点では{{then}}ポジション保有していて、現在{{now}}ポジション保有しています。最新の分析を実行してください。",
   "riskLatestView": "全分析を表示",
   "riskLatestRunNew": "新しい分析を実行",
   "portfolioHealthCoverageValue": "ポートフォリオ評価額の{{pct}}%を対象としています。スコアなし: {{symbols}}。",
   "portfolioHealthUnscoredMore": "ほか{{count}}件",
-  "portfolioHealthExplainUnscored": "暗号資産、大半のファンド、財務諸表を公開していない企業にはヘルススコアがないため、平均から除外しています。"
+  "portfolioHealthExplainUnscored": "暗号資産、大半のファンド、財務諸表を公開していない企業にはヘルススコアがないため、平均から除外しています。",
+  "portfolioDashboardPricedOf": "{{count}}/{{total}}件のポジションが評価済み"
 }

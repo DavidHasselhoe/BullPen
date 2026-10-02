@@ -5,6 +5,7 @@ import { computeTodaySparkline, getTodayCandlesForSymbol, type SparklineHolding,
 import { getStockQuotes } from '@/lib/market-data';
 import { isOutsideRegularSessionET } from '@/lib/twelvedata/twelvedata-client';
 import { randomBytes } from 'crypto';
+import { listingMic } from '@/lib/assets/asset-type';
 
 interface CreateShareBody {
   includeAmount?: boolean;
@@ -66,7 +67,7 @@ async function handler(
   // prepost and mic_code included. The card's number IS that page's number,
   // so it has to come from that page's source rather than be re-derived.
   const micCodes: Record<string, string> = {};
-  for (const p of positions) if (p.micCode) micCodes[p.symbol] = p.micCode;
+  for (const p of positions) { const mic = listingMic(p.micCode); if (mic) micCodes[p.symbol] = mic; }
   const quotes = await getStockQuotes(positions.map((p) => p.symbol), {
     prepost: isOutsideRegularSessionET(),
     ...(Object.keys(micCodes).length > 0 ? { micCodes } : {}),

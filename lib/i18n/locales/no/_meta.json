@@ -3017,5 +3017,9 @@
   "tools.calendarEstimatedDateHint": "933286d35c57c2ee9582e44eaa84d78fb720a3e17d783b260c2ba0a2095b70a4",
   "tools.screenerSortHint": "a0e6333236eb34ded82c6f5aaa50fc331a05d2857843ee3ef9d7a080f953f1d2",
   "tools.screenerSortedDescHint": "70ef576d4bc8898442499d46a3da5a8f4113ff5540a05d4cd1d0c6771bc64198",
-  "tools.screenerSortedAscHint": "4fa6b11bad86d48fbb8d1fe58973f4b261ccd59c1527239c3a19dbb2a166e29b"
+  "tools.screenerSortedAscHint": "4fa6b11bad86d48fbb8d1fe58973f4b261ccd59c1527239c3a19dbb2a166e29b",
+  "holdings.portfolioHealthCoverageValue": "d58deb3dc90e27b38ff7c984fc7493d0168876fe4586b8be9d56c265200995dd",
+  "holdings.portfolioHealthUnscoredMore": "25a067fd69ff7625b9eccc01a36d750435cc76099ee291969ae0f01c569b0ab3",
+  "holdings.portfolioHealthExplainUnscored": "b622c6a6425c6929118f6514c95c715d054f55c410b5af0ac1e0f718aafa5310",
+  "holdings.portfolioDashboardPricedOf": "4232db3fcb3b4c879f232f6c9f262dd83a0f64c30ed4e2cca641a54872e65b3f"
 }

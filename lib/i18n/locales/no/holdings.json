@@ -367,14 +367,15 @@
   "analysisHistoryShowAll": "Vis alle {{count}}",
   "analysisHistoryShowLess": "Vis mindre",
   "holdingsTablePositionsTitle": "Posisjoner",
-  "analysisHistoryTrendLabel": "Trend",
-  "importReviewColumnType": "Type",
-  "holdingsBadgeLive": "Live",
   "riskLatestLabel": "Siste analyse, {{date}}",
   "riskLatestHoldingsChanged": "Du hadde {{then}} posisjoner da og har {{now}} nå. Kjør en ny analyse for å få oppdatert oversikt.",
   "riskLatestView": "Se full analyse",
   "riskLatestRunNew": "Kjør ny analyse",
+  "analysisHistoryTrendLabel": "Trend",
+  "importReviewColumnType": "Type",
+  "holdingsBadgeLive": "Live",
   "portfolioHealthCoverageValue": "Dekker {{pct}}% av porteføljens verdi. Uten score: {{symbols}}.",
   "portfolioHealthUnscoredMore": "og {{count}} til",
-  "portfolioHealthExplainUnscored": "Krypto, de fleste fond og selskaper uten publiserte regnskaper har ingen helsescore, så de holdes utenfor gjennomsnittet."
+  "portfolioHealthExplainUnscored": "Krypto, de fleste fond og selskaper uten publiserte regnskaper har ingen helsescore, så de holdes utenfor gjennomsnittet.",
+  "portfolioDashboardPricedOf": "{{count}} av {{total}} posisjoner priset så langt"
 }

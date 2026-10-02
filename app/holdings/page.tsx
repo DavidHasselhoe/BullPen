@@ -35,6 +35,7 @@ import { convertCurrency, type CurrencyCode } from '@/lib/currency/currency-conv
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { CashBalanceDialog } from '@/components/holdings/CashBalanceDialog';
+import { listingMic } from '@/lib/assets/asset-type';
 
 export default function HoldingsPage() {
   const { t } = useTranslation('holdings');
@@ -101,7 +102,7 @@ export default function HoldingsPage() {
   // silently overwriting a correctly mic_code-pinned REST price (from the
   // quotesData query below) with a price for the wrong listing.
   const holdingSymbols = useMemo(
-    () => (holdings ?? []).filter((h) => !h.mic_code).map((h) => h.symbol),
+    () => (holdings ?? []).filter((h) => !listingMic(h.mic_code)).map((h) => h.symbol),
     [holdings]
   );
   const livePrices = useLivePrices(holdingSymbols);

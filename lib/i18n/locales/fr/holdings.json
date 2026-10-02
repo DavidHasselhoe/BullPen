@@ -360,6 +360,10 @@
   "holdingsTableTrend30dLabel": "{{symbol}} au cours des 30 derniers jours",
   "analysisHistoryShowAll": "Afficher les {{count}} résultats",
   "analysisHistoryShowLess": "Afficher moins",
+  "riskLatestLabel": "Dernière analyse, {{date}}",
+  "riskLatestHoldingsChanged": "Vous aviez {{then}} positions à ce moment-là et en avez {{now}} maintenant. Exécutez une nouvelle analyse pour une vue à jour.",
+  "riskLatestView": "Afficher l'analyse complète",
+  "riskLatestRunNew": "Exécuter une nouvelle analyse",
   "addHoldingDatePlaceholderShort": "Date",
   "aiAssessmentMetricConcentration": "Concentration",
   "holdingsTableColActions": "Actions",
@@ -370,11 +374,8 @@
   "soldPositionsDateLabel": "Date",
   "addHoldingTypeCrypto": "Crypto",
   "holdingsTablePositionsTitle": "Positions",
-  "riskLatestLabel": "Dernière analyse, {{date}}",
-  "riskLatestHoldingsChanged": "Vous aviez {{then}} positions à ce moment-là et en avez {{now}} maintenant. Exécutez une nouvelle analyse pour une vue à jour.",
-  "riskLatestView": "Afficher l'analyse complète",
-  "riskLatestRunNew": "Exécuter une nouvelle analyse",
   "portfolioHealthCoverageValue": "Couvre {{pct}}% de la valeur de votre portefeuille. Non noté : {{symbols}}.",
   "portfolioHealthUnscoredMore": "et {{count}} autres",
-  "portfolioHealthExplainUnscored": "Les cryptomonnaies, la plupart des fonds et les entreprises sans états financiers publiés n'ont pas de score de santé : ils sont exclus de la moyenne."
+  "portfolioHealthExplainUnscored": "Les cryptomonnaies, la plupart des fonds et les entreprises sans états financiers publiés n'ont pas de score de santé : ils sont exclus de la moyenne.",
+  "portfolioDashboardPricedOf": "{{count}} sur {{total}} positions évaluées jusqu'à présent"
 }
