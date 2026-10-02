@@ -1,5 +1,34 @@
 [
   {
+    "date": "2026-10-02",
+    "entries": [
+      {
+        "type": "fixed",
+        "text": "Washington Trading no longer lists a trade under the wrong stock. Each ticker is now checked against the company named in the filing, and trades we could not match are left out instead of guessed"
+      },
+      {
+        "type": "improved",
+        "text": "My Holdings has an Add button at the top of the table, gains and losses show a plus or minus sign, and the sections share one heading style"
+      },
+      {
+        "type": "fixed",
+        "text": "My Holdings no longer shows a partial total as your whole portfolio while a price is still loading, and positions listed on foreign exchanges get their price straight away"
+      },
+      {
+        "type": "improved",
+        "text": "Your free monthly Weekly Pick thesis is only used when you tap Read the full thesis, not when you open the page. Each pick also shows how many of its three independent reviews agreed, and the whole section is available in all seven languages"
+      },
+      {
+        "type": "fixed",
+        "text": "The Screener works on phones, uses the full page width, starts with a shorter set of beginner-friendly columns, and no longer shows impossible price-to-book values"
+      },
+      {
+        "type": "fixed",
+        "text": "On narrow screens the stock page header stacks the company name above the buttons instead of squeezing it onto several lines"
+      }
+    ]
+  },
+  {
     "date": "2026-10-01",
     "entries": [
       {
@@ -1400,7 +1429,7 @@
     "entries": [
       {
         "type": "new",
-        "text": "Academy courses are now shown as a path — each course unlocks once you finish the one before it, instead of a flat list of everything at once"
+        "text": "Academy courses are now shown as a path. Each course unlocks once you finish the one before it, instead of a flat list of everything at once"
       },
       {
         "type": "new",
