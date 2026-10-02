@@ -18,10 +18,9 @@ interface PageMascotProps {
  * third-party-generated or liability-sensitive boilerplate where a cartoon
  * mascot would undercut the seriousness the content needs, not add polish.
  *
- * Inverts unconditionally rather than via `dark:invert` — `.bullpen-landing-root`
- * forces its own always-dark appearance independent of the visitor's app-level
- * theme class, so a `dark:` variant would silently fail to invert (rendering
- * invisible black-on-black art) for anyone whose `<html>` isn't also `.dark`.
+ * Black line art, shown as is: these pages sit on the light landing theme
+ * (`.landing-light-preview`) whatever the visitor's app theme, so neither an
+ * unconditional nor a `dark:` invert is right here.
  */
 export function PageMascot({ pose, size = 44, className }: PageMascotProps) {
   return (
@@ -31,7 +30,7 @@ export function PageMascot({ pose, size = 44, className }: PageMascotProps) {
       alt=""
       aria-hidden
       style={{ width: size, height: size }}
-      className={cn('invert opacity-90', className)}
+      className={cn('opacity-90', className)}
     />
   );
 }

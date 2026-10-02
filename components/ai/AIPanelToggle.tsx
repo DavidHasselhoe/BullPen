@@ -6,33 +6,16 @@ import { useTranslation } from 'react-i18next';
 import { useAIPanel } from './AIPanelProvider';
 import { BullAiIcon } from './BullAiIcon';
 import { cn } from '@/lib/utils';
+import { isStandalonePage } from '@/components/navigation/AuthNavigation';
 
-// Public marketing/support pages — no app context (tickers, portfolio, etc.) for the
-// assistant to act on, so the toggle stays inside the actual dashboard experience.
-const PUBLIC_ROUTES = new Set([
-  '/',
-  '/about',
-  '/contact',
-  '/roadmap',
-  '/changelog',
-  '/help',
-  '/glossary',
-  '/privacy',
-  '/terms',
-  '/cookies',
-  '/accessibility',
-  '/disclosures',
-  '/security',
-  '/login',
-  '/register',
-  '/get-started',
-]);
+// Public marketing/support pages have no app context (tickers, portfolio) for
+// the assistant to act on. Same list as the app nav, so a new page is added once.
 
 export function AIPanelToggle() {
   const { t } = useTranslation('ai');
   const { isOpen, toggle } = useAIPanel();
   const pathname = usePathname();
-  const hiddenForRoute = PUBLIC_ROUTES.has(pathname) || pathname.startsWith('/share/') || pathname.startsWith('/get-started/');
+  const hiddenForRoute = isStandalonePage(pathname);
   const visible = !hiddenForRoute && !isOpen;
 
   // Reserve room for the button at the end of the page on phones, the same
@@ -73,7 +56,7 @@ export function AIPanelToggle() {
   // the assistant to act on, and the whole point of that page is one focused
   // CTA — not a second, unrelated affordance competing for attention.
   // /get-started/trial is part of onboarding, where the toggle covered the trial terms on phones.
-  if (PUBLIC_ROUTES.has(pathname) || pathname.startsWith('/share/') || pathname.startsWith('/get-started/')) return null;
+  if (hiddenForRoute) return null;
 
   // Hide when panel is open so it doesn't overlap the input; close via panel X button
   if (isOpen) return null;

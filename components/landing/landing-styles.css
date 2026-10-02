@@ -95,6 +95,12 @@
 
   --up: #047857;   /* emerald-700 — app/globals.css --cal-up */
   --down: #b91c1c; /* red-700 — app/globals.css --cal-down */
+  /* The dark theme's pale blue/amber are built for a black page; on white the
+     changelog's Improved/Fixed pills read at about 2:1. Darker hue, same tint. */
+  --info: oklch(0.48 0.15 250);
+  --info-soft: oklch(0.48 0.15 250 / 0.1);
+  --warn: oklch(0.5 0.11 70);
+  --warn-soft: oklch(0.5 0.11 70 / 0.12);
 
   --bg: oklch(1 0 0);
   --bg-2: oklch(0.97 0 0);
@@ -826,9 +832,14 @@
 }
 
 /* ─── Changelog page ────────────────────────────────────────────────────── */
+/* Same column as .legal-doc, so every footer page shares one left edge. */
+.bullpen-landing-root .page-column {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
 .bullpen-landing-root .changelog-list {
   max-width: 640px;
-  margin: 0 auto;
 }
 
 .bullpen-landing-root .changelog-date-group {
@@ -903,15 +914,20 @@
   font-weight: 600;
 }
 
+/* rtl so a phone opens on the latest weeks, not January; text-align keeps it
+   left-aligned when it fits, and the inner block flips back to ltr. */
 .bullpen-landing-root .activity-heatmap-scroll {
   overflow-x: auto;
   padding-bottom: 4px;
+  direction: rtl;
+  text-align: left;
 }
 
 /* Shares one natural width (driven by the grid, its widest child) so the
    legend below can right-align to the grid's actual right edge instead of
    a container width that may be wider than the rendered content. */
 .bullpen-landing-root .activity-heatmap-inner {
+  direction: ltr;
   display: inline-flex;
   flex-direction: column;
   gap: 8px;

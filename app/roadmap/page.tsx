@@ -56,7 +56,7 @@ export default function RoadmapPage() {
   const groups = groupByMonth(readRoadmapHistory());
 
   return (
-    <div className="bullpen-landing-root">
+    <div className="bullpen-landing-root landing-light-preview">
       <div className="content-layer">
         <header style={{ borderBottom: '1px solid var(--border)', padding: '20px 0' }}>
           <div className="wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -69,43 +69,43 @@ export default function RoadmapPage() {
           </div>
         </header>
 
-        <main className="wrap" style={{ padding: '56px 0 96px' }}>
-          <PageMascot pose="thinking" className="mb-3" />
-          <h1 style={{ fontSize: 32, marginBottom: 8 }}>Roadmap</h1>
-          <p style={{ color: 'var(--fg-muted)', marginBottom: 16 }}>Where we&apos;ve been, and what&apos;s next.</p>
+        <main className="wrap" style={{ paddingTop: 56, paddingBottom: 96 }}>
+          <div className="page-column">
+            <PageMascot pose="thinking" className="mb-3" />
+            <h1 style={{ fontSize: 32, marginBottom: 8 }}>Roadmap</h1>
+            <p style={{ color: 'var(--fg-muted)', marginBottom: 16 }}>Where we&apos;ve been, and what&apos;s next.</p>
 
-          <div
-            style={{
-              border: '1px solid var(--border)',
-              borderRadius: 12,
-              padding: '20px 24px',
-              marginBottom: 48,
-              maxWidth: 640,
-              marginLeft: 'auto',
-              marginRight: 'auto',
-              background: 'var(--bg-2)',
-            }}
-          >
-            <strong>What&apos;s next</strong>
-            <p style={{ color: 'var(--fg-muted)', margin: '8px 0 0' }}>
-              We&apos;re still scoping the public roadmap — check back soon.
-            </p>
-          </div>
+            <div
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                padding: '20px 24px',
+                marginBottom: 48,
+                maxWidth: 640,
+                background: 'var(--bg-2)',
+              }}
+            >
+              <strong>What&apos;s next</strong>
+              <p style={{ color: 'var(--fg-muted)', margin: '8px 0 0' }}>
+                We&apos;re still scoping the public roadmap. Check back soon.
+              </p>
+            </div>
 
-          <div className="changelog-list">
-            {groups.map((group) => (
-              <div className="changelog-date-group" key={group.date}>
-                <div className="changelog-date">{formatMonth(group.date)}</div>
-                <div className="changelog-items">
-                  {group.items.map((text, i) => (
-                    <div className="changelog-item" key={i}>
-                      <span className="changelog-pill changelog-pill--new">Shipped</span>
-                      <span>{text}</span>
-                    </div>
-                  ))}
+            <div className="changelog-list">
+              {groups.map((group) => (
+                <div className="changelog-date-group" key={group.date}>
+                  <div className="changelog-date">{formatMonth(group.date)}</div>
+                  <div className="changelog-items">
+                    {group.items.map((text, i) => (
+                      <div className="changelog-item" key={i}>
+                        <span className="changelog-pill changelog-pill--new">Shipped</span>
+                        <span>{text}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </main>
 

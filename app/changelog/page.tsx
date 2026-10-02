@@ -11,7 +11,7 @@ import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
   title: 'Changelog',
-  description: "What's new in BullPen — features, improvements, and fixes.",
+  description: "What's new in BullPen: features, improvements, and fixes.",
   alternates: { canonical: '/changelog' },
 };
 
@@ -53,7 +53,7 @@ export default async function ChangelogPage() {
   const activity = await getCommitActivity();
 
   return (
-    <div className="bullpen-landing-root">
+    <div className="bullpen-landing-root landing-light-preview">
       <div className="content-layer">
         <header style={{ borderBottom: '1px solid var(--border)', padding: '20px 0' }}>
           <div className="wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -66,31 +66,33 @@ export default async function ChangelogPage() {
           </div>
         </header>
 
-        <main className="wrap" style={{ padding: '56px 0 96px' }}>
-          <PageMascot pose="alert" className="mb-3" />
-          <h1 style={{ fontSize: 32, marginBottom: 8 }}>Changelog</h1>
-          <p style={{ color: 'var(--fg-muted)', marginBottom: 48 }}>
-            What&apos;s new, improved, and fixed in BullPen.
-          </p>
+        <main className="wrap" style={{ paddingTop: 56, paddingBottom: 96 }}>
+          <div className="page-column">
+            <PageMascot pose="alert" className="mb-3" />
+            <h1 style={{ fontSize: 32, marginBottom: 8 }}>Changelog</h1>
+            <p style={{ color: 'var(--fg-muted)', marginBottom: 48 }}>
+              What&apos;s new, improved, and fixed in BullPen.
+            </p>
 
-          {activity && <ActivityHeatmap data={activity} />}
+            {activity && <ActivityHeatmap data={activity} />}
 
-          <div className="changelog-list">
-            {groups.map((group) => (
-              <div className="changelog-date-group" key={group.date}>
-                <div className="changelog-date">{formatDate(group.date)}</div>
-                <div className="changelog-items">
-                  {group.entries.map((entry, i) => (
-                    <div className="changelog-item" key={i}>
-                      <span className={`changelog-pill changelog-pill--${entry.type}`}>
-                        {PILL_LABEL[entry.type]}
-                      </span>
-                      <span>{entry.text}</span>
-                    </div>
-                  ))}
+            <div className="changelog-list">
+              {groups.map((group) => (
+                <div className="changelog-date-group" key={group.date}>
+                  <div className="changelog-date">{formatDate(group.date)}</div>
+                  <div className="changelog-items">
+                    {group.entries.map((entry, i) => (
+                      <div className="changelog-item" key={i}>
+                        <span className={`changelog-pill changelog-pill--${entry.type}`}>
+                          {PILL_LABEL[entry.type]}
+                        </span>
+                        <span>{entry.text}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </main>
 

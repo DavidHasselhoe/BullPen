@@ -61,12 +61,12 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
   if (weeks.length === 0) return null;
 
   const monthLabels = monthLabelsForWeeks(weeks);
-  const summary = `Commit activity heatmap: ${data.totalCommits.toLocaleString()} commits across ${weeks.length} weeks since launch`;
+  const summary = `Commit activity heatmap: ${data.totalCommits.toLocaleString('en-US')} commits across ${weeks.length} weeks since launch`;
 
   return (
     <div className="activity-heatmap">
       <p className="activity-heatmap-headline">
-        <strong>{data.totalCommits.toLocaleString()}</strong> commits shipped since launch
+        <strong>{data.totalCommits.toLocaleString('en-US')}</strong> commits shipped since launch
       </p>
       <div className="activity-heatmap-scroll">
         <div className="activity-heatmap-inner">

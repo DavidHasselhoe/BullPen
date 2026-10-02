@@ -23,6 +23,7 @@ const NO_APP_NAV_ROUTES = [
   '/help',
   '/disclosures',
   '/security',
+  '/dmca',
   // Dynamic, so it never had an exact path to list: one route per share.
   '/share',
 ];
@@ -40,7 +41,7 @@ const NO_APP_NAV_ROUTES = [
  *
  * '/' is matched exactly and never as a prefix, or it would swallow the app.
  */
-function isStandalonePage(pathname: string): boolean {
+export function isStandalonePage(pathname: string): boolean {
   if (pathname === '/') return true;
   return NO_APP_NAV_ROUTES.some(
     (route) => route !== '/' && (pathname === route || pathname.startsWith(`${route}/`))

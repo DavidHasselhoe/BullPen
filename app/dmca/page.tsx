@@ -16,7 +16,7 @@ export default function DmcaPage() {
   const agent = dmcaAgent();
 
   return (
-    <div className="bullpen-landing-root">
+    <div className="bullpen-landing-root landing-light-preview">
       <div className="content-layer">
         <header style={{ borderBottom: '1px solid var(--border)', padding: '20px 0' }}>
           <div className="wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -29,7 +29,7 @@ export default function DmcaPage() {
           </div>
         </header>
 
-        <main className="wrap" style={{ padding: '56px 0 96px' }}>
+        <main className="wrap" style={{ paddingTop: 56, paddingBottom: 96 }}>
           <div className="legal-doc">
             <PageMascot pose="thinking" className="mb-3" />
             <h1>Copyright and DMCA</h1>

@@ -7,11 +7,10 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: 'Product',
     links: [
-      { label: 'Features', href: '#features' },
-      { label: 'Pricing', href: '#pricing' },
-      { label: 'Daily Brief', href: '#daily-brief' },
-      { label: 'Ask Bull', href: '#bullpen-ai' },
-      { label: 'Screener', href: '#screener' },
+      // Rooted at / so they work from every page this footer sits on. Daily
+      // Brief, Ask Bull and Screener pointed at anchors no section ever had.
+      { label: 'Features', href: '/#features' },
+      { label: 'Pricing', href: '/#pricing' },
       { label: 'Roadmap', href: '/roadmap' },
       { label: 'Changelog', href: '/changelog' },
     ],
