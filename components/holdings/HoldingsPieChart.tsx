@@ -59,7 +59,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading, cashValue
     return (
       <Card className="border-border/50 h-full">
         <CardHeader className="pb-3">
-          <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-sm font-semibold">
+          <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-base font-semibold">
             <LayoutGrid className="h-4 w-4 text-muted-foreground" />
             {t('holdingsPieChartTitle')}
           </CardTitle>
@@ -89,7 +89,7 @@ export function HoldingsPieChart({ holdings, onSectorHover, isLoading, cashValue
   return (
     <Card className="border-border/50 h-full">
       <CardHeader className="pb-3">
-        <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-sm font-semibold">
+        <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-base font-semibold">
           <LayoutGrid className="h-4 w-4 text-muted-foreground" />
           {t('holdingsPieChartTitle')}
         </CardTitle>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, HeartPulse } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
@@ -87,9 +87,10 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
   return (
     // id: the risk analysis result links here ("See breakdown"). scroll-mt keeps
     // the card clear of the sticky nav when the browser jumps to it.
-    <div id="portfolio-health" className="scroll-mt-24 rounded-xl border border-border/50 bg-card p-5">
-      <div className="mb-3 flex items-center gap-1.5">
-        <span role="heading" aria-level={2} className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+    <div id="portfolio-health" className="scroll-mt-24 rounded-xl border border-border/50 bg-card p-6">
+      <div className="mb-4 flex items-center gap-2">
+        <span role="heading" aria-level={2} className="flex items-center gap-2 text-base font-semibold leading-none">
+          <HeartPulse className="h-4 w-4 text-muted-foreground" />
           {t('portfolioHealthCardTitle')}
         </span>
         <button

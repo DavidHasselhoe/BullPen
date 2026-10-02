@@ -14,7 +14,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useHoldings, useRemoveHolding } from '@/hooks/use-holdings';
 import { SoldPositionsModal } from '@/components/holdings/SoldPositionsModal';
 import { useAuth } from '@/hooks/use-auth';
-import { Trash2, Edit2, DollarSign, PlusCircle, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Banknote, MoreHorizontal } from 'lucide-react';
+import { Trash2, Edit2, DollarSign, PlusCircle, ArrowUpRight, ArrowDownRight, Plus, Search, X, Loader2, Upload, Banknote, MoreHorizontal, List } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { logger } from '@/lib/utils/logger';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
@@ -77,6 +77,10 @@ import type { UserHolding } from '@/lib/types/database';
 import { convertCurrency, formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
+
+/** A gain reads '+$1,406.40', not a green '$1,406.40': direction never rides on colour alone. */
+const formatSignedCurrency = (value: number, currency: CurrencyCode, opts?: { round: boolean }) =>
+  `${value > 0 ? '+' : ''}${formatCurrencyValue(value, currency, opts)}`;
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 
@@ -181,7 +185,6 @@ function SkeletonTableRow({ index }: { index: number }) {
       </td>
       <td className="py-4 px-2 xl:px-3">
         <div className="flex items-center gap-2">
-          <Skeleton className="hidden xl:block h-1.5 w-14 rounded-full" />
           <Skeleton className="h-4 w-8" />
         </div>
       </td>
@@ -260,7 +263,6 @@ function DayChangeCell({
 
 interface HoldingRowProps {
   holding: HoldingWithPrice;
-  maxAllocation: number;
   isHighlighted: boolean;
   showPriceSkeleton: boolean;
   rowIndex: number;
@@ -278,7 +280,6 @@ interface HoldingRowProps {
 
 const HoldingRow = memo(function HoldingRow({
   holding,
-  maxAllocation,
   isHighlighted,
   showPriceSkeleton,
   rowIndex,
@@ -403,7 +404,7 @@ const HoldingRow = memo(function HoldingRow({
         ) : holding.unrealizedPL !== undefined ? (
           <div className={cn(plColor, 'animate-in fade-in duration-300')}>
             <div className="text-sm font-medium">
-              {formatCurrencyValue(holding.unrealizedPL, currency, roundNumbers ? { round: true } : undefined)}
+              {formatSignedCurrency(holding.unrealizedPL, currency, roundNumbers ? { round: true } : undefined)}
             </div>
             {holding.unrealizedPLPercent !== undefined && (
               <div className="text-xs">{formatPercentUtil(holding.unrealizedPLPercent, roundNumbers)}</div>
@@ -414,26 +415,18 @@ const HoldingRow = memo(function HoldingRow({
       <td className="py-4 px-2 xl:px-3">
         {showPriceSkeleton ? (
           <div className="flex items-center gap-2">
-            <Skeleton className="hidden xl:block h-1.5 w-14 rounded-full" />
             <Skeleton className="h-4 w-8" />
           </div>
         ) : holding.allocation !== undefined ? (
-          <div className="flex items-center gap-2.5 xl:min-w-[100px] animate-in fade-in duration-300">
-            <div className="hidden xl:block w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${(holding.allocation / maxAllocation) * 100}%`, backgroundColor: '#a855f7' }}
-              />
-            </div>
+          <div className="animate-in fade-in duration-300">
             <span className="text-sm tabular-nums text-foreground">
               {holding.allocation.toFixed(roundNumbers ? 0 : 1)}%
             </span>
           </div>
         ) : <span className="text-sm text-muted-foreground">—</span>}
       </td>
-      {/* Sparkline and the allocation bar (the % stays) are the two decorative
-          extras, so they give way below xl and the table still fits a 1024px
-          laptop instead of scrolling sideways. */}
+      {/* The sparkline is the decorative extra, so it gives way below xl and
+          the table still fits a 1024px laptop instead of scrolling sideways. */}
       <td className="hidden xl:table-cell py-4 px-2 xl:px-3">
         <SparklineCell prices={sparklinePrices} label={t('holdingsTableTrend30dLabel', { symbol: holding.symbol })} />
       </td>
@@ -466,7 +459,6 @@ const HoldingRow = memo(function HoldingRow({
   prev.isDeletingThis === next.isDeletingThis &&
   prev.anyPending === next.anyPending &&
   prev.isEditModalOpen === next.isEditModalOpen &&
-  prev.maxAllocation === next.maxAllocation &&
   prev.sparklinePrices === next.sparklinePrices
 );
 
@@ -660,11 +652,6 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
     const invested = holdingsWithPrices.reduce((sum, h) => sum + (h.marketValue ?? 0), 0);
     return (cashValue / (invested + cashValue)) * 100;
   }, [holdingsWithPrices, cashValue]);
-
-  const maxAllocation = useMemo(
-    () => Math.max(...holdingsWithPrices.map((h) => h.allocation ?? 0), cashAllocation, 1),
-    [holdingsWithPrices, cashAllocation]
-  );
 
   // Sort holdings
   const sortedHoldings = useMemo(() => {
@@ -862,9 +849,24 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle role="heading" aria-level={2}>{t('holdingsTablePositionsTitle')}</CardTitle>
-          {/* Wraps: in one row the full-width search box ran off phone screens. */}
+          <CardTitle role="heading" aria-level={2} className="flex items-center gap-2 text-base font-semibold">
+            <List className="h-4 w-4 text-muted-foreground" />
+            {t('holdingsTablePositionsTitle')}
+          </CardTitle>
+          {/* Wraps: in one row the full-width search box ran off phone screens.
+              On phones Add and search share the first row and the secondary
+              actions drop below; from sm up it reads Add, secondary, search. */}
           <div className="flex flex-wrap items-center gap-2">
+            {onAddClick && sortedHoldings.length > 0 && (
+              <button
+                onClick={onAddClick}
+                className="flex items-center gap-1.5 h-8 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-[background-color,transform] duration-150"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {t('holdingsTableAddHolding')}
+              </button>
+            )}
+            <div className="order-last flex basis-full flex-wrap items-center gap-2 sm:order-none sm:basis-auto">
             {onImportClick && (
               <button
                 onClick={onImportClick}
@@ -897,8 +899,9 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
               </button>
             )}
             <SoldPositionsModal />
+            </div>
           {/* Search */}
-          <div className="relative basis-full sm:basis-auto sm:w-56">
+          <div className="relative min-w-[9rem] flex-1 sm:w-56 sm:flex-none">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <input
               type="text"
@@ -966,12 +969,20 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   />
                   <HoldingField
                     label={t('holdingsTableFieldDay')}
-                    valueClass={cn(isPos ? 'text-green-500' : 'text-red-500', holding.isPriceStale && 'opacity-60')}
+                    valueClass={cn(isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400', holding.isPriceStale && 'opacity-60')}
                     title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
                     value={holding.dayChangePercent !== undefined ? formatPercentUtil(holding.dayChangePercent, roundNumbers) : '—'}
                   />
                   <HoldingField label={t('holdingsTableFieldValue')} value={holding.marketValue !== undefined ? formatCurrencyValue(holding.marketValue, ccy, opts) : '—'} />
-                  <HoldingField label={t('holdingsTableFieldPl')} valueClass={plPos ? 'text-green-500' : 'text-red-500'} value={holding.unrealizedPL !== undefined ? formatCurrencyValue(holding.unrealizedPL, ccy, opts) : '—'} />
+                  <HoldingField
+                    label={t('holdingsTableFieldPl')}
+                    valueClass={plPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}
+                    value={
+                      holding.unrealizedPL !== undefined
+                        ? `${formatSignedCurrency(holding.unrealizedPL, ccy, opts)}${holding.unrealizedPLPercent !== undefined ? ` (${formatPercentUtil(holding.unrealizedPLPercent, roundNumbers)})` : ''}`
+                        : '—'
+                    }
+                  />
                 </div>
               </div>
             );
@@ -1059,7 +1070,6 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   key={holding.id}
                   holding={holding}
                   rowIndex={rowIndex}
-                  maxAllocation={maxAllocation}
                   isHighlighted={!hoveredSector || getSectorLabel(holding) === hoveredSector}
                   showPriceSkeleton={(isLoadingPrices && holding.currentPrice === undefined) || isFxLoading}
                   userCurrency={userCurrency}
@@ -1095,13 +1105,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   </td>
                   <td className="py-4 px-2 xl:px-3 text-sm text-muted-foreground">—</td>
                   <td className="py-4 px-2 xl:px-3">
-                    <div className="flex items-center gap-2.5 xl:min-w-[100px]">
-                      <div className="hidden xl:block w-14 h-1 rounded-full bg-muted/50 overflow-hidden shrink-0">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${(cashAllocation / maxAllocation) * 100}%`, backgroundColor: '#a855f7' }}
-                        />
-                      </div>
+                    <div>
                       <span className="text-sm tabular-nums text-foreground">
                         {cashAllocation.toFixed(roundNumbers ? 0 : 1)}%
                       </span>
