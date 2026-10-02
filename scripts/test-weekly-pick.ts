@@ -20,7 +20,7 @@ config({ path: '.env.local' });
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import { runFactorScreen, rankUniverse, pickShortlist, ratiosDisagree, describeScreen, MAX_PER_SECTOR, SCREEN_SIZE } from '../lib/picks/factor-screen';
-import { runWeeklyPickPipeline, batchBySector } from '../lib/ai/picks/pipeline';
+import { runWeeklyPickPipeline, batchBySector, pickCostUsd } from '../lib/ai/picks/pipeline';
 import { quarterOf, quarterRange, quarterLabel } from '../lib/picks/quarters';
 import { extractJsonObject } from '../lib/ai/portfolio-builder/schema';
 import { stripCitations } from '../lib/ai/picks/schema';
@@ -97,7 +97,8 @@ async function main() {
   }
 
   const todayET = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-  const result = await runWeeklyPickPipeline({ todayET });
+  // Hard cap for dry runs (David, 2026-10-02: never above $3).
+  const result = await runWeeklyPickPipeline({ todayET, maxUsd: 3 });
   const { trace } = result;
 
   console.log('\nscreen:', trace.screen?.shortlist.map((s) => `${s.ticker}(${s.sector})`).join(' '));
@@ -109,10 +110,9 @@ async function main() {
   console.log('\nfinalists:', trace.finalists?.join(', '));
   console.log('votes:', trace.votes, trace.tiebreak ? `tie-break → ${trace.tiebreak.symbol}` : '');
   console.log('timings (ms from start):', trace.timingsMs);
-  // Opus 5.5: $4 in, $20 out, $0.20 cache read, $5 cache write per MTok; search $0.01 each.
   const t = trace.costTokens;
   const plainIn = t.input - t.cacheRead - t.cacheWrite;
-  const cost = (plainIn * 4 + t.cacheRead * 0.2 + t.cacheWrite * 5 + t.output * 20) / 1e6 + t.webSearches * 0.01;
+  const cost = pickCostUsd(t);
   console.log(`tokens: ${plainIn} in + ${t.cacheWrite} cache write + ${t.cacheRead} cache read / ${t.output} out, ${t.webSearches} searches, ${cost.toFixed(2)} total`);
 
   if (!result.ok) {

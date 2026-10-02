@@ -207,7 +207,17 @@ function formatDiligence(reviews: DiligenceReview[]): string {
     .join('\n\n');
 }
 
-export async function runWeeklyPickPipeline(params: { todayET: string }): Promise<PipelineResult> {
+// Opus 5.5: $4 in, $20 out, $0.20 cache read, $5 cache write per MTok; search $0.01 each.
+export function pickCostUsd(t: PipelineTrace['costTokens']): number {
+  const plainIn = t.input - t.cacheRead - t.cacheWrite;
+  return (plainIn * 4 + t.cacheRead * 0.2 + t.cacheWrite * 5 + t.output * 20) / 1e6 + t.webSearches * 0.01;
+}
+
+// Commit x3 plus a possible tie-break, measured at ~$0.50 on 2026-09-28.
+const COMMIT_RESERVE_USD = 0.75;
+
+/** maxUsd: dry-run spending cap, checked before the commit stage. The cron passes none. */
+export async function runWeeklyPickPipeline(params: { todayET: string; maxUsd?: number }): Promise<PipelineResult> {
   const { todayET } = params;
   const trace: PipelineTrace = {
     costTokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, webSearches: 0 },
@@ -295,6 +305,11 @@ export async function runWeeklyPickPipeline(params: { todayET: string }): Promis
   const finalists = survivors.filter((s) => advancedSet.has(s.symbol)).slice(0, MAX_FINALISTS);
   trace.finalists = finalists.map((f) => f.symbol);
   if (finalists.length < 2) return fail('diligence', `only ${finalists.length} names advanced`);
+
+  const spent = pickCostUsd(trace.costTokens);
+  if (params.maxUsd != null && spent + COMMIT_RESERVE_USD > params.maxUsd) {
+    return fail('commit', `stopped before commit: $${spent.toFixed(2)} spent, cap $${params.maxUsd}`);
+  }
 
   const finalistReviews = finalists.map((f) => advanced.find((r) => r.symbol === f.symbol)!);
   const scorecards = formatScorecards(finalists);
