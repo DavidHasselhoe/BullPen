@@ -493,8 +493,11 @@
   "screenerColHealthGrowthTip": "健康评分增长子类别（0-15）。奖励营收和盈利增长。",
   "screenerColHealthLabel": "健康度",
   "screenerColHealthMarketRiskLabel": "稳定性",
+  "screenerColHealthMarketRiskTip": "财务健康度中的市场风险小类 (0-10)。数值越高，波动性越低，利润越稳定。",
+  "screenerColHealthTip": "BullPen 财务健康度评分 (0-100)。评估盈利能力、债务、现金流、增长和市场风险。不包含股价。",
   "screenerColHealthTitle": "健康度 {{score}}/100 · 等级 {{grade}}",
   "screenerColHealthValuationLabel": "价值",
+  "screenerColHealthValuationTip": "股票在 P/E、P/B 和 EV/EBITDA 上的价值程度 (0-20)。不属于健康度评分的一部分。",
   "screenerColLastCloseChangeTitle": "按最后收盘价计，市场开盘后将提供实时价格",
   "screenerColLastCloseTitle": "最后收盘价。市场开盘后将提供实时价格",
   "screenerColMarginLabel": "净利润率",
@@ -730,9 +733,6 @@
   "screenerAiContextLabel": "你屏幕上的股票",
   "portfolioBuilderBullCase": "Bull case",
   "portfolioBuilderBullThesis": "Bull thesis",
-  "screenerColHealthMarketRiskTip": "财务健康度中的市场风险小类 (0-10)。数值越高，波动性越低，利润越稳定。",
-  "screenerColHealthTip": "BullPen 财务健康度评分 (0-100)。评估盈利能力、债务、现金流、增长和市场风险。不包含股价。",
-  "screenerColHealthValuationTip": "股票在 P/E、P/B 和 EV/EBITDA 上的价值程度 (0-20)。不属于健康度评分的一部分。",
   "economicShort_cpi": "CPI",
   "economicShort_ppi": "PPI",
   "economicShort_jolts": "JOLTS",
@@ -740,5 +740,8 @@
   "economicShort_pce": "PCE",
   "economicEtTime": "{{time}} ET",
   "calendarEstimatedDate": "预估",
-  "calendarEstimatedDateHint": "根据过往发布日期推算。公司尚未公布。"
+  "calendarEstimatedDateHint": "根据过往发布日期推算。公司尚未公布。",
+  "screenerSortHint": "点击排序，从高到低。",
+  "screenerSortedDescHint": "按从高到低排序。点击可改为从低到高。",
+  "screenerSortedAscHint": "按从低到高排序。点击可改为从高到低。"
 }

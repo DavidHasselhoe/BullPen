@@ -493,8 +493,11 @@
   "screenerColHealthGrowthTip": "ヘルススコア成長サブカテゴリー（0～15）。収益と利益の成長に報酬を与えます。",
   "screenerColHealthLabel": "ヘルススコア",
   "screenerColHealthMarketRiskLabel": "安定性",
+  "screenerColHealthMarketRiskTip": "ヘルススコアの市場リスク部門(0～10)。高いほどボラティリティが低く、利益が安定しています。",
+  "screenerColHealthTip": "BullPenの財務ヘルススコア(0～100)。収益性、負債、キャッシュフロー、成長性および市場リスクを評価します。株価は含まれていません。",
   "screenerColHealthTitle": "ヘルススコア {{score}}/100 · グレード {{grade}}",
   "screenerColHealthValuationLabel": "バリュー",
+  "screenerColHealthValuationTip": "P/E、P/B、EV/EBITDAでの株価の割安度(0～20)。ヘルススコアには含まれていません。",
   "screenerColLastCloseChangeTitle": "最終値での価格。市場が再開されるまでリアルタイム価格は表示されません",
   "screenerColLastCloseTitle": "最終値。市場が再開されるまでリアルタイム価格は表示されません",
   "screenerColMarginLabel": "マージン",
@@ -729,9 +732,6 @@
   "screenerAiContextLabel": "画面上の銘柄",
   "portfolioBuilderBullCase": "Bull case",
   "portfolioBuilderBullThesis": "Bull thesis",
-  "screenerColHealthMarketRiskTip": "ヘルススコアの市場リスク部門(0～10)。高いほどボラティリティが低く、利益が安定しています。",
-  "screenerColHealthTip": "BullPenの財務ヘルススコア(0～100)。収益性、負債、キャッシュフロー、成長性および市場リスクを評価します。株価は含まれていません。",
-  "screenerColHealthValuationTip": "P/E、P/B、EV/EBITDAでの株価の割安度(0～20)。ヘルススコアには含まれていません。",
   "economicName_gdp": "GDP",
   "economicShort_cpi": "CPI",
   "economicShort_ppi": "PPI",
@@ -740,5 +740,8 @@
   "economicShort_pce": "PCE",
   "economicEtTime": "{{time}} ET",
   "calendarEstimatedDate": "推定",
-  "calendarEstimatedDateHint": "過去の発表日から推定した日付です。会社はまだ発表していません。"
+  "calendarEstimatedDateHint": "過去の発表日から推定した日付です。会社はまだ発表していません。",
+  "screenerSortHint": "クリックして並べ替え、高い順。",
+  "screenerSortedDescHint": "高い順で並べ替え済み。クリックで低い順に切り替え。",
+  "screenerSortedAscHint": "低い順で並べ替え済み。クリックで高い順に切り替え。"
 }

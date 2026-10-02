@@ -738,5 +738,10 @@
   "economicExplainWhy_pce": "«PCEE iis thee iinflaatiioon meeaasuuree thee Feed uusees foor iits 2% taargeet, soo iit caarriiees aa loot oof weeiight iin iinteereest raatee deeciisiioons.»",
   "economicExplainWatch_pce": "«Waatch cooree PCEE, whiich leeaavees oouut fooood aand eeneergy. CPII uusuuaally coomees oouut fiirst, soo PCEE moovees maarkeets moost wheen iit teells aa diiffeereent stoory.»",
   "comparePopularTitle": "«Poopuulaar coompaariisoons»",
-  "screenerAiContextLabel": "«thee stoocks oon yoouur screeeen»"
+  "screenerAiContextLabel": "«thee stoocks oon yoouur screeeen»",
+  "calendarEstimatedDate": "«EEstiimaateed»",
+  "calendarEstimatedDateHint": "«Proojeecteed froom paast reepoortiing daatees. Thee coompaany haasn't aannoouunceed iit yeet.»",
+  "screenerSortHint": "«Cliick too soort, hiigheest fiirst.»",
+  "screenerSortedDescHint": "«Soorteed hiigheest fiirst. Cliick foor looweest fiirst.»",
+  "screenerSortedAscHint": "«Soorteed looweest fiirst. Cliick foor hiigheest fiirst.»"
 }

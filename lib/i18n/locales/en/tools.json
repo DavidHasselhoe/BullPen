@@ -740,5 +740,8 @@
   "comparePopularTitle": "Popular comparisons",
   "screenerAiContextLabel": "the stocks on your screen",
   "calendarEstimatedDate": "Estimated",
-  "calendarEstimatedDateHint": "Projected from past reporting dates. The company hasn't announced it yet."
+  "calendarEstimatedDateHint": "Projected from past reporting dates. The company hasn't announced it yet.",
+  "screenerSortHint": "Click to sort, highest first.",
+  "screenerSortedDescHint": "Sorted highest first. Click for lowest first.",
+  "screenerSortedAscHint": "Sorted lowest first. Click for highest first."
 }

@@ -3048,5 +3048,10 @@
   "discover.pickMethodRemovedTitle": "98be3b550f2aa1e22897b0475052a816f62804e0acc14a03595ea6ab80e92f27",
   "discover.pickMethodRemovedBody": "d7ca07da1f9b5c72ee2d393a859059c0cdd9a59c5624afbca169303b694f16d5",
   "discover.pickMethodDisclaimerTitle": "d2253c6b32a750fb5fa45f48b50cfebbf7e95dd0043bc7957595bf99324156e1",
-  "discover.pickMethodDisclaimerBody": "36d03d57a0d32805b41ccead7c03b140625fa00f0e6b106782f392c6e5a09cc9"
+  "discover.pickMethodDisclaimerBody": "36d03d57a0d32805b41ccead7c03b140625fa00f0e6b106782f392c6e5a09cc9",
+  "tools.calendarEstimatedDate": "b774599a9cd1f9a734a815fc5cf99ad188547aee7c727468d51b73dfd02988f9",
+  "tools.calendarEstimatedDateHint": "933286d35c57c2ee9582e44eaa84d78fb720a3e17d783b260c2ba0a2095b70a4",
+  "tools.screenerSortHint": "a0e6333236eb34ded82c6f5aaa50fc331a05d2857843ee3ef9d7a080f953f1d2",
+  "tools.screenerSortedDescHint": "70ef576d4bc8898442499d46a3da5a8f4113ff5540a05d4cd1d0c6771bc64198",
+  "tools.screenerSortedAscHint": "4fa6b11bad86d48fbb8d1fe58973f4b261ccd59c1527239c3a19dbb2a166e29b"
 }

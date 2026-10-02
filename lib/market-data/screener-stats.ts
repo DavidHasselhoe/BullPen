@@ -48,6 +48,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import {
   batchFetch,
   sanitizeDividendYield,
+  plausiblePriceToBook,
   type CompanyStatistics,
   type IncomeStatementPeriod,
   type BalanceSheetPeriod,
@@ -128,6 +129,10 @@ export interface TwelveDataStatisticsRaw {
   message?: string;
 }
 
+function isAllCaps(name: string | null | undefined): boolean {
+  return !!name && /[A-Z]/.test(name) && name === name.toUpperCase();
+}
+
 /** Map a raw TwelveData /statistics payload to the screener_stats column shape. */
 export function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
   const s = raw.statistics ?? {};
@@ -142,7 +147,7 @@ export function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
     market_cap: v.market_capitalization ? Math.round(v.market_capitalization) : null,
     pe_ratio: v.trailing_pe ?? null,
     forward_pe: v.forward_pe ?? null,
-    pb_ratio: v.price_to_book_mrq ?? null,
+    pb_ratio: plausiblePriceToBook(v.price_to_book_mrq),
     ps_ratio: v.price_to_sales_ttm ?? null,
     ev_to_ebitda: v.enterprise_to_ebitda ?? null,
     beta: sp.beta ?? null,
@@ -177,7 +182,7 @@ function rawToCompanyStats(raw: TwelveDataStatisticsRaw, sym: string): CompanySt
     enterpriseValue: v.enterprise_value ?? null,
     peRatioTTM: v.trailing_pe ?? null,
     peRatioForward: v.forward_pe ?? null,
-    pbRatio: v.price_to_book_mrq ?? null,
+    pbRatio: plausiblePriceToBook(v.price_to_book_mrq),
     evToEbitda: v.enterprise_to_ebitda ?? null,
     beta: sp.beta ?? null,
     week52High: sp.fifty_two_week_high ?? null,
@@ -361,8 +366,10 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       rows.push({
         ...stats,
         // meta.name comes back in the same /statistics response we already paid for,
-        // so it costs nothing and covers every ticker with no companies row.
-        name: company?.name ?? statsRaw.meta?.name ?? sym,
+        // so it costs nothing and covers every ticker with no companies row. It
+        // also wins over a `companies` name in SEC filing caps ("NVIDIA CORP"),
+        // which sat beside "Apple Inc." in the screener.
+        name: ((!isAllCaps(company?.name) && company?.name) || statsRaw.meta?.name || company?.name || sym).replace(/ Common Stock$/, ''),
         sector,
         // Nothing but `companies` knows industries, so at least never erase one.
         industry: priorMetaMap.get(sym)?.industry || company?.industry || null,

@@ -249,7 +249,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
 
       {/* Presets */}
       <div className="space-y-1.5">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t('screenerPresetsHeading')}</p>
+        <p className="text-xs font-semibold text-foreground">{t('screenerPresetsHeading')}</p>
         <div className="flex flex-wrap gap-1">
           {presets.map((p) => (
             <button
@@ -270,9 +270,11 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
 
       {/* My presets — saved custom filter combinations, orthogonal to screener
          views (which select tickers, not criteria). Signed-in only. */}
-      {isAuthenticated && (
+      {/* Hidden until there is a preset to show or a filter to save: an empty
+          heading on its own read as a broken section. */}
+      {isAuthenticated && ((myPresets?.length ?? 0) > 0 || hasFilters) && (
         <div className="space-y-1.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t('screenerMyPresetsHeading')}</p>
+          <p className="text-xs font-semibold text-foreground">{t('screenerMyPresetsHeading')}</p>
           <div className="flex flex-wrap items-center gap-1">
             {(myPresets ?? []).map((preset) => (
               <span key={preset.id} className="group/preset relative inline-flex items-center">
@@ -287,7 +289,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
                   type="button"
                   onClick={() => deletePreset.mutate(preset.id)}
                   aria-label={t('screenerDeleteFilterPreset', { name: preset.name })}
-                  className="absolute right-1 flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/preset:opacity-100"
+                  className="absolute right-1 flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/preset:opacity-100"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -341,8 +343,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
 
       {/* Health Score */}
       {show('health_score', 'healthScoreMin', 'healthScoreMax') && (
-        <div className="space-y-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1">{t('screenerGroupHealthScore')}</p>
+        <div>
           <RangeFilter label={t('screenerHealthScoreLabel')} hint={t('screenerHealthScoreHint')} minKey="healthScoreMin" maxKey="healthScoreMax" filters={filters} onChange={onChange} step="5" />
         </div>
       )}
@@ -352,7 +353,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
         show('pe_ratio', 'peMin', 'peMax') ||
         show('pb_ratio', 'pbMin', 'pbMax')) && (
         <div className="space-y-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1">{t('screenerValuationHeading')}</p>
+          <p className="text-xs font-semibold text-foreground pb-1">{t('screenerValuationHeading')}</p>
           {show('market_cap', 'marketCapMin', 'marketCapMax') && (
             <RangeFilter label={t('screenerMarketCapLabel')} unit="$B" hint={t('screenerMarketCapHint')} minKey="marketCapMin" maxKey="marketCapMax" filters={filters} onChange={onChange} step="10" />
           )}
@@ -373,7 +374,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       {(show('profit_margin', 'profitMarginMin', 'profitMarginMax') ||
         show('revenue_growth_yoy', 'revenueGrowthMin', 'revenueGrowthMax')) && (
         <div className="space-y-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1">{t('screenerProfitabilityHeading')}</p>
+          <p className="text-xs font-semibold text-foreground pb-1">{t('screenerProfitabilityHeading')}</p>
           {show('profit_margin', 'profitMarginMin', 'profitMarginMax') && (
             <RangeFilter label={t('screenerProfitMarginLabel')} unit="%" hint={t('screenerProfitMarginHint')} minKey="profitMarginMin" maxKey="profitMarginMax" filters={filters} onChange={onChange} step="1" />
           )}
@@ -389,7 +390,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       {(show('beta', 'betaMin', 'betaMax') ||
         show('dividend_yield', 'divYieldMin', 'divYieldMax')) && (
         <div className="space-y-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1">{t('screenerRiskIncomeHeading')}</p>
+          <p className="text-xs font-semibold text-foreground pb-1">{t('screenerRiskIncomeHeading')}</p>
           {show('beta', 'betaMin', 'betaMax') && (
             <RangeFilter label={t('screenerBetaLabel')} hint={t('screenerBetaHint')} minKey="betaMin" maxKey="betaMax" filters={filters} onChange={onChange} step="0.1" />
           )}
@@ -404,7 +405,7 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       {/* 52-Week Range */}
       {show('week52_high', 'week52ChangeMin', 'week52ChangeMax') && (
         <div className="space-y-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1">{t('screenerPriceRangeHeading')}</p>
+          <p className="text-xs font-semibold text-foreground pb-1">{t('screenerPriceRangeHeading')}</p>
           <RangeFilter label={t('screener52wSpreadLabel')} unit="%" hint={t('screener52wSpreadHint')} minKey="week52ChangeMin" maxKey="week52ChangeMax" filters={filters} onChange={onChange} step="5" />
         </div>
       )}

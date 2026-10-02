@@ -367,7 +367,7 @@ function ScreenerContent() {
   const customViewEmpty = isCustomView && symbolsFilter === '__none__';
 
   return (
-    <div className="w-full px-4 py-8">
+    <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-4">
         <div className="flex items-center gap-3 mb-1 flex-wrap">
@@ -455,7 +455,9 @@ function ScreenerContent() {
         <ScreenerViewBar activeView={activeView} onViewChange={handleViewChange} totalCount={allTotalData?.total} />
       </div>
 
-      <div className="flex gap-4">
+      {/* Stacked below lg: side by side, the results column landed off-screen
+          to the right of the filters card and phones showed no results at all. */}
+      <div className="flex flex-col gap-4 lg:flex-row">
         {/* Sidebar filters — always visible */}
         <Card className="w-56 flex-shrink-0 hidden lg:block self-start sticky top-20">
           <CardContent className="p-4">
@@ -485,7 +487,7 @@ function ScreenerContent() {
         </Card>
 
         {/* Mobile filters */}
-        <div className="lg:hidden mb-4 w-full">
+        <div className="lg:hidden">
           <Card>
             <CardContent className="p-4">
               {isLoading ? (
@@ -514,8 +516,9 @@ function ScreenerContent() {
           </Card>
         </div>
 
-        {/* Results — pb/pr give clearance for the fixed AI Assistant button */}
-        <div className="flex-1 min-w-0 pb-20 sm:pr-40">
+        {/* Results. No gutter for the Ask Bull button: it steps aside while you
+            scroll, and a fixed 160px right gutter clipped the table beside it. */}
+        <div className="flex-1 min-w-0">
           {/* Empty custom view — stock picker inline in the normal results area */}
           {customViewEmpty && isCustomView ? (
             <div className="rounded-md border border-border/40 overflow-hidden">
@@ -576,7 +579,7 @@ export default function ScreenerPage() {
   return (
     <Suspense
       fallback={
-        <div className="w-full px-4 py-8">
+        <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <Skeleton className="h-8 w-48 mb-6" />
           <div className="flex gap-4">
             <Skeleton className="w-56 h-[600px] hidden lg:block" />

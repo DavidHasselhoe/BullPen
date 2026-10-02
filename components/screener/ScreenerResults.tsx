@@ -22,6 +22,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Bell, Scale, ListPlus, X, Loader2 } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -438,19 +439,35 @@ export function ScreenerResults({
                   key={col.key}
                   className="text-right"
                   style={{ width: col.width, minWidth: col.width }}
-                  // Sortable header, so a Radix TermTooltip can't nest inside the
-                  // sort button — mirrors WatchlistTable.tsx's native-title pattern,
-                  // sourced from the shared glossary so screener/watchlist/stock-page
-                  // copy for the same metric never drifts. col.tip is the fallback for
-                  // the few columns (Price, % Chg) with no glossary entry.
-                  title={getGlossaryEntry(col.label)?.description ?? col.tip}
+                  aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                 >
-                  <button
-                    onClick={() => toggleSort(col.key)}
-                    className="flex items-center justify-end gap-1 text-xs font-medium w-full hover:text-foreground"
-                  >
-                    {col.label} {sortIcon(col.key)}
-                  </button>
+                  {/* The tooltip wraps the whole sort button: it opens on hover and
+                      keyboard focus, where the old native title needed a still
+                      mouse. Copy comes from the shared glossary so screener,
+                      watchlist and stock page never drift; col.tip covers the few
+                      columns (Price, % Chg) with no glossary entry. The second line
+                      says what a click does: the table opens sorted by Mkt Cap,
+                      so a first click there shows the smallest companies. */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => toggleSort(col.key)}
+                        className="flex items-center justify-end gap-1 text-xs font-medium w-full hover:text-foreground"
+                      >
+                        {col.label} {sortIcon(col.key)}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                      <p>{getGlossaryEntry(col.label)?.description ?? col.tip}</p>
+                      <p className="mt-1 opacity-70">
+                        {sortKey !== col.key
+                          ? t('screenerSortHint')
+                          : sortDir === 'desc'
+                            ? t('screenerSortedDescHint')
+                            : t('screenerSortedAscHint')}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 </TableHead>
               ))}
             </TableRow>

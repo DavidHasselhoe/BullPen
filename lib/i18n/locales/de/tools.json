@@ -486,8 +486,11 @@
   "screenerColHealthGrowthTip": "Wachstums-Unterkategorie der Gesundheitsbewertung (0-15). Honoriert Umsatz- und Gewinnwachstum.",
   "screenerColHealthLabel": "Gesundheit",
   "screenerColHealthMarketRiskLabel": "Stabilität",
+  "screenerColHealthMarketRiskTip": "Gesundheitsscore Marktrisiko-Unterkategorie (0-10). Höher bedeutet niedrigere Volatilität und stabilere Gewinne.",
+  "screenerColHealthTip": "BullPen-Finanzgesundheitsscore (0-100). Bewertet Rentabilität, Schulden, Cashflow, Wachstum und Marktrisiko. Der Aktienkurs wird nicht berücksichtigt.",
   "screenerColHealthTitle": "Gesundheit {{score}}/100 · Note {{grade}}",
   "screenerColHealthValuationLabel": "Wert",
+  "screenerColHealthValuationTip": "Wie günstig die Aktie bei P/E, P/B und EV/EBITDA aussieht (0-20). Nicht Teil des Gesundheitsscores.",
   "screenerColLastCloseChangeTitle": "Bei letztem Schlusskurs; Livepreis nicht verfügbar, bis der Markt wieder öffnet",
   "screenerColLastCloseTitle": "Letzter Schlusskurs. Livepreis nicht verfügbar, bis der Markt wieder öffnet",
   "screenerColMarginLabel": "Marge",
@@ -724,9 +727,6 @@
   "screenerBetaLabel": "Beta",
   "screenerColBetaLabel": "Beta",
   "screenerColForwardPeLabel": "Fwd P/E",
-  "screenerColHealthMarketRiskTip": "Gesundheitsscore Marktrisiko-Unterkategorie (0-10). Höher bedeutet niedrigere Volatilität und stabilere Gewinne.",
-  "screenerColHealthTip": "BullPen-Finanzgesundheitsscore (0-100). Bewertet Rentabilität, Schulden, Cashflow, Wachstum und Marktrisiko. Der Aktienkurs wird nicht berücksichtigt.",
-  "screenerColHealthValuationTip": "Wie günstig die Aktie bei P/E, P/B und EV/EBITDA aussieht (0-20). Nicht Teil des Gesundheitsscores.",
   "screenerCsvTicker": "Ticker",
   "screenerMaxPlaceholder": "Max",
   "screenerMinPlaceholder": "Min",
@@ -740,5 +740,8 @@
   "economicShort_pce": "PCE",
   "economicEtTime": "{{time}} ET",
   "calendarEstimatedDate": "Geschätzt",
-  "calendarEstimatedDateHint": "Aus früheren Berichtsterminen hochgerechnet. Das Unternehmen hat es noch nicht bekanntgegeben."
+  "calendarEstimatedDateHint": "Aus früheren Berichtsterminen hochgerechnet. Das Unternehmen hat es noch nicht bekanntgegeben.",
+  "screenerSortHint": "Zum Sortieren klicken, höchste zuerst.",
+  "screenerSortedDescHint": "Nach höchstem sortiert. Klicken für niedrigstes zuerst.",
+  "screenerSortedAscHint": "Nach niedrigstem sortiert. Klicken für höchstes zuerst."
 }

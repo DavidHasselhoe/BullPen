@@ -1091,6 +1091,20 @@ const STALE_DIVIDEND_MONTHS = 14;
  * the two: each figure's failure mode (one-off special annualized x4 vs. a
  * one-off spin-off counted in TTM) only ever inflates it.
  */
+/**
+ * TwelveData's price_to_book_mrq, or null when it can't be real. A P/B above 0
+ * but under 0.05 means a market value of 5% of book, which no listed company
+ * trades at: all 55 such rows on 2026-10-02 were units errors. BRK.B was priced
+ * against Class A book value per share (0.00095, real ~1.6), and foreign ADRs
+ * (EC, CIB, AVAL...) against book value in pesos. The screener showed BRK.B at
+ * "0.00" and let these pass the Deep Value preset. Negative P/B (negative
+ * equity) is real and kept.
+ */
+export function plausiblePriceToBook(pb: number | null | undefined): number | null {
+  if (pb == null || !Number.isFinite(pb)) return null;
+  return pb > 0 && pb < 0.05 ? null : pb;
+}
+
 export function sanitizeDividendYield(d: {
   trailing_annual_dividend_yield?: number | null;
   forward_annual_dividend_yield?: number | null;
@@ -1139,7 +1153,7 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
     enterpriseValue: v.enterprise_value ?? null,
     peRatioTTM: v.trailing_pe ?? null,
     peRatioForward: v.forward_pe ?? null,
-    pbRatio: v.price_to_book_mrq ?? null,
+    pbRatio: plausiblePriceToBook(v.price_to_book_mrq),
     evToEbitda: v.enterprise_to_ebitda ?? null,
     psRatio: v.price_to_sales_ttm ?? null,
     beta: sp.beta ?? null,
