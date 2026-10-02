@@ -25,11 +25,11 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'Is my financial data safe?',
-    a: "All connections go through bank-level OAuth — we never see your brokerage password. Data is encrypted in transit and at rest. We don't sell data and we don't serve ads.",
+    a: "All connections go through bank-level OAuth, so we never see your brokerage password. Data is encrypted in transit and at rest. We don't sell data and we don't serve ads.",
   },
   {
     q: 'Is BullPen an SEC-registered advisor?',
-    a: "No — BullPen is a research and analytics tool. We don't give personalized financial advice or execute trades. Everything on the platform is for informational purposes.",
+    a: "No. BullPen is a research and analytics tool. We don't give personalized financial advice or execute trades. Everything on the platform is for informational purposes.",
   },
   {
     q: 'Can I cancel anytime?',

@@ -71,7 +71,7 @@ const PLANS: Plan[] = [
       "Bull's Weekly Pick, with the full thesis",
       'Automatic brokerage sync (SnapTrade)',
       'Unlimited watchlists & price alerts',
-      'Institutional 13F holdings from 15 funds',
+      'What 16 famous funds own, like Buffett and Dalio',
       'Insider transactions, exports & advanced Academy',
     ],
   },
@@ -87,9 +87,7 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
           title={
             <>
               Free to start.{' '}
-              <span className="accent-serif" style={{ color: 'var(--accent)' }}>
-                Pro
-              </span>{' '}
+              Pro{' '}
               when you&apos;re ready.
             </>
           }

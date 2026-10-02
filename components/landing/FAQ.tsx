@@ -70,9 +70,7 @@ export function FAQ() {
           title={
             <>
               Questions, answered{' '}
-              <span className="accent-serif" style={{ color: 'var(--accent)' }}>
-                straight.
-              </span>
+              straight.
             </>
           }
         />

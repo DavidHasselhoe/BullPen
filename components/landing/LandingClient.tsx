@@ -12,13 +12,11 @@ import type { AuthMode } from '@/components/auth/AuthModal';
 const AuthModal = lazy(() => import('@/components/auth/AuthModal').then((m) => ({ default: m.AuthModal })));
 import { Nav } from './Nav';
 import { Hero } from './Hero';
-import { TickerStrip } from './TickerStrip';
-import { Features } from './Features';
+import { Benefits } from './Benefits';
 import { HowItWorks } from './HowItWorks';
 import { Peek } from './Peek';
 import { Pricing } from './Pricing';
 import { FAQ } from './FAQ';
-import { Toolkit } from './Toolkit';
 import { FinalCTA } from './FinalCTA';
 import { Footer } from './Footer';
 import type { Shot } from '@/lib/landing/screenshots';
@@ -98,11 +96,9 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
       <div className="content-layer">
         <Nav onSignIn={() => openSignIn('nav')} onSignUp={() => openSignUp('nav')} isDarkLanding={isDarkLanding} />
         <Hero onSignUp={() => openSignUp('hero')} />
-        <TickerStrip />
-        <Features />
+        <Benefits />
         <HowItWorks onSignUp={() => openSignUp('how_it_works')} />
         <Peek shots={shots} />
-        <Toolkit />
         <Pricing onSignUp={() => openSignUp('pricing')} onSubscribe={openSubscribe} />
         <FAQ />
         <FinalCTA onSignUp={() => openSignUp('final_cta')} />

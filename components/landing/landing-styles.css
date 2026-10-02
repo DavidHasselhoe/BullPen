@@ -615,45 +615,7 @@
   .bullpen-landing-root .pricing-grid { grid-template-columns: 1fr !important; }
 }
 
-/* Feature rows — a real screenshot beside its copy, alternating sides.
-   The captures are 1600x1000 stills of the running app, so they need genuine
-   width to stay legible; the old 12-column card grid gave each visual ~340px,
-   which is fine for a drawing and useless for a photograph. 1.15fr on the shot
-   lets it run slightly wider than the prose column it sits next to. */
-.bullpen-landing-root .feat-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 88px;
-}
-.bullpen-landing-root .feat-row {
-  display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  gap: 56px;
-  align-items: center;
-}
-/* The track sizes have to flip with the items. `order` only changes which cell
-   each child lands in, not how wide that cell is, so flipping the order alone
-   dropped every second screenshot into the 1fr track and rendered the four
-   captures at alternating widths (606px / 526px at 1440). */
-.bullpen-landing-root .feat-row[data-flip='true'] { grid-template-columns: 1.15fr 1fr; }
-.bullpen-landing-root .feat-row[data-flip='true'] .feat-row-copy { order: 2; }
-.bullpen-landing-root .feat-row[data-flip='true'] .feat-row-shot { order: 1; }
-
-@media (max-width: 900px) {
-  .bullpen-landing-root .feat-rows { gap: 64px; }
-  .bullpen-landing-root .feat-row,
-  .bullpen-landing-root .feat-row[data-flip='true'] {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-  /* Single column: the copy always leads, so the flip never strands a
-     screenshot above the sentence that explains it. */
-  .bullpen-landing-root .feat-row[data-flip='true'] .feat-row-copy { order: 0; }
-  .bullpen-landing-root .feat-row[data-flip='true'] .feat-row-shot { order: 0; }
-}
-
-/* How-it-works steps — ruled columns, the same index treatment as the Toolkit
-   below. No card chrome and no connector line: both existed to hold three
+/* How-it-works steps — ruled columns. No card chrome and no connector line: both existed to hold three
    drawn mockups that are gone. */
 .bullpen-landing-root .steps-grid {
   display: grid;
@@ -673,14 +635,6 @@
   }
 }
 
-/* Toolkit inventory — auto-fit so the four groups reflow 4→2→1 without
-   needing a breakpoint per step. */
-.bullpen-landing-root .toolkit-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 18px;
-  align-items: stretch;
-}
 @media (max-width: 560px) {
   .bullpen-landing-root .footer-grid { grid-template-columns: 1fr !important; }
 }
@@ -1062,4 +1016,143 @@
 .bullpen-landing-root .activity-heatmap-legend .activity-heatmap-cell {
   width: 10px;
   height: 10px;
+}
+
+/* ── Hero: rotating audience pill ─────────────────────────────────────────
+   One emerald pill holding the headline's single serif word. The label's
+   width eases to each new word (measured from the hidden copy) so the line
+   reflows instead of jumping; the word itself rises in. Stops on "you". */
+.bullpen-landing-root .hero-audience {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  padding: 0 0.28em 0.04em;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  vertical-align: baseline;
+}
+.bullpen-landing-root .hero-audience-label {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  /* Room for the italic overhang and descenders, which overflow would clip. */
+  padding: 0 0.08em 0.1em 0;
+  margin-bottom: -0.1em;
+  transition: width 300ms cubic-bezier(0.86, 0, 0.07, 1);
+}
+.bullpen-landing-root .hero-audience-word {
+  display: inline-block;
+  color: var(--accent);
+  animation: hero-audience-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.bullpen-landing-root .hero-audience-measure {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@keyframes hero-audience-in {
+  from { opacity: 0; transform: translateY(0.3em); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bullpen-landing-root .hero-audience-label { transition: none; }
+  .bullpen-landing-root .hero-audience-word { animation: none; }
+}
+
+/* ── Benefits bento ────────────────────────────────────────────────────────
+   Two columns of equal cards. Copy sits top-left; the capture peeks in from
+   the bottom-left corner and is clipped by the card, so each one shows a
+   single moment at a readable size rather than a whole shrunken screen. */
+.bullpen-landing-root .benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+/* Grid items default to min-width: auto, so the wider-than-card captures
+   stretched the column past the screen on phones and cut the copy off. */
+.bullpen-landing-root .benefits-grid > *,
+.bullpen-landing-root .benefit-card { min-width: 0; }
+.bullpen-landing-root .benefit-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+.bullpen-landing-root .benefit-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 18px 40px -24px oklch(0 0 0 / 0.25);
+  transform: translateY(-2px);
+}
+.bullpen-landing-root .benefit-copy {
+  padding: 28px 28px 22px;
+}
+.bullpen-landing-root .benefit-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--fg);
+}
+.bullpen-landing-root .benefit-pro {
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  vertical-align: 3px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.bullpen-landing-root .benefit-body {
+  margin: 10px 0 0;
+  max-width: 46ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+.bullpen-landing-root .benefit-shot {
+  flex: 1;
+  max-height: 300px;
+  margin-left: 28px;
+  overflow: hidden;
+  border-top-left-radius: 12px;
+  border: 1px solid var(--border);
+  border-right: 0;
+  border-bottom: 0;
+  background: var(--bg);
+  box-shadow: 0 -12px 40px -24px oklch(0 0 0 / 0.25);
+}
+/* Shown at ~85% of capture size and cropped by the card, so text stays
+   readable; scaling a 1024px capture into the card made it ~60% and tiny.
+   --shot-shift moves a capture whose content sits off to the right. */
+.bullpen-landing-root .benefit-shot img {
+  display: block;
+  width: var(--shot-width, 860px);
+  max-width: none;
+  height: auto;
+  margin-left: var(--shot-shift, 0px);
+}
+@media (max-width: 900px) {
+  .bullpen-landing-root .benefits-grid { grid-template-columns: 1fr; }
+  .bullpen-landing-root .benefit-shot { max-height: 240px; }
+  .bullpen-landing-root .benefit-shot img { width: calc(var(--shot-width, 860px) * 0.8); margin-left: calc(var(--shot-shift, 0px) * 0.8); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bullpen-landing-root .benefit-card,
+  .bullpen-landing-root .benefit-card:hover { transition: none; transform: none; }
+}
+
+/* The tour shows whole app screens; at phone width they shrink past reading.
+   The bento above already shows the same moments at a readable size. */
+@media (max-width: 700px) {
+  .bullpen-landing-root #peek { display: none; }
 }

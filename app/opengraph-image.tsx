@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import { loadOgFont } from '@/lib/render/og-fonts';
 
 export const runtime = 'nodejs';
-export const alt = 'BullPen — The market, explained.';
+export const alt = 'BullPen: investing, explained for you.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -41,15 +41,15 @@ export default async function OpengraphImage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', maxWidth: 980 }}>
           <div style={{ display: 'flex', fontSize: 76, fontWeight: 600, lineHeight: 1.08, color: fg }}>
-            The market,
+            Investing, explained
           </div>
           <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 92, lineHeight: 1.08, color: accent }}>
-            explained.
+            for you.
           </div>
         </div>
 
         <div style={{ display: 'flex', fontSize: 26, color: muted, marginTop: 28, maxWidth: 760 }}>
-          Track your portfolio, screen stocks, and get AI-powered market insights, all in one place.
+          Every stock in plain English, every move with a reason. No finance degree needed.
         </div>
       </div>
     ),

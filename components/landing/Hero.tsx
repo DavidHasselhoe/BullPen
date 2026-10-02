@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Reveal } from './Atoms';
 import { Icon } from './Icon';
@@ -363,58 +363,72 @@ function HeroChartPanel({ liveQuotes }: { liveQuotes: Record<string, LiveQuote> 
   );
 }
 
+// ── Rotating audience ────────────────────────────────────────────────────────
+// Everyday people, then "you": the rotation is how the line lands, so it stops
+// there instead of looping. Reduced motion goes straight to "you". The pill's
+// width eases to each new word (a hidden copy measures it) so the line reflows
+// smoothly rather than jumping, the same mechanism as notion.com's hero.
+const AUDIENCES = ['teachers', 'nurses', 'electricians', 'students', 'new parents', 'retirees', 'you'];
+const ROTATE_MS = 1900;
+
+function RotatingAudience() {
+  const [index, setIndex] = useState(0);
+  const [width, setWidth] = useState<number | null>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const last = AUDIENCES.length - 1;
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const t = setTimeout(() => setIndex(last), 0);
+      return () => clearTimeout(t);
+    }
+    const id = setInterval(() => {
+      setIndex((n) => {
+        if (n + 1 >= last) clearInterval(id);
+        return Math.min(n + 1, last);
+      });
+    }, ROTATE_MS);
+    return () => clearInterval(id);
+  }, [last]);
+
+  useEffect(() => {
+    const el = measureRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(el.getBoundingClientRect().width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <>
+      <span className="hero-audience" aria-hidden>
+        <span className="hero-audience-label" style={width != null ? { width } : undefined}>
+          <span key={index} className="hero-audience-word accent-serif">
+            {AUDIENCES[index]}
+          </span>
+        </span>
+        <span ref={measureRef} className="hero-audience-measure accent-serif">
+          {AUDIENCES[index]}
+        </span>
+      </span>
+      <span className="sr-only">you</span>
+    </>
+  );
+}
+
 // ── Hero ─────────────────────────────────────────────────────────────────────
 export function Hero({ onSignUp }: Props) {
   const liveQuotes = useLiveQuotes();
 
   return (
-    <section id="top" style={{ position: 'relative', padding: '40px 0 80px' }}>
+    <section id="top" style={{ position: 'relative', padding: '72px 0 80px' }}>
       <div className="wrap">
-        <Reveal>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '6px 14px 6px 8px',
-              borderRadius: 999,
-              background: 'var(--surface)',
-              border: '1px solid oklch(from var(--accent) l c h / 0.3)',
-              fontSize: 13,
-              color: 'var(--fg-muted)',
-              margin: '0 auto 20px',
-              boxShadow: '0 0 24px -10px var(--accent-glow)',
-            }}
-          >
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 8px',
-                borderRadius: 99,
-                background: 'var(--accent)',
-                color: 'var(--accent-ink)',
-                fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-              }}
-            >
-              New
-            </span>
-            Why Today? Ask any stock why it moved, get an answer with sources
-            <Icon name="arrowRight" size={14} />
-          </div>
-        </Reveal>
-
         <div style={{ textAlign: 'center', maxWidth: 920, margin: '0 auto' }}>
           <Reveal delay={1}>
-            <h1 className="headline" style={{ margin: 0, fontSize: 'clamp(48px, 8vw, 104px)', color: 'var(--fg)' }}>
-              The market,{' '}
-              <span className="accent-serif" style={{ color: 'var(--accent)' }}>
-                explained.
-              </span>
+            <h1 className="headline" style={{ margin: 0, fontSize: 'clamp(44px, 7.4vw, 96px)', color: 'var(--fg)' }}>
+              Investing, explained
+              <br />
+              for <RotatingAudience />.
             </h1>
           </Reveal>
 
@@ -429,7 +443,7 @@ export function Hero({ onSignUp }: Props) {
                 textWrap: 'pretty',
               }}
             >
-              Ask why any stock moved and get a real answer, sources included. Every morning, a Daily Brief tells you before you ask. Built for investors who want to understand, not just watch.
+              Every stock in plain English, every move with a reason. No finance degree, no jargon, no guessing.
             </p>
           </Reveal>
 
@@ -518,84 +532,6 @@ export function Hero({ onSignUp }: Props) {
             </div>
           </div>
         </div>
-
-        <Reveal delay={6}>
-          <div style={{ marginTop: 110, textAlign: 'center' }}>
-            {/* Proof of substance rather than proof of popularity.
-                Every clause here is checked, not rounded up:
-                  - 1 May 2026 to 12 Sep 2026 contains exactly 92 US market days
-                    (96 weekdays minus Memorial Day, Juneteenth, 3 July and
-                    Labor Day), and daily_briefs holds exactly 92 rows across 92
-                    distinct dates. "Unbroken" is literal.
-                  - institutional_investors holds 16 curated funds, parsed from
-                    80 13F filings pulled from SEC EDGAR (checked 2026-09-14).
-                  - screener_stats holds 3,053 rows, so "more than 3,000" is a
-                    floor that stays true as the universe grows.
-                Deliberately a sentence, not a row of big numerals with small
-                labels underneath: that template is the reflex, and at this
-                stage the specificity is what persuades, not the size of the
-                digits. Re-check the numbers before changing this copy. */}
-            <p
-              style={{
-                margin: '0 auto 36px',
-                maxWidth: 680,
-                fontSize: 15,
-                lineHeight: 1.6,
-                color: 'var(--fg-muted)',
-                textWrap: 'pretty',
-              }}
-            >
-              A Daily Brief every market morning since 1 May, unbroken. 13F filings from 16 funds,
-              read straight out of SEC EDGAR. Live fundamentals on more than 3,000 US stocks and ETFs.
-            </p>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--fg-dim)',
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                marginBottom: 20,
-              }}
-            >
-              The data and models behind BullPen
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                flexWrap: 'wrap',
-              }}
-            >
-              {/* Only vendors BullPen genuinely runs on. Two removals from the
-                  previous list: NASDAQ and NYSE (their data reaches us via
-                  TwelveData — badging the exchanges directly implies a
-                  relationship that doesn't exist), and Finnhub (no commercial
-                  licence to display their data, so advertising them as a source
-                  invites exactly the scrutiny we'd fail). */}
-              {['TwelveData', 'SEC EDGAR', 'Anthropic', 'OpenAI', 'SnapTrade'].map((b) => (
-                <span
-                  key={b}
-                  style={{
-                    padding: '5px 12px',
-                    borderRadius: 99,
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    letterSpacing: '-0.01em',
-                    color: 'var(--fg-dim)',
-                    fontFamily: b === 'TwelveData' ? 'var(--font-mono)' : 'inherit',
-                  }}
-                >
-                  {b}
-                </span>
-              ))}
-            </div>
-          </div>
-        </Reveal>
       </div>
     </section>
   );

@@ -14,16 +14,13 @@ import { Icon } from './Icon';
  * Brief sitting a few hundred pixels below an actual screenshot of the real
  * Daily Brief, with no "Example" tag to tell the two apart.
  *
- * They are not replaced with screenshots. This section sits between Features
- * (four large captures) and Peek (a full-width framed gallery), so a third
+ * They are not replaced with screenshots. This section sits between Benefits
+ * (six captures) and Peek (a full-width framed gallery), so a third
  * image-bearing section would make the middle of the page image-image-image
  * with nowhere to rest. The steps are simple enough to read as words, and the
  * quiet beat between two loud sections is worth more than a third picture.
  *
- * The ruled-column treatment is deliberately the same one `Toolkit.tsx` uses,
- * for the same reason given there: it reads as an index, it needs no card
- * chrome, and two uses make it the page's structural texture rather than a
- * one-off.
+ * Ruled columns: it reads as an index and needs no card chrome.
  */
 
 interface Step {
@@ -45,12 +42,10 @@ const STEPS: Step[] = [
   },
   {
     n: '03',
-    title: 'Wake up to your Daily Brief',
-    // Was "lands in your inbox", which is not what happens: the brief is
-    // generated at 06:30 UTC and surfaced on the dashboard with an in-app
-    // notification (lib/notifications/notification-creators.ts,
-    // createDailyBriefReadyNotification). Nothing is emailed.
-    desc: 'A personalized summary of what moved, what mattered and what to watch, waiting on your dashboard before the open.',
+    title: 'Check in each morning',
+    // Free on purpose: the Daily Brief this step used to promise is Pro, and
+    // the free plan's Home really does explain the biggest mover each day.
+    desc: 'Home shows how your stocks did and the reason behind your biggest mover, in a sentence or two.',
   },
 ];
 
@@ -62,9 +57,7 @@ export function HowItWorks({ onSignUp }: { onSignUp: () => void }) {
           title={
             <>
               From signup to first insight,{' '}
-              <span className="accent-serif" style={{ color: 'var(--accent)' }}>
-                under a minute.
-              </span>
+              under a minute.
             </>
           }
           sub="Three steps. You don't need to connect a brokerage, learn new vocabulary, or wait for anything to sync."

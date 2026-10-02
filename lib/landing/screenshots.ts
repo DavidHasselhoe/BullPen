@@ -26,45 +26,38 @@ export interface Shot {
 /**
  * Every screenshot the landing page's app tour knows how to display.
  *
- * Whole-screen captures only. The four feature-specific shots (Why Today?, the
- * Daily Brief, Ask Bull and institutional holdings) belong to `Features.tsx`
- * and are deliberately not repeated here — no capture appears in both sections.
+ * Whole-screen captures, cropped below the app navigation. The cropped
+ * single-moment captures belong to `Benefits.tsx` and are not repeated here, so
+ * no capture appears in both sections.
  */
 export const CANDIDATE_SHOTS: Shot[] = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    url: '/dashboard',
-    file: 'dashboard.png',
-    alt: 'The BullPen dashboard, showing the daily brief, a Why Today prompt and market context',
-  },
   {
     id: 'stock',
     label: 'Stock page',
     url: '/stock/NVDA',
-    file: 'stock-detail.png',
-    alt: 'A BullPen stock page, showing the price chart, health score and key statistics',
+    file: 'tour-stock.png',
+    alt: "NVIDIA's BullPen stock page: the price, today's move and a six-month chart",
   },
   {
     id: 'discover',
     label: 'Discover',
     url: '/discover',
-    file: 'discover.png',
-    alt: 'The BullPen Discover page, showing the weekly pick, index levels and sector performance',
+    file: 'tour-discover.png',
+    alt: "BullPen Discover: Bull's Weekly Pick and the market pulse for the major indexes",
   },
   {
     id: 'screener',
     label: 'Screener',
     url: '/tools/screener',
-    file: 'screener.png',
-    alt: 'The BullPen stock screener with filters applied and matching companies listed',
+    file: 'tour-screener.png',
+    alt: 'The BullPen stock screener listing S&P 500 companies with health scores, price and valuation',
   },
   {
     id: 'holdings',
     label: 'Holdings',
     url: '/holdings',
-    file: 'holdings.png',
-    alt: 'The BullPen holdings page, showing positions, allocation and profit and loss',
+    file: 'tour-holdings.png',
+    alt: "A portfolio on BullPen's Holdings page: total value, today's gain, and each position",
   },
 ];
 

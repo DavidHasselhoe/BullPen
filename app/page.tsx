@@ -5,14 +5,14 @@ import { getAvailableShots } from '@/lib/landing/screenshots';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 
 export const metadata: Metadata = {
-  title: 'BullPen — The market, explained.',
+  title: 'BullPen: investing, explained for you',
   description:
-    'Ask why any stock moved and get a real answer, sources included. Every morning, a Daily Brief tells you before you ask. Free forever plan, no card required.',
+    "Every stock in plain English, every move with a reason. Built for people who aren't finance people. Free forever plan, no card required.",
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'BullPen — The market, explained.',
+    title: 'BullPen: investing, explained for you',
     description:
-      'Ask why any stock moved and get a real answer, sources included. Every morning, a Daily Brief tells you before you ask.',
+      'Every stock in plain English, every move with a reason. No finance degree, no jargon, no guessing.',
     url: '/',
     siteName: 'BullPen',
     type: 'website',

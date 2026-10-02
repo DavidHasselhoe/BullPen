@@ -23,7 +23,7 @@ import { SITE_HOST } from '@/lib/site';
  * and each one appears automatically.
  *
  * This is the whole-app tour: five complete screens, in browser chrome. The
- * four feature-specific captures live in Features.tsx and are not repeated
+ * cropped single-moment captures live in Benefits.tsx and are not repeated
  * here, so no visitor sees the same screenshot twice on one page.
  *
  * `shots` is resolved on the server (lib/landing/screenshots.ts), so a missing
@@ -114,9 +114,7 @@ export function Peek({ shots }: { shots: Shot[] }) {
           title={
             <>
               Powerful, but never{' '}
-              <span className="accent-serif" style={{ color: 'var(--accent)' }}>
-                overwhelming.
-              </span>
+              overwhelming.
             </>
           }
           sub="Every screen is built around one job: helping you make a better decision in the next 30 seconds."
@@ -181,7 +179,7 @@ export function Peek({ shots }: { shots: Shot[] }) {
                   src={`/screenshots/${active.file}`}
                   alt={active.alt}
                   width={1280}
-                  height={800}
+                  height={736}
                   sizes="(max-width: 1240px) 100vw, 1200px"
                   style={{ width: '100%', height: 'auto', display: 'block' }}
                 />
