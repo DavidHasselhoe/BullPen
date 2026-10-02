@@ -150,10 +150,14 @@ export interface NewTrade {
  * 'Stock' rows are — the rest are treasuries and municipal bonds, which have
  * no ticker to resolve in the first place.
  */
+// The vendor also fills the ticker slot with the asset class itself: 89 rows
+// read 'ETF', 65 'LP', 54 'OPTION', 53 'FUND' (counted 2026-10-02).
+const PLACEHOLDER_TICKERS = new Set(['N/A', 'NA', '--', 'OTHER', 'ETF', 'LP', 'FUND', 'OPTION', 'TREAS', 'TRUST']);
+
 export function normalizeSymbol(ticker: string | null): string | null {
   if (!ticker) return null;
   const t = ticker.trim().toUpperCase();
-  if (!t || t === 'N/A' || t === 'NA' || t === '--' || t === 'OTHER') return null;
+  if (!t || PLACEHOLDER_TICKERS.has(t)) return null;
   return t;
 }
 
@@ -194,13 +198,195 @@ export async function resolveMissingSymbols<T extends { symbol: string | null; a
   rows: T[],
 ): Promise<(T & { symbol_source?: string })[]> {
   const names = [...new Set(rows.filter((r) => !r.symbol && isResolvableType(r.asset_type) && isNameResolvable(r.asset_description)).map((r) => r.asset_description))];
-  if (names.length === 0) return rows;
-  const { data, error } = await supabase.rpc('resolve_issuer_symbols' as never, { names } as never);
-  if (error || !data) return rows;
-  const map = new Map((data as { name: string; symbol: string }[]).map((d) => [d.name, d.symbol]));
+  const map = await resolveNames(supabase, names);
   return rows.map((r) => {
     const symbol = !r.symbol ? map.get(r.asset_description) : undefined;
     return symbol ? { ...r, symbol, symbol_source: 'name_match' } : r;
+  });
+}
+
+async function resolveNames(supabase: ReturnType<typeof createServerClient>, names: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  // One row per resolved name, so chunks under the 1000-row RPC cap.
+  for (let i = 0; i < names.length; i += 500) {
+    const { data, error } = await supabase.rpc('resolve_issuer_symbols' as never, { names: names.slice(i, i + 500) } as never);
+    if (error || !data) continue;
+    for (const d of data as { name: string; symbol: string }[]) out.set(d.name, d.symbol);
+  }
+  return out;
+}
+
+/**
+ * The filed name with the account and share-type wording removed, so it can
+ * be compared with a company name: '(Spouse) Netflix, Inc. - Common Stock',
+ * 'Diageo plc Common Stock [Hern Family Foundation]', 'UNITEDHEALTH GROUP
+ * INCORPORATE CMN'. Brackets hold the owner or an account, never the issuer.
+ */
+export function cleanFiledName(description: string): string {
+  return description
+    .normalize('NFD').replace(/\p{M}/gu, '')
+    .replace(/\[[^\]]*\]|\([^)]*\)/g, ' ')
+    .replace(/\s-\s.*$/, '')
+    .replace(/^\s*\d{6,}\s+/, '') // '2000166537 JT Organon & Co.': an account number
+    .replace(/\b(SPOUSE|IRA|SP|ROTH|JT|CMN|COMMON|STOCKS?|SHARES?|ORDINARY|UNSPONSORED|SPONSORED|UNSP|ADRS?|ADS|AMERICAN DEPOSITARY|DEPOSITARY|RECEIPTS?|INCORPORATE|CL [A-C])\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// First words that say nothing about which company it is: 'VANGUARD GROWTH'
+// and 'VANGUARD VALUE' are different funds, 'UNITED STATES STEEL' is not
+// 'UNITED HEALTH'.
+const GENERIC_FIRST_WORDS = new Set([
+  'UNITED', 'AMERICAN', 'AMERICA', 'AMERICAS', 'GENERAL', 'FIRST', 'NATIONAL', 'INTERNATIONAL', 'GLOBAL',
+  'NORTH', 'SOUTH', 'NORTHERN', 'SOUTHERN', 'WESTERN', 'EASTERN', 'PACIFIC', 'ATLANTIC', 'ROYAL', 'CAPITAL',
+  'CENTURY', 'COMMUNITY', 'SECURITY', 'HEALTH', 'MEDICAL', 'ENERGY', 'DIGITAL', 'DATA', 'SOLAR', 'POWER',
+  'ISHARES', 'VANGUARD', 'INVESCO', 'SCHWAB', 'FIDELITY', 'FRANKLIN', 'PIMCO', 'SELECT', 'STATE', 'DIREXION',
+  'PROSHARES', 'WISDOMTREE', 'YIELDMAX', 'BLACKROCK',
+]);
+
+const FUND_WORDS = new Set(['ETF', 'FUND', 'TRUST', 'INDEX', 'THE', 'OF', '&']);
+
+/** True when `longer` spelled without spaces begins with `shorter` spelled without spaces, ending on a word. */
+function prefixOnWord(longer: string[], shorter: string[]): boolean {
+  const target = shorter.join('');
+  if (target.length < 5) return false;
+  let acc = '';
+  for (const w of longer) {
+    acc += w;
+    if (acc === target) return true;
+    if (acc.length >= target.length) return false;
+  }
+  return false;
+}
+
+/**
+ * Whether two normalised company names plausibly name the same company.
+ * Lenient on purpose about suffixes and spacing ('JP MORGAN CHASE' and
+ * 'JPMORGAN CHASE', 'TE CONNECTIVITY LTD NEW SWITZERLAND' and 'TE
+ * CONNECTIVITY'), strict about the distinctive part: 'NETAPP' is not
+ * 'NETFLIX', 'NET APP' is not 'NET ELEMENT'.
+ */
+export function namesAgree(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  if (a.replace(/ /g, '') === b.replace(/ /g, '')) return true; // 'V F' and 'VF'
+  const at = a.split(' ');
+  const bt = b.split(' ');
+  if (prefixOnWord(at, bt) || prefixOnWord(bt, at)) return true;
+  // Every word of the filed name appears in ours: 'CONSUMER STAPLES SELECT
+  // SECTOR SPDR' in 'STATE STREET CONSUMER STAPLES SELECT SECTOR SPDR ETF'.
+  const filed = at.filter((w) => !FUND_WORDS.has(w));
+  if (filed.length >= 2 && filed.some((w) => !GENERIC_FIRST_WORDS.has(w)) && filed.every((w) => bt.includes(w))) return true;
+  if (at[0] !== bt[0]) return false;
+  if (at.length === 1 || bt.length === 1 || at[1] === bt[1]) return true;
+  return at[0].length >= 5 && !GENERIC_FIRST_WORDS.has(at[0]);
+}
+
+// Renamed companies whose filings still carry the old name. Only the ones
+// seen in stored trades; a missing entry costs a dropped ticker, not a wrong one.
+const FORMER_NAMES: Record<string, string[]> = {
+  RTX: ['RAYTHEON'],
+  META: ['FACEBOOK'],
+  SLB: ['SCHLUMBERGER'],
+  LH: ['LABORATORY CORP OF AMERICA'],
+  BXP: ['BOSTON PROPERTIES'],
+  WAB: ['WESTINGHOUSE AIR BRAKE TECHNOLOGIES'],
+  HTHT: ['CHINA LODGING'],
+  CBU: ['COMMUNITY BANK SYSTEM'],
+};
+
+// No listed security is a municipal bond or a Treasury, so a ticker on one is
+// always a guess (every one in the data was: MUNI, BOND, HII for Honolulu).
+const NEVER_TICKERED = new Set(['Municipal Bond', 'Municipal Security', 'Treasury', 'Bond/Note']);
+
+type VerifiableRow = {
+  symbol: string | null;
+  asset_description: string;
+  asset_type?: string | null;
+  symbol_source?: string | null;
+  price_at_trade?: number | null;
+  price_at_disclosure?: number | null;
+  sector?: string | null;
+  industry?: string | null;
+};
+
+/**
+ * Check every vendor ticker against the filed name, because the vendor
+ * guesses tickers from names and guesses wrong (migration 161 has the
+ * measured list: NetApp as NFLX, Dollar General as GEN, munis as MUNI).
+ *
+ * - The ticker is written in the filing, '(VUG)': kept.
+ * - We know names for the ticker: kept only if one agrees with the filing.
+ *   Otherwise the filing's name is resolved (resolve_issuer_symbols, exact
+ *   and unambiguous) and that replaces it, or the ticker is dropped.
+ * - We know no name for it (delisted, OTC, or not in our catalogue): kept,
+ *   unless the filing's name resolves to a different listed stock. That
+ *   catches UHGI for UnitedHealth without dropping Pioneer's PXD.
+ *
+ * A changed row loses the vendor's prices, sector and industry too: they
+ * describe the company the vendor wrongly picked.
+ */
+export async function verifyVendorSymbols<T extends VerifiableRow>(
+  supabase: ReturnType<typeof createServerClient>,
+  rows: T[],
+): Promise<(T & { vendor_symbol?: string })[]> {
+  const check = rows.filter(
+    (r) => r.symbol && !r.symbol_source && !new RegExp(`\\(${r.symbol.replace(/[^A-Z0-9]/g, '\\$&')}\\)`, 'i').test(r.asset_description),
+  );
+  if (check.length === 0) return rows;
+
+  const cleaned = new Map(check.map((r) => [r.asset_description, cleanFiledName(r.asset_description)]));
+  const descKey = new Map<string, string>();
+  const symbolKeys = new Map<string, string[]>();
+  // Chunked: an RPC returning a set is capped at 1000 rows like any select,
+  // and a ticker can carry several 13F spellings.
+  for (let i = 0; i < check.length; i += 100) {
+    const chunk = check.slice(i, i + 100);
+    const { data, error } = await supabase.rpc('congress_name_keys' as never, {
+      descs: [...new Set(chunk.map((r) => cleaned.get(r.asset_description)!))],
+      syms: [...new Set(chunk.map((r) => r.symbol as string))],
+    } as never);
+    // Rows are immutable once stored, so an unchecked ticker would stay wrong
+    // for good. Failing the member's run means the next run tries again.
+    const keys = data as { kind: string; input: string; key: string }[] | null;
+    if (error || !keys || keys.length >= 1000) throw new Error(`congress_name_keys failed: ${error?.message ?? 'no data or truncated'}`);
+    for (const k of keys) {
+      if (k.kind === 'desc') descKey.set(k.input, k.key);
+      else if (!symbolKeys.get(k.input)?.includes(k.key)) symbolKeys.set(k.input, [...(symbolKeys.get(k.input) ?? []), k.key]);
+    }
+  }
+
+  const verdict = new Map<T, 'wrong' | 'unknown'>();
+  for (const r of check) {
+    const sym = r.symbol as string;
+    if (r.asset_type && NEVER_TICKERED.has(r.asset_type)) { verdict.set(r, 'wrong'); continue; }
+    const names = [...(symbolKeys.get(sym) ?? []), ...(FORMER_NAMES[sym] ?? [])];
+    const filed = descKey.get(cleaned.get(r.asset_description)!) ?? '';
+    if (names.length === 0) verdict.set(r, 'unknown');
+    else if (!names.some((n) => namesAgree(filed, n))) verdict.set(r, 'wrong');
+  }
+  if (verdict.size === 0) return rows;
+
+  const resolvable = (r: T) => isResolvableType(r.asset_type) && isNameResolvable(r.asset_description);
+  const fixes = await resolveNames(
+    supabase,
+    [...new Set([...verdict.keys()].filter(resolvable).map((r) => cleaned.get(r.asset_description)!))],
+  );
+
+  return rows.map((r) => {
+    const v = verdict.get(r);
+    if (!v) return r;
+    const fix = resolvable(r) ? fixes.get(cleaned.get(r.asset_description)!) : undefined;
+    if (fix === r.symbol || (v === 'unknown' && !fix)) return r;
+    return {
+      ...r,
+      symbol: fix ?? null,
+      symbol_source: fix ? 'name_corrected' : 'vendor_rejected',
+      vendor_symbol: r.symbol as string,
+      price_at_trade: null,
+      price_at_disclosure: null,
+      sector: null,
+      industry: null,
+    };
   });
 }
 
@@ -406,7 +592,13 @@ export async function ingestPolitician(
 
   base.fetched = trades.length;
 
-  const resolved = await resolveMissingSymbols(supabase, buildRows(trades, politician.id));
+  let verified;
+  try {
+    verified = await verifyVendorSymbols(supabase, buildRows(trades, politician.id));
+  } catch (err) {
+    return { ...base, error: err instanceof Error ? err.message : String(err) };
+  }
+  const resolved = await resolveMissingSymbols(supabase, verified);
   const symbols = [...new Set(resolved.map((r) => r.symbol).filter((s): s is string => !!s))];
   const earliest = resolved.reduce((m, r) => (r.transaction_date < m ? r.transaction_date : m), '9999');
   const { data: stored } = symbols.length
@@ -563,7 +755,7 @@ export async function ingestHoldings(
     return { positions: 0, creditsCharged, error: err instanceof Error ? err.message : String(err) };
   }
 
-  const rows = (body.positions ?? [])
+  const mapped = (body.positions ?? [])
     .filter((p) => p.ticker && normalizeSymbol(p.ticker))
     .map((p) => ({
       politician_id: politician.id,
@@ -583,6 +775,13 @@ export async function ingestHoldings(
       last_activity_date: p.last_activity_date,
       snapshot_at: new Date().toISOString(),
     }));
+
+  let rows;
+  try {
+    rows = await dropMisTickeredPositions(supabase, mapped);
+  } catch (err) {
+    return { positions: 0, creditsCharged, error: err instanceof Error ? err.message : String(err) };
+  }
 
   // A snapshot replaces the previous one wholesale: a position the member has
   // fully exited simply stops appearing in the vendor's response, so upserting
@@ -609,6 +808,26 @@ export async function ingestHoldings(
     .eq('id', politician.id);
 
   return { positions: rows.length, creditsCharged };
+}
+
+/**
+ * Positions carry the same vendor ticker guesses as trades (Harshbarger's
+ * Alliant Energy as A, AutoZone as AZN, Amdocs as AMD), and the vendor priced
+ * each one with the WRONG company's quote. Re-labelling would keep a value
+ * nobody can stand behind, so a position whose ticker disagrees with its name
+ * is left out of the snapshot instead.
+ */
+export async function dropMisTickeredPositions<P extends { symbol: string; company_name: string | null }>(
+  supabase: ReturnType<typeof createServerClient>,
+  positions: P[],
+): Promise<P[]> {
+  const named = positions.filter((p) => p.company_name);
+  const checked = await verifyVendorSymbols(
+    supabase,
+    named.map((p) => ({ symbol: p.symbol as string | null, asset_description: p.company_name as string, position: p })),
+  );
+  const wrong = new Set(checked.filter((c) => c.vendor_symbol).map((c) => c.position));
+  return positions.filter((p) => !wrong.has(p));
 }
 
 export interface RunEstimate {

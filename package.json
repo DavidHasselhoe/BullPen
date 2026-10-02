@@ -84,6 +84,7 @@
     "test-holdings-context": "tsx scripts/test-holdings-context-gate.ts",
     "ingest-congress": "tsx scripts/ingest-congress-trades.ts",
     "test-congress-ingest": "tsx scripts/test-congress-ingest.ts",
+    "recheck-congress-symbols": "tsx scripts/recheck-congress-symbols.ts",
     "test-weekly-pick": "tsx scripts/test-weekly-pick.ts",
     "check-weekly-pick": "tsx scripts/check-weekly-pick.ts"
   },

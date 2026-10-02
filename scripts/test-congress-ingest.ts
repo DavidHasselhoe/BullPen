@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates } from '../lib/congress/ingest-trades';
+import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cleanFiledName, namesAgree } from '../lib/congress/ingest-trades';
 import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } from '../lib/congress/types';
 
 // Both ends always survive. Nothing here may ever average them into one
@@ -132,6 +132,34 @@ assert.equal(isNameResolvable('COREBRIDGE FINL INC PERP -A 6.8750%'), false);
 assert.equal(isNameResolvable('HOME DEPOT INC'), true);
 assert.equal(isNameResolvable('META PLATFORMS INC CLASS A'), true);
 assert.equal(isNameResolvable('UNITEDHEALTH GROUP INC'), true, 'UNIT must match whole words only');
+
+// The vendor puts the asset class in the ticker slot (counted 2026-10-02).
+for (const p of ['ETF', 'LP', 'FUND', 'OPTION', 'TREAS', 'TRUST']) assert.equal(normalizeSymbol(p), null, `${p} is not a ticker`);
+
+// Filed names carry owner, account and share-type wording around the issuer.
+assert.equal(cleanFiledName('(Spouse) Netflix, Inc. - Common Stock'), 'Netflix, Inc.');
+assert.equal(cleanFiledName('Diageo plc Common Stock [Hern Family Foundation]'), 'Diageo plc');
+assert.equal(cleanFiledName('UNITEDHEALTH GROUP INCORPORATE CMN'), 'UNITEDHEALTH GROUP');
+assert.equal(cleanFiledName('2000166537 JT Organon & Co. Common Stock'), 'Organon & Co.');
+assert.equal(cleanFiledName('Estée Lauder Companies, Inc.'), 'Estee Lauder Companies, Inc.');
+
+// namesAgree takes normalised keys (norm_company_name output). Every pair
+// below is a real vendor ticker against the filed name.
+assert.equal(namesAgree('NETAPP', 'NETFLIX'), false, 'Lamborn NetApp filed as NFLX');
+assert.equal(namesAgree('NET APP', 'NET ELEMENT'), false, 'NetApp filed as NETE');
+assert.equal(namesAgree('DOLLAR GENERAL', 'GEN DIGITAL'), false, 'Khanna Dollar General filed as GEN');
+assert.equal(namesAgree('VERISIGN', 'VERIZON COMMUNICATIONS'), false, 'VeriSign filed as VZ');
+assert.equal(namesAgree('PACCAR', 'PACKAGING CORPORATION OF AMERICA'), false, 'PACCAR filed as PKG');
+assert.equal(namesAgree('UNITED STATES STEEL', 'UTSTARCOM'), false);
+assert.equal(namesAgree('VANGUARD MID CAP ETF', 'VANGUARD TOTAL STOCK MARKET INDEX FUND ETF'), false, 'filed as VTI');
+assert.equal(namesAgree('JP MORGAN CHASE &', 'JPMORGAN CHASE &'), true);
+assert.equal(namesAgree('MC DONALDS', 'MCDONALDS'), true);
+assert.equal(namesAgree('BHP GROUP LIMITED', 'BHP'), true);
+assert.equal(namesAgree('CVS', 'CVS HEALTH'), true);
+assert.equal(namesAgree('TE CONNECTIVITY LTD NEW SWITZERLAND', 'TE CONNECTIVITY'), true);
+assert.equal(namesAgree('FERGUSON', 'FERGUSON ENTERPRISES'), true);
+assert.equal(namesAgree('CONSUMER STAPLES SELECT SECTOR SPDR', 'STATE STREET CONSUMER STAPLES SELECT SECTOR SPDR ETF'), true);
+assert.equal(namesAgree('AMERICAN EXPRESS', 'AMERICA'), false, 'a prefix must end on a word');
 
 // Move before disclosure: the real Pelosi BE case that motivated migration 156.
 {
