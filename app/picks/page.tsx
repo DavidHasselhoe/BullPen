@@ -4,9 +4,9 @@ import type { Metadata } from 'next';
 import PicksClientPage from './PicksClientPage';
 
 export const metadata: Metadata = {
-  title: "Bull's Track Record — BullPen",
+  title: "Bull's Track Record",
   description:
-    "Every AI stock pick BullPen has made, priced at the next market open and tracked from there — winners and losers, against the S&P bought on the same days.",
+    "Every AI stock pick BullPen has made, priced at the next market open and tracked from there. Winners and losers, against the S&P bought on the same days.",
   alternates: { canonical: '/picks' },
 };
 

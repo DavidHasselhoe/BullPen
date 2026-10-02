@@ -2,14 +2,16 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ArrowUpRight, Lock, Minus } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
 import { useLivePrice } from '@/components/discover/v2/LivePriceContext';
-import { CATALYST_LABELS, HORIZON_LABELS, type PickDetail } from '@/lib/picks/types';
-import { DIRECTION_TEXT, directionOf, fmtPct, fmtPrice, pickedAgo } from './pick-format';
+import type { PickDetail } from '@/lib/picks/types';
+import { CATALYST_KEY, DIRECTION_TEXT, HORIZON_KEY, directionOf, fmtPct, fmtPrice, pickedAgo } from './pick-format';
 import { ConvictionMeter } from './ConvictionMeter';
+import { VoteChip } from './VoteChip';
 
 /**
  * Shared query for the current pick. DiscoverClient uses it to fold the pick's
@@ -32,11 +34,14 @@ export const CURRENT_PICK_QUERY = {
  * The Discover entry point for Bull's Weekly Pick.
  *
  * Free users see the whole card — ticker, argument, entry price, and live
- * return. Only the multi-section thesis behind "Read the full thesis" is Pro.
+ * return. Only the multi-section thesis behind "Read the full thesis" is Pro,
+ * or a free account's one a month. Loading this card never spends that: the
+ * GET reports `free_available`, and only the pick page's button redeems.
  * That split is deliberate: the track record has to be checkable by anyone for
  * the claim it supports to mean anything.
  */
 export function WeeklyPickHero() {
+  const { t } = useTranslation('discover');
   const { data, isLoading, error } = useQuery(CURRENT_PICK_QUERY);
   // Rides the Discover page's single SSE subscription when it's available
   // (DiscoverClient folds the pick's symbol into the stream); falls back to the
@@ -72,13 +77,13 @@ export function WeeklyPickHero() {
           id="weekly-pick-heading"
           className="text-lg font-semibold tracking-tight text-foreground"
         >
-          Bull&apos;s Weekly Pick
+          {t('pickHeroHeading')}
         </h2>
         <Link
           href="/picks"
           className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          Track record <ArrowUpRight className="h-3 w-3" />
+          {t('pickHeroTrackRecord')} <ArrowUpRight className="h-3 w-3" />
         </Link>
       </div>
 
@@ -124,9 +129,10 @@ export function WeeklyPickHero() {
             </p>
 
             <div className="mt-4 hidden flex-wrap items-center gap-2 sm:flex">
-              <Chip>{CATALYST_LABELS[pick.catalystType]}</Chip>
-              <Chip>{HORIZON_LABELS[pick.horizon]}</Chip>
+              <Chip>{pick.catalystType in CATALYST_KEY ? t(CATALYST_KEY[pick.catalystType as keyof typeof CATALYST_KEY]) : pick.catalystType}</Chip>
+              <Chip>{pick.horizon in HORIZON_KEY ? t(HORIZON_KEY[pick.horizon as keyof typeof HORIZON_KEY]) : pick.horizon}</Chip>
               <ConvictionMeter value={pick.conviction} />
+              {pick.vote && <VoteChip vote={pick.vote} />}
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -134,17 +140,21 @@ export function WeeklyPickHero() {
                 href={`/picks/${pick.pickDate}`}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
-                {pick.locked && <Lock className="h-3 w-3" aria-hidden />}
-                Read the full thesis
+                {pick.locked && pick.lockReason !== 'free_available' && <Lock className="h-3 w-3" aria-hidden />}
+                {t('pickReadThesis')}
                 <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
               {pick.locked && (
                 <span className="text-xs text-muted-foreground">
-                  {pick.lockReason === 'anonymous'
-                    ? 'Sign up free for one thesis a month'
-                    : pick.lockReason === 'free_quota_used'
-                      ? "This month's free thesis is used"
-                      : 'Full thesis is a Pro feature'}
+                  {t(
+                    pick.lockReason === 'anonymous'
+                      ? 'pickHeroLockAnon'
+                      : pick.lockReason === 'free_available'
+                        ? 'pickHeroLockFree'
+                        : pick.lockReason === 'free_quota_used'
+                          ? 'pickHeroLockUsed'
+                          : 'pickHeroLockPro',
+                  )}
                 </span>
               )}
             </div>
@@ -155,19 +165,19 @@ export function WeeklyPickHero() {
             <dl className="grid grid-cols-3 gap-4 lg:grid-cols-1 lg:gap-3">
               <div>
                 <dt className="text-xs font-medium text-muted-foreground">
-                  Picked
+                  {t('pickHeroPicked')}
                 </dt>
-                <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
-                  {pickedAgo(pick.pickDate)}
+                <dd className="mt-1 text-sm text-foreground/90">
+                  {pickedAgo(pick.pickDate, t)}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium text-muted-foreground">
-                  Entry
+                  {t('pickEntry')}
                 </dt>
                 <dd className="mt-1 font-mono text-sm tabular-nums text-foreground/90">
                   {pending ? (
-                    <span className="text-muted-foreground">Pending</span>
+                    <span className="text-muted-foreground">{t('pickEntryPending')}</span>
                   ) : (
                     <>${fmtPrice(pick.entryPrice)}</>
                   )}
@@ -175,7 +185,7 @@ export function WeeklyPickHero() {
               </div>
               <div>
                 <dt className="text-xs font-medium text-muted-foreground">
-                  Since pick
+                  {t('pickSincePick')}
                 </dt>
                 <dd
                   className={cn(
@@ -193,12 +203,12 @@ export function WeeklyPickHero() {
 
             {pending && (
               <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                Entry price is set from the first market open after we publish.
+                {t('pickHeroEntryNote')}
               </p>
             )}
             {!pending && pick.benchmarkReturnPct != null && (
               <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                S&amp;P 500 over the same stretch:{' '}
+                {t('pickHeroSpSame')}{' '}
                 <span className="font-mono tabular-nums text-muted-foreground">
                   {fmtPct(pick.benchmarkReturnPct)}
                 </span>

@@ -5,7 +5,9 @@ import {
   Area, CartesianGrid, ComposedChart, Line, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { intlLocale } from '@/lib/i18n/intl-locale';
 import type { NormalizedPoint, SeriesPoint } from '@/lib/picks/types';
 import { fmtPct } from './pick-format';
 
@@ -31,8 +33,8 @@ interface Props {
 
 interface CalendarPointRow extends SeriesPoint { label: string }
 
-function fmtAxisDate(t: number): string {
-  return new Date(t * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+function fmtAxisDate(t: number, locale: string): string {
+  return new Date(t * 1000).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 }
 
 /**
@@ -47,6 +49,8 @@ function fmtAxisDate(t: number): string {
  * printed in the tooltip rather than left for the reader to assume.
  */
 export function PicksPerformanceChart({ series, normalized, className }: Props) {
+  const { t, i18n } = useTranslation('discover');
+  const locale = intlLocale(i18n.language);
   const [mode, setMode] = useState<Mode>('calendar');
   const [range, setRange] = useState<Range>('MAX');
 
@@ -62,8 +66,8 @@ export function PicksPerformanceChart({ series, normalized, className }: Props) 
     const filtered = series.filter((p) => p.t >= cutoff);
     // Never render a single lonely point — fall back to the full series.
     const use = filtered.length >= 2 ? filtered : series;
-    return use.map((p) => ({ ...p, label: fmtAxisDate(p.t) }));
-  }, [series, range]);
+    return use.map((p) => ({ ...p, label: fmtAxisDate(p.t, locale) }));
+  }, [series, range, locale]);
 
   const last = calendarData[calendarData.length - 1];
   const isUp = mode === 'calendar'
@@ -80,12 +84,12 @@ export function PicksPerformanceChart({ series, normalized, className }: Props) 
     <div className={cn('rounded-xl border border-border/50 bg-card/40', className)}>
       {/* ── Controls ───────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-5">
-        <div role="tablist" aria-label="Chart view" className="flex items-center gap-0.5 rounded-md bg-muted/50 p-0.5">
+        <div role="tablist" aria-label={t('pickChartViewLabel')} className="flex items-center gap-0.5 rounded-md bg-muted/50 p-0.5">
           <ModeTab active={mode === 'calendar'} onClick={() => setMode('calendar')}>
-            Portfolio
+            {t('pickChartPortfolio')}
           </ModeTab>
           <ModeTab active={mode === 'normalized'} onClick={() => setMode('normalized')}>
-            Since pick
+            {t('pickChartSincePick')}
           </ModeTab>
         </div>
 
@@ -115,11 +119,11 @@ export function PicksPerformanceChart({ series, normalized, className }: Props) 
       {/* ── Legend: always present, and each series also carries a distinct
              line style so identity never rests on colour alone ─────────────── */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 pt-3 sm:px-5">
-        <LegendItem color={pickColor} label={mode === 'calendar' ? "Bull's picks" : 'Average pick'} />
+        <LegendItem color={pickColor} label={mode === 'calendar' ? t('pickChartLegendPicks') : t('pickChartLegendAverage')} />
         {mode === 'calendar' ? (
-          <LegendItem color={BENCHMARK} label="S&P 500, same dates" dashed />
+          <LegendItem color={BENCHMARK} label={t('pickChartLegendBenchmark')} dashed />
         ) : (
-          <LegendItem color={BENCHMARK} label="Median pick" dashed />
+          <LegendItem color={BENCHMARK} label={t('pickChartLegendMedian')} dashed />
         )}
       </div>
 
@@ -127,7 +131,7 @@ export function PicksPerformanceChart({ series, normalized, className }: Props) 
       <div className="px-1 pb-3 pt-2">
         {!active ? (
           <div className="flex h-[260px] items-center justify-center px-6 text-center text-sm text-muted-foreground">
-            Not enough history to chart yet — the line starts once a pick has traded for a day.
+            {t('pickChartNotEnough')}
           </div>
         ) : mode === 'calendar' ? (
           <ResponsiveContainer width="100%" height={260}>
@@ -165,11 +169,11 @@ export function PicksPerformanceChart({ series, normalized, className }: Props) 
                   if (!on || !payload?.length) return null;
                   const p = payload[0].payload as CalendarPointRow;
                   return (
-                    <TooltipBox date={new Date(p.t * 1000)}>
-                      <TooltipRow color={pickColor} label="Bull's picks" value={fmtPct(p.picksPct)} />
-                      <TooltipRow color={BENCHMARK} label="S&P 500" value={fmtPct(p.benchmarkPct)} dashed />
+                    <TooltipBox title={new Date(p.t * 1000).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}>
+                      <TooltipRow color={pickColor} label={t('pickChartLegendPicks')} value={fmtPct(p.picksPct)} />
+                      <TooltipRow color={BENCHMARK} label={t('pickChartTooltipSp')} value={fmtPct(p.benchmarkPct)} dashed />
                       <p className="pt-1 text-[11px] text-muted-foreground">
-                        {p.liveCount} {p.liveCount === 1 ? 'pick' : 'picks'} held
+                        {t('pickChartHeld', { count: p.liveCount })}
                       </p>
                     </TooltipBox>
                   );
@@ -229,11 +233,11 @@ export function PicksPerformanceChart({ series, normalized, className }: Props) 
                   if (!on || !payload?.length) return null;
                   const p = payload[0].payload as NormalizedPoint;
                   return (
-                    <TooltipBox title={`${p.day} ${p.day === 1 ? 'day' : 'days'} after the pick`}>
-                      <TooltipRow color={pickColor} label="Average" value={fmtPct(p.avgPct)} />
-                      <TooltipRow color={BENCHMARK} label="Median" value={fmtPct(p.medianPct)} dashed />
+                    <TooltipBox title={t('pickChartDaysAfter', { count: p.day })}>
+                      <TooltipRow color={pickColor} label={t('pickChartAverage')} value={fmtPct(p.avgPct)} />
+                      <TooltipRow color={BENCHMARK} label={t('pickChartMedian')} value={fmtPct(p.medianPct)} dashed />
                       <p className="pt-1 text-[11px] text-muted-foreground">
-                        Based on {p.n} {p.n === 1 ? 'pick' : 'picks'} that have run this long
+                        {t('pickChartBasedOn', { count: p.n })}
                       </p>
                     </TooltipBox>
                   );
@@ -266,9 +270,7 @@ export function PicksPerformanceChart({ series, normalized, className }: Props) 
 
       {mode === 'normalized' && hasNormalized && (
         <p className="px-4 pb-4 text-[11px] leading-relaxed text-muted-foreground sm:px-5">
-          Fewer picks have run for a long time than a short time, so the right-hand
-          side of this curve rests on a smaller sample. Hover any point to see how
-          many picks it&apos;s built from.
+          {t('pickChartSampleNote')}
         </p>
       )}
     </div>
@@ -313,13 +315,11 @@ function LegendItem({ color, label, dashed }: { color: string; label: string; da
   );
 }
 
-function TooltipBox({
-  date, title, children,
-}: { date?: Date; title?: string; children: React.ReactNode }) {
+function TooltipBox({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1 rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm">
       <p className="pb-0.5 font-medium text-foreground">
-        {title ?? date?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+        {title}
       </p>
       {children}
     </div>

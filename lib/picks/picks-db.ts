@@ -10,7 +10,7 @@
 import { createServerClient } from '@/lib/supabase/client';
 import type { Tier } from '@/lib/billing/tier';
 import type { CatalystType, Horizon, PickRisk, StoredThesis } from '@/lib/ai/picks/schema';
-import type { PickDetail, PickSummary, PickWithPerformance } from './types';
+import type { LockReason, PickDetail, PickSummary, PickVote, PickWithPerformance } from './types';
 
 /** Columns needed for a summary row + the performance maths. */
 export const PICK_SUMMARY_COLUMNS =
@@ -97,11 +97,12 @@ export function coerceRowNumerics<T extends PickRow>(row: T): T {
 export function toDetail(
   row: PickDetailRow,
   perf: Pick<PickWithPerformance, 'currentPrice' | 'returnPct' | 'benchmarkReturnPct'>,
-  access: { tier: Tier; unlocked: boolean; lockReason?: 'anonymous' | 'free_quota_used' }
+  access: { tier: Tier; unlocked: boolean; lockReason?: LockReason }
 ): PickDetail {
   const base: PickDetail = {
     ...rowToSummary(row),
     ...perf,
+    vote: readVote(row.metrics_snapshot),
     model: row.model,
     generatedAt: row.generated_at,
     locked: !access.unlocked,
@@ -116,6 +117,13 @@ export function toDetail(
     risks: (row.risks ?? []) as PickRisk[],
     metricsSnapshot: (row.metrics_snapshot ?? {}) as Record<string, unknown>,
   };
+}
+
+/** The commit vote stored by the v2 pipeline in metrics_snapshot.vote. */
+function readVote(snapshot: unknown): PickVote | null {
+  const v = (snapshot as { vote?: { agreed?: unknown; of?: unknown; tiebreak?: unknown } } | null)?.vote;
+  if (!v || typeof v.agreed !== 'number' || typeof v.of !== 'number') return null;
+  return { agreed: v.agreed, of: v.of, tiebreak: !!v.tiebreak };
 }
 
 /** The most recent published pick, or null before the first one ships. */

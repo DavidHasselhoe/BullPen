@@ -36,17 +36,17 @@ export function fmtPrice(price: number | null | undefined): string {
   return price.toFixed(4);
 }
 
-/** "27 Jul 2026" — unambiguous across locales, compact enough for a table cell. */
-export function fmtDate(dateStr: string | null | undefined): string {
+/** The app language's short date, e.g. "Jul 27, 2026" in English. `locale` comes from intlLocale(). */
+export function fmtDate(dateStr: string | null | undefined, locale: string): string {
   if (!dateStr) return '—';
-  return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString('en-GB', {
+  return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString(locale, {
     day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
   });
 }
 
-export function fmtDateLong(dateStr: string | null | undefined): string {
+export function fmtDateLong(dateStr: string | null | undefined, locale: string): string {
   if (!dateStr) return '—';
-  return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString('en-GB', {
+  return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString(locale, {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
   });
 }
@@ -55,25 +55,41 @@ function daysSince(pickDate: string): number {
   return Math.floor((Date.now() - new Date(`${pickDate}T12:00:00Z`).getTime()) / 86_400_000);
 }
 
+/** The discover-namespace `t`, kept loose so this file stays free of React. */
+type T = (key: string, options?: Record<string, unknown>) => string;
+
 /**
  * How long a pick has been running, in the coarsest honest unit. Reads after
- * "over" or "for" — never after "ago", which is what `pickedAgo` is for.
+ * "over" or "for", never after "ago", which is what `pickedAgo` is for.
  */
-export function heldFor(pickDate: string): string {
+export function heldFor(pickDate: string, t: T): string {
   const days = daysSince(pickDate);
-  if (days < 1) return 'less than a day';
-  if (days === 1) return '1 day';
-  if (days < 31) return `${days} days`;
+  if (days < 1) return t('pickHeldLessThanDay');
+  if (days < 31) return t('pickHeldDays', { count: days });
   const months = Math.round(days / 30.44);
-  if (months < 12) return months === 1 ? '1 month' : `${months} months`;
+  if (months < 12) return t('pickHeldMonths', { count: months });
   const years = days / 365.25;
-  return years < 1.1 ? '1 year' : `${years.toFixed(1)} years`;
+  return years < 1.1 ? t('pickHeldOneYear') : t('pickHeldYears', { years: years.toFixed(1) });
 }
 
 /** A complete phrase, so callers never append " ago" to the word "today". */
-export function pickedAgo(pickDate: string): string {
+export function pickedAgo(pickDate: string, t: T): string {
   const days = daysSince(pickDate);
-  if (days < 1) return 'today';
-  if (days === 1) return 'yesterday';
-  return `${heldFor(pickDate)} ago`;
+  if (days < 1) return t('pickToday');
+  if (days === 1) return t('pickYesterday');
+  return t('pickAgo', { duration: heldFor(pickDate, t) });
 }
+
+export const CATALYST_KEY = {
+  undervalued: 'pickCatalystUndervalued',
+  catalyst: 'pickCatalystCatalyst',
+  growth: 'pickCatalystGrowth',
+  turnaround: 'pickCatalystTurnaround',
+  thematic: 'pickCatalystThematic',
+} as const;
+
+export const HORIZON_KEY = {
+  '3m': 'pickHorizon3m',
+  '6m': 'pickHorizon6m',
+  '12m': 'pickHorizon12m',
+} as const;

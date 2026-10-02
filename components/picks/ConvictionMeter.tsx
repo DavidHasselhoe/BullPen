@@ -1,13 +1,14 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
-const LABELS: Record<number, string> = {
-  1: 'Speculative',
-  2: 'Tentative',
-  3: 'Moderate',
-  4: 'Strong',
-  5: 'High',
+const LABEL_KEYS: Record<number, string> = {
+  1: 'pickConvictionSpeculative',
+  2: 'pickConvictionTentative',
+  3: 'pickConvictionModerate',
+  4: 'pickConvictionStrong',
+  5: 'pickConvictionHigh',
 };
 
 /**
@@ -19,8 +20,10 @@ const LABELS: Record<number, string> = {
  * pick can still lose.
  */
 export function ConvictionMeter({ value, className }: { value: number; className?: string }) {
+  const { t } = useTranslation('discover');
   const clamped = Math.max(1, Math.min(5, Math.round(value)));
-  const label = LABELS[clamped];
+  const label = t(LABEL_KEYS[clamped]);
+  const outOf = t('pickConvictionOutOf', { value: clamped });
 
   return (
     <span
@@ -28,7 +31,7 @@ export function ConvictionMeter({ value, className }: { value: number; className
         'inline-flex items-center gap-2 rounded-md border border-border/40 bg-muted/30 px-2 py-1',
         className,
       )}
-      title={`Conviction: ${label} (${clamped} of 5)`}
+      title={`${label} (${outOf})`}
     >
       <span className="flex items-center gap-[3px]" aria-hidden>
         {Array.from({ length: 5 }, (_, i) => (
@@ -41,10 +44,8 @@ export function ConvictionMeter({ value, className }: { value: number; className
           />
         ))}
       </span>
-      <span className="text-[11px] font-medium text-muted-foreground">
-        {label} conviction
-      </span>
-      <span className="sr-only">{clamped} out of 5</span>
+      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+      <span className="sr-only">, {outOf}</span>
     </span>
   );
 }

@@ -13,7 +13,7 @@ export async function generateMetadata({
   const pick = await getPickRowByDate(date);
   return {
     title: pick ? `${pick.symbol}: Bull's Pick for ${date}` : `Bull's Pick for ${date}`,
-    description: pick?.one_liner ?? "Bull's Weekly Pick — see the thesis, entry price, and tracked result.",
+    description: pick?.one_liner ?? "Bull's Weekly Pick: the thesis, the entry price, and the tracked result.",
     alternates: { canonical: `/picks/${date}` },
   };
 }

@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ChevronsUpDown, Minus } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
-import { CATALYST_LABELS, type PickWithPerformance } from '@/lib/picks/types';
-import { DIRECTION_TEXT, directionOf, fmtDate, fmtPct, fmtPrice } from './pick-format';
+import { intlLocale } from '@/lib/i18n/intl-locale';
+import type { PickWithPerformance } from '@/lib/picks/types';
+import { CATALYST_KEY, DIRECTION_TEXT, directionOf, fmtDate, fmtPct, fmtPrice } from './pick-format';
 
 type SortKey = 'pickDate' | 'symbol' | 'returnPct' | 'vsBenchmark';
 type SortDir = 'asc' | 'desc';
@@ -28,6 +30,8 @@ function vsBenchmarkOf(p: PickWithPerformance): number | null {
  * of publishing this at all.
  */
 export function PicksTable({ picks }: Props) {
+  const { t, i18n } = useTranslation('discover');
+  const locale = intlLocale(i18n.language);
   const [sortKey, setSortKey] = useState<SortKey>('pickDate');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
@@ -69,141 +73,153 @@ export function PicksTable({ picks }: Props) {
   if (picks.length === 0) {
     return (
       <p className="rounded-xl border border-border/50 bg-card/40 px-5 py-8 text-center text-sm text-muted-foreground">
-        No picks yet. The first one lands on a Monday.
+        {t('pickTableEmpty')}
       </p>
     );
   }
 
+  const angle = (p: PickWithPerformance) =>
+    p.catalystType in CATALYST_KEY ? t(CATALYST_KEY[p.catalystType as keyof typeof CATALYST_KEY]) : p.catalystType;
+
   return (
-    <div className="overflow-x-auto rounded-xl border border-border/50 bg-card/40">
-      <table className="w-full min-w-[720px] border-collapse text-sm">
-        <caption className="sr-only">
-          Every pick Bull has made, with its entry price, current price, and return since the pick.
-        </caption>
-        <thead>
-          <tr className="border-b border-border/50">
-            <SortableHeader
-              label="Pick"
-              active={sortKey === 'symbol'}
-              dir={sortDir}
-              onClick={() => toggleSort('symbol')}
-              className="text-left"
-            />
-            <SortableHeader
-              label="Picked"
-              active={sortKey === 'pickDate'}
-              dir={sortDir}
-              onClick={() => toggleSort('pickDate')}
-              className="text-left"
-            />
-            <PlainHeader label="Entry" />
-            <PlainHeader label="Now" />
-            <SortableHeader
-              label="Return"
-              active={sortKey === 'returnPct'}
-              dir={sortDir}
-              onClick={() => toggleSort('returnPct')}
-              className="text-right"
-            />
-            <SortableHeader
-              label="vs S&P"
-              active={sortKey === 'vsBenchmark'}
-              dir={sortDir}
-              onClick={() => toggleSort('vsBenchmark')}
-              className="text-right"
-            />
-            <PlainHeader label="Angle" className="text-left" />
-          </tr>
-        </thead>
-
-        <tbody>
-          {sorted.map((p) => {
-            const dir = directionOf(p.returnPct);
-            const DirIcon = dir === 'up' ? ArrowUp : dir === 'down' ? ArrowDown : Minus;
-            const vs = vsBenchmarkOf(p);
-            const vsDir = directionOf(vs);
-
-            return (
-              <tr
-                key={p.pickDate}
-                className="group border-b border-border/30 last:border-b-0 transition-colors hover:bg-muted/25"
+    <>
+      {/* Phones: one card per pick. As a table, Return and vs S&P sat behind a
+          sideways scroll, and a track record whose returns are off-screen is
+          just a list of tickers. */}
+      <ul className="space-y-2 md:hidden">
+        {sorted.map((p) => {
+          const dir = directionOf(p.returnPct);
+          const DirIcon = dir === 'up' ? ArrowUp : dir === 'down' ? ArrowDown : Minus;
+          const vs = vsBenchmarkOf(p);
+          return (
+            <li key={p.pickDate}>
+              <Link
+                href={`/picks/${p.pickDate}`}
+                className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-4 py-3 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/picks/${p.pickDate}`}
-                    className="flex items-center gap-2.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  >
-                    <CompanyLogo
-                      name={p.companyName ?? p.symbol}
-                      ticker={p.symbol}
-                      logoUrl={p.logoUrl}
-                      size={24}
-                      className="shrink-0"
-                    />
-                    <span className="min-w-0">
-                      <span className="block font-mono text-[13px] font-bold text-foreground group-hover:text-primary transition-colors">
-                        {p.symbol}
-                      </span>
-                      {/* clamp-ok: company name in a table cell, not a sentence */}
-                      <span className="block max-w-[160px] truncate text-[11px] text-muted-foreground">
-                        {p.companyName ?? '—'}
-                      </span>
-                    </span>
-                  </Link>
-                </td>
-
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-[12px] tabular-nums text-muted-foreground">
-                  {fmtDate(p.pickDate)}
-                </td>
-
-                <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-[12px] tabular-nums text-muted-foreground">
-                  {p.entryPrice == null ? (
-                    <span className="text-muted-foreground">pending</span>
-                  ) : (
-                    `$${fmtPrice(p.entryPrice)}`
-                  )}
-                </td>
-
-                <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-[12px] tabular-nums text-foreground/80">
-                  {p.currentPrice == null ? '—' : `$${fmtPrice(p.currentPrice)}`}
-                </td>
-
-                <td className="whitespace-nowrap px-4 py-3 text-right">
-                  <span
-                    className={cn(
-                      'inline-flex items-center justify-end gap-1 font-mono text-[13px] font-semibold tabular-nums',
-                      DIRECTION_TEXT[dir],
-                    )}
-                  >
+                <CompanyLogo name={p.companyName ?? p.symbol} ticker={p.symbol} logoUrl={p.logoUrl} size={32} className="shrink-0" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-mono text-sm font-bold text-foreground">{p.symbol}</span>
+                  <span className="block text-xs text-muted-foreground">{fmtDate(p.pickDate, locale)}</span>
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className={cn('inline-flex items-center gap-1 font-mono text-sm font-semibold tabular-nums', DIRECTION_TEXT[dir])}>
                     {p.returnPct != null && <DirIcon className="h-3 w-3" strokeWidth={2.5} aria-hidden />}
-                    {fmtPct(p.returnPct)}
+                    {p.entryPrice == null ? t('pickEntryPending') : fmtPct(p.returnPct)}
                   </span>
-                </td>
+                  <span className="block text-xs text-muted-foreground">
+                    {t('pickColVsSp')}{' '}
+                    <span className={cn('font-mono tabular-nums', DIRECTION_TEXT[directionOf(vs)])}>{fmtPct(vs)}</span>
+                  </span>
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
 
-                <td className="whitespace-nowrap px-4 py-3 text-right">
-                  <span className={cn('font-mono text-[12px] tabular-nums', DIRECTION_TEXT[vsDir])}>
-                    {fmtPct(vs)}
-                  </span>
-                </td>
+      <div className="hidden overflow-x-auto rounded-xl border border-border/50 bg-card/40 md:block">
+        <table className="w-full min-w-[720px] border-collapse text-sm">
+          <caption className="sr-only">{t('pickTableCaption')}</caption>
+          <thead>
+            <tr className="border-b border-border/50">
+              <SortableHeader label={t('pickColPick')} active={sortKey === 'symbol'} dir={sortDir} onClick={() => toggleSort('symbol')} className="text-left" />
+              <SortableHeader label={t('pickColPicked')} active={sortKey === 'pickDate'} dir={sortDir} onClick={() => toggleSort('pickDate')} className="text-left" />
+              <PlainHeader label={t('pickColEntry')} />
+              <PlainHeader label={t('pickColNow')} />
+              <SortableHeader label={t('pickColReturn')} active={sortKey === 'returnPct'} dir={sortDir} onClick={() => toggleSort('returnPct')} className="text-right" />
+              <SortableHeader label={t('pickColVsSp')} active={sortKey === 'vsBenchmark'} dir={sortDir} onClick={() => toggleSort('vsBenchmark')} className="text-right" />
+              <PlainHeader label={t('pickColAngle')} className="text-left" />
+            </tr>
+          </thead>
 
-                <td className="px-4 py-3">
-                  <span className="inline-flex whitespace-nowrap rounded border border-border/40 bg-muted/30 px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                    {CATALYST_LABELS[p.catalystType] ?? p.catalystType}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+          <tbody>
+            {sorted.map((p) => {
+              const dir = directionOf(p.returnPct);
+              const DirIcon = dir === 'up' ? ArrowUp : dir === 'down' ? ArrowDown : Minus;
+              const vs = vsBenchmarkOf(p);
+              const vsDir = directionOf(vs);
+
+              return (
+                <tr
+                  key={p.pickDate}
+                  className="group border-b border-border/30 last:border-b-0 transition-colors hover:bg-muted/25"
+                >
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/picks/${p.pickDate}`}
+                      className="flex items-center gap-2.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    >
+                      <CompanyLogo
+                        name={p.companyName ?? p.symbol}
+                        ticker={p.symbol}
+                        logoUrl={p.logoUrl}
+                        size={24}
+                        className="shrink-0"
+                      />
+                      <span className="min-w-0">
+                        <span className="block font-mono text-[13px] font-bold text-foreground group-hover:text-primary transition-colors">
+                          {p.symbol}
+                        </span>
+                        {/* clamp-ok: company name in a table cell, not a sentence */}
+                        <span className="block max-w-[160px] truncate text-[11px] text-muted-foreground" title={p.companyName ?? undefined}>
+                          {p.companyName ?? '—'}
+                        </span>
+                      </span>
+                    </Link>
+                  </td>
+
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                    {fmtDate(p.pickDate, locale)}
+                  </td>
+
+                  <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-[12px] tabular-nums text-muted-foreground">
+                    {p.entryPrice == null ? t('pickEntryPending') : `$${fmtPrice(p.entryPrice)}`}
+                  </td>
+
+                  <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-[12px] tabular-nums text-foreground/80">
+                    {p.currentPrice == null ? '—' : `$${fmtPrice(p.currentPrice)}`}
+                  </td>
+
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                    <span
+                      className={cn(
+                        'inline-flex items-center justify-end gap-1 font-mono text-[13px] font-semibold tabular-nums',
+                        DIRECTION_TEXT[dir],
+                      )}
+                    >
+                      {p.returnPct != null && <DirIcon className="h-3 w-3" strokeWidth={2.5} aria-hidden />}
+                      {fmtPct(p.returnPct)}
+                    </span>
+                  </td>
+
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                    <span className={cn('font-mono text-[12px] tabular-nums', DIRECTION_TEXT[vsDir])}>
+                      {fmtPct(vs)}
+                    </span>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <span className="inline-flex whitespace-nowrap rounded border border-border/40 bg-muted/30 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                      {angle(p)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
 // ─── Headers ─────────────────────────────────────────────────────────────────
 
-const HEADER_BASE =
-  'px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground';
+// Sentence case and the body font: uppercase was only half applied anyway,
+// because buttons reset text-transform, so sortable headers read "Return"
+// beside plain ones reading "ENTRY".
+const HEADER_BASE = 'px-4 py-2.5 text-xs font-medium text-muted-foreground';
 
 function PlainHeader({ label, className }: { label: string; className?: string }) {
   return <th scope="col" className={cn(HEADER_BASE, 'text-right', className)}>{label}</th>;

@@ -43,17 +43,34 @@ export interface PickWithPerformance extends PickSummary {
   benchmarkReturnPct: number | null;
 }
 
+/**
+ * Why a viewer can't see the thesis. `free_available` is a free account that
+ * hasn't spent its monthly thesis: reading is one explicit POST away, never
+ * spent by merely loading a page.
+ */
+export type LockReason = 'anonymous' | 'free_available' | 'free_quota_used';
+
+/** How the v2 pipeline's independent commit runs voted. Absent on earlier picks. */
+export interface PickVote {
+  agreed: number;
+  of: number;
+  /** True when every run chose a different stock and a final review decided. */
+  tiebreak: boolean;
+}
+
 export interface PickDetail extends PickWithPerformance {
   /** Present only for Pro. Free responses omit these entirely. */
   thesis?: StoredThesis;
   risks?: PickRisk[];
   metricsSnapshot?: Record<string, unknown>;
+  /** Public for everyone: it says how the pick was reached, not what it argues. */
+  vote: PickVote | null;
   model: string;
   generatedAt: string;
   /** True when the viewer doesn't currently have access to the thesis. */
   locked: boolean;
   /** Why `locked` is true — absent when locked is false. Drives the upsell copy. */
-  lockReason?: 'anonymous' | 'free_quota_used';
+  lockReason?: LockReason;
 }
 
 // ─── Performance series ──────────────────────────────────────────────────────

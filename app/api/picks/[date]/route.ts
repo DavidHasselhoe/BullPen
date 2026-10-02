@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withOptionalAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { withAuth, withOptionalAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { resolveThesisAccess } from '@/lib/picks/thesis-access';
 import { getPickRowByDate, toDetail } from '@/lib/picks/picks-db';
@@ -16,10 +16,11 @@ import { livePerformanceFor } from '@/lib/picks/performance';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-async function handler(
+async function load(
   _request: NextRequest,
   context: unknown,
-  session: { userId: string } | null
+  session: { userId: string } | null,
+  redeem: boolean
 ): Promise<NextResponse> {
   const { date } = await (context as { params: Promise<{ date: string }> }).params;
 
@@ -38,7 +39,7 @@ async function handler(
     }
 
     const [access, perf] = await Promise.all([
-      resolveThesisAccess(session, row.pick_date, row.model),
+      resolveThesisAccess(session, row.pick_date, row.model, { redeem }),
       livePerformanceFor(row),
     ]);
 
@@ -56,4 +57,11 @@ async function handler(
   }
 }
 
-export const GET = withOptionalAuth(handler, { rateLimit: { windowMs: 60 * 1000, maxRequests: 60 } });
+export const GET = withOptionalAuth((req, ctx, session) => load(req, ctx, session, false), {
+  rateLimit: { windowMs: 60 * 1000, maxRequests: 60 },
+});
+
+/** Spend a free account's monthly thesis on this pick: the only thing that does. */
+export const POST = withAuth((req, ctx, session) => load(req, ctx, session, true), {
+  rateLimit: { windowMs: 60 * 1000, maxRequests: 10 },
+});

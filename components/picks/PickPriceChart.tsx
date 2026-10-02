@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { intlLocale } from '@/lib/i18n/intl-locale';
 import {
   Area, AreaChart, CartesianGrid, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -31,19 +33,21 @@ export function PickPriceChart({
   pickDate: string;
   currentPrice: number | null;
 }) {
+  const { t, i18n } = useTranslation('discover');
+  const locale = intlLocale(i18n.language);
   const data = useMemo<Point[]>(() => {
     if (!candles || candles.t.length === 0) return [];
     return candles.t.map((t, i) => ({
       t,
       price: candles.c[i],
-      label: new Date(t * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      label: new Date(t * 1000).toLocaleDateString(locale, { day: 'numeric', month: 'short' }),
     }));
-  }, [candles]);
+  }, [candles, locale]);
 
   if (data.length < 2) {
     return (
       <div className="flex h-[220px] items-center justify-center rounded-xl border border-border/50 bg-card/40 px-6 text-center text-sm text-muted-foreground">
-        Price history isn&apos;t available for this one right now.
+        {t('pickPriceUnavailable')}
       </div>
     );
   }
@@ -97,7 +101,8 @@ export function PickPriceChart({
             tickLine={false}
             width={48}
             domain={['auto', 'auto']}
-            tickFormatter={(v: number) => `$${fmtPrice(v)}`}
+            // Whole dollars from $100 up: fmtPrice gave "$700.00" under "$2,100" on one axis.
+            tickFormatter={(v: number) => (v >= 100 ? `$${Math.round(v).toLocaleString('en-US')}` : `$${fmtPrice(v)}`)}
           />
 
           {entryLabel && (
@@ -107,8 +112,10 @@ export function PickPriceChart({
               strokeDasharray="3 3"
               strokeOpacity={0.8}
               label={{
-                value: 'Picked',
-                position: 'insideTopLeft',
+                value: t('pickPriceMarker'),
+                // Left of the line: the pick sits near the right edge, and a label
+                // to its right was clipped to "Pic" on phones.
+                position: 'insideTopRight',
                 fill: 'var(--chart-label)',
                 fontSize: 10,
               }}
@@ -129,14 +136,14 @@ export function PickPriceChart({
               return (
                 <div className="space-y-1 rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm">
                   <p className="font-medium text-foreground">
-                    {new Date(p.t * 1000).toLocaleDateString('en-GB', {
+                    {new Date(p.t * 1000).toLocaleDateString(locale, {
                       day: 'numeric', month: 'short', year: 'numeric',
                     })}
                   </p>
                   <p className="font-mono tabular-nums text-foreground/90">${fmtPrice(p.price)}</p>
                   {since != null && (
                     <p className="text-muted-foreground">
-                      <span className="font-mono tabular-nums">{fmtPct(since)}</span> since the pick
+                      {t('pickPriceSincePick', { pct: fmtPct(since) })}
                     </p>
                   )}
                 </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AlertCircle, ArrowLeft, Target } from 'lucide-react';
 import { useBackground } from '@/hooks/use-background';
@@ -17,6 +18,7 @@ import { quarterLabel } from '@/lib/picks/quarters';
 type ApiResponse = PerformanceResponse & { success: boolean; error?: string };
 
 export default function PicksClientPage() {
+  const { t } = useTranslation('discover');
   const { hasAnimatedBackground } = useBackground();
   /** null = the whole record. */
   const [quarter, setQuarter] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function PicksClientPage() {
           className="mb-6 inline-flex items-center gap-1.5 rounded text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-          Back to Discover
+          {t('pickBackToDiscover')}
         </Link>
 
         <header className="mb-8">
@@ -54,13 +56,11 @@ export default function PicksClientPage() {
               <Target className="h-5 w-5 text-primary" aria-hidden />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Bull&apos;s Track Record
+              {t('pickTrackRecordTitle')}
             </h1>
           </div>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            One AI stock pick every Monday, priced at the next market open and tracked
-            from there — permanently. Every pick we&apos;ve ever made is below, winners
-            and losers alike, measured against buying the S&amp;P on the very same days.
+            {t('pickTrackRecordIntro')}
           </p>
         </header>
 
@@ -71,7 +71,7 @@ export default function PicksClientPage() {
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden />
             <div>
               <h2 className="text-sm font-semibold text-foreground">
-                Couldn&apos;t load the track record
+                {t('pickTrackRecordLoadError')}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">{humanizeError(error)}</p>
             </div>
@@ -83,9 +83,9 @@ export default function PicksClientPage() {
             {/* One quarter's view equals the whole record until a second
                 quarter exists, so the control only appears once it means something. */}
             {quarters.length >= 2 && (
-              <div role="group" aria-label="Show picks from" className="flex w-fit flex-wrap items-center gap-0.5 rounded-md bg-muted/50 p-0.5">
+              <div role="group" aria-label={t('pickQuarterGroupLabel')} className="flex w-fit flex-wrap items-center gap-0.5 rounded-md bg-muted/50 p-0.5">
                 <QuarterButton active={quarter === null} onClick={() => setQuarter(null)}>
-                  All time
+                  {t('pickQuarterAllTime')}
                 </QuarterButton>
                 {quarters.map((q) => (
                   <QuarterButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
@@ -105,11 +105,8 @@ export default function PicksClientPage() {
             )}
 
             <section aria-labelledby="all-picks-heading">
-              <h2
-                id="all-picks-heading"
-                className="mb-3 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
-              >
-                Every pick
+              <h2 id="all-picks-heading" className="mb-3 text-base font-semibold text-foreground">
+                {t('pickEveryPickHeading')}
               </h2>
               <PicksTable picks={data.picks} />
             </section>
@@ -120,10 +117,7 @@ export default function PicksClientPage() {
 
         {!isLoading && !error && data && !data.success && (
           <div className="rounded-xl border border-border/50 bg-card/40 px-5 py-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Market data is temporarily unavailable, so returns can&apos;t be priced right
-              now. The picks themselves are unaffected — try again shortly.
-            </p>
+            <p className="text-sm text-muted-foreground">{t('pickDataUnavailable')}</p>
           </div>
         )}
       </main>
