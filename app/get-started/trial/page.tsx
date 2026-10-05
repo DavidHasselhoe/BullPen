@@ -55,7 +55,9 @@ export default function TrialOfferPage() {
     }
   }, [isLoading, isAuthenticated, isPro]);
 
-  if (isLoading || !isAuthenticated || isPro) return null;
+  // The frame renders while auth loads or a redirect is underway, never a blank screen.
+  const ready = !isLoading && isAuthenticated && !isPro;
+  const yearlySaving = Math.round((1 - PRICING.proAnnualPerMonth / PRICING.proMonthly) * 100);
 
   const lead = watchlist?.[0]?.symbol;
   const terms = renewalTerms(cycle);
@@ -93,7 +95,7 @@ export default function TrialOfferPage() {
           </div>
         </header>
 
-        <main style={{ padding: '80px 0' }}>
+        {ready && <main style={{ padding: '80px 0' }}>
           <div className="wrap" style={{ maxWidth: 520, margin: '0 auto' }}>
             <div style={{ marginBottom: 32 }}>
               <OnboardingProgress stepIndex={4} totalSteps={TOTAL_STEPS} />
@@ -103,14 +105,15 @@ export default function TrialOfferPage() {
               className="headline"
               style={{ margin: '0 0 12px', fontSize: 'clamp(26px, 3.4vw, 34px)', color: 'var(--fg)', textAlign: 'center' }}
             >
-              {justConfirmed ? 'All set! ' : ''}Here&apos;s a one week free trial{' '}
-              <span className="accent-serif" style={{ color: 'var(--accent)' }}>on us!</span>
+              Try Pro free for a{' '}
+              <span className="accent-serif" style={{ color: 'var(--accent)' }}>week.</span>
             </h1>
             <p style={{ margin: '0 0 28px', textAlign: 'center', fontSize: 16, color: 'var(--fg-muted)' }}>
-              Try everything in BullPen Pro for {PRICING.trialDays} days.
+              {justConfirmed ? 'All set. ' : ''}Every Pro feature for {PRICING.trialDays} days.
             </p>
 
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* A left-aligned list centred as a block, so it lines up under the centred headline. */}
+            <ul style={{ listStyle: 'none', margin: '0 auto', padding: 0, width: 'fit-content', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {benefits.map((b) => (
                 <li key={b} style={{ display: 'flex', gap: 10, fontSize: 15, color: 'var(--fg)' }}>
                   <span aria-hidden style={{ color: 'var(--accent)' }}>✓</span>
@@ -135,7 +138,10 @@ export default function TrialOfferPage() {
                       background: selected ? 'var(--accent-soft)' : 'var(--surface)',
                     }}
                   >
-                    <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>{c === 'annual' ? 'Yearly' : 'Monthly'}</span>
+                    <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>
+                      {c === 'annual' ? 'Yearly' : 'Monthly'}
+                      {c === 'annual' && <span style={{ fontWeight: 500, color: 'var(--accent)' }}> · save {yearlySaving}%</span>}
+                    </span>
                     <span className="mono" style={{ display: 'block', fontSize: 13, color: 'var(--fg-muted)' }}>
                       ${c === 'annual' ? PRICING.proAnnualPerMonth : PRICING.proMonthly}/mo{c === 'annual' ? ' billed yearly' : ''}
                     </span>
@@ -181,7 +187,7 @@ export default function TrialOfferPage() {
               </Link>
             </p>
           </div>
-        </main>
+        </main>}
       </div>
     </div>
   );

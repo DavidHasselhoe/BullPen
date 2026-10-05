@@ -6,7 +6,7 @@ import { StepHeadline, StepShell } from './StepShell';
 const ROWS: { key: keyof AlertChoices; label: string; description: string }[] = [
   { key: 'price_alerts', label: 'Big price moves', description: 'When one of your stocks moves 5% or more in a day.' },
   { key: 'upcoming_earnings', label: 'Earnings coming up', description: 'A heads-up before a company reports results.' },
-  { key: 'dividend_reminder', label: 'Dividend dates', description: 'Before a stock goes ex-dividend, so you know when to own it.' },
+  { key: 'dividend_reminder', label: 'Dividend dates', description: "Before a stock's dividend cutoff date, so you know when to own it." },
 ];
 
 export function AlertsStep({

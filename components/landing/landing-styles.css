@@ -74,7 +74,11 @@
   text-rendering: optimizeLegibility;
   min-height: 100vh;
   position: relative;
-  overflow-x: hidden;
+  /* clip, not hidden: hidden makes this div a scroll container that never
+     scrolls (the app shell's .app-scroll does), and every position: sticky
+     inside it, the landing nav and onboarding's pinned button, stuck to it
+     instead of the viewport. */
+  overflow-x: clip;
 }
 
 /* LIGHT preview — prototype only, gated behind ?theme=light (see LandingClient.tsx).

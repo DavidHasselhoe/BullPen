@@ -68,6 +68,11 @@ export function PickStocksStep({
       </label>
 
       <p style={{ margin: '20px 0 10px', fontSize: 13, fontWeight: 600, color: 'var(--fg-dim)' }}>{listLabel}</p>
+      {picks.length >= MAX_PICKS && (
+        <p role="status" style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--fg-muted)' }}>
+          That&apos;s {MAX_PICKS}, the most for now. You can add more from your watchlist later.
+        </p>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {list.map((s) => {
           const isPicked = picked.has(s.ticker);
@@ -98,14 +103,25 @@ export function PickStocksStep({
         })}
       </div>
 
-      <button
-        type="button"
-        className="btn btn-primary"
-        onClick={onContinue}
-        style={{ width: '100%', justifyContent: 'center', marginTop: 24 }}
+      {/* Pinned to the bottom of the screen: below eleven suggestions it sat
+          ~320px under the fold on a phone, so its live count was the one
+          piece of feedback a pick produced and nobody could see it. */}
+      <div
+        style={{
+          position: 'sticky', bottom: 0, marginTop: 8, paddingTop: 24,
+          paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+          background: 'linear-gradient(to bottom, transparent, var(--bg) 40%)',
+        }}
       >
-        {picks.length > 0 ? `Continue with ${picks.length} ${picks.length === 1 ? 'stock' : 'stocks'}` : 'Skip for now'}
-      </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={onContinue}
+          style={{ width: '100%', justifyContent: 'center' }}
+        >
+          {picks.length > 0 ? `Continue with ${picks.length} ${picks.length === 1 ? 'stock' : 'stocks'}` : 'Skip for now'}
+        </button>
+      </div>
     </StepShell>
   );
 }

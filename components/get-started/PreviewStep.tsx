@@ -175,8 +175,8 @@ function SaveSetupButton() {
   };
 
   return (
-    <div style={{ marginTop: 40, display: 'flex', justifyContent: 'center' }}>
-      <button type="button" className="btn btn-primary" onClick={save} disabled={saving || !user} style={{ minWidth: 200 }}>
+    <div style={{ marginTop: 32 }}>
+      <button type="button" className="btn btn-primary" onClick={save} disabled={saving || !user} style={{ width: '100%', justifyContent: 'center' }}>
         {saving ? 'Saving…' : 'Save and continue'}
       </button>
     </div>

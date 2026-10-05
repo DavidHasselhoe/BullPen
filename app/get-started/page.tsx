@@ -28,7 +28,8 @@ function GetStartedContent() {
     }
   }, [isLoading, leave, router]);
 
-  if (isLoading || leave) return null;
+  // The frame renders while auth loads, so the page is never a blank screen.
+  const ready = !isLoading && !leave;
 
   return (
     <div className="bullpen-landing-root dark">
@@ -41,18 +42,25 @@ function GetStartedContent() {
             <Link href="/" aria-label="BullPen home">
               <Logo size="sm" />
             </Link>
-            {!isAuthenticated && (
+            {ready && (isAuthenticated ? (
+              // Signed in means the account exists already (see /auth/callback),
+              // so setup is optional. The stock page banner still asks the one
+              // question that matters if they skip.
+              <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--fg-dim)' }}>
+                Skip for now
+              </Link>
+            ) : (
               <Link
                 href="/login"
                 style={{ fontSize: 13, color: 'var(--fg-dim)' }}
               >
                 Already have an account? <span style={{ color: 'var(--fg)', fontWeight: 600 }}>Sign in</span>
               </Link>
-            )}
+            ))}
           </div>
         </header>
 
-        <GetStartedFlow signedIn={isAuthenticated} />
+        {ready && <GetStartedFlow signedIn={isAuthenticated} />}
       </div>
     </div>
   );
