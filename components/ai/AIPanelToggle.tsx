@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAIPanel } from './AIPanelProvider';
@@ -10,6 +10,47 @@ import { isStandalonePage } from '@/components/navigation/AuthNavigation';
 
 // Public marketing/support pages have no app context (tickers, portfolio) for
 // the assistant to act on. Same list as the app nav, so a new page is added once.
+
+const MEDIA = new Set(['IMG', 'CANVAS', 'VIDEO', 'INPUT', 'TEXTAREA', 'SELECT', 'BUTTON']);
+
+/** Does `el` paint anything at (x, y)? Layout wrappers that are transparent
+ *  and borderless don't, which is what the margin beside the content is. */
+function paintsAt(el: Element, x: number, y: number, pageBg: string): boolean {
+  if (MEDIA.has(el.tagName) || el instanceof SVGElement) return true;
+  const s = getComputedStyle(el);
+  if (s.backgroundImage !== 'none') return true;
+  // Page wrappers repaint the page's own background (bg-background); only a different fill shows.
+  if (s.backgroundColor !== pageBg && !/[,/]\s*0\)$|^transparent$/.test(s.backgroundColor)) return true;
+  if (parseFloat(s.borderLeftWidth) > 0 && parseFloat(s.borderRightWidth) > 0) return true;
+  // A block of text spans the full width; only the glyphs count.
+  const range = document.createRange();
+  for (const node of el.childNodes) {
+    if (node.nodeType !== Node.TEXT_NODE || !node.textContent?.trim()) continue;
+    range.selectNodeContents(node);
+    for (const r of range.getClientRects()) {
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true;
+    }
+  }
+  return false;
+}
+
+/** Is any of the page's content under the button? Probes its corners and centre. */
+function coversContent(button: HTMLElement, scroller: HTMLElement): boolean {
+  const b = button.getBoundingClientRect();
+  const points: [number, number][] = [
+    [b.left + 4, b.top + 4], [b.right - 4, b.top + 4], [b.left + b.width / 2, b.top + b.height / 2],
+    [b.left + 4, b.bottom - 4], [b.right - 4, b.bottom - 4],
+  ];
+  const pageBg = getComputedStyle(document.body).backgroundColor;
+  return points.some(([x, y]) => {
+    for (const el of document.elementsFromPoint(x, y)) {
+      if (button.contains(el)) continue;
+      if (el === scroller || !scroller.contains(el)) return false;
+      if (paintsAt(el, x, y, pageBg)) return true;
+    }
+    return false;
+  });
+}
 
 export function AIPanelToggle() {
   const { t } = useTranslation('ai');
@@ -33,8 +74,11 @@ export function AIPanelToggle() {
   // end label and "See all Washington trading"), so it steps aside while you
   // scroll down and comes back on any scroll up, near the top, or at the end
   // of the page. Keyed by path so a new page always starts with it showing.
+  // Only when something is actually under it, though: on a wide screen it
+  // sits in the empty margin and hiding it there just made it disappear.
   const [tuckedOn, setTuckedOn] = useState<string | null>(null);
   const tucked = tuckedOn === pathname;
+  const buttonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!visible) return;
     const el = document.querySelector<HTMLElement>('.app-scroll');
@@ -44,7 +88,7 @@ export function AIPanelToggle() {
       const y = el.scrollTop;
       const atEnd = y + el.clientHeight >= el.scrollHeight - 8;
       if (y < 80 || atEnd || y < last - 6) setTuckedOn(null);
-      else if (y > last + 6) setTuckedOn(pathname);
+      else if (y > last + 6 && buttonRef.current && coversContent(buttonRef.current, el)) setTuckedOn(pathname);
       last = y;
     };
     el.addEventListener('scroll', onScroll, { passive: true });
@@ -63,6 +107,7 @@ export function AIPanelToggle() {
 
   return (
     <button
+      ref={buttonRef}
       onClick={toggle}
       aria-hidden={tucked || undefined}
       tabIndex={tucked ? -1 : undefined}
