@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ChevronsUpDown, Minus } from 'lucide-react';
@@ -8,6 +8,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 import { intlLocale } from '@/lib/i18n/intl-locale';
 import type { PickWithPerformance } from '@/lib/picks/types';
+import { quarterLabel, quarterOf } from '@/lib/picks/quarters';
 import { CATALYST_KEY, DIRECTION_TEXT, directionOf, fmtDate, fmtPct, fmtPrice } from './pick-format';
 
 type SortKey = 'pickDate' | 'symbol' | 'returnPct' | 'vsBenchmark';
@@ -81,18 +82,31 @@ export function PicksTable({ picks }: Props) {
   const angle = (p: PickWithPerformance) =>
     p.catalystType in CATALYST_KEY ? t(CATALYST_KEY[p.catalystType as keyof typeof CATALYST_KEY]) : p.catalystType;
 
+  // A quarter label above its first row, only in date order: sorted by
+  // return, the quarters interleave and a divider would mislabel rows.
+  const quarterStart = (i: number) => {
+    if (sortKey !== 'pickDate') return null;
+    const q = quarterOf(sorted[i].pickDate);
+    return i === 0 || quarterOf(sorted[i - 1].pickDate) !== q ? quarterLabel(q) : null;
+  };
+
   return (
     <>
       {/* Phones: one card per pick. As a table, Return and vs S&P sat behind a
           sideways scroll, and a track record whose returns are off-screen is
           just a list of tickers. */}
       <ul className="space-y-2 md:hidden">
-        {sorted.map((p) => {
+        {sorted.map((p, i) => {
           const dir = directionOf(p.returnPct);
           const DirIcon = dir === 'up' ? ArrowUp : dir === 'down' ? ArrowDown : Minus;
           const vs = vsBenchmarkOf(p);
+          const quarter = quarterStart(i);
           return (
-            <li key={p.pickDate}>
+            <Fragment key={p.pickDate}>
+            {quarter && (
+              <li className={cn('px-1 pb-0.5 text-xs font-medium text-muted-foreground', i > 0 && 'pt-3')}>{quarter}</li>
+            )}
+            <li>
               <Link
                 href={`/picks/${p.pickDate}`}
                 className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-4 py-3 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -114,6 +128,7 @@ export function PicksTable({ picks }: Props) {
                 </span>
               </Link>
             </li>
+            </Fragment>
           );
         })}
       </ul>
@@ -134,15 +149,23 @@ export function PicksTable({ picks }: Props) {
           </thead>
 
           <tbody>
-            {sorted.map((p) => {
+            {sorted.map((p, i) => {
               const dir = directionOf(p.returnPct);
               const DirIcon = dir === 'up' ? ArrowUp : dir === 'down' ? ArrowDown : Minus;
               const vs = vsBenchmarkOf(p);
               const vsDir = directionOf(vs);
+              const quarter = quarterStart(i);
 
               return (
+                <Fragment key={p.pickDate}>
+                {quarter && (
+                  <tr className="border-b border-border/30 bg-muted/20">
+                    <th scope="rowgroup" colSpan={7} className="px-4 py-1.5 text-left text-xs font-medium text-muted-foreground">
+                      {quarter}
+                    </th>
+                  </tr>
+                )}
                 <tr
-                  key={p.pickDate}
                   className="group border-b border-border/30 last:border-b-0 transition-colors hover:bg-muted/25"
                 >
                   <td className="px-4 py-3">
@@ -205,6 +228,7 @@ export function PicksTable({ picks }: Props) {
                     </span>
                   </td>
                 </tr>
+                </Fragment>
               );
             })}
           </tbody>
