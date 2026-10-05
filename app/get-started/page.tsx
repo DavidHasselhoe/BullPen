@@ -1,19 +1,24 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/landing/Atoms';
 import { GetStartedFlow } from '@/components/get-started/GetStartedFlow';
 import '@/components/landing/landing-styles.css';
 
-export default function GetStartedPage() {
+function GetStartedContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  // Set by /auth/callback for a brand-new account that signed up some other
+  // way: it runs the same steps, saving to the account instead of staging
+  // for a signup that already happened.
+  const setup = useSearchParams().get('setup') === '1';
+  const leave = isAuthenticated && !setup;
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!isLoading && leave) {
       // Every signed-in way out of onboarding lands on the trial offer: the
       // form's own success, the wait screen noticing the email was confirmed,
       // or a signed-in visitor. The trial page sends Pro members on to the
@@ -21,9 +26,9 @@ export default function GetStartedPage() {
       // which clears them at sign-in and sent people to the dashboard instead.
       router.replace('/get-started/trial');
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, leave, router]);
 
-  if (isLoading || isAuthenticated) return null;
+  if (isLoading || leave) return null;
 
   return (
     <div className="bullpen-landing-root dark">
@@ -36,17 +41,27 @@ export default function GetStartedPage() {
             <Link href="/" aria-label="BullPen home">
               <Logo size="sm" />
             </Link>
-            <Link
-              href="/login"
-              style={{ fontSize: 13, color: 'var(--fg-dim)' }}
-            >
-              Already have an account? <span style={{ color: 'var(--fg)', fontWeight: 600 }}>Sign in</span>
-            </Link>
+            {!isAuthenticated && (
+              <Link
+                href="/login"
+                style={{ fontSize: 13, color: 'var(--fg-dim)' }}
+              >
+                Already have an account? <span style={{ color: 'var(--fg)', fontWeight: 600 }}>Sign in</span>
+              </Link>
+            )}
           </div>
         </header>
 
-        <GetStartedFlow />
+        <GetStartedFlow signedIn={isAuthenticated} />
       </div>
     </div>
+  );
+}
+
+export default function GetStartedPage() {
+  return (
+    <Suspense fallback={null}>
+      <GetStartedContent />
+    </Suspense>
   );
 }

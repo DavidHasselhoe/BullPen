@@ -1,6 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/use-auth';
+import { flushPendingOnboardingData } from '@/lib/onboarding/flush';
+import { trackEvent } from '@/lib/analytics/track';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Bell, BellOff } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -36,12 +41,14 @@ export function PreviewStep({
   stepIndex,
   totalSteps,
   onBack,
+  signedIn = false,
 }: {
   picks: StockPick[];
   alerts: AlertChoices;
   stepIndex: number;
   totalSteps: number;
   onBack: () => void;
+  signedIn?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
   const isExample = picks.length === 0;
@@ -146,7 +153,32 @@ export function PreviewStep({
         {alertsSentence(alerts, isExample)}
       </p>
 
-      <GetStartedSignupForm />
+      {signedIn ? <SaveSetupButton /> : <GetStartedSignupForm />}
     </StepShell>
+  );
+}
+
+/** The account already exists (see /auth/callback): save the choices now and go on to the trial offer. */
+function SaveSetupButton() {
+  const { user, refresh } = useAuth();
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!user) return;
+    setSaving(true);
+    trackEvent('get_started_completed', { signed_in: true });
+    // Never throws; on a failure the staged choices stay for PendingOnboardingFlush to retry.
+    await flushPendingOnboardingData(user.id);
+    await refresh();
+    router.replace('/get-started/trial');
+  };
+
+  return (
+    <div style={{ marginTop: 40, display: 'flex', justifyContent: 'center' }}>
+      <button type="button" className="btn btn-primary" onClick={save} disabled={saving || !user} style={{ minWidth: 200 }}>
+        {saving ? 'Saving…' : 'Save and continue'}
+      </button>
+    </div>
   );
 }

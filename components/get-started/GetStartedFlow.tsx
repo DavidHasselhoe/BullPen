@@ -20,7 +20,7 @@ import { PreviewStep } from './PreviewStep';
 export const TOTAL_STEPS = 5;
 const STEP_KEYS = ['explain_style', 'pick_stocks', 'alerts', 'preview'] as const;
 
-export function GetStartedFlow() {
+export function GetStartedFlow({ signedIn = false }: { signedIn?: boolean }) {
   // Mounts only after GetStartedPage's auth gate, never in the SSR tree, so
   // reading sessionStorage in the initializer can't cause a hydration mismatch.
   const [step, setStep] = useState(() => readDraft()?.step ?? 0);
@@ -100,6 +100,7 @@ export function GetStartedFlow() {
               stepIndex={3}
               totalSteps={TOTAL_STEPS}
               onBack={() => setStep(2)}
+              signedIn={signedIn}
             />
           )}
         </AnimatePresence>

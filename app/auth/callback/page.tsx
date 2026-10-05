@@ -16,6 +16,23 @@ import { maybeClaimShareAttribution } from '@/lib/auth/share-attribution';
 import { setLastUsedAuthMethod } from '@/lib/auth/last-used-method';
 import { Loader2 } from 'lucide-react';
 
+const SETUP_PATH = '/get-started?setup=1';
+
+/**
+ * A brand-new account that hasn't been through setup. Only /get-started
+ * stages its choices before signup; every other way in (Google from a
+ * sign-in button, /register, the Watch prompt) used to land on Home with no
+ * personalisation and no trial offer, which was all 3 real signups from
+ * 09-15 to 10-05. The week cap keeps older accounts that never set a level
+ * from being sent through it on every sign-in.
+ */
+async function needsSetup(supabase: ReturnType<typeof createBrowserClient>, userId: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('users').select('experience_level, created_at').eq('id', userId).maybeSingle();
+  return !!data && data.experience_level == null && Date.now() - Date.parse(data.created_at) < 7 * 864e5;
+}
+
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,12 +58,15 @@ function AuthCallbackContent() {
     // Honor ?next (relative paths only) so OAuth can resume checkout on /upgrade.
     const next = searchParams.get('next');
     const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
+    // Only the default landing is swapped for setup. A real destination
+    // (checkout, the trial offer, the stock they were watching) still wins.
+    const isDefault = dest === '/dashboard' || dest === '/';
 
-    const redirectHome = () => {
-      if (!redirected) {
-        redirected = true;
-        router.replace(dest);
-      }
+    const redirectHome = async (userId: string) => {
+      if (redirected) return;
+      redirected = true;
+      const setup = isDefault && (await needsSetup(supabase, userId).catch(() => false));
+      router.replace(setup ? SETUP_PATH : dest);
     };
 
     const runExchange = async () => {
@@ -58,18 +78,18 @@ function AuthCallbackContent() {
       if (DEBUG) console.log('[Auth Callback] exchange result', exErr ? exErr.message : 'ok');
       if (exErr) {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) redirectHome();
+        if (session) void redirectHome(session.user.id);
         return;
       }
 
       // One-time sign-in side effects live in the SIGNED_IN listener below,
       // not here: this success branch is usually never reached (see there).
-      if (data.session) redirectHome();
+      if (data.session) void redirectHome(data.session.user.id);
     };
 
     const checkSession = () =>
       supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) redirectHome();
+        if (session) void redirectHome(session.user.id);
         return !!session;
       });
 
@@ -90,7 +110,7 @@ function AuthCallbackContent() {
         setLastUsedAuthMethod(session.user.app_metadata?.provider === 'google' ? 'google' : 'email');
         void maybeClaimShareAttribution();
       }
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) redirectHome();
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) void redirectHome(session.user.id);
     });
 
     if (code) {
