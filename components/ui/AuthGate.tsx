@@ -1,16 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
 interface AuthGateProps {
   icon: React.ReactNode;
   title: string;
   description: string;
+  /** Overrides the default, which returns to the page the gate is on. */
   signInHref?: string;
 }
 
-export function AuthGate({ icon, title, description, signInHref = '/login' }: AuthGateProps) {
+export function AuthGate({ icon, title, description, signInHref }: AuthGateProps) {
+  const { t } = useTranslation('common');
+  const pathname = usePathname();
+  // Both buttons bring the person back here afterwards. /login and /register
+  // read ?redirect (not ?redirectTo, which Academy used to pass and lost).
+  const back = pathname && pathname !== '/' ? `?redirect=${encodeURIComponent(pathname)}` : '';
+
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <motion.div
@@ -30,16 +39,16 @@ export function AuthGate({ icon, title, description, signInHref = '/login' }: Au
 
         <div className="flex flex-col sm:flex-row gap-3 w-full">
           <Link
-            href={signInHref}
+            href={signInHref ?? `/login${back}`}
             className="flex-1 inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium transition-all duration-150 hover:opacity-90 active:scale-[0.97]"
           >
-            Sign in
+            {t('authGateSignIn')}
           </Link>
           <Link
-            href="/register"
+            href={`/register${back}`}
             className="flex-1 inline-flex items-center justify-center rounded-lg border border-border bg-card text-foreground px-5 py-2.5 text-sm font-medium transition-all duration-150 hover:bg-accent active:scale-[0.97]"
           >
-            Create account
+            {t('authGateCreateAccount')}
           </Link>
         </div>
       </motion.div>

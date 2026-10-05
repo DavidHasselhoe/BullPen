@@ -158,5 +158,7 @@ export function useInstantSearch(query: string, limit = 8) {
     results,
     /** True only while nothing is on screen yet — local hits mean there is already something to read. */
     isLoading: isRemoteLoading && results.length === 0,
+    /** Both searches have answered for the current query, debounce included. Only then is "no matches" true. */
+    isSettled: debounced === trimmed && !isRemoteLoading,
   };
 }

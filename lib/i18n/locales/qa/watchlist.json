@@ -63,5 +63,16 @@
   "watchlistSparklinePreviousAriaLabel": "«{{symbol}} priicee treend iin thee laast traadiing seessiioon»",
   "watchlistSignInPrompt": "«Creeaatee aa freeee aaccoouunt too keeeep {{ticker}} oon yoouur waatchliist aand heeaar wheen iit moovees.»",
   "watchlistSignUp": "«Creeaatee freeee aaccoouunt»",
-  "watchlistSignIn": "«Siign iin»"
+  "watchlistSignIn": "«Siign iin»",
+  "watchlistDeleteConfirmTitle": "«Deeleetee thee liist {{name}}?»",
+  "watchlistDeleteConfirmBody_one": "«IIt haas {{count}} stoock, whiich coomees ooff yoouur waatchliist wiith iit. Thiis caannoot bee uundoonee.»",
+  "watchlistDeleteConfirmBody_other": "«IIt haas {{count}} stoocks, whiich coomee ooff yoouur waatchliist wiith iit. Thiis caannoot bee uundoonee.»",
+  "watchlistDeleteConfirmButton": "«Deeleetee liist»",
+  "watchlistRemovedToast": "«Reemooveed {{symbol}}»",
+  "watchlistUndo": "«UUndoo»",
+  "watchlistSearchNoMatches": "«Noo maatchees foor {{query}}»",
+  "watchlistSearchAdded": "«AAddeed»",
+  "watchlistThesisBull": "«Buull»",
+  "watchlistThesisBear": "«Beeaar»",
+  "watchlistThesisNeutral": "«Neeuutraal»"
 }

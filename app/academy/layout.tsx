@@ -28,7 +28,6 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
         icon={<GraduationCap className="h-7 w-7" />}
         title={t('academyLayoutSignInTitle')}
         description={t('academyLayoutSignInDescription')}
-        signInHref="/login?redirectTo=/academy"
       />
     );
   }

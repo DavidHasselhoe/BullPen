@@ -63,5 +63,16 @@
   "watchlistSparklinePreviousAriaLabel": "Tendance du prix de {{symbol}} au cours de la dernière séance de bourse",
   "watchlistSignInPrompt": "Créez un compte gratuit pour conserver {{ticker}} sur votre liste de surveillance et être averti quand le titre bouge.",
   "watchlistSignUp": "Créer un compte gratuit",
-  "watchlistSignIn": "Se connecter"
+  "watchlistSignIn": "Se connecter",
+  "watchlistDeleteConfirmTitle": "Supprimer la liste {{name}} ?",
+  "watchlistDeleteConfirmBody_one": "Elle contient {{count}} action, qui sera retirée de votre liste de suivi. Cette action ne peut pas être annulée.",
+  "watchlistDeleteConfirmBody_other": "Elle contient {{count}} actions, qui seront retirées de votre liste de suivi. Cette action ne peut pas être annulée.",
+  "watchlistDeleteConfirmButton": "Supprimer la liste",
+  "watchlistRemovedToast": "{{symbol}} supprimé",
+  "watchlistUndo": "Annuler",
+  "watchlistSearchNoMatches": "Aucun résultat pour {{query}}",
+  "watchlistSearchAdded": "Ajouté",
+  "watchlistThesisBull": "Bull",
+  "watchlistThesisBear": "Bear",
+  "watchlistThesisNeutral": "Neutral"
 }

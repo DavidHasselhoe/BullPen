@@ -21,5 +21,7 @@
   "metricSignalStrength": "Stärke",
   "metricSignalStrengthHint": "Spricht für das Unternehmen in seinem Health Score",
   "metricSignalWeak": "Schwachstelle",
-  "metricSignalWeakHint": "Spricht gegen das Unternehmen in seinem Health Score"
+  "metricSignalWeakHint": "Spricht gegen das Unternehmen in seinem Health Score",
+  "authGateSignIn": "Anmelden",
+  "authGateCreateAccount": "Konto erstellen"
 }

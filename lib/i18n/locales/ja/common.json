@@ -21,5 +21,7 @@
   "metricSignalStrength": "強み",
   "metricSignalStrengthHint": "企業のヘルススコアに有利に働きます",
   "metricSignalWeak": "弱点",
-  "metricSignalWeakHint": "企業のヘルススコアに不利に働きます"
+  "metricSignalWeakHint": "企業のヘルススコアに不利に働きます",
+  "authGateSignIn": "ログイン",
+  "authGateCreateAccount": "アカウント作成"
 }

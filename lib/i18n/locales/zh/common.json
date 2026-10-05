@@ -21,5 +21,7 @@
   "metricSignalStrength": "强势",
   "metricSignalStrengthHint": "在公司健康评分中加分",
   "metricSignalWeak": "弱点",
-  "metricSignalWeakHint": "在公司健康评分中扣分"
+  "metricSignalWeakHint": "在公司健康评分中扣分",
+  "authGateSignIn": "登录",
+  "authGateCreateAccount": "创建账户"
 }

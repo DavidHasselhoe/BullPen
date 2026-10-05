@@ -63,5 +63,16 @@
   "watchlistSparklinePreviousAriaLabel": "{{symbol}} 上一个交易日的价格走势",
   "watchlistSignInPrompt": "创建免费账户，将 {{ticker}} 加入关注列表，并在它波动时接收通知。",
   "watchlistSignUp": "创建免费账户",
-  "watchlistSignIn": "登录"
+  "watchlistSignIn": "登录",
+  "watchlistDeleteConfirmTitle": "删除列表 {{name}}？",
+  "watchlistDeleteConfirmBody_one": "其中有 {{count}} 只股票，删除此列表后它们将从您的观察列表中移除。此操作无法撤销。",
+  "watchlistDeleteConfirmBody_other": "其中有 {{count}} 只股票，删除此列表后它们将从您的观察列表中移除。此操作无法撤销。",
+  "watchlistDeleteConfirmButton": "删除列表",
+  "watchlistRemovedToast": "已移除 {{symbol}}",
+  "watchlistUndo": "撤销",
+  "watchlistSearchNoMatches": "没有找到与 {{query}} 匹配的结果",
+  "watchlistSearchAdded": "已添加",
+  "watchlistThesisBull": "Bull",
+  "watchlistThesisBear": "Bear",
+  "watchlistThesisNeutral": "Neutral"
 }

@@ -8,6 +8,7 @@ import { AlertDialog } from '@/components/alerts/AlertDialog';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { Sparkline } from '@/components/viz/Sparkline';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 
 interface Quote {
   price: number;
@@ -39,8 +40,8 @@ interface WatchlistCardProps {
   sparklineIsPreviousSession?: boolean;
 }
 
-function formatPrice(p: number) {
-  return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatPrice(p: number, locale: string) {
+  return p.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function gradeColor(grade: string) {
@@ -51,10 +52,12 @@ function gradeColor(grade: string) {
 }
 
 function thesisColor(sentiment: 'bull' | 'bear' | 'neutral') {
-  if (sentiment === 'bull') return 'bg-emerald-500';
-  if (sentiment === 'bear') return 'bg-red-500';
-  return 'bg-muted-foreground';
+  if (sentiment === 'bull') return 'text-emerald-500';
+  if (sentiment === 'bear') return 'text-red-400';
+  return 'text-muted-foreground';
 }
+
+const THESIS_KEY = { bull: 'watchlistThesisBull', bear: 'watchlistThesisBear', neutral: 'watchlistThesisNeutral' } as const;
 
 
 export function WatchlistCard({
@@ -72,6 +75,7 @@ export function WatchlistCard({
   sparklineIsPreviousSession,
 }: WatchlistCardProps) {
   const { t } = useTranslation('watchlist');
+  const locale = useIntlLocale();
   const isUp = (quote?.changePercent ?? 0) > 0;
   const isDown = (quote?.changePercent ?? 0) < 0;
   const Icon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
@@ -80,16 +84,10 @@ export function WatchlistCard({
 
   return (
     <div className="group relative rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/30 hover:shadow-md">
-      {/* Thesis dot */}
-      {thesisSentiment && (
-        <span
-          className={cn('absolute left-2 top-2 z-10 h-1.5 w-1.5 rounded-full', thesisColor(thesisSentiment))}
-          title={t('watchlistThesisTitle', { sentiment: thesisSentiment })}
-        />
-      )}
-
-      {/* Hover action buttons: alerts + remove */}
-      <div className="absolute right-2 top-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+      {/* Alerts + remove. Revealed on hover, but always shown on touch screens
+          (no hover there) and whenever focus is inside the card, so a phone or
+          keyboard can still reach them. */}
+      <div className="absolute right-2 top-2 z-10 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
         <AlertDialog
           symbol={symbol}
           companyName={company_name}
@@ -97,7 +95,7 @@ export function WatchlistCard({
             <button
               type="button"
               onClick={(e) => e.preventDefault()}
-              className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               title={t('watchlistAlertsTitle', { symbol })}
               aria-label={t('watchlistAlertsAriaLabel', { symbol })}
             >
@@ -109,7 +107,7 @@ export function WatchlistCard({
           onClick={(e) => { e.preventDefault(); onRemove(symbol); }}
           disabled={isRemoving}
           className={cn(
-            'rounded-full p-1 transition-all',
+            'flex h-8 w-8 items-center justify-center rounded-full transition-colors',
             'text-muted-foreground hover:bg-destructive/10 hover:text-destructive',
             isRemoving && 'opacity-50 cursor-not-allowed'
           )}
@@ -123,8 +121,15 @@ export function WatchlistCard({
         {/* Header */}
         <div className="flex items-center gap-3">
           <CompanyLogo name={company_name} ticker={symbol} logoUrl={logo_url ?? null} size={36} />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-foreground leading-none">{symbol}</p>
+          <div className="min-w-0 flex-1 [@media(hover:none)]:pr-16">
+            <p className="flex items-baseline gap-1.5 text-sm font-semibold text-foreground leading-none">
+              {symbol}
+              {thesisSentiment && (
+                <span className={cn('text-xs font-medium', thesisColor(thesisSentiment))}>
+                  {t(THESIS_KEY[thesisSentiment])}
+                </span>
+              )}
+            </p>
             <p className="text-xs text-muted-foreground truncate mt-0.5">{company_name}</p>
           </div>
         </div>
@@ -136,7 +141,7 @@ export function WatchlistCard({
               className={cn('text-lg font-bold tabular-nums', quote.stale ? 'text-muted-foreground' : 'text-foreground')}
               title={quote.stale ? t('watchlistStaleTitle') : undefined}
             >
-              ${formatPrice(quote.price)}
+              ${formatPrice(quote.price, locale)}
             </span>
             <div
               className={cn(
@@ -163,7 +168,12 @@ export function WatchlistCard({
 
         {/* Sparkline */}
         {sparkline && sparkline.length > 1 && (
-          <div className="relative -mx-1 -mb-1">
+          <div className="-mx-1 -mb-1">
+            {sparklineIsPreviousSession && (
+              <p className="mb-0.5 px-1 text-right text-xs text-muted-foreground" aria-hidden>
+                {t('watchlistSparklinePreviousLabel')}
+              </p>
+            )}
             <Sparkline
               data={sparkline}
               // Last session's line is coloured by its own move, not today's change badge.
@@ -176,11 +186,6 @@ export function WatchlistCard({
                 ? t('watchlistSparklinePreviousAriaLabel', { symbol })
                 : t('watchlistSparklineAriaLabel', { symbol })}
             />
-            {sparklineIsPreviousSession && (
-              <span className="absolute right-1 top-0 rounded bg-card/85 px-1 text-xs text-muted-foreground" aria-hidden>
-                {t('watchlistSparklinePreviousLabel')}
-              </span>
-            )}
           </div>
         )}
 

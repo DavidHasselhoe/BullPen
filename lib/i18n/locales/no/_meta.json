@@ -3077,5 +3077,17 @@
   "tools.deepDiveThreeThingsAria": "0598593d9c1c71f0f96dba22faf51f303dfbb81da2217dee67162922468a2672",
   "tools.deepDiveVerdictAiView": "03cf84aab99f7128341cb3d9ea8446cffac6ffdc910b3d1b13c138a70bc13748",
   "tools.deepDiveVerdictHealth": "94dd3d2b65014c8c3eee2693525bc378ebf61a45f6632490634698b2b9bd149c",
-  "tools.deepDiveVerdictPrice": "a08c21e8a7460e00c1a2fbb597fbb4a5d0f86b188a165be0dce3d0aacc4593b2"
+  "tools.deepDiveVerdictPrice": "a08c21e8a7460e00c1a2fbb597fbb4a5d0f86b188a165be0dce3d0aacc4593b2",
+  "watchlist.watchlistDeleteConfirmTitle": "1923f3c2528d0515c16b396177df324865a88423a3ac35ab79d8dd705528c0e1",
+  "watchlist.watchlistDeleteConfirmBody_one": "551623e4b24921f26ad1ca3c10c17e9e6d4e8c6cf6862ddb09ed3ccb786327a7",
+  "watchlist.watchlistDeleteConfirmBody_other": "43ec979a1690143bc0ae89456b0a4ea6b9389a699c7356068d7857c00a255ce5",
+  "watchlist.watchlistDeleteConfirmButton": "1c22c8680c714fca00b190f11f172fcb092d74b6f41ff02b338db6c26759c365",
+  "watchlist.watchlistRemovedToast": "76dcca8d438c738d0e9af426d0649d1c0d95336470ce73043fff4dd694aaa3a3",
+  "watchlist.watchlistUndo": "a8283ade31856f71220db0e6f60a257c6889dc4dad0f275f66ad44b9ed9bf8d5",
+  "watchlist.watchlistSearchNoMatches": "f8b31d6ec6f9aff03790dfd6b13d76b4cb82b7cbe5928bc658aef040a13b9a2b",
+  "watchlist.watchlistSearchAdded": "6b02e0d363a4af1c95eef50364bb0202c8b250aa05a48a69e68fd7787b4b0632",
+  "watchlist.watchlistThesisBull": "9ae3a6d95ad602c1a38e71c11ed5dc74a612851a86ddab6606d071867bf8cedc",
+  "watchlist.watchlistThesisNeutral": "1c6ac69f1e5db9c36e9f549d72ef77d23ceab19c557a7eb3a27c7f06f4484b44",
+  "common.authGateSignIn": "bfd402b2f6f3812529b55596136d3a11c51616317e3b1cd999928e2d4eae7d3f",
+  "common.authGateCreateAccount": "798ca2ce18bf2038bc13aaa33ebfe6db7020df5b4bba40f68e21462a9207db3d"
 }

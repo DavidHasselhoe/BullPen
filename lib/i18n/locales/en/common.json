@@ -21,5 +21,7 @@
   "metricSignalStrength": "Strength",
   "metricSignalStrengthHint": "Counts in the company's favour in its Health Score",
   "metricSignalWeak": "Weak spot",
-  "metricSignalWeakHint": "Counts against the company in its Health Score"
+  "metricSignalWeakHint": "Counts against the company in its Health Score",
+  "authGateSignIn": "Sign in",
+  "authGateCreateAccount": "Create account"
 }

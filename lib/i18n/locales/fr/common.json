@@ -21,5 +21,7 @@
   "metricSignalStrength": "Force",
   "metricSignalStrengthHint": "Joue en faveur de l'entreprise dans son Score de Santé",
   "metricSignalWeak": "Point faible",
-  "metricSignalWeakHint": "Joue contre l'entreprise dans son Score de Santé"
+  "metricSignalWeakHint": "Joue contre l'entreprise dans son Score de Santé",
+  "authGateSignIn": "Se connecter",
+  "authGateCreateAccount": "Créer un compte"
 }

@@ -63,5 +63,16 @@
   "watchlistSparklinePreviousAriaLabel": "{{symbol}} price trend in the last trading session",
   "watchlistSignInPrompt": "Create a free account to keep {{ticker}} on your watchlist and hear when it moves.",
   "watchlistSignUp": "Create free account",
-  "watchlistSignIn": "Sign in"
+  "watchlistSignIn": "Sign in",
+  "watchlistDeleteConfirmTitle": "Delete the list {{name}}?",
+  "watchlistDeleteConfirmBody_one": "It has {{count}} stock, which comes off your watchlist with it. This cannot be undone.",
+  "watchlistDeleteConfirmBody_other": "It has {{count}} stocks, which come off your watchlist with it. This cannot be undone.",
+  "watchlistDeleteConfirmButton": "Delete list",
+  "watchlistRemovedToast": "Removed {{symbol}}",
+  "watchlistUndo": "Undo",
+  "watchlistSearchNoMatches": "No matches for {{query}}",
+  "watchlistSearchAdded": "Added",
+  "watchlistThesisBull": "Bull",
+  "watchlistThesisBear": "Bear",
+  "watchlistThesisNeutral": "Neutral"
 }

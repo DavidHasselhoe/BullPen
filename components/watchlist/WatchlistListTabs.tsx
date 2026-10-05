@@ -9,6 +9,8 @@ import { useUpdateWatchlistList, useDeleteWatchlistList } from '@/hooks/use-watc
 import { CreateListDialog } from '@/components/watchlist/CreateListDialog';
 import { PaywallDialog } from '@/components/watchlist/PaywallDialog';
 import { useWatchlistLimits } from '@/hooks/use-watchlist-limits';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface WatchlistListTabsProps {
   lists: WatchlistList[];
@@ -78,6 +80,8 @@ export function WatchlistListTabs({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const { canCreateList } = useWatchlistLimits();
   const deleteList = useDeleteWatchlistList();
+  // A list goes with every stock in it, so deleting asks first.
+  const [confirmDelete, setConfirmDelete] = useState<WatchlistList | null>(null);
 
   function handleNewList() {
     if (canCreateList) {
@@ -87,8 +91,8 @@ export function WatchlistListTabs({
     }
   }
 
-  async function handleDelete(e: React.MouseEvent, list: WatchlistList) {
-    e.stopPropagation();
+  async function handleDelete(list: WatchlistList) {
+    setConfirmDelete(null);
     // If deleting the active list, navigate away first
     if (activeListId === list.id) onSelect(null);
     await deleteList.mutateAsync(list.id);
@@ -107,7 +111,7 @@ export function WatchlistListTabs({
               key={list.id}
               className={cn(
                 'group relative flex items-center gap-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
-                isRenaming ? 'px-3 py-1.5' : 'pr-16 pl-3 py-1.5',
+                isRenaming ? 'px-3 py-1.5' : 'pr-[4.25rem] pl-3 py-1.5',
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -154,29 +158,31 @@ export function WatchlistListTabs({
                   <button
                     type="button"
                     title={t('watchlistRenameTitle')}
+                    aria-label={t('watchlistRenameTitle')}
                     onClick={(e) => { e.stopPropagation(); setRenamingId(list.id); }}
                     className={cn(
-                      'h-5 w-5 rounded flex items-center justify-center transition-colors',
+                      'h-7 w-7 rounded flex items-center justify-center transition-colors',
                       isActive
                         ? 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-white/15'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     )}
                   >
-                    <Pencil className="h-2.5 w-2.5" />
+                    <Pencil className="h-3.5 w-3.5" aria-hidden />
                   </button>
                   <button
                     type="button"
                     title={t('watchlistDeleteTitle')}
-                    onClick={(e) => handleDelete(e, list)}
+                    aria-label={t('watchlistDeleteTitle')}
+                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(list); }}
                     disabled={deleteList.isPending}
                     className={cn(
-                      'h-5 w-5 rounded flex items-center justify-center transition-colors',
+                      'h-7 w-7 rounded flex items-center justify-center transition-colors',
                       isActive
                         ? 'text-primary-foreground/60 hover:text-red-300 hover:bg-white/15'
                         : 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
                     )}
                   >
-                    <Trash2 className="h-2.5 w-2.5" />
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden />
                   </button>
                 </div>
               )}
@@ -205,6 +211,22 @@ export function WatchlistListTabs({
         }}
       />
       <PaywallDialog open={paywallOpen} onOpenChange={setPaywallOpen} />
+      <Dialog open={confirmDelete !== null} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('watchlistDeleteConfirmTitle', { name: confirmDelete?.name ?? '' })}</DialogTitle>
+            <DialogDescription>
+              {t('watchlistDeleteConfirmBody', { count: confirmDelete?.item_count ?? 0 })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(null)}>{t('createListCancel')}</Button>
+            <Button variant="destructive" onClick={() => confirmDelete && handleDelete(confirmDelete)} disabled={deleteList.isPending}>
+              {t('watchlistDeleteConfirmButton')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

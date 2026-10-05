@@ -21,5 +21,7 @@
   "metricSignalStrengthHint": "Teller i selskapets favør i Health Score",
   "metricSignalWeak": "Svakt punkt",
   "metricSignalWeakHint": "Teller mot selskapet i Health Score",
-  "filter": "Filter"
+  "filter": "Filter",
+  "authGateSignIn": "Logg inn",
+  "authGateCreateAccount": "Opprett konto"
 }

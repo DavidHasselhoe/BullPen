@@ -110,7 +110,7 @@ async function createHandler(
           {
             success: false,
             code: 'free_limit_reached',
-            error: `You've reached the free tier limit — ${FREE_ACTIVE_ALERT_LIMIT} stocks with active alerts. Pause alerts on a stock to free up a slot, or upgrade to Pro for unlimited.`,
+            error: `Free accounts can have alerts on ${FREE_ACTIVE_ALERT_LIMIT} stocks. Pause alerts on a stock to free up a slot, or upgrade to Pro for unlimited.`,
           },
           { status: 402 }
         )

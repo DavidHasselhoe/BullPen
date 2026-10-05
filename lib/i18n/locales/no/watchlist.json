@@ -12,7 +12,7 @@
   "watchlistWatching": "Følger",
   "watchlistWatch": "Følg",
   "watchlistChooseListAriaLabel": "Velg favorittliste",
-  "templatesTitle": "Starterlistor",
+  "templatesTitle": "Startlister",
   "templatesDescription": "Legg til en ferdig liste, og gi den nytt navn, eller legg til eller fjern aksjer som du vil. Dette er bare forslag for å komme i gang.",
   "templatesGenericError": "Kunne ikke opprette listen. Prøv igjen.",
   "templatesMoreCount": "+{{count}} flere",
@@ -63,5 +63,16 @@
   "watchlistSignUp": "Opprett gratis konto",
   "watchlistSignIn": "Logg inn",
   "watchlistColSymbol": "Symbol",
-  "watchlistTableEarningsInDays": "{{days}}d"
+  "watchlistTableEarningsInDays": "{{days}}d",
+  "watchlistDeleteConfirmTitle": "Slett listen {{name}}?",
+  "watchlistDeleteConfirmBody_one": "Den inneholder {{count}} aksje, som blir fjernet fra favorittlisten din. Dette kan ikke angres.",
+  "watchlistDeleteConfirmBody_other": "Den inneholder {{count}} aksjer, som blir fjernet fra favorittlisten din. Dette kan ikke angres.",
+  "watchlistDeleteConfirmButton": "Slett listen",
+  "watchlistRemovedToast": "Fjernet {{symbol}}",
+  "watchlistUndo": "Angre",
+  "watchlistSearchNoMatches": "Ingen treff for {{query}}",
+  "watchlistSearchAdded": "Lagt til",
+  "watchlistThesisBull": "Bull",
+  "watchlistThesisBear": "Bear",
+  "watchlistThesisNeutral": "Nøytral"
 }

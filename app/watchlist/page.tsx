@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist, useCreateWatchlistList } from '@/hooks/use-watchlist';
-import { useAlerts } from '@/hooks/use-alerts';
 import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
@@ -17,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthGate } from '@/components/ui/AuthGate';
 import Link from 'next/link';
-import { Bookmark, Search, Plus, Radio, TrendingUp, LayoutGrid, List, Sparkles } from 'lucide-react';
+import { Bookmark, Search, Plus, Radio, TrendingUp, LayoutGrid, List, Sparkles, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'table';
@@ -79,14 +78,18 @@ export default function WatchlistPage() {
   const addMutation = useAddToWatchlist();
   const removeMutation = useRemoveFromWatchlist();
   const createListMutation = useCreateWatchlistList();
-  const { create: createAlert, alerts } = useAlerts();
+  // Last removal, for the Undo bar. Cleared after a few seconds.
+  const [removed, setRemoved] = useState<{ symbol: string; company_name: string; listId: string | null } | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (undoTimer.current) clearTimeout(undoTimer.current); }, []);
+  const [highlight, setHighlight] = useState(0);
 
   // Items to display: per-list when a list is active, otherwise all
   const displayItems = activeListId ? (listItems ?? []) : (watchlist ?? []);
   const displayLoading = activeListId ? listItemsLoading : watchlistLoading;
 
   // Company search for adding stocks — local catalogue first, server behind it.
-  const { results: searchResults } = useInstantSearch(searchQuery, 6);
+  const { results: searchResults, isSettled: searchSettled } = useInstantSearch(searchQuery, 6);
 
   // Live price stream for all watchlist symbols via WsManager SSE
   const allSymbols = (watchlist ?? []).map((w) => w.symbol);
@@ -142,27 +145,42 @@ export default function WatchlistPage() {
 
     addMutation.mutate({ symbol: result.ticker, company_name: result.name, listId });
 
-    // Auto-create default price alerts for this stock if none exist yet.
-    // Best-effort — limit hits or failures are silently ignored.
-    const sym = result.ticker.toUpperCase();
-    const hasAlerts = alerts.some((a) => a.symbol === sym);
-    if (!hasAlerts) {
-      const defaults: Array<{ alertType: Parameters<typeof createAlert>[0]['alertType']; threshold: number }> = [
-        { alertType: 'all_time_high',   threshold: 0 },
-        { alertType: 'near_52w_high',   threshold: 0 },
-        { alertType: 'near_52w_low',    threshold: 0 },
-        { alertType: 'pct_change_up',   threshold: 0.03 },
-      ];
-      for (const { alertType, threshold } of defaults) {
-        createAlert({ symbol: sym, companyName: result.name, alertType, threshold });
-      }
-    }
-
+    // No alerts are created here. Adding used to set four price alerts per
+    // stock, which silently filled a free account's alert slots (5 stocks).
+    // Alerts are opt-in through the bell on each card.
     setSearchQuery('');
     setShowDropdown(false);
   };
 
   const alreadyWatched = new Set((watchlist ?? []).map((w) => w.symbol));
+
+  // One click removes, so the bar below offers it back instead of a
+  // confirmation in front of every removal.
+  const handleRemove = (symbol: string) => {
+    const item = displayItems.find((i) => i.symbol === symbol);
+    removeMutation.mutate({ symbol, listId: activeListId });
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setRemoved({ symbol, company_name: item?.company_name ?? symbol, listId: activeListId });
+    undoTimer.current = setTimeout(() => setRemoved(null), 6000);
+  };
+  const undoRemove = () => {
+    if (!removed) return;
+    addMutation.mutate({ symbol: removed.symbol, company_name: removed.company_name, listId: removed.listId ?? undefined });
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setRemoved(null);
+  };
+
+  const results = searchResults ?? [];
+  const onSearchKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showDropdown || results.length === 0) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHighlight((h) => (h + 1) % results.length); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlight((h) => (h - 1 + results.length) % results.length); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      const r = results[Math.min(highlight, results.length - 1)];
+      if (r && !alreadyWatched.has(r.ticker)) handleAdd(r);
+    } else if (e.key === 'Escape') setShowDropdown(false);
+  };
 
   if (!isAuthenticated) {
     return (
@@ -212,7 +230,7 @@ export default function WatchlistPage() {
               aria-label={t('watchlistTemplatesButtonTitle')}
             >
               <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('watchlistTemplatesButtonLabel')}</span>
+              <span className="sr-only sm:not-sr-only">{t('watchlistTemplatesButtonLabel')}</span>
             </button>
             {/* View toggle */}
             <div className="flex rounded-lg border border-border overflow-hidden">
@@ -244,7 +262,12 @@ export default function WatchlistPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); setHighlight(0); }}
+                onKeyDown={onSearchKey}
+                role="combobox"
+                aria-expanded={showDropdown && results.length > 0}
+                aria-controls="watchlist-search-results"
+                aria-activedescendant={showDropdown && results[highlight] ? `watchlist-result-${results[highlight].ticker}` : undefined}
                 onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                 placeholder={t('watchlistSearchPlaceholder')}
@@ -253,25 +276,40 @@ export default function WatchlistPage() {
             </div>
 
             {/* Dropdown results */}
-            {showDropdown && (searchResults?.length ?? 0) > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
-                {searchResults!.map((r) => (
-                  <button
-                    key={r.ticker}
-                    onMouseDown={() => handleAdd(r)}
-                    className={cn(
-                      'flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm hover:bg-accent transition-colors',
-                      alreadyWatched.has(r.ticker) && 'opacity-40 cursor-not-allowed'
-                    )}
-                    disabled={alreadyWatched.has(r.ticker)}
-                  >
-                    <span className="font-semibold text-foreground min-w-[48px]">{r.ticker}</span>
-                    <span className="text-muted-foreground truncate flex-1">{r.name}</span>
-                    {!alreadyWatched.has(r.ticker) && (
-                      <Plus className="h-3.5 w-3.5 text-primary shrink-0" />
-                    )}
-                  </button>
-                ))}
+            {showDropdown && searchQuery.trim().length > 0 && (results.length > 0 || searchSettled) && (
+              <div id="watchlist-search-results" role="listbox" className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
+                {results.length === 0 ? (
+                  <p className="px-3 py-2.5 text-sm text-muted-foreground">{t('watchlistSearchNoMatches', { query: searchQuery.trim() })}</p>
+                ) : results.map((r, i) => {
+                  const watched = alreadyWatched.has(r.ticker);
+                  return (
+                    <button
+                      key={r.ticker}
+                      id={`watchlist-result-${r.ticker}`}
+                      role="option"
+                      aria-selected={i === highlight}
+                      onMouseDown={() => !watched && handleAdd(r)}
+                      onMouseEnter={() => setHighlight(i)}
+                      className={cn(
+                        'flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm transition-colors',
+                        i === highlight && 'bg-accent',
+                        watched && 'cursor-default'
+                      )}
+                      disabled={watched}
+                    >
+                      <span className="font-semibold text-foreground min-w-[48px]">{r.ticker}</span>
+                      {/* clamp-ok: company name in a one-line result row */}
+                      <span className="text-muted-foreground truncate flex-1">{r.name}</span>
+                      {watched ? (
+                        <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                          <Check className="h-3.5 w-3.5" aria-hidden /> {t('watchlistSearchAdded')}
+                        </span>
+                      ) : (
+                        <Plus className="h-3.5 w-3.5 text-primary shrink-0" aria-hidden />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -373,7 +411,7 @@ export default function WatchlistPage() {
               })
             )}
             enhancedData={enhancedData}
-            onRemove={(sym) => removeMutation.mutate({ symbol: sym, listId: activeListId })}
+            onRemove={handleRemove}
             isRemoving={(sym) => removeMutation.isPending && removeMutation.variables?.symbol === sym}
           />
         ) : (
@@ -397,7 +435,7 @@ export default function WatchlistPage() {
                   logo_url={item.logo_url}
                   quote={quote}
                   alerts_enabled={item.alerts_enabled}
-                  onRemove={(sym) => removeMutation.mutate({ symbol: sym, listId: activeListId })}
+                  onRemove={handleRemove}
                   isRemoving={removeMutation.isPending && removeMutation.variables?.symbol === item.symbol}
                   healthScore={enhanced?.healthScore}
                   nextEarningsDate={enhanced?.nextEarningsDate}
@@ -408,6 +446,15 @@ export default function WatchlistPage() {
                 />
               );
             })}
+          </div>
+        )}
+
+        {removed && (
+          <div role="status" className="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-popover px-4 py-2 text-sm shadow-lg md:bottom-8">
+            <span className="text-foreground">{t('watchlistRemovedToast', { symbol: removed.symbol })}</span>
+            <button type="button" onClick={undoRemove} className="font-semibold text-primary underline-offset-4 hover:underline">
+              {t('watchlistUndo')}
+            </button>
           </div>
         )}
 

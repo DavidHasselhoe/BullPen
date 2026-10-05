@@ -14,6 +14,9 @@ import { slugToAssetPath } from '@/lib/assets/asset-type';
 import type { EnhancedDataMap } from '@/hooks/use-watchlist-enhanced';
 import { TermTooltip } from '@/components/ui/TermTooltip';
 import { getGlossaryEntry } from '@/lib/finance/glossary';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
+
+const THESIS_KEY = { bull: 'watchlistThesisBull', bear: 'watchlistThesisBear', neutral: 'watchlistThesisNeutral' } as const;
 
 interface Quote {
   price: number;
@@ -81,6 +84,7 @@ function Col({
 
 export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemoving }: WatchlistTableProps) {
   const { t } = useTranslation('watchlist');
+  const locale = useIntlLocale();
   const [sortKey, setSortKey] = useState<SortKey>('added_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const queryClient = useQueryClient();
@@ -167,7 +171,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
                   className={cn('tabular-nums font-medium', q?.stale && 'text-muted-foreground')}
                   title={q?.stale ? t('watchlistStaleTitle') : undefined}
                 >
-                  {q ? `$${q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                  {q ? `${q.price.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                 </TableCell>
 
                 <TableCell>
@@ -221,25 +225,25 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
                 <TableCell>
                   {enhanced?.thesisSentiment ? (
                     <span className={cn(
-                      'text-xs font-medium capitalize',
+                      'text-xs font-medium',
                       enhanced.thesisSentiment === 'bull' && 'text-emerald-500',
                       enhanced.thesisSentiment === 'bear' && 'text-red-500',
                       enhanced.thesisSentiment === 'neutral' && 'text-muted-foreground',
                     )}>
-                      {enhanced.thesisSentiment}
+                      {t(THESIS_KEY[enhanced.thesisSentiment])}
                     </span>
                   ) : '—'}
                 </TableCell>
 
                 <TableCell className="text-xs text-muted-foreground">
-                  {new Date(item.added_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date(item.added_at).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                 </TableCell>
 
                 <TableCell>
                   <button
                     onClick={() => onRemove(item.symbol)}
                     disabled={removing}
-                    className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
+                    className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:text-destructive transition-colors"
                     aria-label={t('watchlistTableRemoveAriaLabel', { symbol: item.symbol })}
                   >
                     <X className="h-3.5 w-3.5" />

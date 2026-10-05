@@ -21,5 +21,7 @@
   "metricSignalStrengthHint": "Cuenta a favor de la empresa en su Puntuación de Salud",
   "metricSignalWeak": "Punto débil",
   "metricSignalWeakHint": "Cuenta en contra de la empresa en su Puntuación de Salud",
-  "error": "Error"
+  "error": "Error",
+  "authGateSignIn": "Inicia sesión",
+  "authGateCreateAccount": "Crear cuenta"
 }

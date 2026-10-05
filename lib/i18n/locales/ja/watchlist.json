@@ -63,5 +63,16 @@
   "watchlistSparklinePreviousAriaLabel": "{{symbol}}の前回の取引セッションでの価格推移",
   "watchlistSignInPrompt": "無料アカウントを作成して、{{ticker}}をウォッチリストに追加し、値動きがあったときに通知を受け取りましょう。",
   "watchlistSignUp": "無料アカウントを作成",
-  "watchlistSignIn": "ログイン"
+  "watchlistSignIn": "ログイン",
+  "watchlistDeleteConfirmTitle": "リスト「{{name}}」を削除しますか？",
+  "watchlistDeleteConfirmBody_one": "このリストには{{count}}個の銘柄が含まれており、削除するとウォッチリストから削除されます。この操作は取り消せません。",
+  "watchlistDeleteConfirmBody_other": "このリストには{{count}}個の銘柄が含まれており、削除するとウォッチリストから削除されます。この操作は取り消せません。",
+  "watchlistDeleteConfirmButton": "リストを削除",
+  "watchlistRemovedToast": "{{symbol}}を削除しました",
+  "watchlistUndo": "元に戻す",
+  "watchlistSearchNoMatches": "「{{query}}」に一致する結果がありません",
+  "watchlistSearchAdded": "追加済み",
+  "watchlistThesisBull": "Bull",
+  "watchlistThesisBear": "Bear",
+  "watchlistThesisNeutral": "Neutral"
 }
