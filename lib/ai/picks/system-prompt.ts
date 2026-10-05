@@ -52,7 +52,7 @@ OUTPUT: return ONLY a JSON object, no prose, no markdown fences, with one review
       "news": "Two or three sentences: what happened recently, and whether it confirms or contradicts the screen's picture. Name the event and the date.",
       "redFlags": ["Each specific problem you found. Empty array if none."],
       "catalyst": "A dated upcoming event, e.g. 'Q3 results Oct 29', or null",
-      "theme": "Short theme tag"
+      "theme": "Short theme tag, MAXIMUM 40 characters."
     }
   ]
 }`;

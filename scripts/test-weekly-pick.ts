@@ -23,7 +23,7 @@ import { runFactorScreen, rankUniverse, pickShortlist, ratiosDisagree, describeS
 import { runWeeklyPickPipeline, batchBySector } from '../lib/ai/picks/pipeline';
 import { quarterOf, quarterRange, quarterLabel } from '../lib/picks/quarters';
 import { extractJsonObject } from '../lib/ai/portfolio-builder/schema';
-import { stripCitations } from '../lib/ai/picks/schema';
+import { stripCitations, parseDiligence } from '../lib/ai/picks/schema';
 
 const full = process.argv.includes('--full');
 
@@ -65,6 +65,14 @@ function checkPureHelpers() {
   // JSON followed by more text still parses; citation markup is stripped.
   assert.equal(extractJsonObject('{"a":"}"} and then {"b":1}'), '{"a":"}"}');
   assert.equal(stripCitations('(cite index="123-5">Faces competition</cite> from free providers'), 'Faces competition from free providers');
+  // 2026-10-05: one 60+ char theme tag failed the whole week. Internal tags must not.
+  const [rv] = parseDiligence(JSON.stringify({ reviews: [{
+    symbol: 'cf', verdict: 'Advance', news: 'Q2 results beat, guidance raised.',
+    theme: 'Nitrogen fertilizer pricing recovery on tight global supply (cite index="3-1">',
+    redFlags: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+  }] }));
+  assert.equal(rv.redFlags.length, 7);
+  assert.ok(!rv.theme.includes('cite'));
 
   // Currency-mismatched rows are caught; consistent and loss-making ones pass.
   assert.equal(ratiosDisagree({ pe_ratio: 6.66, ps_ratio: 0.12, profit_margin: 0.296 }), true);  // HMY

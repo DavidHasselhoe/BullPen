@@ -59,11 +59,15 @@ const DiligenceReviewSchema = z.object({
   verdict: z.preprocess(lower, z.enum(['advance', 'reject'])),
   /** Recent news, and whether it supports or contradicts the factor picture. */
   news: z.string().min(10),
-  redFlags: z.array(z.string()).max(6).default([]),
+  redFlags: z.array(z.string()).default([]),
   /** A dated upcoming event, or null. */
   catalyst: z.string().nullable().optional(),
-  /** Short tag for the investment theme, used to stop repeats across weeks. */
-  theme: z.string().min(3).max(60),
+  /**
+   * Short tag for the investment theme, used to stop repeats across weeks.
+   * Internal only, so no max: a long tag once failed a whole week (2026-10-05).
+   * The prompt asks for 40 characters to match the commit stage's theme.
+   */
+  theme: z.string().min(3),
 });
 
 export const DiligenceSchema = z.object({
