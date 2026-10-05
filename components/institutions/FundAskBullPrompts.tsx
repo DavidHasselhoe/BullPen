@@ -21,7 +21,7 @@
 import { useTranslation } from 'react-i18next';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useOwnedSymbols } from '@/hooks/use-owned-symbols';
-import { friendlyIssuerName } from '@/lib/institutions/allocation';
+import { friendlyIssuerName, holdingName } from '@/lib/institutions/allocation';
 import { fmtUsd } from '@/lib/institutions/format';
 import type { Allocation } from '@/lib/institutions/allocation';
 import type { HoldingsDiff } from '@/lib/institutions/compute-diff';
@@ -91,8 +91,11 @@ export function FundAskBullPrompts({
       question: `Why would ${fundName} hold ${topPct}% of its portfolio in ${topName}? Explain the likely investment case in plain language for someone new to investing.`,
     },
     {
-      label: t('fundAskRisk', { pct: topPct }),
-      question: `Is putting ${topPct}% of a portfolio into a single stock, as ${fundName} has with ${topName}, too risky for a beginner? Explain what that concentration means for someone with a much smaller portfolio.`,
+      // An index fund (IVV, SPY) is hundreds of companies, not one stock.
+      label: t(topHolding.isFund ? 'fundAskRiskFund' : 'fundAskRisk', { pct: topPct }),
+      question: topHolding.isFund
+        ? `${fundName} holds ${topPct}% of its portfolio in ${topName}, which is a fund rather than a single company. What does that tell us about its approach, and is that kind of position risky for a beginner?`
+        : `Is putting ${topPct}% of a portfolio into a single stock, as ${fundName} has with ${topName}, too risky for a beginner? Explain what that concentration means for someone with a much smaller portfolio.`,
     },
   ];
 
@@ -107,7 +110,7 @@ export function FundAskBullPrompts({
 
   return (
     <div className={className}>
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="mb-2 text-xs font-medium text-muted-foreground">
         {t('fundAskHeading')}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -129,8 +132,8 @@ export function FundAskBullPrompts({
 /** The quarter's moves, compactly, so the model can answer "what changed". */
 function formatMoves(diff: HoldingsDiff): string {
   const parts: string[] = [];
-  const names = (rows: Array<{ symbol: string | null; nameOfIssuer: string }>, n = 4) =>
-    rows.slice(0, n).map((h) => h.symbol ?? friendlyIssuerName(h.nameOfIssuer)).join(', ');
+  const names = (rows: Array<{ symbol: string | null; nameOfIssuer: string; companyName?: string | null }>, n = 4) =>
+    rows.slice(0, n).map((h) => h.symbol ?? holdingName(h)).join(', ');
 
   if (diff.newPositions.length) parts.push(`New positions: ${names(diff.newPositions)}.`);
   if (diff.increased.length) parts.push(`Increased: ${names(diff.increased)}.`);

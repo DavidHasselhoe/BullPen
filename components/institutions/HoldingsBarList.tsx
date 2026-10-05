@@ -2,8 +2,10 @@
 
 /**
  * The fund's holdings as weighted bar rows rather than a spreadsheet. Bar
- * length is the position's size relative to the fund's largest holding, and
- * each of the top rows carries the same color as its wedge in the donut above
+ * length is the position's share of the whole portfolio, on the same 0-100%
+ * scale as the number beside it. Scaling to the largest holding drew a 22%
+ * position as a full bar under a "% of portfolio" header. Each bar
+ * of the top rows carries the same color as its wedge in the donut above
  * (both read from one buildAllocation() call), so the two visuals are one
  * connected system rather than two separate charts of the same numbers.
  *
@@ -26,7 +28,8 @@ import {
 import { fmtShares, fmtUsd } from '@/lib/institutions/format';
 import { useOwnedSymbols } from '@/hooks/use-owned-symbols';
 import { buildStatusIndex, holdingKey } from '@/lib/institutions/compute-diff';
-import type { Allocation, AllocationEntry } from '@/lib/institutions/allocation';
+import { friendlyIssuerName, holdingName, type Allocation, type AllocationEntry } from '@/lib/institutions/allocation';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import type { DiffableHolding, HoldingChange, HoldingsDiff, HoldingStatus } from '@/lib/institutions/compute-diff';
 
 /** Rows revealed per "show more" step once the tail is expanded. */
@@ -61,13 +64,9 @@ function QoqBadge({ status, change, hasDiff }: QoqChange & { hasDiff: boolean })
     );
   }
 
-  if (status === 'unchanged' || !change) {
-    return (
-      <span className="shrink-0 rounded-full bg-muted/60 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-        {t('barUnchanged')}
-      </span>
-    );
-  }
+  // Silent when nothing changed: an "Unchanged" chip on most rows of a
+  // buy-and-hold fund drowned out the few rows that did move.
+  if (status === 'unchanged' || !change) return null;
 
   const up = status === 'increased';
   const Icon = up ? TrendingUp : TrendingDown;
@@ -111,8 +110,6 @@ interface HoldingRowProps {
   hasDiff: boolean;
   /** The signed-in user holds this ticker too. Always false when logged out. */
   owned: boolean;
-  /** Largest holding's pct, so bars share one scale across the whole list. */
-  maxPct: number;
   change: QoqChange;
   /** Highlighted from the donut above. Marked by lighting this row up, never
    *  by dimming the others: with a list this long, a cursor drifting across it
@@ -121,9 +118,10 @@ interface HoldingRowProps {
   onHighlight: (key: string | null) => void;
 }
 
-function HoldingRow({ entry, hasDiff, owned, maxPct, change, highlighted, onHighlight }: HoldingRowProps) {
+function HoldingRow({ entry, hasDiff, owned, change, highlighted, onHighlight }: HoldingRowProps) {
   const { t } = useTranslation('discover');
-  const barPct = Math.max(MIN_BAR_PCT, maxPct > 0 ? (entry.pct / maxPct) * 100 : 0);
+  const barPct = Math.max(MIN_BAR_PCT, entry.pct);
+  const name = friendlyIssuerName(entry.name);
 
   return (
     <li
@@ -133,7 +131,7 @@ function HoldingRow({ entry, hasDiff, owned, maxPct, change, highlighted, onHigh
     >
       <div className="flex items-center gap-3">
         {entry.symbol ? (
-          <CompanyLogo ticker={entry.symbol} name={entry.name} size={28} />
+          <CompanyLogo ticker={entry.symbol} name={name} size={28} />
         ) : (
           <span
             className="h-[28px] w-[28px] shrink-0 rounded-full"
@@ -152,7 +150,8 @@ function HoldingRow({ entry, hasDiff, owned, maxPct, change, highlighted, onHigh
                 {entry.symbol}
               </Link>
             ) : (
-              <span className="shrink-0 truncate text-sm text-foreground">{entry.name}</span>
+              // clamp-ok: company name in a dense row
+              <span className="shrink-0 truncate text-sm text-foreground">{name}</span>
             )}
             {owned && (
               <span
@@ -166,7 +165,7 @@ function HoldingRow({ entry, hasDiff, owned, maxPct, change, highlighted, onHigh
                 the logo and ticker already say which company this is, while a
                 dollar figure clipped mid-number ("$51.2…") is just wrong. */}
             <span className="hidden min-w-0 truncate text-xs text-muted-foreground sm:inline">
-              {entry.symbol && entry.name}
+              {entry.symbol && name}
             </span>
             <span className="ml-auto shrink-0 pl-2 font-mono text-xs tabular-nums text-muted-foreground">
               {fmtUsd(entry.valueUsd)}
@@ -201,6 +200,7 @@ interface HoldingsBarListProps {
 
 export function HoldingsBarList({ allocation, options, diff, highlightedKey, onHighlight }: HoldingsBarListProps) {
   const { t } = useTranslation('discover');
+  const locale = useIntlLocale();
   const [expanded, setExpanded] = useState(false);
   const [visibleRest, setVisibleRest] = useState(REST_PAGE_SIZE);
   const [visibleExited, setVisibleExited] = useState(REST_PAGE_SIZE);
@@ -222,7 +222,6 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
     change: qoqChangeFor(key),
   });
 
-  const maxPct = allocation.top[0]?.pct ?? 0;
   const shownRest = expanded ? allocation.rest.slice(0, visibleRest) : [];
   const hiddenRestCount = allocation.rest.length - shownRest.length;
   const exited = diff?.exited ?? [];
@@ -230,8 +229,8 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
   return (
     <div className="overflow-hidden rounded-xl border border-border/50">
       <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('barHeaderHolding')}</span>
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-xs font-medium text-muted-foreground">{t('barHeaderHolding')}</span>
+        <span className="text-xs font-medium text-muted-foreground">
           {t('barHeaderPct')}
         </span>
       </div>
@@ -243,7 +242,6 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
             entry={entry}
             hasDiff={hasDiff}
             owned={isOwned(entry.symbol)}
-            maxPct={maxPct}
             change={changeFor(entry.key)}
             highlighted={highlightedKey === entry.key}
             onHighlight={onHighlight}
@@ -256,7 +254,6 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
             entry={entry}
             hasDiff={hasDiff}
             owned={isOwned(entry.symbol)}
-            maxPct={maxPct}
             change={changeFor(entry.key)}
             highlighted={highlightedKey === entry.key}
             onHighlight={onHighlight}
@@ -276,7 +273,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                 <ChevronDown className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0 flex-1 text-sm text-foreground/85">
-                {t('barMorePositions', { count: allocation.rest.length, formatted: allocation.rest.length.toLocaleString('en-US') })}
+                {t('barMorePositions', { count: allocation.rest.length, formatted: allocation.rest.length.toLocaleString(locale) })}
                 <span className="ml-2 text-xs text-muted-foreground">
                   <span className="font-mono tabular-nums">{fmtUsd(allocation.restValue)}</span>
                 </span>
@@ -305,7 +302,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                 >
                   {t('barShowMore', { count: Math.min(REST_PAGE_SIZE, hiddenRestCount) })}
                   <span className="ml-1.5 font-normal text-muted-foreground">
-                    {t('barLeft', { formatted: hiddenRestCount.toLocaleString('en-US') })}
+                    {t('barLeft', { formatted: hiddenRestCount.toLocaleString(locale) })}
                   </span>
                 </button>
               )}
@@ -324,9 +321,9 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
             defaultValue={optionsValue > allocation.total ? 'options' : undefined}
           >
             <AccordionItem value="options" className="border-none">
-              <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
+              <AccordionTrigger className="px-4 py-3 text-xs font-medium text-muted-foreground hover:no-underline">
                 {t('barOptions')}
-                <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground">
+                <span className="ml-2 font-mono text-muted-foreground">
                   {options.length}
                 </span>
               </AccordionTrigger>
@@ -340,7 +337,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                     return (
                       <li key={key} className="flex items-center gap-3 px-4 py-2.5">
                         {h.symbol ? (
-                          <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={22} />
+                          <CompanyLogo ticker={h.symbol} name={holdingName(h)} size={22} />
                         ) : (
                           <span className="h-[22px] w-[22px] shrink-0 rounded-full bg-muted/60" aria-hidden />
                         )}
@@ -353,12 +350,12 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                               {h.symbol}
                             </Link>
                           ) : (
-                            h.nameOfIssuer
+                            holdingName(h)
                           )}
                           <PutCallTag putCall={h.putCall} />
                           {h.symbol && (
                             <span className="ml-2 hidden text-xs text-muted-foreground sm:inline">
-                              {h.nameOfIssuer}
+                              {holdingName(h)}
                             </span>
                           )}
                         </span>
@@ -378,7 +375,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                   >
                     {t('barShowMore', { count: Math.min(REST_PAGE_SIZE, options.length - visibleOptions) })}
                     <span className="ml-1.5 font-normal text-muted-foreground">
-                      {t('barLeft', { formatted: (options.length - visibleOptions).toLocaleString('en-US') })}
+                      {t('barLeft', { formatted: (options.length - visibleOptions).toLocaleString(locale) })}
                     </span>
                   </button>
                 )}
@@ -395,9 +392,9 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
         <div className="border-t border-border/50 bg-muted/10">
           <Accordion type="single" collapsible>
             <AccordionItem value="exited" className="border-none">
-              <AccordionTrigger className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
+              <AccordionTrigger className="px-4 py-3 text-xs font-medium text-muted-foreground hover:no-underline">
                 {t('barExited')}
-                <span className="ml-2 font-mono normal-case tracking-normal text-muted-foreground">
+                <span className="ml-2 font-mono text-muted-foreground">
                   {exited.length}
                 </span>
               </AccordionTrigger>
@@ -406,7 +403,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                   {exited.slice(0, visibleExited).map((h) => (
                     <li key={`exited-${holdingKey(h)}`} className="flex items-center gap-3 px-4 py-2.5">
                       {h.symbol ? (
-                        <CompanyLogo ticker={h.symbol} name={h.nameOfIssuer} size={22} />
+                        <CompanyLogo ticker={h.symbol} name={holdingName(h)} size={22} />
                       ) : (
                         <span className="h-[22px] w-[22px] shrink-0 rounded-full bg-muted/60" aria-hidden />
                       )}
@@ -419,11 +416,11 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                             {h.symbol}
                           </Link>
                         ) : (
-                          h.nameOfIssuer
+                          holdingName(h)
                         )}
                         <PutCallTag putCall={h.putCall} />
                         {h.symbol && (
-                          <span className="ml-2 text-xs text-muted-foreground">{h.nameOfIssuer}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">{holdingName(h)}</span>
                         )}
                       </span>
                       {/* Prior quarter's weight, not its dollar value: "was 4.3%
@@ -443,7 +440,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                   >
                     {t('barShowMore', { count: Math.min(REST_PAGE_SIZE, exited.length - visibleExited) })}
                     <span className="ml-1.5 font-normal text-muted-foreground">
-                      {t('barLeft', { formatted: (exited.length - visibleExited).toLocaleString('en-US') })}
+                      {t('barLeft', { formatted: (exited.length - visibleExited).toLocaleString(locale) })}
                     </span>
                   </button>
                 )}

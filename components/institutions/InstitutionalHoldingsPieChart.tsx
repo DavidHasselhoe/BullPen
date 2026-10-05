@@ -16,7 +16,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ALLOCATION_OTHER_COLOR } from '@/lib/charts/allocation-colors';
-import { allocationHeadline, quarterHeadline } from '@/lib/institutions/allocation';
+import { allocationHeadline, friendlyIssuerName, quarterHeadline } from '@/lib/institutions/allocation';
 import { useTranslation } from 'react-i18next';
 import { fmtUsd } from '@/lib/institutions/format';
 import type { Allocation } from '@/lib/institutions/allocation';
@@ -207,8 +207,9 @@ export function InstitutionalHoldingsPieChart({
 
           {/* Two columns on wide screens: one tall column leaves a ticker and
               its percentage separated by most of the card, which is a long way
-              for the eye to travel to read one row. */}
-          <div className="grid grid-cols-1 gap-x-8 gap-y-1.5 lg:grid-cols-2">
+              for the eye to travel to read one row. Capped at 15rem a column
+              for the same reason: at 1fr each half was ~350px wide. */}
+          <div className="grid grid-cols-1 gap-x-10 gap-y-1.5 lg:grid-cols-[repeat(2,minmax(0,15rem))]">
             {slices.map((s) => {
               const dimmed = highlightedKey !== null && highlightedKey !== s.key;
               // The wedge color rings the logo with no ring-offset: offset it
@@ -238,7 +239,7 @@ export function InstitutionalHoldingsPieChart({
                     </span>
                   )}
                   <span className="min-w-0 flex-1 truncate text-sm text-foreground/85">
-                    {s.symbol ?? s.name}
+                    {s.symbol ?? friendlyIssuerName(s.name)}
                   </span>
                   <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
                     {s.pct.toFixed(1)}%

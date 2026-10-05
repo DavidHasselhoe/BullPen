@@ -252,9 +252,6 @@
   "backToDiscover": "ディスカバーに戻る",
   "showLess": "表示を減らす",
   "searchClear": "検索をクリア",
-  "fundFiledSummary_one": "{{filed}}提出、{{period}}締めの四半期 · {{count}}銘柄で{{value}}",
-  "fundFiledSummary_other": "{{filed}}提出、{{period}}締めの四半期 · {{count}}銘柄で{{value}}",
-  "fundFiledOptions": "、オプション{{value}}",
   "fundLockedTitle": "全保有銘柄はPro機能です",
   "fundLockedLastFiled": "最終提出 {{date}} · {{positions}}銘柄",
   "fundLockedPitch": "全銘柄をポートフォリオ比率順に表示し、四半期ごとに更新します。",
@@ -516,5 +513,11 @@
   "pickMethodRemovedTitle": "何も削除されることはありません",
   "pickMethodRemovedBody": "ピックは早期に閉じられたり、削除されたり、静かにドロップされたりすることはありません。ピックは、会社が買収またはリストから外れた場合にのみ移動を停止し、その最終価格で記録に留まります。上記のすべてのロッサーは、私たちが公開したロッサーです。",
   "pickMethodDisclaimerTitle": "これは研究であり、アドバイスではありません",
-  "pickMethodDisclaimerBody": "Bull's Weekly Pickは、市場データと公開ニュースからAIモデルによって生成されます。何かを買ったり売ったりすることの推奨ではなく、個人的な財務アドバイスではなく、あなたの状況、目標、またはリスク許容度を考慮していません。過去のパフォーマンスは将来のリターンについて何も信頼できないことは言わず、{{min}}以下のピックはほぼ何も言いません。表示されるリターンは価格のみです：配当金、手数料、税金、開始価格とあなたが実際に記入した価格の違いは除きます。ここで何か行動する前に、あなた自身の研究を行ってください。"
+  "pickMethodDisclaimerBody": "Bull's Weekly Pickは、市場データと公開ニュースからAIモデルによって生成されます。何かを買ったり売ったりすることの推奨ではなく、個人的な財務アドバイスではなく、あなたの状況、目標、またはリスク許容度を考慮していません。過去のパフォーマンスは将来のリターンについて何も信頼できないことは言わず、{{min}}以下のピックはほぼ何も言いません。表示されるリターンは価格のみです：配当金、手数料、税金、開始価格とあなたが実際に記入した価格の違いは除きます。ここで何か行動する前に、あなた自身の研究を行ってください。",
+  "fundFiledSummary_one": "{{period}}の四半期決算で{{filed}}を提出 · {{positions}}個のポジション全体で{{value}}",
+  "fundFiledSummary_other": "{{period}}の四半期決算で{{filed}}を提出 · {{positions}}個のポジション全体で{{value}}",
+  "fundFiledOptions": "、さらに{{value}}の株式をカバーするオプションを含む",
+  "fundFiledOptionsNote": "オプションはそれがカバーしている株式の価値で計上され、コストではないため、合計には含まれません。",
+  "fundAskRiskFund": "1つのファンドに{{pct}}%を投じるのはリスキーですか？",
+  "instDisclaimerSummary": "13Fファイリングは遅延し、不完全です。なぜですか？"
 }

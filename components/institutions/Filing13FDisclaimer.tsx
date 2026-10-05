@@ -18,9 +18,15 @@ export function Filing13FDisclaimer({ compact = false }: { compact?: boolean }) 
     );
   }
 
+  // One line until asked: five always-open lines above the data pushed the
+  // holdings down a fifth of a phone screen (DESIGN.md: explanation goes
+  // behind a disclosure). Native <details>, so it needs no script.
   return (
-    <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
-      {t('instDisclaimerFull')}
-    </p>
+    <details className="group max-w-prose text-xs text-muted-foreground">
+      <summary className="cursor-pointer list-none underline-offset-4 hover:text-foreground hover:underline [&::-webkit-details-marker]:hidden">
+        {t('instDisclaimerSummary')}
+      </summary>
+      <p className="mt-1.5 leading-relaxed">{t('instDisclaimerFull')}</p>
+    </details>
   );
 }

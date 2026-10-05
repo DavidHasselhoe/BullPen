@@ -2743,9 +2743,9 @@
   "discover.backToDiscover": "02935bb03dd67500433b3a24f21c0254a61a288a4a72bf85538c5c7615498dac",
   "discover.showLess": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8",
   "discover.searchClear": "3b7ea51793e9d906afa06afb86252abb48e1125cc96a7f5efabcfd8597ea183a",
-  "discover.fundFiledSummary_one": "eeb9647e3c52033e06d0a5d8a3b7dc9f7c6eaaa2650f774528f0fbb726854155",
-  "discover.fundFiledSummary_other": "0857221c5473494d7537a415ebafc6732fde81f089b93399b35a02e3808855bb",
-  "discover.fundFiledOptions": "575ae93dacca1b498abbaf6fe523ea3ea54d493560e94eea1ded4fac289f2783",
+  "discover.fundFiledSummary_one": "e069d465dcec500b11ce79741880a4c737436ac2132c24912101866d30a3d14b",
+  "discover.fundFiledSummary_other": "038747cb86a9ae0cac86abc15ec82f905aa87518fb724b2bc552713abded7a91",
+  "discover.fundFiledOptions": "42b9d601a76c10693f9848e61d3bb99eb86700760bd9747f2c52fd85ea4a7873",
   "discover.fundLockedTitle": "19a43f743ec25c366d7a0fd4f0a1acc1ce54b9004f67c86d283215acde764739",
   "discover.fundLockedLastFiled": "ed3e88214380bf82de5e13169d9685c6ee5825a809fd7d5f3801a6623d5085f7",
   "discover.fundLockedPitch": "e4b3d43e76c0e66795dcdef61f7d2f30760185538eca12f1f24da9c35bd1b0fc",
@@ -3081,5 +3081,9 @@
   "watchlist.watchlistSearchAdded": "6b02e0d363a4af1c95eef50364bb0202c8b250aa05a48a69e68fd7787b4b0632",
   "watchlist.watchlistThesisBull": "9ae3a6d95ad602c1a38e71c11ed5dc74a612851a86ddab6606d071867bf8cedc",
   "common.authGateSignIn": "bfd402b2f6f3812529b55596136d3a11c51616317e3b1cd999928e2d4eae7d3f",
-  "common.authGateCreateAccount": "798ca2ce18bf2038bc13aaa33ebfe6db7020df5b4bba40f68e21462a9207db3d"
+  "common.authGateCreateAccount": "798ca2ce18bf2038bc13aaa33ebfe6db7020df5b4bba40f68e21462a9207db3d",
+  "discover.instHeading": "614c492e8080f6766b80800405d1ce8102fe83f7638ba154b8fee751762a2f4f",
+  "discover.fundFiledOptionsNote": "7d47127b93158f255f81a83a0710eec81e380bf1d054853a500366a524678c48",
+  "discover.fundAskRiskFund": "70fcf8dab1898fee62d04b3b907f49ae838847ff5caaf7fe2d0c425a742d45d1",
+  "discover.instDisclaimerSummary": "dd9b410a1e3c8be07ec56b7a586d225ff5cdeb52eaf78c9dc2d740b1023564bf"
 }

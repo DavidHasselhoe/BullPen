@@ -17,7 +17,10 @@ export const ALLOCATION_TOP_N = 8;
 export interface AllocationEntry {
   key: string;
   symbol: string | null;
+  /** Readable name: the catalogue's when known, else the SEC issuer field. Pass through friendlyIssuerName to display. */
   name: string;
+  /** An ETF or fund, not a company. */
+  isFund: boolean;
   valueUsd: number;
   shares: number;
   /** Share of the whole portfolio, 0-100. */
@@ -48,7 +51,8 @@ export function buildAllocation(holdings: DiffableHolding[]): Allocation {
   const toEntry = (h: DiffableHolding, color: string): AllocationEntry => ({
     key: holdingKey(h),
     symbol: h.symbol,
-    name: h.nameOfIssuer,
+    name: h.companyName ?? h.nameOfIssuer,
+    isFund: !!h.isFund,
     valueUsd: h.valueUsd,
     shares: h.shares,
     pct: pctOf(h.valueUsd),
@@ -77,6 +81,8 @@ const NAME_SUFFIXES = new Set([
   // suffix often arrives cut in half: "LIVE NATION ENTERTAINMENT IN",
   // "SEAGATE TECHNOLOGY HLDNGS PL". Drop those the same way.
   'IN', 'PL', 'HLDNGS', 'INTL', 'CORPORATIO', 'INCORPORAT',
+  // Catalogue names spell them out: "The Coca-Cola Company", "Chubb Limited".
+  'CORPORATION', 'COMPANY', 'LIMITED', 'INCORPORATED',
 ]);
 
 /**
@@ -109,13 +115,22 @@ const MINOR_WORDS = new Set(['OF', 'AND', 'THE', 'FOR', 'IN', 'AT', 'TO', 'DE'])
  * and "AT&T" don't become "3m"/"At&t".
  */
 export function friendlyIssuerName(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
+  // Catalogue names arrive already cased ("NVIDIA", "iShares Core S&P 500
+  // ETF"); re-casing them would turn NVIDIA into Nvidia. Only the SEC field,
+  // which is all capitals, gets cased here. Both lose a share-class tail
+  // ("Alphabet Inc. Class A Common Stock") and their legal suffix.
+  const cased = /[a-z]/.test(name);
+  const cleaned = name
+    .replace(/\s+(class [a-z]\s+)?(common stock|ordinary shares|common shares)\b.*$/i, '')
+    .replace(/^the\s+/i, '');
+  const words = cleaned.trim().split(/\s+/).filter(Boolean);
   while (words.length > 1 && NAME_SUFFIXES.has(words[words.length - 1].toUpperCase())) {
     words.pop();
   }
   // "AMAZON.COM, INC" loses its suffix but kept the comma before it, which
   // read "Amazon.com, and Forge Investments, alone make up..." in a headline.
   words[words.length - 1] = words[words.length - 1].replace(/,+$/, '');
+  if (cased) return words.join(' ');
   return words
     .map((w, i) => {
       const upper = w.toUpperCase();
@@ -124,6 +139,11 @@ export function friendlyIssuerName(name: string): string {
       return /[^A-Za-z]/.test(w) ? w : w[0].toUpperCase() + w.slice(1).toLowerCase();
     })
     .join(' ');
+}
+
+/** The display name for a holding row: catalogue name first, SEC field as the fallback. */
+export function holdingName(h: Pick<DiffableHolding, 'nameOfIssuer' | 'companyName'>): string {
+  return friendlyIssuerName(h.companyName ?? h.nameOfIssuer);
 }
 
 /**
@@ -335,7 +355,7 @@ export function quarterHeadline(
 
   const trim = notable(diff.decreased);
   if (trim) {
-    clauses.push(moveClause('trimmed', friendlyIssuerName(trim.nameOfIssuer), streakMoves(sharesHistory[holdingKey(trim)], 'down')));
+    clauses.push(moveClause('trimmed', holdingName(trim), streakMoves(sharesHistory[holdingKey(trim)], 'down')));
   }
 
   // A brand-new position is more notable than adding to an existing one, so
@@ -343,9 +363,9 @@ export function quarterHeadline(
   const opened = notable(diff.newPositions);
   const added = notable(diff.increased);
   if (opened) {
-    clauses.push(plainClause('opened', friendlyIssuerName(opened.nameOfIssuer)));
+    clauses.push(plainClause('opened', holdingName(opened)));
   } else if (added) {
-    clauses.push(moveClause('added', friendlyIssuerName(added.nameOfIssuer), streakMoves(sharesHistory[holdingKey(added)], 'up')));
+    clauses.push(moveClause('added', holdingName(added), streakMoves(sharesHistory[holdingKey(added)], 'up')));
   }
 
   // An exited position has no current weight, so rank it by what it was worth
@@ -353,7 +373,7 @@ export function quarterHeadline(
   if (clauses.length === 0) {
     const exit = diff.exited.filter((h) => !h.putCall).sort((a, b) => (b.portfolioPct ?? 0) - (a.portfolioPct ?? 0))[0];
     if (exit && (exit.portfolioPct ?? 0) >= NOTABLE_WEIGHT_PCT) {
-      clauses.push(plainClause('sold', friendlyIssuerName(exit.nameOfIssuer)));
+      clauses.push(plainClause('sold', holdingName(exit)));
     }
   }
 

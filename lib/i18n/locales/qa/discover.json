@@ -252,9 +252,9 @@
   "backToDiscover": "«Baack too Diiscooveer»",
   "showLess": "«Shoow leess»",
   "searchClear": "«Cleeaar seeaarch»",
-  "fundFiledSummary_one": "«Fiileed {{filed}} foor thee quuaarteer eendeed {{period}} · {{value}} aacrooss {{count}} poosiitiioon»",
-  "fundFiledSummary_other": "«Fiileed {{filed}} foor thee quuaarteer eendeed {{period}} · {{value}} aacrooss {{count}} poosiitiioons»",
-  "fundFiledOptions": "«, pluus {{value}} iin ooptiioons»",
+  "fundFiledSummary_one": "«Fiileed {{filed}} foor thee quuaarteer eendeed {{period}} · {{value}} aacrooss {{positions}} poosiitiioon»",
+  "fundFiledSummary_other": "«Fiileed {{filed}} foor thee quuaarteer eendeed {{period}} · {{value}} aacrooss {{positions}} poosiitiioons»",
+  "fundFiledOptions": "«, pluus ooptiioons cooveeriing {{value}} oof stoock»",
   "fundLockedTitle": "«Fuull hooldiings aaree aa Proo feeaatuuree»",
   "fundLockedLastFiled": "«Laast fiileed {{date}} · {{positions}} poosiitiioons»",
   "fundLockedPitch": "«Seeee eeveery poosiitiioon, siizeed by poortfooliioo weeiight, uupdaateed eeveery quuaarteer.»",
@@ -516,5 +516,8 @@
   "pickMethodRemovedTitle": "«Noothiing iis eeveer reemooveed»",
   "pickMethodRemovedBody": "«Piicks aaree neeveer clooseed eeaarly, deeleeteed, oor quuiieetly drooppeed. AA piick oonly stoops mooviing iif thee coompaany iis aacquuiireed oor deeliisteed, aand iit staays iin thee reecoord aat thaat fiinaal priicee. EEveery looseer aaboovee iis aa looseer wee puubliisheed.»",
   "pickMethodDisclaimerTitle": "«Thiis iis reeseeaarch, noot aadviicee»",
-  "pickMethodDisclaimerBody": "«Buull's Weeeekly Piick iis geeneeraateed by aan AAII moodeel froom maarkeet daataa aand puubliic neews. IIt iis noot aa reecoommeendaatiioon too buuy oor seell aanythiing, iit iis noot peersoonaal fiinaanciiaal aadviicee, aand iit taakees noo aaccoouunt oof yoouur siituuaatiioon, gooaals, oor riisk tooleeraancee. Paast peerfoormaancee saays noothiing reeliiaablee aaboouut fuutuuree reetuurns, aand beeloow {{min}} piicks iit saays aalmoost noothiing aat aall. Reetuurns shoown aaree priicee-oonly: theey eexcluudee diiviideends, feeees, taaxees, aand aany diiffeereencee beetweeeen thee oopeeniing priicee aand thee priicee yoouu woouuld aactuuaally haavee beeeen fiilleed aat. Doo yoouur oown reeseeaarch beefooree aactiing oon aanythiing heeree.»"
+  "pickMethodDisclaimerBody": "«Buull's Weeeekly Piick iis geeneeraateed by aan AAII moodeel froom maarkeet daataa aand puubliic neews. IIt iis noot aa reecoommeendaatiioon too buuy oor seell aanythiing, iit iis noot peersoonaal fiinaanciiaal aadviicee, aand iit taakees noo aaccoouunt oof yoouur siituuaatiioon, gooaals, oor riisk tooleeraancee. Paast peerfoormaancee saays noothiing reeliiaablee aaboouut fuutuuree reetuurns, aand beeloow {{min}} piicks iit saays aalmoost noothiing aat aall. Reetuurns shoown aaree priicee-oonly: theey eexcluudee diiviideends, feeees, taaxees, aand aany diiffeereencee beetweeeen thee oopeeniing priicee aand thee priicee yoouu woouuld aactuuaally haavee beeeen fiilleed aat. Doo yoouur oown reeseeaarch beefooree aactiing oon aanythiing heeree.»",
+  "fundFiledOptionsNote": "«OOptiioons aaree coouunteed aat thee vaaluuee oof thee shaarees theey cooveer, noot whaat theey coost, soo theey aaree noot paart oof thee tootaal.»",
+  "fundAskRiskFund": "«IIs {{pct}}% iin oonee fuund riisky?»",
+  "instDisclaimerSummary": "«13F fiiliings aaree deelaayeed aand paartiiaal. Why?»"
 }

@@ -20,6 +20,10 @@ export interface DiffableHolding {
   putCall?: 'PUT' | 'CALL' | null;
   symbol: string | null;
   nameOfIssuer: string;
+  /** Our catalogue's name for the ticker ("Bank of America Corporation"), when it has one. Prefer over nameOfIssuer. */
+  companyName?: string | null;
+  /** The ticker is an ETF or fund, not a company (IVV, SPY). */
+  isFund?: boolean;
   valueUsd: number;
   shares: number;
   portfolioPct: number | null;

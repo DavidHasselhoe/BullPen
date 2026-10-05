@@ -31,6 +31,8 @@ export interface PaywallPreviewContext {
   changePercent?: number;
   tickers?: string[];
   fundName?: string;
+  /** The fund's real top holdings (the public teaser), when the trigger has them. */
+  fundTop?: { symbol: string | null; name: string; pct: number }[];
   /** Described alert condition, e.g. "New all-time high". */
   alertCondition?: string;
 }
@@ -101,7 +103,7 @@ export function getAiPaywallConfig(t: TFunction, context?: PaywallPreviewContext
         { icon: ShieldAlert, text: t('paywallBenefitUnlimitedRiskAnalysis') },
         { icon: Zap, text: t('paywallBenefitDailyBrief') },
       ],
-      preview: <InstitutionalHoldingsPaywallPreview fundName={context?.fundName} />,
+      preview: <InstitutionalHoldingsPaywallPreview fundName={context?.fundName} rows={context?.fundTop} />,
     },
     'Price Alerts': {
       benefits: [

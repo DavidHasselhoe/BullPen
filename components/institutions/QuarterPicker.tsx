@@ -46,7 +46,7 @@ export function QuarterPicker({ quarters, value, onChange, busy }: QuarterPicker
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="quarter-picker" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <label htmlFor="quarter-picker" className="text-xs font-medium text-muted-foreground">
         {t('fundQuarterLabel')}
       </label>
       <Select value={selected} onValueChange={onChange}>

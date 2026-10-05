@@ -1,49 +1,53 @@
 'use client';
 
 /**
- * Fabricated mini holdings-table visual used purely as a paywall teaser —
- * same posture as RiskAnalysisPaywallPreview: the dialog has no access to a
- * real result for an anonymous/free caller (the holdings route 403s before
- * any real data leaves the server), so the numbers here stay fabricated and
- * blurred on purpose rather than risk showing something real-looking that's
- * wrong. When a real fund name is known at the trigger site, an unblurred
- * "Berkshire Hathaway's Q2 2026 holdings" line leads the preview — that
- * part is true, it's just metadata already public in the free fund list.
+ * Teaser behind the Institutional Holdings paywall.
+ *
+ * With `rows` (the fund page passes its public teaser: the real top three),
+ * those are shown as they are, since the page above already shows them. With
+ * no rows, the preview is shape only: bars, no tickers, no percentages. It
+ * used to draw Berkshire's real top three under every fund's name, which on
+ * Citadel's page claimed Citadel held 22% Apple.
  */
 interface Props {
   fundName?: string;
+  rows?: { symbol: string | null; name: string; pct: number }[];
 }
 
-const MOCK_ROWS = [
-  { symbol: 'AAPL', pct: 22.0 },
-  { symbol: 'AXP', pct: 17.1 },
-  { symbol: 'KO', pct: 10.9 },
-];
+const PLACEHOLDER_WIDTHS = ['w-2/3', 'w-1/2', 'w-1/3'];
 
-export function InstitutionalHoldingsPaywallPreview({ fundName }: Props) {
+export function InstitutionalHoldingsPaywallPreview({ fundName, rows }: Props) {
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
       {fundName && (
         <p className="mb-3 text-left text-xs font-medium text-foreground">{fundName}&apos;s full holdings</p>
       )}
-      <div className="pointer-events-none space-y-2 opacity-70 blur-[3px]">
-        {MOCK_ROWS.map((row) => (
-          <div key={row.symbol} className="flex items-center justify-between text-sm">
-            <span className="font-mono font-semibold text-foreground">{row.symbol}</span>
-            <span className="font-mono tabular-nums text-muted-foreground">{row.pct.toFixed(1)}%</span>
+      {rows && rows.length > 0 ? (
+        <div className="pointer-events-none space-y-2">
+          {rows.map((row) => (
+            <div key={row.symbol ?? row.name} className="flex items-center justify-between text-sm">
+              <span className="font-mono font-semibold text-foreground">{row.symbol ?? row.name}</span>
+              <span className="font-mono tabular-nums text-muted-foreground">{row.pct.toFixed(1)}%</span>
+            </div>
+          ))}
+          <div className="space-y-2 pt-1 opacity-60 blur-[3px]">
+            {PLACEHOLDER_WIDTHS.map((w) => (
+              <div key={w} className={`h-3 rounded bg-muted ${w}`} />
+            ))}
           </div>
-        ))}
-        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full w-2/3 rounded-full bg-primary" />
         </div>
-      </div>
+      ) : (
+        <div className="pointer-events-none space-y-2.5 opacity-70 blur-[2px]">
+          {PLACEHOLDER_WIDTHS.map((w) => (
+            <div key={w} className="flex items-center justify-between gap-6">
+              <div className={`h-3 rounded bg-muted ${w}`} />
+              <div className="h-3 w-10 rounded bg-muted" />
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-card to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-card to-transparent" />
-
-      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border/70 bg-background/90 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground shadow-sm">
-        Preview
-      </span>
     </div>
   );
 }

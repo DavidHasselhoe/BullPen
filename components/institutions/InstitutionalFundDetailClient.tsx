@@ -19,6 +19,9 @@ import { HoldingsBarList } from './HoldingsBarList';
 import { buildAllocation, optionPositions } from '@/lib/institutions/allocation';
 import { ALLOCATION_COLORS } from '@/lib/charts/allocation-colors';
 import { fmtUsd } from '@/lib/institutions/format';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { intlLocale } from '@/lib/i18n/intl-locale';
+import type { FundTeaser } from '@/app/api/institutions/[slug]/teaser/route';
 import type { InstitutionalFundSummary } from '@/app/api/institutions/route';
 import type { DiffableHolding, HoldingsDiff } from '@/lib/institutions/compute-diff';
 
@@ -84,6 +87,19 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
   });
 
   const locked = !isAuthenticated || holdingsData?.error === 'pro_required';
+
+  // What a locked visitor sees above the lock: the quarter's headline and the
+  // three largest holdings. Public SEC data, and the clearest pitch for the rest.
+  const { data: teaser } = useQuery({
+    queryKey: ['institutions-teaser', slug, i18n.language],
+    queryFn: async (): Promise<(FundTeaser & { success: boolean }) | null> => {
+      const res = await fetch(`/api/institutions/${slug}/teaser?lang=${encodeURIComponent(i18n.language)}`);
+      return res.ok ? res.json() : null;
+    },
+    enabled: locked,
+    staleTime: 60 * 60 * 1000,
+  });
+  const locale = intlLocale(i18n.language);
   const unlocked = !locked && holdingsData?.success && !!holdingsData.holdings;
 
   const displayName = holdingsData?.fund?.displayName ?? fundSummary?.displayName ?? slug;
@@ -144,8 +160,15 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
               period: fmtDate(holdingsData.filing.periodOfReport, i18n.language),
               value: fmtUsd(holdingsData.filing.totalValueUsd ?? 0),
               count: holdingsData.filing.totalPositions ?? 0,
+              positions: (holdingsData.filing.totalPositions ?? 0).toLocaleString(locale),
             })}
             {options.length > 0 && t('fundFiledOptions', { value: fmtUsd(optionsValue) })}
+            {/* A 13F counts an option at the value of the shares it covers.
+                Read as part of the fund's size, Citadel's $700B of options
+                turned a $174B book into "almost a trillion". */}
+            {options.length > 0 && (
+              <span className="mt-1 block text-xs">{t('fundFiledOptionsNote')}</span>
+            )}
           </p>
           <QuarterPicker
             quarters={holdingsData.availableQuarters ?? []}
@@ -160,6 +183,29 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
         <NextFilingNote />
         <Filing13FDisclaimer />
       </div>
+
+      {locked && teaser?.success && teaser.top.length > 0 && (
+        <div className="mb-4 rounded-xl border border-border/50 bg-card/40 p-5">
+          {teaser.headline && (
+            <p className="mb-4 text-base font-medium leading-snug text-foreground">{teaser.headline}</p>
+          )}
+          <ul className="divide-y divide-border/30">
+            {teaser.top.map((h) => (
+              <li key={h.symbol ?? h.name} className="flex items-center gap-3 py-2.5">
+                {h.symbol ? (
+                  <CompanyLogo ticker={h.symbol} name={h.name} size={24} />
+                ) : (
+                  <span className="h-6 w-6 shrink-0 rounded-full bg-muted/60" aria-hidden />
+                )}
+                {h.symbol && <span className="font-mono text-sm font-semibold text-foreground">{h.symbol}</span>}
+                {/* clamp-ok: company name in a dense row */}
+                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{h.name}</span>
+                <span className="font-mono text-sm font-semibold tabular-nums text-foreground">{h.pct.toFixed(1)}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {locked && (
         <div className="rounded-xl border border-border/50 bg-card/40 p-8 text-center">
@@ -227,7 +273,7 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
         onOpenChange={setPaywallOpen}
         featureName={t('instHeading')}
         quota={{ allowed: false, used: 0, limit: 0, period: 'month', resetsAt: new Date().toISOString(), reason: 'pro_only' }}
-        previewContext={{ fundName: displayName }}
+        previewContext={{ fundName: displayName, fundTop: teaser?.success ? teaser.top : undefined }}
       />
     </div>
   );
