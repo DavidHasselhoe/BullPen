@@ -3,7 +3,7 @@
  * Source: State Street's SPY ETF daily holdings disclosure (full-replication S&P 500 tracker).
  * Auto-synced weekly by scripts/sync-index-constituents.ts — do not hand-edit,
  * changes will be overwritten on the next sync run.
- * Last synced: 2026-09-28
+ * Last synced: 2026-10-05
  */
 export const SP500_TICKERS: string[] = [
   'A', 'AAPL', 'ABBV', 'ABNB', 'ABT', 'ACGL', 'ACN', 'ADBE', 'ADI', 'ADM',
@@ -53,8 +53,8 @@ export const SP500_TICKERS: string[] = [
   'TPR', 'TRGP', 'TRMB', 'TROW', 'TRV', 'TSCO', 'TSLA', 'TSN', 'TT', 'TTWO',
   'TXN', 'TXT', 'TYL', 'UAL', 'UBER', 'UDR', 'UHS', 'ULTA', 'UNH', 'UNP',
   'UPS', 'URI', 'USB', 'V', 'VEEV', 'VICI', 'VLO', 'VLTO', 'VMC', 'VMRK',
-  'VRSK', 'VRSN', 'VRT', 'VRTX', 'VST', 'VTR', 'VTRS', 'VZ', 'WAB', 'WAT',
-  'WBD', 'WDAY', 'WDC', 'WEC', 'WELL', 'WFC', 'WM', 'WMB', 'WMT', 'WRB',
-  'WSM', 'WST', 'WTW', 'WY', 'WYNN', 'XEL', 'XOM', 'XYL', 'XYZ', 'YUM',
-  'ZBH', 'ZBRA', 'ZTS',
+  'VRSK', 'VRSN', 'VRT', 'VRTX', 'VST', 'VTR', 'VTRS', 'VYLR', 'VZ', 'WAB',
+  'WAT', 'WBD', 'WDAY', 'WDC', 'WEC', 'WELL', 'WFC', 'WM', 'WMB', 'WMT',
+  'WRB', 'WSM', 'WST', 'WTW', 'WY', 'WYNN', 'XEL', 'XOM', 'XYL', 'XYZ',
+  'YUM', 'ZBH', 'ZBRA', 'ZTS',
 ];
