@@ -7,6 +7,7 @@
  */
 
 import { type ComponentType } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList,
@@ -53,6 +54,8 @@ function severityTier(severity: 'low' | 'medium' | 'high'): Tier {
   if (severity === 'medium') return 'caution';
   return 'info';
 }
+
+const SEVERITY_KEY = { low: 'deepDiveSeverityLow', medium: 'deepDiveSeverityMedium', high: 'deepDiveSeverityHigh' } as const;
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   if (!children) return null;
@@ -215,6 +218,7 @@ function PriceTargets({
   // old carried 228.07 for a stock trading at 218, so the range bar drew its
   // "you are here" marker 4.5% off while the top of the same page showed the
   // real number. The stored value is the fallback, not the source.
+  const { t } = useTranslation('tools');
   const livePrice = currentPrice ?? block.currentPrice;
   const hasRange = block.low != null && block.high != null && block.high > block.low;
   const anchor = livePrice ?? block.mean ?? (hasRange ? (block.low! + block.high!) / 2 : undefined);
@@ -241,7 +245,7 @@ function PriceTargets({
 
   return (
     <section>
-      <SectionTitle>{block.title ?? 'Analyst price targets'}</SectionTitle>
+      <SectionTitle>{block.title ?? t('deepDiveBlockPriceTargets')}</SectionTitle>
       {/* block.current is the model's own formatted string and goes stale the
           same way block.currentPrice does. The range bar's marker carries the
           live price now, and the verdict bar at the top of the report states
@@ -252,12 +256,14 @@ function PriceTargets({
             low={block.low!}
             high={block.high!}
             current={livePrice ?? undefined}
-            srLabel={`Analyst price target range: $${block.low} to $${block.high}${livePrice ? `, current price $${livePrice.toFixed(2)}` : ''}`}
+            srLabel={livePrice
+              ? t('deepDiveTargetRangeSrCurrent', { low: block.low, high: block.high, price: livePrice.toFixed(2) })
+              : t('deepDiveTargetRangeSr', { low: block.low, high: block.high })}
           />
           {wideDisagreement && (
             <p className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-              Analysts sharply disagree on this one. That wide a range usually means real uncertainty about the growth story, not just noise.
+              {t('deepDiveAnalystsDisagree')}
             </p>
           )}
         </div>
@@ -334,14 +340,15 @@ function BulletItem({
 function BullBear({ block }: { block: Extract<Block, { type: 'bull_bear' }> }) {
   // One Set shared across both columns — a term explained once in the bull
   // case doesn't need a second tooltip if it recurs in the bear case.
+  const { t } = useTranslation('tools');
   const seen = new Set<string>();
   return (
     <section>
-      <SectionTitle>{block.title ?? 'Bull vs Bear'}</SectionTitle>
+      <SectionTitle>{block.title ?? t('deepDiveBlockBullBear')}</SectionTitle>
       <div className="grid sm:grid-cols-2 gap-3">
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4">
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-emerald-500 mb-2">
-            <TrendingUp className="h-3.5 w-3.5" /> Bull case
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 mb-2">
+            <TrendingUp className="h-3.5 w-3.5" aria-hidden /> {t('deepDiveBullCase')}
           </p>
           <ul className="space-y-1.5">
             {block.bull.map((point, i) => (
@@ -350,8 +357,8 @@ function BullBear({ block }: { block: Extract<Block, { type: 'bull_bear' }> }) {
           </ul>
         </div>
         <div className="rounded-xl border border-red-500/20 bg-red-500/[0.04] p-4">
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-red-500 mb-2">
-            <TrendingDown className="h-3.5 w-3.5" /> Bear case
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-red-500 mb-2">
+            <TrendingDown className="h-3.5 w-3.5" aria-hidden /> {t('deepDiveBearCase')}
           </p>
           <ul className="space-y-1.5">
             {block.bear.map((point, i) => (
@@ -367,10 +374,11 @@ function BullBear({ block }: { block: Extract<Block, { type: 'bull_bear' }> }) {
 // ─── catalysts ────────────────────────────────────────────────────────────────
 
 function Catalysts({ block }: { block: Extract<Block, { type: 'catalysts' }> }) {
+  const { t } = useTranslation('tools');
   const seen = new Set<string>();
   return (
     <section>
-      <SectionTitle>{block.title ?? 'Catalysts to watch'}</SectionTitle>
+      <SectionTitle>{block.title ?? t('deepDiveBlockCatalysts')}</SectionTitle>
       <div className="space-y-2.5">
         {block.items.map((item, i) => {
           const Icon = item.direction === 'down' ? ArrowDownRight : item.direction === 'up' ? ArrowUpRight : Minus;
@@ -401,10 +409,11 @@ function Catalysts({ block }: { block: Extract<Block, { type: 'catalysts' }> }) 
 // ─── risks ────────────────────────────────────────────────────────────────────
 
 function Risks({ block }: { block: Extract<Block, { type: 'risks' }> }) {
+  const { t } = useTranslation('tools');
   const seen = new Set<string>();
   return (
     <section>
-      <SectionTitle>{block.title ?? 'Key risks'}</SectionTitle>
+      <SectionTitle>{block.title ?? t('deepDiveBlockRisks')}</SectionTitle>
       <div className="space-y-2.5">
         {block.items.map((item, i) => (
           <div key={i} className="flex gap-3">
@@ -414,7 +423,7 @@ function Risks({ block }: { block: Extract<Block, { type: 'risks' }> }) {
                 {glossaryText(item.title, seen)}
                 {item.severity && (
                   <span className={cn('shrink-0 rounded-full border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide', tierBadgeClass(severityTier(item.severity)))}>
-                    {item.severity}
+                    {t(SEVERITY_KEY[item.severity])}
                   </span>
                 )}
               </p>
@@ -446,10 +455,11 @@ function renderInline(text: string, seen: Set<string>): React.ReactNode[] {
 
 function Prose({ block }: { block: Extract<Block, { type: 'prose' }> }) {
   const lines = block.markdown.split('\n').map((l) => l.trim()).filter(Boolean);
+  const { t } = useTranslation('tools');
   const seen = new Set<string>();
   return (
     <section>
-      <SectionTitle>{block.title ?? 'Bottom line'}</SectionTitle>
+      <SectionTitle>{block.title ?? t('deepDiveBlockBottomLine')}</SectionTitle>
       <div className="space-y-2 text-sm text-foreground/90 leading-relaxed">
         {lines.map((line, i) =>
           line.startsWith('- ') || line.startsWith('• ') ? (

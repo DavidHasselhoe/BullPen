@@ -1,7 +1,9 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { VerdictBar } from './VerdictBar';
 import type { DeepDivePrice } from '@/hooks/use-deep-dive-price';
@@ -10,33 +12,31 @@ import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 // Relative for the first 24h, then an absolute date — used for BOTH
 // generatedAt and dataAsOf so the two dates in the meta line never mismatch
 // in format (previously dataAsOf was interpolated raw/unformatted).
-export function fmtRelative(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return fmtAbsolute(iso);
+export function fmtRelative(iso: string, locale: string): string {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'short' });
+  if (mins < 1) return rtf.format(0, 'minute');
+  if (mins < 60) return rtf.format(-mins, 'minute');
+  if (mins < 24 * 60) return rtf.format(-Math.floor(mins / 60), 'hour');
+  return fmtAbsolute(iso, locale);
 }
 
 // dataAsOf is a bare "YYYY-MM-DD" string. new Date("YYYY-MM-DD") parses as
 // UTC midnight, and toLocaleDateString then applies the LOCAL timezone,
 // which can shift the displayed day by one in the evening at negative UTC
 // offsets. Parse the parts explicitly instead of trusting that round-trip.
-function fmtAbsolute(dateStr: string): string {
+export function fmtAbsolute(dateStr: string, locale: string): string {
   const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
   if (!y || !m || !d) return dateStr;
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(y, m - 1, d).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-const STALE_DATA_DAYS = 14;
+const STALE_DAYS = 14;
 
-function isStale(dateStr: string): boolean {
+function daysSince(dateStr: string): number {
   const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
-  if (!y || !m || !d) return false;
-  const days = (Date.now() - new Date(y, m - 1, d).getTime()) / (24 * 60 * 60 * 1000);
-  return days > STALE_DATA_DAYS;
+  if (!y || !m || !d) return 0;
+  return (Date.now() - new Date(y, m - 1, d).getTime()) / (24 * 60 * 60 * 1000);
 }
 
 interface Props {
@@ -64,39 +64,47 @@ interface Props {
  * repeating risks[0] and catalysts[0] verbatim.
  */
 export function DeepDiveHero({ report, when, actions, price }: Props) {
+  const { t } = useTranslation('tools');
+  const locale = useIntlLocale();
+  const dataStale = !!report.dataAsOf && daysSince(report.dataAsOf) > STALE_DAYS;
+  // A report sitting beside today's live price reads as current. Past two
+  // weeks, or on fundamentals that old, say so where the verdict is read
+  // instead of only in the 12px meta line.
+  const stale = daysSince(when) > STALE_DAYS || dataStale;
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <CompanyLogo name={report.companyName} ticker={report.ticker} size={40} className="mt-0.5 border border-border/50" loading="eager" />
-          <div className="min-w-0 space-y-1">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-3 w-3 shrink-0 text-primary" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-primary">
-                AI Deep Dive
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
-              {report.companyName} <span className="text-muted-foreground font-mono text-base">${report.ticker}</span>
-            </h1>
-          </div>
+        <div className="flex min-w-0 items-center gap-3">
+          <CompanyLogo name={report.companyName} ticker={report.ticker} size={40} className="border border-border/50" loading="eager" />
+          <h1 className="min-w-0 text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
+            {report.companyName} <span className="text-muted-foreground font-mono text-base">${report.ticker}</span>
+          </h1>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
           {actions && <div className="flex items-center gap-1.5">{actions}</div>}
-          <p className="text-[10px] leading-snug text-muted-foreground sm:max-w-[260px] sm:text-right">
-            Generated {fmtRelative(when)}
+          <p className="text-xs leading-snug text-muted-foreground sm:max-w-[300px] sm:text-right">
+            {t('deepDiveMetaGenerated', { when: fmtRelative(when, locale) })}
             {report.dataAsOf && (
               <>
-                {' · fundamentals as of '}
-                <span className={cn(isStale(report.dataAsOf) && 'text-amber-500 font-medium')}>
-                  {fmtAbsolute(report.dataAsOf)}
+                {' · '}
+                <span className={cn(dataStale && 'text-amber-500 font-medium')}>
+                  {t('deepDiveMetaDataAsOf', { date: fmtAbsolute(report.dataAsOf, locale) })}
                 </span>
               </>
             )}
-            {' · AI-generated, verify before acting.'}
+            {' · '}
+            {t('deepDiveMetaVerify')}
           </p>
         </div>
       </div>
+
+      {stale && (
+        <p role="note" className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-xs leading-relaxed text-foreground/90">
+          <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" aria-hidden />
+          {t('deepDiveStaleNotice', { date: fmtAbsolute(when, locale) })}
+        </p>
+      )}
 
       <VerdictBar ticker={report.ticker} verdict={report.verdict} price={price} />
 

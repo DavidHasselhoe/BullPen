@@ -18,12 +18,13 @@ import { useHoldings } from '@/hooks/use-holdings';
 import { HoldingsContextToggle } from '@/components/holdings/HoldingsContextToggle';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
-import { useInvalidateQuota } from '@/hooks/use-quota';
+import { useInvalidateQuota, useQuota } from '@/hooks/use-quota';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { DeepDiveReport } from '@/components/deep-dive/DeepDiveReport';
-import { fmtRelative } from '@/components/deep-dive/DeepDiveHero';
+import { fmtAbsolute, fmtRelative } from '@/components/deep-dive/DeepDiveHero';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 import type { QuotaState } from '@/lib/billing/quotas';
@@ -66,6 +67,8 @@ export default function DeepDivePage() {
   const { data: holdings } = useHoldings();
   const { open: openAIPanel } = useAIPanel();
   const invalidateQuota = useInvalidateQuota();
+  const { data: quota } = useQuota('deep_dive');
+  const locale = useIntlLocale();
   const queryClient = useQueryClient();
   const markEntityRead = useMarkEntityNotificationsRead();
 
@@ -89,6 +92,7 @@ export default function DeepDivePage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
   const [showExistingDialog, setShowExistingDialog] = useState(false);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   // True for a brief hold after the real report lands, before swapping the
   // loading screen out for the result — otherwise the bar hits 100% and the
   // whole screen changes in the same instant.
@@ -221,6 +225,17 @@ export default function DeepDivePage() {
     });
   }, [openAIPanel, symbol, report]);
 
+  // null for Pro (unlimited) or before the quota has loaded: no count to state.
+  const remaining = quota && quota.limit !== 'unlimited' ? Math.max(0, quota.limit - quota.used) : null;
+  const quotaLine = remaining == null || remaining === 0 ? null
+    : remaining === 1 ? t('deepDiveRegenerateConfirmQuotaLast')
+    : t('deepDiveRegenerateConfirmQuota', { remaining });
+
+  // A regenerate spends a deep dive and replaces the report on screen, so it
+  // confirms first. With none left there is nothing to spend: go straight to
+  // generate(), whose 402 opens the paywall.
+  const askRegenerate = () => (remaining === 0 ? generate() : setConfirmRegenerate(true));
+
   // Deep dives are a real-money AI call (Claude with extended thinking) —
   // gated behind auth for cost/quota reasons, not just to nudge signup.
   // Gate here, before ever hitting the API, so a guest gets a clear prompt
@@ -244,10 +259,18 @@ export default function DeepDivePage() {
               <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
                 {t('deepDiveSignInDescription', 'Create a free account to generate an AI deep dive: results, guidance, valuation, bull vs bear, catalysts and risks.')}
               </p>
-              <div className="mt-6">
-                <Button size="lg" onClick={() => router.push(`/login?redirect=${encodeURIComponent(`/tools/deep-dive/${rawTicker}`)}`)}>
-                  {t('deepDiveSignInButton', 'Sign in')}
+              {/* The copy promises an account, so the button makes one. It used
+                  to be a lone Sign in that led to the login form. */}
+              <div className="mt-6 flex flex-col items-center gap-3">
+                <Button size="lg" onClick={() => router.push(`/register?redirect=${encodeURIComponent(`/tools/deep-dive/${rawTicker}`)}`)}>
+                  {t('deepDiveCreateAccountButton')}
                 </Button>
+                <p className="text-sm text-muted-foreground">
+                  {t('deepDiveHaveAccount')}{' '}
+                  <Link href={`/login?redirect=${encodeURIComponent(`/tools/deep-dive/${rawTicker}`)}`} className="font-medium text-foreground underline-offset-4 hover:underline">
+                    {t('deepDiveSignInLink')}
+                  </Link>
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -329,7 +352,7 @@ export default function DeepDivePage() {
               report={report}
               createdAt={createdAt}
               onAsk={askAI}
-              onRegenerate={() => generate()}
+              onRegenerate={askRegenerate}
             />
             {/* Also here, not only on the idle screen: a reader who already has
                 a report can never reach an idle screen for this ticker again,
@@ -347,9 +370,6 @@ export default function DeepDivePage() {
                 />
               </div>
             )}
-            <p className="text-center text-[11px] text-muted-foreground">
-              {t('deepDiveRegenerateQuotaHint', 'Regenerating uses one deep dive from your monthly quota.')}
-            </p>
           </div>
         )}
 
@@ -384,8 +404,9 @@ export default function DeepDivePage() {
               <DialogTitle>{t('deepDiveExistingTitle', 'Already generated for {{symbol}}', { symbol })}</DialogTitle>
               <DialogDescription>
                 {createdAt
-                  ? t('deepDiveExistingDescriptionWithDate', "You generated a deep dive for {{symbol}} {{when}}. Here it is below, or regenerate for a fresh take with today's data.", { symbol, when: fmtRelative(createdAt) })
+                  ? t('deepDiveExistingDescriptionWithDate', "You generated a deep dive for {{symbol}} {{when}}. Here it is below, or regenerate for a fresh take with today's data.", { symbol, when: fmtRelative(createdAt, locale) })
                   : t('deepDiveExistingDescription', "You've already generated a deep dive for {{symbol}}. Here it is below, or regenerate for a fresh take with today's data.", { symbol })}
+                {quotaLine && <> {quotaLine}</>}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -397,6 +418,25 @@ export default function DeepDivePage() {
                 className="gap-1.5 rounded-full animate-ai-pill-shine"
               >
                 <RefreshCw className="h-3.5 w-3.5" /> {t('deepDiveExistingRegenerateButton', 'Regenerate')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={confirmRegenerate} onOpenChange={setConfirmRegenerate}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('deepDiveRegenerateConfirmTitle')}</DialogTitle>
+              <DialogDescription>
+                {createdAt && t('deepDiveRegenerateConfirmReplace', { date: fmtAbsolute(createdAt, locale) })}
+                {quotaLine && <> {quotaLine}</>}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmRegenerate(false)}>
+                {t('deepDiveCancelButton')}
+              </Button>
+              <Button onClick={() => { setConfirmRegenerate(false); generate(); }} className="gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden /> {t('deepDiveRegenerateButton')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -421,6 +461,7 @@ function errorBody(code: ErrorCode, message: string, t: TFunction): string {
     case 'payment_required': return t('deepDiveErrorBodyUnavailable', 'This AI feature is temporarily unavailable. Please try again shortly.');
     case 'invalid_key':      return t('deepDiveErrorBodyUnavailable', 'This AI feature is temporarily unavailable. Please try again shortly.');
     case 'parse_failed':     return t('deepDiveErrorBodyParseFailed', 'The model returned an unexpected response. This is usually transient. Try again.');
-    default:                 return message || t('deepDiveErrorBodyUnknown', 'An unexpected error occurred. Please try again.');
+    // Never the raw message ("Request failed: 500"): it names our problem, not the reader's next step.
+    default:                 return t('deepDiveErrorBodyUnknown', 'An unexpected error occurred. Please try again.');
   }
 }

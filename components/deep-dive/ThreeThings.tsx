@@ -21,6 +21,7 @@
  * clamped or truncated: a card grows and the row grows with it.
  */
 
+import { useTranslation } from 'react-i18next';
 import { TrendingUp, AlertTriangle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { glossaryText } from '@/components/ui/GlossaryText';
@@ -38,19 +39,19 @@ interface CardSpec {
 
 const SPECS: Record<'growth' | 'risk' | 'watch', CardSpec> = {
   growth: {
-    label: 'Growth',
+    label: 'deepDiveThingGrowth',
     icon: TrendingUp,
     tint: 'border-emerald-500/20 bg-emerald-500/[0.04]',
     iconColor: 'text-emerald-500',
   },
   risk: {
-    label: 'Biggest risk',
+    label: 'deepDiveThingRisk',
     icon: AlertTriangle,
     tint: 'border-red-500/20 bg-red-500/[0.04]',
     iconColor: 'text-red-500',
   },
   watch: {
-    label: 'What to watch next',
+    label: 'deepDiveThingWatch',
     icon: Eye,
     tint: 'border-border/60 bg-muted/25',
     iconColor: 'text-muted-foreground',
@@ -58,14 +59,15 @@ const SPECS: Record<'growth' | 'risk' | 'watch', CardSpec> = {
 };
 
 function ThingCard({ kind, text, seen }: { kind: keyof typeof SPECS; text: string; seen: Set<string> }) {
+  const { t } = useTranslation('tools');
   const spec = SPECS[kind];
   const Icon = spec.icon;
   return (
     <div className={cn('flex flex-col rounded-xl border p-3.5', spec.tint)}>
       <div className="mb-2 flex items-center gap-1.5">
         <Icon className={cn('h-3.5 w-3.5 shrink-0', spec.iconColor)} aria-hidden />
-        <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-          {spec.label}
+        <span className="text-xs font-semibold text-muted-foreground">
+          {t(spec.label)}
         </span>
       </div>
       <p className="text-[13px] leading-relaxed text-foreground/90">{glossaryText(text, seen)}</p>
@@ -75,6 +77,7 @@ function ThingCard({ kind, text, seen }: { kind: keyof typeof SPECS; text: strin
 
 /** Pre-threeThings reports: the old two-row strip, unchanged. */
 function LegacyHighlights({ report }: { report: Report }) {
+  const { t } = useTranslation('tools');
   const risksBlock = report.blocks.find((b) => b.type === 'risks');
   const catalystsBlock = report.blocks.find((b) => b.type === 'catalysts');
   const topRisk = risksBlock?.type === 'risks' ? risksBlock.items[0] : undefined;
@@ -86,9 +89,7 @@ function LegacyHighlights({ report }: { report: Report }) {
     <div className="space-y-3.5 border-t border-border/20 pt-4">
       {topRisk && (
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Key risk
-          </div>
+          <div className="text-xs font-semibold text-muted-foreground">{t('deepDiveLegacyKeyRisk')}</div>
           <div className="mt-0.5 text-sm font-medium text-foreground">{glossaryText(topRisk.title, seen)}</div>
           {topRisk.detail && (
             <div className="text-[13px] text-muted-foreground">{glossaryText(topRisk.detail, seen)}</div>
@@ -97,9 +98,7 @@ function LegacyHighlights({ report }: { report: Report }) {
       )}
       {topCatalyst && (
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Catalyst to watch
-          </div>
+          <div className="text-xs font-semibold text-muted-foreground">{t('deepDiveLegacyCatalyst')}</div>
           <div className="mt-0.5 text-sm font-medium text-foreground">{glossaryText(topCatalyst.title, seen)}</div>
           {topCatalyst.timeframe && (
             <div className="text-[13px] text-muted-foreground">{topCatalyst.timeframe}</div>
@@ -111,6 +110,7 @@ function LegacyHighlights({ report }: { report: Report }) {
 }
 
 export function ThreeThings({ report }: { report: Report }) {
+  const { t } = useTranslation('tools');
   const three = report.verdict.threeThings;
   if (!three) return <LegacyHighlights report={report} />;
 
@@ -119,7 +119,7 @@ export function ThreeThings({ report }: { report: Report }) {
   const seen = new Set<string>();
 
   return (
-    <section aria-label="The three things that matter most">
+    <section aria-label={t('deepDiveThreeThingsAria')}>
       <div className="grid gap-3 sm:grid-cols-3">
         <ThingCard kind="growth" text={three.growth} seen={seen} />
         <ThingCard kind="risk" text={three.risk} seen={seen} />

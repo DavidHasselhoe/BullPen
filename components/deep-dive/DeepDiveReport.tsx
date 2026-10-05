@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, MessageSquare, Sparkles } from 'lucide-react';
@@ -39,6 +40,7 @@ interface Props {
 // them; the footer disclaimer stays as cheap redundancy for legally
 // sensitive copy.
 export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, onAsk }: Props) {
+  const { t } = useTranslation('tools');
   const when = createdAt ?? report.generatedAt;
 
   // Resolved once, here, and passed down. Every current price on this report
@@ -62,12 +64,15 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
             <>
               {onAsk && (
                 <Button variant="outline" size="sm" onClick={onAsk} className="h-8 gap-1.5 text-xs">
-                  <MessageSquare className="h-3.5 w-3.5" /> Ask Bull
+                  <MessageSquare className="h-3.5 w-3.5" aria-hidden /> {t('deepDiveAskBullButton')}
                 </Button>
               )}
+              {/* Outline, like Ask Bull: it spends a monthly deep dive (one, on the
+                  free plan), so it opens a confirmation instead of being the
+                  loudest thing in the header. */}
               {onRegenerate && (
-                <Button size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs rounded-full animate-ai-pill-shine">
-                  <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} /> Regenerate
+                <Button variant="outline" size="sm" onClick={onRegenerate} disabled={regenerating} className="h-8 gap-1.5 text-xs">
+                  <RefreshCw className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} aria-hidden /> {t('deepDiveRegenerateButton')}
                 </Button>
               )}
             </>
@@ -86,7 +91,7 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
           />
         )}
 
-        <StockPricePanel ticker={report.ticker} />
+        <StockPricePanel ticker={report.ticker} minimal />
 
         <div className="border-t border-border/20 pt-6">
           <DeepDiveSections report={report} currentPrice={price.price} />
@@ -94,7 +99,7 @@ export function DeepDiveReport({ report, createdAt, onRegenerate, regenerating, 
 
         <div className="flex justify-end border-t border-border/20 pt-6">
           <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Sparkles className="h-3 w-3" /> Educational only. Not investment advice.
+            <Sparkles className="h-3 w-3" aria-hidden /> {t('deepDiveDisclaimer')}
           </span>
         </div>
       </CardContent>

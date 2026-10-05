@@ -155,7 +155,9 @@ function StatItem({ label, value, valueClass }: { label: string; value: string; 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function StockPricePanel({ ticker }: { ticker: string }) {
+/** `minimal`: the price line without indicators, for a page that reads about a
+ *  stock (Deep Dive) rather than trades it. The stock page keeps the full panel. */
+export function StockPricePanel({ ticker, minimal = false }: { ticker: string; minimal?: boolean }) {
   const { t, i18n } = useTranslation('stock');
   const { isAuthenticated } = useAuth();
   const RANGE_LABEL = getRangeLabel(t);
@@ -163,7 +165,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
   const [range, setRange] = useState<Range>(prefs.defaultRange as Range);
 
   const [activeIndicators, setActiveIndicators] = useState<Set<Indicator>>(
-    new Set(prefs.defaultIndicators as Indicator[])
+    new Set(minimal ? [] : (prefs.defaultIndicators as Indicator[]))
   );
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const { isSimplified } = useExperienceLevel();
@@ -696,7 +698,7 @@ export function StockPricePanel({ ticker }: { ticker: string }) {
             </div>
 
             {/* Indicators — advanced users, non-1D only */}
-            {!isSimplified && range !== '1D' && (
+            {!isSimplified && !minimal && range !== '1D' && (
               <div className="flex flex-wrap items-center gap-1 sm:justify-end">
                 {INDICATORS.map(({ key, label }) => (
                   <button

@@ -24,6 +24,8 @@
  * the tools and compare page headers.
  */
 
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { AlertTriangle, BarChart3, CalendarClock, FileText, Scale, Target } from 'lucide-react';
 import {
   Accordion,
@@ -56,6 +58,7 @@ const BLOCK_SECTION: Record<Block['type'], SectionKey> = {
 };
 
 interface SectionSpec {
+  /** Translation key in the tools namespace. */
   label: string;
   icon: typeof BarChart3;
   iconColor: string;
@@ -68,37 +71,37 @@ const SECTION_ORDER: SectionKey[] = ['financials', 'bullBear', 'risks', 'catalys
 
 const SECTIONS: Record<SectionKey, SectionSpec> = {
   financials: {
-    label: 'Financials',
+    label: 'deepDiveSectionFinancials',
     icon: BarChart3,
     iconColor: 'text-blue-500',
     chip: 'bg-blue-500/10',
   },
   bullBear: {
-    label: 'Bull vs bear',
+    label: 'deepDiveSectionBullBear',
     icon: Scale,
     iconColor: 'text-foreground/70',
     chip: 'bg-foreground/[0.07]',
   },
   risks: {
-    label: 'Risks',
+    label: 'deepDiveSectionRisks',
     icon: AlertTriangle,
     iconColor: 'text-red-500',
     chip: 'bg-red-500/10',
   },
   catalysts: {
-    label: 'Catalysts',
+    label: 'deepDiveSectionCatalysts',
     icon: CalendarClock,
     iconColor: 'text-amber-500',
     chip: 'bg-amber-500/10',
   },
   analysts: {
-    label: 'Analyst views',
+    label: 'deepDiveSectionAnalysts',
     icon: Target,
     iconColor: 'text-muted-foreground',
     chip: 'bg-muted',
   },
   more: {
-    label: 'More detail',
+    label: 'deepDiveSectionMore',
     icon: FileText,
     iconColor: 'text-muted-foreground',
     chip: 'bg-muted',
@@ -110,17 +113,16 @@ const SECTIONS: Record<SectionKey, SectionSpec> = {
  * worth opening without opening it. Plain words over analyst register: a bull
  * and bear count reads as "for" and "against".
  */
-function summarize(key: SectionKey, blocks: Block[]): string | null {
-  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+function summarize(key: SectionKey, blocks: Block[], t: TFunction): string | null {
 
   switch (key) {
     case 'risks': {
       const n = blocks.reduce((acc, b) => acc + (b.type === 'risks' ? b.items.length : 0), 0);
-      return n > 0 ? plural(n, 'risk', 'risks') : null;
+      return n > 0 ? t('deepDiveSummaryRisks', { count: n }) : null;
     }
     case 'catalysts': {
       const n = blocks.reduce((acc, b) => acc + (b.type === 'catalysts' ? b.items.length : 0), 0);
-      return n > 0 ? plural(n, 'catalyst', 'catalysts') : null;
+      return n > 0 ? t('deepDiveSummaryCatalysts', { count: n }) : null;
     }
     case 'bullBear': {
       let bull = 0;
@@ -131,20 +133,21 @@ function summarize(key: SectionKey, blocks: Block[]): string | null {
           bear += b.bear.length;
         }
       }
-      return bull + bear > 0 ? `${bull} for, ${bear} against` : null;
+      return bull + bear > 0 ? t('deepDiveSummaryBullBear', { bull, bear }) : null;
     }
     case 'analysts': {
       const n = blocks.reduce((acc, b) => acc + (b.type === 'price_targets' ? b.items.length : 0), 0);
-      return n > 0 ? plural(n, 'target', 'targets') : null;
+      return n > 0 ? t('deepDiveSummaryTargets', { count: n }) : null;
     }
     case 'financials':
-      return blocks.length > 0 ? plural(blocks.length, 'chart', 'charts and tables') : null;
+      return blocks.length > 0 ? t('deepDiveSummaryCharts', { count: blocks.length }) : null;
     default:
       return null;
   }
 }
 
 export function DeepDiveSections({ report, currentPrice }: { report: Report; currentPrice?: number | null }) {
+  const { t } = useTranslation('tools');
   const grouped = new Map<SectionKey, Block[]>();
   for (const block of report.blocks) {
     const key = BLOCK_SECTION[block.type];
@@ -164,7 +167,7 @@ export function DeepDiveSections({ report, currentPrice }: { report: Report; cur
         const spec = SECTIONS[key];
         const blocks = grouped.get(key)!;
         const Icon = spec.icon;
-        const hint = summarize(key, blocks);
+        const hint = summarize(key, blocks, t);
 
         return (
           <AccordionItem
@@ -180,7 +183,7 @@ export function DeepDiveSections({ report, currentPrice }: { report: Report; cur
                 >
                   <Icon className={cn('h-4 w-4', spec.iconColor)} />
                 </span>
-                <span className="text-sm font-semibold text-foreground">{spec.label}</span>
+                <span className="text-sm font-semibold text-foreground">{t(spec.label)}</span>
                 {hint && (
                   <span className="text-[11px] font-normal text-muted-foreground">{hint}</span>
                 )}

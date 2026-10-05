@@ -21,6 +21,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { HealthRing } from '@/components/finance/HealthRing';
 import { DELAYED_QUOTE_MINUTES } from '@/lib/market-data/ws-coverage';
 import { cn } from '@/lib/utils';
@@ -28,17 +29,17 @@ import type { DeepDivePrice } from '@/hooks/use-deep-dive-price';
 import type { HealthScore } from '@/lib/finance/health-score';
 import type { Verdict } from '@/lib/ai/deep-dive/schema';
 
-const STANCE_STYLE: Record<Verdict['stance'], { label: string; cls: string }> = {
-  bullish: { label: 'Bullish', cls: 'text-emerald-500' },
-  bearish: { label: 'Bearish', cls: 'text-red-500' },
-  neutral: { label: 'Neutral', cls: 'text-muted-foreground' },
-  mixed: { label: 'Mixed', cls: 'text-amber-600 dark:text-amber-400' },
+const STANCE_STYLE: Record<Verdict['stance'], { key: string; cls: string }> = {
+  bullish: { key: 'deepDiveStanceBullish', cls: 'text-emerald-500' },
+  bearish: { key: 'deepDiveStanceBearish', cls: 'text-red-500' },
+  neutral: { key: 'deepDiveStanceNeutral', cls: 'text-muted-foreground' },
+  mixed: { key: 'deepDiveStanceMixed', cls: 'text-amber-600 dark:text-amber-400' },
 };
 
-const CONFIDENCE_LABEL: Record<Verdict['confidence'], string> = {
-  high: 'High confidence',
-  medium: 'Medium confidence',
-  low: 'Low confidence',
+const CONFIDENCE_KEY: Record<Verdict['confidence'], string> = {
+  high: 'deepDiveConfidenceHigh',
+  medium: 'deepDiveConfidenceMedium',
+  low: 'deepDiveConfidenceLow',
 };
 
 /**
@@ -46,13 +47,9 @@ const CONFIDENCE_LABEL: Record<Verdict['confidence'], string> = {
  * ways. Thresholds match the health score's own grade bands (see
  * scoreToGrade): A/B is 70+, D/F is under 55.
  */
-function mismatchNote(score: number, stance: Verdict['stance']): string | null {
-  if (score >= 70 && stance === 'bearish') {
-    return 'The financials are strong but this report is still cautious. A good business and a good buy at today\'s price are two different questions.';
-  }
-  if (score < 55 && stance === 'bullish') {
-    return 'This report is positive despite weak financials today, so the case rests on what changes from here rather than on the current numbers.';
-  }
+function mismatchKey(score: number, stance: Verdict['stance']): string | null {
+  if (score >= 70 && stance === 'bearish') return 'deepDiveMismatchStrongBearish';
+  if (score < 55 && stance === 'bullish') return 'deepDiveMismatchWeakBullish';
   return null;
 }
 
@@ -64,8 +61,8 @@ function mismatchNote(score: number, stance: Verdict['stance']): string | null {
  */
 function Cell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col items-center justify-center text-center sm:px-4">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className="flex min-w-0 flex-col items-center justify-start text-center sm:justify-center sm:px-4">
+      <p className="mb-2 text-xs font-medium text-muted-foreground">
         {label}
       </p>
       {children}
@@ -96,27 +93,32 @@ export function VerdictBar({
     retry: false,
   });
 
-  const { price, changePct, isLive } = priceInfo;
+  const { t } = useTranslation('tools');
+  const { price, changePct, isLive, session } = priceInfo;
   // Flat is its own state, not a gain. `>= 0` painted an unchanged price
   // emerald with a "+" in front of it, which reads as a small rise.
   const direction = changePct == null || Math.abs(changePct) < 0.005 ? 'flat' : changePct > 0 ? 'up' : 'down';
+  const pct = changePct == null ? '' : `${direction === 'up' ? '+' : ''}${changePct.toFixed(2)}%`;
+  const changeKey = session === 'pre' ? 'deepDiveChangePre' : session === 'post' ? 'deepDiveChangePost' : 'deepDiveChangeToday';
 
   const stance = STANCE_STYLE[verdict.stance];
-  const note = health ? mismatchNote(health.score, verdict.stance) : null;
+  const noteKey = health ? mismatchKey(health.score, verdict.stance) : null;
   const showHealth = healthLoading || !!health;
 
   return (
     <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
+      {/* Columns on every width. Stacked on a phone, the three cells stood
+          ~330px tall and pushed the report's headline below the fold. */}
       <div
         className={cn(
-          'grid gap-5 sm:divide-x sm:divide-border/40',
-          showHealth ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
+          'grid gap-2 divide-x divide-border/40 sm:gap-5',
+          showHealth ? 'grid-cols-3' : 'grid-cols-2'
         )}
       >
         {showHealth && (
-          <Cell label="Financial health">
+          <Cell label={t('deepDiveVerdictHealth')}>
             {healthLoading || !health ? (
-              <div className="h-[68px] w-[68px] animate-shimmer rounded-full" />
+              <div className="h-[52px] w-[52px] animate-shimmer rounded-full sm:h-[68px] sm:w-[68px]" />
             ) : (
               // Ring and word as one centered unit, and nothing else. A
               // "What the numbers say" gloss used to sit under the word; at a
@@ -126,31 +128,31 @@ export function VerdictBar({
               // label already says these are the financials, and the note
               // under the bar explains the split when the two readings
               // actually disagree.
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex flex-col items-center justify-center gap-1.5 sm:flex-row sm:gap-3">
                 <HealthRing
                   score={health.score}
                   grade={health.grade}
                   pillars={health.categories}
-                  size={68}
+                  size={56}
                   className="shrink-0 text-foreground"
                 />
-                <p className="text-lg font-bold leading-tight text-foreground">{health.label}</p>
+                <p className="text-sm font-bold leading-tight text-foreground sm:text-lg">{health.label}</p>
               </div>
             )}
           </Cell>
         )}
 
-        <Cell label="AI view">
-          <p className={cn('text-2xl font-bold leading-none', stance.cls)}>{stance.label}</p>
+        <Cell label={t('deepDiveVerdictAiView')}>
+          <p className={cn('text-lg font-bold leading-none sm:text-2xl', stance.cls)}>{t(stance.key)}</p>
           <p className="mt-2 text-xs leading-tight text-muted-foreground">
-            {CONFIDENCE_LABEL[verdict.confidence]}
+            {t(CONFIDENCE_KEY[verdict.confidence])}
           </p>
         </Cell>
 
-        <Cell label="Price today">
+        <Cell label={t('deepDiveVerdictPrice')}>
           {price != null ? (
             <>
-              <p className="text-2xl font-bold tabular-nums leading-none text-foreground">
+              <p className="font-mono text-lg font-bold tabular-nums leading-none text-foreground sm:text-2xl">
                 ${price.toFixed(2)}
               </p>
               {changePct != null && (
@@ -162,16 +164,15 @@ export function VerdictBar({
                     direction === 'flat' && 'text-muted-foreground'
                   )}
                 >
-                  {direction === 'up' ? '+' : ''}
-                  {changePct.toFixed(2)}% today
+                  {t(changeKey, { pct })}
                 </p>
               )}
               {/* Say which feed this is. A delayed number presented as live is
                   the kind of quiet inaccuracy that costs trust in every other
                   figure on the page. */}
               {!isLive && (
-                <p className="mt-1 text-[10px] leading-tight text-muted-foreground">
-                  {DELAYED_QUOTE_MINUTES} min delayed
+                <p className="mt-1 text-xs leading-tight text-muted-foreground">
+                  {t('deepDiveDelayed', { minutes: DELAYED_QUOTE_MINUTES })}
                 </p>
               )}
             </>
@@ -181,9 +182,9 @@ export function VerdictBar({
         </Cell>
       </div>
 
-      {note && (
+      {noteKey && (
         <p className="mt-3 border-t border-border/40 pt-3 text-xs leading-relaxed text-muted-foreground">
-          {note}
+          {t(noteKey)}
         </p>
       )}
     </div>

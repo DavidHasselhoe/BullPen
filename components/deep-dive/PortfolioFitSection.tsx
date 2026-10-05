@@ -74,7 +74,7 @@ export function PortfolioFitSection({
       <dl className="space-y-3.5">
         {rows.map((row) => (
           <div key={row.label}>
-            <dt className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <dt className="mb-1 text-xs font-semibold text-muted-foreground">
               {row.label}
             </dt>
             <dd className={cn('text-[13px] leading-relaxed text-muted-foreground')}>{row.body}</dd>
