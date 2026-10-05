@@ -1,5 +1,46 @@
 [
   {
+    "date": "2026-10-05",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Member profiles are now private unless you turn on Public profile in Settings. Search engines no longer list member pages, and public profiles no longer show who has Pro"
+      },
+      {
+        "type": "improved",
+        "text": "Every new account now gets the short setup, choosing how BullPen explains things, your first stocks and your alerts, whether you sign up with Google or email. You can skip it at any time"
+      },
+      {
+        "type": "fixed",
+        "text": "Deep Dive shows the right change before the market opens and after it closes, asks before a regenerate uses up one of your monthly deep dives, notes when a report is more than two weeks old, and now appears in your language"
+      },
+      {
+        "type": "improved",
+        "text": "Watchlist asks before deleting a list, lets you undo removing a stock, and its buttons now work on phones. Adding a stock no longer sets up price alerts on its own, so your free alert slots stay yours to use"
+      },
+      {
+        "type": "improved",
+        "text": "Fund pages show readable company names, no longer make options look like part of a fund's size, and show the quarter's headline and top three holdings before you upgrade"
+      },
+      {
+        "type": "fixed",
+        "text": "Upgrade previews no longer show sample scores or reasons next to your real stock or portfolio, where they could be read as BullPen's verdict"
+      },
+      {
+        "type": "new",
+        "text": "The Weekly Pick track record now groups picks by quarter"
+      },
+      {
+        "type": "improved",
+        "text": "The Ask Bull button stays put on wide screens and only steps aside when it would cover something"
+      },
+      {
+        "type": "fixed",
+        "text": "This week's Weekly Pick was published a few hours late after an error stopped the scheduled run. That error can no longer hold up a week's pick"
+      }
+    ]
+  },
+  {
     "date": "2026-10-02",
     "entries": [
       {
