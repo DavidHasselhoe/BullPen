@@ -75,5 +75,20 @@
   "publicProfileTierPro": "Pro",
   "activityReplyFallbackTarget": "a",
   "profileAvatarTierNormal": "Normal",
-  "profileModalUsernamePlaceholder": "johndoe"
+  "profileModalUsernamePlaceholder": "johndoe",
+  "usersPageTitle": "Explorar miembros",
+  "usersPageSubtitle": "Miembros que eligieron hacer su perfil público. Busca por nombre o nombre de usuario.",
+  "usersSearchPlaceholder": "Busca por nombre o nombre de usuario…",
+  "usersHowToJoin": "¿Quieres aparecer en la lista? Activa el perfil público en Configuración.",
+  "usersLoadError": "Los miembros no pudieron cargarse. Intenta de nuevo en un momento.",
+  "usersNoResults": "No se encontraron miembros para {{query}}.",
+  "usersResultCount_one": "{{count}} resultado para {{query}}",
+  "usersResultCount_other": "{{count}} resultados para {{query}}",
+  "usersPublicCount_one": "{{count}} perfil público",
+  "usersPublicCount_other": "{{count}} perfiles públicos",
+  "usersEmpty": "Aún no hay perfiles públicos.",
+  "publicProfileThesisCount_one": "{{count}} tesis",
+  "publicProfileThesisCount_other": "{{count}} tesis",
+  "publicProfileFollowerCount_one": "{{count}} seguidor",
+  "publicProfileFollowerCount_other": "{{count}} seguidores"
 }

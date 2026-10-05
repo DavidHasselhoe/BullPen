@@ -146,10 +146,8 @@
   "privacyOAuthNotice": "Iniciaste sesión con Google. El cambio de contraseña no está disponible para cuentas OAuth.",
   "privacyPasswordMinChars": "Mín. 8 caracteres, con una letra y un número",
   "privacyPasswordUpdated": "¡Contraseña actualizada!",
-  "privacyPublicProfileDescription": "Permite que otros miembros de BullPen encuentren y vean tu página de perfil.",
   "privacyPublicProfileLabel": "Perfil público",
   "privacyRepeatPassword": "Repite la nueva contraseña",
-  "privacyShowPortfolioDescription": "Muestra tus acciones de cartera (solo símbolo de cotización y nombre de empresa, sin cantidades ni precios) en tu perfil público.",
   "privacyShowPortfolioLabel": "Mostrar cartera",
   "privacyUpdatePasswordButton": "Actualizar contraseña",
   "privacyUpdatingPassword": "Actualizando...",
@@ -176,7 +174,6 @@
   "theme": "Tema",
   "themeDark": "Oscuro",
   "themeLight": "Claro",
-  "darkMode": "Modo oscuro",
   "title": "Configuración",
   "notifEconomicEventsLabel": "Lanzamientos Económicos",
   "notifEconomicEventsDescription": "Un aviso por la mañana en días con un lanzamiento económico de EE.UU. que sigues, con la hora en tu zona horaria. Elige qué lanzamientos deseas seguir en Economic en el Market Calendar.",
@@ -194,5 +191,8 @@
   "notifPoliticianTradesDescription": "Recibe notificaciones cuando un político que sigues divulga nuevas operaciones de acciones",
   "notifPoliticianHoldingsLabel": "Operaciones de Políticos en tus Acciones",
   "notifPoliticianHoldingsDescription": "Pro: recibe notificaciones cuando un político rastreado opera una acción que posees o sigues",
-  "sectionPlanLabel": "Plan"
+  "privacyPublicProfileDescription": "Muestra tu nombre, foto y biografía en una página de perfil que cualquiera con el enlace puede abrir, y te lista en Explorar miembros. Desactivado hasta que lo actives.",
+  "privacyShowPortfolioDescription": "También muestra qué acciones tienes (solo símbolo y nombre de la empresa, sin cantidades ni precios) en tu perfil público.",
+  "sectionPlanLabel": "Plan",
+  "darkMode": "Modo oscuro"
 }

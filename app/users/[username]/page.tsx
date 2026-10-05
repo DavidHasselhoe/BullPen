@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { PublicHoldingsList } from '@/components/user/PublicHoldingsList';
 import { FollowButton } from '@/components/user/FollowButton';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ActivityFeed } from '@/components/user/ActivityFeed';
 import {
@@ -19,8 +18,6 @@ import {
   Globe,
   ChevronLeft,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { tierLabel } from '@/lib/billing/tier';
 import type { PublicUser } from '@/app/api/users/search/route';
 
 interface ProfileResponse {
@@ -29,19 +26,6 @@ interface ProfileResponse {
   holdings?: Array<{ symbol: string; company_name: string }>;
   error?: string;
 }
-
-// See components/user/PublicProfileCard.tsx for why Pro gets a warmer amber
-// treatment here instead of the neutral ProBadge used in account chrome.
-const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
-  Member: 'bg-muted text-muted-foreground border-0',
-  Pro: 'border-amber-400/30 bg-amber-400/10 text-amber-600 dark:text-amber-400',
-};
-
-// Same amber as the badge, carried onto the avatar ring.
-const AVATAR_RING_CLASS: Record<'Member' | 'Pro', string> = {
-  Member: 'ring-border',
-  Pro: 'ring-amber-400/70',
-};
 
 const EXPERIENCE_LABELS: Record<string, string> = {
   beginner: 'Beginner',
@@ -138,9 +122,6 @@ export default function UserProfilePage() {
 
   const displayName = profile.full_name || profile.username || 'Anonymous';
   const initials = displayName.slice(0, 2).toUpperCase();
-  const tierLabelValue = tierLabel(profile.account_tier);
-  const tier = tierLabelValue ? { label: tierLabelValue, className: TIER_BADGE_CLASS[tierLabelValue] } : null;
-  const ringClass = AVATAR_RING_CLASS[tierLabelValue ?? 'Member'];
 
   return (
     <div className="min-h-screen bg-background">
@@ -163,10 +144,10 @@ export default function UserProfilePage() {
               alt={displayName}
               width={80}
               height={80}
-              className={cn('rounded-full object-cover ring-2 shrink-0', ringClass)}
+              className="rounded-full object-cover ring-2 ring-border shrink-0"
             />
           ) : (
-            <div className={cn('h-20 w-20 rounded-full bg-primary/10 ring-2 flex items-center justify-center shrink-0', ringClass)}>
+            <div className="h-20 w-20 rounded-full bg-primary/10 ring-2 ring-border flex items-center justify-center shrink-0">
               <span className="text-xl font-bold text-primary">{initials}</span>
             </div>
           )}
@@ -174,11 +155,6 @@ export default function UserProfilePage() {
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
-              {tier && (
-                <Badge variant="outline" className={cn('text-[11px] font-semibold', tier.className)}>
-                  {tier.label}
-                </Badge>
-              )}
             </div>
             {profile.username && (
               <p className="text-sm text-muted-foreground">@{profile.username}</p>

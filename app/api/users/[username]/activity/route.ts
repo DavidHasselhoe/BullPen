@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { isProfilePublic, areHoldingsPublic } from '@/lib/social/visibility';
 
 export interface ActivityItem {
   type: 'thesis' | 'reply' | 'portfolio';
@@ -56,10 +57,10 @@ async function handler(
     }
 
     const settings = userRow.settings ?? {};
-    if (settings.profile_public === false) {
+    if (!isProfilePublic(settings)) {
       return addSecurityHeaders(NextResponse.json({ success: false, error: 'This profile is private' }, { status: 403 }));
     }
-    const holdingsPublic = settings.holdings_public !== false;
+    const holdingsPublic = areHoldingsPublic(settings);
     const targetId = userRow.id;
 
     const [thesesRes, repliesRes, portfolioRes] = await Promise.all([

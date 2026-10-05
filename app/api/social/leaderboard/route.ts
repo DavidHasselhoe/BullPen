@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient as createServiceClient } from '@/lib/supabase/client';
+import { isProfilePublic } from '@/lib/social/visibility';
 
 export interface LeaderboardEntry {
   user_id: string;
@@ -24,8 +25,7 @@ interface ProfileRow {
 }
 
 function isPublic(p: ProfileRow): boolean {
-  const s = (p.settings as Record<string, unknown>) ?? {};
-  return s.profile_public !== false;
+  return isProfilePublic(p.settings);
 }
 
 async function handler(

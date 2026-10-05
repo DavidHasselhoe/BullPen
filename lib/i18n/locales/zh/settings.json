@@ -146,10 +146,8 @@
   "privacyOAuthNotice": "您使用Google登录。OAuth账户无法更改密码。",
   "privacyPasswordMinChars": "至少 8 个字符，必须包含字母和数字",
   "privacyPasswordUpdated": "密码已更新!",
-  "privacyPublicProfileDescription": "允许其他BullPen用户查找和查看您的个人资料页面。",
   "privacyPublicProfileLabel": "公开资料",
   "privacyRepeatPassword": "重复新密码",
-  "privacyShowPortfolioDescription": "在您的公开资料上展示您的投资组合股票（仅代码和公司名称，不含数量或价格）。",
   "privacyShowPortfolioLabel": "展示投资组合",
   "privacyUpdatePasswordButton": "更新密码",
   "privacyUpdatingPassword": "正在更新...",
@@ -177,7 +175,6 @@
   "theme": "主题",
   "themeDark": "深色",
   "themeLight": "浅色",
-  "darkMode": "深色模式",
   "title": "设置",
   "notifEconomicEventsLabel": "经济数据发布",
   "notifEconomicEventsDescription": "在有您关注的美国经济数据发布的日子，早上提醒您，并显示您所在时区的时间。您可以在Market Calendar中的Economic下选择要关注的数据发布。",
@@ -194,5 +191,8 @@
   "notifPoliticianTradesLabel": "政治家交易",
   "notifPoliticianTradesDescription": "当你关注的政治家披露新的股票交易时获得通知",
   "notifPoliticianHoldingsLabel": "你持有的股票中的政界人士交易",
-  "notifPoliticianHoldingsDescription": "Pro：当被追踪的政界人士交易你持有或关注的股票时获得通知"
+  "notifPoliticianHoldingsDescription": "Pro：当被追踪的政界人士交易你持有或关注的股票时获得通知",
+  "privacyPublicProfileDescription": "在任何人都可以打开的个人资料页面上展示你的名字、照片和个人简介，并在浏览成员中列出你。默认关闭，需要你手动开启。",
+  "privacyShowPortfolioDescription": "同时在你的公开个人资料上展示你持有的股票（仅显示代码和公司名称，不显示数量或价格）。",
+  "darkMode": "深色模式"
 }

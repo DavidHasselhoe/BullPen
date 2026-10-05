@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useAuth } from '@/hooks/use-auth';
 import { PublicProfileCard } from '@/components/user/PublicProfileCard';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,16 +21,24 @@ async function fetchMembers(q: string): Promise<PublicUser[]> {
   const params = new URLSearchParams({ limit: '30' });
   if (q.trim().length >= 2) params.set('q', q.trim());
   const res = await fetchWithTimeout(`/api/users/search?${params.toString()}`, {}, 8000);
-  if (!res.ok) return [];
+  // Thrown, not swallowed: an empty list read as "No public profiles yet"
+  // when the request had simply failed.
+  if (!res.ok) throw new Error(`Members request failed: ${res.status}`);
   const data = (await res.json()) as SearchResponse;
   return data.results ?? [];
 }
 
+// Opens Settings on its Privacy tab, the same event the notifications page uses.
+const openPrivacySettings = () =>
+  window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'privacy' } }));
+
 export default function UsersPage() {
+  const { t } = useTranslation('user');
+  const { isAuthenticated } = useAuth();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 280);
 
-  const { data: results, isLoading } = useQuery({
+  const { data: results, isLoading, isError } = useQuery({
     queryKey: ['users-search', debouncedQuery],
     queryFn: () => fetchMembers(debouncedQuery),
     staleTime: 30_000,
@@ -36,8 +46,9 @@ export default function UsersPage() {
   });
 
   const isSearchMode = debouncedQuery.trim().length >= 2;
-  const showEmpty = isSearchMode && !isLoading && (results?.length ?? 0) === 0;
-  const showResults = (results?.length ?? 0) > 0;
+  const count = results?.length ?? 0;
+  const showEmpty = isSearchMode && !isLoading && !isError && count === 0;
+  const showResults = count > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,10 +58,8 @@ export default function UsersPage() {
             <Users className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Browse Members</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Everyone listed here has a public profile. Use search to narrow by name or username.
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('usersPageTitle')}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">{t('usersPageSubtitle')}</p>
           </div>
         </div>
 
@@ -59,10 +68,18 @@ export default function UsersPage() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or username…"
+            placeholder={t('usersSearchPlaceholder')}
+            aria-label={t('usersSearchPlaceholder')}
             className="pl-9"
           />
         </div>
+
+        {/* Profiles are opt-in, so say where the switch is. */}
+        {isAuthenticated && (
+          <button type="button" onClick={openPrivacySettings} className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+            {t('usersHowToJoin')}
+          </button>
+        )}
 
         {isLoading && (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -72,25 +89,26 @@ export default function UsersPage() {
           </div>
         )}
 
+        {isError && !isLoading && (
+          <div role="alert" className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
+            <Users className="h-10 w-10 opacity-30" aria-hidden />
+            <p className="text-sm">{t('usersLoadError')}</p>
+          </div>
+        )}
+
         {showEmpty && (
           <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
-            <Users className="h-10 w-10 opacity-30" />
-            <p className="text-sm">No members found for &ldquo;{debouncedQuery}&rdquo;.</p>
+            <Users className="h-10 w-10 opacity-30" aria-hidden />
+            <p className="text-sm">{t('usersNoResults', { query: debouncedQuery })}</p>
           </div>
         )}
 
         {showResults && !isLoading && (
           <>
             <p className="text-xs text-muted-foreground">
-              {isSearchMode ? (
-                <>
-                  {results!.length} result{results!.length === 1 ? '' : 's'} for &ldquo;{debouncedQuery}&rdquo;
-                </>
-              ) : (
-                <>
-                  {results!.length} public profile{results!.length === 1 ? '' : 's'}
-                </>
-              )}
+              {isSearchMode
+                ? t('usersResultCount', { count, query: debouncedQuery })
+                : t('usersPublicCount', { count })}
             </p>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {results!.map((user) => (
@@ -100,10 +118,15 @@ export default function UsersPage() {
           </>
         )}
 
-        {!isLoading && !showResults && !showEmpty && (
+        {!isLoading && !isError && !showResults && !showEmpty && (
           <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
-            <Users className="h-10 w-10 opacity-30" />
-            <p className="text-sm">No public profiles yet.</p>
+            <Users className="h-10 w-10 opacity-30" aria-hidden />
+            <p className="text-sm">{t('usersEmpty')}</p>
+            {isAuthenticated && (
+              <button type="button" onClick={openPrivacySettings} className="text-xs text-primary underline-offset-4 hover:underline">
+                {t('usersHowToJoin')}
+              </button>
+            )}
           </div>
         )}
       </div>

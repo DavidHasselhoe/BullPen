@@ -75,5 +75,20 @@
   "publicProfileStockCount_other": "{{count}} actions",
   "publicProfileTierMember": "Membre",
   "publicProfileTierPro": "Pro",
-  "profileAvatarTierNormal": "Normal"
+  "profileAvatarTierNormal": "Normal",
+  "usersPageTitle": "Parcourir les membres",
+  "usersPageSubtitle": "Membres qui ont choisi de rendre leur profil public. Recherchez par nom ou nom d'utilisateur.",
+  "usersSearchPlaceholder": "Rechercher par nom ou nom d'utilisateur…",
+  "usersHowToJoin": "Vous voulez être listé ? Activez le profil public dans les Paramètres.",
+  "usersLoadError": "Les membres n'ont pas pu être chargés. Réessayez dans un moment.",
+  "usersNoResults": "Aucun membre trouvé pour {{query}}.",
+  "usersResultCount_one": "{{count}} résultat pour {{query}}",
+  "usersResultCount_other": "{{count}} résultats pour {{query}}",
+  "usersPublicCount_one": "{{count}} profil public",
+  "usersPublicCount_other": "{{count}} profils publics",
+  "usersEmpty": "Aucun profil public pour le moment.",
+  "publicProfileThesisCount_one": "{{count}} thèse",
+  "publicProfileThesisCount_other": "{{count}} thèses",
+  "publicProfileFollowerCount_one": "{{count}} abonné",
+  "publicProfileFollowerCount_other": "{{count}} abonnés"
 }

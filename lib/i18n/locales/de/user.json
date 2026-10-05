@@ -75,5 +75,20 @@
   "publicProfileTierMember": "Mitglied",
   "publicProfileTierPro": "Pro",
   "profileAvatarTierGold": "Gold",
-  "profileAvatarTierNormal": "Normal"
+  "profileAvatarTierNormal": "Normal",
+  "usersPageTitle": "Mitglieder durchsuchen",
+  "usersPageSubtitle": "Mitglieder, die ihr Profil öffentlich gemacht haben. Suche nach Name oder Benutzername.",
+  "usersSearchPlaceholder": "Nach Name oder Benutzername suchen…",
+  "usersHowToJoin": "Möchtest du aufgelistet werden? Aktiviere Öffentliches Profil in den Einstellungen.",
+  "usersLoadError": "Mitglieder konnten nicht geladen werden. Versuche es in einem Moment erneut.",
+  "usersNoResults": "Keine Mitglieder gefunden für {{query}}.",
+  "usersResultCount_one": "{{count}} Ergebnis für {{query}}",
+  "usersResultCount_other": "{{count}} Ergebnisse für {{query}}",
+  "usersPublicCount_one": "{{count}} öffentliches Profil",
+  "usersPublicCount_other": "{{count}} öffentliche Profile",
+  "usersEmpty": "Noch keine öffentlichen Profile.",
+  "publicProfileThesisCount_one": "{{count}} These",
+  "publicProfileThesisCount_other": "{{count}} Thesen",
+  "publicProfileFollowerCount_one": "{{count}} Follower",
+  "publicProfileFollowerCount_other": "{{count}} Follower"
 }

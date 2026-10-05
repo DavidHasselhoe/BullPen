@@ -75,5 +75,20 @@
   "publicProfileTierPro": "Pro",
   "profileAvatarTierNormal": "Normal",
   "profileModalDisplayNamePlaceholder": "John Doe",
-  "profileModalUsernamePlaceholder": "johndoe"
+  "profileModalUsernamePlaceholder": "johndoe",
+  "usersPageTitle": "Bla gjennom medlemmer",
+  "usersPageSubtitle": "Medlemmer som valgte å gjøre profilen sin offentlig. Søk etter navn eller brukernavn.",
+  "usersSearchPlaceholder": "Søk etter navn eller brukernavn…",
+  "usersHowToJoin": "Vil du være med på listen? Slå på Offentlig profil i Innstillinger.",
+  "usersLoadError": "Medlemmer kunne ikke lastes inn. Prøv igjen om litt.",
+  "usersNoResults": "Ingen medlemmer funnet for {{query}}.",
+  "usersResultCount_one": "{{count}} resultat for {{query}}",
+  "usersResultCount_other": "{{count}} resultater for {{query}}",
+  "usersPublicCount_one": "{{count}} offentlig profil",
+  "usersPublicCount_other": "{{count}} offentlige profiler",
+  "usersEmpty": "Ingen offentlige profiler ennå.",
+  "publicProfileThesisCount_one": "{{count}} oppfatning",
+  "publicProfileThesisCount_other": "{{count}} oppfatninger",
+  "publicProfileFollowerCount_one": "{{count}} følger",
+  "publicProfileFollowerCount_other": "{{count}} følgere"
 }

@@ -17,10 +17,12 @@ interface FollowButtonProps {
   /** URL segment from `/users/[username]`: actual username or user UUID (for users without a username). */
   profileSlug: string;
   targetUserId: string;
+  /** Just the button, no follower counts beside it (member cards show their own). */
+  compact?: boolean;
   className?: string;
 }
 
-export function FollowButton({ profileSlug, targetUserId, className }: FollowButtonProps) {
+export function FollowButton({ profileSlug, targetUserId, compact = false, className }: FollowButtonProps) {
   const { t } = useTranslation('user');
   const { user, isAuthenticated } = useAuth();
   const [stats, setStats] = useState<FollowStats | null>(null);
@@ -62,7 +64,7 @@ export function FollowButton({ profileSlug, targetUserId, className }: FollowBut
   return (
     <div className={cn('flex items-center gap-3', className)}>
       {/* Follower counts */}
-      {stats && (
+      {stats && !compact && (
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <span>
             <strong className="text-foreground">{stats.followers}</strong> {t('followButtonFollowersCount', { count: stats.followers })}
@@ -78,7 +80,7 @@ export function FollowButton({ profileSlug, targetUserId, className }: FollowBut
         variant={stats?.isFollowing ? 'outline' : 'default'}
         onClick={handleToggle}
         disabled={pending}
-        className="gap-1.5 min-w-[100px]"
+        className={cn('gap-1.5', compact ? 'h-8 px-2.5' : 'min-w-[100px]')}
       >
         {pending ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />

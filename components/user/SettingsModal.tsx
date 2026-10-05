@@ -158,7 +158,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [homepageMenuOpen, setHomepageMenuOpen] = useState<boolean>(false);
   const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true);
   const [roundNumbers, setRoundNumbers] = useState<boolean>(false);
-  const [profilePublic, setProfilePublic] = useState<boolean>(true);
+  const [profilePublic, setProfilePublic] = useState<boolean>(false);
 
   // Chart preferences — shared with the stock-page chart settings popover via the
   // same hook (localStorage + users.settings.chart_prefs), so edits stay in sync.
@@ -191,7 +191,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         : homepageStockPick.ticker
       : t('homepageStock')
     : currentHomepageOption?.label ?? t('homepageHome');
-  const [holdingsPublic, setHoldingsPublic] = useState<boolean>(true);
+  const [holdingsPublic, setHoldingsPublic] = useState<boolean>(false);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGET_ORDER);
   const [widgetHidden, setWidgetHidden] = useState<string[]>([]);
   // AI settings state
@@ -271,8 +271,9 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setStockMode(!!stockMatch);
       setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
       setRoundNumbers(settings.round_numbers === true);
-      setProfilePublic(settings.profile_public !== false);
-      setHoldingsPublic(settings.holdings_public !== false);
+      // Off unless turned on: saving any setting used to write a public profile.
+      setProfilePublic(settings.profile_public === true);
+      setHoldingsPublic(settings.holdings_public === true);
       setWidgetOrder(Array.isArray(settings.homepage_widget_order) ? settings.homepage_widget_order : DEFAULT_WIDGET_ORDER);
       setWidgetHidden(Array.isArray(settings.homepage_widget_hidden) ? settings.homepage_widget_hidden : []);
       // AI settings

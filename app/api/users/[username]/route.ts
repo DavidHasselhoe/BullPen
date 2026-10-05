@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import type { PublicUser } from '../search/route';
+import { isProfilePublic, areHoldingsPublic } from '@/lib/social/visibility';
 
 // Public profile page — deliberately unauthenticated, same reasoning as
 // users/search/route.ts: the column whitelist below plus the profile_public/
@@ -28,7 +29,7 @@ async function handler(
   try {
     const supabase = createServerClient();
 
-    const SELECT_COLS = 'id, username, full_name, avatar_url, bio, experience_level, market_focus, risk_profile, account_tier, created_at, settings';
+    const SELECT_COLS = 'id, username, full_name, avatar_url, bio, experience_level, market_focus, risk_profile, created_at, settings';
 
     // Try username first, then fall back to user ID (for users who haven't set a username)
     let userRow: Record<string, unknown> | null = null;
@@ -61,7 +62,7 @@ async function handler(
 
     // Respect profile_public setting
     const settings = (userRow.settings as Record<string, unknown>) ?? {};
-    if (settings.profile_public === false) {
+    if (!isProfilePublic(settings)) {
       return addSecurityHeaders(
         NextResponse.json({ success: false, error: 'This profile is private' }, { status: 403 })
       );
@@ -76,12 +77,11 @@ async function handler(
       experience_level: (userRow.experience_level as PublicUser['experience_level']) ?? null,
       market_focus: (userRow.market_focus as PublicUser['market_focus']) ?? null,
       risk_profile: (userRow.risk_profile as PublicUser['risk_profile']) ?? null,
-      account_tier: (userRow.account_tier as number | null) ?? null,
       created_at: userRow.created_at as string,
     };
 
     // Fetch public holdings (symbol + company_name only — no qty or price)
-    const holdingsPublic = settings.holdings_public !== false;
+    const holdingsPublic = areHoldingsPublic(settings);
     let holdings: Array<{ symbol: string; company_name: string }> = [];
 
     if (holdingsPublic) {

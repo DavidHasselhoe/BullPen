@@ -4,33 +4,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Briefcase, TrendingUp, BarChart2 } from 'lucide-react';
+import { Briefcase, TrendingUp, BarChart2, MessageSquareText, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { tierLabel } from '@/lib/billing/tier';
+import { FollowButton } from '@/components/user/FollowButton';
 import type { PublicUser } from '@/app/api/users/search/route';
 
 interface PublicProfileCardProps {
   user: PublicUser;
   className?: string;
 }
-
-// Pro gets a warmer, more distinct treatment than the neutral ProBadge used in
-// account chrome (components/billing/ProBadge.tsx) — this one does social
-// signaling work on a public surface, so it's allowed to stand out more than a
-// badge sitting quietly next to your own name in a dropdown. Amber/gold reads
-// as "premium" and is DESIGN.md's sanctioned third color for status pills
-// (never used for gain/loss, which stays exclusively Signal Emerald/Red).
-const TIER_BADGE_CLASS: Record<'Member' | 'Pro', string> = {
-  Member: 'bg-muted text-muted-foreground',
-  Pro: 'border border-amber-400/30 bg-amber-400/10 text-amber-600 dark:text-amber-400',
-};
-
-// Same amber used on the badge above, carried onto the avatar ring so the two
-// read as one signal rather than two unrelated colors.
-const AVATAR_RING_CLASS: Record<'Member' | 'Pro', string> = {
-  Member: 'ring-border group-hover:ring-primary/40',
-  Pro: 'ring-amber-400/70 group-hover:ring-amber-400',
-};
 
 function getExperienceLabels(t: TFunction): Record<string, string> {
   return {
@@ -48,91 +30,101 @@ function getMarketLabels(t: TFunction): Record<string, string> {
   };
 }
 
-function getTierLabels(t: TFunction): Record<'Member' | 'Pro', string> {
-  return {
-    Member: t('publicProfileTierMember'),
-    Pro: t('publicProfileTierPro'),
-  };
-}
+const CHIP = 'flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground';
 
+/**
+ * One member on Browse Members. Leads with what they do here (theses written,
+ * followers) because that is the reason to open a profile. No Member/Pro
+ * badge: on 19 of 20 cards it said nothing, and on the 20th it told strangers
+ * who pays.
+ *
+ * The whole card opens the profile through a stretched link, so the Follow
+ * button can sit on it without being a button inside a link.
+ */
 export function PublicProfileCard({ user, className }: PublicProfileCardProps) {
   const { t } = useTranslation('user');
   const displayName = user.full_name || user.username || t('publicProfileAnonymous');
   // Prefer username slug; fall back to user ID so profiles without a username are still reachable
   const profileSlug = user.username ? encodeURIComponent(user.username) : user.id;
   const href = profileSlug ? `/users/${profileSlug}` : '#';
-  const tierLabelValue = tierLabel(user.account_tier);
-  const tier = tierLabelValue ? { label: getTierLabels(t)[tierLabelValue], className: TIER_BADGE_CLASS[tierLabelValue] } : null;
-  const ringClass = AVATAR_RING_CLASS[tierLabelValue ?? 'Member'];
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <Link
-      href={href}
+    <div
       className={cn(
-        'group flex flex-col gap-3 rounded-xl border border-border bg-card p-4',
+        'group relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4',
         'hover:border-primary/40 hover:shadow-md transition-all duration-200',
         className
       )}
     >
-      {/* Header: avatar + name + tier */}
       <div className="flex items-start gap-3">
         <div className="shrink-0">
           {user.avatar_url ? (
             <Image
               src={user.avatar_url}
-              alt={displayName}
+              alt=""
               width={44}
               height={44}
-              className={cn('rounded-full object-cover ring-2 transition-all', ringClass)}
+              className="rounded-full object-cover ring-2 ring-border transition-all group-hover:ring-primary/40"
             />
           ) : (
-            <div className={cn('h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center ring-2 transition-all', ringClass)}>
+            <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-border transition-all group-hover:ring-primary/40">
               <span className="text-sm font-semibold text-primary">{initials}</span>
             </div>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+          {/* clamp-ok: a person's name in a card header */}
+          <Link
+            href={href}
+            className="block truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+          >
             {displayName}
-          </p>
+          </Link>
           {user.username && (
+            // clamp-ok: a handle in a card header
             <p className="text-xs text-muted-foreground truncate">@{user.username}</p>
           )}
-          {tier && (
-            <span className={cn('inline-block mt-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-full', tier.className)}>
-              {tier.label}
-            </span>
-          )}
         </div>
+        <FollowButton profileSlug={profileSlug} targetUserId={user.id} compact className="relative z-10 shrink-0" />
       </div>
 
-      {/* Bio */}
       {user.bio && (
         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{user.bio}</p>
       )}
 
-      {/* Meta badges */}
       <div className="flex flex-wrap gap-1.5 mt-auto">
+        {(user.thesis_count ?? 0) > 0 && (
+          <span className={CHIP}>
+            <MessageSquareText className="h-2.5 w-2.5" aria-hidden />
+            {t('publicProfileThesisCount', { count: user.thesis_count ?? 0 })}
+          </span>
+        )}
+        {(user.follower_count ?? 0) > 0 && (
+          <span className={CHIP}>
+            <Users className="h-2.5 w-2.5" aria-hidden />
+            {t('publicProfileFollowerCount', { count: user.follower_count ?? 0 })}
+          </span>
+        )}
         {user.experience_level && (
-          <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-            <BarChart2 className="h-2.5 w-2.5" />
+          <span className={CHIP}>
+            <BarChart2 className="h-2.5 w-2.5" aria-hidden />
             {getExperienceLabels(t)[user.experience_level]}
           </span>
         )}
         {user.market_focus && (
-          <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-            <TrendingUp className="h-2.5 w-2.5" />
+          <span className={CHIP}>
+            <TrendingUp className="h-2.5 w-2.5" aria-hidden />
             {getMarketLabels(t)[user.market_focus]}
           </span>
         )}
         {(user.holdings_count ?? 0) > 0 && (
-          <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-            <Briefcase className="h-2.5 w-2.5" />
+          <span className={CHIP}>
+            <Briefcase className="h-2.5 w-2.5" aria-hidden />
             {t('publicProfileStockCount', { count: user.holdings_count ?? 0 })}
           </span>
         )}
       </div>
-    </Link>
+    </div>
   );
 }

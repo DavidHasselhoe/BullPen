@@ -75,5 +75,20 @@
   "publicProfileStockCount_one": "«{{count}} stoock»",
   "publicProfileStockCount_other": "«{{count}} stoocks»",
   "publicProfileTierMember": "«Meembeer»",
-  "publicProfileTierPro": "«Proo»"
+  "publicProfileTierPro": "«Proo»",
+  "usersPageTitle": "«Broowsee meembeers»",
+  "usersPageSubtitle": "«Meembeers whoo choosee too maakee theeiir proofiilee puubliic. Seeaarch by naamee oor uuseernaamee.»",
+  "usersSearchPlaceholder": "«Seeaarch by naamee oor uuseernaamee…»",
+  "usersHowToJoin": "«Waant too bee liisteed? Tuurn oon Puubliic proofiilee iin Seettiings.»",
+  "usersLoadError": "«Meembeers coouuld noot bee looaadeed. Try aagaaiin iin aa moomeent.»",
+  "usersNoResults": "«Noo meembeers foouund foor {{query}}.»",
+  "usersResultCount_one": "«{{count}} reesuult foor {{query}}»",
+  "usersResultCount_other": "«{{count}} reesuults foor {{query}}»",
+  "usersPublicCount_one": "«{{count}} puubliic proofiilee»",
+  "usersPublicCount_other": "«{{count}} puubliic proofiilees»",
+  "usersEmpty": "«Noo puubliic proofiilees yeet.»",
+  "publicProfileThesisCount_one": "«{{count}} theesiis»",
+  "publicProfileThesisCount_other": "«{{count}} theesees»",
+  "publicProfileFollowerCount_one": "«{{count}} foollooweer»",
+  "publicProfileFollowerCount_other": "«{{count}} foollooweers»"
 }

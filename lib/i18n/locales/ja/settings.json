@@ -146,10 +146,8 @@
   "privacyOAuthNotice": "Google でサインインしています。OAuth アカウントではパスワード変更は利用できません。",
   "privacyPasswordMinChars": "最短8文字で、文字と数字を含める必要があります",
   "privacyPasswordUpdated": "パスワードが更新されました！",
-  "privacyPublicProfileDescription": "他の BullPen メンバーがあなたのプロフィールページを見つけて表示できるようにします。",
   "privacyPublicProfileLabel": "公開プロフィール",
   "privacyRepeatPassword": "新しいパスワードを再入力",
-  "privacyShowPortfolioDescription": "あなたのポートフォリオの銘柄（ティッカーと企業名のみ、数量と価格なし）を公開プロフィールに表示します。",
   "privacyShowPortfolioLabel": "ポートフォリオを表示",
   "privacyUpdatePasswordButton": "パスワードを更新",
   "privacyUpdatingPassword": "更新中…",
@@ -177,7 +175,6 @@
   "theme": "テーマ",
   "themeDark": "ダーク",
   "themeLight": "ライト",
-  "darkMode": "ダークモード",
   "title": "設定",
   "notifEconomicEventsLabel": "経済統計",
   "notifEconomicEventsDescription": "フォローしている米国経済指標が発表される日の朝に通知を受け取ります。時間はあなたのタイムゾーンで表示されます。Market Calendarの「Economic」で通知する指標を選択できます。",
@@ -194,5 +191,8 @@
   "notifPoliticianTradesLabel": "政治家の取引",
   "notifPoliticianTradesDescription": "フォロー中の政治家が新しい株式取引を開示したときに通知を受け取ります",
   "notifPoliticianHoldingsLabel": "政治家があなたの株を取引",
-  "notifPoliticianHoldingsDescription": "Pro: フォロー中の政治家があなたが保有またはウォッチ中の株を取引した時に通知を受け取ります"
+  "notifPoliticianHoldingsDescription": "Pro: フォロー中の政治家があなたが保有またはウォッチ中の株を取引した時に通知を受け取ります",
+  "privacyPublicProfileDescription": "リンクを持っている人なら誰でも開けるプロフィールページに、あなたの名前、写真、自己紹介を表示し、メンバーブラウザに掲載されます。オンにするまでは非表示です。",
+  "privacyShowPortfolioDescription": "公開プロフィールに、保有している株式（ティッカーと企業名のみ、数量や価格は非表示）も表示します。",
+  "darkMode": "ダークモード"
 }

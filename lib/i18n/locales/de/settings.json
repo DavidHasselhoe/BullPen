@@ -146,10 +146,8 @@
   "privacyOAuthNotice": "Du hast dich mit Google angemeldet. Eine Passwortänderung ist für OAuth-Konten nicht verfügbar.",
   "privacyPasswordMinChars": "Min. 8 Zeichen, mit einem Buchstaben und einer Zahl",
   "privacyPasswordUpdated": "Passwort aktualisiert!",
-  "privacyPublicProfileDescription": "Erlaube anderen BullPen-Mitgliedern, dein Profilseite zu finden und anzuzeigen.",
   "privacyPublicProfileLabel": "Öffentliches Profil",
   "privacyRepeatPassword": "Neues Passwort wiederholen",
-  "privacyShowPortfolioDescription": "Zeige deine Portfolio-Aktien (nur Ticker und Unternehmensname, keine Mengen oder Preise) auf deinem öffentlichen Profil.",
   "privacyShowPortfolioLabel": "Portfolio anzeigen",
   "privacyUpdatePasswordButton": "Passwort aktualisieren",
   "privacyUpdatingPassword": "Wird aktualisiert…",
@@ -176,7 +174,6 @@
   "theme": "Design",
   "themeDark": "Dunkel",
   "themeLight": "Hell",
-  "darkMode": "Dunkler Modus",
   "title": "Einstellungen",
   "notifEconomicEventsLabel": "Wirtschaftliche Veröffentlichungen",
   "notifEconomicEventsDescription": "Eine morgendliche Benachrichtigung an Tagen mit einer US-Wirtschaftsveröffentlichung, die du verfolgst, mit der Zeit in deiner Zeitzone. Wähle unter Economic im Market Calendar, welche Veröffentlichungen du sehen möchtest.",
@@ -194,5 +191,8 @@
   "notifPoliticianTradesDescription": "Erhalte eine Benachrichtigung, wenn ein Politiker, dem du folgst, neue Aktiengeschäfte offenbart",
   "notifPoliticianHoldingsLabel": "Politiker handeln deine Aktien",
   "notifPoliticianHoldingsDescription": "Pro: Erhalte eine Benachrichtigung, wenn ein überwachter Politiker eine Aktie handelt, die du besitzt oder beobachtest",
-  "sectionPlanLabel": "Plan"
+  "privacyPublicProfileDescription": "Show your name, photo and bio on a profile page anyone with the link can open, and list you in Browse members. Off until you turn it on.",
+  "privacyShowPortfolioDescription": "Also show which stocks you hold (ticker and company name only, no quantities or prices) on your public profile.",
+  "sectionPlanLabel": "Plan",
+  "darkMode": "Dunkler Modus"
 }

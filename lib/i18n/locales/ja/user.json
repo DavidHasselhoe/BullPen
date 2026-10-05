@@ -75,5 +75,20 @@
   "publicProfileStockCount_other": "{{count}}銘柄",
   "publicProfileTierMember": "メンバー",
   "publicProfileTierPro": "Pro",
-  "profileModalUsernamePlaceholder": "johndoe"
+  "profileModalUsernamePlaceholder": "johndoe",
+  "usersPageTitle": "メンバーを閲覧",
+  "usersPageSubtitle": "プロフィールを公開に設定したメンバーです。名前またはユーザー名で検索できます。",
+  "usersSearchPlaceholder": "名前またはユーザー名で検索…",
+  "usersHowToJoin": "リストに載りたいですか？設定でプロフィールを公開に変更してください。",
+  "usersLoadError": "メンバーを読み込めませんでした。しばらく経ってからもう一度試してください。",
+  "usersNoResults": "{{query}}に一致するメンバーが見つかりません。",
+  "usersResultCount_one": "{{query}}の検索結果：{{count}}件",
+  "usersResultCount_other": "{{query}}の検索結果：{{count}}件",
+  "usersPublicCount_one": "公開プロフィール{{count}}件",
+  "usersPublicCount_other": "公開プロフィール{{count}}件",
+  "usersEmpty": "まだ公開プロフィールがありません。",
+  "publicProfileThesisCount_one": "テーシス{{count}}件",
+  "publicProfileThesisCount_other": "テーシス{{count}}件",
+  "publicProfileFollowerCount_one": "フォロワー{{count}}人",
+  "publicProfileFollowerCount_other": "フォロワー{{count}}人"
 }

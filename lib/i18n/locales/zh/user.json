@@ -75,5 +75,20 @@
   "publicProfileStockCount_other": "{{count}} 只股票",
   "publicProfileTierMember": "会员",
   "publicProfileTierPro": "Pro",
-  "profileModalUsernamePlaceholder": "johndoe"
+  "profileModalUsernamePlaceholder": "johndoe",
+  "usersPageTitle": "浏览成员",
+  "usersPageSubtitle": "选择公开个人资料的成员。按名字或用户名搜索。",
+  "usersSearchPlaceholder": "按名字或用户名搜索…",
+  "usersHowToJoin": "想被列出来？在设置中打开公开个人资料。",
+  "usersLoadError": "无法加载成员。请稍后重试。",
+  "usersNoResults": "未找到 {{query}} 的成员。",
+  "usersResultCount_one": "{{count}} 个结果，查询：{{query}}",
+  "usersResultCount_other": "{{count}} 个结果，查询：{{query}}",
+  "usersPublicCount_one": "{{count}} 个公开个人资料",
+  "usersPublicCount_other": "{{count}} 个公开个人资料",
+  "usersEmpty": "暂无公开个人资料。",
+  "publicProfileThesisCount_one": "{{count}} 个投资论点",
+  "publicProfileThesisCount_other": "{{count}} 个投资论点",
+  "publicProfileFollowerCount_one": "{{count}} 个粉丝",
+  "publicProfileFollowerCount_other": "{{count}} 个粉丝"
 }

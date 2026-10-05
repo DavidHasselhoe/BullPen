@@ -146,10 +146,8 @@
   "privacyOAuthNotice": "Vous vous êtes connecté avec Google. La modification du mot de passe n'est pas disponible pour les comptes OAuth.",
   "privacyPasswordMinChars": "Min. 8 caractères, avec une lettre et un chiffre",
   "privacyPasswordUpdated": "Mot de passe mis à jour !",
-  "privacyPublicProfileDescription": "Permettre aux autres membres de BullPen de trouver et consulter votre page de profil.",
   "privacyPublicProfileLabel": "Profil public",
   "privacyRepeatPassword": "Répéter le nouveau mot de passe",
-  "privacyShowPortfolioDescription": "Afficher vos actions du portefeuille (symbole et nom de l'entreprise uniquement, pas de quantités ni de prix) sur votre profil public.",
   "privacyShowPortfolioLabel": "Afficher le portefeuille",
   "privacyUpdatePasswordButton": "Mettre à jour le mot de passe",
   "privacyUpdatingPassword": "Mise à jour en cours…",
@@ -177,7 +175,6 @@
   "theme": "Thème",
   "themeDark": "Sombre",
   "themeLight": "Clair",
-  "darkMode": "Mode sombre",
   "title": "Paramètres",
   "notifEconomicEventsLabel": "Annonces Économiques",
   "notifEconomicEventsDescription": "Une notification le matin des jours avec un communiqué économique américain que vous suivez, avec l'heure dans votre fuseau horaire. Choisissez les communiqués à suivre sous Économie dans le Calendrier de marché.",
@@ -194,5 +191,8 @@
   "notifPoliticianTradesLabel": "Opérations des politiciens",
   "notifPoliticianTradesDescription": "Soyez averti quand un politicien que vous suivez divulgue de nouvelles opérations en bourse",
   "notifPoliticianHoldingsLabel": "Transactions de politiciens dans vos actions",
-  "notifPoliticianHoldingsDescription": "Pro : recevez une notification quand un politicien suivi effectue une transaction sur une action que vous possédez ou suivez"
+  "notifPoliticianHoldingsDescription": "Pro : recevez une notification quand un politicien suivi effectue une transaction sur une action que vous possédez ou suivez",
+  "privacyPublicProfileDescription": "Affichez votre nom, photo et bio sur une page de profil que n'importe qui avec le lien peut ouvrir, et figurez dans Parcourir les membres. Désactivé jusqu'à ce que vous l'activiez.",
+  "privacyShowPortfolioDescription": "Affichez également les actions que vous détenez (symbole et nom de la société uniquement, sans quantités ni prix) sur votre profil public.",
+  "darkMode": "Mode sombre"
 }

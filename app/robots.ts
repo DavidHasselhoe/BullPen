@@ -45,7 +45,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: ['/', '/api/instagram/render/', ...allowedStockPaths],
-      disallow: ['/api/', '/stock/', '/asset/', '/etf/', '/tools/deep-dive/', '/admin/'],
+      // /users: member profiles carry real names. Opt-in visibility (lib/social/visibility.ts)
+      // decides who can see them in the app; it is not consent to be indexed.
+      disallow: ['/api/', '/stock/', '/asset/', '/etf/', '/tools/deep-dive/', '/admin/', '/users'],
     },
     host: SITE_URL,
     // Search Console reported "no referring sitemap" for /stock/TXN although

@@ -75,5 +75,20 @@
   "publicProfileStockCount_one": "{{count}} stock",
   "publicProfileStockCount_other": "{{count}} stocks",
   "publicProfileTierMember": "Member",
-  "publicProfileTierPro": "Pro"
+  "publicProfileTierPro": "Pro",
+  "usersPageTitle": "Browse members",
+  "usersPageSubtitle": "Members who chose to make their profile public. Search by name or username.",
+  "usersSearchPlaceholder": "Search by name or username…",
+  "usersHowToJoin": "Want to be listed? Turn on Public profile in Settings.",
+  "usersLoadError": "Members could not be loaded. Try again in a moment.",
+  "usersNoResults": "No members found for {{query}}.",
+  "usersResultCount_one": "{{count}} result for {{query}}",
+  "usersResultCount_other": "{{count}} results for {{query}}",
+  "usersPublicCount_one": "{{count}} public profile",
+  "usersPublicCount_other": "{{count}} public profiles",
+  "usersEmpty": "No public profiles yet.",
+  "publicProfileThesisCount_one": "{{count}} thesis",
+  "publicProfileThesisCount_other": "{{count}} theses",
+  "publicProfileFollowerCount_one": "{{count}} follower",
+  "publicProfileFollowerCount_other": "{{count}} followers"
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { isProfilePublic } from '@/lib/social/visibility';
 
 export interface FeedItem {
   id: string;
@@ -73,7 +74,7 @@ async function handler(
   const profileMap = new Map<string, { username: string | null; full_name: string | null; avatar_url: string | null }>();
   (profileRows ?? []).forEach((p: { id: string; username: string | null; full_name: string | null; avatar_url: string | null; settings: Record<string, unknown> | null }) => {
     const settings = p.settings ?? {};
-    if (settings.profile_public !== false) {
+    if (isProfilePublic(settings)) {
       profileMap.set(p.id, { username: p.username, full_name: p.full_name, avatar_url: p.avatar_url });
     }
   });

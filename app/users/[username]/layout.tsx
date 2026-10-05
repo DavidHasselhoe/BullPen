@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { createServerClient } from '@/lib/supabase/client';
+import { isProfilePublic } from '@/lib/social/visibility';
 
 /**
  * page.tsx is a client component, so this sibling server layout carries the
@@ -28,13 +29,15 @@ export async function generateMetadata({
       settings: Record<string, unknown> | null;
     }>();
 
-  if (!data || data.settings?.profile_public === false) return { title: 'Profile' };
+  // Never indexed, public or not: showing a profile in the app is not consent to search engines.
+  if (!data || !isProfilePublic(data.settings)) return { title: 'Profile', robots: { index: false, follow: false } };
 
   const name = data.full_name || data.username;
 
   return {
     title: `${name} (@${data.username})`,
     description: data.bio || `${name}'s public investing profile on BullPen.`,
+    robots: { index: false, follow: false },
   };
 }
 
