@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { PreviewLines } from './PreviewShapes';
 
 interface Props {
   /** Real ticker the user was actually looking at when the paywall fired. */
@@ -11,13 +12,11 @@ interface Props {
 }
 
 /**
- * "Why Today?" paywall teaser. When the caller has the real ticker + day
- * change on hand (every current trigger site does — see StockPricePanel,
- * WhyTodayWidget), it leads with a real, unblurred hook built from that
- * live data: "$NVDA rose 2.1% today" — then cuts off at "because—" into a
- * blurred, still-fabricated continuation, since the actual reasoning is
- * exactly the paid answer being withheld. Falls back to the fully static,
- * fabricated example when no real data is passed.
+ * "Why Today?" paywall teaser. With the real ticker and day change (every
+ * current trigger site has them), it leads with a true hook, "$NVDA rose
+ * 2.1% today because…", then the outline of the explanation. The reasons are
+ * the paid answer. Made-up ones (analyst upgrades, institutional buying) used
+ * to follow the hook, written for a rally and shown under stocks that fell.
  */
 export function WhyTodayPaywallPreview({ ticker, changePercent }: Props) {
   const { t } = useTranslation('billing');
@@ -25,11 +24,9 @@ export function WhyTodayPaywallPreview({ ticker, changePercent }: Props) {
   const isUp = (changePercent ?? 0) >= 0;
   const pct = Math.abs(changePercent ?? 0).toFixed(1);
 
-  const mockLines = [t('whyTodayPreviewLine2'), t('whyTodayPreviewLine3')];
-
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
-      {isDynamic ? (
+      {isDynamic && (
         <p className="text-left text-sm font-medium leading-relaxed">
           <span className="font-semibold text-foreground">${ticker}</span>{' '}
           <span className={cn('tabular-nums', isUp ? 'text-emerald-400' : 'text-red-400')}>
@@ -37,27 +34,12 @@ export function WhyTodayPaywallPreview({ ticker, changePercent }: Props) {
           </span>{' '}
           <span className="text-foreground">{t('whyTodayPreviewBecause')}</span>
         </p>
-      ) : (
-        <div className="pointer-events-none opacity-70 blur-[3px]">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">{t('whyTodayPreviewTicker')}</span>
-            <span className="text-sm font-medium tabular-nums text-emerald-400">
-              {t('whyTodayPreviewChange')}
-            </span>
-          </div>
-          <p className="mt-2 text-left text-xs leading-relaxed text-muted-foreground">
-            {t('whyTodayPreviewLine1')}
-          </p>
-        </div>
       )}
 
-      <div className={cn('pointer-events-none opacity-70 blur-[3px]', isDynamic && 'mt-3')}>
-        <div className="space-y-2 text-left text-xs text-muted-foreground">
-          {mockLines.map((line) => (
-            <p key={line} className="leading-relaxed">{line}</p>
-          ))}
-        </div>
-      </div>
+      <PreviewLines
+        widths={isDynamic ? [1, 0.92, 0.97, 0.6] : [0.35, 1, 0.92, 0.97, 0.6]}
+        className={cn('pointer-events-none opacity-80 blur-[1px]', isDynamic && 'mt-3')}
+      />
 
       {/* Top fade keeps the dialog's close button legible over the preview. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-card to-transparent" />

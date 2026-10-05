@@ -1,12 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/lib/utils';
-
-const TONE_FILL: Record<'good' | 'mixed', string> = {
-  good: 'bg-emerald-500',
-  mixed: 'bg-amber-500',
-};
+import { PreviewMetricRow } from './PreviewShapes';
 
 interface Props {
   /** Real ticker (and optionally company name) being deep-dived, if known
@@ -16,19 +11,13 @@ interface Props {
 }
 
 /**
- * Fabricated Deep Dive report snapshot used purely as a paywall teaser. The
- * score/verdict stay fabricated and blurred on purpose — that's the actual
- * paid result, not something this dialog can know in advance. When the
- * real ticker is known, though, an unblurred "Deep Dive: $AAPL" line leads
- * the preview — that part is simply true, not a fabricated result.
+ * Deep Dive paywall teaser. The "Deep Dive: $AAPL" line is true, so it stays
+ * sharp. Below it, the outline of a report with no score or verdict: the
+ * report is the paid result, and this dialog can't know it. A made-up
+ * "84/100, Strong fundamentals" used to sit under the real company's name.
  */
 export function DeepDivePaywallPreview({ ticker, companyName }: Props) {
   const { t } = useTranslation('billing');
-  const mockSections: { label: string; pct: number; tone: 'good' | 'mixed' }[] = [
-    { label: t('deepDivePreviewGrowth'), pct: 82, tone: 'good' },
-    { label: t('deepDivePreviewValuation'), pct: 38, tone: 'mixed' },
-    { label: t('deepDivePreviewFinancialHealth'), pct: 91, tone: 'good' },
-  ];
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
       {ticker && (
@@ -36,26 +25,12 @@ export function DeepDivePaywallPreview({ ticker, companyName }: Props) {
           {t('deepDivePreviewFor', { ticker: companyName ? `${ticker} · ${companyName}` : ticker })}
         </p>
       )}
-      <div className="pointer-events-none opacity-70 blur-[3px]">
-        <div className="flex items-baseline gap-2">
-          <span className="font-mono text-3xl font-bold tabular-nums text-foreground">
-            84<span className="text-base text-muted-foreground">/100</span>
-          </span>
-          <span className="text-sm font-semibold text-emerald-400">{t('deepDivePreviewVerdict')}</span>
-        </div>
-
+      <div className="pointer-events-none opacity-80 blur-[1px]">
+        <div className="h-7 w-24 rounded-md bg-muted-foreground/20" />
         <div className="mt-5 space-y-2.5">
-          {mockSections.map((s) => (
-            <div key={s.label}>
-              <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>{s.label}</span>
-                <span className="font-mono tabular-nums">{s.pct}%</span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div className={cn('h-full rounded-full', TONE_FILL[s.tone])} style={{ width: `${s.pct}%` }} />
-              </div>
-            </div>
-          ))}
+          <PreviewMetricRow label={t('deepDivePreviewGrowth')} />
+          <PreviewMetricRow label={t('deepDivePreviewValuation')} />
+          <PreviewMetricRow label={t('deepDivePreviewFinancialHealth')} />
         </div>
       </div>
 

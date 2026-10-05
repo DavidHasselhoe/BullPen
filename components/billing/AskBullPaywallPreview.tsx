@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { PreviewLines } from './PreviewShapes';
 
 interface Props {
   /** Real ticker the chart/page was showing when the gate fired, if known
@@ -9,26 +10,24 @@ interface Props {
 }
 
 /**
- * Fabricated chat exchange used purely as a paywall teaser for Ask Bull
- * (both the main chat and the in-chart assistant share this feature name,
- * so they share this preview). Bull's reply stays fabricated on purpose —
- * it's the actual paid answer. The user's question swaps in the real
- * ticker when known, since asking about the stock the reader is actually
- * looking at reads as an invitation, not a fabricated result.
+ * Ask Bull paywall teaser (the main chat and the in-chart assistant share it).
+ * The question is an invitation, so it names the reader's ticker. The reply
+ * is the outline of an answer: a written one was about NVDA's data-center
+ * demand and showed up under Coca-Cola as Bull's view of it.
  */
 export function AskBullPaywallPreview({ ticker }: Props) {
   const { t } = useTranslation('billing');
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
-      <div className="pointer-events-none space-y-2.5 opacity-70 blur-[3px]">
+      <div className="pointer-events-none space-y-2.5">
         <div className="flex justify-end">
           <div className="max-w-[75%] rounded-2xl rounded-br-sm bg-primary/10 px-3 py-2 text-left text-xs text-foreground">
             {ticker ? t('askBullPreviewUserMessageTicker', { ticker: `$${ticker}` }) : t('askBullPreviewUserMessage')}
           </div>
         </div>
         <div className="flex justify-start">
-          <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-left text-xs text-foreground">
-            {t('askBullPreviewBullReply')}
+          <div className="w-[85%] rounded-2xl rounded-bl-sm bg-muted px-3 py-2.5 opacity-80 blur-[1px]">
+            <PreviewLines widths={[1, 0.94, 0.7]} />
           </div>
         </div>
       </div>

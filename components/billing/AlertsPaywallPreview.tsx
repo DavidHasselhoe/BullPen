@@ -13,13 +13,13 @@ interface Props {
 }
 
 /**
- * Price-alert paywall teaser: the notification the user would have received
- * for the alert they just tried to create, on their real ticker and
- * condition, with two blurred example notifications stacked behind it.
+ * Price-alert paywall teaser: an example of the notification the user would
+ * get for the alert they just tried to create, with two blank notifications
+ * stacked behind it. Labelled as an example: "NVDA · New all-time high · now"
+ * read as news, and with no ticker passed it named NVDA regardless.
  */
 export function AlertsPaywallPreview({ ticker, companyName, condition }: Props) {
   const { t } = useTranslation('billing');
-  const symbol = ticker ?? 'NVDA';
 
   return (
     <div className="relative select-none bg-card px-6 pb-10 pt-8" aria-hidden="true">
@@ -29,14 +29,18 @@ export function AlertsPaywallPreview({ ticker, companyName, condition }: Props) 
       </div>
 
       <div className="relative flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2.5 text-left shadow-sm">
-        <CompanyLogo name={companyName ?? symbol} ticker={symbol} logoUrl={null} size={28} className="rounded-md" />
+        {ticker ? (
+          <CompanyLogo name={companyName ?? ticker} ticker={ticker} logoUrl={null} size={28} className="rounded-md" />
+        ) : (
+          <span className="h-7 w-7 shrink-0 rounded-md bg-muted" />
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Bell className="h-3 w-3" />
             <span>{t('alertsPreviewSource')}</span>
           </div>
           <p className="text-sm font-medium text-foreground">
-            <span className="font-mono font-semibold">{symbol}</span>{' '}
+            <span className={ticker ? 'font-mono font-semibold' : 'font-semibold'}>{ticker ?? t('alertsPreviewYourStock')}</span>{' '}
             {condition ?? t('alertsPreviewFallbackCondition')}
           </p>
         </div>

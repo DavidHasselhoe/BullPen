@@ -2,37 +2,31 @@
 
 import { useTranslation } from 'react-i18next';
 
-/**
- * Static, fabricated suggested allocation used purely as a paywall teaser
- * for AI Portfolio Builder. Never a real recommendation.
- */
-const MOCK_ROWS: { symbol: string; name: string; pct: number }[] = [
-  { symbol: 'VOO', name: 'Vanguard S&P 500 ETF', pct: 40 },
-  { symbol: 'MSFT', name: 'Microsoft Corporation', pct: 18 },
-  { symbol: 'AVGO', name: 'Broadcom Inc.', pct: 12 },
-];
+/** Row widths of the outline, largest position first. Shapes, not weights. */
+const ROW_WIDTHS = [0.8, 0.55, 0.4];
 
+/**
+ * AI Portfolio Builder paywall teaser: the outline of a suggested allocation.
+ * It used to name real tickers at made-up weights (VOO 40%, MSFT 18%, AVGO
+ * 12%), which is a stock recommendation nobody made.
+ */
 export function PortfolioBuilderPaywallPreview() {
   const { t } = useTranslation('billing');
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
-      <div className="pointer-events-none opacity-70 blur-[3px]">
-        <p className="text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('portfolioBuilderPreviewHeading')}</p>
-        <div className="mt-3 space-y-2.5">
-          {MOCK_ROWS.map((r) => (
-            <div key={r.symbol} className="flex items-center gap-3 text-left">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-foreground">{r.symbol}</span>
-                  <span className="font-mono text-xs tabular-nums text-muted-foreground">{r.pct}%</span>
-                </div>
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${r.pct}%` }} />
-                </div>
-              </div>
+      <p className="text-left text-xs font-medium text-muted-foreground">{t('portfolioBuilderPreviewHeading')}</p>
+      <div className="pointer-events-none mt-3 space-y-2.5 opacity-80 blur-[1px]">
+        {ROW_WIDTHS.map((w) => (
+          <div key={w} className="text-left">
+            <div className="flex items-center justify-between gap-2">
+              <span className="h-2.5 w-12 rounded-full bg-muted-foreground/25" />
+              <span className="h-2.5 w-8 rounded-full bg-muted-foreground/20" />
             </div>
-          ))}
-        </div>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary/40" style={{ width: `${w * 100}%` }} />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Top fade keeps the dialog's close button legible over the preview. */}
