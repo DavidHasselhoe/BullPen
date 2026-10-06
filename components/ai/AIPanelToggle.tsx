@@ -124,6 +124,10 @@ export function AIPanelToggle() {
         'flex flex-row-reverse items-center gap-1.5 md:flex-col',
         'transition-[transform,opacity] duration-200 ease-out',
         tucked && 'pointer-events-none translate-y-[140%] opacity-0',
+        // Home on a phone: at the top of the page the button sat on the third
+        // mover's "Why?", where nothing has scrolled yet to tuck it. Home has
+        // its own Ask Bull prompts right under those movers, so it steps out.
+        pathname === '/dashboard' && 'max-md:hidden',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-2xl'
       )}
     >

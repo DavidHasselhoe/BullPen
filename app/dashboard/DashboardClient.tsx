@@ -10,6 +10,7 @@ import type { IndexQuote } from '@/lib/discover/discover-config';
 import { useBackground } from '@/hooks/use-background';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { useHomePortfolio } from '@/hooks/use-home-portfolio';
+import { useAuth } from '@/hooks/use-auth';
 import { HomeHeader } from '@/components/dashboard/HomeHeader';
 import { PortfolioHero } from '@/components/dashboard/PortfolioHero';
 import { ComingUp } from '@/components/dashboard/ComingUp';
@@ -53,6 +54,7 @@ export default function DashboardClient({
   const { hasAnimatedBackground } = useBackground();
   const { showWelcomeText, homepageWidgetOrder, homepageWidgetHidden } = useUserSettings();
   const { isNew } = useHomePortfolio();
+  const { isAuthenticated } = useAuth();
   // The first tap makes the account not-new; keep the picker until they say Done.
   const [picking, setPicking] = useState(false);
 
@@ -91,6 +93,7 @@ export default function DashboardClient({
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
             </div>
+            {isAuthenticated && (
             <button
               type="button"
               onClick={openCustomize}
@@ -99,6 +102,7 @@ export default function DashboardClient({
               <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
               {t('homeCustomize')}
             </button>
+            )}
           </footer>
         </main>
       </div>

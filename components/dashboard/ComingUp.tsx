@@ -8,6 +8,7 @@ import { ArrowRight, CalendarClock, Landmark } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
 import { useHomePortfolio } from '@/hooks/use-home-portfolio';
+import { useAuth } from '@/hooks/use-auth';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
 import { fmtReleaseTimeShort, type EconomicEvent, type EconomicKind } from '@/lib/market-data/economic-kinds';
@@ -49,6 +50,7 @@ export function ComingUp() {
   const { t: tTools } = useTranslation('tools');
   const locale = useIntlLocale();
   const { symbols, isLoading: homeLoading } = useHomePortfolio();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const from = todayET();
   const to = addDays(from, DAYS_AHEAD - 1);
@@ -110,6 +112,9 @@ export function ComingUp() {
       <ArrowRight className="h-3.5 w-3.5" aria-hidden />
     </Link>
   );
+
+  // Signed out there are no stocks to be about, so the card could only ever be empty.
+  if (!authLoading && !isAuthenticated) return null;
 
   if (homeLoading || isLoading) {
     return (

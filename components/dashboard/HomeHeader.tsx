@@ -5,6 +5,8 @@ import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
 import { useMarketStatus } from '@/hooks/use-market-status';
 import { useHomePortfolio } from '@/hooks/use-home-portfolio';
+import { useTradingSession } from '@/hooks/use-trading-session';
+import { useAuth } from '@/hooks/use-auth';
 import { formatTimeUntilShort } from '@/lib/market/market-status';
 import { cn } from '@/lib/utils';
 import type { InitialWelcome } from '@/lib/dashboard/greeting';
@@ -65,6 +67,10 @@ export function HomeHeader({
   const spy = indices.find((i) => i.symbol === 'SPY')?.changePct ?? null;
   const sentence = useStatusSentence(spy);
   const { isLoading: homeLoading } = useHomePortfolio();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  // Index quotes are regular-session numbers. Outside it they are the last
+  // session's move, and sat unlabelled under "up 0.72% today" before the open.
+  const lastClose = useTradingSession() !== 'regular';
 
   const marketOpen = !!nyse && !nyse.isHoliday && nyse.isOpen;
   const marketLine = nyse
@@ -76,6 +82,9 @@ export function HomeHeader({
   return (
     <header className="space-y-3">
       {showWelcome && <WelcomeMessage initial={initialWelcome} />}
+      {!authLoading && !isAuthenticated && (
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('homeSignedOutTitle')}</h1>
+      )}
       {sentence ? (
         <p className="max-w-[65ch] text-sm leading-relaxed text-foreground/80">{sentence}</p>
       ) : (
@@ -86,6 +95,9 @@ export function HomeHeader({
 
       {(shown.length > 0 || marketLine) && (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-sm">
+          {lastClose && shown.length > 0 && (
+            <span className="-mr-2 text-xs text-muted-foreground">{t('homeIndicesLastClose')}</span>
+          )}
           {shown.map((i) => {
             const up = i.changePct! > 0.005;
             const down = i.changePct! < -0.005;

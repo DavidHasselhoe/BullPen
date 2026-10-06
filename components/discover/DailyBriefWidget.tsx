@@ -245,7 +245,7 @@ function SectionBlock({ section, index, isTldr, sectionRef, known }: SectionBloc
         style={{ animationDelay: `${index * 60}ms` }}
       >
         <div className="relative rounded-2xl border border-primary/15 bg-primary/[0.04] px-5 py-4 md:px-6 md:py-5 overflow-hidden">
-          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/80 mb-2.5">
+          <div className="mb-2 text-xs font-semibold text-primary">
             {t('briefTldrLabel')}
           </div>
           <div className="space-y-2.5 text-[15px] leading-7 text-foreground/90">
@@ -267,7 +267,7 @@ function SectionBlock({ section, index, isTldr, sectionRef, known }: SectionBloc
       style={{ animationDelay: `${index * 60}ms` }}
     >
       <div className="flex items-center gap-3 mb-5 min-w-0">
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground shrink-0 max-w-full truncate">
+        <span className="min-w-0 text-sm font-semibold text-foreground">
           {section.heading}
         </span>
         <div className="flex-1 h-px bg-border/30" />
@@ -280,7 +280,7 @@ function SectionBlock({ section, index, isTldr, sectionRef, known }: SectionBloc
 
           if (kind === 'sub-header') {
             return (
-              <p key={i} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground pt-2">
+              <p key={i} className="pt-2 text-sm font-semibold text-foreground">
                 {renderInline(text.replace(/:$/, ''), known)}
               </p>
             );
@@ -327,7 +327,7 @@ function SectionTOC({
       aria-label={t('briefTocSectionsAriaLabel')}
       className="hidden md:block w-[180px] shrink-0 border-r border-border/30 px-4 py-7 overflow-y-auto brief-scroll"
     >
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3 pl-3">
+      <p className="mb-3 pl-3 text-xs font-semibold text-muted-foreground">
         {t('briefTocHeading')}
       </p>
       <ul className="space-y-0.5">
@@ -677,7 +677,7 @@ function BriefReader({
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/75">
+                  <span className="text-xs font-semibold text-primary">
                     {t('briefHeroLabel')}
                   </span>
                 </div>

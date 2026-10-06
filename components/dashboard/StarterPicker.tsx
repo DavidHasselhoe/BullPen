@@ -11,6 +11,8 @@ import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAddToWatchlist, useRemoveFromWatchlist, useWatchlist } from '@/hooks/use-watchlist';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { fetchHoldingQuotes } from '@/lib/holdings/holding-quotes';
 import { useTradingSession } from '@/hooks/use-trading-session';
@@ -33,6 +35,8 @@ export function StarterPicker({ onPick, onDone }: { onPick: () => void; onDone: 
   const { t } = useTranslation('discover');
   const { open: openAIPanel } = useAIPanel();
   const { data: watchlist } = useWatchlist();
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
   const add = useAddToWatchlist();
   const remove = useRemoveFromWatchlist();
   const [query, setQuery] = useState('');
@@ -59,6 +63,13 @@ export function StarterPicker({ onPick, onDone }: { onPick: () => void; onDone: 
   const list: Pick[] = searching ? results.map((r) => ({ ticker: r.ticker, name: r.name })) : [...extras, ...STARTER_STOCKS];
 
   const toggle = (p: Pick) => {
+    // Signed out, the watchlist write is a 401 that used to fail with nothing
+    // on screen. The picker stays as a preview of Home; a tap asks to sign up.
+    if (!isAuthenticated) {
+      trackEvent('home_starter_pick', { ticker: p.ticker, action: 'signup_prompt', source: searching ? 'search' : 'suggestion' });
+      router.push('/register?redirect=%2Fdashboard');
+      return;
+    }
     onPick();
     trackEvent('home_starter_pick', { ticker: p.ticker, action: watched.has(p.ticker) ? 'remove' : 'add', source: searching ? 'search' : 'suggestion' });
     if (watched.has(p.ticker)) remove.mutate({ symbol: p.ticker });
