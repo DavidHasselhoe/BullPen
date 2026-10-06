@@ -71,7 +71,7 @@ const PLANS: Plan[] = [
       "Bull's Weekly Pick, with the full thesis",
       'Automatic brokerage sync (SnapTrade)',
       'Unlimited watchlists & price alerts',
-      'What 16 famous funds own, like Buffett and Dalio',
+      'What 17 famous funds own, like Buffett and Dalio',
       'Insider transactions, exports & advanced Academy',
     ],
   },
