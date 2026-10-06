@@ -13,6 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { isProgressionLocked } from '@/lib/academy/unlock';
 import { withOptionalAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isPro } from '@/lib/billing/tier';
@@ -91,16 +92,8 @@ async function handler(
     const done = courseLessonIds.filter((id) => completedLessonIds.has(id)).length;
     const percentComplete = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    // Sequential unlock *within a gating track* (free vs Pro): the first course in
-    // each track is always progression-unlocked; a later course unlocks once the
-    // previous course in the SAME track is completed. This keeps the free ladder
-    // and the Pro ladder independent, so a Pro subscriber can start the first Pro
-    // course without finishing every free course first.
-    let prevInTrack: CourseRow | null = null;
-    for (let j = idx - 1; j >= 0; j--) {
-      if (courses[j].requires_pro === c.requires_pro) { prevInTrack = courses[j]; break; }
-    }
-    const progressionLocked = prevInTrack !== null && !completedCourseIds.has(prevInTrack.id);
+    // Order locks chain within a chapter, not across the whole path (lib/academy/unlock.ts).
+    const progressionLocked = isProgressionLocked(courses, idx, completedCourseIds, done);
     const proLocked = c.requires_pro && !userIsPro;
     // 'pro' wins the messaging even if progression would also lock it — upgrading
     // is the action that actually unblocks the user, so that's what we tell them.

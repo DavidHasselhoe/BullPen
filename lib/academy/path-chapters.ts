@@ -8,8 +8,8 @@ export interface PathChapter {
 /**
  * Groups courses (already in order_index order) into chapters by consecutive
  * runs of the same `unitLabel` — purely presentational grouping for the path
- * UI on /academy. Does not affect unlock logic, which stays sequential
- * within a gating track (see app/api/academy/courses/route.ts).
+ * UI on /academy. The unlock logic uses the same runs: courses chain within
+ * a chapter (see app/api/academy/courses/route.ts).
  */
 export function groupIntoChapters(courses: CourseWithProgress[]): PathChapter[] {
   const chapters: PathChapter[] = [];
@@ -26,8 +26,8 @@ export function groupIntoChapters(courses: CourseWithProgress[]): PathChapter[] 
 
 /**
  * The single "next up" course: the first unlocked, incomplete course in
- * sequence. There is at most one at a time under the sequential-unlock
- * model — everything before it is complete, everything after is locked.
+ * path order. Several chapters can be open at once; this picks the earliest,
+ * so the path still has one obvious place to continue.
  */
 export function findCurrentCourse(courses: CourseWithProgress[]): CourseWithProgress | null {
   return courses.find((c) => !c.isLocked && !c.isCompleted) ?? null;

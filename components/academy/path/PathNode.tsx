@@ -54,15 +54,23 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
         !course.isCompleted && !isCurrent && !course.isLocked && 'border-border bg-card'
       )}
     >
+      {/* A locked course keeps its own icon, with the lock as a badge: 21 of
+          23 nodes rendering the same grey padlock made the path one wall. */}
       {course.isCompleted ? (
         <Check className="h-6 w-6 text-white" strokeWidth={2.5} />
-      ) : course.isLocked ? (
-        <Lock className="h-5 w-5 text-muted-foreground" />
       ) : (
-        <CourseIcon name={course.icon} className={cn('h-5 w-5', isCurrent ? 'text-emerald-500' : 'text-foreground/70')} />
+        <CourseIcon
+          name={course.icon}
+          className={cn('h-5 w-5', isCurrent ? 'text-emerald-500' : course.isLocked ? 'text-muted-foreground' : 'text-foreground/70')}
+        />
+      )}
+      {isProgressionLocked && (
+        <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-card bg-muted text-muted-foreground">
+          <Lock className="h-3 w-3" aria-hidden />
+        </span>
       )}
       {isProLocked && (
-        <span className="absolute -bottom-1 -right-1 rounded bg-amber-400/15 px-1 py-0.5 text-[11px] font-bold tracking-wide text-amber-500 border border-card">
+        <span className="absolute -bottom-1 -right-1 rounded border border-card bg-amber-400/15 px-1 py-0.5 text-xs font-semibold text-amber-500">
           {t('pathNodePro')}
         </span>
       )}
@@ -74,33 +82,34 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
       <div
         className={cn(
           'text-sm font-bold tracking-tight leading-snug',
-          (isProgressionLocked || isProLocked) && 'text-muted-foreground'
+          (isProgressionLocked || isProLocked) && 'text-foreground/75'
         )}
       >
         {course.title}
       </div>
       <div className={cn('mt-1 flex flex-wrap items-center gap-1.5', align === 'left' && 'justify-end')}>
-        {course.difficulty && (
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">
+        {/* Beginner is the default on almost every course; only a step up is worth a tag. */}
+        {course.difficulty && course.difficulty.toLowerCase() !== 'beginner' && (
+          <span className="rounded bg-muted/50 px-1.5 py-0.5 text-xs font-medium capitalize text-muted-foreground">
             {course.difficulty}
           </span>
         )}
         {course.isOptional && (
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <span className="rounded bg-muted/50 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
             {t('pathNodeOptional')}
           </span>
         )}
         {course.skipped && (
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <span className="rounded bg-muted/50 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
             {t('pathNodeSkipped')}
           </span>
         )}
-        <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {t('pathNodeLessonProgress', { completed: course.completedLessons, total: course.totalLessons })}
         </span>
       </div>
       {isCurrent && (
-        <div className={cn('mt-1.5 inline-flex items-center gap-1 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-500', align === 'left' && 'flex-row-reverse')}>
+        <div className={cn('mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400', align === 'left' && 'flex-row-reverse')}>
           <Play className="h-2.5 w-2.5 fill-current" />
           {course.completedLessons > 0 ? t('pathNodeContinue') : t('pathNodeStart')}
         </div>
@@ -137,11 +146,14 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
   if (!isInteractive) {
     return (
       <div className="flex flex-col items-center gap-1.5 py-2.5">
-        <div aria-disabled="true">{content}</div>
+        <div aria-disabled="true">
+          {content}
+          <span className="sr-only">{t('pathNodeLocked')}</span>
+        </div>
         {showSkipToQuiz && (
           <Link
             href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}
-            className="text-[11px] font-mono text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
           >
             {t('pathNodeSkipToQuiz')}
           </Link>

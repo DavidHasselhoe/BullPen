@@ -13,12 +13,13 @@ export function ChapterBanner({ label, courseCount, requiresPro }: Props) {
   const { t } = useTranslation('academy');
   return (
     <div className="relative z-[2] flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5 my-2">
-      <span className="text-sm font-bold tracking-tight">{label}</span>
-      <span className="text-[11px] font-mono text-muted-foreground">
+      {/* A heading, so the path is navigable by chapter with a screen reader. */}
+      <h2 className="text-sm font-bold tracking-tight">{label}</h2>
+      <span className="text-xs text-muted-foreground tabular-nums">
         {t('chapterBannerCourseCount', { count: courseCount })}
       </span>
       {requiresPro && (
-        <span className="text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-500">
+        <span className="rounded bg-amber-400/10 px-1.5 py-0.5 text-xs font-semibold text-amber-500">
           {t('chapterBannerPro')}
         </span>
       )}

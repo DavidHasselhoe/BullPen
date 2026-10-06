@@ -41,7 +41,9 @@ export function AcademyHomeClient() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{t('homePageTitle')}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            {/* A returning learner on a phone needs the path, not the pitch: the
+                daily challenge already fills the first screen. */}
+            <p className={isAuthenticated ? 'mt-0.5 hidden text-sm text-muted-foreground sm:block' : 'mt-0.5 text-sm text-muted-foreground'}>
               {t('homePageSubtitle')}
             </p>
           </div>
@@ -60,14 +62,14 @@ export function AcademyHomeClient() {
             href="/register?redirect=/academy"
             className="flex items-center gap-1.5 shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
-            Start free
+            {t('homePageStartFree')}
           </Link>
         )}
       </div>
 
       {!isAuthenticated && (
         <p className="text-sm text-muted-foreground -mt-2">
-          Free to start. Sign up to track progress, earn XP, and unlock every lesson.
+          {t('homePageSignedOutNote')}
         </p>
       )}
 
