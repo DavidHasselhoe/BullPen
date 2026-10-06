@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Trans, useTranslation } from 'react-i18next';
 import { ArrowDownRight, ArrowLeft, ArrowUpRight, ChevronDown, Info } from 'lucide-react';
 import { InstitutionalHoldingsPieChart } from '@/components/institutions/InstitutionalHoldingsPieChart';
-import { ALLOCATION_TOP_N, buildAllocation } from '@/lib/institutions/allocation';
+import { buildAllocation } from '@/lib/institutions/allocation';
 import { positionLine } from '@/lib/congress/member-list';
 import { formatAmountRange, isFiledLate, moveBeforeDisclosure, tradeDirection } from '@/lib/congress/types';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ import { FollowFundButton } from '@/components/institutions/FollowFundButton';
 import { PoliticianScorecard } from './PoliticianScorecard';
 import { ListSearch } from './ListSearch';
 import { PoliticianAvatar } from './PoliticianAvatar';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { CongressMemberDetail, CongressHoldingRow } from '@/app/api/congress/[slug]/route';
 import type { CongressTradeRow } from '@/lib/congress/types';
 
@@ -25,6 +26,9 @@ const ALL_YEARS = 'all';
 
 /** How many more positions each "Show more" reveals. */
 const REST_PAGE = 25;
+
+/** Trades shown before "Show more". All 100 at once made Pelosi's page 8.6 screens. */
+const TRADES_FIRST_PAGE = 20;
 
 /** Labels are discover.json's memberFilter_<key>. */
 const FILTERS: TradeFilter[] = ['all', 'buy', 'sell'];
@@ -116,6 +120,8 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
         {isBuy ? tr('memberBought') : isSell ? tr('memberSold') : t.tradeType}
       </span>
 
+      <CompanyLogo size={28} ticker={t.symbol} name={t.companyName ?? t.assetDescription} className="shrink-0" />
+
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <div className="flex min-w-0 items-baseline gap-2">
@@ -127,11 +133,13 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
             </Link>
             {/* clamp-ok: company name beside its ticker; hidden on phones
                 where there is no width for it to be legible */}
+            {/* The catalogue's name reads cleanly; the filing's own wording,
+                the actual record, stays one hover away. */}
             <span
               className="hidden truncate text-xs text-muted-foreground sm:inline"
               title={t.assetDescription}
             >
-              {t.assetDescription}
+              {t.companyName ?? t.assetDescription}
             </span>
           </div>
           <p className="shrink-0 font-mono text-sm tabular-nums text-foreground">
@@ -172,7 +180,10 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
   const [year, setYear] = useState(ALL_YEARS);
   const [tradeQuery, setTradeQuery] = useState('');
   const [holdingQuery, setHoldingQuery] = useState('');
-  const [holdingsShown, setHoldingsShown] = useState(ALLOCATION_TOP_N);
+  // 0 = list collapsed: the donut legend above already names the top positions,
+  // and the list repeated those same rows straight under it.
+  const [holdingsShown, setHoldingsShown] = useState(0);
+  const [tradesShown, setTradesShown] = useState(TRADES_FIRST_PAGE);
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
@@ -255,7 +266,8 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
         (year === ALL_YEARS || tradeYear(t) === year) &&
         (!q ||
           t.symbol.toLowerCase().includes(q) ||
-          t.assetDescription.toLowerCase().includes(q)),
+          t.assetDescription.toLowerCase().includes(q) ||
+          !!t.companyName?.toLowerCase().includes(q)),
     );
   }, [tradesWithTicker, filter, year, tradeQuery]);
 
@@ -300,10 +312,11 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
   }
 
   return (
-    <div>
+    // A column so a member with no estimate can show trades first (order-last).
+    <div className="flex flex-col">
       <Link
         href="/discover"
-        className="mb-5 inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="mb-5 inline-flex self-start items-center gap-1.5 rounded-sm text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
         {t('headerTitle')}
@@ -325,10 +338,10 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
       <PoliticianScorecard slug={member.slug} displayName={member.displayName} />
 
       {/* ---------------- Estimated portfolio ---------------- */}
-      <section aria-labelledby="congress-holdings-heading" className="mb-10">
+      <section aria-labelledby="congress-holdings-heading" className={cn("mb-10", !allocation && "order-last")}>
         <h2
           id="congress-holdings-heading"
-          className="mb-1 text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+          className="mb-1 text-base font-semibold text-foreground"
         >
           {t('memberEstimatedPortfolio')}
         </h2>
@@ -371,7 +384,18 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
               </p>
             </div>
 
-            {visibleHoldings.length === 0 ? (
+            {!holdingQuery && holdingsShown === 0 ? (
+              <button
+                type="button"
+                onClick={() => setHoldingsShown(REST_PAGE)}
+                className="flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+                  <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                </span>
+                <span className="text-sm text-foreground/85">{t('memberListPositions', { count: allHoldings.length })}</span>
+              </button>
+            ) : visibleHoldings.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border/60 px-6 py-8 text-center text-sm text-foreground">
                 {t('memberNoPositionMatch', { query: holdingQuery })}
               </p>
@@ -389,6 +413,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                     style={{ backgroundColor: h.color }}
                     aria-hidden
                   />
+                  <CompanyLogo size={22} ticker={h.symbol ?? h.name} name={h.name} className="shrink-0" />
                   <Link
                     href={`/stock/${h.symbol}`}
                     className="w-16 shrink-0 rounded-sm font-mono text-sm font-semibold tabular-nums text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -413,10 +438,10 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
             )}
 
             {/* The donut's legend promises "N more positions" but the list
-                above is capped at ALLOCATION_TOP_N, so without this the rest
+                above is paged, so without this the rest
                 were counted and coloured and then unreachable. Paged rather
                 than dumped: Gilbert Cisneros holds 388. */}
-            {!holdingQuery && hiddenHoldings > 0 && (
+            {!holdingQuery && holdingsShown > 0 && hiddenHoldings > 0 && (
               <button
                 type="button"
                 onClick={() => setHoldingsShown((n) => n + REST_PAGE)}
@@ -437,10 +462,10 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
               </button>
             )}
 
-            {!holdingQuery && hiddenHoldings === 0 && holdingsShown > ALLOCATION_TOP_N && (
+            {!holdingQuery && holdingsShown > 0 && (
               <button
                 type="button"
-                onClick={() => setHoldingsShown(ALLOCATION_TOP_N)}
+                onClick={() => setHoldingsShown(0)}
                 className="mt-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {t('showLess')}
@@ -474,7 +499,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2
             id="congress-trades-heading"
-            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+            className="text-base font-semibold text-foreground"
           >
             {t('memberDisclosedTrades')}
           </h2>
@@ -573,10 +598,24 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
           </div>
         ) : (
           <ul className="rounded-xl border border-border/60 px-4">
-            {visibleTrades.map((t) => (
+            {(tradeQuery ? visibleTrades : visibleTrades.slice(0, tradesShown)).map((t) => (
               <TradeRow key={t.id} t={t} />
             ))}
           </ul>
+        )}
+        {!tradeQuery && visibleTrades.length > tradesShown && (
+          <button
+            type="button"
+            onClick={() => setTradesShown((n) => n + REST_PAGE)}
+            className="mt-2 flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+            </span>
+            <span className="text-sm text-foreground/85">
+              {t('memberShowMoreTrades', { count: Math.min(visibleTrades.length - tradesShown, REST_PAGE) })}
+            </span>
+          </button>
         )}
       </section>
     </div>

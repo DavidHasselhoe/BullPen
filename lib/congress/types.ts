@@ -8,7 +8,11 @@
 export interface CongressTradeRow {
   id: string;
   symbol: string | null;
+  /** The filing's own wording: the record, kept for search and the row's tooltip. */
   assetDescription: string;
+  /** Our catalogue's name for `symbol` ('Fidelity National Information Services'
+   *  for 'FIDELITY NATL INFORMATIO'). Null when the ticker isn't in the catalogue. */
+  companyName?: string | null;
   assetType: string | null;
   /** 'Buy' | 'Sell' | 'Exchange' as filed. */
   tradeType: string;

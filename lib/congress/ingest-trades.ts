@@ -242,6 +242,8 @@ const GENERIC_FIRST_WORDS = new Set([
   'CENTURY', 'COMMUNITY', 'SECURITY', 'HEALTH', 'MEDICAL', 'ENERGY', 'DIGITAL', 'DATA', 'SOLAR', 'POWER',
   'ISHARES', 'VANGUARD', 'INVESCO', 'SCHWAB', 'FIDELITY', 'FRANKLIN', 'PIMCO', 'SELECT', 'STATE', 'DIREXION',
   'PROSHARES', 'WISDOMTREE', 'YIELDMAX', 'BLACKROCK',
+  // Places name no company: 'Taiwan Al, Inc.' was accepted as TSM on 'TAIWAN' alone.
+  'TAIWAN', 'CHINA', 'JAPAN', 'KOREA', 'INDIA', 'CANADIAN', 'BRITISH', 'TEXAS', 'CALIFORNIA', 'FLORIDA', 'NEW',
 ]);
 
 const FUND_WORDS = new Set(['ETF', 'FUND', 'TRUST', 'INDEX', 'THE', 'OF', '&']);
@@ -278,7 +280,29 @@ export function namesAgree(a: string, b: string): boolean {
   if (filed.length >= 2 && filed.some((w) => !GENERIC_FIRST_WORDS.has(w)) && filed.every((w) => bt.includes(w))) return true;
   if (at[0] !== bt[0]) return false;
   if (at.length === 1 || bt.length === 1 || at[1] === bt[1]) return true;
+  // A shortened second word: 'TAIWAN SEMI' is 'TAIWAN SEMICONDUCTOR', 'TAIWAN AL' is not.
+  const [s1, l1] = at[1].length <= bt[1].length ? [at[1], bt[1]] : [bt[1], at[1]];
+  if (s1.length >= 3 && l1.startsWith(s1)) return true;
+  // A shared distinctive first word is accepted on purpose: renamed companies
+  // depend on it ('THERMO ELECTRON' is TMO, 'NEWELL RUBBERMAID' is NWL). Place
+  // names are on the generic list for the case it got wrong ('TAIWAN AL' as TSM).
   return at[0].length >= 5 && !GENERIC_FIRST_WORDS.has(at[0]);
+}
+
+/**
+ * Filings that cannot be a company's ordinary listed shares: a preferred
+ * series ('Toronto Dominion Bank Ser P' arrived as TD and was priced as TD
+ * common) or a private investment LLC ('Forge Investments, LLC' as FRGE).
+ * The vendor's plain ticker on one of these is always the wrong security. LLC
+ * alone is not enough: GE Vernova, LandBridge and Vertiv file as LLCs and are
+ * listed. A ticker written into the filing itself never reaches this check.
+ */
+export function isNonCommonFiling(description: string): boolean {
+  // Brackets and parentheses name the owner or account, never the security:
+  // 'Enterprise Product Partners L.P. (via HGI, LLC)' is EPD held through an LLC.
+  const issuer = description.replace(/\[[^\]]*\]|\([^)]*\)/g, ' ');
+  return /\b(PFD|PREFERRED|PREF)\b|\bSER\.?\s+[A-Z]{1,2}\b/i.test(issuer)
+    || /\b(INVESTMENTS?|VENTURES?|PARTNERS|CAPITAL|FUND)\b.*\bL\.?\s?L\.?\s?C\b/i.test(issuer);
 }
 
 // Renamed companies whose filings still carry the old name. Only the ones
@@ -359,6 +383,8 @@ export async function verifyVendorSymbols<T extends VerifiableRow>(
   for (const r of check) {
     const sym = r.symbol as string;
     if (r.asset_type && NEVER_TICKERED.has(r.asset_type)) { verdict.set(r, 'wrong'); continue; }
+    // A preferred ticker carries its series ('PSA-T', 'MS.PRQ'); a plain one on a preferred or LLC filing is wrong.
+    if (isNonCommonFiling(r.asset_description) && !/[-.]/.test(sym)) { verdict.set(r, 'wrong'); continue; }
     const names = [...(symbolKeys.get(sym) ?? []), ...(FORMER_NAMES[sym] ?? [])];
     const filed = descKey.get(cleaned.get(r.asset_description)!) ?? '';
     if (names.length === 0) verdict.set(r, 'unknown');
@@ -366,7 +392,8 @@ export async function verifyVendorSymbols<T extends VerifiableRow>(
   }
   if (verdict.size === 0) return rows;
 
-  const resolvable = (r: T) => isResolvableType(r.asset_type) && isNameResolvable(r.asset_description);
+  // A preferred or LLC filing's name resolves straight back to the common stock it is not.
+  const resolvable = (r: T) => isResolvableType(r.asset_type) && isNameResolvable(r.asset_description) && !isNonCommonFiling(r.asset_description);
   const fixes = await resolveNames(
     supabase,
     [...new Set([...verdict.keys()].filter(resolvable).map((r) => cleaned.get(r.asset_description)!))],

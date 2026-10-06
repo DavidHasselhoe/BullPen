@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cleanFiledName, namesAgree } from '../lib/congress/ingest-trades';
+import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cleanFiledName, namesAgree, isNonCommonFiling } from '../lib/congress/ingest-trades';
 import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } from '../lib/congress/types';
 
 // Both ends always survive. Nothing here may ever average them into one
@@ -160,6 +160,22 @@ assert.equal(namesAgree('TE CONNECTIVITY LTD NEW SWITZERLAND', 'TE CONNECTIVITY'
 assert.equal(namesAgree('FERGUSON', 'FERGUSON ENTERPRISES'), true);
 assert.equal(namesAgree('CONSUMER STAPLES SELECT SECTOR SPDR', 'STATE STREET CONSUMER STAPLES SELECT SECTOR SPDR ETF'), true);
 assert.equal(namesAgree('AMERICAN EXPRESS', 'AMERICA'), false, 'a prefix must end on a word');
+// 2026-10-06, live on Pelosi's page: a place name is not a company name.
+assert.equal(namesAgree('THERMO ELECTRON', 'THERMO FISHER SCIENTIFIC'), true, 'renamed company keeps its ticker (TMO)');
+assert.equal(namesAgree('TAIWAN AL', 'TAIWAN SEMICONDUCTOR MANUFACTURING'), false, 'Pelosi Taiwan Al filed as TSM');
+assert.equal(namesAgree('EXXONMOBIL HLDGS', 'EXXONMOBIL HOLDINGS'), true, 'abbreviated second word (Trump filing)');
+assert.equal(namesAgree('KINDER MORGAN', 'KINDER MORGAN'), true);
+// Preferred series and private LLCs are never a plain common ticker.
+assert.equal(isNonCommonFiling('Toronto Dominion Bank Ser P'), true, 'Hern TD preferred filed as TD');
+assert.equal(isNonCommonFiling('Forge Investments, LLC'), true);
+assert.equal(isNonCommonFiling('Wells Fargo & Co 4.75% PFD Series Z'), true);
+assert.equal(isNonCommonFiling('Liberty Media Corp Series A Liberty SiriusXM'), false, 'tracking stock, not preferred');
+assert.equal(isNonCommonFiling('Bloom Energy Corporation Class A Common Stock'), false);
+assert.equal(isNonCommonFiling('GE VERNOVA LLC CMN'), false, 'listed LLC');
+assert.equal(isNonCommonFiling('Enterprise Product Partners L.P. (via HGI, LLC)'), false, 'LLC is the account, in parentheses');
+assert.equal(namesAgree('TAIWAN SEMI', 'TAIWAN SEMICONDUCTOR MANUFACTURING'), true, 'shortened second word');
+assert.equal(isNonCommonFiling('Vertiv Holdings, LLC Class A'), false, 'listed LLC');
+assert.equal(isNonCommonFiling('AllianceBernstein Holding L.P. Units'), false, 'listed LP units are common');
 
 // Move before disclosure: the real Pelosi BE case that motivated migration 156.
 {

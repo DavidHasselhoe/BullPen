@@ -103,6 +103,23 @@ async function handler(_request: NextRequest, context?: unknown) {
         .limit(TRADE_LIMIT),
     ]);
 
+    // Readable names from our own catalogue, by ticker. The filed wording is
+    // upper-case, truncated and full of account tags ('FIDELITY NATL
+    // INFORMATIO', 'JP Morgan Chase & Co. [sT]'), and it reached the rows and
+    // the generated summary sentence. Same fix as the 13F pages (load-holdings).
+    const symbols = [
+      ...new Set(
+        [...((holdings ?? []) as { symbol: string | null }[]), ...((trades ?? []) as { symbol: string | null }[])]
+          .map((r) => r.symbol)
+          .filter((s): s is string => !!s),
+      ),
+    ];
+    const catalogue = new Map<string, string>();
+    for (let i = 0; i < symbols.length; i += 500) {
+      const { data: names } = await supabase.from('search_index').select('ticker, name').in('ticker', symbols.slice(i, i + 500));
+      for (const r of (names as { ticker: string; name: string }[] | null) ?? []) catalogue.set(r.ticker, r.name);
+    }
+
     const detail: CongressMemberDetail = {
       slug: member.slug,
       displayName: member.display_name,
@@ -114,7 +131,10 @@ async function handler(_request: NextRequest, context?: unknown) {
       holdingsDisclaimer: member.holdings_disclaimer,
       holdings: ((holdings ?? []) as Record<string, never>[]).map((h) => ({
         symbol: h.symbol as unknown as string,
-        companyName: (h.company_name as unknown as string) ?? null,
+        // An option keeps its filed name: the page tells options from shares by it (isOptionPosition).
+        companyName: /\b(call|put)\s+option/i.test((h.company_name as unknown as string) ?? '')
+          ? (h.company_name as unknown as string)
+          : catalogue.get(h.symbol as unknown as string) ?? (h.company_name as unknown as string) ?? null,
         sector: (h.sector as unknown as string) ?? null,
         estimatedShares: num(h.estimated_shares),
         currentPrice: num(h.current_price),
@@ -133,6 +153,7 @@ async function handler(_request: NextRequest, context?: unknown) {
         id: t.id as unknown as string,
         symbol: (t.symbol as unknown as string) ?? null,
         assetDescription: (t.asset_description as unknown as string) ?? '',
+        companyName: t.symbol ? catalogue.get(t.symbol as unknown as string) ?? null : null,
         assetType: (t.asset_type as unknown as string) ?? null,
         tradeType: t.trade_type as unknown as string,
         amountRange: t.amount_range as unknown as string,
