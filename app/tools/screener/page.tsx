@@ -30,6 +30,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvider';
 import { isAdmin, tierFromUser } from '@/lib/billing/tier';
 import type { ScreenerRow } from '@/app/api/screener/route';
+import { ToolPage, ToolBackLink } from '@/components/tools/ToolHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -367,7 +368,8 @@ function ScreenerContent() {
   const customViewEmpty = isCustomView && symbolsFilter === '__none__';
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <ToolPage width="wide">
+      <ToolBackLink />
       {/* Header */}
       <div className="mb-4">
         <div className="flex items-center gap-3 mb-1 flex-wrap">
@@ -571,7 +573,7 @@ function ScreenerContent() {
           )}
         </div>
       </div>
-    </div>
+    </ToolPage>
   );
 }
 

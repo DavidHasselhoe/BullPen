@@ -1,13 +1,12 @@
 'use client';
 
 import { useRef, useState, useMemo } from 'react';
-import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Wallet, Loader2, AlertCircle, TrendingUp, Plus, X, Briefcase } from 'lucide-react';
-import { useBackground } from '@/hooks/use-background';
+import { Wallet, Loader2, AlertCircle, TrendingUp, Plus, X, Briefcase } from 'lucide-react';
+import { ToolPage, ToolHeader, ToolSectionTitle } from '@/components/tools/ToolHeader';
 import { cn } from '@/lib/utils';
 import {
   AreaChart,
@@ -179,7 +178,6 @@ export default function DividendClientPage({
   onCalculated,
 }: DividendClientPageProps = {}) {
   const { t } = useTranslation('tools');
-  const { hasAnimatedBackground } = useBackground();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
 
@@ -352,34 +350,11 @@ export default function DividendClientPage({
   // Page chrome (back link + hero) is suppressed when embedded in a demo shell,
   // which supplies its own header. The form + results below are shared verbatim.
   const header = embedded ? null : (
-    <>
-      <Link
-        href="/tools"
-        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
-      >
-        <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-        {t('allToolsLink', 'All tools')}
-      </Link>
-
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="mb-8"
-      >
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-            <Wallet className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('dividendTitle', 'Dividend Calculator')}</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">
-              {t('dividendSubtitle', 'Build a dividend portfolio and project income, reinvestment growth, and break-even')}
-            </p>
-          </div>
-        </div>
-      </motion.div>
-    </>
+    <ToolHeader
+      icon={<Wallet />}
+      title={t('dividendTitle', 'Dividend Calculator')}
+      description={t('dividendSubtitle', 'Build a dividend portfolio and project income, reinvestment growth, and break-even')}
+    />
   );
 
   const inner = (
@@ -392,13 +367,11 @@ export default function DividendClientPage({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.05 }}
-          className="mb-8 rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
+          className="mb-8 rounded-2xl border border-border/60 bg-card p-6 sm:p-8"
         >
           {/* Quick pick */}
           <div className="mb-6">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
-              {t('dividendQuickAdd', 'Quick add')}
-            </p>
+            <ToolSectionTitle as="h3">{t('dividendQuickAdd', 'Quick add')}</ToolSectionTitle>
             <div className="flex flex-wrap gap-2">
               {DIVIDEND_QUICK_PICKS.map((pick) => {
                 const active = pickedTickers.has(pick.ticker);
@@ -419,7 +392,7 @@ export default function DividendClientPage({
                     <CompanyLogo size={22} ticker={pick.ticker} name={pick.name} logoUrl={null} className="shrink-0" />
                     <span className="font-medium">{pick.ticker}</span>
                     {pick.highYield && (
-                      <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-500">
+                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                         {t('dividendHighYield', 'High yield')}
                       </span>
                     )}
@@ -440,9 +413,7 @@ export default function DividendClientPage({
           {/* Portfolio rows */}
           <div data-tour="dividend-holdings" className="space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {t('dividendYourPortfolio', 'Your portfolio')}
-              </p>
+              <ToolSectionTitle as="h3" className="mb-0">{t('dividendYourPortfolio', 'Your portfolio')}</ToolSectionTitle>
               <div className="flex items-center gap-2">
                 {myHoldings && myHoldings.length > 0 && (
                   <button
@@ -595,11 +566,8 @@ export default function DividendClientPage({
             type="submit"
             data-tour="dividend-calculate"
             disabled={!isValid || isLoading}
-            className={cn(
-              'mt-6 w-full h-12 text-base font-semibold',
-              'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70',
-              'transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
-            )}
+            size="lg"
+            className="mt-6 h-11 w-full text-sm font-semibold disabled:opacity-40"
           >
             {isLoading ? (
               <><Loader2 className="h-5 w-5 mr-2 animate-spin" />{t('dividendCalculating', 'Calculating…')}</>
@@ -615,7 +583,7 @@ export default function DividendClientPage({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8 space-y-6"
+              className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8 space-y-6"
             >
               <Skeleton className="h-8 w-48" />
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -633,12 +601,10 @@ export default function DividendClientPage({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
+              className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8"
             >
               <div className="mb-6 flex items-center justify-between gap-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {t('dividendResultsLabel', 'Results')}
-                </p>
+                <ToolSectionTitle className="mb-0">{t('dividendResultsLabel', 'Results')}</ToolSectionTitle>
                 {/* Not in the Academy demo: an upsell mid-lesson is noise. */}
                 {!embedded && result.success && (result.years?.length ?? 0) > 0 && (
                   <ResultsExport result={result} drip={drip} userCurrency={userCurrency} rates={rates} />
@@ -677,12 +643,7 @@ export default function DividendClientPage({
   }
 
   return (
-    <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
-      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none" />
-      <main className="container mx-auto max-w-4xl py-10 px-4 sm:px-6 lg:px-8">
-        {inner}
-      </main>
-    </div>
+    <ToolPage>{inner}</ToolPage>
   );
 }
 

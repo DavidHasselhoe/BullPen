@@ -65,10 +65,10 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
       {/* Section header + filter chips */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('sectionTitle')}
           </h2>
-          <span className="text-[11px] font-mono text-muted-foreground">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {t('stockCount', { count: activeStockCount })}
             {totalConditions > 0 && ` · ${t('conditionCount', { count: totalConditions })}`}
           </span>
@@ -79,8 +79,9 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
               key={f}
               type="button"
               onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
               className={cn(
-                'text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded transition-colors',
+                'rounded px-2 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 filter === f
                   ? 'bg-foreground/10 text-foreground'
                   : 'text-muted-foreground hover:text-foreground'

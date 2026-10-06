@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ArrowLeft, Grid3X3, AlertCircle, Search, X, ListOrdered } from 'lucide-react';
+import { Grid3X3, AlertCircle, Search, X, ListOrdered } from 'lucide-react';
+import { ToolPage, ToolHeader } from '@/components/tools/ToolHeader';
 import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { cn } from '@/lib/utils';
@@ -694,36 +695,14 @@ export default function HeatmapClientPage() {
     : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 } };
 
   return (
-    <div className="min-h-screen">
-      <main className="container mx-auto max-w-7xl pt-10 pb-20 px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
-        >
-          <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-          {t('allToolsLink', 'All tools')}
-        </Link>
-
-        <motion.div
-          {...motionProps}
-          transition={{ duration: 0.3 }}
-          className="flex items-start justify-between gap-4 flex-wrap mb-5"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-              <Grid3X3 className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                {mode === 'my-stocks' ? t('heatmapMyStocksTitle', 'My Stocks Heatmap') : t('heatmapSp500Title', 'S&P 500 Sector Heatmap')}
-              </h1>
-              <p className="text-muted-foreground text-sm mt-0.5">
-                {t('heatmapSubtitle', "Sized by market cap · colored by today's performance")}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
+    <ToolPage width="wide">
+        <ToolHeader
+          className="mb-5"
+          icon={<Grid3X3 />}
+          title={mode === 'my-stocks' ? t('heatmapMyStocksTitle', 'My Stocks Heatmap') : t('heatmapSp500Title', 'S&P 500 Sector Heatmap')}
+          description={t('heatmapSubtitle', "Sized by market cap · colored by today's performance")}
+          actions={
+          <div className="flex flex-wrap items-center gap-2">
             {isAuthenticated && (
               <Tabs value={mode} onValueChange={(v) => setMode(v as HeatmapMode)}>
                 <TabsList>
@@ -737,7 +716,8 @@ export default function HeatmapClientPage() {
               <span className="text-xs text-muted-foreground tabular-nums">{t('heatmapAsOf', 'As of {{time}}', { time: lastUpdated })}</span>
             )}
           </div>
-        </motion.div>
+          }
+        />
 
         {/* Legend + search + sector filter */}
         <motion.div
@@ -865,9 +845,7 @@ export default function HeatmapClientPage() {
             'Prices stream live via WebSocket during market hours. Sector and market-cap classification refresh periodically.'
           )}
         </p>
-      </main>
-
       <FloatingTooltip pos={tooltipPos} session={session} />
-    </div>
+    </ToolPage>
   );
 }

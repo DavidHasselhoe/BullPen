@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calculator, Loader2, AlertCircle } from 'lucide-react';
-import { useBackground } from '@/hooks/use-background';
+import { Calculator, Loader2, AlertCircle } from 'lucide-react';
+import { ToolPage, ToolHeader, ToolSectionTitle } from '@/components/tools/ToolHeader';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import {
@@ -39,6 +39,15 @@ import {
 } from '@/components/ui/tooltip';
 
 const STORAGE_KEY = 'buy-here-last-ticker';
+
+/** One-tap starting points, so a first visit can run without knowing a ticker. */
+const QUICK_PICKS = [
+  { ticker: 'AAPL', name: 'Apple' },
+  { ticker: 'NVDA', name: 'NVIDIA' },
+  { ticker: 'MSFT', name: 'Microsoft' },
+  { ticker: 'AMZN', name: 'Amazon' },
+  { ticker: 'KO', name: 'Coca-Cola' },
+];
 
 type BuyHereResult = {
   success: boolean;
@@ -251,7 +260,6 @@ function BuyHereChart({
 
 export default function BuyHereClientPage() {
   const { t } = useTranslation('tools');
-  const { hasAnimatedBackground } = useBackground();
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
   const [selectedStock, setSelectedStock] = useState<SearchResult | null>(null);
@@ -368,52 +376,21 @@ export default function BuyHereClientPage() {
   const isValid = selectedStock && amt > 0;
 
   return (
-    <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
-      {/* Subtle gradient background */}
-      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none" />
+    <ToolPage>
+      <ToolHeader
+        icon={<Calculator />}
+        title={t('buyHereTitle', 'If You Bought Here')}
+        description={t('buyHereSubtitle', 'See how an investment would have performed based on historical prices')}
+      />
 
-      <main className="container mx-auto max-w-4xl py-10 px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
-        >
-          <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-          {t('allToolsLink', 'All tools')}
-        </Link>
-
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-              <Calculator className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('buyHereTitle', 'If You Bought Here')}</h1>
-              <p className="text-muted-foreground text-sm mt-0.5">
-                {t('buyHereSubtitle', 'See how an investment would have performed based on historical prices')}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Inputs - Glass card */}
-        <motion.form
+        {/* Inputs */}
+        <form
           onSubmit={(e) => {
             e.preventDefault();
             handleCalculate();
           }}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          className="mb-8 rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
+          className="mb-8 rounded-2xl border border-border/60 bg-card p-6 sm:p-8"
         >
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-6">
-            {t('buyHereInputsLabel', 'Inputs')}
-          </p>
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -421,8 +398,31 @@ export default function BuyHereClientPage() {
                 <TickerSelector
                   value={selectedStock}
                   onChange={setSelectedStock}
-                  placeholder="Search by ticker or company name..."
+                  placeholder={t('compareSearchPlaceholder', 'Search by ticker or company name...')}
                 />
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {QUICK_PICKS.map((pick) => {
+                    const active = selectedStock?.ticker === pick.ticker;
+                    return (
+                      <button
+                        key={pick.ticker}
+                        type="button"
+                        onClick={() => setSelectedStock({ ticker: pick.ticker, name: pick.name, cik: '', has_data: true })}
+                        aria-pressed={active}
+                        title={pick.name}
+                        className={cn(
+                          'flex items-center gap-1.5 rounded-full border py-0.5 pl-0.5 pr-2.5 text-xs font-medium transition-colors duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          active
+                            ? 'border-primary/40 bg-primary/10 text-foreground'
+                            : 'border-border bg-background text-muted-foreground hover:border-foreground/20 hover:text-foreground'
+                        )}
+                      >
+                        <CompanyLogo size={20} ticker={pick.ticker} name={pick.name} className="shrink-0" />
+                        {pick.ticker}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('buyHereAmountLabel', 'Investment amount')}</label>
@@ -480,12 +480,9 @@ export default function BuyHereClientPage() {
 
             <Button
               type="submit"
+              size="lg"
               disabled={!isValid || isLoading}
-              className={cn(
-                'w-full h-12 text-base font-semibold',
-                'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70',
-                'transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
-              )}
+              className="h-11 w-full text-sm font-semibold disabled:opacity-40"
             >
               {isLoading ? (
                 <>
@@ -497,7 +494,7 @@ export default function BuyHereClientPage() {
               )}
             </Button>
           </div>
-        </motion.form>
+        </form>
 
         {/* Results */}
         <AnimatePresence mode="wait">
@@ -507,7 +504,7 @@ export default function BuyHereClientPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
+              className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8"
             >
               <div className="space-y-6">
                 <Skeleton className="h-8 w-48" />
@@ -527,11 +524,9 @@ export default function BuyHereClientPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-xl shadow-xl p-6 sm:p-8"
+              className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8"
             >
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-6">
-                {t('buyHereResultsLabel', 'Results')}
-              </p>
+              <ToolSectionTitle className="mb-5">{t('buyHereResultsLabel', 'Results')}</ToolSectionTitle>
 
               {!result.success ? (
                 <div className="flex items-start gap-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
@@ -542,7 +537,7 @@ export default function BuyHereClientPage() {
                     <p className="text-xs text-muted-foreground mt-2">
                       {t(
                         'buyHereErrorHint',
-                        'Please ensure the stock is listed in the US and try again. If the issue persists, check your API key or rate limits.'
+                        'Make sure the stock is listed in the US and try again. If it keeps failing, try again in a few minutes.'
                       )}
                     </p>
                   </div>
@@ -556,7 +551,7 @@ export default function BuyHereClientPage() {
                       className="rounded-xl border border-border/50 bg-muted/30 p-5"
                     >
                       <p className="text-sm font-medium text-muted-foreground">
-                        {t('buyHereYourInvestment', '{{ticker}} — Your investment', { ticker: result.stock.ticker })}
+                        {t('buyHereYourInvestment', 'Your {{ticker}} investment', { ticker: result.stock.ticker })}
                       </p>
                       <p className="mt-2 text-2xl font-bold text-foreground">
                         <AnimatedCounter value={result.stock.valueNow} format={fmtCurrency} />
@@ -626,7 +621,6 @@ export default function BuyHereClientPage() {
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
-    </div>
+    </ToolPage>
   );
 }

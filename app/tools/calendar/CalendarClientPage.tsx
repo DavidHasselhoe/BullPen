@@ -4,11 +4,10 @@ import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CalendarDays, ArrowLeft, Info, Loader2 } from 'lucide-react';
+import { CalendarDays, Info, Loader2 } from 'lucide-react';
+import { ToolPage, ToolHeader } from '@/components/tools/ToolHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
-import { useBackground } from '@/hooks/use-background';
 import { useHoldings } from '@/hooks/use-holdings';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
@@ -52,7 +51,6 @@ export function CalendarClientPage() {
   const { t } = useTranslation('tools');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { hasAnimatedBackground } = useBackground();
   const { isAuthenticated } = useAuth();
 
   const today = todayET();
@@ -168,28 +166,12 @@ export function CalendarClientPage() {
   }
 
   return (
-    <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
-      <main className="container mx-auto max-w-6xl py-10 px-4 sm:px-6 lg:px-8">
-
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/tools"
-            className="group mb-5 inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-            {t('allToolsLink', 'All tools')}
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-              <CalendarDays className="h-5 w-5 text-primary" aria-hidden />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">{t('calendarTitle', 'Market Calendar')}</h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">{t('calendarSubtitle', 'Earnings, dividends, splits, IPOs & economic releases')}</p>
-            </div>
-          </div>
-        </div>
+    <ToolPage width="wide">
+        <ToolHeader
+          icon={<CalendarDays />}
+          title={t('calendarTitle', 'Market Calendar')}
+          description={t('calendarSubtitle', 'Earnings, dividends, splits, IPOs & economic releases')}
+        />
 
         {/* View + date navigation */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -328,8 +310,7 @@ export function CalendarClientPage() {
         </Card>
 
         <DayDetailDialog model={openModel} onOpenChange={(open) => { if (!open) setOpenDate(null); }} />
-      </main>
-    </div>
+    </ToolPage>
   );
 }
 

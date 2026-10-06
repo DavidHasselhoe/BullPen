@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Bell, Plus, AlertCircle } from 'lucide-react';
+import { Bell, Plus, AlertCircle } from 'lucide-react';
+import { ToolPage, ToolHeader, ToolSectionTitle } from '@/components/tools/ToolHeader';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -75,67 +75,44 @@ export default function AlertsClientPage() {
   }
 
   return (
-    <div className={cn('min-h-screen', !hasAnimatedBackground && 'bg-background')}>
-      <div className="max-w-3xl mx-auto px-4 py-6 sm:px-6 sm:py-10 lg:px-8 space-y-8">
-
-        {/* Header */}
-        <div className="pb-4 border-b border-border/30">
-          <Link
-            href="/tools"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3 group"
-          >
-            <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-            {t('allToolsLink', 'All tools')}
-          </Link>
-
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/illustrations/bull-alert.webp"
-                alt=""
-                aria-hidden
-                className="hidden sm:block h-20 w-20 shrink-0 select-none opacity-90 dark:opacity-80 dark:invert"
-              />
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold tracking-tight">{t('alertsTitle', 'Price Alerts')}</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {t('alertsSubtitle', 'Get notified when a stock hits a target price, daily move, 52-week extreme, or new high.')}
-                </p>
-              </div>
-            </div>
-
-            {/* Quota + new-alert button */}
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              {!composerOpen && (
-                <Button
-                  size="sm"
-                  onClick={() => { setLockedTicker(null); setComposerOpen(true); }}
-                  className="gap-1.5"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('alertsNewAlert', 'New alert')}
-                </Button>
-              )}
-              {!isLoading && (
-                <div className="hidden sm:flex items-center gap-1.5 whitespace-nowrap">
-                  <div className="h-1 w-14 rounded-full bg-muted/60 overflow-hidden">
-                    <div
-                      className={cn(
-                        'h-full rounded-full transition-[width] duration-300',
-                        activeSymbolCount >= FREE_ACTIVE_ALERT_LIMIT ? 'bg-amber-400' : 'bg-primary/70'
-                      )}
-                      style={{ width: `${Math.min(100, (activeSymbolCount / FREE_ACTIVE_ALERT_LIMIT) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
-                    {activeSymbolCount}/{FREE_ACTIVE_ALERT_LIMIT}
-                  </span>
+    <ToolPage>
+      <ToolHeader
+        icon={<Bell />}
+        title={t('alertsTitle', 'Price Alerts')}
+        description={t('alertsSubtitle', 'Get notified when a stock hits a target price, daily move, 52-week extreme, or new high.')}
+        actions={
+          <div className="flex flex-col items-end gap-2">
+            {!composerOpen && (
+              <Button
+                size="sm"
+                onClick={() => { setLockedTicker(null); setComposerOpen(true); }}
+                className="gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {t('alertsNewAlert', 'New alert')}
+              </Button>
+            )}
+            {!isLoading && (
+              <div className="hidden items-center gap-1.5 whitespace-nowrap sm:flex">
+                <div className="h-1 w-14 overflow-hidden rounded-full bg-muted/60">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-[width] duration-300',
+                      activeSymbolCount >= FREE_ACTIVE_ALERT_LIMIT ? 'bg-amber-400' : 'bg-primary/70'
+                    )}
+                    style={{ width: `${Math.min(100, (activeSymbolCount / FREE_ACTIVE_ALERT_LIMIT) * 100)}%` }}
+                  />
                 </div>
-              )}
-            </div>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {activeSymbolCount}/{FREE_ACTIVE_ALERT_LIMIT}
+                </span>
+              </div>
+            )}
           </div>
-        </div>
+        }
+      />
+
+      <div className="space-y-8">
 
         {/* Composer */}
         {composerOpen && (
@@ -180,7 +157,7 @@ export default function AlertsClientPage() {
                   <Button
                     size="sm"
                     onClick={() => setComposerOpen(true)}
-                    className="gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white"
+                    className="gap-1.5"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     {t('alertsCreateFirst', 'Create your first alert')}
@@ -194,11 +171,11 @@ export default function AlertsClientPage() {
         )}
 
         {/* About */}
-        <div className="border-t border-border/30 pt-5 px-1">
-          <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground mb-2">
+        <div className="border-t border-border/40 pt-5">
+          <ToolSectionTitle className="mb-1.5">
             {t('alertsAboutHeading', 'About alerts')}
-          </div>
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
+          </ToolSectionTitle>
+          <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
             {t(
               'alertsAboutBody',
               "Alerts are checked at {{marketOpen}} and once every hour through close (Mon–Fri). Each alert can fire at most {{oncePerDay}} so you're never spammed. Pause one to silence it without losing the configuration.",
@@ -207,6 +184,6 @@ export default function AlertsClientPage() {
           </p>
         </div>
       </div>
-    </div>
+    </ToolPage>
   );
 }

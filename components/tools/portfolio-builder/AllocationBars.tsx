@@ -94,7 +94,7 @@ export function AllocationBars({ holdings, logoMap, isSimplified }: Props) {
         return (
           <div key={section.role}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
+              <span className="text-sm font-semibold text-foreground">
                 {roleLabel[section.role]} · {t('portfolioBuilderPositionCount', { count: section.items.length })}
               </span>
               <span className="text-[11px] tabular-nums text-muted-foreground font-semibold">

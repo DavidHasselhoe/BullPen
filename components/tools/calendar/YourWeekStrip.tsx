@@ -32,7 +32,7 @@ export function YourWeekStrip({ days }: { days: DayModel[] }) {
 
   return (
     <div className="mb-6">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="mb-2 text-sm font-semibold text-foreground">
         {t('calendarYourEvents')}
       </p>
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">

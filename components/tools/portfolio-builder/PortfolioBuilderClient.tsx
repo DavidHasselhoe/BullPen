@@ -273,7 +273,7 @@ export function PortfolioBuilderClient() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
             <Sparkles className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">{t('portfolioBuilderSignInTitle')}</h1>
+          <h2 className="text-xl font-bold tracking-tight">{t('portfolioBuilderSignInTitle')}</h2>
           <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
             {t('portfolioBuilderSignInDescription')}
           </p>
@@ -404,9 +404,9 @@ function RecentPortfolios({
     <div>
       <div className="flex items-center gap-2 mb-3">
         <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
+        <h2 className="text-sm font-semibold text-foreground">
           {isSearching ? t('portfolioBuilderMatchingPortfolios') : t('portfolioBuilderRecentPortfolios')}
-        </span>
+        </h2>
         {total > 0 && (
           <span className="text-[11px] text-muted-foreground tabular-nums">
             ({total})

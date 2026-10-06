@@ -27,6 +27,8 @@ const SCANNED = [
   'components/holdings/risk-analysis',
   'components/tools/portfolio-builder',
   'components/deep-dive',
+  // The saved-dives list renders each report's model-written headline.
+  'app/tools/deep-dive',
   'components/ai/cards',
   'components/picks',
 ];

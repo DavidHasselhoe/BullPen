@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { ToolSectionTitle } from '@/components/tools/ToolHeader';
 import { cn } from '@/lib/utils';
 import { HoldingsContextToggle } from '@/components/holdings/HoldingsContextToggle';
 
@@ -30,16 +31,10 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
 
   return (
     <div className="space-y-8">
-      {/* Hero */}
-      <div className="text-center space-y-3 pt-4">
-        <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 mb-1">
-          <Sparkles className="h-6 w-6 text-primary" />
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('portfolioBuilderTitle')}</h1>
-        <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">
-          {t('portfolioBuilderHeroDescription')}
-        </p>
-      </div>
+      {/* The page header names the tool; this says how it works. */}
+      <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
+        {t('portfolioBuilderHeroDescription')}
+      </p>
 
       {/* Input area */}
       <div className="rounded-2xl border border-border/70 bg-card shadow-sm overflow-hidden">
@@ -83,9 +78,7 @@ export function ThesisInput({ onSubmit, disabled }: Props) {
 
       {/* Examples */}
       <div>
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold mb-3 text-center">
-          {t('portfolioBuilderExampleThesesHeading')}
-        </p>
+        <ToolSectionTitle as="h3">{t('portfolioBuilderExampleThesesHeading')}</ToolSectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {EXAMPLES.map((ex) => (
             <button

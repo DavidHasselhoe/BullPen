@@ -39,11 +39,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { ArrowLeft, Scale, Building2, BarChart3, TrendingUp, Plus, X, Info, ArrowUpDown, ChevronDown, ChevronRight, Sparkles, MessageSquare } from 'lucide-react';
+import { Scale, Building2, BarChart3, TrendingUp, Plus, X, Info, ArrowUpDown, ChevronDown, ChevronRight, Sparkles, MessageSquare } from 'lucide-react';
 import type { CompareCompany } from '@/app/api/compare/route';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useRecentlyCompared } from '@/hooks/use-recently-compared';
 import { RecentlyComparedCard } from '@/components/tools/compare/RecentlyComparedCard';
+import { ToolPage, ToolHeader, ToolBackLink, ToolSectionTitle } from '@/components/tools/ToolHeader';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import { cn } from '@/lib/utils';
 import { Suspense, Fragment } from 'react';
@@ -548,27 +549,8 @@ function CompareContent() {
     const canCompare = selectedCompanies.length >= 2;
 
     return (
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
-        <div className="mb-8">
-          <Link
-            href="/tools"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5 group"
-          >
-            <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-            {t('allToolsLink')}
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-              <Scale className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('compareTitle')}</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {t('compareSubtitle')}
-              </p>
-            </div>
-          </div>
-        </div>
+      <ToolPage width="wide">
+        <ToolHeader icon={<Scale />} title={t('compareTitle')} description={t('compareSubtitle')} />
         <RecentlyComparedCard />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-5">
           {Array.from({ length: slots }).map((_, i) => (
@@ -615,7 +597,7 @@ function CompareContent() {
         {/* One-tap starting points: an empty two-slot grid gave a beginner no idea what a useful comparison looks like. */}
         {selectedCompanies.length === 0 && (
           <div className="mt-8">
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('comparePopularTitle')}</p>
+            <ToolSectionTitle>{t('comparePopularTitle')}</ToolSectionTitle>
             <div className="flex flex-wrap gap-2">
               {POPULAR_COMPARISONS.map((pair) => (
                 <Link
@@ -698,7 +680,7 @@ function CompareContent() {
             </Command>
           </DialogContent>
         </Dialog>
-      </div>
+      </ToolPage>
     );
   }
 
@@ -708,14 +690,8 @@ function CompareContent() {
     const message = known?.message ?? t('compareLoadError');
 
     return (
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
-        >
-          <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-          {t('allToolsLink')}
-        </Link>
+      <ToolPage width="wide">
+        <ToolBackLink />
         <Card className={known?.transient ? undefined : 'border-destructive/50'}>
           <CardContent className="py-8 flex flex-col items-center gap-4 text-center">
             <p className={known?.transient ? 'text-muted-foreground' : 'text-destructive'}>{message}</p>
@@ -724,7 +700,7 @@ function CompareContent() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </ToolPage>
     );
   }
 
@@ -763,14 +739,9 @@ function CompareContent() {
         })();
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-[1600px]">
-      <Link
-        href="/tools"
-        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6 group"
-      >
-        <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-        {t('allToolsLink')}
-      </Link>
+    // Wider than ToolPage's `wide`: up to five companies side by side need it.
+    <ToolPage width="wide" className="max-w-[1600px]">
+      <ToolBackLink />
 
       {isLoading ? (
         <ProcessingScreen
@@ -783,11 +754,13 @@ function CompareContent() {
         <div className="page-enter">
           <div className="mb-8">
             <div className="flex items-center justify-between gap-4 mb-1">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                  <Scale className="h-5 w-5 text-primary" />
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex shrink-0 -space-x-2" aria-hidden>
+                  {companies.map((c) => (
+                    <CompanyLogo key={c.ticker} name={c.name} ticker={c.ticker} logoUrl={c.logo_url} size={36} className="rounded-full ring-2 ring-background" />
+                  ))}
+                </span>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground text-balance">
                   {companies.map((c) => c.ticker).join(' vs ')}
                 </h1>
               </div>
@@ -1265,7 +1238,7 @@ function CompareContent() {
           </div>
         </div>
       )}
-    </div>
+    </ToolPage>
   );
 }
 

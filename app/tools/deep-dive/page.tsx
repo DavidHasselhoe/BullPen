@@ -9,15 +9,25 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Telescope, ChevronRight, Trash2, Clock, ArrowLeft } from 'lucide-react';
+import { ClampedText } from '@/components/ui/ClampedText';
+import { Telescope, ChevronRight, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useBackground } from '@/hooks/use-background';
+import { useIntlLocale } from '@/hooks/use-intl-locale';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
+import { ToolPage, ToolHeader, ToolSectionTitle } from '@/components/tools/ToolHeader';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import type { Verdict } from '@/lib/ai/deep-dive/schema';
 import type { SavedDivePreview } from '@/app/api/ai/deep-dive/route';
 
-const POPULAR = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL'];
+const POPULAR = [
+  { ticker: 'NVDA', name: 'NVIDIA' },
+  { ticker: 'AAPL', name: 'Apple' },
+  { ticker: 'MSFT', name: 'Microsoft' },
+  { ticker: 'TSLA', name: 'Tesla' },
+  { ticker: 'AMZN', name: 'Amazon' },
+  { ticker: 'GOOGL', name: 'Alphabet' },
+];
 
 const STANCE_DOT: Record<Verdict['stance'], string> = {
   bullish: 'bg-emerald-500',
@@ -26,10 +36,16 @@ const STANCE_DOT: Record<Verdict['stance'], string> = {
   mixed: 'bg-amber-500',
 };
 
+const STANCE_LABEL: Record<Verdict['stance'], [key: string, fallback: string]> = {
+  bullish: ['deepDiveStanceBullish', 'Bullish'],
+  bearish: ['deepDiveStanceBearish', 'Bearish'],
+  neutral: ['deepDiveStanceNeutral', 'Neutral'],
+  mixed: ['deepDiveStanceMixed', 'Mixed'],
+};
+
 export default function DeepDiveLanding() {
   const { t } = useTranslation('tools');
   const router = useRouter();
-  const { hasAnimatedBackground } = useBackground();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<SearchResult | null>(null);
 
@@ -57,128 +73,135 @@ export default function DeepDiveLanding() {
   };
 
   return (
-    <div className={cn('min-h-screen', hasAnimatedBackground ? '' : 'bg-background')}>
-      <main className="container mx-auto max-w-3xl py-10 px-4 sm:px-6 lg:px-8">
+    <ToolPage>
+      <ToolHeader
+        icon={<Telescope />}
+        title={t('deepDiveTitle', 'AI Deep Dive')}
+        description={t('deepDiveSubtitle', 'Analyst-grade reports: results, guidance, valuation, bull vs bear, risks.')}
+      />
 
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/tools"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-5 group"
+      {/* Generate panel */}
+      <Card className="mb-10 py-0">
+        <CardContent className="space-y-4 p-5 sm:p-6">
+          <form
+            onSubmit={(e) => { e.preventDefault(); if (selected) go(selected.ticker); }}
+            className="flex flex-col gap-2.5 sm:flex-row"
           >
-            <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-            {t('allToolsLink', 'All tools')}
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-              <Telescope className="h-5 w-5 text-primary" aria-hidden />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">{t('deepDiveTitle', 'AI Deep Dive')}</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {t('deepDiveSubtitle', 'Analyst-grade reports: results, guidance, valuation, bull vs bear, risks.')}
-              </p>
-            </div>
-          </div>
-        </div>
+            <TickerSelector
+              value={selected}
+              onChange={setSelected}
+              placeholder={t('compareSearchPlaceholder','Search by ticker or company name...')}
+              className="flex-1"
+            />
+            <Button type="submit" size="lg" disabled={!selected} className="shrink-0 gap-2 rounded-full animate-ai-pill-shine">
+              <Telescope className="h-4 w-4" /> {t('deepDiveAnalyzeButton', 'Analyze')}
+            </Button>
+          </form>
 
-        {/* Generate panel */}
-        <Card className="mb-8">
-          <CardContent className="p-5 sm:p-6 space-y-4">
-            <form
-              onSubmit={(e) => { e.preventDefault(); if (selected) go(selected.ticker); }}
-              className="flex flex-col sm:flex-row gap-2.5"
-            >
-              <TickerSelector
-                value={selected}
-                onChange={setSelected}
-                placeholder="Search by ticker or company name..."
-                className="flex-1"
-              />
-              <Button type="submit" size="lg" disabled={!selected} className="gap-2 shrink-0 rounded-full animate-ai-pill-shine">
-                <Telescope className="h-4 w-4" /> {t('deepDiveAnalyzeButton', 'Analyze')}
-              </Button>
-            </form>
-
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] text-muted-foreground">{t('deepDivePopularLabel', 'Popular:')}</span>
-              {POPULAR.map((sym) => (
-                <button
-                  key={sym}
-                  onClick={() => go(sym)}
-                  className="rounded-md border border-border/60 px-2 py-0.5 text-xs font-mono font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {sym}
-                </button>
-              ))}
-            </div>
-
-            <div className="pt-1">
-              <QuotaIndicator feature="deep_dive" unit={{ singular: 'deep dive', plural: 'deep dives' }} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Saved dives */}
-        <div className="flex items-center gap-2 mb-3">
-          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">{t('deepDiveYourDives', 'Your deep dives')}</span>
-          {dives.length > 0 && <span className="text-[11px] text-muted-foreground tabular-nums">({dives.length})</span>}
-        </div>
-
-        {isLoading ? (
-          <div className="space-y-2">
-            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
-          </div>
-        ) : dives.length === 0 ? (
-          <EmptyState
-            pose="thinking"
-            title={t('deepDiveEmptyTitle', 'No deep dives yet')}
-            description={t('deepDiveEmptyDescription', 'Enter a ticker above and the AI analyst will dig into the business, financials, and risks.')}
-            imageSize={150}
-            className="py-6"
-          />
-        ) : (
-          <div className="space-y-2">
-            {dives.map((d) => (
-              <SavedDiveRow key={d.id} dive={d} onDelete={() => deleteMutation.mutate(d.id)} />
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-0.5 text-xs text-muted-foreground">{t('deepDivePopularLabel', 'Popular:')}</span>
+            {POPULAR.map(({ ticker, name }) => (
+              <button
+                key={ticker}
+                type="button"
+                onClick={() => go(ticker)}
+                title={name}
+                className="flex items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 text-sm transition-colors duration-150 hover:border-foreground/20 hover:bg-accent/50 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <CompanyLogo size={22} ticker={ticker} name={name} className="shrink-0" />
+                <span className="font-medium">{ticker}</span>
+              </button>
             ))}
           </div>
-        )}
 
-      </main>
-    </div>
+          <QuotaIndicator feature="deep_dive" unit={{ singular: 'deep dive', plural: 'deep dives' }} />
+        </CardContent>
+      </Card>
+
+      {/* Saved dives */}
+      <ToolSectionTitle meta={dives.length > 0 ? dives.length : undefined}>
+        {t('deepDiveYourDives', 'Your deep dives')}
+      </ToolSectionTitle>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-[84px] w-full rounded-xl" />)}
+        </div>
+      ) : dives.length === 0 ? (
+        <EmptyState
+          pose="thinking"
+          title={t('deepDiveEmptyTitle', 'No deep dives yet')}
+          description={t('deepDiveEmptyDescription', 'Enter a ticker above and the AI analyst will dig into the business, financials, and risks.')}
+          imageSize={150}
+          className="py-6"
+        />
+      ) : (
+        <ul className="space-y-2">
+          {dives.map((d) => (
+            <SavedDiveRow key={d.id} dive={d} onDelete={() => deleteMutation.mutate(d.id)} />
+          ))}
+        </ul>
+      )}
+    </ToolPage>
   );
 }
 
 function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete: () => void }) {
   const { t } = useTranslation('tools');
+  const locale = useIntlLocale();
   const [confirm, setConfirm] = useState(false);
+  const date = new Date(d.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
-    <div className="group flex items-center gap-3 rounded-xl border border-border/50 bg-card px-4 py-3 hover:border-border/80 transition-colors">
-      <Link href={`/tools/deep-dive/${d.symbol}`} className="flex-1 min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
-        <div className="flex items-center gap-2 mb-0.5">
-          {d.stance && <span className={cn('h-2 w-2 rounded-full shrink-0', STANCE_DOT[d.stance])} />}
-          <span className="text-sm font-bold font-mono text-foreground">{d.symbol}</span>
-          {d.companyName && <span className="text-xs text-muted-foreground truncate">{d.companyName}</span>}
+    // The ticker link is stretched over the whole row (after:inset-0), so the
+    // row is still one big target while the headline's Show more toggle and the
+    // delete controls, lifted above it with z-10, stay real buttons instead of
+    // buttons nested inside a link.
+    <li className="group relative flex items-start gap-3 rounded-xl border border-border/50 bg-card px-4 py-3 transition-colors hover:border-border focus-within:border-border">
+      <CompanyLogo size={36} ticker={d.symbol} name={d.companyName ?? d.symbol} className="mt-0.5 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <Link
+            href={`/tools/deep-dive/${d.symbol}`}
+            className="shrink-0 text-sm font-semibold text-foreground after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+          >
+            {d.symbol}
+          </Link>
+          {d.companyName && (
+            // clamp-ok: company name beside its ticker; the report it links to shows it in full
+            <span className="min-w-0 truncate text-xs text-muted-foreground">{d.companyName}</span>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground truncate">
-          {d.headline ?? new Date(d.createdAt).toLocaleDateString()}
-        </p>
-      </Link>
-      <div className="flex items-center gap-1 shrink-0">
+        {d.headline && (
+          <ClampedText className="mt-0.5 text-sm text-foreground/85" toggleClassName="relative z-10">
+            {d.headline}
+          </ClampedText>
+        )}
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+          {d.stance && (
+            <>
+              <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', STANCE_DOT[d.stance])} aria-hidden />
+              <span className="font-medium text-foreground/80">{t(...STANCE_LABEL[d.stance])}</span>
+              <span aria-hidden>·</span>
+            </>
+          )}
+          <time dateTime={d.createdAt} className="tabular-nums">{date}</time>
+        </div>
+      </div>
+      <div className="relative z-10 flex shrink-0 items-center gap-1 self-center">
         {confirm ? (
           <>
             <button
+              type="button"
               onClick={onDelete}
-              className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded px-2 py-1 text-xs text-red-400 transition-colors hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t('deepDiveDeleteButton', 'Delete')}
             </button>
             <button
+              type="button"
               onClick={() => setConfirm(false)}
-              className="text-xs text-muted-foreground hover:text-muted-foreground px-2 py-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t('deepDiveCancelButton', 'Cancel')}
             </button>
@@ -186,16 +209,17 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
         ) : (
           <>
             <button
+              type="button"
               onClick={() => setConfirm(true)}
-              className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-red-400 p-1.5 rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded p-1.5 text-muted-foreground opacity-0 transition-all hover:text-red-400 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 [@media(hover:none)]:opacity-100"
               aria-label={t('deepDiveDeleteAriaLabel', 'Delete {{symbol}} deep dive', { symbol: d.symbol })}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground/80 transition-colors" aria-hidden />
+            <ChevronRight className="pointer-events-none h-4 w-4 text-muted-foreground" aria-hidden />
           </>
         )}
       </div>
-    </div>
+    </li>
   );
 }

@@ -72,8 +72,8 @@ export function MoodHero({ score, label, animated }: { score: number; label: str
           <span className="text-base text-muted-foreground font-mono mb-2">/100</span>
         </div>
         <div
-          className="text-[11px] font-semibold uppercase mt-3"
-          style={{ color, letterSpacing: '0.3em', opacity: 0.85 }}
+          className="mt-2 text-sm font-semibold"
+          style={{ color }}
         >
           {label}
         </div>
@@ -110,11 +110,8 @@ export function MoodHero({ score, label, animated }: { score: number; label: str
         </div>
 
         {/* End labels */}
-        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{t('moodFear')}</span>
-          <span className="font-mono tabular-nums text-muted-foreground">
-            {t('moodScale')}
-          </span>
           <span>{t('moodGreed')}</span>
         </div>
       </div>
@@ -133,11 +130,11 @@ export function SignalCard({ signal }: { signal: MoodSignal }) {
     >
       {/* Top row: name + state chip */}
       <div className="flex items-start justify-between gap-2 mb-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        <span className="text-sm font-medium text-foreground">
           {signal.name}
         </span>
         <span
-          className="text-[11px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded shrink-0 leading-none"
+          className="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium leading-none"
           style={{ color, background: `${color}14` }}
         >
           {signal.label}
