@@ -1,5 +1,30 @@
 [
   {
+    "date": "2026-10-06",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Academy no longer makes you finish every course in order. Once you complete What is a Stock?, the first course in every chapter opens, so you can go straight to taxes, bonds or investor psychology. Optional courses and any course you have already started are always open"
+      },
+      {
+        "type": "fixed",
+        "text": "Politician pages no longer show a few filings as the wrong company, such as a private investment fund listed as a public stock or a preferred share priced as the common stock. They also show readable company names and logos, and load trades 20 at a time"
+      },
+      {
+        "type": "improved",
+        "text": "Home shows the same price change for a stock everywhere on the page before the market opens, labels index moves from the last close, and shows company logos next to news about your stocks"
+      },
+      {
+        "type": "improved",
+        "text": "The Tools page groups tools by what you want to do and shows your latest deep dive and alerts. Every tool now shares the same layout, and Deep Dive, If You Bought Here and Compare show company logos"
+      },
+      {
+        "type": "new",
+        "text": "Thiel Macro, Peter Thiel's fund, is now one of the funds you can follow on Discover, with five quarters of holdings"
+      }
+    ]
+  },
+  {
     "date": "2026-10-05",
     "entries": [
       {
