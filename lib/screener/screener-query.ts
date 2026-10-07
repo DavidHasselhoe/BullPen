@@ -138,8 +138,10 @@ export function matchesScreenerFilters(r: ScreenerRow, f: ScreenerFilterParams):
   if (f.industry && r.industry !== f.industry) return false;
   if (!inRange(r.health_score, f.healthScoreMin, f.healthScoreMax)) return false;
   if (!inRange(r.market_cap, f.marketCapMin, f.marketCapMax)) return false;
-  if (!inRange(r.pe_ratio, f.peMin, f.peMax)) return false;
-  if (!inRange(r.pb_ratio, f.pbMin, f.pbMax)) return false;
+  // A P/E or P/B at or below zero is a loss-maker or negative equity, shown as
+  // "—" in the table. Treat it as missing, or "P/E under 15" keeps 500+ of them.
+  if (!inRange(r.pe_ratio != null && r.pe_ratio > 0 ? r.pe_ratio : null, f.peMin, f.peMax)) return false;
+  if (!inRange(r.pb_ratio != null && r.pb_ratio > 0 ? r.pb_ratio : null, f.pbMin, f.pbMax)) return false;
   if (!inRange(r.beta, f.betaMin, f.betaMax)) return false;
   if (!inRangeFractionAsPct(r.dividend_yield, f.divYieldMin, f.divYieldMax)) return false;
   if (!inRangeFractionAsPct(r.profit_margin, f.profitMarginMin, f.profitMarginMax)) return false;
