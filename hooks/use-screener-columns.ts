@@ -72,8 +72,8 @@ export interface UseScreenerColumns {
   showAll: () => void;
   hideAll: () => void;
   reorder: (keys: string[]) => void;
-  /** Shows these columns and moves them right after % Chg (a preset bringing its own data into view). */
-  surface: (keys: string[]) => void;
+  /** Shows these columns right after % Chg without saving them; [] goes back to the saved layout. */
+  setPresetColumns: (keys: string[]) => void;
   reset: () => void;
 }
 
@@ -124,25 +124,38 @@ export function useScreenerColumns(): UseScreenerColumns {
     }, 1_000);
   }, []);
 
+  // A built-in preset's columns, layered over the saved layout for as long as
+  // that preset is the one picked. Never saved: switching from Dividend to
+  // Growth swaps the dividend columns for growth ones, and All drops the layer.
+  const [presetKeys, setPresetKeys] = useState<string[]>([]);
+
+  // Any manual edit adopts what's on screen: the preset columns become part of
+  // the saved layout, and the layer is gone.
   const update = useCallback((next: StoredPrefs) => {
+    setPresetKeys([]);
     setUserEdited(true);
     setLocalPrefs(next);
     saveLocal(next);
     if (userRef.current) saveToSupabase(next);
   }, [saveToSupabase]);
 
-  const orderedKeys = resolveOrder(prefs.order);
-  const hidden = new Set(prefs.hidden);
+  const baseOrder = resolveOrder(prefs.order);
+  const orderedKeys = presetKeys.length > 0 ? bringForward(baseOrder, presetKeys) : baseOrder;
+  const hiddenKeys = useMemo(
+    () => prefs.hidden.filter((k) => !presetKeys.includes(k)),
+    [prefs.hidden, presetKeys],
+  );
+  const hidden = new Set(hiddenKeys);
   const orderedColumns = orderedKeys.map((k) => translatedColumnByKey[k]).filter(Boolean);
   const visibleColumns = orderedColumns.filter((c) => !hidden.has(c.key));
 
-  const isHidden = useCallback((key: string) => prefs.hidden.includes(key), [prefs.hidden]);
+  const isHidden = useCallback((key: string) => hiddenKeys.includes(key), [hiddenKeys]);
 
   const toggle = useCallback((key: string) => {
-    const set = new Set(prefs.hidden);
+    const set = new Set(hiddenKeys);
     if (set.has(key)) set.delete(key); else set.add(key);
     update({ order: orderedKeys, hidden: [...set] });
-  }, [prefs.hidden, orderedKeys, update]);
+  }, [hiddenKeys, orderedKeys, update]);
 
   const showAll = useCallback(() => {
     update({ order: orderedKeys, hidden: [] });
@@ -153,10 +166,11 @@ export function useScreenerColumns(): UseScreenerColumns {
   }, [orderedKeys, update]);
 
   const reorder = useCallback((keys: string[]) => {
-    update({ order: keys, hidden: prefs.hidden });
-  }, [prefs.hidden, update]);
+    update({ order: keys, hidden: hiddenKeys });
+  }, [hiddenKeys, update]);
 
   const reset = useCallback(() => {
+    setPresetKeys([]);
     setUserEdited(false); // let remote prefs win again on next render if available
     const def = defaultPrefs();
     setLocalPrefs(def);
@@ -167,10 +181,5 @@ export function useScreenerColumns(): UseScreenerColumns {
     }
   }, [saveToSupabase]);
 
-  const surface = useCallback((keys: string[]) => {
-    if (keys.length === 0) return;
-    update({ order: bringForward(orderedKeys, keys), hidden: prefs.hidden.filter((k) => !keys.includes(k)) });
-  }, [orderedKeys, prefs.hidden, update]);
-
-  return { orderedColumns, visibleColumns, isHidden, toggle, showAll, hideAll, reorder, surface, reset };
+  return { orderedColumns, visibleColumns, isHidden, toggle, showAll, hideAll, reorder, setPresetColumns: setPresetKeys, reset };
 }

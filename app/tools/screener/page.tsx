@@ -106,12 +106,13 @@ function ScreenerContent() {
   // A preset re-seeds the table sort. ScreenerResults only reads its initial
   // sort on mount, so `n` remounts it.
   const [presetSort, setPresetSort] = useState<{ key: string; dir: 'asc' | 'desc'; n: number } | null>(null);
-  const { surface } = screenerColumns;
+  const { setPresetColumns } = screenerColumns;
   const applyPresetView = useCallback((view: PresetView) => {
-    surface(view.columns);
-    setPresetSort((prev) => ({ key: view.sortKey, dir: view.sortDir, n: (prev?.n ?? 0) + 1 }));
+    setPresetColumns(view.columns);
+    const { sortKey, sortDir = 'desc' } = view;
+    if (sortKey) setPresetSort((prev) => ({ key: sortKey, dir: sortDir, n: (prev?.n ?? 0) + 1 }));
     setPage(1);
-  }, [surface]);
+  }, [setPresetColumns]);
 
   // Restore active view from URL once custom views are loaded
   useEffect(() => {
@@ -342,7 +343,10 @@ function ScreenerContent() {
     setPage(1);
   }, []);
 
-  const handleReset = useCallback(() => handleFilterChange({ ...EMPTY_FILTERS }), [handleFilterChange]);
+  const handleReset = useCallback(() => {
+    handleFilterChange({ ...EMPTY_FILTERS });
+    setPresetColumns([]);
+  }, [handleFilterChange, setPresetColumns]);
 
   const handleViewChange = useCallback((view: ActiveView) => {
     setActiveView(view);

@@ -70,8 +70,9 @@ export const EMPTY_FILTERS: ScreenerFilterValues = {
 export interface PresetView {
   /** Shown and moved next to % Chg, so the preset's criteria are on screen. */
   columns: string[];
-  sortKey: string;
-  sortDir: 'asc' | 'desc';
+  /** Omitted for a saved preset: it keeps whatever sort the table has. */
+  sortKey?: string;
+  sortDir?: 'asc' | 'desc';
 }
 
 interface Preset extends PresetView {
@@ -277,7 +278,10 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
               <span key={preset.id} className="group/preset relative inline-flex items-center">
                 <button
                   type="button"
-                  onClick={() => onChange({ ...EMPTY_FILTERS, ...preset.filters })}
+                  onClick={() => {
+                    onChange({ ...EMPTY_FILTERS, ...preset.filters });
+                    onPresetApply?.({ columns: [] });
+                  }}
                   className="rounded-full border border-border bg-transparent py-0.5 pl-2.5 pr-6 text-[11px] font-medium text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
                 >
                   {preset.name}
