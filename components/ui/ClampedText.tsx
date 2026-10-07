@@ -28,6 +28,7 @@ export function ClampedText({
   children,
   lines = 2,
   className,
+  textClassName,
   toggleClassName,
   onToggle,
 }: {
@@ -35,6 +36,8 @@ export function ClampedText({
   /** Lines to show before clamping. */
   lines?: 2 | 3 | 4;
   className?: string;
+  /** On the clamped element itself, which draws the "…". */
+  textClassName?: string;
   toggleClassName?: string;
   /** Called with the new state when the reader expands or collapses it. */
   onToggle?: (expanded: boolean) => void;
@@ -63,7 +66,7 @@ export function ClampedText({
 
   return (
     <span className={cn('block min-w-0', className)}>
-      <span ref={textRef} className={cn('block', !expanded && clampClass)}>
+      <span ref={textRef} className={cn('block', !expanded && clampClass, textClassName)}>
         {children}
       </span>
       {(clamped || expanded) && (

@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import Link from 'next/link';
+import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { InkBullets } from './InkText';
+import { whyBullets } from '@/lib/ai/why-today-shared';
 
 type Status = 'searching' | 'streaming' | 'done' | 'error' | 'upgrade';
 type ErrorCode = 'payment_required' | 'invalid_key' | 'rate_limited' | 'unknown';
@@ -93,6 +96,27 @@ export function WhyTodayView({ ticker, price, change, changePct }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Words are released at a writing pace rather than as they arrive: Claude
+  // streams in bursts after its search, and a cached answer comes as one
+  // chunk that would otherwise appear all at once. The pace speeds up with
+  // the backlog, so a whole cached answer still lands in under a second.
+  const words = text.split(/(\s+)/);
+  const totalWords = words.filter((w) => w.trim()).length;
+  const [shown, setShown] = useState(0);
+  const [reducedMotion] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  useEffect(() => {
+    if (reducedMotion || shown >= totalWords) return;
+    const id = setTimeout(() => setShown((n) => Math.min(totalWords, n + Math.max(1, Math.ceil((totalWords - n) / 20)))), 32);
+    return () => clearTimeout(id);
+  }, [shown, totalWords, reducedMotion]);
+
+  let seen = 0;
+  const visible = reducedMotion
+    ? text
+    : words.filter((w) => (w.trim() ? ++seen <= shown : seen < shown)).join('');
+
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 scrollbar-hide">
       <div className="flex items-center gap-2 mb-4">
@@ -109,25 +133,22 @@ export function WhyTodayView({ ticker, price, change, changePct }: Props) {
       </div>
 
       {status === 'searching' && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+        <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+          <Sparkles className="h-3.5 w-3.5 shrink-0 animate-pulse" aria-hidden />
           {t('whyTodaySearching', { ticker })}
-        </div>
+        </p>
       )}
 
-      {(status === 'streaming' || status === 'done') && text && (
-        <div className="text-sm text-foreground space-y-2 leading-relaxed">
-          {text.split('\n').filter(Boolean).map((line, i) => (
-            <p key={i} className={cn(
-              line.startsWith('•') ? 'pl-0' : 'text-muted-foreground text-xs'
-            )}>
-              {line}
-            </p>
-          ))}
-          {status === 'streaming' && (
-            <span className="inline-block h-3.5 w-0.5 bg-foreground/60 animate-pulse ml-0.5 align-middle" />
-          )}
-        </div>
+      {/* Streamed words settle as they land; no cursor, the arriving ink says it's still writing. */}
+      {/* Parsed like Home and the stock page (whyBullets). The answer is plain
+          prose now; the old "•"-or-footnote styling showed it as small muted text. */}
+      {(status === 'streaming' || status === 'done') && visible.trim() && (
+        <InkBullets
+          stagger={false}
+          bullets={whyBullets(visible)}
+          className="block text-pretty text-sm leading-relaxed text-foreground"
+          bulletClassName={(i) => (i > 0 ? 'mt-2' : undefined)}
+        />
       )}
 
       {status === 'error' && (

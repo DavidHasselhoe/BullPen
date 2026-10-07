@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { ClampedText } from '@/components/ui/ClampedText';
 import { WHY_TODAY_MIN_MOVE, whyBullets } from '@/lib/ai/why-today-shared';
+import { InkReveal, InkBullets } from '@/components/ai/InkText';
 import type { ExtendedHoursQuote, IndicatorValue, CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 
 // Fullscreen advanced chart is loaded on demand so lightweight-charts stays out
@@ -589,9 +590,15 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
                       ? (extHours!.pre_or_post === 'pre' ? t('stockPricePanelPreMarket') : t('stockPricePanelAfterHours'))
                       : t('stockPricePanelAtClose')}
                   </span>
+                  {/* The move shown beside it. `changePct` is live price vs the
+                      previous session's previous close, so before the open it
+                      spanned two days (NBIS read "+4.1%": Monday close to
+                      Wednesday pre-market). */}
                   <button
                     type="button"
-                    onClick={() => requestWhyToday({ ticker, price, change, changePct })}
+                    onClick={() => requestWhyToday(extActive
+                      ? { ticker, price: extPriceVal, change: extDiff, changePct: extPct }
+                      : { ticker, price: closePrice, change: closeChange, changePct: closePct })}
                     className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
                   >
                     <Sparkles className="h-3 w-3" />
@@ -729,14 +736,14 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
         </div>
 
         {cachedWhy?.why && (
-          <div className="mt-4 flex max-w-3xl gap-2 text-sm leading-relaxed text-muted-foreground">
-            <Sparkles className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden />
-            <ClampedText lines={2} className="min-w-0 flex-1">
-              {whyBullets(cachedWhy.why.text).map((b, i) => (
-                <span key={i} className={cn('block', i > 0 && 'mt-1')}>{b}</span>
-              ))}
-            </ClampedText>
-          </div>
+          <InkReveal>
+            <div className="flex max-w-3xl gap-2 pt-4 text-sm leading-relaxed text-muted-foreground">
+              <Sparkles className="ink-glint mt-1 h-3.5 w-3.5 shrink-0" aria-hidden />
+              <ClampedText lines={2} className="min-w-0 flex-1" textClassName="ink-ellipsis">
+                <InkBullets bullets={whyBullets(cachedWhy.why.text)} bulletClassName={(i) => (i > 0 ? 'mt-1' : undefined)} />
+              </ClampedText>
+            </div>
+          </InkReveal>
         )}
       </div>
 

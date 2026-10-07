@@ -11,6 +11,7 @@ import { ArrowDown, ArrowRight, ArrowUp, Minus, Sparkles } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { ClampedText } from '@/components/ui/ClampedText';
+import { InkReveal, InkBullets } from '@/components/ai/InkText';
 import { AskBullChips } from '@/components/dashboard/AskBullChips';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { WHY_TODAY_MIN_MOVE, whyBullets, type InlineWhy } from '@/lib/ai/why-today-shared';
@@ -179,20 +180,23 @@ function MoverRow({ mover, why, onWhy }: { mover: HomeMover; why: InlineWhy | 'l
         )}
       </div>
 
+      {/* Opens from the height of the "Reading the news" line it replaces, so
+          the row grows into the explanation instead of collapsing first. */}
       {explained && (
-        <div className="mt-2 flex gap-2 pl-10 text-xs leading-relaxed text-muted-foreground">
-          <Sparkles className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
-          <ClampedText
-            lines={2}
-            className="min-w-0 flex-1"
-            onToggle={(open) => open && trackEvent('home_why_inline_expanded', { ticker: mover.symbol })}
-          >
-            <span className="sr-only">{t('homeWhyLabel', { ticker: mover.symbol })} </span>
-            {whyBullets(explained).map((b, i) => (
-              <span key={i} className={cn('block', i > 0 && 'mt-1')}>{b}</span>
-            ))}
-          </ClampedText>
-        </div>
+        <InkReveal className="min-h-6">
+          <div className="flex gap-2 pl-10 pt-2 text-xs leading-relaxed text-muted-foreground">
+            <Sparkles className="ink-glint mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+            <ClampedText
+              lines={2}
+              className="min-w-0 flex-1"
+              textClassName="ink-ellipsis"
+              onToggle={(open) => open && trackEvent('home_why_inline_expanded', { ticker: mover.symbol })}
+            >
+              <span className="sr-only">{t('homeWhyLabel', { ticker: mover.symbol })} </span>
+              <InkBullets bullets={whyBullets(explained)} bulletClassName={(i) => (i > 0 ? 'mt-1' : undefined)} />
+            </ClampedText>
+          </div>
+        </InkReveal>
       )}
       {writing && (
         <p className="mt-2 flex items-center gap-2 pl-10 text-xs text-muted-foreground" role="status">
