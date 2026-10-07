@@ -7,6 +7,7 @@ import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InkBullets } from './InkText';
 import { whyBullets } from '@/lib/ai/why-today-shared';
+import { trackEvent } from '@/lib/analytics/track';
 
 type Status = 'searching' | 'streaming' | 'done' | 'error' | 'upgrade';
 type ErrorCode = 'payment_required' | 'invalid_key' | 'rate_limited' | 'unknown';
@@ -34,6 +35,12 @@ export function WhyTodayView({ ticker, price, change, changePct }: Props) {
   useEffect(() => {
     const ctrl = new AbortController();
     abortRef.current = ctrl;
+    // Analytics: time to the first word, and whether it was a cache hit (a
+    // fresh answer always searches first). Production latency for both paths.
+    const startedAt = performance.now();
+    let searched = false;
+    let answered = false;
+    const failed = (code: string) => trackEvent('why_panel_failed', { ticker, code });
 
     (async () => {
       try {
@@ -49,6 +56,7 @@ export function WhyTodayView({ ticker, price, change, changePct }: Props) {
           return;
         }
         if (!res.ok) {
+          failed(String(res.status));
           setStatus('error');
           return;
         }
@@ -67,15 +75,21 @@ export function WhyTodayView({ ticker, price, change, changePct }: Props) {
             try {
               const event = JSON.parse(line.slice(6));
               if (event.type === 'searching') {
+                searched = true;
                 setStatus('searching');
                 setText('');
               }
               if (event.type === 'text') {
+                if (!answered) {
+                  answered = true;
+                  trackEvent('why_panel_answered', { ticker, cached: !searched, ms: Math.round(performance.now() - startedAt) });
+                }
                 setStatus('streaming');
                 setText((t) => t + event.delta);
               }
               if (event.type === 'done') setStatus('done');
               if (event.type === 'error') {
+                failed(event.code ?? 'unknown');
                 setErrorCode((event.code as ErrorCode) ?? 'unknown');
                 setStatus('error');
               }

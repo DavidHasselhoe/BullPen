@@ -35,6 +35,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { ClampedText } from '@/components/ui/ClampedText';
 import { WHY_TODAY_MIN_MOVE, whyBullets } from '@/lib/ai/why-today-shared';
 import { InkReveal, InkBullets } from '@/components/ai/InkText';
+import { trackEvent } from '@/lib/analytics/track';
 import type { ExtendedHoursQuote, IndicatorValue, CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 
 // Fullscreen advanced chart is loaded on demand so lightweight-charts stays out
@@ -528,9 +529,25 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
   const perfPct   = range === '1D' ? (showDual ? extPct    : changePct)  : chartPct;
   const perfDiff  = range === '1D' ? (showDual ? extDiff   : change)     : chartDiff;
 
+  // A pre/post-market block only earns its place once a trade has moved the
+  // price off the close. Before that it repeated the close with a red "-$0.00".
+  const extActive = showDual && !isFlat(extPct);
+
+  // The move Why Today explains, measured the way the server measures it
+  // (parseQuoteResponse): before the open, the pre-market move from the last
+  // close; after the close, the whole session including after hours, from
+  // the previous close. The Why? buttons send it and the cached explanation
+  // below is checked against it, so both always describe the same move. The
+  // cached check used the regular close, which hid every pre-market answer.
+  const whyMove = !extActive
+    ? (showDual ? { ticker, price: closePrice, change: closeChange, changePct: closePct } : { ticker, price, change, changePct })
+    : extHours?.pre_or_post === 'pre' || !(prevClose > 0)
+      ? { ticker, price: extPriceVal, change: extDiff, changePct: extPct }
+      : { ticker, price: extPriceVal, change: extPriceVal - prevClose, changePct: ((extPriceVal - prevClose) / prevClose) * 100 };
+  const dayPct = whyMove.changePct;
+
   // Today's explanation, only when someone already paid for it (Home's inline
   // explanations and the Why? panel share one cache). Never generates.
-  const dayPct = showDual ? closePct : changePct;
   const { data: cachedWhy } = useQuery<{ why: { text: string; changePct: number } | null }>({
     queryKey: ['why-today-cached', ticker, i18n.language, Math.round(dayPct)],
     queryFn: async () => {
@@ -544,9 +561,11 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
-  // A pre/post-market block only earns its place once a trade has moved the
-  // price off the close. Before that it repeated the close with a red "-$0.00".
-  const extActive = showDual && !isFlat(extPct);
+  // Analytics only (no state): Pro users seeing the explanation, and reading it.
+  const shownWhy = cachedWhy?.why?.text ?? null;
+  useEffect(() => {
+    if (shownWhy) trackEvent('stock_why_inline_shown', { ticker });
+  }, [shownWhy, ticker]);
 
   if (quoteLoading && !restQuote && !live) {
     return (
@@ -590,15 +609,12 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
                       ? (extHours!.pre_or_post === 'pre' ? t('stockPricePanelPreMarket') : t('stockPricePanelAfterHours'))
                       : t('stockPricePanelAtClose')}
                   </span>
-                  {/* The move shown beside it. `changePct` is live price vs the
-                      previous session's previous close, so before the open it
-                      spanned two days (NBIS read "+4.1%": Monday close to
-                      Wednesday pre-market). */}
+                  {/* Not `changePct`: that is live price vs the previous
+                      session's previous close, so before the open it spanned
+                      two days (NBIS read "+4.1%" on a -3.12% pre-market). */}
                   <button
                     type="button"
-                    onClick={() => requestWhyToday(extActive
-                      ? { ticker, price: extPriceVal, change: extDiff, changePct: extPct }
-                      : { ticker, price: closePrice, change: closeChange, changePct: closePct })}
+                    onClick={() => requestWhyToday(whyMove)}
                     className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
                   >
                     <Sparkles className="h-3 w-3" />
@@ -627,7 +643,7 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
                   {range === '1D' && (
                     <button
                       type="button"
-                      onClick={() => requestWhyToday({ ticker, price, change, changePct })}
+                      onClick={() => requestWhyToday(whyMove)}
                       className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:border-foreground/30"
                     >
                       <Sparkles className="h-3 w-3" />
@@ -739,7 +755,12 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
           <InkReveal>
             <div className="flex max-w-3xl gap-2 pt-4 text-sm leading-relaxed text-muted-foreground">
               <Sparkles className="ink-glint mt-1 h-3.5 w-3.5 shrink-0" aria-hidden />
-              <ClampedText lines={2} className="min-w-0 flex-1" textClassName="ink-ellipsis">
+              <ClampedText
+                lines={2}
+                className="min-w-0 flex-1"
+                textClassName="ink-ellipsis"
+                onToggle={(open) => open && trackEvent('stock_why_inline_expanded', { ticker })}
+              >
                 <InkBullets bullets={whyBullets(cachedWhy.why.text)} bulletClassName={(i) => (i > 0 ? 'mt-1' : undefined)} />
               </ClampedText>
             </div>

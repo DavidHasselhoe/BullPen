@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { useAIPanel, type WhyTodayPayload } from '@/components/ai/AIPanelProvider';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import type { QuotaState } from '@/lib/billing/quotas';
+import { trackEvent } from '@/lib/analytics/track';
 
 /**
  * Why Today is a hard Pro-only gate (QUOTAS.why_today has count: 0 — no free
@@ -34,6 +35,8 @@ export function useWhyTodayGate() {
 
   const requestWhyToday = useCallback(
     (payload: Omit<WhyTodayPayload, 'requestedAt'>) => {
+      // allowed: false is a paywall impression; the page is on the event's URL.
+      trackEvent('why_requested', { ticker: payload.ticker, allowed: can('why_today') });
       if (can('why_today')) {
         openWhyToday(payload);
       } else {
