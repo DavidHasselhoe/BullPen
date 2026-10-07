@@ -28,6 +28,7 @@ import { fmtAbsolute, fmtRelative } from '@/components/deep-dive/DeepDiveHero';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 import { useSignupGate } from '@/components/auth/SignupGate';
+import { DeepDivePaywallPreview } from '@/components/billing/DeepDivePaywallPreview';
 import type { QuotaState } from '@/lib/billing/quotas';
 
 type Phase = 'loading' | 'idle' | 'generating' | 'done' | 'error';
@@ -251,11 +252,11 @@ export default function DeepDivePage() {
           >
             <ArrowLeft className="h-3.5 w-3.5" /> {t('deepDiveAllDivesLink', 'All deep dives')}
           </Link>
-          <Card>
-            <CardContent className="p-6 sm:p-8 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                <Sparkles className="h-6 w-6 text-primary" />
-              </div>
+          <Card className="overflow-hidden">
+            {/* What the report covers, for this ticker: the outline of one,
+                no made-up score (see components/billing/PreviewShapes.tsx). */}
+            <DeepDivePaywallPreview ticker={rawTicker.toUpperCase()} />
+            <CardContent className="p-6 pt-2 sm:p-8 sm:pt-2 text-center">
               <h1 className="text-xl font-bold tracking-tight">{t('deepDiveSignInTitle', 'Sign in to run a deep dive')}</h1>
               <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
                 {/* Says what the account gets you; the title already asks for it. */}

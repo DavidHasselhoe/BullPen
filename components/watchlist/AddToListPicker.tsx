@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { useWatchlistLists, useAddToWatchlist, useRemoveFromWatchlist, useIsWatched } from '@/hooks/use-watchlist';
-import { useSignupGate } from '@/components/auth/SignupGate';
+import { useSignupGate, useResumeAction } from '@/components/auth/SignupGate';
 
 interface AddToListPickerProps {
   symbol: string;
@@ -23,6 +23,13 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
   const removeFromWatchlist = useRemoveFromWatchlist();
   const { isAuthenticated } = useAuth();
   const openGate = useSignupGate();
+  // Signed up from this button: add the stock they asked for (no list
+  // given, so the API uses their first list, creating it if needed).
+  useResumeAction('watch', (value) => {
+    if (value !== symbol.toUpperCase()) return false;
+    if (!isWatched) addToWatchlist.mutate({ symbol, company_name: companyName });
+    return true;
+  });
 
   // Signed out, the add can only fail (401). It used to flip to "Watching"
   // anyway and save nothing; now it is the moment to offer an account.
@@ -34,7 +41,7 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
         variant="outline"
         size="sm"
         className="gap-2"
-        onClick={() => openGate({ source: 'watch', context: t('watchlistSignInPrompt', { ticker: symbol.toUpperCase() }) })}
+        onClick={() => openGate({ source: 'watch', context: t('watchlistSignInPrompt', { ticker: symbol.toUpperCase() }), resume: `watch:${symbol.toUpperCase()}` })}
       >
         <Bookmark className="h-4 w-4" />
         {t('watchlistWatch')}

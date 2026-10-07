@@ -3,6 +3,7 @@
 import { useState, useMemo, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthGate } from '@/components/ui/AuthGate';
+import { HoldingsPreview } from '@/components/billing/HoldingsPreview';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
 import { CSVImportModal } from '@/components/holdings/CSVImportModal';
@@ -304,6 +305,7 @@ export default function HoldingsPage() {
     return (
       <AuthGate
         source="holdings"
+        preview={<HoldingsPreview />}
         icon={<BarChart2 className="h-7 w-7" />}
         title={t('holdingsGateTitle')}
         description={t('holdingsGateBody')}

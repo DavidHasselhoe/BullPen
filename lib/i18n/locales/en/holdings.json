@@ -142,7 +142,7 @@
   "importReviewActionBuy": "Buy",
   "importReviewActionSell": "Sell",
   "importReviewAuthDescription": "This import is tied to your account.",
-  "importReviewAuthTitle": "Sign in to review your import",
+  "importReviewAuthTitle": "Create a free account to save your import",
   "importReviewBack": "Back",
   "importReviewBackToHoldings": "Back to Holdings",
   "importReviewColumnDate": "Date",
@@ -356,7 +356,7 @@
   "addHoldingTypeCrypto": "Crypto",
   "addHoldingTypeFund": "Fund",
   "portfolioDashboardFromSales": "{{amount}} from shares you sold",
-  "holdingsGateTitle": "Sign in to view your holdings",
+  "holdingsGateTitle": "Track your whole portfolio in one place",
   "holdingsGateBody": "Track positions, performance, and risk across your whole portfolio in real time.",
   "holdingsBadgePreMarket": "Pre-market",
   "holdingsBadgeLive": "Live",
@@ -377,5 +377,6 @@
   "portfolioHealthCoverageValue": "Covers {{pct}}% of your portfolio's value. Not scored: {{symbols}}.",
   "portfolioHealthUnscoredMore": "and {{count}} more",
   "portfolioHealthExplainUnscored": "Crypto, most funds and companies without published financial statements have no health score, so they are left out of the average.",
-  "portfolioDashboardPricedOf": "{{count}} of {{total}} positions priced so far"
+  "portfolioDashboardPricedOf": "{{count}} of {{total}} positions priced so far",
+  "holdingsPreviewValue": "Portfolio value"
 }

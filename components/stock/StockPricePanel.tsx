@@ -36,6 +36,7 @@ import { ClampedText } from '@/components/ui/ClampedText';
 import { WHY_TODAY_MIN_MOVE, whyBullets } from '@/lib/ai/why-today-shared';
 import { InkReveal, InkBullets } from '@/components/ai/InkText';
 import { trackEvent } from '@/lib/analytics/track';
+import { useResumeAction } from '@/components/auth/SignupGate';
 import type { ExtendedHoursQuote, IndicatorValue, CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 
 // Fullscreen advanced chart is loaded on demand so lightweight-charts stays out
@@ -561,6 +562,14 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+  // Signed up from Why?: ask again with the move on screen. A new account
+  // gets the paywall with the trial; a returning Pro user, the answer.
+  useResumeAction('why', (value) => {
+    if (value !== ticker.toUpperCase()) return false;
+    requestWhyToday(whyMove);
+    return true;
+  }, whyMove.price > 0); // after a Google/email return the quote may still be loading
+
   // Analytics only (no state): Pro users seeing the explanation, and reading it.
   const shownWhy = cachedWhy?.why?.text ?? null;
   useEffect(() => {

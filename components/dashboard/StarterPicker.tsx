@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAddToWatchlist, useRemoveFromWatchlist, useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
-import { useSignupGate } from '@/components/auth/SignupGate';
+import { useSignupGate, useResumeAction } from '@/components/auth/SignupGate';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { fetchHoldingQuotes } from '@/lib/holdings/holding-quotes';
 import { useTradingSession } from '@/hooks/use-trading-session';
@@ -62,12 +62,21 @@ export function StarterPicker({ onPick, onDone }: { onPick: () => void; onDone: 
     .map(([ticker, name]) => ({ ticker, name }));
   const list: Pick[] = searching ? results.map((r) => ({ ticker: r.ticker, name: r.name })) : [...extras, ...STARTER_STOCKS];
 
+  // Signed up from a tap here: follow the stock they tapped.
+  useResumeAction('watch', (ticker) => {
+    if (!watched.has(ticker)) {
+      onPick();
+      add.mutate({ symbol: ticker, company_name: STARTER_STOCKS.find((x) => x.ticker === ticker)?.name ?? ticker });
+    }
+    return true;
+  });
+
   const toggle = (p: Pick) => {
     // Signed out, the watchlist write is a 401 that used to fail with nothing
     // on screen. The picker stays as a preview of Home; a tap asks to sign up.
     if (!isAuthenticated) {
       trackEvent('home_starter_pick', { ticker: p.ticker, action: 'signup_prompt', source: searching ? 'search' : 'suggestion' });
-      openGate({ source: 'home_starter', context: t('starterGuestContext', { ticker: p.ticker }) });
+      openGate({ source: 'home_starter', context: t('starterGuestContext', { ticker: p.ticker }), resume: `watch:${p.ticker}` });
       return;
     }
     onPick();

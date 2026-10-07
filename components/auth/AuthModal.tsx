@@ -33,9 +33,11 @@ interface AuthModalProps {
   context?: string;
   /** For signup_form_* / login_form_* events. */
   source?: string;
+  /** Replaces the default "close and go to redirectTo" after an in-place sign-in (SignupGate resumes the action instead). */
+  onSuccess?: () => void;
 }
 
-export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectTo, forceLight = false, context, source = 'modal' }: AuthModalProps) {
+export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectTo, forceLight = false, context, source = 'modal', onSuccess }: AuthModalProps) {
   const { t } = useTranslation('auth');
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -75,6 +77,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
   };
 
   const handleSuccess = () => {
+    if (onSuccess) return onSuccess();
     onOpenChange(false);
     router.replace(redirectTo || '/');
   };

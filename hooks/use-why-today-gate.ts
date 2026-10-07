@@ -47,7 +47,7 @@ export function useWhyTodayGate() {
       // A guest is asked for a free account first, then the trial: a $9 price
       // shown to someone without an account is the steeper ask.
       if (!isAuthenticated) {
-        openGate({ source: 'why_today', context: t('whyTodayGuestContext', { trialDays: PRICING.trialDays }) });
+        openGate({ source: 'why_today', context: t('whyTodayGuestContext', { trialDays: PRICING.trialDays }), resume: `why:${payload.ticker.toUpperCase()}` });
         return;
       }
       if (can('why_today')) {

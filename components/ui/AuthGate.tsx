@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useSignupGate } from '@/components/auth/SignupGate';
+import { cn } from '@/lib/utils';
 
 interface AuthGateProps {
   icon: React.ReactNode;
@@ -12,6 +13,8 @@ interface AuthGateProps {
   source: string;
   /** Where to land after signing in, when the bare path isn't enough (a prefilled ?query). Defaults to this page. */
   returnTo?: string;
+  /** The page's outline, shown in place of the icon so the guest sees what they'd get. */
+  preview?: React.ReactNode;
 }
 
 /**
@@ -21,7 +24,7 @@ interface AuthGateProps {
  * back. Create account leads: a guest here is far more often new than
  * signed out.
  */
-export function AuthGate({ icon, title, description, source, returnTo }: AuthGateProps) {
+export function AuthGate({ icon, title, description, source, returnTo, preview }: AuthGateProps) {
   const { t } = useTranslation('common');
   const openGate = useSignupGate();
 
@@ -31,11 +34,15 @@ export function AuthGate({ icon, title, description, source, returnTo }: AuthGat
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="flex flex-col items-center text-center max-w-sm gap-5"
+        className={cn('flex flex-col items-center text-center gap-5', preview ? 'w-full max-w-md' : 'max-w-sm')}
       >
-        <div className="h-16 w-16 rounded-2xl bg-card border border-border flex items-center justify-center text-muted-foreground">
-          {icon}
-        </div>
+        {preview ? (
+          <div className="w-full">{preview}</div>
+        ) : (
+          <div className="h-16 w-16 rounded-2xl bg-card border border-border flex items-center justify-center text-muted-foreground">
+            {icon}
+          </div>
+        )}
 
         <div className="space-y-2">
           <h2 className="text-xl font-semibold text-foreground">{title}</h2>

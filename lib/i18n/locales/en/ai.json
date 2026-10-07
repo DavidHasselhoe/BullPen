@@ -3,7 +3,7 @@
   "authGateCreateAccount": "Create free account",
   "authGateDescription": "Get instant answers about SEC filings, financial metrics, and investment research.",
   "authGateSignIn": "Sign in",
-  "authGateTitle": "Sign in to ask Bull",
+  "authGateTitle": "Ask Bull about any stock",
   "chatContextPromptFilings": "Recent filings for {{ticker}}",
   "chatContextPromptMargins": "Which company has stronger margins?",
   "chatContextPromptProfitability": "Explain profitability differences",

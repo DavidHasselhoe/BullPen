@@ -87,7 +87,7 @@ export default function NotificationsPage() {
       <AuthGate
         source="notifications"
         icon={<Bell className="h-7 w-7" />}
-        title="Sign in to see your notifications"
+        title="Your alerts and updates, in one place"
         description="Price alerts, earnings dates and big moves in the stocks you follow, all in one place."
       />
     );

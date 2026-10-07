@@ -33,7 +33,7 @@ import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { SCREENER_COLUMNS, getScreenerColumns, type ScreenerColumn } from './screener-columns';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
-import { useSignupGate } from '@/components/auth/SignupGate';
+import { useSignupGate, useResumeAction } from '@/components/auth/SignupGate';
 
 type SortDir = 'asc' | 'desc';
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
@@ -165,13 +165,7 @@ export function ScreenerResults({
     router.push(`/tools/compare?tickers=${selectedTickers.join(',')}`);
   }, [canCompare, selectedTickers, router]);
 
-  const addSelectedToWatchlist = useCallback(async () => {
-    // The sign-up dialog over this screener (SignupGate); it returns here,
-    // filters and all. It used to be a bare /login.
-    if (!isAuthenticated) {
-      openGate({ source: 'screener_watchlist', context: t('screenerGuestWatchlistContext', { count: selectedTickers.length }) });
-      return;
-    }
+  const addTickers = useCallback(async (tickers: string[]) => {
     setIsBulkAdding(true);
     try {
       // No listId passed — POST /api/watchlist resolves the caller's first
@@ -179,7 +173,7 @@ export function ScreenerResults({
       // Best-effort: add every selection; one failure shouldn't abort the
       // rest (same pattern as WatchlistTemplatesDialog's bulk add).
       await Promise.allSettled(
-        selectedTickers.map((ticker) => {
+        tickers.map((ticker) => {
           const row = data.find((r) => r.ticker === ticker);
           return addToWatchlist.mutateAsync({ symbol: ticker, company_name: row?.name ?? ticker });
         })
@@ -188,7 +182,29 @@ export function ScreenerResults({
     } finally {
       setIsBulkAdding(false);
     }
-  }, [isAuthenticated, selectedTickers, data, addToWatchlist, openGate, t]);
+  }, [data, addToWatchlist]);
+
+  const addSelectedToWatchlist = useCallback(() => {
+    // The sign-up dialog over this screener (SignupGate); it returns here,
+    // filters and all, and adds the selection (which a reload would lose, so
+    // it rides in the resume). It used to be a bare /login.
+    if (!isAuthenticated) {
+      openGate({
+        source: 'screener_watchlist',
+        context: t('screenerGuestWatchlistContext', { count: selectedTickers.length }),
+        resume: `watchlist-add:${selectedTickers.slice(0, 25).join(',')}`,
+      });
+      return;
+    }
+    void addTickers(selectedTickers);
+  }, [isAuthenticated, selectedTickers, addTickers, openGate, t]);
+
+  // Signed up from "Add to watchlist": add what they had selected, once the
+  // rows (for company names) are back.
+  useResumeAction('watchlist-add', (value) => {
+    void addTickers(value.split(',').filter(Boolean));
+    return true;
+  }, data.length > 0);
 
   /**
    * One row model for both formats.

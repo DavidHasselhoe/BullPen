@@ -66,7 +66,7 @@ export default function AlertsClientPage() {
       <AuthGate
         source="alerts"
         icon={<Bell className="h-7 w-7" />}
-        title={t('alertsSignInTitle', 'Sign in to set alerts')}
+        title={t('alertsSignInTitle', 'Get an alert when a stock hits your price')}
         description={t('alertsSignInDescription', 'Create personal alerts when a stock hits a price, % move, or all-time high.')}
         returnTo={`/tools/alerts${query ? `?${query}` : ''}`}
       />

@@ -18,7 +18,7 @@ import { useAlerts } from '@/hooks/use-alerts';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { Slot } from '@radix-ui/react-slot';
-import { useSignupGate } from '@/components/auth/SignupGate';
+import { useSignupGate, useResumeAction } from '@/components/auth/SignupGate';
 
 interface Props {
   symbol: string;
@@ -33,6 +33,14 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
   const openGate = useSignupGate();
   const { alerts, isLoading, create, toggle, remove } = useAlerts();
   const [composerOpen, setComposerOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  // Signed up from this button: open the alert form they were reaching for.
+  useResumeAction('alert', (value) => {
+    if (value !== symbol.toUpperCase()) return false;
+    setOpen(true);
+    setComposerOpen(true);
+    return true;
+  });
   const [busy, setBusy] = useState<string | null>(null);
 
   const tickerAlerts = alerts.filter(
@@ -70,14 +78,14 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
   // say "sign in" (SignupGate). Slot keeps whatever trigger the caller passed.
   if (!isAuthenticated) {
     return (
-      <Slot onClick={() => openGate({ source: 'alert', context: t('signUpPrompt', { ticker: symbol.toUpperCase() }) })}>
+      <Slot onClick={() => openGate({ source: 'alert', context: t('signUpPrompt', { ticker: symbol.toUpperCase() }), resume: `alert:${symbol.toUpperCase()}` })}>
         {triggerEl}
       </Slot>
     );
   }
 
   return (
-    <Dialog onOpenChange={(open) => { if (!open) setComposerOpen(false); }}>
+    <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) setComposerOpen(false); }}>
       <DialogTrigger asChild>{triggerEl}</DialogTrigger>
 
       <DialogContent className="max-w-md">
