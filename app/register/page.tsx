@@ -101,7 +101,14 @@ function RegisterContent() {
         </div>
 
         {/* Signup Form */}
-        <AuthFormSignup onSuccess={handleSuccess} onError={setError} source="register" />
+        {/* The confirmation link lands where the person was headed, like Google
+            does; it always went to /dashboard, dropping every ?redirect. */}
+        <AuthFormSignup
+          onSuccess={handleSuccess}
+          onError={setError}
+          source="register"
+          emailRedirectPath={redirectTo !== '/dashboard' ? redirectTo : undefined}
+        />
 
         {/* Footer */}
         <motion.div

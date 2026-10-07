@@ -836,5 +836,7 @@
   "portfolioBuilderSignUpDescription": "Describe an investment idea and get a thematic portfolio of stocks built around it.",
   "toolGateCreateAccount": "Create free account",
   "toolGateHaveAccount": "Already have an account?",
-  "toolGateSignIn": "Sign in"
+  "toolGateSignIn": "Sign in",
+  "screenerGuestWatchlistContext_one": "Create a free account to save this stock to your watchlist and hear when it moves.",
+  "screenerGuestWatchlistContext_other": "Create a free account to save these {{count}} stocks to your watchlist and hear when they move."
 }

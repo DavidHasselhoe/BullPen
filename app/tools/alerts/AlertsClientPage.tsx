@@ -64,6 +64,7 @@ export default function AlertsClientPage() {
     const query = searchParams.toString();
     return (
       <AuthGate
+        source="alerts"
         icon={<Bell className="h-7 w-7" />}
         title={t('alertsSignInTitle', 'Sign in to set alerts')}
         description={t('alertsSignInDescription', 'Create personal alerts when a stock hits a price, % move, or all-time high.')}

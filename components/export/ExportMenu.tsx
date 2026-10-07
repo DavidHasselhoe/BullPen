@@ -12,6 +12,10 @@ import {
 import { ProBadge } from '@/components/billing/ProBadge';
 import { logger } from '@/lib/utils/logger';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/use-auth';
+import { useSignupGate } from '@/components/auth/SignupGate';
+import { PRICING } from '@/lib/billing/entitlements';
 
 /**
  * The one export control, shared by the screener and holdings.
@@ -55,6 +59,9 @@ export function ExportMenu({
   className,
 }: ExportMenuProps) {
   const router = useRouter();
+  const { t } = useTranslation('common');
+  const { isAuthenticated } = useAuth();
+  const openGate = useSignupGate();
   const [isBuilding, setIsBuilding] = useState(false);
 
   // A failed export used to be completely silent: the CSV path had no error
@@ -86,7 +93,10 @@ export function ExportMenu({
     return (
       <button
         type="button"
-        onClick={() => router.push('/upgrade')}
+        // A guest gets account-first (then the trial), not a price page.
+        onClick={() => (isAuthenticated
+          ? router.push('/upgrade')
+          : openGate({ source: 'export', context: t('exportGuestContext', { trialDays: PRICING.trialDays }) }))}
         title={title}
         className={cn(TRIGGER_CLASS, className)}
       >

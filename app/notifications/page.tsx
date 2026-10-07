@@ -85,6 +85,7 @@ export default function NotificationsPage() {
   if (!authLoading && !isAuthenticated) {
     return (
       <AuthGate
+        source="notifications"
         icon={<Bell className="h-7 w-7" />}
         title="Sign in to see your notifications"
         description="Price alerts, earnings dates and big moves in the stocks you follow, all in one place."

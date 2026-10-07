@@ -33,6 +33,7 @@ import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { SCREENER_COLUMNS, getScreenerColumns, type ScreenerColumn } from './screener-columns';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
+import { useSignupGate } from '@/components/auth/SignupGate';
 
 type SortDir = 'asc' | 'desc';
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
@@ -89,6 +90,7 @@ export function ScreenerResults({
   const { isPro } = useEntitlements();
   const { isAuthenticated } = useAuth();
   const addToWatchlist = useAddToWatchlist();
+  const openGate = useSignupGate();
   const fallbackColumns = useMemo(() => getScreenerColumns(t), [t]);
   const columns = visibleColumns ?? fallbackColumns;
   const [sortKey, setSortKey] = useState<string>(initialSortKey);
@@ -164,9 +166,10 @@ export function ScreenerResults({
   }, [canCompare, selectedTickers, router]);
 
   const addSelectedToWatchlist = useCallback(async () => {
-    // Back to this screener, filters and all (it was a bare /login).
+    // The sign-up dialog over this screener (SignupGate); it returns here,
+    // filters and all. It used to be a bare /login.
     if (!isAuthenticated) {
-      router.push(`/register?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      openGate({ source: 'screener_watchlist', context: t('screenerGuestWatchlistContext', { count: selectedTickers.length }) });
       return;
     }
     setIsBulkAdding(true);
@@ -185,7 +188,7 @@ export function ScreenerResults({
     } finally {
       setIsBulkAdding(false);
     }
-  }, [isAuthenticated, selectedTickers, data, addToWatchlist, router]);
+  }, [isAuthenticated, selectedTickers, data, addToWatchlist, openGate, t]);
 
   /**
    * One row model for both formats.

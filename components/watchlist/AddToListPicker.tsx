@@ -1,15 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Bookmark, BookmarkCheck, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useWatchlistLists, useAddToWatchlist, useRemoveFromWatchlist, useIsWatched } from '@/hooks/use-watchlist';
+import { useSignupGate } from '@/components/auth/SignupGate';
 
 interface AddToListPickerProps {
   symbol: string;
@@ -24,32 +22,23 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
   const addToWatchlist = useAddToWatchlist();
   const removeFromWatchlist = useRemoveFromWatchlist();
   const { isAuthenticated } = useAuth();
-  const pathname = usePathname();
+  const openGate = useSignupGate();
 
   // Signed out, the add can only fail (401). It used to flip to "Watching"
   // anyway and save nothing; now it is the moment to offer an account.
   if (!isAuthenticated) {
-    const back = encodeURIComponent(pathname || '/');
+    // Straight to the sign-up dialog with the same promise the popover made
+    // (SignupGate); the popover was one more click to a separate page.
     return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Bookmark className="h-4 w-4" />
-            {t('watchlistWatch')}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-64 space-y-3 p-4">
-          <p className="text-sm text-foreground">{t('watchlistSignInPrompt', { ticker: symbol.toUpperCase() })}</p>
-          <div className="flex items-center gap-2">
-            <Button asChild size="sm">
-              <Link href={`/register?redirect=${back}`}>{t('watchlistSignUp')}</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link href={`/login?redirect=${back}`}>{t('watchlistSignIn')}</Link>
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2"
+        onClick={() => openGate({ source: 'watch', context: t('watchlistSignInPrompt', { ticker: symbol.toUpperCase() }) })}
+      >
+        <Bookmark className="h-4 w-4" />
+        {t('watchlistWatch')}
+      </Button>
     );
   }
 

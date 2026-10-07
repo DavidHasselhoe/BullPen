@@ -297,10 +297,10 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   if (!isAuthenticated) {
     return (
       <AuthGate
+        source="import_review"
         icon={<GraduationCap className="h-7 w-7" />}
         title={t('importReviewAuthTitle')}
         description={t('importReviewAuthDescription')}
-        signInHref="/login"
       />
     );
   }

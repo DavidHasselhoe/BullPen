@@ -29,9 +29,13 @@ interface AuthModalProps {
   // guest). See the .landing-force-light rule in app/globals.css and
   // UserMenu's forceDark/forceLight, the same fix for the same class of bug.
   forceLight?: boolean;
+  /** Signup only: why this account, for what the guest just tried (SignupGate). Replaces the generic line. */
+  context?: string;
+  /** For signup_form_* / login_form_* events. */
+  source?: string;
 }
 
-export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectTo, forceLight = false }: AuthModalProps) {
+export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectTo, forceLight = false, context, source = 'modal' }: AuthModalProps) {
   const { t } = useTranslation('auth');
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -53,20 +57,20 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
     setError('');
     setIsGoogleLoading(true);
     const eventBase = mode === 'signup' ? 'signup_form' : 'login_form';
-    trackEvent(`${eventBase}_submitted`, { source: 'modal', method: 'google' });
+    trackEvent(`${eventBase}_submitted`, { source, method: 'google' });
 
     try {
       const result = await signInWithGoogle(redirectTo);
       if (!result.success) {
         setError(result.error || t('modalGoogleFailed'));
         setIsGoogleLoading(false);
-        trackEvent(`${eventBase}_failed`, { source: 'modal', method: 'google' });
+        trackEvent(`${eventBase}_failed`, { source, method: 'google' });
       }
       // If successful, redirect will happen automatically via OAuth flow
     } catch (err) {
       setError(err instanceof Error ? err.message : t('unexpectedError'));
       setIsGoogleLoading(false);
-      trackEvent(`${eventBase}_failed`, { source: 'modal', method: 'google' });
+      trackEvent(`${eventBase}_failed`, { source, method: 'google' });
     }
   };
 
@@ -98,7 +102,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
       case 'login':
         return t('modalDescriptionLogin');
       case 'signup':
-        return t('modalDescriptionSignup');
+        return context ?? t('modalDescriptionSignup');
       case 'forgot-password':
         return t('modalDescriptionForgotPassword');
       default:
@@ -187,7 +191,7 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
                 onError={setError}
                 onForgotPassword={() => handleModeChange('forgot-password')}
                 redirectTo={redirectTo}
-                source="modal"
+                source={source}
               />
             )}
 
@@ -196,7 +200,10 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
                 key="signup"
                 onSuccess={handleSuccess}
                 onError={setError}
-                source="modal"
+                source={source}
+                // With email confirmation on, the link is how most email
+                // signups come back: it has to come back here too.
+                emailRedirectPath={redirectTo}
               />
             )}
 

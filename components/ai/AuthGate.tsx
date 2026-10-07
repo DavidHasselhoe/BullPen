@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { BullAiIcon } from './BullAiIcon';
+import { useSignupGate } from '@/components/auth/SignupGate';
 
 interface AuthGateProps {
   /** Path to return to after signing in — passed through /login's ?redirect=. Omit for surfaces (like the side panel) that stay mounted across sign-in. */
@@ -17,8 +17,9 @@ interface AuthGateProps {
  */
 export function AuthGate({ redirectTo }: AuthGateProps) {
   const { t } = useTranslation('ai');
-  const loginHref = redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : '/login';
-  const registerHref = redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : '/register';
+  // The sign-up dialog over the chat, account first (SignupGate). The side
+  // panel stays mounted across sign-in, so it needs no redirect of its own.
+  const openGate = useSignupGate();
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
@@ -30,18 +31,20 @@ export function AuthGate({ redirectTo }: AuthGateProps) {
         </p>
       </div>
       <div className="flex flex-col gap-2 w-full max-w-[200px]">
-        <Link
-          href={loginHref}
+        <button
+          type="button"
+          onClick={() => openGate({ source: 'ask_bull', context: t('authGateDescription'), redirectTo })}
           className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
         >
-          {t('authGateSignIn')}
-        </Link>
-        <Link
-          href={registerHref}
+          {t('authGateCreateAccount')}
+        </button>
+        <button
+          type="button"
+          onClick={() => openGate({ source: 'ask_bull', mode: 'login', redirectTo })}
           className="flex items-center justify-center gap-2 w-full rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
         >
-          {t('authGateCreateAccount')}
-        </Link>
+          {t('authGateSignIn')}
+        </button>
       </div>
     </div>
   );

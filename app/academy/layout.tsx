@@ -25,6 +25,7 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
   if (!isAuthenticated && !isPublicCatalog) {
     return (
       <AuthGate
+        source="academy"
         icon={<GraduationCap className="h-7 w-7" />}
         title={t('academyLayoutSignInTitle')}
         description={t('academyLayoutSignInDescription')}

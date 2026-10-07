@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
 import type { TFunction } from 'i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ThesisInput } from './ThesisInput';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
@@ -21,6 +21,7 @@ import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useInvalidateQuota } from '@/hooks/use-quota';
 import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
+import { useSignupGate } from '@/components/auth/SignupGate';
 import { useAuth } from '@/hooks/use-auth';
 
 type Phase = 'idle' | 'streaming' | 'composing' | 'validating' | 'done' | 'error';
@@ -61,7 +62,7 @@ const POLL_INTERVAL_MS = 2500;
 
 export function PortfolioBuilderClient() {
   const { t } = useTranslation('tools');
-  const router = useRouter();
+  const openGate = useSignupGate();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [phase, setPhase] = useState<Phase>('idle');
@@ -280,14 +281,14 @@ export function PortfolioBuilderClient() {
             {t('portfolioBuilderSignUpDescription')}
           </p>
           <div className="mt-6 flex flex-col items-center gap-3">
-            <Button size="lg" onClick={() => router.push(`/register?redirect=${encodeURIComponent('/tools/portfolio-builder')}`)}>
+            <Button size="lg" onClick={() => openGate({ source: 'portfolio_builder', context: t('portfolioBuilderSignUpDescription') })}>
               {t('toolGateCreateAccount')}
             </Button>
             <p className="text-sm text-muted-foreground">
               {t('toolGateHaveAccount')}{' '}
-              <Link href={`/login?redirect=${encodeURIComponent('/tools/portfolio-builder')}`} className="font-medium text-foreground underline-offset-4 hover:underline">
+              <button type="button" onClick={() => openGate({ source: 'portfolio_builder', mode: 'login' })} className="font-medium text-foreground underline-offset-4 hover:underline">
                 {t('toolGateSignIn')}
-              </Link>
+              </button>
             </p>
           </div>
         </CardContent>

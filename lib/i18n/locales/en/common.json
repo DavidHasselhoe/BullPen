@@ -23,5 +23,6 @@
   "metricSignalWeak": "Weak spot",
   "metricSignalWeakHint": "Counts against the company in its Health Score",
   "authGateSignIn": "Sign in",
-  "authGateCreateAccount": "Create account"
+  "authGateCreateAccount": "Create free account",
+  "exportGuestContext": "Exporting to CSV and PDF is part of Pro: create a free account, then try Pro free for {{trialDays}} days."
 }

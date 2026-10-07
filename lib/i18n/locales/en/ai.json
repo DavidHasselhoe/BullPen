@@ -1,6 +1,6 @@
 {
   "askBull": "Ask Bull",
-  "authGateCreateAccount": "Create account",
+  "authGateCreateAccount": "Create free account",
   "authGateDescription": "Get instant answers about SEC filings, financial metrics, and investment research.",
   "authGateSignIn": "Sign in",
   "authGateTitle": "Sign in to ask Bull",
@@ -122,5 +122,6 @@
   "chatScreenerPromptCheapest": "Which of these is cheapest by P/E?",
   "chatScreenerPromptWhatToLookFor": "What should I look for in a stock?",
   "chatScreenerPromptCandidates": "Show me some strong candidates",
-  "chatScreenerPromptReviewFilters": "Are my filters any good?"
+  "chatScreenerPromptReviewFilters": "Are my filters any good?",
+  "whyTodayGuestContext": "Why Today explains a stock's move in plain English. It's part of Pro: create a free account, then try Pro free for {{trialDays}} days."
 }

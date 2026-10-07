@@ -1,27 +1,29 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useSignupGate } from '@/components/auth/SignupGate';
 
 interface AuthGateProps {
   icon: React.ReactNode;
   title: string;
   description: string;
-  /** Overrides the default, which returns to the page the gate is on. */
-  signInHref?: string;
-  /** Where both buttons return to, when the bare path isn't enough (a prefilled ?query). */
+  /** For signup_gate_shown, e.g. 'holdings'. */
+  source: string;
+  /** Where to land after signing in, when the bare path isn't enough (a prefilled ?query). Defaults to this page. */
   returnTo?: string;
 }
 
-export function AuthGate({ icon, title, description, signInHref, returnTo }: AuthGateProps) {
+/**
+ * A whole page that needs an account. Both buttons open the sign-up dialog
+ * over this page (SignupGate) instead of sending the guest to /login or
+ * /register, so they keep sight of what they are unlocking and come straight
+ * back. Create account leads: a guest here is far more often new than
+ * signed out.
+ */
+export function AuthGate({ icon, title, description, source, returnTo }: AuthGateProps) {
   const { t } = useTranslation('common');
-  const pathname = usePathname();
-  // Both buttons bring the person back here afterwards. /login and /register
-  // read ?redirect (not ?redirectTo, which Academy used to pass and lost).
-  const target = returnTo ?? pathname;
-  const back = target && target !== '/' ? `?redirect=${encodeURIComponent(target)}` : '';
+  const openGate = useSignupGate();
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
@@ -41,18 +43,20 @@ export function AuthGate({ icon, title, description, signInHref, returnTo }: Aut
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full">
-          <Link
-            href={signInHref ?? `/login${back}`}
+          <button
+            type="button"
+            onClick={() => openGate({ source, context: description, redirectTo: returnTo })}
             className="flex-1 inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium transition-all duration-150 hover:opacity-90 active:scale-[0.97]"
           >
-            {t('authGateSignIn')}
-          </Link>
-          <Link
-            href={`/register${back}`}
+            {t('authGateCreateAccount')}
+          </button>
+          <button
+            type="button"
+            onClick={() => openGate({ source, mode: 'login', redirectTo: returnTo })}
             className="flex-1 inline-flex items-center justify-center rounded-lg border border-border bg-card text-foreground px-5 py-2.5 text-sm font-medium transition-all duration-150 hover:bg-accent active:scale-[0.97]"
           >
-            {t('authGateCreateAccount')}
-          </Link>
+            {t('authGateSignIn')}
+          </button>
         </div>
       </motion.div>
     </div>

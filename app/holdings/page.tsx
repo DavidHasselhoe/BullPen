@@ -303,6 +303,7 @@ export default function HoldingsPage() {
   if (!isAuthenticated) {
     return (
       <AuthGate
+        source="holdings"
         icon={<BarChart2 className="h-7 w-7" />}
         title={t('holdingsGateTitle')}
         description={t('holdingsGateBody')}

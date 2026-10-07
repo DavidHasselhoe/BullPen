@@ -185,6 +185,7 @@ export default function WatchlistPage() {
   if (!isAuthenticated) {
     return (
       <AuthGate
+        source="watchlist"
         icon={<Bookmark className="h-7 w-7" />}
         title={t('watchlistSignInTitle')}
         description={t('watchlistSignInDescription')}

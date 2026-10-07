@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Bell, Plus, ExternalLink, Pause, Play, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +17,8 @@ import { describeAlert } from '@/types/alerts';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { Slot } from '@radix-ui/react-slot';
+import { useSignupGate } from '@/components/auth/SignupGate';
 
 interface Props {
   symbol: string;
@@ -29,7 +30,7 @@ interface Props {
 export function AlertDialog({ symbol, companyName, trigger }: Props) {
   const { t } = useTranslation('alerts');
   const { isAuthenticated } = useAuth();
-  const pathname = usePathname();
+  const openGate = useSignupGate();
   const { alerts, isLoading, create, toggle, remove } = useAlerts();
   const [composerOpen, setComposerOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -65,6 +66,16 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
     </Button>
   );
 
+  // Guests get the sign-up dialog instead of an alert dialog that could only
+  // say "sign in" (SignupGate). Slot keeps whatever trigger the caller passed.
+  if (!isAuthenticated) {
+    return (
+      <Slot onClick={() => openGate({ source: 'alert', context: t('signUpPrompt', { ticker: symbol.toUpperCase() }) })}>
+        {triggerEl}
+      </Slot>
+    );
+  }
+
   return (
     <Dialog onOpenChange={(open) => { if (!open) setComposerOpen(false); }}>
       <DialogTrigger asChild>{triggerEl}</DialogTrigger>
@@ -77,21 +88,6 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
           </DialogTitle>
         </DialogHeader>
 
-        {!isAuthenticated ? (
-          // Same shape as the Watch popover: what the account gets you for this
-          // stock, signup first (most guests are new), sign-in beside it.
-          <div className="py-6 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">{t('signUpPrompt', { ticker: symbol.toUpperCase() })}</p>
-            <div className="flex items-center justify-center gap-2">
-              <Button asChild size="sm">
-                <Link href={`/register?redirect=${encodeURIComponent(pathname || `/stock/${symbol}`)}`}>{t('signUpButton')}</Link>
-              </Button>
-              <Button asChild size="sm" variant="ghost">
-                <Link href={`/login?redirect=${encodeURIComponent(pathname || `/stock/${symbol}`)}`}>{t('signInButton')}</Link>
-              </Button>
-            </div>
-          </div>
-        ) : (
           <div className="space-y-4">
             {/* Existing alerts for this ticker */}
             {!isLoading && tickerAlerts.length > 0 && (
@@ -191,7 +187,6 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
               </div>
             )}
           </div>
-        )}
       </DialogContent>
     </Dialog>
   );

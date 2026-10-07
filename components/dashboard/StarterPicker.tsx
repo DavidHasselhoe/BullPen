@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAddToWatchlist, useRemoveFromWatchlist, useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
+import { useSignupGate } from '@/components/auth/SignupGate';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { fetchHoldingQuotes } from '@/lib/holdings/holding-quotes';
 import { useTradingSession } from '@/hooks/use-trading-session';
@@ -36,7 +36,7 @@ export function StarterPicker({ onPick, onDone }: { onPick: () => void; onDone: 
   const { open: openAIPanel } = useAIPanel();
   const { data: watchlist } = useWatchlist();
   const { isAuthenticated } = useAuth();
-  const router = useRouter();
+  const openGate = useSignupGate();
   const add = useAddToWatchlist();
   const remove = useRemoveFromWatchlist();
   const [query, setQuery] = useState('');
@@ -67,7 +67,7 @@ export function StarterPicker({ onPick, onDone }: { onPick: () => void; onDone: 
     // on screen. The picker stays as a preview of Home; a tap asks to sign up.
     if (!isAuthenticated) {
       trackEvent('home_starter_pick', { ticker: p.ticker, action: 'signup_prompt', source: searching ? 'search' : 'suggestion' });
-      router.push('/register?redirect=%2Fdashboard');
+      openGate({ source: 'home_starter', context: t('starterGuestContext', { ticker: p.ticker }) });
       return;
     }
     onPick();

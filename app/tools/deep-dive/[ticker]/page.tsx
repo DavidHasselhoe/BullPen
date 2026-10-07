@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -27,6 +27,7 @@ import { DeepDiveReport } from '@/components/deep-dive/DeepDiveReport';
 import { fmtAbsolute, fmtRelative } from '@/components/deep-dive/DeepDiveHero';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
+import { useSignupGate } from '@/components/auth/SignupGate';
 import type { QuotaState } from '@/lib/billing/quotas';
 
 type Phase = 'loading' | 'idle' | 'generating' | 'done' | 'error';
@@ -49,7 +50,7 @@ interface StatusResponse {
 export default function DeepDivePage() {
   const { t } = useTranslation('tools');
   const params = useParams();
-  const router = useRouter();
+  const openGate = useSignupGate();
   const searchParams = useSearchParams();
   const rawTicker = (params.ticker as string) ?? '';
   const symbol = rawTicker.toUpperCase();
@@ -263,14 +264,14 @@ export default function DeepDivePage() {
               {/* The copy promises an account, so the button makes one. It used
                   to be a lone Sign in that led to the login form. */}
               <div className="mt-6 flex flex-col items-center gap-3">
-                <Button size="lg" onClick={() => router.push(`/register?redirect=${encodeURIComponent(`/tools/deep-dive/${rawTicker}`)}`)}>
+                <Button size="lg" onClick={() => openGate({ source: 'deep_dive', context: t('deepDiveSignUpDescription', { ticker: rawTicker.toUpperCase() }), redirectTo: `/tools/deep-dive/${rawTicker}` })}>
                   {t('toolGateCreateAccount')}
                 </Button>
                 <p className="text-sm text-muted-foreground">
                   {t('toolGateHaveAccount')}{' '}
-                  <Link href={`/login?redirect=${encodeURIComponent(`/tools/deep-dive/${rawTicker}`)}`} className="font-medium text-foreground underline-offset-4 hover:underline">
+                  <button type="button" onClick={() => openGate({ source: 'deep_dive', mode: 'login', redirectTo: `/tools/deep-dive/${rawTicker}` })} className="font-medium text-foreground underline-offset-4 hover:underline">
                     {t('toolGateSignIn')}
-                  </Link>
+                  </button>
                 </p>
               </div>
             </CardContent>
