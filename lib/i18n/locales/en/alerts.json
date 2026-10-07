@@ -61,5 +61,7 @@
   "cancelButton": "Cancel",
   "creatingButton": "Creating…",
   "submitCreateButton": "Create alert",
-  "limitReachedNote": "Or pause every alert on one stock to free up a slot."
+  "limitReachedNote": "Or pause every alert on one stock to free up a slot.",
+  "signUpPrompt": "Create a free account to get an alert when {{ticker}} hits your price.",
+  "signUpButton": "Create free account"
 }

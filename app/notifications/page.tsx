@@ -11,6 +11,7 @@ import { useBackground } from '@/hooks/use-background';
 import { useAuth } from '@/hooks/use-auth';
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from '@/hooks/use-notifications';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
+import { AuthGate } from '@/components/ui/AuthGate';
 import type { Notification } from '@/lib/notifications/notifications-db';
 
 /** A short category label for filtering — derived from type + entity_type. */
@@ -78,6 +79,19 @@ export default function NotificationsPage() {
 
   const openSettings = () => window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'notifications' } }));
 
+  // The shared gate, like Holdings and Watchlist. Guests used to get the full
+  // page with "You're all caught up" over a bare "Sign in to see your
+  // notifications." and no way to act on it. (This page is untranslated.)
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <AuthGate
+        icon={<Bell className="h-7 w-7" />}
+        title="Sign in to see your notifications"
+        description="Price alerts, earnings dates and big moves in the stocks you follow, all in one place."
+      />
+    );
+  }
+
   return (
     <div className={cn('min-h-screen', !hasAnimatedBackground && 'bg-background')}>
       <main className="container mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
@@ -139,8 +153,6 @@ export default function NotificationsPage() {
               </div>
             ))}
           </div>
-        ) : !isAuthenticated ? (
-          <EmptyState text="Sign in to see your notifications." />
         ) : filtered.length === 0 ? (
           <EmptyState
             text={all.length === 0 ? 'No notifications yet. Alerts, earnings, and portfolio updates will show up here.' : 'Nothing matches this filter.'}

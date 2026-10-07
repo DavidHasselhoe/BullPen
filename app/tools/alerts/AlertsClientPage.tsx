@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Bell, Plus, AlertCircle } from 'lucide-react';
 import { ToolPage, ToolHeader, ToolSectionTitle } from '@/components/tools/ToolHeader';
@@ -9,20 +9,18 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/use-auth';
-import { useBackground } from '@/hooks/use-background';
 import { humanizeError } from '@/lib/errors/humanize';
 import { cn } from '@/lib/utils';
 import { CreateAlertForm } from '@/components/alerts/CreateAlertForm';
 import { AlertList } from '@/components/alerts/AlertList';
+import { AuthGate } from '@/components/ui/AuthGate';
 import { FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 import { useAlerts } from '@/hooks/use-alerts';
 
 export default function AlertsClientPage() {
   const { t } = useTranslation('tools');
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { hasAnimatedBackground } = useBackground();
 
   // When arriving from the command palette (?symbol=NVDA&name=NVIDIA+Corporation),
   // open the composer immediately. useState initializer runs once so this is safe.
@@ -60,17 +58,17 @@ export default function AlertsClientPage() {
 
   // ── Auth gate ──────────────────────────────────────────────────────────────
   if (!authLoading && !isAuthenticated) {
+    // The shared gate: both buttons, and ?redirect (this page sent ?redirectTo,
+    // which /login doesn't read, so signing in landed on Home). The query is
+    // kept so a "set an alert at $X" link still arrives prefilled.
+    const query = searchParams.toString();
     return (
-      <div className={cn('min-h-screen', !hasAnimatedBackground && 'bg-background')}>
-        <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-          <Bell className="h-10 w-10 text-primary/70 mx-auto" />
-          <h1 className="text-2xl font-semibold">{t('alertsSignInTitle', 'Sign in to set alerts')}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t('alertsSignInDescription', 'Create personal alerts when a stock hits a price, % move, or all-time high.')}
-          </p>
-          <Button onClick={() => router.push('/login?redirectTo=/tools/alerts')}>{t('alertsSignInButton', 'Sign in')}</Button>
-        </div>
-      </div>
+      <AuthGate
+        icon={<Bell className="h-7 w-7" />}
+        title={t('alertsSignInTitle', 'Sign in to set alerts')}
+        description={t('alertsSignInDescription', 'Create personal alerts when a stock hits a price, % move, or all-time high.')}
+        returnTo={`/tools/alerts${query ? `?${query}` : ''}`}
+      />
     );
   }
 

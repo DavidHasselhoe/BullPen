@@ -273,14 +273,22 @@ export function PortfolioBuilderClient() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
             <Sparkles className="h-6 w-6 text-primary" />
           </div>
-          <h2 className="text-xl font-bold tracking-tight">{t('portfolioBuilderSignInTitle')}</h2>
+          {/* Same shape as Deep Dive's gate. The title asked for an account
+              while the only button was Sign in. */}
+          <h2 className="text-xl font-bold tracking-tight">{t('portfolioBuilderSignUpTitle')}</h2>
           <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
-            {t('portfolioBuilderSignInDescription')}
+            {t('portfolioBuilderSignUpDescription')}
           </p>
-          <div className="mt-6">
-            <Button size="lg" onClick={() => router.push(`/login?redirect=${encodeURIComponent('/tools/portfolio-builder')}`)}>
-              {t('portfolioBuilderSignInButton')}
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <Button size="lg" onClick={() => router.push(`/register?redirect=${encodeURIComponent('/tools/portfolio-builder')}`)}>
+              {t('toolGateCreateAccount')}
             </Button>
+            <p className="text-sm text-muted-foreground">
+              {t('toolGateHaveAccount')}{' '}
+              <Link href={`/login?redirect=${encodeURIComponent('/tools/portfolio-builder')}`} className="font-medium text-foreground underline-offset-4 hover:underline">
+                {t('toolGateSignIn')}
+              </Link>
+            </p>
           </div>
         </CardContent>
       </Card>

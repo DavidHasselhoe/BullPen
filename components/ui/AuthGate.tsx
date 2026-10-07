@@ -11,14 +11,17 @@ interface AuthGateProps {
   description: string;
   /** Overrides the default, which returns to the page the gate is on. */
   signInHref?: string;
+  /** Where both buttons return to, when the bare path isn't enough (a prefilled ?query). */
+  returnTo?: string;
 }
 
-export function AuthGate({ icon, title, description, signInHref }: AuthGateProps) {
+export function AuthGate({ icon, title, description, signInHref, returnTo }: AuthGateProps) {
   const { t } = useTranslation('common');
   const pathname = usePathname();
   // Both buttons bring the person back here afterwards. /login and /register
   // read ?redirect (not ?redirectTo, which Academy used to pass and lost).
-  const back = pathname && pathname !== '/' ? `?redirect=${encodeURIComponent(pathname)}` : '';
+  const target = returnTo ?? pathname;
+  const back = target && target !== '/' ? `?redirect=${encodeURIComponent(target)}` : '';
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">

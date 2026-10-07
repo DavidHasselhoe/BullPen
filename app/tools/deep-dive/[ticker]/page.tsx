@@ -257,18 +257,19 @@ export default function DeepDivePage() {
               </div>
               <h1 className="text-xl font-bold tracking-tight">{t('deepDiveSignInTitle', 'Sign in to run a deep dive')}</h1>
               <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">
-                {t('deepDiveSignInDescription', 'Create a free account to generate an AI deep dive: results, guidance, valuation, bull vs bear, catalysts and risks.')}
+                {/* Says what the account gets you; the title already asks for it. */}
+                {t('deepDiveSignUpDescription', { ticker: rawTicker.toUpperCase() })}
               </p>
               {/* The copy promises an account, so the button makes one. It used
                   to be a lone Sign in that led to the login form. */}
               <div className="mt-6 flex flex-col items-center gap-3">
                 <Button size="lg" onClick={() => router.push(`/register?redirect=${encodeURIComponent(`/tools/deep-dive/${rawTicker}`)}`)}>
-                  {t('deepDiveCreateAccountButton')}
+                  {t('toolGateCreateAccount')}
                 </Button>
                 <p className="text-sm text-muted-foreground">
-                  {t('deepDiveHaveAccount')}{' '}
+                  {t('toolGateHaveAccount')}{' '}
                   <Link href={`/login?redirect=${encodeURIComponent(`/tools/deep-dive/${rawTicker}`)}`} className="font-medium text-foreground underline-offset-4 hover:underline">
-                    {t('deepDiveSignInLink')}
+                    {t('toolGateSignIn')}
                   </Link>
                 </p>
               </div>

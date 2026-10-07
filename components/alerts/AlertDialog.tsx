@@ -78,11 +78,18 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
         </DialogHeader>
 
         {!isAuthenticated ? (
+          // Same shape as the Watch popover: what the account gets you for this
+          // stock, signup first (most guests are new), sign-in beside it.
           <div className="py-6 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">{t('signInPrompt')}</p>
-            <Button asChild size="sm">
-              <Link href={`/login?redirect=${encodeURIComponent(pathname || `/stock/${symbol}`)}`}>{t('signInButton')}</Link>
-            </Button>
+            <p className="text-sm text-muted-foreground">{t('signUpPrompt', { ticker: symbol.toUpperCase() })}</p>
+            <div className="flex items-center justify-center gap-2">
+              <Button asChild size="sm">
+                <Link href={`/register?redirect=${encodeURIComponent(pathname || `/stock/${symbol}`)}`}>{t('signUpButton')}</Link>
+              </Button>
+              <Button asChild size="sm" variant="ghost">
+                <Link href={`/login?redirect=${encodeURIComponent(pathname || `/stock/${symbol}`)}`}>{t('signInButton')}</Link>
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

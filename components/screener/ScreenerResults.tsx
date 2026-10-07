@@ -164,7 +164,11 @@ export function ScreenerResults({
   }, [canCompare, selectedTickers, router]);
 
   const addSelectedToWatchlist = useCallback(async () => {
-    if (!isAuthenticated) { router.push('/login'); return; }
+    // Back to this screener, filters and all (it was a bare /login).
+    if (!isAuthenticated) {
+      router.push(`/register?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
     setIsBulkAdding(true);
     try {
       // No listId passed — POST /api/watchlist resolves the caller's first
