@@ -15,6 +15,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { languageName, isSupportedLanguage } from '@/lib/i18n/language-names';
 import { WHY_TODAY_MIN_MOVE } from '@/lib/ai/why-today-shared';
+import { sessionDateET } from '@/lib/market-data/trading-day';
 
 export { WHY_TODAY_MIN_MOVE };
 export type { InlineWhy } from '@/lib/ai/why-today-shared';
@@ -49,13 +50,7 @@ export function whyTodayLanguage(raw: unknown): string {
  * answer). Crypto trades around the clock, so its day is the ET date.
  */
 export function whyTodaySessionDate(ticker: string, now = new Date()): string {
-  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  if (!ticker.includes('/')) {
-    if (et.getHours() < 4) et.setDate(et.getDate() - 1);
-    while (et.getDay() === 0 || et.getDay() === 6) et.setDate(et.getDate() - 1);
-  }
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${et.getFullYear()}-${pad(et.getMonth() + 1)}-${pad(et.getDate())}`;
+  return sessionDateET(now, ticker.includes('/'));
 }
 
 /** A holding pinned to a listing (mic_code) keeps its own entry: bare KOG is Kroger, not Kongsberg. */

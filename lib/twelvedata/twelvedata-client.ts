@@ -7,6 +7,7 @@
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 import { fetchNasdaqEarningsDay } from '@/lib/market-data/nasdaq-earnings-calendar';
+import { sessionDateET } from '@/lib/market-data/trading-day';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
@@ -248,7 +249,7 @@ interface TwelveDataQuoteResponse {
   message?: string;
 }
 
-export function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useExtended = false): StockQuote {
+export function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string, useExtended = false, now = new Date()): StockQuote {
   if (data.code || data.status === 'error') {
     const msg = data.message || `Twelve Data API error for ${symbol}`;
     const isRateLimit =
@@ -292,12 +293,18 @@ export function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string
   // the open: after 4pm `close` is TODAY's close, so extended_percent_change is
   // the after-hours move alone and the regular session's move vanished (CEG on
   // 2026-09-30: -4.01% day, +2.77% after hours, Home showed +2.77% "today").
-  // An extended print on the same ET date as the regular session is after it.
+  // An extended print on the same ET date as the regular session is after it,
+  // but only counts as "today" while that session is still the current one:
+  // from 4:00 ET the next morning a new day has started, and a stock with no
+  // pre-market trade yet still carries last night's print. Measuring that from
+  // the previous close put two days under "today" (CEG on 2026-10-07: +12.25%
+  // Tuesday, -2.13% after hours, Home showed +9.85% before Wednesday's open).
   if (useExtended && data.is_market_open === false) {
     const extPrice = parseFloat(data.extended_price ?? '0');
     if (extPrice) {
       const afterClose = havePrevClose && data.extended_timestamp != null && data.datetime != null &&
-        new Date(data.extended_timestamp * 1000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) === data.datetime;
+        new Date(data.extended_timestamp * 1000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) === data.datetime &&
+        sessionDateET(now) === data.datetime;
       const base = afterClose ? rawPrevClose : close;
       return {
         c: extPrice,
