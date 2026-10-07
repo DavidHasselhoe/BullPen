@@ -125,13 +125,14 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
         }
 
         const move = { ticker, price: q.c, change: q.d, changePct: q.dp };
-        const { text, inputTokens, outputTokens } = await generateWhyToday(move, language);
+        const { text, inputTokens, outputTokens, webSearches } = await generateWhyToday(move, language);
         void logAiCall({
           userId: session.userId,
           feature: 'why_today',
           model: WHY_TODAY_MODEL,
           inputTokens,
           outputTokens,
+          webSearches,
           metadata: { ticker, inline: true },
         });
         if (!text) return;

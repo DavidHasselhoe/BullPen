@@ -22,7 +22,14 @@ export type { InlineWhy } from '@/lib/ai/why-today-shared';
 
 export const WHY_TODAY_MODEL = 'claude-sonnet-5';
 
-const CACHE_TTL_SECONDS = 36 * 60 * 60;
+/**
+ * The key carries the session date, so a long life can't serve a stale day:
+ * it only has to outlast the gap until the next session. 36h didn't. Friday's
+ * answers expired Saturday evening, and a weekend visit (which still reads
+ * Friday's key) paid to write them again: 5 calls on Sunday 2026-10-04.
+ * Four days covers a Friday answer through a Monday holiday.
+ */
+const CACHE_TTL_SECONDS = 4 * 24 * 60 * 60;
 
 export interface WhyTodayMove {
   ticker: string;
@@ -61,10 +68,16 @@ export function whyTodayKey(ticker: string, language: string, mic?: string | nul
 export const whyTodayLockKey = (key: string) => `${key}:lock`;
 export const WHY_TODAY_CACHE_TTL = CACHE_TTL_SECONDS;
 
-/** The same stock can move further or turn around after it was explained. */
+/**
+ * The same stock can turn around, or move much further, after it was
+ * explained. "Much further" is relative to the move: the answer never states
+ * the percent, so CEG at +9% tells the same story as at +6%. A flat 3 points
+ * rewrote it on every leg of a big day (CEG 4x and NBIS 3x on 2026-10-06).
+ * Small moves keep the 3-point floor.
+ */
 export function isStale(cached: CachedWhyToday, currentPct: number): boolean {
   const flipped = Math.sign(cached.changePct) !== Math.sign(currentPct) && Math.abs(currentPct) >= WHY_TODAY_MIN_MOVE;
-  return flipped || Math.abs(currentPct - cached.changePct) >= 3;
+  return flipped || Math.abs(currentPct - cached.changePct) > Math.max(3, Math.abs(cached.changePct) / 2);
 }
 
 /** Request body shared by the streamed and the one-shot call, so both say the same thing. */
@@ -121,6 +134,11 @@ export async function generateWhyToday(move: WhyTodayMove, language: string) {
     .map((b) => (b.type === 'text' ? b.text : ''))
     .join('')
     .trim();
-  return { text, inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens };
+  return {
+    text,
+    inputTokens: res.usage.input_tokens,
+    outputTokens: res.usage.output_tokens,
+    webSearches: res.usage.server_tool_use?.web_search_requests ?? 0,
+  };
 }
 

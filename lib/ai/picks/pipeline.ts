@@ -160,8 +160,8 @@ async function callClaude(
       userId: null, feature: opts.feature, model: PICK_MODEL,
       inputTokens: input, outputTokens: output,
       cache: { cacheReadTokens: cacheRead, cacheWriteTokens: cacheWrite },
-      // $10 per 1,000 searches is billed outside tokens; recorded, not priced here.
-      metadata: { ...opts.meta, webSearches: searches },
+      webSearches: searches,
+      metadata: opts.meta,
     });
 
     if (final.stop_reason === 'refusal') throw new Error(`${opts.feature}: model refused`);

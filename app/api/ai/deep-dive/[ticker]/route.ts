@@ -104,6 +104,7 @@ async function runDeepDive(params: {
         model: MODEL,
         inputTokens: final.usage.input_tokens,
         outputTokens: final.usage.output_tokens,
+        webSearches: final.usage.server_tool_use?.web_search_requests ?? 0,
         metadata: { symbol },
       });
     } catch { /* never block on logging */ }

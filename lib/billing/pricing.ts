@@ -49,6 +49,9 @@ export interface CachedTokenSplit {
   cacheWriteTokens?: number;
 }
 
+/** Anthropic's web search tool: $10 per 1,000 searches, billed outside tokens. */
+export const WEB_SEARCH_USD = 0.01;
+
 export function calcCost(
   model: string,
   inputTokens: number,

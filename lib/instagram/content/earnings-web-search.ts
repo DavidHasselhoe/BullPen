@@ -172,6 +172,7 @@ export async function fetchConfirmedEarnings(
     model: MODEL,
     inputTokens: message.usage.input_tokens,
     outputTokens: message.usage.output_tokens,
+    webSearches: message.usage.server_tool_use?.web_search_requests ?? 0,
     metadata: { contentType: 'earnings_calendar', step: 'web_search', weekStart, weekEnd },
   });
 

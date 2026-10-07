@@ -10,7 +10,7 @@
  */
 
 import { createServerClient } from '@/lib/supabase/client';
-import { calcCost, type CachedTokenSplit } from './pricing';
+import { calcCost, WEB_SEARCH_USD, type CachedTokenSplit } from './pricing';
 
 export interface LogAiCallParams {
   userId: string | null;          // null for cron jobs (e.g. daily brief)
@@ -22,6 +22,8 @@ export interface LogAiCallParams {
   metadata?: Record<string, unknown>;
   /** Provider's cache split of inputTokens, priced at cache rates. */
   cache?: CachedTokenSplit;
+  /** Anthropic web searches (usage.server_tool_use.web_search_requests), billed per search on top of tokens. */
+  webSearches?: number;
 }
 
 /** Returns the inserted row's id (or null on failure) so a caller that logs
@@ -30,7 +32,8 @@ export async function logAiCall(params: LogAiCallParams): Promise<string | null>
   try {
     const inputTokens  = params.inputTokens  ?? 0;
     const outputTokens = params.outputTokens ?? 0;
-    const costUsd      = calcCost(params.model, inputTokens, outputTokens, params.cache);
+    const webSearches  = params.webSearches ?? 0;
+    const costUsd      = Number((calcCost(params.model, inputTokens, outputTokens, params.cache) + webSearches * WEB_SEARCH_USD).toFixed(6));
 
     const supabase = createServerClient();
     const { data } = await supabase.from('ai_usage').insert({
@@ -41,7 +44,7 @@ export async function logAiCall(params: LogAiCallParams): Promise<string | null>
       output_tokens: outputTokens || null,
       cost_usd:      costUsd,
       status:        params.status ?? 'success',
-      metadata:      params.metadata ?? null,
+      metadata:      webSearches ? { ...params.metadata, webSearches } : (params.metadata ?? null),
     }).select('id').single();
     return (data as { id: string } | null)?.id ?? null;
   } catch (err) {

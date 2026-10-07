@@ -243,6 +243,8 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
 interface StreamUsage {
   inputTokens: number;
   outputTokens: number;
+  /** Billed per search on top of tokens. */
+  webSearches: number;
 }
 
 /**
@@ -271,20 +273,28 @@ function trackStreamUsage(
   usage: StreamUsage,
 ): void {
   let lastOutput = 0;
+  let lastSearches = 0;
   stream.on('streamEvent', (event) => {
     const e = event as {
       type?: string;
       message?: { usage?: { input_tokens?: number } };
-      usage?: { output_tokens?: number };
+      usage?: { output_tokens?: number; server_tool_use?: { web_search_requests?: number } };
     };
     if (e.type === 'message_start') {
       usage.inputTokens += e.message?.usage?.input_tokens ?? 0;
       lastOutput = 0;
+      lastSearches = 0;
       return;
     }
     if (e.type === 'message_delta' && typeof e.usage?.output_tokens === 'number') {
       usage.outputTokens += e.usage.output_tokens - lastOutput;
       lastOutput = e.usage.output_tokens;
+    }
+    // Cumulative per message, like output_tokens.
+    const searches = e.type === 'message_delta' ? e.usage?.server_tool_use?.web_search_requests : undefined;
+    if (typeof searches === 'number') {
+      usage.webSearches += searches - lastSearches;
+      lastSearches = searches;
     }
   });
 }
@@ -568,7 +578,7 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
 
   let fullText = '';
   let sources: BriefSource[] = [];
-  const usage: StreamUsage = { inputTokens: 0, outputTokens: 0 };
+  const usage: StreamUsage = { inputTokens: 0, outputTokens: 0, webSearches: 0 };
   try {
     // Reverted from web_search_20260209 back to web_search_20250305 on
     // 2026-08-15. The 08-13 switch was a cost optimization, and it cost us
@@ -707,6 +717,7 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
         model: 'claude-sonnet-4-6',
         inputTokens: usage.inputTokens,
         outputTokens: usage.outputTokens,
+        webSearches: usage.webSearches,
         metadata: { date: todayET, searchRounds: requestParams.tools[0].max_uses },
       });
     } catch { /* never block cron on logging */ }
@@ -728,6 +739,7 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
       model: 'claude-sonnet-4-6',
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
+      webSearches: usage.webSearches,
       status: 'error',
       metadata: { date: todayET, detail },
     });
