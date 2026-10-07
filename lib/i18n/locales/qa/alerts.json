@@ -61,5 +61,7 @@
   "cancelButton": "«Caanceel»",
   "creatingButton": "«Creeaatiing…»",
   "submitCreateButton": "«Creeaatee aaleert»",
-  "limitReachedNote": "«OOr paauusee eeveery aaleert oon oonee stoock too freeee uup aa sloot.»"
+  "limitReachedNote": "«OOr paauusee eeveery aaleert oon oonee stoock too freeee uup aa sloot.»",
+  "signUpPrompt": "«Creeaatee aa freeee aaccoouunt too geet aan aaleert wheen {{ticker}} hiits yoouur priicee.»",
+  "signUpButton": "«Creeaatee freeee aaccoouunt»"
 }

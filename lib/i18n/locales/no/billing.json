@@ -4,6 +4,7 @@
   "proGateDefaultTitle": "En Pro-funksjon",
   "proGateDefaultDescription": "Oppgrader til Pro for å låse opp denne.",
   "previewBadge": "Forhåndsvisning",
+  "askBullPreviewUserMessage": "Er dette et godt tidspunkt å kjøpe?",
   "askBullPreviewUserMessageTicker": "Er {{ticker}} fortsatt et godt kjøp nå?",
   "whyTodayPreviewTeaserUp": "steg {{pct}}% i dag",
   "whyTodayPreviewTeaserDown": "falt {{pct}}% i dag",
@@ -100,9 +101,8 @@
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "Spørsmål",
   "paywallBenefitUnlimitedAlerts": "Prisvarslinger på ubegrenset antall aksjer",
-  "alertsPreviewFallbackCondition": "Nytt historisk høyt nivå",
-  "askBullPreviewUserMessage": "Er dette et godt tidspunkt å kjøpe?",
-  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
   "alertsPreviewSource": "Eksempelvarsel",
-  "alertsPreviewYourStock": "Din aksje"
+  "alertsPreviewFallbackCondition": "Nytt historisk høyt nivå",
+  "alertsPreviewYourStock": "Din aksje",
+  "deepDivePreviewFor": "Dyptgravende analyse: {{ticker}}"
 }

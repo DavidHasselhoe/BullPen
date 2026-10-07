@@ -142,7 +142,6 @@
   "importReviewActionBuy": "买入",
   "importReviewActionSell": "卖出",
   "importReviewAuthDescription": "此导入与你的账户关联。",
-  "importReviewAuthTitle": "登录以查看你的导入",
   "importReviewBack": "返回",
   "importReviewBackToHoldings": "返回持仓",
   "importReviewColumnDate": "日期",
@@ -356,7 +355,6 @@
   "addHoldingTypeCrypto": "加密货币",
   "addHoldingTypeFund": "基金",
   "portfolioDashboardFromSales": "来自已售股份的 {{amount}}",
-  "holdingsGateTitle": "登录查看您的持仓",
   "holdingsGateBody": "实时追踪您整个投资组合的头寸、表现和风险。",
   "holdingsBadgePreMarket": "盘前",
   "holdingsBadgeLive": "实时",
@@ -377,5 +375,8 @@
   "portfolioHealthCoverageValue": "覆盖组合价值的 {{pct}}%。未评分：{{symbols}}。",
   "portfolioHealthUnscoredMore": "等另外 {{count}} 个",
   "portfolioHealthExplainUnscored": "加密货币、大多数基金以及未公布财务报表的公司没有健康评分，因此不计入平均值。",
-  "portfolioDashboardPricedOf": "{{count}}/{{total}}个持仓已报价"
+  "portfolioDashboardPricedOf": "{{count}}/{{total}}个持仓已报价",
+  "importReviewAuthTitle": "创建免费账户以保存您的导入",
+  "holdingsGateTitle": "在一个地方追踪您的整个投资组合",
+  "holdingsPreviewValue": "投资组合价值"
 }

@@ -146,8 +146,10 @@
   "privacyOAuthNotice": "Du logg­et inn med Google. Passord­endring er ikke tilgjengelig for OAuth-kontoer.",
   "privacyPasswordMinChars": "Min. 8 tegn, med en bokstav og et tall",
   "privacyPasswordUpdated": "Passord oppdatert!",
+  "privacyPublicProfileDescription": "Vis navn, bilde og bio på en profilside som alle med lenken kan åpne, og vis deg under Bla gjennom medlemmer. Av til du slår det på.",
   "privacyPublicProfileLabel": "Offentlig profil",
   "privacyRepeatPassword": "Gjenta nytt passord",
+  "privacyShowPortfolioDescription": "Vis også hvilke aksjer du holder (ticker og selskapsnavn bare, ingen mengder eller priser) på den offentlige profilen din.",
   "privacyShowPortfolioLabel": "Vis beholdning",
   "privacyUpdatePasswordButton": "Oppdater passord",
   "privacyUpdatingPassword": "Oppdaterer…",
@@ -174,6 +176,7 @@
   "theme": "Tema",
   "themeDark": "Mørk",
   "themeLight": "Lys",
+  "darkMode": "Mørk modus",
   "title": "Innstillinger",
   "notifEconomicEventsLabel": "Økonomiske nøkkeltall",
   "notifEconomicEventsDescription": "Et morgenvarsel på dager med en amerikansk økonomisk rapport du følger, med klokkeslettet i din tidssone. Velg hvilke rapporter under Økonomisk i Markedskalenderen.",
@@ -191,8 +194,5 @@
   "notifPoliticianTradesDescription": "Få varsel når en politiker du følger avslører nye aksjehandler",
   "notifPoliticianHoldingsLabel": "Politikertransaksjoner i dine aksjer",
   "notifPoliticianHoldingsDescription": "Pro: få varsel når en fulgt politiker handler en aksje du eier eller følger",
-  "privacyPublicProfileDescription": "Vis navn, bilde og bio på en profilside som alle med lenken kan åpne, og vis deg under Bla gjennom medlemmer. Av til du slår det på.",
-  "privacyShowPortfolioDescription": "Vis også hvilke aksjer du holder (ticker og selskapsnavn bare, ingen mengder eller priser) på den offentlige profilen din.",
-  "sectionPlanLabel": "Plan",
-  "darkMode": "Mørk modus"
+  "sectionPlanLabel": "Plan"
 }

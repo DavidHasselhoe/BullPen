@@ -23,5 +23,6 @@
   "metricSignalWeak": "Schwachstelle",
   "metricSignalWeakHint": "Spricht gegen das Unternehmen in seinem Health Score",
   "authGateSignIn": "Anmelden",
-  "authGateCreateAccount": "Konto erstellen"
+  "authGateCreateAccount": "Kostenloses Konto erstellen",
+  "exportGuestContext": "Export zu CSV und PDF ist Teil von Pro: erstelle ein kostenloses Konto und probiere Pro {{trialDays}} Tage lang kostenlos aus."
 }

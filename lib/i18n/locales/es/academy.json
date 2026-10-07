@@ -80,7 +80,6 @@
   "dailyChallengeDoneToday": "Listo por hoy.",
   "dailyChallengeNewChallengeIn": "Nuevo desafío en {{time}}",
   "dailyChallengeCorrect": "¡Correcto!",
-  "academyLayoutSignInTitle": "Inicia sesión para usar Academy",
   "academyLayoutSignInDescription": "Lecciones breves que te enseñan cómo funciona realmente la inversión. Gana XP y construye una racha mientras avanzas.",
   "lessonPageNotFound": "Lección no encontrada.",
   "academyProGateTitle": "Desbloquea este curso con Pro",
@@ -133,9 +132,13 @@
   "courseOverviewPassedQuizMessage": "Pasaste la prueba final. Continúa con el siguiente curso en la página de inicio.",
   "courseOverviewFinishedLessonsMessage": "Completaste todas las lecciones. Continúa con el siguiente curso en la página de inicio.",
   "xpBarXpSuffix": " XP",
-  "readLessonAskAiForMore": "Ask Bull for more",
+  "readLessonAskAiForMore": "Ask Bull para más",
   "pathNodePro": "PRO",
+  "pathNodeLocked": "Bloqueado. Termina el curso anterior para abrir este.",
   "lessonPlayerXpReward": "{{xp}} XP",
   "dailyChallengeXpReward": "+{{xp}} XP",
+  "academyLayoutSignInTitle": "Aprende a invertir, una lección corta a la vez",
+  "homePageStartFree": "Comenzar gratis",
+  "homePageSignedOutNote": "Gratis para empezar. Regístrate para guardar tu progreso y ganar XP. Termina el primer curso y se abrirán todos los capítulos.",
   "leaderboardXpUnit": "XP"
 }

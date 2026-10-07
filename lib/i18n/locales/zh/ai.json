@@ -1,9 +1,7 @@
 {
   "askBull": "Ask Bull",
-  "authGateCreateAccount": "创建账户",
   "authGateDescription": "快速获取关于 SEC 备案、财务指标和投资研究的答案。",
   "authGateSignIn": "登录",
-  "authGateTitle": "登录以询问 Bull",
   "chatContextPromptFilings": "{{ticker}} 的最近申报文件",
   "chatContextPromptMargins": "哪家公司的利润率更强？",
   "chatContextPromptProfitability": "解释盈利能力差异",
@@ -42,8 +40,6 @@
   "financialsRevenue": "营收",
   "financialsTotalAssets": "总资产",
   "financialsTotalLiabilities": "总负债",
-  "screenDataAsOf": "截至 {{date}}",
-  "screenRankedBy": "按{{metric}}排序",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreNotAvailable": "不可用",
   "healthScoreTitle": "{{ticker}} 财务健康度",
@@ -120,7 +116,12 @@
   "chatScreenerPromptWhatToLookFor": "我应该在股票中寻找什么?",
   "chatScreenerPromptCandidates": "给我展示一些强劲的候选股票",
   "chatScreenerPromptReviewFilters": "我的筛选条件好吗?",
+  "authGateCreateAccount": "免费创建账户",
+  "authGateTitle": "向 Bull 询问任何股票",
+  "screenRankedBy": "按 {{metric}} 排序",
+  "screenDataAsOf": "数据截至 {{date}}",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "whyTodayGuestContext": "Why Today 用通俗易懂的方式解释股票的涨跌。这是 Pro 功能：创建免费账户，然后免费试用 Pro {{trialDays}} 天。"
 }

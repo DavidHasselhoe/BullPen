@@ -75,7 +75,6 @@
   "publicProfileStockCount_other": "{{count}} 只股票",
   "publicProfileTierMember": "会员",
   "publicProfileTierPro": "Pro",
-  "profileModalUsernamePlaceholder": "johndoe",
   "usersPageTitle": "浏览成员",
   "usersPageSubtitle": "选择公开个人资料的成员。按名字或用户名搜索。",
   "usersSearchPlaceholder": "按名字或用户名搜索…",
@@ -90,5 +89,6 @@
   "publicProfileThesisCount_one": "{{count}} 个投资论点",
   "publicProfileThesisCount_other": "{{count}} 个投资论点",
   "publicProfileFollowerCount_one": "{{count}} 个粉丝",
-  "publicProfileFollowerCount_other": "{{count}} 个粉丝"
+  "publicProfileFollowerCount_other": "{{count}} 个粉丝",
+  "profileModalUsernamePlaceholder": "johndoe"
 }

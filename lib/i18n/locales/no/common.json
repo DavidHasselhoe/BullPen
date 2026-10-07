@@ -21,7 +21,8 @@
   "metricSignalStrengthHint": "Teller i selskapets favør i Health Score",
   "metricSignalWeak": "Svakt punkt",
   "metricSignalWeakHint": "Teller mot selskapet i Health Score",
-  "filter": "Filter",
   "authGateSignIn": "Logg inn",
-  "authGateCreateAccount": "Opprett konto"
+  "filter": "Filter",
+  "authGateCreateAccount": "Opprett gratis konto",
+  "exportGuestContext": "Eksport til CSV og PDF er en del av Pro: opprett en gratis konto, og prøv Pro gratis i {{trialDays}} dager."
 }

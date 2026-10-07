@@ -1,9 +1,7 @@
 {
   "askBull": "Ask Bull",
-  "authGateCreateAccount": "アカウント作成",
   "authGateDescription": "SEC申告書、財務指標、投資調査について即座に回答を得られます。",
   "authGateSignIn": "サインイン",
-  "authGateTitle": "Bullに質問するにはサインイン",
   "chatContextPromptFilings": "{{ticker}}の最近のファイリング",
   "chatContextPromptMargins": "どちらの企業がより強いマージンを持っていますか？",
   "chatContextPromptProfitability": "収益性の違いを説明してください",
@@ -31,6 +29,7 @@
   "earningsSrLabelActual": "1株あたり${{actual}}を獲得（予想${{estimate}}に対し{{surprise}}のサプライズ）",
   "earningsSrLabelEstimate": "1株あたり${{estimate}}を予想",
   "financialsBalanceStatement": "貸借対照表",
+  "financialsCapex": "資本支出",
   "financialsCashflowStatement": "キャッシュフロー計算書",
   "financialsEpsDiluted": "EPS（希薄化後）",
   "financialsEquity": "自己資本",
@@ -41,8 +40,6 @@
   "financialsRevenue": "売上高",
   "financialsTotalAssets": "総資産",
   "financialsTotalLiabilities": "総負債",
-  "screenDataAsOf": "{{date}}時点",
-  "screenRankedBy": "{{metric}}順",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreTitle": "{{ticker}}の財務健全性",
   "insiderActivityTitle": "{{ticker}}のインサイダー取引",
@@ -118,9 +115,13 @@
   "chatScreenerPromptWhatToLookFor": "株を選ぶときは何を見ればいいですか？",
   "chatScreenerPromptCandidates": "強力な候補銘柄を見せてください",
   "chatScreenerPromptReviewFilters": "私のフィルター設定は良いですか？",
-  "financialsCapex": "資本支出",
+  "authGateCreateAccount": "無料アカウントを作成",
+  "authGateTitle": "どの銘柄でもBullに質問できます",
+  "screenRankedBy": "{{metric}}でランク付け",
+  "screenDataAsOf": "{{date}}時点",
   "healthScoreNotAvailable": "N/A",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "whyTodayGuestContext": "Why Todayは株価変動をわかりやすく説明します。これはProの機能です。無料アカウントを作成してから、Proを{{trialDays}}日間無料でお試しください。"
 }

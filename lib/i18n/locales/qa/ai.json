@@ -1,9 +1,9 @@
 {
   "askBull": "«AAsk Buull»",
-  "authGateCreateAccount": "«Creeaatee aaccoouunt»",
+  "authGateCreateAccount": "«Creeaatee freeee aaccoouunt»",
   "authGateDescription": "«Geet iinstaant aansweers aaboouut SEEC fiiliings, fiinaanciiaal meetriics, aand iinveestmeent reeseeaarch.»",
   "authGateSignIn": "«Siign iin»",
-  "authGateTitle": "«Siign iin too aask Buull»",
+  "authGateTitle": "«AAsk Buull aaboouut aany stoock»",
   "chatContextPromptFilings": "«Reeceent fiiliings foor {{ticker}}»",
   "chatContextPromptMargins": "«Whiich coompaany haas stroongeer maargiins?»",
   "chatContextPromptProfitability": "«EExplaaiin proofiitaabiiliity diiffeereencees»",
@@ -42,6 +42,8 @@
   "financialsRevenue": "«Reeveenuuee»",
   "financialsTotalAssets": "«Tootaal AAsseets»",
   "financialsTotalLiabilities": "«Tootaal Liiaabiiliitiiees»",
+  "screenRankedBy": "«Raankeed by {{metric}}»",
+  "screenDataAsOf": "«AAs oof {{date}}»",
   "healthScoreBadge": "«{{score}}/100 · {{grade}}»",
   "healthScoreNotAvailable": "«N/AA»",
   "healthScoreTitle": "«{{ticker}} Fiinaanciiaal Heeaalth»",
@@ -120,5 +122,6 @@
   "chatScreenerPromptCheapest": "«Whiich oof theesee iis cheeaapeest by P/EE?»",
   "chatScreenerPromptWhatToLookFor": "«Whaat shoouuld II looook foor iin aa stoock?»",
   "chatScreenerPromptCandidates": "«Shoow mee soomee stroong caandiidaatees»",
-  "chatScreenerPromptReviewFilters": "«AAree my fiilteers aany gooood?»"
+  "chatScreenerPromptReviewFilters": "«AAree my fiilteers aany gooood?»",
+  "whyTodayGuestContext": "«Why Toodaay eexplaaiins aa stoock's moovee iin plaaiin EEngliish. IIt's paart oof Proo: creeaatee aa freeee aaccoouunt, theen try Proo freeee foor {{trialDays}} daays.»"
 }

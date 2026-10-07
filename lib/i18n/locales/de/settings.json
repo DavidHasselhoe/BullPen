@@ -191,8 +191,8 @@
   "notifPoliticianTradesDescription": "Erhalte eine Benachrichtigung, wenn ein Politiker, dem du folgst, neue Aktiengeschäfte offenbart",
   "notifPoliticianHoldingsLabel": "Politiker handeln deine Aktien",
   "notifPoliticianHoldingsDescription": "Pro: Erhalte eine Benachrichtigung, wenn ein überwachter Politiker eine Aktie handelt, die du besitzt oder beobachtest",
-  "privacyPublicProfileDescription": "Show your name, photo and bio on a profile page anyone with the link can open, and list you in Browse members. Off until you turn it on.",
-  "privacyShowPortfolioDescription": "Also show which stocks you hold (ticker and company name only, no quantities or prices) on your public profile.",
+  "privacyPublicProfileDescription": "Zeige deinen Namen, dein Foto und deine Bio auf einer Profilseite, die jeder mit dem Link öffnen kann, und liste dich in Browse members auf. Standardmäßig ausgeschaltet.",
+  "privacyShowPortfolioDescription": "Zeige außerdem, welche Aktien du hältst (Ticker und Unternehmensname nur, keine Mengen oder Preise) auf deinem öffentlichen Profil.",
   "sectionPlanLabel": "Plan",
   "darkMode": "Dunkler Modus"
 }

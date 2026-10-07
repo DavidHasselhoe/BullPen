@@ -75,7 +75,6 @@
   "publicProfileStockCount_other": "{{count}} actions",
   "publicProfileTierMember": "Membre",
   "publicProfileTierPro": "Pro",
-  "profileAvatarTierNormal": "Normal",
   "usersPageTitle": "Parcourir les membres",
   "usersPageSubtitle": "Membres qui ont choisi de rendre leur profil public. Recherchez par nom ou nom d'utilisateur.",
   "usersSearchPlaceholder": "Rechercher par nom ou nom d'utilisateur…",
@@ -90,5 +89,6 @@
   "publicProfileThesisCount_one": "{{count}} thèse",
   "publicProfileThesisCount_other": "{{count}} thèses",
   "publicProfileFollowerCount_one": "{{count}} abonné",
-  "publicProfileFollowerCount_other": "{{count}} abonnés"
+  "publicProfileFollowerCount_other": "{{count}} abonnés",
+  "profileAvatarTierNormal": "Normal"
 }

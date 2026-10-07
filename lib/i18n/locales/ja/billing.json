@@ -4,6 +4,7 @@
   "proGateDefaultTitle": "Pro 限定機能です",
   "proGateDefaultDescription": "Pro にアップグレードすると、この機能が使えます。",
   "previewBadge": "プレビュー",
+  "askBullPreviewUserMessage": "今が買い時でしょうか？",
   "askBullPreviewUserMessageTicker": "{{ticker}}は今でも良い買い物ですか？",
   "whyTodayPreviewTeaserUp": "本日{{pct}}%上昇しました",
   "whyTodayPreviewTeaserDown": "本日{{pct}}%下落しました",
@@ -100,9 +101,8 @@
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "ご質問",
   "paywallBenefitUnlimitedAlerts": "無制限の銘柄に対する価格アラート",
-  "alertsPreviewFallbackCondition": "新しい過去最高値",
-  "askBullPreviewUserMessage": "今が買い時でしょうか？",
-  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
   "alertsPreviewSource": "アラート例",
-  "alertsPreviewYourStock": "あなたの銘柄"
+  "alertsPreviewFallbackCondition": "新しい過去最高値",
+  "alertsPreviewYourStock": "あなたの銘柄",
+  "deepDivePreviewFor": "Deep Dive: {{ticker}}"
 }

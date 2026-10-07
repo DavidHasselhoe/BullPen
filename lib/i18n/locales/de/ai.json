@@ -1,9 +1,7 @@
 {
   "askBull": "Ask Bull",
-  "authGateCreateAccount": "Konto erstellen",
   "authGateDescription": "Erhalte sofort Antworten zu SEC-Anmeldungen, Finanzkennzahlen und Anlageforschung.",
   "authGateSignIn": "Anmelden",
-  "authGateTitle": "Melde dich an, um Bull zu befragen",
   "chatContextPromptFilings": "Aktuelle Einreichungen für {{ticker}}",
   "chatContextPromptMargins": "Welches Unternehmen hat stärkere Margen?",
   "chatContextPromptProfitability": "Unterschiede der Rentabilität erklären",
@@ -40,8 +38,6 @@
   "financialsRevenue": "Umsatz",
   "financialsTotalAssets": "Gesamtvermögen",
   "financialsTotalLiabilities": "Gesamtverbindlichkeiten",
-  "screenDataAsOf": "Stand {{date}}",
-  "screenRankedBy": "Sortiert nach {{metric}}",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreNotAvailable": "k. A.",
   "healthScoreTitle": "{{ticker}} Finanzielle Gesundheit",
@@ -118,9 +114,14 @@
   "chatScreenerPromptWhatToLookFor": "Worauf sollte ich bei einer Aktie achten?",
   "chatScreenerPromptCandidates": "Zeig mir ein paar starke Kandidaten",
   "chatScreenerPromptReviewFilters": "Sind meine Filter in Ordnung?",
+  "authGateCreateAccount": "Kostenloses Konto erstellen",
+  "authGateTitle": "Ask Bull zu jeder Aktie",
   "financialsCapex": "CapEx",
   "financialsOperatingCf": "Operating CF",
+  "screenRankedBy": "Sortiert nach {{metric}}",
+  "screenDataAsOf": "Stand: {{date}}",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "whyTodayGuestContext": "Why Today erklärt dir die Kursbewegung einer Aktie in verständlichen Worten. Das ist Teil von Pro: Erstelle ein kostenloses Konto und probiere Pro dann {{trialDays}} Tage kostenlos aus."
 }

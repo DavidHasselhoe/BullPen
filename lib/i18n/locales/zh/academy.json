@@ -81,7 +81,6 @@
   "dailyChallengeDoneToday": "今天已完成。",
   "dailyChallengeNewChallengeIn": "新挑战将在 {{time}} 后开始",
   "dailyChallengeCorrect": "正确！",
-  "academyLayoutSignInTitle": "登录以使用学院",
   "academyLayoutSignInDescription": "循序渐进的课程教你投资的实际运作方式。赚取 XP 并在学习中建立连胜纪录。",
   "lessonPageNotFound": "找不到课程。",
   "academyProGateTitle": "通过 Pro 解锁此课程",
@@ -133,9 +132,13 @@
   "courseOverviewCourseComplete": "课程完成",
   "courseOverviewPassedQuizMessage": "您通过了最终测验。在主页上继续学习下一门课程。",
   "courseOverviewFinishedLessonsMessage": "您已完成所有课程。在主页上继续学习下一门课程。",
-  "readLessonAskAiForMore": "Ask Bull for more",
+  "readLessonAskAiForMore": "Ask Bull 获取更多内容",
   "pathNodePro": "PRO",
+  "pathNodeLocked": "已锁定。完成先前的课程后即可开启此课程。",
   "lessonPlayerXpReward": "{{xp}} XP",
   "dailyChallengeXpReward": "+{{xp}} XP",
+  "academyLayoutSignInTitle": "一次学一堂课，学会投资",
+  "homePageStartFree": "免费开始",
+  "homePageSignedOutNote": "免费开始。注册账户以保存进度并赚取 XP。完成第一门课程后，所有章节都将开启。",
   "leaderboardXpUnit": "XP"
 }

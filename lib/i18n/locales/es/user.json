@@ -73,9 +73,6 @@
   "publicProfileStockCount_other": "{{count}} acciones",
   "publicProfileTierMember": "Miembro",
   "publicProfileTierPro": "Pro",
-  "activityReplyFallbackTarget": "a",
-  "profileAvatarTierNormal": "Normal",
-  "profileModalUsernamePlaceholder": "johndoe",
   "usersPageTitle": "Explorar miembros",
   "usersPageSubtitle": "Miembros que eligieron hacer su perfil público. Busca por nombre o nombre de usuario.",
   "usersSearchPlaceholder": "Busca por nombre o nombre de usuario…",
@@ -90,5 +87,8 @@
   "publicProfileThesisCount_one": "{{count}} tesis",
   "publicProfileThesisCount_other": "{{count}} tesis",
   "publicProfileFollowerCount_one": "{{count}} seguidor",
-  "publicProfileFollowerCount_other": "{{count}} seguidores"
+  "publicProfileFollowerCount_other": "{{count}} seguidores",
+  "activityReplyFallbackTarget": "a",
+  "profileAvatarTierNormal": "Normal",
+  "profileModalUsernamePlaceholder": "johndoe"
 }

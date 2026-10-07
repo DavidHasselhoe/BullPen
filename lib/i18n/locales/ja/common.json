@@ -23,5 +23,6 @@
   "metricSignalWeak": "弱点",
   "metricSignalWeakHint": "企業のヘルススコアに不利に働きます",
   "authGateSignIn": "ログイン",
-  "authGateCreateAccount": "アカウント作成"
+  "authGateCreateAccount": "無料アカウントを作成",
+  "exportGuestContext": "CSV および PDF へのエクスポートは Pro の機能です。無料アカウントを作成して、Pro を {{trialDays}} 日間無料でお試しください。"
 }

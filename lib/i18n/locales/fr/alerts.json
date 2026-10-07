@@ -61,5 +61,7 @@
   "actionPause": "Pause",
   "conditionCount_one": "{{count}} condition",
   "conditionCount_other": "{{count}} conditions",
-  "stepCondition": "Condition"
+  "stepCondition": "Condition",
+  "signUpPrompt": "Créez un compte gratuit pour recevoir une alerte quand {{ticker}} atteint votre prix.",
+  "signUpButton": "Créer un compte gratuit"
 }

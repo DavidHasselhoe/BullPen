@@ -80,7 +80,6 @@
   "dailyChallengeDoneToday": "今日はここまで。",
   "dailyChallengeNewChallengeIn": "新しいチャレンジまで {{time}}",
   "dailyChallengeCorrect": "正解！",
-  "academyLayoutSignInTitle": "Academyを利用するにはサインインしてください",
   "academyLayoutSignInDescription": "投資の仕組みを教えるコンパクトなレッスン。進むにつれてXPを稼いでストリークを築きましょう。",
   "lessonPageNotFound": "レッスンが見つかりません。",
   "academyProGateTitle": "このコースはProでアンロック",
@@ -111,6 +110,7 @@
   "leaderboardSubtitle": "Academy XPでのトップ学習者。公開プロフィールのみ表示されます。",
   "leaderboardEmpty": "まだAcademy XPは獲得されていません。最初の人になりましょう！",
   "leaderboardAnonymous": "匿名",
+  "leaderboardLevel": "レベル {{level}}",
   "leaderboardFooter": "ランキングはレッスンと日次チャレンジで獲得した合計Academy XPに基づいています。",
   "courseOverviewTypeRead": "読む",
   "courseOverviewTypeQuiz": "クイズ",
@@ -134,8 +134,11 @@
   "xpBarXpSuffix": " XP",
   "readLessonAskAiForMore": "Ask Bull for more",
   "pathNodePro": "PRO",
+  "pathNodeLocked": "ロック済み。このコースを開く前に、前のコースを完了してください。",
   "lessonPlayerXpReward": "{{xp}} XP",
   "dailyChallengeXpReward": "+{{xp}} XP",
-  "leaderboardLevel": "レベル {{level}}",
+  "academyLayoutSignInTitle": "短いレッスンで投資を学ぼう",
+  "homePageStartFree": "無料で始める",
+  "homePageSignedOutNote": "無料で始められます。サインアップして進捗を保存し、XP を獲得しましょう。最初のコースを完了すると、すべてのチャプターが開きます。",
   "leaderboardXpUnit": "XP"
 }

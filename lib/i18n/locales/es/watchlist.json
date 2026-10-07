@@ -52,7 +52,6 @@
   "watchlistGridViewAriaLabel": "Vista de cuadrícula",
   "watchlistTableViewAriaLabel": "Vista de tabla",
   "watchlistSearchPlaceholder": "Agrega una acción…",
-  "watchlistSignInTitle": "Inicia sesión para usar la Lista de seguimiento",
   "watchlistSignInDescription": "Sigue tus acciones favoritas y recibe alertas cuando los precios cambien.",
   "watchlistEmptyTitle": "Todavía no hay nada",
   "watchlistEmptySubtitle": "Busca arriba para agregar cualquier acción, o comienza con algunas populares:",
@@ -63,7 +62,6 @@
   "watchlistSignInPrompt": "Crea una cuenta gratuita para mantener {{ticker}} en tu lista de seguimiento y recibir alertas cuando se mueva.",
   "watchlistSignUp": "Crear cuenta gratuita",
   "watchlistSignIn": "Iniciar sesión",
-  "watchlistTableEarningsInDays": "{{days}}d",
   "watchlistDeleteConfirmTitle": "¿Eliminar la lista {{name}}?",
   "watchlistDeleteConfirmBody_one": "Contiene {{count}} acción, que se eliminará de tu lista de seguimiento. Esto no se puede deshacer.",
   "watchlistDeleteConfirmBody_other": "Contiene {{count}} acciones, que se eliminarán de tu lista de seguimiento. Esto no se puede deshacer.",
@@ -73,6 +71,8 @@
   "watchlistSearchNoMatches": "Sin resultados para {{query}}",
   "watchlistSearchAdded": "Agregada",
   "watchlistThesisBull": "Bull",
-  "watchlistThesisBear": "Bear",
+  "watchlistTableEarningsInDays": "{{days}}d",
+  "watchlistSignInTitle": "Sigue las acciones que te importan",
+  "watchlistThesisBear": "Bajista",
   "watchlistThesisNeutral": "Neutral"
 }

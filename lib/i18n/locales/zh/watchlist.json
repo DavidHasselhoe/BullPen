@@ -53,7 +53,6 @@
   "watchlistGridViewAriaLabel": "网格视图",
   "watchlistTableViewAriaLabel": "表格视图",
   "watchlistSearchPlaceholder": "添加股票…",
-  "watchlistSignInTitle": "登录以使用关注列表",
   "watchlistSignInDescription": "关注你喜欢的股票，价格变动时获取提醒。",
   "watchlistEmptyTitle": "暂无内容",
   "watchlistEmptySubtitle": "上方搜索添加任何股票，或从这些热门股票开始：",
@@ -73,6 +72,7 @@
   "watchlistSearchNoMatches": "没有找到与 {{query}} 匹配的结果",
   "watchlistSearchAdded": "已添加",
   "watchlistThesisBull": "Bull",
-  "watchlistThesisBear": "Bear",
-  "watchlistThesisNeutral": "Neutral"
+  "watchlistSignInTitle": "关注你感兴趣的股票",
+  "watchlistThesisBear": "看跌",
+  "watchlistThesisNeutral": "中性"
 }

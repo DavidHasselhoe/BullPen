@@ -61,5 +61,7 @@
   "submitCreateButton": "Opprett varsel",
   "limitReachedNote": "Eller sett alle varsler på en aksje på pause for å frigjøre en plass.",
   "groupMomentum": "Momentum",
-  "actionPause": "Pause"
+  "actionPause": "Pause",
+  "signUpPrompt": "Opprett en gratis konto for å få en varsling når {{ticker}} når prisen din.",
+  "signUpButton": "Opprett gratis konto"
 }

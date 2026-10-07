@@ -53,7 +53,6 @@
   "watchlistGridViewAriaLabel": "グリッドビュー",
   "watchlistTableViewAriaLabel": "テーブルビュー",
   "watchlistSearchPlaceholder": "銘柄を追加…",
-  "watchlistSignInTitle": "ウォッチリストを使用するにはサインイン",
   "watchlistSignInDescription": "好きな銘柄を追跡して、価格が変動したときにアラートを受け取ります。",
   "watchlistEmptyTitle": "まだ何もありません",
   "watchlistEmptySubtitle": "上記で銘柄を検索して追加するか、人気のある銘柄から始めてください：",
@@ -73,6 +72,7 @@
   "watchlistSearchNoMatches": "「{{query}}」に一致する結果がありません",
   "watchlistSearchAdded": "追加済み",
   "watchlistThesisBull": "Bull",
-  "watchlistThesisBear": "Bear",
-  "watchlistThesisNeutral": "Neutral"
+  "watchlistSignInTitle": "あなたが注目する銘柄をフォローしましょう",
+  "watchlistThesisBear": "弱気",
+  "watchlistThesisNeutral": "中立"
 }

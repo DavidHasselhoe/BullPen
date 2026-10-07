@@ -75,7 +75,6 @@
   "publicProfileStockCount_other": "{{count}}銘柄",
   "publicProfileTierMember": "メンバー",
   "publicProfileTierPro": "Pro",
-  "profileModalUsernamePlaceholder": "johndoe",
   "usersPageTitle": "メンバーを閲覧",
   "usersPageSubtitle": "プロフィールを公開に設定したメンバーです。名前またはユーザー名で検索できます。",
   "usersSearchPlaceholder": "名前またはユーザー名で検索…",
@@ -90,5 +89,6 @@
   "publicProfileThesisCount_one": "テーシス{{count}}件",
   "publicProfileThesisCount_other": "テーシス{{count}}件",
   "publicProfileFollowerCount_one": "フォロワー{{count}}人",
-  "publicProfileFollowerCount_other": "フォロワー{{count}}人"
+  "publicProfileFollowerCount_other": "フォロワー{{count}}人",
+  "profileModalUsernamePlaceholder": "johndoe"
 }

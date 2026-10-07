@@ -142,7 +142,6 @@
   "importReviewActionBuy": "買い",
   "importReviewActionSell": "売り",
   "importReviewAuthDescription": "このインポートはあなたのアカウントに紐付けられています。",
-  "importReviewAuthTitle": "インポートを確認するにはサインインしてください",
   "importReviewBack": "戻る",
   "importReviewBackToHoldings": "保有銘柄に戻る",
   "importReviewColumnDate": "日付",
@@ -356,7 +355,6 @@
   "addHoldingTypeCrypto": "暗号資産",
   "addHoldingTypeFund": "ファンド",
   "portfolioDashboardFromSales": "売却した株式から{{amount}}の利益",
-  "holdingsGateTitle": "保有銘柄を表示するにはサインインしてください",
   "holdingsGateBody": "ポートフォリオ全体のポジション、パフォーマンス、リスクをリアルタイムで管理できます。",
   "holdingsBadgePreMarket": "市場前",
   "holdingsBadgeLive": "ライブ",
@@ -377,5 +375,8 @@
   "portfolioHealthCoverageValue": "ポートフォリオ評価額の{{pct}}%を対象としています。スコアなし: {{symbols}}。",
   "portfolioHealthUnscoredMore": "ほか{{count}}件",
   "portfolioHealthExplainUnscored": "暗号資産、大半のファンド、財務諸表を公開していない企業にはヘルススコアがないため、平均から除外しています。",
-  "portfolioDashboardPricedOf": "{{count}}/{{total}}件のポジションが評価済み"
+  "portfolioDashboardPricedOf": "{{count}}/{{total}}件のポジションが評価済み",
+  "importReviewAuthTitle": "インポートを保存するには無料アカウントを作成してください",
+  "holdingsGateTitle": "ポートフォリオ全体を1つの場所で管理できます",
+  "holdingsPreviewValue": "ポートフォリオ価値"
 }

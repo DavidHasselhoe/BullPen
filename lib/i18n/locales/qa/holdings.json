@@ -142,7 +142,7 @@
   "importReviewActionBuy": "«Buuy»",
   "importReviewActionSell": "«Seell»",
   "importReviewAuthDescription": "«Thiis iimpoort iis tiieed too yoouur aaccoouunt.»",
-  "importReviewAuthTitle": "«Siign iin too reeviieew yoouur iimpoort»",
+  "importReviewAuthTitle": "«Creeaatee aa freeee aaccoouunt too saavee yoouur iimpoort»",
   "importReviewBack": "«Baack»",
   "importReviewBackToHoldings": "«Baack too Hooldiings»",
   "importReviewColumnDate": "«Daatee»",
@@ -356,7 +356,7 @@
   "addHoldingTypeCrypto": "«Cryptoo»",
   "addHoldingTypeFund": "«Fuund»",
   "portfolioDashboardFromSales": "«{{amount}} froom shaarees yoouu soold»",
-  "holdingsGateTitle": "«Siign iin too viieew yoouur hooldiings»",
+  "holdingsGateTitle": "«Traack yoouur whoolee poortfooliioo iin oonee plaacee»",
   "holdingsGateBody": "«Traack poosiitiioons, peerfoormaancee, aand riisk aacrooss yoouur whoolee poortfooliioo iin reeaal tiimee.»",
   "holdingsBadgePreMarket": "«Pree-maarkeet»",
   "holdingsBadgeLive": "«Liivee»",
@@ -377,5 +377,6 @@
   "portfolioHealthCoverageValue": "«Cooveers {{pct}}% oof yoouur poortfooliioo's vaaluuee. Noot scooreed: {{symbols}}.»",
   "portfolioHealthUnscoredMore": "«aand {{count}} mooree»",
   "portfolioHealthExplainUnscored": "«Cryptoo, moost fuunds aand coompaaniiees wiithoouut puubliisheed fiinaanciiaal staateemeents haavee noo heeaalth scooree, soo theey aaree leeft oouut oof thee aaveeraagee.»",
-  "portfolioDashboardPricedOf": "«{{count}} oof {{total}} poosiitiioons priiceed soo faar»"
+  "portfolioDashboardPricedOf": "«{{count}} oof {{total}} poosiitiioons priiceed soo faar»",
+  "holdingsPreviewValue": "«Poortfooliioo vaaluuee»"
 }

@@ -119,7 +119,7 @@
   "earningsStreakBeat": "«Beeaat eexpeectaatiioons {{count}} oof thee laast {{total}} quuaarteers»",
   "earningsStreakMiss": "«Miisseed eexpeectaatiioons {{count}} oof thee laast {{total}} quuaarteers»",
   "earningsToday": "«Toodaay»",
-  "earningsUnconfirmed": "«UUncoonfiirmeed»",
+  "earningsUnconfirmed": "«AAwaaiitiing fiiliing»",
   "employeesLabel": "«EEmplooyeeees»",
   "exchangeLabel": "«EExchaangee»",
   "financialsCardTitle": "«Fiinaanciiaals»",
@@ -429,5 +429,13 @@
   "positionPerShare": "«peer shaaree»",
   "washingtonTradeCount_one": "«{{count}} traadee»",
   "washingtonTradeCount_other": "«{{count}} traadees»",
-  "healthNoChange": "«Noo chaangee»"
+  "healthNoChange": "«Noo chaangee»",
+  "earningsEstimatedDate": "«EEstiimaateed daatee»",
+  "earningsEstimatedDateHint": "«Proojeecteed froom paast reepoortiing daatees. Thee coompaany haasn't aannoouunceed iit yeet.»",
+  "fiscalQuarterLabel": "«Q{{quarter}} FY{{year}}»",
+  "fiscalYearLabel": "«FY{{year}}»",
+  "financialsPeriodEndTitle": "«Quuaarteer eendeed {{date}}»",
+  "financialsYearEndTitle": "«Fiiscaal yeeaar eendeed {{date}}»",
+  "financialsReportedOn": "«Reepoorteed {{date}}»",
+  "financialsReportPending": "«{{period}} waas reepoorteed {{date}}. IIts fuull fiinaanciiaal staateemeents aareen't fiileed yeet.»"
 }

@@ -333,6 +333,17 @@ async function translateNamespace(ns: string, lang: string) {
     for (const key of failedKeys) allFailedKeys.add(key);
   }
 
+  // A failed retry must not put English over a translation we can't show is
+  // stale. A key with no hash on record (an earlier failure, or a hand fix)
+  // keeps its existing value; one whose recorded hash no longer matches the
+  // English is stale, and English beats an outdated meaning. Before this,
+  // every run re-failed legitimately-unchanged words ("Symbol" in German,
+  // "Median vs S&P 500") and overwrote good translations with English.
+  for (const key of allFailedKeys) {
+    const existing = existingFlat[key];
+    if (existing && existing !== enFlat[key] && !meta[`${ns}.${key}`]) resultFlat[key] = existing;
+  }
+
   // Prune orphans: a key removed from English shouldn't linger in target locales.
   for (const key of Object.keys(resultFlat)) {
     if (!(key in enFlat)) delete resultFlat[key];

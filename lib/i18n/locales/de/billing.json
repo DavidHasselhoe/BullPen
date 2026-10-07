@@ -4,6 +4,7 @@
   "proGateDefaultTitle": "Ein Pro-Feature",
   "proGateDefaultDescription": "Upgrade auf Pro, um dies freizuschalten.",
   "previewBadge": "Vorschau",
+  "askBullPreviewUserMessage": "Ist das ein guter Zeitpunkt zum Kaufen?",
   "askBullPreviewUserMessageTicker": "Ist {{ticker}} jetzt noch ein guter Kauf?",
   "whyTodayPreviewTeaserUp": "ist heute um {{pct}}% gestiegen",
   "whyTodayPreviewTeaserDown": "ist heute um {{pct}}% gefallen",
@@ -100,9 +101,8 @@
   "upgradeComparePro": "Pro",
   "upgradeQuestionsHeading": "Fragen",
   "paywallBenefitUnlimitedAlerts": "Preisalarme für unbegrenzte Aktien",
-  "alertsPreviewFallbackCondition": "Neues Allzeithoch",
-  "askBullPreviewUserMessage": "Ist das ein guter Zeitpunkt zum Kaufen?",
-  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
   "alertsPreviewSource": "Beispiel-Warnung",
-  "alertsPreviewYourStock": "Deine Aktie"
+  "alertsPreviewFallbackCondition": "Neues Allzeithoch",
+  "alertsPreviewYourStock": "Deine Aktie",
+  "deepDivePreviewFor": "Deep Dive: {{ticker}}"
 }

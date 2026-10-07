@@ -55,11 +55,13 @@
   "stepThresholdPercent": "Umbral (%)",
   "searchStockPlaceholder": "Buscar una acción (p. ej. AAPL)",
   "previewLabel": "Vista previa",
+  "previewText": "Alerta para {{ticker}}: {{description}}.",
   "genericCreateError": "No se pudo crear la alerta. Por favor, intenta de nuevo.",
+  "limitReachedTitle": "Tienes alertas en {{limit}} acciones, el límite del plan gratuito",
   "cancelButton": "Cancelar",
   "creatingButton": "Creando…",
   "submitCreateButton": "Crear alerta",
-  "previewText": "Alerta para {{ticker}}: {{description}}.",
-  "limitReachedTitle": "Tienes alertas en {{limit}} acciones, el límite del plan gratuito",
-  "limitReachedNote": "O pausa todas las alertas en una acción para liberar un espacio."
+  "limitReachedNote": "O pausa todas las alertas en una acción para liberar un espacio.",
+  "signUpPrompt": "Crea una cuenta gratuita para recibir una alerta cuando {{ticker}} alcance tu precio.",
+  "signUpButton": "Crear cuenta gratuita"
 }

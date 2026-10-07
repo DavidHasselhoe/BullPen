@@ -23,5 +23,6 @@
   "metricSignalWeak": "«Weeaak spoot»",
   "metricSignalWeakHint": "«Coouunts aagaaiinst thee coompaany iin iits Heeaalth Scooree»",
   "authGateSignIn": "«Siign iin»",
-  "authGateCreateAccount": "«Creeaatee aaccoouunt»"
+  "authGateCreateAccount": "«Creeaatee freeee aaccoouunt»",
+  "exportGuestContext": "«EExpoortiing too CSV aand PDF iis paart oof Proo: creeaatee aa freeee aaccoouunt, theen try Proo freeee foor {{trialDays}} daays.»"
 }

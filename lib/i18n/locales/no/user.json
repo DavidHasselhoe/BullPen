@@ -73,9 +73,6 @@
   "publicProfileStockCount_other": "{{count}} aksjer",
   "publicProfileTierMember": "Medlem",
   "publicProfileTierPro": "Pro",
-  "profileAvatarTierNormal": "Normal",
-  "profileModalDisplayNamePlaceholder": "John Doe",
-  "profileModalUsernamePlaceholder": "johndoe",
   "usersPageTitle": "Bla gjennom medlemmer",
   "usersPageSubtitle": "Medlemmer som valgte å gjøre profilen sin offentlig. Søk etter navn eller brukernavn.",
   "usersSearchPlaceholder": "Søk etter navn eller brukernavn…",
@@ -90,5 +87,8 @@
   "publicProfileThesisCount_one": "{{count}} oppfatning",
   "publicProfileThesisCount_other": "{{count}} oppfatninger",
   "publicProfileFollowerCount_one": "{{count}} følger",
-  "publicProfileFollowerCount_other": "{{count}} følgere"
+  "publicProfileFollowerCount_other": "{{count}} følgere",
+  "profileAvatarTierNormal": "Normal",
+  "profileModalDisplayNamePlaceholder": "John Doe",
+  "profileModalUsernamePlaceholder": "johndoe"
 }

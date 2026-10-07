@@ -74,8 +74,6 @@
   "publicProfileStockCount_other": "{{count}} Aktien",
   "publicProfileTierMember": "Mitglied",
   "publicProfileTierPro": "Pro",
-  "profileAvatarTierGold": "Gold",
-  "profileAvatarTierNormal": "Normal",
   "usersPageTitle": "Mitglieder durchsuchen",
   "usersPageSubtitle": "Mitglieder, die ihr Profil öffentlich gemacht haben. Suche nach Name oder Benutzername.",
   "usersSearchPlaceholder": "Nach Name oder Benutzername suchen…",
@@ -90,5 +88,7 @@
   "publicProfileThesisCount_one": "{{count}} These",
   "publicProfileThesisCount_other": "{{count}} Thesen",
   "publicProfileFollowerCount_one": "{{count}} Follower",
-  "publicProfileFollowerCount_other": "{{count}} Follower"
+  "publicProfileFollowerCount_other": "{{count}} Follower",
+  "profileAvatarTierGold": "Gold",
+  "profileAvatarTierNormal": "Normal"
 }

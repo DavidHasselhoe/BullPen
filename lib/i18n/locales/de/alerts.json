@@ -1,5 +1,6 @@
 {
   "groupPrice": "Preis",
+  "groupMomentum": "Dynamik",
   "groupProximity": "Nähe",
   "groupMilestone": "Meilenstein",
   "typePriceAbove": "Preis über",
@@ -61,5 +62,6 @@
   "creatingButton": "Wird erstellt…",
   "submitCreateButton": "Benachrichtigung erstellen",
   "limitReachedNote": "Oder pausiere alle Benachrichtigungen für eine Aktie, um einen Platz freizugeben.",
-  "groupMomentum": "Dynamik"
+  "signUpPrompt": "Erstelle ein kostenloses Konto, um eine Benachrichtigung zu erhalten, wenn {{ticker}} deinen Zielpreis erreicht.",
+  "signUpButton": "Kostenloses Konto erstellen"
 }

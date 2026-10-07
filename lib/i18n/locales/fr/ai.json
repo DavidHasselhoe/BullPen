@@ -1,9 +1,7 @@
 {
   "askBull": "Ask Bull",
-  "authGateCreateAccount": "Créer un compte",
   "authGateDescription": "Obtenez des réponses instantanées sur les dépôts SEC, les métriques financières et la recherche d'investissement.",
   "authGateSignIn": "Se connecter",
-  "authGateTitle": "Se connecter pour poser une question à Bull",
   "chatContextPromptFilings": "Récents dépôts de {{ticker}}",
   "chatContextPromptMargins": "Quelle entreprise a des marges plus fortes ?",
   "chatContextPromptProfitability": "Expliquer les différences de rentabilité",
@@ -39,8 +37,6 @@
   "financialsRevenue": "Chiffre d'affaires",
   "financialsTotalAssets": "Actif total",
   "financialsTotalLiabilities": "Passif total",
-  "screenDataAsOf": "Au {{date}}",
-  "screenRankedBy": "Classé par {{metric}}",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreNotAvailable": "S/O",
   "healthScoreTitle": "Santé financière de {{ticker}}",
@@ -118,9 +114,14 @@
   "chatScreenerPromptWhatToLookFor": "Que dois-je rechercher dans une action ?",
   "chatScreenerPromptCandidates": "Montre-moi quelques candidats solides",
   "chatScreenerPromptReviewFilters": "Mes filtres sont-ils bons ?",
+  "authGateCreateAccount": "Créer un compte gratuit",
+  "authGateTitle": "Posez une question à Ask Bull sur n'importe quelle action",
   "chatUnitMessage": "message",
   "chatUnitMessages": "messages",
   "financialsCapex": "CapEx",
+  "screenRankedBy": "Classé par {{metric}}",
+  "screenDataAsOf": "Au {{date}}",
   "insiderNet": "Net {{value}}",
-  "statisticsEvEbitda": "EV/EBITDA"
+  "statisticsEvEbitda": "EV/EBITDA",
+  "whyTodayGuestContext": "Why Today explique le mouvement d'une action en langage simple. C'est inclus dans Pro : créez un compte gratuit, puis essayez Pro gratuitement pendant {{trialDays}} jours."
 }

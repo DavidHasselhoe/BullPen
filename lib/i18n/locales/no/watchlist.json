@@ -51,7 +51,6 @@
   "watchlistGridViewAriaLabel": "Rutenettsvisning",
   "watchlistTableViewAriaLabel": "Tabelivisning",
   "watchlistSearchPlaceholder": "Legg til en aksje…",
-  "watchlistSignInTitle": "Logg inn for å bruke Favorittliste",
   "watchlistSignInDescription": "Følg dine favorittpapirer og få varslinger når prisene endres.",
   "watchlistEmptyTitle": "Ingenting her ennå",
   "watchlistEmptySubtitle": "Søk ovenfor for å legge til en aksje, eller kom i gang med noen populære:",
@@ -62,8 +61,6 @@
   "watchlistSignInPrompt": "Opprett en gratis konto for å holde {{ticker}} på favorittlisten din og få beskjed når den beveger seg.",
   "watchlistSignUp": "Opprett gratis konto",
   "watchlistSignIn": "Logg inn",
-  "watchlistColSymbol": "Symbol",
-  "watchlistTableEarningsInDays": "{{days}}d",
   "watchlistDeleteConfirmTitle": "Slett listen {{name}}?",
   "watchlistDeleteConfirmBody_one": "Den inneholder {{count}} aksje, som blir fjernet fra favorittlisten din. Dette kan ikke angres.",
   "watchlistDeleteConfirmBody_other": "Den inneholder {{count}} aksjer, som blir fjernet fra favorittlisten din. Dette kan ikke angres.",
@@ -73,6 +70,9 @@
   "watchlistSearchNoMatches": "Ingen treff for {{query}}",
   "watchlistSearchAdded": "Lagt til",
   "watchlistThesisBull": "Bull",
-  "watchlistThesisBear": "Bear",
-  "watchlistThesisNeutral": "Nøytral"
+  "watchlistThesisNeutral": "Nøytral",
+  "watchlistColSymbol": "Symbol",
+  "watchlistTableEarningsInDays": "{{days}}d",
+  "watchlistSignInTitle": "Følg aksjene du bryr deg om",
+  "watchlistThesisBear": "Bearish"
 }

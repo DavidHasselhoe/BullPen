@@ -142,7 +142,6 @@
   "importReviewActionBuy": "Comprar",
   "importReviewActionSell": "Vender",
   "importReviewAuthDescription": "Esta importación está vinculada a tu cuenta.",
-  "importReviewAuthTitle": "Inicia sesión para revisar tu importación",
   "importReviewBack": "Atrás",
   "importReviewBackToHoldings": "Volver a Posiciones",
   "importReviewColumnDate": "Fecha",
@@ -356,7 +355,6 @@
   "addHoldingTypeCrypto": "Criptomoneda",
   "addHoldingTypeFund": "Fondo",
   "portfolioDashboardFromSales": "{{amount}} de las acciones que vendiste",
-  "holdingsGateTitle": "Inicia sesión para ver tus posiciones",
   "holdingsGateBody": "Monitorea posiciones, rendimiento y riesgo en toda tu cartera en tiempo real.",
   "holdingsBadgePreMarket": "Preventa",
   "holdingsBadgeLive": "En directo",
@@ -377,5 +375,8 @@
   "portfolioHealthCoverageValue": "Cubre el {{pct}}% del valor de tu cartera. Sin puntuar: {{symbols}}.",
   "portfolioHealthUnscoredMore": "y {{count}} más",
   "portfolioHealthExplainUnscored": "Las criptomonedas, la mayoría de fondos y las empresas sin estados financieros publicados no tienen puntuación de salud, así que quedan fuera del promedio.",
-  "portfolioDashboardPricedOf": "{{count}} de {{total}} posiciones cotizadas hasta ahora"
+  "portfolioDashboardPricedOf": "{{count}} de {{total}} posiciones cotizadas hasta ahora",
+  "importReviewAuthTitle": "Crea una cuenta gratuita para guardar tu importación",
+  "holdingsGateTitle": "Sigue tu cartera completa en un solo lugar",
+  "holdingsPreviewValue": "Valor de la cartera"
 }

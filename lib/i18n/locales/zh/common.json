@@ -23,5 +23,6 @@
   "metricSignalWeak": "弱点",
   "metricSignalWeakHint": "在公司健康评分中扣分",
   "authGateSignIn": "登录",
-  "authGateCreateAccount": "创建账户"
+  "authGateCreateAccount": "创建免费账户",
+  "exportGuestContext": "导出为 CSV 和 PDF 是 BullPen Pro 的功能：创建免费账户，然后免费试用 Pro {{trialDays}} 天。"
 }

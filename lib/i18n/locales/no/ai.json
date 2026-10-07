@@ -1,9 +1,7 @@
 {
   "askBull": "Ask Bull",
-  "authGateCreateAccount": "Opprett konto",
   "authGateDescription": "Få øyeblikkelige svar om SEC-registreringer, finansielle nøkkeltall og investeringsanalyser.",
   "authGateSignIn": "Logg inn",
-  "authGateTitle": "Logg inn for å spørre Bull",
   "chatContextPromptFilings": "Nylige registreringer for {{ticker}}",
   "chatContextPromptMargins": "Hvilken selskap har sterkere marginer?",
   "chatContextPromptProfitability": "Forklar resultatforskjeller",
@@ -41,8 +39,6 @@
   "financialsRevenue": "Inntekter",
   "financialsTotalAssets": "Totale eiendeler",
   "financialsTotalLiabilities": "Totale gjeld",
-  "screenDataAsOf": "Per {{date}}",
-  "screenRankedBy": "Rangert etter {{metric}}",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
   "healthScoreNotAvailable": "I.A.",
   "healthScoreTitle": "{{ticker}} finansiell helse",
@@ -119,8 +115,13 @@
   "chatScreenerPromptWhatToLookFor": "Hva bør jeg se etter i en aksje?",
   "chatScreenerPromptCandidates": "Vis meg noen sterke kandidater",
   "chatScreenerPromptReviewFilters": "Er filtrene mine gode?",
+  "authGateCreateAccount": "Opprett gratis konto",
+  "authGateTitle": "Spør Bull om hvilken som helst aksje",
   "financialsCapex": "CapEx",
+  "screenRankedBy": "Rangert etter {{metric}}",
+  "screenDataAsOf": "Per {{date}}",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "whyTodayGuestContext": "Why Today forklarer en aksjekurs' bevegelse på enkel norsk. Det er en del av Pro: opprett en gratis konto, og prøv Pro gratis i {{trialDays}} dager."
 }

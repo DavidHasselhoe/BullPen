@@ -51,7 +51,6 @@
   "watchlistGridViewAriaLabel": "Rasteransicht",
   "watchlistTableViewAriaLabel": "Tabellenansicht",
   "watchlistSearchPlaceholder": "Aktie hinzufügen…",
-  "watchlistSignInTitle": "Melde dich an, um die Beobachtungsliste zu nutzen",
   "watchlistSignInDescription": "Beobachte deine Lieblingsakten und erhalte Benachrichtigungen, wenn sich die Kurse bewegen.",
   "watchlistEmptyTitle": "Noch nichts hier",
   "watchlistEmptySubtitle": "Suche oben, um eine beliebige Aktie hinzuzufügen, oder starte mit ein paar beliebten:",
@@ -62,8 +61,6 @@
   "watchlistSignInPrompt": "Erstelle ein kostenloses Konto, um {{ticker}} auf deiner Watchlist zu speichern und Benachrichtigungen zu erhalten, wenn sich der Kurs bewegt.",
   "watchlistSignUp": "Kostenloses Konto erstellen",
   "watchlistSignIn": "Anmelden",
-  "watchlistColSymbol": "Symbol",
-  "watchlistLiveLabel": "Live",
   "watchlistDeleteConfirmTitle": "Liste {{name}} löschen?",
   "watchlistDeleteConfirmBody_one": "Sie enthält {{count}} Aktie, die ebenfalls von deiner Watchlist entfernt wird. Das kann nicht rückgängig gemacht werden.",
   "watchlistDeleteConfirmBody_other": "Sie enthält {{count}} Aktien, die ebenfalls von deiner Watchlist entfernt werden. Das kann nicht rückgängig gemacht werden.",
@@ -73,6 +70,9 @@
   "watchlistSearchNoMatches": "Keine Treffer für {{query}}",
   "watchlistSearchAdded": "Hinzugefügt",
   "watchlistThesisBull": "Bull",
-  "watchlistThesisBear": "Bear",
+  "watchlistColSymbol": "Symbol",
+  "watchlistLiveLabel": "Live",
+  "watchlistSignInTitle": "Folge den Aktien, die dir wichtig sind",
+  "watchlistThesisBear": "Bärisch",
   "watchlistThesisNeutral": "Neutral"
 }
