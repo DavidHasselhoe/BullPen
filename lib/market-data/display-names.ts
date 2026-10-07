@@ -9,19 +9,10 @@
  */
 
 import { createServerClient } from '@/lib/supabase/client';
+import { displayCompanyName } from './company-name';
 
-// Trailing legal/share-class noise, stripped repeatedly until none is left.
-const TRAILING = /(?:,?\s+(?:common stock|class [a-c]|inc\.?|incorporated|corporation|corp\.?|company|and company|& co\.?|co\.?|plc|n\.v\.|s\.a\.|ltd\.?|limited|holdings|group|l\.p\.))+\s*,?\s*$/i;
-
-export function displayCompanyName(raw: string): string {
-  let name = raw.trim().replace(/^the\s+/i, '');
-  let prev;
-  do {
-    prev = name;
-    name = name.replace(TRAILING, '').replace(/,\s*$/, '').trim();
-  } while (name !== prev);
-  return name || raw.trim();
-}
+// The name rule itself lives in company-name.ts so client components can use it.
+export { displayCompanyName };
 
 // Companies the public knows by their acronym, not their legal name.
 const KNOWN_AS: Record<string, string> = { IBM: 'IBM', AMD: 'AMD' };

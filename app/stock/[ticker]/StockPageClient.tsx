@@ -34,6 +34,7 @@ import { postStockVisit } from '@/lib/discover/post-stock-visit';
 import { StockSectionBoundary } from '@/components/stock/StockSectionBoundary';
 import { LazySection } from '@/components/stock/LazySection';
 import { StockNavSidebar, type StockNavSection } from '@/components/stock/StockNavSidebar';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 import { slugToSymbol, inferAssetType, hasFinancials } from '@/lib/assets/asset-type';
 
 const StockPricePanel = dynamic(
@@ -177,9 +178,11 @@ export default function StockPageClient() {
   });
 
   // Prefer TwelveData short name over the full legal name in Supabase
-  // Some profile names carry the share class ("Reddit Inc. Class A Common Stock"); Discover and the
-  // Screener already drop the trailing "Common Stock", so the page title matches them.
-  const displayName = (profileData?.profile?.name ?? company?.name ?? ticker).replace(/ Common Stock$/, '');
+  // The name people know the company by, as the movers lists show it: listing
+  // names carry legal and share-class wording ("Nebius Group N.V. Class A
+  // Ordinary Shares"). The full name stays on the heading's hover.
+  const legalName = profileData?.profile?.name ?? company?.name ?? ticker;
+  const displayName = displayCompanyName(legalName);
 
   // Prefer the TwelveData profile for sector/industry — the Supabase `companies`
   // row is scoped to SEC-filing-ingested companies (a small hand-ingested
@@ -364,7 +367,7 @@ export default function StockPageClient() {
                             loading="eager"
                           />
                           <div>
-                            <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>
+                            <h1 className="text-3xl font-semibold text-foreground" title={legalName !== displayName ? legalName : undefined}>{displayName}</h1>
                             <div className="mt-1 flex items-center gap-2">
                               <Badge variant="outline" className="font-mono text-sm">
                                 {ticker}
