@@ -1,5 +1,46 @@
 [
   {
+    "date": "2026-10-07",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "The Stock Screener shows when there are more columns than fit, with a button to scroll to them. Presets now bring their own columns and sort: Dividend shows yield, dividend per share and payout ratio, highest yield first. New columns include dividend per share, distance from the 52-week high, price versus the 200-day average and each part of the health score"
+      },
+      {
+        "type": "fixed",
+        "text": "The screener's Deep Value preset no longer includes loss-making companies, and sorting by P/E or P/B no longer puts them at the top"
+      },
+      {
+        "type": "fixed",
+        "text": "Before the market opens, a stock's change for the day no longer mixes in the previous day's move"
+      },
+      {
+        "type": "improved",
+        "text": "Stock pages name each quarter the way the company does, such as Q3 FY26, and show the same name and report date in Earnings, Revenue Flow and Financials"
+      },
+      {
+        "type": "improved",
+        "text": "Explanations of why a stock moved now appear smoothly, word by word, instead of jumping onto the page. The Why? button explains the same move shown next to it before and after market hours"
+      },
+      {
+        "type": "improved",
+        "text": "When you try something that needs an account, a quick sign-up window opens right where you are, with Google sign-in first. After signing up, BullPen finishes what you started, like adding the stock to your watchlist or opening the alert you were setting"
+      },
+      {
+        "type": "fixed",
+        "text": "Signing up with email now brings you back to the page you started from after you confirm your email"
+      },
+      {
+        "type": "improved",
+        "text": "Stock pages use the name people know a company by, such as Nebius instead of Nebius Group N.V. Class A Ordinary Shares"
+      },
+      {
+        "type": "improved",
+        "text": "More of BullPen is translated into Spanish, French, German, Japanese, Chinese and Norwegian"
+      }
+    ]
+  },
+  {
     "date": "2026-10-06",
     "entries": [
       {
