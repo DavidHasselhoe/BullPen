@@ -43,12 +43,25 @@ function saveLocal(prefs: StoredPrefs) {
 
 /**
  * Keys in the registry but missing from stored order (added in later releases)
- * are appended at the end so they appear with their default visibility.
+ * slot in after the last stored column of the same group, so a new dividend
+ * column lands beside Div Yld rather than at the far end of the table.
  */
 function resolveOrder(order: string[]): string[] {
-  const known = order.filter((k) => COLUMN_BY_KEY[k]);
-  const missing = SCREENER_COLUMNS.filter((c) => !known.includes(c.key)).map((c) => c.key);
-  return [...known, ...missing];
+  const result = order.filter((k) => COLUMN_BY_KEY[k]);
+  for (const col of SCREENER_COLUMNS) {
+    if (result.includes(col.key)) continue;
+    let at = -1;
+    result.forEach((k, i) => { if (COLUMN_BY_KEY[k].group === col.group) at = i; });
+    if (at === -1) result.push(col.key); else result.splice(at + 1, 0, col.key);
+  }
+  return result;
+}
+
+/** Stored order puts these columns right after % Chg, keeping their given order. */
+function bringForward(order: string[], keys: string[]): string[] {
+  const rest = order.filter((k) => !keys.includes(k));
+  const at = rest.indexOf('change_pct') + 1;
+  return [...rest.slice(0, at), ...keys, ...rest.slice(at)];
 }
 
 export interface UseScreenerColumns {
@@ -59,6 +72,8 @@ export interface UseScreenerColumns {
   showAll: () => void;
   hideAll: () => void;
   reorder: (keys: string[]) => void;
+  /** Shows these columns and moves them right after % Chg (a preset bringing its own data into view). */
+  surface: (keys: string[]) => void;
   reset: () => void;
 }
 
@@ -152,5 +167,10 @@ export function useScreenerColumns(): UseScreenerColumns {
     }
   }, [saveToSupabase]);
 
-  return { orderedColumns, visibleColumns, isHidden, toggle, showAll, hideAll, reorder, reset };
+  const surface = useCallback((keys: string[]) => {
+    if (keys.length === 0) return;
+    update({ order: bringForward(orderedKeys, keys), hidden: prefs.hidden.filter((k) => !keys.includes(k)) });
+  }, [orderedKeys, prefs.hidden, update]);
+
+  return { orderedColumns, visibleColumns, isHidden, toggle, showAll, hideAll, reorder, surface, reset };
 }

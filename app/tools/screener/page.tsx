@@ -15,6 +15,7 @@ import {
   ScreenerFilters,
   EMPTY_FILTERS,
   type ScreenerFilterValues,
+  type PresetView,
 } from '@/components/screener/ScreenerFilters';
 import { ScreenerResults } from '@/components/screener/ScreenerResults';
 import { ScreenerViewBar, type ActiveView } from '@/components/screener/ScreenerViewBar';
@@ -102,6 +103,15 @@ function ScreenerContent() {
   const [pickedTickers, setPickedTickers] = useState<string[]>([]);
   const updateView = useUpdateScreenerView();
   const screenerColumns = useScreenerColumns();
+  // A preset re-seeds the table sort. ScreenerResults only reads its initial
+  // sort on mount, so `n` remounts it.
+  const [presetSort, setPresetSort] = useState<{ key: string; dir: 'asc' | 'desc'; n: number } | null>(null);
+  const { surface } = screenerColumns;
+  const applyPresetView = useCallback((view: PresetView) => {
+    surface(view.columns);
+    setPresetSort((prev) => ({ key: view.sortKey, dir: view.sortDir, n: (prev?.n ?? 0) + 1 }));
+    setPage(1);
+  }, [surface]);
 
   // Restore active view from URL once custom views are loaded
   useEffect(() => {
@@ -482,7 +492,7 @@ function ScreenerContent() {
                 industries={industries}
                 onChange={handleFilterChange}
                 onReset={handleReset}
-                visibleColumnKeys={new Set(screenerColumns.visibleColumns.map((c) => c.key))}
+                onPresetApply={applyPresetView}
               />
             )}
           </CardContent>
@@ -510,6 +520,7 @@ function ScreenerContent() {
                       industries={industries}
                       onChange={handleFilterChange}
                       onReset={handleReset}
+                      onPresetApply={applyPresetView}
                     />
                   </div>
                 </details>
@@ -559,6 +570,9 @@ function ScreenerContent() {
                 onPageChange={setPage}
                 onPageSizeChange={(sz) => { setPageSize(sz); setPage(1); }}
                 onVisibleRowsChange={setShown}
+                key={presetSort?.n}
+                initialSortKey={presetSort?.key}
+                initialSortDir={presetSort?.dir}
               />
               {/* Inline add row — only for custom views with stocks */}
               {isCustomView && (

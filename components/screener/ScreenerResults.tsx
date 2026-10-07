@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -244,6 +244,40 @@ export function ScreenerResults({
   // In table order, so a selected export matches what the user sees.
   const selectedRows = useMemo(() => sorted.filter((r) => selected.has(r.ticker)), [sorted, selected]);
 
+  // Columns past the right edge of the table's scroll box. With 10+ columns
+  // the table is wider than the results area, and the only scrollbar sits
+  // under the last row (Windows hides it until hovered), so columns toggled on
+  // in the chooser looked like they never appeared.
+  const [hiddenRight, setHiddenRight] = useState(0);
+  const scrollBoxRef = useRef<HTMLElement | null>(null);
+  const trackOverflow = useCallback((el: HTMLDivElement | null) => {
+    const box = el?.querySelector<HTMLElement>('[data-slot="table-container"]');
+    if (!box) return;
+    scrollBoxRef.current = box;
+    const measure = () => {
+      const edge = box.scrollLeft + box.clientWidth;
+      let n = 0;
+      box.querySelectorAll<HTMLElement>('th[data-col]').forEach((th) => {
+        if (th.offsetLeft + th.offsetWidth / 2 > edge) n++;
+      });
+      setHiddenRight(n);
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    if (box.firstElementChild) ro.observe(box.firstElementChild);
+    box.addEventListener('scroll', measure, { passive: true });
+    return () => {
+      ro.disconnect();
+      box.removeEventListener('scroll', measure);
+    };
+  }, []);
+  const scrollTableRight = () => {
+    const box = scrollBoxRef.current;
+    if (!box) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    box.scrollBy({ left: box.clientWidth * 0.75, behavior: reduce ? 'auto' : 'smooth' });
+  };
+
   const toggleSort = (key: string) => {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -411,7 +445,24 @@ export function ScreenerResults({
         })}
       </div>
 
-      <div className="hidden md:block rounded-md border overflow-x-auto">
+      {/* overflow-clip, not overflow-x-auto: Table scrolls itself, and a scroll
+          container here would stop the sticky "more columns" button sticking. */}
+      <div ref={trackOverflow} className="relative hidden md:block rounded-md border overflow-clip">
+        {hiddenRight > 0 && (
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-40 w-20 bg-gradient-to-l from-background via-background/70 to-transparent">
+            <div className="sticky top-[50vh] mt-2 flex justify-end pr-2">
+              <button
+                type="button"
+                onClick={scrollTableRight}
+                aria-label={t('screenerMoreColumnsAriaLabel', { count: hiddenRight })}
+                className="pointer-events-auto inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-full border bg-background px-3 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+              >
+                {t('screenerMoreColumns', { count: hiddenRight })}
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
         <Table>
           <TableHeader className="sticky top-0 z-20 bg-background shadow-sm">
             <TableRow>
@@ -437,6 +488,7 @@ export function ScreenerResults({
               {columns.map((col) => (
                 <TableHead
                   key={col.key}
+                  data-col
                   className="text-right"
                   style={{ width: col.width, minWidth: col.width }}
                   aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}

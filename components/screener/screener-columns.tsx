@@ -58,6 +58,28 @@ function fmtVolume(v: number | null): string {
   return String(Math.round(v));
 }
 
+/** P/E, P/B and friends are meaningless at or below zero and render "—", so
+ *  they must also sort as missing: a loss-maker's -40 P/E sorted to the top of
+ *  "lowest P/E" while showing a dash. */
+function positiveOrNull(v: number | null): number | null {
+  return v != null && v > 0 ? v : null;
+}
+
+/** Live tick when there is one, else the last quote (same fallback as the Price column). */
+function currentPrice(row: ScreenerRow, live?: HeatmapPriceEntry): number | null {
+  return live?.price ?? row.last_price ?? null;
+}
+
+/** Percent difference of `price` from `ref`. */
+function pctVs(price: number | null, ref: number | null): number | null {
+  return price != null && ref ? ((price - ref) / ref) * 100 : null;
+}
+
+function annualDividend(row: ScreenerRow, live?: HeatmapPriceEntry): number | null {
+  const price = currentPrice(row, live);
+  return row.dividend_yield && price ? row.dividend_yield * price : null;
+}
+
 // ─── Column registry ──────────────────────────────────────────────────────────
 
 export type ColumnGroup = 'health' | 'price' | 'volume' | 'valuation' | 'profitability' | 'risk';
@@ -94,6 +116,24 @@ export interface ScreenerColumn {
   render: (row: ScreenerRow, live?: HeatmapPriceEntry) => ReactNode;
 }
 
+/** One health-score pillar, rendered against its own maximum. */
+function scoreColumn(
+  key: 'health_profitability' | 'health_financial_strength' | 'health_cash_flow' | 'health_growth' | 'health_market_risk' | 'health_valuation',
+  max: number,
+  label: string,
+  tip: string,
+): ScreenerColumn {
+  return {
+    key,
+    label,
+    tip,
+    group: 'health',
+    defaultVisible: false,
+    width: 112,
+    getValue: (row) => row[key],
+    render: (row) => (row[key] != null ? `${row[key]}/${max}` : '—'),
+  };
+}
 
 export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
   return [
@@ -123,38 +163,15 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
   // can set sortKey to one of these and get a real reorder rather than a
   // silent no-op: ScreenerResults' sort comparator looks the key up in this
   // list and treats an unknown key as "no column" (both sides null → every
-  // row compares equal). A user can still surface any of these as a visible
-  // column via the column picker like any other entry here.
-  {
-    key: 'health_growth',
-    label: t('screenerColHealthGrowthLabel'),
-    tip: t('screenerColHealthGrowthTip'),
-    group: 'health',
-    defaultVisible: false,
-    width: 72,
-    getValue: (row) => row.health_growth,
-    render: (row) => fmtNum(row.health_growth, 0),
-  },
-  {
-    key: 'health_valuation',
-    label: t('screenerColHealthValuationLabel'),
-    tip: t('screenerColHealthValuationTip'),
-    group: 'valuation',
-    defaultVisible: false,
-    width: 72,
-    getValue: (row) => row.health_valuation,
-    render: (row) => fmtNum(row.health_valuation, 0),
-  },
-  {
-    key: 'health_market_risk',
-    label: t('screenerColHealthMarketRiskLabel'),
-    tip: t('screenerColHealthMarketRiskTip'),
-    group: 'risk',
-    defaultVisible: false,
-    width: 72,
-    getValue: (row) => row.health_market_risk,
-    render: (row) => fmtNum(row.health_market_risk, 0),
-  },
+  // row compares equal). Each pillar has its own maximum (lib/finance/
+  // health-score.ts), so cells read "22/30": a bare 22 beside a bare 8 out of
+  // 10 would look like the worse stock.
+  scoreColumn('health_profitability', 30, t('screenerColHealthProfitabilityLabel'), t('screenerColHealthProfitabilityTip')),
+  scoreColumn('health_financial_strength', 25, t('screenerColHealthStrengthLabel'), t('screenerColHealthStrengthTip')),
+  scoreColumn('health_cash_flow', 20, t('screenerColHealthCashFlowLabel'), t('screenerColHealthCashFlowTip')),
+  scoreColumn('health_growth', 15, t('screenerColHealthGrowthLabel'), t('screenerColHealthGrowthTip')),
+  scoreColumn('health_market_risk', 10, t('screenerColHealthMarketRiskLabel'), t('screenerColHealthMarketRiskTip')),
+  scoreColumn('health_valuation', 20, t('screenerColHealthValuationLabel'), t('screenerColHealthValuationTip')),
 
   // ── Price ──
   // Falls back to the last quoted price/change (`row.last_price`/`last_change_pct`,
@@ -207,6 +224,62 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
       );
     },
   },
+  {
+    key: 'from_52w_high',
+    label: t('screenerColFromHighLabel'),
+    tip: t('screenerColFromHighTip'),
+    group: 'price',
+    defaultVisible: false,
+    width: 104,
+    // Capped at 0: week52_high refreshes daily, so a stock making a new high
+    // today would otherwise read "+1.2% below its high".
+    getValue: (row, live) => {
+      const pct = pctVs(currentPrice(row, live), row.week52_high);
+      return pct != null ? Math.min(0, pct) : null;
+    },
+    render: (row, live) => {
+      const pct = pctVs(currentPrice(row, live), row.week52_high);
+      return pct != null ? fmtPct(Math.min(0, pct), 1) : '—';
+    },
+  },
+  {
+    key: 'vs_200d_ma',
+    label: t('screenerColVs200dLabel'),
+    tip: t('screenerColVs200dTip'),
+    group: 'price',
+    defaultVisible: false,
+    width: 84,
+    getValue: (row, live) => pctVs(currentPrice(row, live), row.day200_ma),
+    render: (row, live) => {
+      const pct = pctVs(currentPrice(row, live), row.day200_ma);
+      if (pct == null) return '—';
+      return (
+        <span className={cn(pct > 0 && 'text-emerald-500', pct < 0 && 'text-red-500')}>
+          {pct > 0 ? '+' : ''}{fmtPct(pct, 1)}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'week52_high',
+    label: t('screenerColWeek52HiLabel'),
+    tip: t('screenerColWeek52HiTip'),
+    group: 'price',
+    defaultVisible: false,
+    width: 92,
+    getValue: (row) => row.week52_high,
+    render: (row) => <span className="text-muted-foreground">{fmtPrice(row.week52_high)}</span>,
+  },
+  {
+    key: 'week52_low',
+    label: t('screenerColWeek52LoLabel'),
+    tip: t('screenerColWeek52LoTip'),
+    group: 'price',
+    defaultVisible: false,
+    width: 92,
+    getValue: (row) => row.week52_low,
+    render: (row) => <span className="text-muted-foreground">{fmtPrice(row.week52_low)}</span>,
+  },
 
   // ── Volume ──
   {
@@ -249,7 +322,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     group: 'valuation',
     defaultVisible: true,
     width: 72,
-    getValue: (row) => row.pe_ratio,
+    getValue: (row) => positiveOrNull(row.pe_ratio),
     render: (row) => (row.pe_ratio != null && row.pe_ratio > 0 ? fmtNum(row.pe_ratio, 1) : '—'),
   },
   {
@@ -259,7 +332,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     group: 'valuation',
     defaultVisible: false,
     width: 80,
-    getValue: (row) => row.forward_pe,
+    getValue: (row) => positiveOrNull(row.forward_pe),
     render: (row) => (row.forward_pe != null && row.forward_pe > 0 ? fmtNum(row.forward_pe, 1) : '—'),
   },
   {
@@ -269,7 +342,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     group: 'valuation',
     defaultVisible: false,
     width: 72,
-    getValue: (row) => row.pb_ratio,
+    getValue: (row) => positiveOrNull(row.pb_ratio),
     render: (row) => (row.pb_ratio != null && row.pb_ratio > 0 ? fmtNum(row.pb_ratio, 2) : '—'),
   },
   {
@@ -279,7 +352,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     group: 'valuation',
     defaultVisible: false,
     width: 68,
-    getValue: (row) => row.ps_ratio,
+    getValue: (row) => positiveOrNull(row.ps_ratio),
     render: (row) => (row.ps_ratio != null && row.ps_ratio > 0 ? fmtNum(row.ps_ratio, 2) : '—'),
   },
   {
@@ -289,7 +362,7 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     group: 'valuation',
     defaultVisible: false,
     width: 72,
-    getValue: (row) => row.ev_to_ebitda,
+    getValue: (row) => positiveOrNull(row.ev_to_ebitda),
     render: (row) => (row.ev_to_ebitda != null && row.ev_to_ebitda > 0 ? fmtNum(row.ev_to_ebitda, 1) : '—'),
   },
   {
@@ -402,6 +475,22 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     render: (row) => (row.dividend_yield != null && row.dividend_yield > 0 ? fmtFractionAsPct(row.dividend_yield, 2) : '—'),
   },
   {
+    key: 'annual_dividend',
+    label: t('screenerColAnnualDivLabel'),
+    tip: t('screenerColAnnualDivTip'),
+    group: 'risk',
+    defaultVisible: false,
+    width: 88,
+    // Derived from the Div Yld column (already sanitized for stale and
+    // trailing-vs-forward yields), so the two always agree. Marked with "~"
+    // because it's yield x today's price, not a declared dividend amount.
+    getValue: (row, live) => annualDividend(row, live),
+    render: (row, live) => {
+      const v = annualDividend(row, live);
+      return v != null ? <span title={t('screenerColAnnualDivTitle')}>~{fmtPrice(v)}</span> : '—';
+    },
+  },
+  {
     key: 'payout_ratio',
     label: t('screenerColPayoutLabel'),
     tip: t('screenerColPayoutTip'),
@@ -414,27 +503,6 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     render: (row) => (row.payout_ratio != null && row.payout_ratio > 0 ? fmtFractionAsPct(row.payout_ratio, 0) : '—'),
   },
 
-  // ── Price levels ──
-  {
-    key: 'week52_high',
-    label: t('screenerColWeek52HiLabel'),
-    tip: t('screenerColWeek52HiTip'),
-    group: 'price',
-    defaultVisible: false,
-    width: 92,
-    getValue: (row) => row.week52_high,
-    render: (row) => <span className="text-muted-foreground">{fmtPrice(row.week52_high)}</span>,
-  },
-  {
-    key: 'week52_low',
-    label: t('screenerColWeek52LoLabel'),
-    tip: t('screenerColWeek52LoTip'),
-    group: 'price',
-    defaultVisible: false,
-    width: 92,
-    getValue: (row) => row.week52_low,
-    render: (row) => <span className="text-muted-foreground">{fmtPrice(row.week52_low)}</span>,
-  },
   ];
 }
 

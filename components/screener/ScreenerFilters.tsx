@@ -67,20 +67,27 @@ export const EMPTY_FILTERS: ScreenerFilterValues = {
   week52ChangeMax: '',
 };
 
-interface Preset {
+export interface PresetView {
+  /** Shown and moved next to % Chg, so the preset's criteria are on screen. */
+  columns: string[];
+  sortKey: string;
+  sortDir: 'asc' | 'desc';
+}
+
+interface Preset extends PresetView {
   label: string;
   filters: Partial<ScreenerFilterValues>;
 }
 
 function getPresets(t: TFunction): Preset[] {
   return [
-    { label: t('screenerPresetAll'),          filters: {} },
-    { label: t('screenerPresetHighHealth'),    filters: { healthScoreMin: '70' } },
-    { label: t('screenerPresetDeepValue'),     filters: { peMax: '15', pbMax: '2' } },
-    { label: t('screenerPresetGrowth'),        filters: { revenueGrowthMin: '15' } },
-    { label: t('screenerPresetDividend'),      filters: { divYieldMin: '2.5' } },
-    { label: t('screenerPresetQuality'),       filters: { profitMarginMin: '15', revenueGrowthMin: '10' } },
-    { label: t('screenerPresetLargeCap'),      filters: { marketCapMin: '100' } },
+    { label: t('screenerPresetAll'),        filters: {},                                                columns: [], sortKey: 'market_cap', sortDir: 'desc' },
+    { label: t('screenerPresetHighHealth'), filters: { healthScoreMin: '70' },                          columns: [], sortKey: 'health_score', sortDir: 'desc' },
+    { label: t('screenerPresetDeepValue'),  filters: { peMax: '15', pbMax: '2' },                       columns: ['pe_ratio', 'pb_ratio'], sortKey: 'pe_ratio', sortDir: 'asc' },
+    { label: t('screenerPresetGrowth'),     filters: { revenueGrowthMin: '15' },                        columns: ['revenue_growth_yoy', 'earnings_growth_yoy'], sortKey: 'revenue_growth_yoy', sortDir: 'desc' },
+    { label: t('screenerPresetDividend'),   filters: { divYieldMin: '2.5' },                            columns: ['dividend_yield', 'annual_dividend', 'payout_ratio'], sortKey: 'dividend_yield', sortDir: 'desc' },
+    { label: t('screenerPresetQuality'),    filters: { profitMarginMin: '15', revenueGrowthMin: '10' }, columns: ['profit_margin', 'revenue_growth_yoy'], sortKey: 'profit_margin', sortDir: 'desc' },
+    { label: t('screenerPresetLargeCap'),   filters: { marketCapMin: '100' },                           columns: ['market_cap'], sortKey: 'market_cap', sortDir: 'desc' },
   ];
 }
 
@@ -154,9 +161,8 @@ interface ScreenerFiltersProps {
   industries: string[];
   onChange: (filters: ScreenerFilterValues) => void;
   onReset: () => void;
-  /** Keys of currently-visible screener columns. Filters whose column is hidden are omitted
-   *  unless the filter already has an active value (so users can always clear it). */
-  visibleColumnKeys?: Set<string>;
+  /** A built-in preset was clicked: bring its columns into view and sort by its metric. */
+  onPresetApply?: (view: PresetView) => void;
 }
 
 function RangeFilter({
@@ -212,7 +218,7 @@ function RangeFilter({
   );
 }
 
-export function ScreenerFilters({ filters, sectors, industries, onChange, onReset, visibleColumnKeys }: ScreenerFiltersProps) {
+export function ScreenerFilters({ filters, sectors, industries, onChange, onReset, onPresetApply }: ScreenerFiltersProps) {
   const { t } = useTranslation('tools');
   const { isAuthenticated } = useAuth();
   const presets = getPresets(t);
@@ -221,18 +227,9 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
   const { data: myPresets } = useScreenerFilterPresets();
   const deletePreset = useDeleteScreenerFilterPreset();
 
-  // Returns true when the filter should be shown:
-  // - no column visibility constraint (visibleColumnKeys not passed), OR
-  // - the corresponding column is visible, OR
-  // - the filter already has an active value (always allow clearing)
-  const show = (colKey: string, ...filterKeys: (keyof ScreenerFilterValues)[]): boolean => {
-    if (!visibleColumnKeys) return true;
-    if (visibleColumnKeys.has(colKey)) return true;
-    return filterKeys.some((k) => !!filters[k]);
-  };
-
   const applyPreset = (preset: Preset) => {
     onChange({ ...EMPTY_FILTERS, ...preset.filters });
+    onPresetApply?.(preset);
   };
 
   return (
@@ -342,73 +339,43 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
       </div>
 
       {/* Health Score */}
-      {show('health_score', 'healthScoreMin', 'healthScoreMax') && (
-        <div>
-          <RangeFilter label={t('screenerHealthScoreLabel')} hint={t('screenerHealthScoreHint')} minKey="healthScoreMin" maxKey="healthScoreMax" filters={filters} onChange={onChange} step="5" />
-        </div>
-      )}
+      <RangeFilter label={t('screenerHealthScoreLabel')} hint={t('screenerHealthScoreHint')} minKey="healthScoreMin" maxKey="healthScoreMax" filters={filters} onChange={onChange} step="5" />
 
       {/* Valuation */}
-      {(show('market_cap', 'marketCapMin', 'marketCapMax') ||
-        show('pe_ratio', 'peMin', 'peMax') ||
-        show('pb_ratio', 'pbMin', 'pbMax')) && (
-        <div className="space-y-0.5">
-          <p className="text-xs font-semibold text-foreground pb-1">{t('screenerValuationHeading')}</p>
-          {show('market_cap', 'marketCapMin', 'marketCapMax') && (
-            <RangeFilter label={t('screenerMarketCapLabel')} unit="$B" hint={t('screenerMarketCapHint')} minKey="marketCapMin" maxKey="marketCapMax" filters={filters} onChange={onChange} step="10" />
-          )}
-          {show('pe_ratio', 'peMin', 'peMax') && (
-            <div className="pt-3">
-              <RangeFilter label={t('screenerPeRatioLabel')} hint={t('screenerPeRatioHint')} minKey="peMin" maxKey="peMax" filters={filters} onChange={onChange} step="1" />
-            </div>
-          )}
-          {show('pb_ratio', 'pbMin', 'pbMax') && (
-            <div className="pt-3">
-              <RangeFilter label={t('screenerPbRatioLabel')} hint={t('screenerPbRatioHint')} minKey="pbMin" maxKey="pbMax" filters={filters} onChange={onChange} step="0.1" />
-            </div>
-          )}
+      <div className="space-y-0.5">
+        <p className="text-xs font-semibold text-foreground pb-1">{t('screenerValuationHeading')}</p>
+        <RangeFilter label={t('screenerMarketCapLabel')} unit="$B" hint={t('screenerMarketCapHint')} minKey="marketCapMin" maxKey="marketCapMax" filters={filters} onChange={onChange} step="10" />
+        <div className="pt-3">
+          <RangeFilter label={t('screenerPeRatioLabel')} hint={t('screenerPeRatioHint')} minKey="peMin" maxKey="peMax" filters={filters} onChange={onChange} step="1" />
         </div>
-      )}
+        <div className="pt-3">
+          <RangeFilter label={t('screenerPbRatioLabel')} hint={t('screenerPbRatioHint')} minKey="pbMin" maxKey="pbMax" filters={filters} onChange={onChange} step="0.1" />
+        </div>
+      </div>
 
       {/* Profitability */}
-      {(show('profit_margin', 'profitMarginMin', 'profitMarginMax') ||
-        show('revenue_growth_yoy', 'revenueGrowthMin', 'revenueGrowthMax')) && (
-        <div className="space-y-0.5">
-          <p className="text-xs font-semibold text-foreground pb-1">{t('screenerProfitabilityHeading')}</p>
-          {show('profit_margin', 'profitMarginMin', 'profitMarginMax') && (
-            <RangeFilter label={t('screenerProfitMarginLabel')} unit="%" hint={t('screenerProfitMarginHint')} minKey="profitMarginMin" maxKey="profitMarginMax" filters={filters} onChange={onChange} step="1" />
-          )}
-          {show('revenue_growth_yoy', 'revenueGrowthMin', 'revenueGrowthMax') && (
-            <div className="pt-3">
-              <RangeFilter label={t('screenerRevenueGrowthLabel')} unit="%" hint={t('screenerRevenueGrowthHint')} minKey="revenueGrowthMin" maxKey="revenueGrowthMax" filters={filters} onChange={onChange} step="1" />
-            </div>
-          )}
+      <div className="space-y-0.5">
+        <p className="text-xs font-semibold text-foreground pb-1">{t('screenerProfitabilityHeading')}</p>
+        <RangeFilter label={t('screenerProfitMarginLabel')} unit="%" hint={t('screenerProfitMarginHint')} minKey="profitMarginMin" maxKey="profitMarginMax" filters={filters} onChange={onChange} step="1" />
+        <div className="pt-3">
+          <RangeFilter label={t('screenerRevenueGrowthLabel')} unit="%" hint={t('screenerRevenueGrowthHint')} minKey="revenueGrowthMin" maxKey="revenueGrowthMax" filters={filters} onChange={onChange} step="1" />
         </div>
-      )}
+      </div>
 
       {/* Risk & Income */}
-      {(show('beta', 'betaMin', 'betaMax') ||
-        show('dividend_yield', 'divYieldMin', 'divYieldMax')) && (
-        <div className="space-y-0.5">
-          <p className="text-xs font-semibold text-foreground pb-1">{t('screenerRiskIncomeHeading')}</p>
-          {show('beta', 'betaMin', 'betaMax') && (
-            <RangeFilter label={t('screenerBetaLabel')} hint={t('screenerBetaHint')} minKey="betaMin" maxKey="betaMax" filters={filters} onChange={onChange} step="0.1" />
-          )}
-          {show('dividend_yield', 'divYieldMin', 'divYieldMax') && (
-            <div className="pt-3">
-              <RangeFilter label={t('screenerDividendYieldLabel')} unit="%" hint={t('screenerDividendYieldHint')} minKey="divYieldMin" maxKey="divYieldMax" filters={filters} onChange={onChange} step="0.1" />
-            </div>
-          )}
+      <div className="space-y-0.5">
+        <p className="text-xs font-semibold text-foreground pb-1">{t('screenerRiskIncomeHeading')}</p>
+        <RangeFilter label={t('screenerBetaLabel')} hint={t('screenerBetaHint')} minKey="betaMin" maxKey="betaMax" filters={filters} onChange={onChange} step="0.1" />
+        <div className="pt-3">
+          <RangeFilter label={t('screenerDividendYieldLabel')} unit="%" hint={t('screenerDividendYieldHint')} minKey="divYieldMin" maxKey="divYieldMax" filters={filters} onChange={onChange} step="0.1" />
         </div>
-      )}
+      </div>
 
       {/* 52-Week Range */}
-      {show('week52_high', 'week52ChangeMin', 'week52ChangeMax') && (
-        <div className="space-y-0.5">
-          <p className="text-xs font-semibold text-foreground pb-1">{t('screenerPriceRangeHeading')}</p>
-          <RangeFilter label={t('screener52wSpreadLabel')} unit="%" hint={t('screener52wSpreadHint')} minKey="week52ChangeMin" maxKey="week52ChangeMax" filters={filters} onChange={onChange} step="5" />
-        </div>
-      )}
+      <div className="space-y-0.5">
+        <p className="text-xs font-semibold text-foreground pb-1">{t('screenerPriceRangeHeading')}</p>
+        <RangeFilter label={t('screener52wSpreadLabel')} unit="%" hint={t('screener52wSpreadHint')} minKey="week52ChangeMin" maxKey="week52ChangeMax" filters={filters} onChange={onChange} step="5" />
+      </div>
     </div>
   );
 }
