@@ -431,5 +431,11 @@
   "washingtonTradeCount_other": "{{count}} trades",
   "healthNoChange": "No change",
   "earningsEstimatedDate": "Estimated date",
-  "earningsEstimatedDateHint": "Projected from past reporting dates. The company hasn't announced it yet."
+  "earningsEstimatedDateHint": "Projected from past reporting dates. The company hasn't announced it yet.",
+  "fiscalQuarterLabel": "Q{{quarter}} FY{{year}}",
+  "fiscalYearLabel": "FY{{year}}",
+  "financialsPeriodEndTitle": "Quarter ended {{date}}",
+  "financialsYearEndTitle": "Fiscal year ended {{date}}",
+  "financialsReportedOn": "Reported {{date}}",
+  "financialsReportPending": "{{period}} was reported {{date}}. Its full financial statements aren't filed yet."
 }

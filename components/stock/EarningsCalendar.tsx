@@ -19,6 +19,7 @@ import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useEarningsHistory } from '@/hooks/use-earnings-history';
 import { DeltaBar } from '@/components/viz/DeltaBar';
 import type { EarningsCalendar as EarningsItem } from '@/lib/finnhub/finnhub-client';
+import { fiscalLabel } from '@/lib/finance/fiscal-label';
 
 function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -132,7 +133,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
                 </p>
                 <p className="text-xs text-muted-foreground mt-1.5">
                   {formatDate(nextEvent.date)}
-                  {nextEvent.quarter && nextEvent.year && ` · ${t('earningsQuarterYear', { quarter: nextEvent.quarter, year: nextEvent.year })}`}
+                  {nextEvent.quarter && nextEvent.year && ` · ${fiscalLabel(t, { quarter: nextEvent.quarter, year: nextEvent.year, offCalendar: nextEvent.offCalendar })}`}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -184,7 +185,7 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
                   <div className="min-w-0 shrink-0">
                     <span className="text-sm font-medium">{formatDate(e.date)}</span>
                     {e.quarter && e.year && (
-                      <span className="text-xs text-muted-foreground ml-2">{t('earningsQuarterYear', { quarter: e.quarter, year: e.year })}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{fiscalLabel(t, { quarter: e.quarter, year: e.year, offCalendar: e.offCalendar })}</span>
                     )}
                     {e.unconfirmed && (
                       <Badge variant="outline" className="text-xs ml-2">{t('earningsUnconfirmed')}</Badge>

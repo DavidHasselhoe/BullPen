@@ -16,6 +16,7 @@ import {
 import { getCached } from '@/lib/cache/market-data-cache';
 import type { HealthScore } from '@/lib/finance/health-score';
 import { computeAndSyncHealthScore } from '@/lib/finance/get-health-score';
+import { getFiscalCalendar, labelEarnings, periodForStatement, fiscalLabelEn, type FiscalCalendar } from '@/lib/finance/fiscal-calendar';
 
 interface EarningsRow {
   period: string;
@@ -34,6 +35,8 @@ export interface DeepDiveData {
   earnings: EarningsRow[];
   health: HealthScore | null;
   dataAsOf: string | null;
+  /** The company's own fiscal quarters (SEC), so the report names periods as the stock page does. */
+  fiscal: FiscalCalendar | null;
 }
 
 // snapshot-route earnings cache shape
@@ -52,23 +55,26 @@ async function cachedOrFetch<T>(key: string, fetcher: () => Promise<T>, fallback
 export async function gatherDeepDiveData(symbol: string): Promise<DeepDiveData> {
   const sym = symbol.toUpperCase();
 
-  const [stats, income, balance, cashflow, profile, snapEarnings] = await Promise.all([
+  const [stats, income, balance, cashflow, profile, snapEarnings, fiscal] = await Promise.all([
     cachedOrFetch<CompanyStatistics | null>(`stats:${sym}`, () => getStatistics(sym), null),
     cachedOrFetch<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`, () => getIncomeStatement(sym, 'quarterly'), []),
     cachedOrFetch<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`, () => getBalanceSheet(sym, 'quarterly'), []),
     cachedOrFetch<CashFlowPeriod[]>(`financials:${sym}:cashflow:quarterly`, () => getCashFlow(sym, 'quarterly'), []),
     getCompanyProfile(sym).catch(() => null),
     getCached<SnapEarnings[]>(`snap-earnings:${sym}`),
+    getFiscalCalendar(sym).catch(() => null),
   ]);
 
   // Earnings: prefer the cached snapshot rows, else fetch the per-company history.
   let earnings: EarningsRow[] = [];
   if (snapEarnings?.length) {
-    earnings = snapEarnings
+    // The cache's quarter is a calendar guess (it called Micron's Sep 30 2026
+    // Q4 FY26 report "Q2 2026"); the release date places it properly.
+    earnings = labelEarnings(snapEarnings, fiscal)
       .filter((e) => e.epsActual != null || e.epsEstimate != null)
       .slice(0, 8)
       .map((e) => ({
-        period: `Q${e.quarter} ${e.year}`,
+        period: fiscalLabelEn({ fiscalQuarter: e.quarter, fiscalYear: e.year }, e.offCalendar ?? false),
         actual: e.epsActual,
         estimate: e.epsEstimate,
         surprisePct:
@@ -96,7 +102,7 @@ export async function gatherDeepDiveData(symbol: string): Promise<DeepDiveData> 
 
   const dataAsOf = income[0]?.fiscal_date || balance[0]?.fiscal_date || null;
 
-  return { symbol: sym, profile, stats, income, balance, cashflow, earnings, health, dataAsOf };
+  return { symbol: sym, profile, stats, income, balance, cashflow, earnings, health, dataAsOf, fiscal };
 }
 
 // ─── Formatting for the prompt ────────────────────────────────────────────────
@@ -149,12 +155,18 @@ export function formatDataBlock(d: DeepDiveData): string {
     lines.push('Category breakdown: ' + d.health.categories.map((c) => `${c.name} ${c.score}/${c.max}`).join(' · '));
   }
 
+  // "Q3 FY26 (ended 2026-05-28)" rather than TwelveData's rounded "2026-05-31".
+  const periodName = (fiscalDate: string) => {
+    const p = d.fiscal ? periodForStatement(d.fiscal, fiscalDate, false) : null;
+    return p ? `${fiscalLabelEn(p, d.fiscal!.offCalendar)} (ended ${p.periodEnd})` : fiscalDate;
+  };
+
   if (d.income.length) {
     lines.push('');
     lines.push('INCOME STATEMENT (most recent quarters, newest first):');
     for (const q of d.income.slice(0, 4)) {
       lines.push(
-        `${q.fiscal_date}: Rev ${money(q.revenue)} · GrossProfit ${money(q.gross_profit)} · OpInc ${money(q.operating_income)} · NetInc ${money(q.net_income)} · EBITDA ${money(q.ebitda)} · EPS(dil) ${num(q.eps_diluted)} · R&D ${money(q.r_and_d_expenses)}`
+        `${periodName(q.fiscal_date)}: Rev ${money(q.revenue)} · GrossProfit ${money(q.gross_profit)} · OpInc ${money(q.operating_income)} · NetInc ${money(q.net_income)} · EBITDA ${money(q.ebitda)} · EPS(dil) ${num(q.eps_diluted)} · R&D ${money(q.r_and_d_expenses)}`
       );
     }
   }
@@ -162,13 +174,13 @@ export function formatDataBlock(d: DeepDiveData): string {
   if (d.balance.length) {
     const b = d.balance[0];
     lines.push('');
-    lines.push(`BALANCE SHEET (${b.fiscal_date}): Assets ${money(b.total_assets)} · Cash ${money(b.cash_and_equivalents)} · CurrentAssets ${money(b.total_current_assets)} · Liabilities ${money(b.total_liabilities)} · CurrentLiab ${money(b.total_current_liabilities)} · LT debt ${money(b.long_term_debt)} · Equity ${money(b.total_stockholders_equity)}`);
+    lines.push(`BALANCE SHEET (${periodName(b.fiscal_date)}): Assets ${money(b.total_assets)} · Cash ${money(b.cash_and_equivalents)} · CurrentAssets ${money(b.total_current_assets)} · Liabilities ${money(b.total_liabilities)} · CurrentLiab ${money(b.total_current_liabilities)} · LT debt ${money(b.long_term_debt)} · Equity ${money(b.total_stockholders_equity)}`);
   }
 
   if (d.cashflow.length) {
     const c = d.cashflow[0];
     lines.push('');
-    lines.push(`CASH FLOW (${c.fiscal_date}): Operating ${money(c.operating_cash_flow)} · CapEx ${money(c.capital_expenditures)} · FreeCashFlow ${money(c.free_cash_flow)} · Dividends paid ${money(c.dividends_paid)}`);
+    lines.push(`CASH FLOW (${periodName(c.fiscal_date)}): Operating ${money(c.operating_cash_flow)} · CapEx ${money(c.capital_expenditures)} · FreeCashFlow ${money(c.free_cash_flow)} · Dividends paid ${money(c.dividends_paid)}`);
   }
 
   if (d.earnings.length) {

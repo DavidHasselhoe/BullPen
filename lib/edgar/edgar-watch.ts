@@ -42,6 +42,8 @@ export interface EdgarFiling {
   accessionNumber: string; // e.g. "0001045810-26-000051"
   primaryDocument: string;
   items: string; // comma-separated, e.g. "2.02,9.01"
+  /** Period a 10-Q/10-K covers (its exact period end), "" for other forms. */
+  reportDate: string;
 }
 
 interface FilingColumns {
@@ -50,10 +52,13 @@ interface FilingColumns {
   accessionNumber?: string[];
   primaryDocument?: string[];
   items?: string[];
+  reportDate?: string[];
 }
 
 interface SubmissionsResponse {
   name?: string;
+  /** MMDD: "0903" for Micron, "1231" for a calendar-year company. */
+  fiscalYearEnd?: string;
   filings?: {
     recent?: FilingColumns;
     /** Older filings, paged into separate JSON files once `recent` fills up
@@ -92,21 +97,39 @@ export async function fetchFirst13FFiledDate(cik: string | number): Promise<stri
   return earliest;
 }
 
-/** Raw recent-filings list for a CIK, newest first (SEC's own order). */
-export async function fetchRecentFilings(cik: string | number): Promise<EdgarFiling[]> {
+/** Recent filings for a CIK, newest first (SEC's own order), plus its fiscal year end. */
+export async function fetchSubmissions(cik: string | number): Promise<{ fiscalYearEnd: string | null; filings: EdgarFiling[] }> {
   const paddedCik = padCik(cik);
   const res = await edgarFetch(`https://data.sec.gov/submissions/CIK${paddedCik}.json`);
   if (!res.ok) throw new Error(`SEC submissions fetch failed: ${res.status} for CIK ${paddedCik}`);
   const body = (await res.json()) as SubmissionsResponse;
   const r = body.filings?.recent;
-  if (!r?.form) return [];
-  return r.form.map((form, i) => ({
+  const filings = (r?.form ?? []).map((form, i) => ({
     form,
-    filingDate: r.filingDate?.[i] ?? '',
-    accessionNumber: r.accessionNumber?.[i] ?? '',
-    primaryDocument: r.primaryDocument?.[i] ?? '',
-    items: r.items?.[i] ?? '',
+    filingDate: r?.filingDate?.[i] ?? '',
+    accessionNumber: r?.accessionNumber?.[i] ?? '',
+    primaryDocument: r?.primaryDocument?.[i] ?? '',
+    items: r?.items?.[i] ?? '',
+    reportDate: r?.reportDate?.[i] ?? '',
   }));
+  return { fiscalYearEnd: body.fiscalYearEnd ?? null, filings };
+}
+
+/** Raw recent-filings list for a CIK, newest first (SEC's own order). */
+export async function fetchRecentFilings(cik: string | number): Promise<EdgarFiling[]> {
+  return (await fetchSubmissions(cik)).filings;
+}
+
+/** A company's own fiscal tag per 10-Q/10-K accession, from the cover page every filing tags. */
+export async function fetchFiscalTagsByAccession(cik: string | number): Promise<Map<string, { fy: number; fp: string }>> {
+  const res = await edgarFetch(`https://data.sec.gov/api/xbrl/companyconcept/CIK${padCik(cik)}/dei/EntityCommonStockSharesOutstanding.json`);
+  const tags = new Map<string, { fy: number; fp: string }>();
+  if (!res.ok) return tags;
+  const body = (await res.json()) as { units?: Record<string, { accn: string; fy?: number; fp?: string }[]> };
+  for (const rows of Object.values(body.units ?? {})) {
+    for (const r of rows) if (r.fy && r.fp && !tags.has(r.accn)) tags.set(r.accn, { fy: r.fy, fp: r.fp });
+  }
+  return tags;
 }
 
 /**

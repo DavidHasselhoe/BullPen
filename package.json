@@ -37,6 +37,7 @@
     "test-peer-quotable": "tsx scripts/test-peer-quotable.ts",
     "test-search-ranking": "tsx scripts/test-search-ranking.ts",
     "test-extended-quote": "tsx scripts/test-extended-quote.ts",
+    "test-fiscal-calendar": "tsx scripts/test-fiscal-calendar.ts",
     "test-economic-calendar": "tsx scripts/test-economic-calendar.ts",
     "sync-economic-calendar": "tsx scripts/sync-economic-calendar.ts",
     "test-earnings-misdated": "tsx scripts/test-earnings-misdated.ts",

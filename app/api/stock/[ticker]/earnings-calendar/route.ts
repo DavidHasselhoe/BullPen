@@ -7,6 +7,7 @@ import { addDays, todayET } from '@/lib/dates/calendar-format';
 import type { EarningsCalendar } from '@/lib/finnhub/finnhub-client';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 import { logger } from '@/lib/utils/logger';
+import { getFiscalCalendar, labelEarnings } from '@/lib/finance/fiscal-calendar';
 
 const HISTORY_TTL_SECONDS = 12 * 60 * 60;
 /** /earnings (20) plus the /income_statement (~101) it reads to match fiscal quarters. */
@@ -52,6 +53,10 @@ export async function GET(
     .then(({ byDate }) => [...byDate.values()].flat().filter((r) => r.symbol?.toUpperCase() === ticker))
     .catch(() => [] as EarningsCalendarItem[]);
 
+  // The company's own fiscal quarters, so these rows name a quarter exactly as
+  // Revenue Flow and Financials do (both read the same SEC calendar).
+  const fiscal = getFiscalCalendar(ticker).catch(() => null);
+
   let history: EarningsCalendar[] = [];
   try {
     history = await getHistory(ticker);
@@ -62,6 +67,6 @@ export async function GET(
 
   return NextResponse.json({
     success: true,
-    earnings: mergeCalendarIntoSymbolEarnings(history, await calendar, ticker),
+    earnings: labelEarnings(mergeCalendarIntoSymbolEarnings(history, await calendar, ticker), await fiscal),
   });
 }

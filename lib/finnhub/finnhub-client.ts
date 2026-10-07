@@ -262,6 +262,8 @@ export interface EarningsCalendar {
   unconfirmed?: boolean;
   /** An upcoming date projected from past reporting dates, not announced by the company yet. */
   estimated?: boolean;
+  /** quarter/year are the company's fiscal ones and its year isn't the calendar year: label "Q3 FY26". */
+  offCalendar?: boolean;
 }
 
 /**

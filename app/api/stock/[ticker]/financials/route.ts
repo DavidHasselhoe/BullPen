@@ -12,6 +12,8 @@ import {
   withRateLimitRetry,
   TwelveDataRateLimitError,
 } from '@/lib/twelvedata/twelvedata-client';
+import { getFiscalCalendar, periodForStatement, type FiscalCalendar } from '@/lib/finance/fiscal-calendar';
+import type { FiscalTag } from '@/lib/finance/fiscal-label';
 
 /**
  * Reserves against the shared per-minute credit budget (see
@@ -44,6 +46,27 @@ function ttlForType(type: FinancialType): number {
   return 24 * 60 * 60;
 }
 
+/**
+ * Tags each statement row with the company's own fiscal period (from SEC), at
+ * response time so the cached TwelveData rows stay raw. Rows SEC can't place
+ * go out untagged and the client labels them by calendar quarter.
+ */
+function withFiscal(rows: unknown, calendar: FiscalCalendar | null, period: Period): unknown {
+  if (!calendar || !Array.isArray(rows)) return rows;
+  return rows.map((row: { fiscal_date?: string }) => {
+    const p = row.fiscal_date ? periodForStatement(calendar, row.fiscal_date, period === 'annual') : null;
+    if (!p) return row;
+    const fiscal: FiscalTag = {
+      quarter: period === 'annual' ? null : p.fiscalQuarter,
+      year: p.fiscalYear,
+      offCalendar: calendar.offCalendar,
+      periodEnd: p.periodEnd,
+      reportedOn: p.reportedOn,
+    };
+    return { ...row, fiscal };
+  });
+}
+
 async function handler(
   request: NextRequest,
   context: { params: Promise<{ ticker: string }> }
@@ -54,11 +77,15 @@ async function handler(
   const type = (searchParams.get('type') ?? 'income') as FinancialType;
   const period = (searchParams.get('period') ?? 'quarterly') as Period;
   const cacheKey = `financials:${symbol}:${type}:${period}`;
+  // Started now so the SEC lookup overlaps the statement fetch.
+  const calendar = type === 'income' || type === 'balance' || type === 'cashflow'
+    ? getFiscalCalendar(symbol).catch(() => null)
+    : Promise.resolve(null);
 
   try {
     const cached = await getCached<unknown>(cacheKey);
     if (cached) {
-      return addSecurityHeaders(NextResponse.json({ success: true, data: cached, type, period }));
+      return addSecurityHeaders(NextResponse.json({ success: true, data: withFiscal(cached, await calendar, period), type, period }));
     }
 
     // withRateLimitRetry guards against a genuine 429 (rare on the current 610/min
@@ -111,7 +138,7 @@ async function handler(
     if (Array.isArray(result) ? result.length > 0 : !!result) {
       await setCached(cacheKey, symbol, 'financials', result, ttlForType(type));
     }
-    return addSecurityHeaders(NextResponse.json({ success: true, data: result, type, period }));
+    return addSecurityHeaders(NextResponse.json({ success: true, data: withFiscal(result, await calendar, period), type, period }));
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
       return addSecurityHeaders(

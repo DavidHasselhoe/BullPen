@@ -29,6 +29,7 @@ import type {
   DividendItem,
   SplitItem,
 } from '@/lib/twelvedata/twelvedata-client';
+import { fiscalLabel, statementLabel, reportedOnFor, pendingReport, longPeriodDate, type FiscalTag } from '@/lib/finance/fiscal-label';
 
 type Tab = 'income' | 'balance' | 'cashflow' | 'dividends' | 'splits';
 type Period = 'quarterly' | 'annual';
@@ -96,14 +97,14 @@ function getTrend(
 
 function toPoints<T extends Record<string, unknown>>(
   data: T[],
-  dateKey: keyof T,
+  labels: string[],
   primaryKey: keyof T,
   secondaryKey?: keyof T
 ): TrendPoint[] {
   return data
     .slice(0, 5)
-    .map((row) => ({
-      label: String(row[dateKey]).slice(0, 7),
+    .map((row, i) => ({
+      label: labels[i],
       primary: (row[primaryKey] as number | null) ?? null,
       secondary: secondaryKey ? ((row[secondaryKey] as number | null) ?? null) : undefined,
     }));
@@ -119,13 +120,20 @@ interface TableRow<T> {
   costMetric?: boolean;
 }
 
+/** One statement column: the quarter's name, when it was reported, and its period end on hover. */
+interface PeriodColumn {
+  label: string;
+  reported: string | null;
+  title: string;
+}
+
 interface TableProps<T> {
   rows: TableRow<T>[];
   data: T[];
-  dateKey: keyof T;
+  columns: PeriodColumn[];
 }
 
-function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey }: TableProps<T>) {
+function FinancialTable<T extends Record<string, unknown>>({ rows, data, columns }: TableProps<T>) {
   const { t } = useTranslation('stock');
   if (!data.length) {
     return (
@@ -148,9 +156,12 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
             <th className="py-2.5 text-center font-medium text-muted-foreground px-3 min-w-[96px]">
               {t('financialsColumnTrend')}
             </th>
-            {cols.map((col, i) => (
-              <th key={i} className="py-2.5 text-right font-medium text-muted-foreground tabular-nums px-3 min-w-[90px]">
-                {String(col[dateKey]).slice(0, 7)}
+            {cols.map((_, i) => (
+              <th key={i} title={columns[i]?.title} className="py-2.5 text-right font-medium text-muted-foreground tabular-nums px-3 min-w-[90px]">
+                <span className="block text-foreground">{columns[i]?.label}</span>
+                {columns[i]?.reported && (
+                  <span className="block text-[11px] font-normal">{t('financialsReportedOn', { date: fmtShortDate(columns[i].reported!) })}</span>
+                )}
               </th>
             ))}
           </tr>
@@ -217,7 +228,7 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, dateKey
   );
 }
 
-function IncomeTable({ data }: { data: IncomeStatementPeriod[] }) {
+function IncomeTable({ data, columns }: { data: IncomeStatementPeriod[]; columns: PeriodColumn[] }) {
   const { t } = useTranslation('stock');
   const rows: TableProps<IncomeStatementPeriod>['rows'] = [
     { label: t('financialsRowRevenue'),          key: 'revenue',                                   fmt: (v) => fmtNum(v as number), highlight: true },
@@ -232,10 +243,10 @@ function IncomeTable({ data }: { data: IncomeStatementPeriod[] }) {
     { label: t('financialsRowInterestExpense'),  key: 'interest_expense',                          fmt: (v) => fmtNum(v as number), costMetric: true },
     { label: t('financialsRowIncomeTax'),        key: 'income_tax_expense',                        fmt: (v) => fmtNum(v as number) },
   ];
-  return <FinancialTable rows={rows} data={data} dateKey="fiscal_date" />;
+  return <FinancialTable rows={rows} data={data} columns={columns} />;
 }
 
-function BalanceTable({ data }: { data: BalanceSheetPeriod[] }) {
+function BalanceTable({ data, columns }: { data: BalanceSheetPeriod[]; columns: PeriodColumn[] }) {
   const { t } = useTranslation('stock');
   const rows: TableProps<BalanceSheetPeriod>['rows'] = [
     { label: t('financialsRowTotalAssets'),          key: 'total_assets',                fmt: (v) => fmtNum(v as number), highlight: true },
@@ -248,10 +259,10 @@ function BalanceTable({ data }: { data: BalanceSheetPeriod[] }) {
     { label: t('financialsRowStockholdersEquity'),  key: 'total_stockholders_equity',   fmt: (v) => fmtNum(v as number), highlight: true },
     { label: t('financialsRowRetainedEarnings'),     key: 'retained_earnings',           fmt: (v) => fmtNum(v as number) },
   ];
-  return <FinancialTable rows={rows} data={data} dateKey="fiscal_date" />;
+  return <FinancialTable rows={rows} data={data} columns={columns} />;
 }
 
-function CashFlowTable({ data }: { data: CashFlowPeriod[] }) {
+function CashFlowTable({ data, columns }: { data: CashFlowPeriod[]; columns: PeriodColumn[] }) {
   const { t } = useTranslation('stock');
   const rows: TableProps<CashFlowPeriod>['rows'] = [
     { label: t('financialsRowOperatingCashFlow'), key: 'operating_cash_flow',           fmt: (v) => fmtNum(v as number), highlight: true },
@@ -263,7 +274,7 @@ function CashFlowTable({ data }: { data: CashFlowPeriod[] }) {
     { label: t('financialsRowFinancingActivities'),key: 'financing_activities_cash_flow',fmt: (v) => fmtNum(v as number) },
     { label: t('financialsRowDividendsPaid'),      key: 'dividends_paid',                fmt: (v) => fmtNum(v as number) },
   ];
-  return <FinancialTable rows={rows} data={data} dateKey="fiscal_date" />;
+  return <FinancialTable rows={rows} data={data} columns={columns} />;
 }
 
 function DividendsTable({ data }: { data: DividendItem[] }) {
@@ -480,26 +491,23 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     staleTime: 15 * 60 * 1000,
   });
 
-  // ── Newest report vs. newest available statement ────────────────────────
-  // Earnings calls happen same-day; the filed statement TwelveData ingests
-  // typically trails by 1–4 weeks. When that gap is more than one quarter's
-  // worth, the newest report's period genuinely isn't in the data yet — say
-  // so instead of silently showing a chart that looks one quarter stale.
+  // ── Period names, shared with Earnings and Revenue Flow ─────────────────
+  // Each column is named the way the company names the quarter ("Q3 FY26"),
+  // dated by the release the Earnings card shows, with the period end on hover.
+  // Results are announced weeks before the statements are filed, so the newest
+  // report may not be here yet: say so instead of looking a quarter stale.
   const { data: earningsData } = useEarningsHistory(ticker);
-  const pendingReportNote = (() => {
-    if (activeTab !== 'income' && activeTab !== 'balance' && activeTab !== 'cashflow') return null;
-    if (!data?.success || !data.data || data.data.length === 0) return null;
-    if (!earningsData || earningsData.length === 0) return null;
-    const today = new Date().toISOString().split('T')[0];
-    const newestReport = earningsData
-      .filter((e) => e.date < today)
-      .sort((a, b) => b.date.localeCompare(a.date))[0];
-    if (!newestReport || !newestReport.quarter || !newestReport.year) return null;
-    const newestFiscalDate = (data.data[0] as { fiscal_date: string }).fiscal_date;
-    const gapDays = (new Date(newestReport.date).getTime() - new Date(newestFiscalDate).getTime()) / 86_400_000;
-    if (gapDays <= 95) return null;
-    return { quarter: newestReport.quarter, year: newestReport.year, date: newestReport.date };
-  })();
+  const annual = period === 'annual';
+  const statementRows = (activeTab === 'income' || activeTab === 'balance' || activeTab === 'cashflow') && data?.success && data.data
+    ? (data.data as { fiscal_date: string; fiscal?: FiscalTag | null }[])
+    : [];
+  const periodColumns: PeriodColumn[] = statementRows.slice(0, 5).map((row) => ({
+    label: statementLabel(t, row, annual),
+    reported: reportedOnFor(row, earningsData),
+    title: t(annual ? 'financialsYearEndTitle' : 'financialsPeriodEndTitle', { date: longPeriodDate(row.fiscal?.periodEnd ?? row.fiscal_date) }),
+  }));
+  const periodLabels = periodColumns.map((c) => c.label);
+  const pendingReportNote = pendingReport(earningsData, statementRows[0], annual);
 
   // ── Chart-first lead per statement tab ─────────────────────────────────
   let chart: React.ReactNode = null;
@@ -507,7 +515,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     if (activeTab === 'income') {
       chart = (
         <FinancialsTrendChart
-          points={toPoints(data.data as IncomeStatementPeriod[], 'fiscal_date', 'revenue', 'net_income')}
+          points={toPoints(data.data as IncomeStatementPeriod[], periodLabels, 'revenue', 'net_income')}
           primaryLabel={t('financialsChartRevenue')}
           secondaryLabel={t('financialsChartNetIncome')}
           question={t('financialsQuestionIncome')}
@@ -518,7 +526,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     } else if (activeTab === 'balance') {
       chart = (
         <FinancialsTrendChart
-          points={toPoints(data.data as BalanceSheetPeriod[], 'fiscal_date', 'total_assets', 'total_liabilities')}
+          points={toPoints(data.data as BalanceSheetPeriod[], periodLabels, 'total_assets', 'total_liabilities')}
           primaryLabel={t('financialsChartAssets')}
           secondaryLabel={t('financialsChartLiabilities')}
           question={t('financialsQuestionBalance')}
@@ -529,7 +537,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     } else if (activeTab === 'cashflow') {
       chart = (
         <FinancialsTrendChart
-          points={toPoints(data.data as CashFlowPeriod[], 'fiscal_date', 'operating_cash_flow', 'free_cash_flow')}
+          points={toPoints(data.data as CashFlowPeriod[], periodLabels, 'operating_cash_flow', 'free_cash_flow')}
           primaryLabel={t('financialsChartOperatingCashFlow')}
           secondaryLabel={t('financialsChartFreeCashFlow')}
           question={t('financialsQuestionCashFlow')}
@@ -642,9 +650,8 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
           <>
             {pendingReportNote && (
               <p className="-mt-1 mb-4 text-xs text-muted-foreground">
-                {t('financialsNewerReportPending', {
-                  quarter: pendingReportNote.quarter,
-                  year: pendingReportNote.year,
+                {t('financialsReportPending', {
+                  period: fiscalLabel(t, pendingReportNote),
                   date: fmtShortDate(pendingReportNote.date),
                 })}
               </p>
@@ -725,9 +732,9 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                     {t('financialsShowKeyTakeaways')}
                   </button>
                 )}
-                {activeTab === 'income' && <IncomeTable data={data.data as IncomeStatementPeriod[]} />}
-                {activeTab === 'balance' && <BalanceTable data={data.data as BalanceSheetPeriod[]} />}
-                {activeTab === 'cashflow' && <CashFlowTable data={data.data as CashFlowPeriod[]} />}
+                {activeTab === 'income' && <IncomeTable data={data.data as IncomeStatementPeriod[]} columns={periodColumns} />}
+                {activeTab === 'balance' && <BalanceTable data={data.data as BalanceSheetPeriod[]} columns={periodColumns} />}
+                {activeTab === 'cashflow' && <CashFlowTable data={data.data as CashFlowPeriod[]} columns={periodColumns} />}
                 {activeTab === 'dividends' && <DividendsTable data={data.data as DividendItem[]} />}
                 {activeTab === 'splits' && <SplitsTable data={data.data as SplitItem[]} />}
               </>

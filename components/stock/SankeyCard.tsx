@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import type { RevenuePart } from '@/lib/segments/select-breakdown';
+import { useEarningsHistory } from '@/hooks/use-earnings-history';
+import { fiscalLabel, statementLabel, pendingReport, shortPeriodDate, longPeriodDate, type FiscalTag } from '@/lib/finance/fiscal-label';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,6 +28,8 @@ export interface IncomeStatementPeriod {
   selling_general_administrative_expenses: number | null;
   /** The currency the statement is reported in, which is not the trading currency. */
   reported_currency?: string | null;
+  /** The company's own name for the period, from SEC (see lib/finance/fiscal-calendar.ts). */
+  fiscal?: FiscalTag | null;
 }
 
 interface FinancialsResponse {
@@ -166,13 +170,6 @@ function fmtVal(n: number, currency?: string | null): string {
 function fmtPct(val: number, total: number): string {
   if (total === 0) return '—';
   return `${((val / total) * 100).toFixed(1)}%`;
-}
-
-function fmtLabel(date: string, period: Period): string {
-  const d = new Date(date);
-  if (period === 'annual') return d.getFullYear().toString();
-  const q = Math.ceil((d.getMonth() + 1) / 3);
-  return `Q${q} ${d.getFullYear()}`;
 }
 
 // ─── Sankey data builder ──────────────────────────────────────────────────────
@@ -706,6 +703,11 @@ export function SankeyCard({ ticker }: { ticker: string }) {
 
   const rows    = useMemo(() => (data?.data ?? []).slice(0, 5), [data]);
   const row     = rows[periodIdx] ?? null;
+  // Named exactly as Earnings and Financials name them ("Q3 FY26", not the
+  // calendar quarter its period end falls in).
+  const labelOf = (r: IncomeStatementPeriod) => statementLabel(t, r, period === 'annual');
+  const { data: earningsData } = useEarningsHistory(ticker);
+  const pending = pendingReport(earningsData, rows[0], period === 'annual');
 
   // Where the revenue came from, from the company's SEC filing. Absent on the
   // first view of a stock (the endpoint fills its cache in the background) and
@@ -773,7 +775,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
             {/* Explain button */}
             {!isLoading && !noData && !isPlanRestricted && graph && row && (
               <button
-                onClick={() => openAIPanel({ query: buildExplainQuery(ticker, revenue, fmtLabel(row.fiscal_date, period), graph, currency) })}
+                onClick={() => openAIPanel({ query: buildExplainQuery(ticker, revenue, labelOf(row), graph, currency) })}
                 className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <Sparkles className="h-3 w-3" />
@@ -806,12 +808,13 @@ export function SankeyCard({ ticker }: { ticker: string }) {
                   <button
                     key={r.fiscal_date}
                     onClick={() => setPeriodIdx(i)}
+                    title={t(period === 'annual' ? 'financialsYearEndTitle' : 'financialsPeriodEndTitle', { date: longPeriodDate(r.fiscal?.periodEnd ?? r.fiscal_date) })}
                     className={cn('shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-all', {
                       'bg-background text-foreground shadow-sm': periodIdx === i,
                       'text-muted-foreground hover:text-foreground': periodIdx !== i,
                     })}
                   >
-                    {fmtLabel(r.fiscal_date, period)}
+                    {labelOf(r)}
                   </button>
                 ))}
               </div>
@@ -861,11 +864,21 @@ export function SankeyCard({ ticker }: { ticker: string }) {
               currency={currency}
               isDark={isDark}
               ticker={ticker}
-              periodLabel={row ? fmtLabel(row.fiscal_date, period) : ''}
+              periodLabel={row ? labelOf(row) : ''}
               onTip={setTip}
             />
           )}
         </div>
+
+        {/* ── Newest results announced, statements not filed yet (same note as Financials) ── */}
+        {!isLoading && !noData && !isPlanRestricted && pending && (
+          <p className="px-6 pb-1 text-xs text-muted-foreground">
+            {t('financialsReportPending', {
+              period: fiscalLabel(t, pending),
+              date: shortPeriodDate(pending.date),
+            })}
+          </p>
+        )}
 
         {/* ── Costs above revenue, which a flow diagram cannot draw ── */}
         {!isLoading && !noData && !isPlanRestricted && row && row.gross_profit != null && row.gross_profit <= 0 && (
