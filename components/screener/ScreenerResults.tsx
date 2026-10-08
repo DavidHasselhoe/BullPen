@@ -273,7 +273,9 @@ export function ScreenerResults({
   // in the chooser looked like they never appeared.
   const [hiddenRight, setHiddenRight] = useState(0);
   const scrollBoxRef = useRef<HTMLElement | null>(null);
+  const tableWrapRef = useRef<HTMLDivElement | null>(null);
   const trackOverflow = useCallback((el: HTMLDivElement | null) => {
+    tableWrapRef.current = el;
     const box = el?.querySelector<HTMLElement>('[data-slot="table-container"]');
     if (!box) return;
     scrollBoxRef.current = box;
@@ -299,6 +301,17 @@ export function ScreenerResults({
     if (!box) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     box.scrollBy({ left: box.clientWidth * 0.75, behavior: reduce ? 'auto' : 'smooth' });
+  };
+
+  // The rows scroll inside their own box, so a new page would otherwise open
+  // wherever the last one was left: at row 80 of a fresh page. Back to its
+  // first row, and the table's top back on screen if the page had moved past it.
+  const changePage = (next: number) => {
+    onPageChange(next);
+    scrollBoxRef.current?.scrollTo({ top: 0 });
+    const wrap = tableWrapRef.current;
+    // 80px = scroll-mt-20 on the wrapper: under the sticky nav counts as off screen.
+    if (wrap && wrap.getBoundingClientRect().top < 80) wrap.scrollIntoView({ block: 'start' });
   };
 
   const toggleSort = (key: string) => {
@@ -468,12 +481,17 @@ export function ScreenerResults({
         })}
       </div>
 
-      {/* overflow-clip, not overflow-x-auto: Table scrolls itself, and a scroll
-          container here would stop the sticky "more columns" button sticking. */}
-      <div ref={trackOverflow} className="relative hidden md:block rounded-md border overflow-clip">
+      {/* The table scrolls in both directions inside its own box, capped at the
+          screen's height. A sticky header only sticks inside its nearest scroll
+          box, and the horizontal scroll made that box the table's own, which
+          never scrolled vertically: the header scrolled away with the page and
+          the horizontal scrollbar sat under row 100. Capped, the header, the
+          scrollbar and the pagination below are all on screen at once.
+          10rem: the 64px nav, the gaps, and the pagination row. */}
+      <div ref={trackOverflow} className="relative hidden md:block scroll-mt-20 rounded-md border overflow-clip">
         {hiddenRight > 0 && (
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-40 w-20 bg-gradient-to-l from-background via-background/70 to-transparent">
-            <div className="sticky top-[50vh] mt-2 flex justify-end pr-2">
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-40 flex w-20 items-center justify-end bg-gradient-to-l from-background via-background/70 to-transparent pr-2">
+            <div>
               <button
                 type="button"
                 onClick={scrollTableRight}
@@ -486,7 +504,7 @@ export function ScreenerResults({
             </div>
           </div>
         )}
-        <Table>
+        <Table containerClassName="max-h-[calc(100dvh-10rem)] overscroll-x-contain">
           <TableHeader className="sticky top-0 z-20 bg-background shadow-sm">
             <TableRow>
               <TableHead className="sticky left-0 z-30 bg-background" style={{ width: 36, minWidth: 36 }}>
@@ -632,8 +650,9 @@ export function ScreenerResults({
         </Table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between px-1">
+      {/* Pagination. md:pr-28 keeps the page arrows clear of the floating Ask Bull
+          button, which now sits beside this row instead of far below it. */}
+      <div className="flex items-center justify-between px-1 md:pr-28">
         <div className="flex items-center gap-3">
           <p className="text-xs text-muted-foreground">
             {t('screenerShowingResults', { start: startItem, end: endItem, total: sorted.length })}
@@ -656,7 +675,7 @@ export function ScreenerResults({
             {PAGE_SIZE_OPTIONS.map((sz) => (
               <button
                 key={sz}
-                onClick={() => onPageSizeChange(sz)}
+                onClick={() => { onPageSizeChange(sz); scrollBoxRef.current?.scrollTo({ top: 0 }); }}
                 className={cn(
                   'px-2 py-0.5 text-xs rounded transition-colors',
                   pageSize === sz
@@ -675,7 +694,7 @@ export function ScreenerResults({
               size="icon"
               className="h-7 w-7"
               disabled={page <= 1}
-              onClick={() => onPageChange(page - 1)}
+              onClick={() => changePage(page - 1)}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
@@ -687,7 +706,7 @@ export function ScreenerResults({
               size="icon"
               className="h-7 w-7"
               disabled={page >= totalPages}
-              onClick={() => onPageChange(page + 1)}
+              onClick={() => changePage(page + 1)}
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
