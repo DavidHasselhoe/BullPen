@@ -627,3 +627,18 @@ export async function signInWithGoogle(next?: string): Promise<{ success: boolea
     return { success: false, error: friendly };
   }
 }
+
+/**
+ * A brand-new account that hasn't been through setup. Only /get-started
+ * stages its choices before signup; every other way in (Google from a
+ * sign-in button, One Tap, /register, the Watch prompt) used to land on Home
+ * with no personalisation and no trial offer, which was all 3 real signups
+ * from 09-15 to 10-05. The week cap keeps older accounts that never set a
+ * level from being sent through it on every sign-in.
+ */
+export async function needsSetup(userId: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (createBrowserClient() as any)
+    .from('users').select('experience_level, created_at').eq('id', userId).maybeSingle();
+  return !!data && data.experience_level == null && Date.now() - Date.parse(data.created_at) < 7 * 864e5;
+}

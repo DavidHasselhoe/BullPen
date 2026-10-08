@@ -14,24 +14,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { maybeClaimShareAttribution } from '@/lib/auth/share-attribution';
 import { setLastUsedAuthMethod } from '@/lib/auth/last-used-method';
+import { needsSetup } from '@/lib/auth/auth';
 import { Loader2 } from 'lucide-react';
 
 const SETUP_PATH = '/get-started?setup=1';
-
-/**
- * A brand-new account that hasn't been through setup. Only /get-started
- * stages its choices before signup; every other way in (Google from a
- * sign-in button, /register, the Watch prompt) used to land on Home with no
- * personalisation and no trial offer, which was all 3 real signups from
- * 09-15 to 10-05. The week cap keeps older accounts that never set a level
- * from being sent through it on every sign-in.
- */
-async function needsSetup(supabase: ReturnType<typeof createBrowserClient>, userId: string): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
-    .from('users').select('experience_level, created_at').eq('id', userId).maybeSingle();
-  return !!data && data.experience_level == null && Date.now() - Date.parse(data.created_at) < 7 * 864e5;
-}
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -65,7 +51,7 @@ function AuthCallbackContent() {
     const redirectHome = async (userId: string) => {
       if (redirected) return;
       redirected = true;
-      const setup = isDefault && (await needsSetup(supabase, userId).catch(() => false));
+      const setup = isDefault && (await needsSetup(userId).catch(() => false));
       router.replace(setup ? SETUP_PATH : dest);
     };
 

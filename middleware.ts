@@ -154,8 +154,8 @@ export async function middleware(request: NextRequest) {
   // blocks that fetch outright (not just the unused extras), so it needs an
   // explicit allowance rather than a client-side config flag.
   const scriptSrc = process.env.NODE_ENV === 'production'
-    ? "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com"
-    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://us-assets.i.posthog.com";
+    ? "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://accounts.google.com/gsi/client"
+    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://us-assets.i.posthog.com https://accounts.google.com/gsi/client";
   const csp = [
     "default-src 'self'",
     scriptSrc,
@@ -168,8 +168,11 @@ export async function middleware(request: NextRequest) {
     // frame-src is needed for this approach; nothing loads from Termly via
     // script-src. frame-src falls back to default-src ('self') when unset,
     // which would otherwise block the iframe.
-    "frame-src https://app.termly.io",
-    "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
+    // accounts.google.com/gsi: Google One Tap (components/auth/GoogleOneTap.tsx)
+    // falls back to an iframe prompt and its own stylesheet where the browser
+    // has no FedCM (Safari, Firefox).
+    "frame-src https://app.termly.io https://accounts.google.com/gsi/",
+    "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style", // Tailwind requires unsafe-inline
     "img-src 'self' data: https:",
     "font-src 'self' data:",
     "connect-src 'self' https: wss:",
