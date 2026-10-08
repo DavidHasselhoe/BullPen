@@ -156,10 +156,6 @@
   "upgradeProBenefitBrief": "A Daily Brief every morning",
   "upgradeProBenefitAsk": "Unlimited Ask Bull, alerts and watchlists",
   "upgradeProBenefitDeepDive": "Deep Dive reports on any company, in plain language",
-  "upgradeTrustTrial": "{{trialDays}} days free",
-  "upgradeTrustReminder": "Email reminder before any charge",
-  "upgradeTrustCancel": "Cancel anytime",
-  "upgradeTrustRefund": "{{moneyBackDays}}-day refund",
   "upgradeFreeNote": "Staying on Free? You keep research, the screener, alerts and the beginner Academy.",
   "upgradeWhatProAdds": "What Pro adds",
   "upgradeAlreadyFree": "Already free on both plans ({{count}})",
@@ -168,5 +164,12 @@
   "upgradeBillingCycleAria": "Billing cycle",
   "upgradeCheckoutCancelled": "No charge was made. Your free trial is still here when you want it.",
   "upgradeFaqCardQ": "Do I need a card for the trial?",
-  "upgradeFaqCardA": "Yes. Checkout asks for a card so Pro can continue after the trial, but nothing is charged for {{trialDays}} days, and we email you 3 days before it ends. Cancel before then and you pay nothing. The free plan never needs a card."
+  "upgradeFaqCardA": "Yes. Checkout asks for a card so Pro can continue after the trial, but nothing is charged for {{trialDays}} days, and we email you 3 days before it ends. Cancel before then and you pay nothing. The free plan never needs a card.",
+  "trialTimelineToday": "Today",
+  "trialTimelineTodayDesc": "Every Pro feature unlocks. Nothing is charged.",
+  "trialTimelineDay": "Day {{day}}",
+  "trialTimelineReminderDesc": "We email you a reminder. Cancel in two clicks if Pro isn't for you.",
+  "trialTimelineChargeAnnual": "Your trial ends and ${{price}} is charged for the year, unless you've cancelled.",
+  "trialTimelineChargeMonthly": "Your trial ends and ${{price}} a month begins, unless you've cancelled.",
+  "upgradeRefundNote": "Changed your mind after paying? Full refund within {{moneyBackDays}} days."
 }

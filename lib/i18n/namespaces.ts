@@ -54,7 +54,8 @@ export function namespacesForPath(pathname: string): Namespace[] {
   // Bull's Weekly Pick lives in Discover's catalog: the same card renders there.
   if (pathname.startsWith('/discover') || pathname.startsWith('/dashboard') || pathname.startsWith('/picks')) return ['discover'];
   if (pathname.startsWith('/academy')) return ['academy'];
-  if (pathname.startsWith('/upgrade') || pathname.startsWith('/pricing')) return ['billing'];
+  // /get-started/trial shows the TrialTimeline, whose copy lives in billing.
+  if (pathname.startsWith('/upgrade') || pathname.startsWith('/pricing') || pathname.startsWith('/get-started/trial')) return ['billing'];
   if (pathname.startsWith('/watchlist')) return ['watchlist'];
   return [];
 }

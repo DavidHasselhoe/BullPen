@@ -21,6 +21,7 @@ import { startCheckout } from '@/lib/billing/checkout';
 import { renewalTerms } from '@/lib/billing/trial-copy';
 import { trackEvent } from '@/lib/analytics/track';
 import { UpgradeSuccessModal } from '@/components/billing/UpgradeSuccessModal';
+import { TrialTimeline } from '@/components/billing/TrialTimeline';
 
 /** The comparison is English in entitlements.ts; each string is looked up by a key derived from it. */
 function planText(t: TFunction, kind: 'group' | 'row' | 'hint' | 'value', english: string): string {
@@ -170,13 +171,6 @@ function UpgradeContent() {
     t('upgradeProBenefitDeepDive'),
   ];
 
-  const trust = [
-    t('upgradeTrustTrial', { trialDays: PRICING.trialDays }),
-    t('upgradeTrustReminder'),
-    t('upgradeTrustCancel'),
-    t('upgradeTrustRefund', { moneyBackDays: PRICING.moneyBackDays }),
-  ];
-
   const cycleButton = (isAnnual: boolean) => (
     <button
       type="button"
@@ -299,14 +293,13 @@ function UpgradeContent() {
               {status === 'done' && <p className="mt-3 text-center text-xs text-muted-foreground">{t('upgradeCheckoutSoon')}</p>}
               {status === 'error' && <p role="alert" className="mt-3 text-center text-xs text-destructive">{t('upgradeCheckoutError')}</p>}
 
-              <ul className="mt-5 grid grid-cols-2 gap-x-3 gap-y-2 border-t pt-4 max-sm:order-2">
-                {trust.map((item) => (
-                  <li key={item} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <Check className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+              {/* What happens when, before they commit: Pro today, a reminder, then the charge. */}
+              {!isPro && (
+                <div className="mt-5 border-t pt-4 max-sm:order-2">
+                  <TrialTimeline annual={annual} />
+                  <p className="mt-3 text-xs text-muted-foreground">{t('upgradeRefundNote', { moneyBackDays: PRICING.moneyBackDays })}</p>
+                </div>
+              )}
             </div>
 
             {!isPro && (

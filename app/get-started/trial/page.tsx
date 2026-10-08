@@ -13,6 +13,7 @@ import { TOTAL_STEPS } from '@/components/get-started/GetStartedFlow';
 import { PRICING } from '@/lib/billing/entitlements';
 import { startCheckout, type BillingCycle } from '@/lib/billing/checkout';
 import { renewalTerms } from '@/lib/billing/trial-copy';
+import { TrialTimeline } from '@/components/billing/TrialTimeline';
 import { trackEvent } from '@/lib/analytics/track';
 import { AWAITING_CONFIRMATION_KEY } from '@/lib/onboarding/pending-onboarding';
 import '@/components/landing/landing-styles.css';
@@ -149,6 +150,9 @@ export default function TrialOfferPage() {
                 );
               })}
             </div>
+
+            {/* Today, the reminder, the charge: said before they commit. */}
+            <TrialTimeline annual={cycle === 'annual'} className="mx-auto mt-6 w-fit" />
 
             <button
               type="button"
