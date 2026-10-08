@@ -20,6 +20,7 @@ const NO_APP_NAV_ROUTES = [
   '/contact',
   '/roadmap',
   '/glossary',
+  '/stocks',
   '/help',
   '/disclosures',
   '/security',

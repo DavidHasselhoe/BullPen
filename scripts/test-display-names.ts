@@ -29,6 +29,7 @@ const cases: Array<[string, string]> = [
   ['Embraer S.A. Sponsored American Depositary Receipt', 'Embraer'],
   ['Fresenius Medical Care AG - Depositary Receipt', 'Fresenius Medical Care'],
   ['Harmony Gold Mining Company Limited - Depositary Receipt (Common Stock)', 'Harmony Gold Mining'],
+  ['Arm Holdings plc ADR', 'Arm'], // search_index, 2026-10-08
   ['CRH plc Ordinary Shares', 'CRH'],
   ['Brookfield Asset Management Ltd. Class A Limited Voting Shares', 'Brookfield Asset Management'],
   ['BRP Inc. Subordinate Voting Shares', 'BRP'],

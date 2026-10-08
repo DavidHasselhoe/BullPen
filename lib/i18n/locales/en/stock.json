@@ -437,5 +437,8 @@
   "financialsPeriodEndTitle": "Quarter ended {{date}}",
   "financialsYearEndTitle": "Fiscal year ended {{date}}",
   "financialsReportedOn": "Reported {{date}}",
-  "financialsReportPending": "{{period}} was reported {{date}}. Its full financial statements aren't filed yet."
+  "financialsReportPending": "{{period}} was reported {{date}}. Its full financial statements aren't filed yet.",
+  "sectorPeersHeading": "More in {{sector}}",
+  "sectorPeersSubtitle": "Companies of a similar size in the same sector",
+  "sectorPeersSeeAll": "All stocks by sector"
 }

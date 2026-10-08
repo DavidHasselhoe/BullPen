@@ -12,6 +12,7 @@
 const TRAILING = new RegExp(
   '(?:,|\\s-)?\\s+(?:' + [
     '(?:sponsored\\s+)?(?:american\\s+)?depositary\\s+(?:shares?|receipts?)(?:\\s*\\(common stock\\))?',
+    'ad[rs]',
     '(?:limited|subordinate)\\s+voting\\s+shares',
     '(?:ordinary|common)\\s+shares?',
     'class [a-c]\\s+shares',

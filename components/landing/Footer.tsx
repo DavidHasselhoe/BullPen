@@ -20,6 +20,8 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     links: [
       { label: 'Help center', href: '/help' },
       { label: 'Glossary', href: '/glossary' },
+      // The crawl path to every stock page: see lib/market-data/stock-directory.ts.
+      { label: 'Stocks by sector', href: '/stocks' },
     ],
   },
   {
