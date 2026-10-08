@@ -80,8 +80,8 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
   {
     title: 'Research',
     rows: [
-      { label: 'Stock pages & advanced charts', free: 'Unlimited', pro: 'Unlimited', hint: 'Simply Wall St caps free at 5 reports/mo' },
-      { label: 'Stock screener', free: true, pro: true, hint: 'A paid feature on Simply Wall St' },
+      { label: 'Stock pages & advanced charts', free: 'Unlimited', pro: 'Unlimited' },
+      { label: 'Stock screener', free: true, pro: true },
       { label: 'Financials, statistics & health score', free: true, pro: true },
       { label: 'Compare companies side-by-side', free: true, pro: true },
       { label: 'Insider transactions', free: false, pro: true },
@@ -100,7 +100,7 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
         label: "Bull's Weekly Pick",
         free: 'Pick + track record',
         pro: 'Full thesis',
-        hint: 'One AI stock pick every Monday. The pick and its full performance history are free — Pro unlocks the reasoning, evidence, and risks behind it.',
+        hint: 'One AI stock pick every Monday. The pick and its full performance history are free. Pro unlocks the reasoning, evidence, and risks behind it.',
       },
     ],
   },

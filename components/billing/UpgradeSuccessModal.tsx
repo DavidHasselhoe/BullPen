@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { planCopyKey } from '@/lib/billing/plan-copy';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -47,14 +48,14 @@ export function UpgradeSuccessModal({ open, onOpenChange }: Props) {
             if (unlocked.length === 0) return null;
             return (
               <div key={group.title}>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {group.title}
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t(planCopyKey('group', group.title), { defaultValue: group.title })}
                 </p>
                 <ul className="mt-1.5 space-y-1.5">
                   {unlocked.map((row) => (
                     <li key={row.label} className="flex items-start gap-2 text-sm text-foreground">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                      <span>{row.label}</span>
+                      <span>{t(planCopyKey('row', row.label), { defaultValue: row.label })}</span>
                     </li>
                   ))}
                 </ul>

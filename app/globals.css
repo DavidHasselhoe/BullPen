@@ -879,6 +879,25 @@ html.animated-background-active [data-slot="dialog-content"] {
   .ink-glint {
     animation: ink-glint 1600ms cubic-bezier(0.25, 1, 0.5, 1) both;
   }
+  /* ── Scroll reveal (upgrade page beats) ───────────────────────────────────
+     Progressive enhancement: a scroll-driven animation where the browser
+     supports it, and simply visible content where it doesn't. Never gated
+     on JavaScript or an observer, so a hidden tab or a screenshot never
+     catches a blank section. */
+  @supports (animation-timeline: view()) {
+    @keyframes scroll-reveal {
+      from { opacity: 0; transform: translateY(24px); }
+    }
+    .scroll-reveal {
+      animation: scroll-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-reveal { animation: none; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     /* The global rule shortens durations but keeps delays, which would still
        reveal the words one by one. */
