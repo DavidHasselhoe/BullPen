@@ -1,5 +1,46 @@
 [
   {
+    "date": "2026-10-08",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Every stock now has its own pages for dividend history, trades reported by members of Congress, and which famous funds own it. Each one is linked from the stock page when there is something to show"
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull now asks you to confirm before it changes anything in your account, like adding a holding or creating a price alert. Nothing changes until you press confirm"
+      },
+      {
+        "type": "improved",
+        "text": "You can scroll up freely while Bull is writing a reply. It only follows the new text when you are at the bottom, and a button takes you back down"
+      },
+      {
+        "type": "new",
+        "text": "Before a free trial starts, you see exactly what happens when: Pro unlocks today, a reminder email arrives on day 4, and the first charge comes on day 7. You also get an email with the trial terms when it starts"
+      },
+      {
+        "type": "improved",
+        "text": "The upgrade page shows what a day with Pro looks like, from the morning brief to the reasons behind a move, in light and dark mode"
+      },
+      {
+        "type": "improved",
+        "text": "In the Stock Screener, the column headers, the sideways scrollbar and the page controls stay on screen while you scroll through results"
+      },
+      {
+        "type": "improved",
+        "text": "Settings, your profile and the account menu are cleaner and easier to scan, and changes save with a clear confirmation"
+      },
+      {
+        "type": "improved",
+        "text": "Stock pages show a short summary of the company at a glance and a row of similar companies in the same sector"
+      },
+      {
+        "type": "fixed",
+        "text": "On Discover, the companies under each sector in Where money moved now load their prices and show their names instead of a dash"
+      }
+    ]
+  },
+  {
     "date": "2026-10-07",
     "entries": [
       {
