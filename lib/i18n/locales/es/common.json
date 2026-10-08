@@ -22,7 +22,12 @@
   "metricSignalWeak": "Punto débil",
   "metricSignalWeakHint": "Cuenta en contra de la empresa en su Puntuación de Salud",
   "authGateSignIn": "Inicia sesión",
-  "error": "Error",
   "authGateCreateAccount": "Crear cuenta gratuita",
-  "exportGuestContext": "Exportar a CSV y PDF es parte de Pro: crea una cuenta gratuita e intenta Pro gratis durante {{trialDays}} días."
+  "exportGuestContext": "Exportar a CSV y PDF es parte de Pro: crea una cuenta gratuita e intenta Pro gratis durante {{trialDays}} días.",
+  "error": "Error",
+  "experienceToggleSimple": "Simple",
+  "experienceToggleFull": "Completo",
+  "experienceToggleSimpleTitle": "Etiquetas en inglés simple y los números clave",
+  "experienceToggleFullTitle": "Términos financieros completos y todas las métricas",
+  "experienceToggleAria": "Terminología"
 }

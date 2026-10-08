@@ -45,7 +45,7 @@
   "navAiCosts": "AI コスト",
   "navFeedbackLabel": "フィードバック",
   "navReportBugOrIdea": "バグまたはアイデアを報告",
-  "navSignOut": "ログアウト",
   "navTryProFree": "{{days}}日間 Pro を無料でお試しください",
-  "navTryProFreeSub": "今日は$0。いつでもキャンセルできます。"
+  "navTryProFreeSub": "今日は$0。いつでもキャンセルできます。",
+  "navSignOut": "ログアウト"
 }

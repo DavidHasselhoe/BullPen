@@ -39,7 +39,6 @@
   "navManageSubscription": "Abonnement verwalten",
   "navAiCosts": "KI-Kosten",
   "navReportBugOrIdea": "Fehler oder Idee melden",
-  "navSignOut": "Abmelden",
   "navTryProFree": "Probiere Pro {{days}} Tage kostenlos",
   "navTryProFreeSub": "$0 heute. Jederzeit kündbar.",
   "navCommunityLabel": "Community",
@@ -47,5 +46,6 @@
   "navSectionTools": "Tools",
   "navSectionCommunity": "Community",
   "navAdminLabel": "Admin",
-  "navFeedbackLabel": "Feedback"
+  "navFeedbackLabel": "Feedback",
+  "navSignOut": "Abmelden"
 }

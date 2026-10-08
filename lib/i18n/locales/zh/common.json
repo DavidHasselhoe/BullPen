@@ -24,5 +24,10 @@
   "metricSignalWeakHint": "在公司健康评分中扣分",
   "authGateSignIn": "登录",
   "authGateCreateAccount": "创建免费账户",
-  "exportGuestContext": "导出为 CSV 和 PDF 是 BullPen Pro 的功能：创建免费账户，然后免费试用 Pro {{trialDays}} 天。"
+  "exportGuestContext": "导出为 CSV 和 PDF 是 BullPen Pro 的功能：创建免费账户，然后免费试用 Pro {{trialDays}} 天。",
+  "experienceToggleSimple": "简洁",
+  "experienceToggleFull": "完整",
+  "experienceToggleSimpleTitle": "通俗标签和关键数字",
+  "experienceToggleFullTitle": "完整财务术语和所有指标",
+  "experienceToggleAria": "术语"
 }

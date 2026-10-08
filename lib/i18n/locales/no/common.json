@@ -22,7 +22,12 @@
   "metricSignalWeak": "Svakt punkt",
   "metricSignalWeakHint": "Teller mot selskapet i Health Score",
   "authGateSignIn": "Logg inn",
-  "filter": "Filter",
   "authGateCreateAccount": "Opprett gratis konto",
-  "exportGuestContext": "Eksport til CSV og PDF er en del av Pro: opprett en gratis konto, og prøv Pro gratis i {{trialDays}} dager."
+  "exportGuestContext": "Eksport til CSV og PDF er en del av Pro: opprett en gratis konto, og prøv Pro gratis i {{trialDays}} dager.",
+  "filter": "Filter",
+  "experienceToggleSimple": "Enkel",
+  "experienceToggleFull": "Full",
+  "experienceToggleSimpleTitle": "Norsk-språklige etiketter og nøkkeltall",
+  "experienceToggleFullTitle": "Fullstendige finansielle termer og alle metrikker",
+  "experienceToggleAria": "Terminologi"
 }

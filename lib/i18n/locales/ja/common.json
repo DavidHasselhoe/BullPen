@@ -24,5 +24,10 @@
   "metricSignalWeakHint": "企業のヘルススコアに不利に働きます",
   "authGateSignIn": "ログイン",
   "authGateCreateAccount": "無料アカウントを作成",
-  "exportGuestContext": "CSV および PDF へのエクスポートは Pro の機能です。無料アカウントを作成して、Pro を {{trialDays}} 日間無料でお試しください。"
+  "exportGuestContext": "CSV および PDF へのエクスポートは Pro の機能です。無料アカウントを作成して、Pro を {{trialDays}} 日間無料でお試しください。",
+  "experienceToggleSimple": "シンプル",
+  "experienceToggleFull": "フル",
+  "experienceToggleSimpleTitle": "わかりやすい表示と重要な数字",
+  "experienceToggleFullTitle": "すべての財務用語とメトリクス",
+  "experienceToggleAria": "用語"
 }

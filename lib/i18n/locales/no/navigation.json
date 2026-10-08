@@ -45,7 +45,7 @@
   "navAiCosts": "AI-kostnader",
   "navFeedbackLabel": "Tilbakemelding",
   "navReportBugOrIdea": "Rapporter en feil eller idé",
-  "navSignOut": "Logg ut",
   "navTryProFree": "Prøv BullPen Pro gratis i {{days}} dager",
-  "navTryProFreeSub": "$0 i dag. Avbryt når som helst."
+  "navTryProFreeSub": "$0 i dag. Avbryt når som helst.",
+  "navSignOut": "Logg ut"
 }

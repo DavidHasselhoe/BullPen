@@ -45,7 +45,7 @@
   "navAiCosts": "Costos de IA",
   "navFeedbackLabel": "Comentarios",
   "navReportBugOrIdea": "Reportar un error o idea",
-  "navSignOut": "Cerrar sesión",
   "navTryProFree": "Prueba Pro gratis por {{days}} días",
-  "navTryProFreeSub": "$0 hoy. Cancela cuando quieras."
+  "navTryProFreeSub": "$0 hoy. Cancela cuando quieras.",
+  "navSignOut": "Cerrar sesión"
 }

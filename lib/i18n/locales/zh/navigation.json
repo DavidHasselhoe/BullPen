@@ -45,7 +45,7 @@
   "navAiCosts": "AI 成本",
   "navFeedbackLabel": "反馈",
   "navReportBugOrIdea": "报告问题或建议",
-  "navSignOut": "登出",
   "navTryProFree": "免费试用 Pro {{days}} 天",
-  "navTryProFreeSub": "今天 $0。随时取消。"
+  "navTryProFreeSub": "今天 $0。随时取消。",
+  "navSignOut": "登出"
 }

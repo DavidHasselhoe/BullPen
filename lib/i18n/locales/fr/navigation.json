@@ -43,9 +43,9 @@
   "navAiCosts": "Coûts IA",
   "navFeedbackLabel": "Retours",
   "navReportBugOrIdea": "Signaler un bug ou une idée",
-  "navSignOut": "Se déconnecter",
   "navTryProFree": "Essayez Pro gratuitement pendant {{days}} jours",
   "navTryProFreeSub": "0 $ aujourd'hui. Annulez à tout moment.",
   "navMenuTitle": "Menu",
-  "navAdminLabel": "Admin"
+  "navAdminLabel": "Admin",
+  "navSignOut": "Se déconnecter"
 }

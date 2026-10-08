@@ -24,5 +24,10 @@
   "metricSignalWeakHint": "Spricht gegen das Unternehmen in seinem Health Score",
   "authGateSignIn": "Anmelden",
   "authGateCreateAccount": "Kostenloses Konto erstellen",
-  "exportGuestContext": "Export zu CSV und PDF ist Teil von Pro: erstelle ein kostenloses Konto und probiere Pro {{trialDays}} Tage lang kostenlos aus."
+  "exportGuestContext": "Export zu CSV und PDF ist Teil von Pro: erstelle ein kostenloses Konto und probiere Pro {{trialDays}} Tage lang kostenlos aus.",
+  "experienceToggleSimple": "Einfach",
+  "experienceToggleFull": "Vollständig",
+  "experienceToggleSimpleTitle": "Einfache Beschriftungen und die wichtigsten Kennzahlen",
+  "experienceToggleFullTitle": "Vollständige Finanzbegriffe und alle Metriken",
+  "experienceToggleAria": "Terminologie"
 }
