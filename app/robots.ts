@@ -39,7 +39,10 @@ import { SITE_URL } from '@/lib/site';
  * Abuse protection lives in auth + rate limiting + caching, not here.
  */
 export default function robots(): MetadataRoute.Robots {
-  const allowedStockPaths = [...SIGNIFICANT_TICKERS].map((ticker) => `/stock/${ticker}$`);
+  // The stock page itself ($: no query-string variants), and its subpages
+  // (/dividends, /congress-trades, /fund-holders). A subpage with nothing to
+  // show marks itself noindex, so the prefix does not open empty pages.
+  const allowedStockPaths = [...SIGNIFICANT_TICKERS].flatMap((ticker) => [`/stock/${ticker}$`, `/stock/${ticker}/`]);
 
   return {
     rules: {

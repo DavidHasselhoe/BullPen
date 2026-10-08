@@ -3,6 +3,7 @@ import { canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
 import { createServerClient } from '@/lib/supabase/client';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { SITE_URL } from '@/lib/site';
+import { getSubpageCoverage } from '@/lib/stock/subpage-data';
 
 /**
  * Served at /sitemap.xml.
@@ -86,5 +87,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...glossaryEntries, ...pickEntries, ...stockEntries];
+  // Stock subpages, only where there is something to show (an empty one is
+  // noindex anyway, and a sitemap of empty pages wastes the crawl).
+  const coverage = await getSubpageCoverage([...SIGNIFICANT_TICKERS]).catch(() => null);
+  const subpageEntries = coverage
+    ? [...SIGNIFICANT_TICKERS].flatMap((ticker) => [
+        ...(coverage.dividends.has(ticker) ? [`/stock/${ticker}/dividends`] : []),
+        ...(coverage.congress.has(ticker) ? [`/stock/${ticker}/congress-trades`] : []),
+        ...(coverage.funds.has(ticker) ? [`/stock/${ticker}/fund-holders`] : []),
+      ]).map((path) => ({
+        url: `${BASE_URL}${path}`,
+        lastModified,
+        changeFrequency: 'weekly' as const,
+        priority: 0.5,
+      }))
+    : [];
+
+  return [...staticEntries, ...glossaryEntries, ...pickEntries, ...stockEntries, ...subpageEntries];
 }
