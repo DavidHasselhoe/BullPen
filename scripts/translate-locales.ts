@@ -229,6 +229,8 @@ interface ChunkResult {
    *  so the next run retries them instead of treating "fell back to
    *  English" as a permanent success. See translateNamespace(). */
   failedKeys: Set<string>;
+  /** The reply as a whole didn't parse (multi-key chunks only); the caller splits and retries. */
+  parseFailed?: boolean;
 }
 
 async function translateChunk(
@@ -261,14 +263,23 @@ async function translateChunk(
   // Treat the entire chunk as failed instead: every key keeps its English
   // value and stays out of _meta.json, so the next run retries just this chunk.
   let parsed: Record<string, unknown> = {};
+  let parseFailed = false;
   if (!jsonMatch) {
+    parseFailed = true;
     console.warn(`  ⚠ ${lang}: no JSON object in response, keeping English for this chunk`);
   } else {
     try {
       parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
     } catch (err) {
+      parseFailed = true;
       console.warn(`  ⚠ ${lang}: response was not valid JSON, keeping English for this chunk (${(err as Error).message})`);
     }
+  }
+  // One bad value (an unescaped quote) sinks the whole reply. With more than
+  // one key, let the caller split the chunk and retry, so it costs only the
+  // string that causes it rather than the 39 around it.
+  if (parseFailed && Object.keys(entries).length > 1) {
+    return { translated: {}, failedKeys: new Set(), parseFailed: true };
   }
   const out: Flat = {};
   const failedKeys = new Set<string>();
@@ -283,6 +294,23 @@ async function translateChunk(
     }
   }
   return { translated: out, failedKeys };
+}
+
+/** translateChunk, halving a chunk whose reply doesn't parse until the bad string is alone. */
+async function translateWithSplit(lang: string, entries: Flat, glossary: Glossary): Promise<ChunkResult> {
+  const result = await translateChunk(lang, entries, glossary);
+  if (!result.parseFailed) return result;
+  const keys = Object.keys(entries);
+  const mid = Math.ceil(keys.length / 2);
+  console.warn(`  ↳ ${lang}: retrying as two chunks of ${mid} and ${keys.length - mid}`);
+  const halves = [keys.slice(0, mid), keys.slice(mid)].map((ks) => Object.fromEntries(ks.map((k) => [k, entries[k]])));
+  const out: ChunkResult = { translated: {}, failedKeys: new Set() };
+  for (const half of halves) {
+    const r = await translateWithSplit(lang, half, glossary);
+    Object.assign(out.translated, r.translated);
+    for (const k of r.failedKeys) out.failedKeys.add(k);
+  }
+  return out;
 }
 
 function chunkEntries(flat: Flat, size: number): Flat[] {
@@ -328,7 +356,7 @@ async function translateNamespace(ns: string, lang: string) {
   const chunks = chunkEntries(toTranslate, CHUNK_SIZE);
   const allFailedKeys = new Set<string>();
   for (const chunk of chunks) {
-    const { translated, failedKeys } = await translateChunk(lang, chunk, glossary);
+    const { translated, failedKeys } = await translateWithSplit(lang, chunk, glossary);
     Object.assign(resultFlat, translated);
     for (const key of failedKeys) allFailedKeys.add(key);
   }
