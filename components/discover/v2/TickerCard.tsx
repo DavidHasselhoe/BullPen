@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 import { useLivePrice, useLivePricesArrived } from './LivePriceContext';
 import type { TickerItem } from '@/lib/discover/discover-config';
 
@@ -83,8 +84,9 @@ export function TickerCard({ item, href, showReason = false }: Props) {
 
   const DirIcon = direction === 'up' ? ArrowUp : direction === 'down' ? ArrowDown : Minus;
 
+  const name = displayCompanyName(item.name);
   const computedHref = href ?? slugToAssetPath(item.ticker);
-  const label = `${item.ticker}, ${item.name}${changePct != null ? `, ${formatPct(changePct)}` : ''}`;
+  const label = `${name}, ${item.ticker}${changePct != null ? `, ${formatPct(changePct)}` : ''}`;
 
   return (
     <Link
@@ -102,26 +104,30 @@ export function TickerCard({ item, href, showReason = false }: Props) {
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
       )}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      {/* Name first, ticker under it: beginners know "Johnson & Johnson", not
+          JNJ. A ticker with no known name shows once, not twice. */}
+      <div className="flex items-start gap-2 min-w-0">
         <CompanyLogo
           name={item.name}
           ticker={item.ticker}
           logoUrl={item.logoUrl ?? null}
-          size={24}
+          size={28}
           className="shrink-0"
         />
-        <span className="font-mono text-[13px] font-bold text-foreground truncate">
-          {item.ticker}
-        </span>
+        <div className="min-w-0">
+          {/* clamp-ok: a company name, not prose; two lines fit "Johnson & Johnson", full name in title */}
+          <div className="line-clamp-2 break-words text-sm font-semibold leading-tight text-foreground" title={item.name}>
+            {name}
+          </div>
+          {name !== item.ticker && (
+            <div className="mt-0.5 font-mono text-xs leading-tight text-muted-foreground">{item.ticker}</div>
+          )}
+        </div>
       </div>
 
-      {showReason && item.reason ? (
+      {showReason && item.reason && (
         <div className="text-xs leading-snug text-muted-foreground line-clamp-2" title={item.reason}>
           {item.reason}
-        </div>
-      ) : (
-        <div className="text-xs text-muted-foreground truncate" title={item.name}>
-          {item.name}
         </div>
       )}
 

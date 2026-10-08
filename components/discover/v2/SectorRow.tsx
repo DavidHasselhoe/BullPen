@@ -57,6 +57,14 @@ export function SectorRow({ sector, scale, expanded, onToggle, index, grown }: P
     },
     // Fetch only once opened, then keep it — reopening costs nothing.
     enabled: expanded,
+    // A partial answer isn't cached server-side, so asking again can fill the
+    // gaps. These cards aren't on the live stream: the response is their price.
+    refetchInterval: (query) =>
+      expanded &&
+      query.state.dataUpdateCount < 4 &&
+      query.state.data?.items?.some((i) => i.changePercent == null)
+        ? 8_000
+        : false,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
