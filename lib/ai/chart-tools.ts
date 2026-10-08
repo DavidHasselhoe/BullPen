@@ -158,7 +158,8 @@ const setPriceAlert = tool({
   execute: async ({ price, direction }) =>
     clientAction(
       { type: 'chart_set_alert', price, ...(direction ? { direction } : {}) },
-      `Setting an alert at $${price}${direction ? ` (${direction})` : ''}…`,
+      // Not created yet: the user confirms with a button under the reply.
+      `Alert at $${price}${direction ? ` (${direction})` : ''} is ready. Nothing is saved until the user presses Confirm under your reply: ask them to confirm, and never say the alert is set.`,
     ),
 });
 

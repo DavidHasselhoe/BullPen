@@ -9,7 +9,9 @@ import { createBrowserClient } from '@/lib/supabase/client';
  * retention policy, etc.) — existing users are re-prompted since their stored
  * acceptance won't match the new version.
  */
-export const AI_TERMS_VERSION = '2026-07-1';
+// 2026-10-08: the disclosure named OpenAI as processor; Bull runs on
+// Anthropic's Claude. Bumped so everyone sees and accepts the corrected text.
+export const AI_TERMS_VERSION = '2026-10-08';
 
 interface UseAiTermsReturn {
   /** True once the user has accepted the *current* version of the AI terms. */

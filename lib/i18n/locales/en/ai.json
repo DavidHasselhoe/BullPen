@@ -71,11 +71,9 @@
   "navigateStayingHere": "Okay, staying here.",
   "navigateTakingYouThere": "Taking you there…",
   "navigateYes": "Yes",
-  "receiptQtySharesOf": "{{quantity}} shares of ",
   "receiptRemoveHolding": "Remove {{ticker}} from your holdings",
   "receiptRemovedHolding": "Removed {{ticker}} from your holdings",
   "receiptRetry": "Retry",
-  "receiptSharesCount": "{{quantity}} shares",
   "receiptUpdateHolding": "Update {{ticker}}",
   "receiptUpdateHoldingWithDetails": "Update {{ticker}}: {{details}}",
   "receiptUpdatedHolding": "Updated {{ticker}}",
@@ -169,5 +167,13 @@
   "chatReplyAnnouncement": "Bull replied: {{text}}",
   "sidePanelCollapse": "Collapse panel",
   "sidePanelRegionLabel": "Ask Bull",
-  "sidePanelHistoryLoadFailed": "Couldn't open that conversation. Try again."
+  "sidePanelHistoryLoadFailed": "Couldn't open that conversation. Try again.",
+  "actionConfirm": "Confirm",
+  "actionCancel": "Cancel",
+  "actionConfirmHint": "Nothing changes until you confirm.",
+  "actionCancelled": "Cancelled. Nothing was changed.",
+  "receiptQtySharesOf_one": "{{count}} share of ",
+  "receiptQtySharesOf_other": "{{count}} shares of ",
+  "receiptSharesCount_one": "{{count}} share",
+  "receiptSharesCount_other": "{{count}} shares"
 }

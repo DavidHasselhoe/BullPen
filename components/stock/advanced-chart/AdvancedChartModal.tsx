@@ -287,7 +287,10 @@ export function AdvancedChartModal({
             : action.price >= base
             ? 'price_above'
             : 'price_below';
-        await createAlert({ symbol: ticker.toUpperCase(), alertType, threshold: action.price });
+        // Throws on failure so Bull's confirmation card shows the error
+        // instead of "Alert set" (the result used to be ignored).
+        const result = await createAlert({ symbol: ticker.toUpperCase(), alertType, threshold: action.price });
+        if (!result.ok) throw new Error(result.error || 'alert_failed');
         break;
       }
     }

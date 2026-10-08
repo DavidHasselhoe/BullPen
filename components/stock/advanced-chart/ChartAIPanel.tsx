@@ -19,6 +19,8 @@ import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
+import { ActionReceiptCard, type ActionableClientAction } from '@/components/ai/cards/ActionReceiptCard';
+import type { ActionOutcome } from '@/lib/ai/tool-ux';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, useNavigateConfirmations } from '@/lib/ai/tool-ux';
 import type { QuotaState } from '@/lib/billing/quotas';
@@ -115,6 +117,9 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+  // Price alerts Bull proposes wait for Confirm, like account changes in the
+  // main chat: they used to be created the moment the reply finished.
+  const [alertOutcomes, setAlertOutcomes] = useState<Record<string, ActionOutcome>>({});
   const starterPrompts = getStarterPrompts(t);
 
   const transport = useMemo(() => new DefaultChatTransport({ api: '/api/ai/chart' }), []);
@@ -138,6 +143,7 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
       const tickers = extractTickers(message);
       if (tickers.length) noteTicker(tickers[tickers.length - 1]);
       for (const action of extractChartActions(message)) {
+        if (action.type === 'chart_set_alert') continue; // waits for Confirm, see alertOutcomes
         try {
           await onAction(action);
         } catch {
@@ -333,8 +339,48 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
                     {toolCalls.map((call, i) => {
                       // Data cards render above the text, navigation prompts
                       // below it, so the reply ends on the question they answer.
-                      if ((call.clientAction?.type === 'navigate') !== navPass) return null;
+                      const chartAlert = (call.output as { __clientAction?: ChartAction } | null)?.__clientAction;
+                      const isChartAlert = chartAlert?.type === 'chart_set_alert';
+                      // Questions for the user (navigate Yes/No, confirm an alert) go after the text.
+                      if ((call.clientAction?.type === 'navigate' || isChartAlert) !== navPass) return null;
                       const actionKey = `${message.id}::${i}`;
+                      if (chartAlert?.type === 'chart_set_alert') {
+                        // Direction fixed here, from the price Bull saw, so the
+                        // card and the alert that's created can't disagree.
+                        const direction = chartAlert.direction
+                          ?? (snapshot.currentPrice == null || chartAlert.price >= snapshot.currentPrice ? 'above' : 'below');
+                        const proposed: ActionableClientAction = {
+                          type: 'createAlert',
+                          ticker: symbol.toUpperCase(),
+                          companyName: symbol.toUpperCase(),
+                          alertType: direction === 'above' ? 'price_above' : 'price_below',
+                          threshold: chartAlert.price,
+                        };
+                        const confirm = async () => {
+                          setAlertOutcomes((prev) => ({ ...prev, [actionKey]: { status: 'pending' } }));
+                          try {
+                            await onAction({ ...chartAlert, direction });
+                            setAlertOutcomes((prev) => ({ ...prev, [actionKey]: { status: 'success' } }));
+                          } catch (err) {
+                            setAlertOutcomes((prev) => ({
+                              ...prev,
+                              [actionKey]: { status: 'error', message: err instanceof Error && err.message !== 'alert_failed' ? err.message : undefined },
+                            }));
+                          }
+                        };
+                        return (
+                          <div key={`${message.id}-tool-${i}`} className="mt-3 first:mt-0">
+                            <ActionReceiptCard
+                              action={proposed}
+                              outcome={alertOutcomes[actionKey]}
+                              isHistorical={false}
+                              onConfirm={confirm}
+                              onCancel={() => setAlertOutcomes((prev) => ({ ...prev, [actionKey]: { status: 'cancelled' } }))}
+                              onRetry={confirm}
+                            />
+                          </div>
+                        );
+                      }
                       // Chart control tools (setTimeframe, addIndicator, …) also embed
                       // a __clientAction, but a chart_* one — already fully handled
                       // above via extractChartActions/onAction. ToolResultCard's

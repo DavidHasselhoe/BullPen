@@ -375,11 +375,10 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       const tickers = extractTickers(message);
       if (tickers.length) noteTicker(tickers[tickers.length - 1]);
       getCompletedToolCalls(message).forEach((call, i) => {
-        // A navigate action that requires confirmation waits for the user to
-        // click Yes/No on its NavigateConfirmCard instead of running here —
-        // see confirmNavigate/declineNavigate, wired to that card below.
-        if (call.clientAction?.type === 'navigate' && call.clientAction.requiresConfirmation) return;
-        if (call.clientAction) {
+        // Only a navigation the user explicitly asked for runs on its own.
+        // Everything that changes their account (holdings, alerts) waits for
+        // Confirm on its card, and a suggested navigation for Yes/No.
+        if (call.clientAction?.type === 'navigate' && !call.clientAction.requiresConfirmation) {
           void runClientAction(call.clientAction, `${message.id}::${i}`);
         }
       });
@@ -625,10 +624,14 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                 onDeclineNavigate={navigateAction ? () => declineNavigate(actionKey) : undefined}
                 isHistorical={historicalMessageIds.has(message.id)}
                 onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
+                onConfirmAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
+                onCancelAction={() => setActionOutcomes((prev) => ({ ...prev, [actionKey]: { status: 'cancelled' } }))}
               />
             );
           };
-          const isNavigate = (call: (typeof toolCalls)[number]) => call.clientAction?.type === 'navigate';
+          // Anything that asks the user something (navigate Yes/No, confirm a
+          // change to their account) goes after the text, which ends on that question.
+          const isNavigate = (call: (typeof toolCalls)[number]) => !!call.clientAction;
 
           if (isUser) {
             return (

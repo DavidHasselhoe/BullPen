@@ -448,6 +448,15 @@ export const compareCompanies = tool({
 
 const CLIENT_ACTION = '__clientAction';
 
+/**
+ * Every change to the user's account (holdings, alerts) waits for them to
+ * press Confirm under Bull's reply; the app only runs it then. Returned with
+ * each write action so the model asks instead of announcing "done".
+ */
+const AWAITING_CONFIRMATION =
+  'NOT DONE YET. Nothing is saved until the user presses Confirm on the card under your reply (they can also Cancel). ' +
+  'Say what will change and ask them to confirm. Never say it has been added, updated, removed or set.';
+
 function clientAction<T extends Record<string, unknown>>(action: T) {
   return { [CLIENT_ACTION]: action } as { __clientAction: T };
 }
@@ -928,6 +937,7 @@ export const addHolding = tool({
         date_purchased: date_purchased ?? null,
       }),
       added: companyName,
+      confirmation: AWAITING_CONFIRMATION,
     };
   },
 });
@@ -971,6 +981,7 @@ export const updateHolding = tool({
       }),
       updating: ticker.toUpperCase(),
       ...(company ? { company: company.name } : {}),
+      confirmation: AWAITING_CONFIRMATION,
     };
   },
 });
@@ -1001,6 +1012,7 @@ export const removeHolding = tool({
       }),
       removing: ticker.toUpperCase(),
       ...(company ? { company: company.name } : {}),
+      confirmation: AWAITING_CONFIRMATION,
     };
   },
 });
@@ -1086,6 +1098,7 @@ export function createAlertTool(userId: string) {
           threshold,
         }),
         creating: `${alertTypeLabel(alertType)} alert for ${companyName} (${symbol}) — ${describeAlert({ alertType, threshold })}`,
+        confirmation: AWAITING_CONFIRMATION,
       };
     },
   });

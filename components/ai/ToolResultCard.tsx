@@ -51,6 +51,8 @@ export function ToolResultCard({
   onDeclineNavigate,
   isHistorical,
   onRetryAction,
+  onConfirmAction,
+  onCancelAction,
 }: {
   toolName: string;
   output: unknown;
@@ -65,6 +67,9 @@ export function ToolResultCard({
   onDeclineNavigate?: () => void;
   isHistorical?: boolean;
   onRetryAction?: () => void;
+  /** Write actions wait for these: Confirm runs the change, Cancel records that nothing changed. */
+  onConfirmAction?: () => void;
+  onCancelAction?: () => void;
 }) {
   if (clientAction && clientAction.type === 'navigate') {
     if (!clientAction.requiresConfirmation) return null;
@@ -84,6 +89,8 @@ export function ToolResultCard({
         outcome={actionOutcome}
         isHistorical={!!isHistorical}
         onRetry={onRetryAction}
+        onConfirm={onConfirmAction}
+        onCancel={onCancelAction}
       />
     );
   }

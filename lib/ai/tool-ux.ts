@@ -44,7 +44,8 @@ export type ClientAction =
 
 /** The real-time outcome of a client action, tracked client-side once its mutation actually runs. */
 export interface ActionOutcome {
-  status: 'pending' | 'success' | 'error';
+  /** 'cancelled': the user declined the confirmation, nothing was changed. */
+  status: 'pending' | 'success' | 'error' | 'cancelled';
   message?: string;
 }
 
