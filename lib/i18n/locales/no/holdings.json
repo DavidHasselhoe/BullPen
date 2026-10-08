@@ -141,6 +141,7 @@
   "importReviewActionBuy": "Kjøp",
   "importReviewActionSell": "Selg",
   "importReviewAuthDescription": "Denne importen er knyttet til kontoen din.",
+  "importReviewAuthTitle": "Opprett en gratis konto for å lagre importen din",
   "importReviewBack": "Tilbake",
   "importReviewBackToHoldings": "Tilbake til beholdning",
   "importReviewColumnDate": "Dato",
@@ -353,6 +354,7 @@
   "addHoldingTypeCrypto": "Krypto",
   "addHoldingTypeFund": "Fond",
   "portfolioDashboardFromSales": "{{amount}} fra aksjer du solgte",
+  "holdingsGateTitle": "Spor hele porteføljen din på ett sted",
   "holdingsGateBody": "Spor posisjoner, ytelse og risiko på tvers av hele porteføljen din i sanntid.",
   "holdingsBadgePreMarket": "Før åpning",
   "holdingsSubtitlePreMarket": "Viser priser før åpning. Oppdateres hvert 3. sekund.",
@@ -373,10 +375,8 @@
   "portfolioHealthUnscoredMore": "og {{count}} til",
   "portfolioHealthExplainUnscored": "Krypto, de fleste fond og selskaper uten publiserte regnskaper har ingen helsescore, så de holdes utenfor gjennomsnittet.",
   "portfolioDashboardPricedOf": "{{count}} av {{total}} posisjoner priset så langt",
+  "holdingsPreviewValue": "Porteføljeverdi",
   "analysisHistoryTrendLabel": "Trend",
-  "importReviewAuthTitle": "Opprett en gratis konto for å lagre importen din",
   "importReviewColumnType": "Type",
-  "holdingsGateTitle": "Spor hele porteføljen din på ett sted",
-  "holdingsBadgeLive": "Live",
-  "holdingsPreviewValue": "Porteføljeverdi"
+  "holdingsBadgeLive": "Live"
 }

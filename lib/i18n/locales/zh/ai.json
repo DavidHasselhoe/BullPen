@@ -17,6 +17,7 @@
   "chatInputPlaceholder": "问任何问题…",
   "chatIntroDefault": "您的个人研究助手。研究任何股票、管理您的持仓或设置价格提醒，全部通过聊天完成。",
   "chatIntroWithContext": "您的个人研究助手。向我询问有关 {{label}} 的任何问题。",
+  "chatRateLimited": "Bull 现在收到了很多请求。请几秒后重试。",
   "chatReasoning": "推理中…",
   "chatSendMessage": "发送消息",
   "chatStopGenerating": "停止生成",
@@ -98,6 +99,7 @@
   "statisticsRangeSrLabelWithCurrent": "52周范围 ${{low}} 至 ${{high}}，当前 ${{current}}",
   "statisticsValuationTitle": "{{ticker}} 估值",
   "termsGateDisclosureAi": "您正在与 AI 交流，而不是真人顾问，AI 可能会出错。",
+  "termsGateDisclosureData": "您的信息会被发送至 Anthropic（Claude 背后的公司）进行处理。我们不会使用您的数据来训练 AI 模型。",
   "termsGateDisclosureNotAdvice": "Ask Bull 仅提供一般性教育信息。这不是个人财务建议。在投资前请务必自己做功课。请查看我们的<disclosuresLink>信息披露</disclosuresLink>。",
   "termsGateDisclosurePrivacy": "您随时可以请求访问或删除您的数据。请查看我们的<privacyLink>隐私政策</privacyLink>。",
   "termsGateEnableButton": "启用 Ask Bull",
@@ -117,11 +119,6 @@
   "chatScreenerPromptCandidates": "给我展示一些强劲的候选股票",
   "chatScreenerPromptReviewFilters": "我的筛选条件好吗?",
   "whyTodayGuestContext": "Why Today 用通俗易懂的方式解释股票的涨跌。这是 Pro 功能：创建免费账户，然后免费试用 Pro {{trialDays}} 天。",
-  "chatRateLimited": "Bull 现在收到了很多请求。请几秒后重试。",
-  "statisticsBeta": "Beta",
-  "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta",
-  "termsGateDisclosureData": "您的信息会被发送至 Anthropic（Claude 背后的公司）进行处理。我们不会使用您的数据来训练 AI 模型。",
   "toolStatus_default": "正在处理…",
   "toolStatus_getHealthScore": "正在检查财务健康状况…",
   "toolStatus_getKeyStatistics": "正在提取估值指标…",
@@ -175,5 +172,8 @@
   "receiptQtySharesOf_one": "{{count}} 股 ",
   "receiptQtySharesOf_other": "{{count}} 股 ",
   "receiptSharesCount_one": "{{count}} 股",
-  "receiptSharesCount_other": "{{count}} 股"
+  "receiptSharesCount_other": "{{count}} 股",
+  "statisticsBeta": "贝塔",
+  "statisticsEvEbitda": "EV/EBITDA",
+  "termsGateBeta": "贝塔"
 }

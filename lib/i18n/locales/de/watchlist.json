@@ -51,6 +51,7 @@
   "watchlistGridViewAriaLabel": "Rasteransicht",
   "watchlistTableViewAriaLabel": "Tabellenansicht",
   "watchlistSearchPlaceholder": "Aktie hinzufügen…",
+  "watchlistSignInTitle": "Folge den Aktien, die dir wichtig sind",
   "watchlistSignInDescription": "Beobachte deine Lieblingsakten und erhalte Benachrichtigungen, wenn sich die Kurse bewegen.",
   "watchlistEmptyTitle": "Noch nichts hier",
   "watchlistEmptySubtitle": "Suche oben, um eine beliebige Aktie hinzuzufügen, oder starte mit ein paar beliebten:",
@@ -70,9 +71,8 @@
   "watchlistSearchNoMatches": "Keine Treffer für {{query}}",
   "watchlistSearchAdded": "Hinzugefügt",
   "watchlistThesisBull": "Bull",
+  "watchlistThesisBear": "Bärisch",
   "watchlistColSymbol": "Symbol",
   "watchlistLiveLabel": "Live",
-  "watchlistSignInTitle": "Folge den Aktien, die dir wichtig sind",
-  "watchlistThesisBear": "Bärisch",
   "watchlistThesisNeutral": "Neutral"
 }

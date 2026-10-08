@@ -140,6 +140,7 @@
   "importReviewActionBuy": "Kauf",
   "importReviewActionSell": "Verkauf",
   "importReviewAuthDescription": "Dieser Import ist an dein Konto gebunden.",
+  "importReviewAuthTitle": "Erstelle ein kostenloses Konto, um deinen Import zu speichern",
   "importReviewBack": "Zurück",
   "importReviewBackToHoldings": "Zurück zu Bestände",
   "importReviewColumnDate": "Datum",
@@ -352,6 +353,7 @@
   "addHoldingTypeCrypto": "Kryptowährung",
   "addHoldingTypeFund": "Fonds",
   "portfolioDashboardFromSales": "{{amount}} aus Aktien, die du verkauft hast",
+  "holdingsGateTitle": "Verfolge dein ganzes Portfolio an einem Ort",
   "holdingsGateBody": "Verfolge deine Positionen, Performance und Risiken in Echtzeit über dein ganzes Portfolio.",
   "holdingsBadgePreMarket": "Vor Marktöffnung",
   "holdingsSubtitlePreMarket": "Zeigt Preise vor Marktöffnung. Wird alle 3 Sekunden aktualisiert.",
@@ -372,11 +374,9 @@
   "portfolioHealthUnscoredMore": "und {{count}} weitere",
   "portfolioHealthExplainUnscored": "Krypto, die meisten Fonds und Unternehmen ohne veröffentlichte Finanzberichte haben keinen Health Score und fließen daher nicht in den Durchschnitt ein.",
   "portfolioDashboardPricedOf": "{{count}} von {{total}} Positionen bislang bewertet",
+  "holdingsPreviewValue": "Portfoliowert",
   "analysisHistoryTrendLabel": "Trend",
   "holdingsTableColSymbol": "Symbol",
-  "importReviewAuthTitle": "Erstelle ein kostenloses Konto, um deinen Import zu speichern",
   "portfolioChartTooltipPortfolio": "Portfolio",
-  "holdingsGateTitle": "Verfolge dein ganzes Portfolio an einem Ort",
-  "holdingsBadgeLive": "Live",
-  "holdingsPreviewValue": "Portfoliowert"
+  "holdingsBadgeLive": "Live"
 }

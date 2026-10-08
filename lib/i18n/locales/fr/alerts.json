@@ -58,10 +58,10 @@
   "creatingButton": "Création…",
   "submitCreateButton": "Créer l'alerte",
   "limitReachedNote": "Ou mettez en pause chaque alerte sur une action pour libérer une place.",
+  "signUpPrompt": "Créez un compte gratuit pour recevoir une alerte quand {{ticker}} atteint votre prix.",
+  "signUpButton": "Créer un compte gratuit",
   "actionPause": "Pause",
   "conditionCount_one": "{{count}} condition",
   "conditionCount_other": "{{count}} conditions",
-  "stepCondition": "Condition",
-  "signUpPrompt": "Créez un compte gratuit pour recevoir une alerte quand {{ticker}} atteint votre prix.",
-  "signUpButton": "Créer un compte gratuit"
+  "stepCondition": "Condition"
 }

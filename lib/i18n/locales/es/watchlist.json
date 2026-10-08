@@ -52,6 +52,7 @@
   "watchlistGridViewAriaLabel": "Vista de cuadrícula",
   "watchlistTableViewAriaLabel": "Vista de tabla",
   "watchlistSearchPlaceholder": "Agrega una acción…",
+  "watchlistSignInTitle": "Sigue las acciones que te importan",
   "watchlistSignInDescription": "Sigue tus acciones favoritas y recibe alertas cuando los precios cambien.",
   "watchlistEmptyTitle": "Todavía no hay nada",
   "watchlistEmptySubtitle": "Busca arriba para agregar cualquier acción, o comienza con algunas populares:",
@@ -71,8 +72,7 @@
   "watchlistSearchNoMatches": "Sin resultados para {{query}}",
   "watchlistSearchAdded": "Agregada",
   "watchlistThesisBull": "Bull",
-  "watchlistTableEarningsInDays": "{{days}}d",
-  "watchlistSignInTitle": "Sigue las acciones que te importan",
   "watchlistThesisBear": "Bajista",
+  "watchlistTableEarningsInDays": "{{days}}d",
   "watchlistThesisNeutral": "Neutral"
 }
