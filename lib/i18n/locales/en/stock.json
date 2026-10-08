@@ -440,5 +440,22 @@
   "financialsReportPending": "{{period}} was reported {{date}}. Its full financial statements aren't filed yet.",
   "sectorPeersHeading": "More in {{sector}}",
   "sectorPeersSubtitle": "Companies of a similar size in the same sector",
-  "sectorPeersSeeAll": "All stocks by sector"
+  "sectorPeersSeeAll": "All stocks by sector",
+  "glanceHeading": "{{name}} at a glance",
+  "glanceWorthAndPrice": "{{name}} ({{ticker}}) is worth about {{marketCap}}, and one share costs {{price}}.",
+  "glancePrice": "One share of {{name}} ({{ticker}}) costs {{price}}.",
+  "glancePe": "Investors are paying about {{pe}} times the profit it earned per share over the last year.",
+  "glanceRange": "Over the past year the share price has ranged from {{low}} to {{high}}.",
+  "glanceMarginGrowth": "It keeps {{margin}} of its revenue as profit, and its revenue changed by {{growth}} over the last year.",
+  "glanceMargin": "It keeps {{margin}} of its revenue as profit.",
+  "glanceDividend": "It pays shareholders a dividend worth about {{yield}} of the share price each year.",
+  "glanceNoDividend": "It doesn't pay a dividend.",
+  "glanceFactMarketCap": "Market cap",
+  "glanceFactPe": "P/E ratio",
+  "glanceFactDividendYield": "Dividend yield",
+  "glanceFactRange": "52-week range",
+  "glanceFactMargin": "Profit margin",
+  "glanceFactBeta": "Beta",
+  "glanceAsOf": "Figures as of {{date}}.",
+  "glanceNotAdvice": "Not financial advice."
 }

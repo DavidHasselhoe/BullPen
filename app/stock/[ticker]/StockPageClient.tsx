@@ -87,7 +87,7 @@ interface CompanyResponse {
   error?: string;
 }
 
-export default function StockPageClient() {
+export default function StockPageClient({ initialName }: { initialName?: string } = {}) {
   const params = useParams();
   const router = useRouter();
   const { t, i18n } = useTranslation('stock');
@@ -181,7 +181,7 @@ export default function StockPageClient() {
   // The name people know the company by, as the movers lists show it: listing
   // names carry legal and share-class wording ("Nebius Group N.V. Class A
   // Ordinary Shares"). The full name stays on the heading's hover.
-  const legalName = profileData?.profile?.name ?? company?.name ?? ticker;
+  const legalName = profileData?.profile?.name ?? company?.name ?? initialName ?? ticker;
   const displayName = displayCompanyName(legalName);
 
   // Prefer the TwelveData profile for sector/industry — the Supabase `companies`
@@ -349,7 +349,7 @@ export default function StockPageClient() {
 
             {/* Company header */}
             <div id="nav-overview" className="scroll-mt-20">
-              {(company || (!companyLoading && ticker)) && (
+              {(company || initialName || (!companyLoading && ticker)) && (
                 <Card className="mb-8">
                   <CardHeader>
                     {/* Stacks when the card is narrow, measured on the card itself:

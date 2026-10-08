@@ -17,10 +17,13 @@
  */
 
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
-import { buildSnapshot } from '@/lib/stock/snapshot';
+import { buildSnapshot, type StockSnapshot } from '@/lib/stock/snapshot';
 import { slugToSymbol } from '@/lib/assets/asset-type';
 import { getSectorPeers } from '@/lib/market-data/stock-directory';
 import { SectorPeers } from '@/components/stock/SectorPeers';
+import { StockGlance } from '@/components/stock/StockGlance';
+import { getDisplayNames } from '@/lib/market-data/display-names';
+import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 import StockPageClient from './StockPageClient';
 
 export default async function StockPage({
@@ -38,6 +41,8 @@ export default async function StockPage({
   // Started now, awaited after the snapshot: neither waits on the other, and
   // a failure only costs the row, never the page.
   const peersPromise = getSectorPeers(ticker).catch(() => null);
+  const namePromise = getDisplayNames([ticker]).then((m) => m.get(ticker)).catch(() => undefined);
+  const localePromise = getRequestLocale();
   try {
     await queryClient.prefetchQuery({
       queryKey: ['stock-snapshot', ticker],
@@ -48,15 +53,20 @@ export default async function StockPage({
     // itself, exactly as it did before this existed.
   }
 
-  const peers = await peersPromise;
+  const [peers, name, locale] = await Promise.all([peersPromise, namePromise, localePromise]);
+  const snapshot = queryClient.getQueryData<StockSnapshot>(['stock-snapshot', ticker]);
+  const t = snapshot ? await getServerT(locale, `/stock/${ticker}`) : null;
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <StockPageClient />
-      {peers && (
+      {/* The name comes from the server so the heading is in the first HTML
+          too: the header used to wait for a browser-side company fetch. */}
+      <StockPageClient initialName={name} />
+      {(peers || (snapshot && t)) && (
         // Lines up with the main column: lg:px-8 plus the 160px nav and 32px gap at xl.
         <div className="mx-auto max-w-[1520px] px-4 pb-12 sm:px-6 lg:px-8 xl:pl-[224px]">
-          <SectorPeers sector={peers.sector} peers={peers.peers} />
+          {snapshot && t && <StockGlance ticker={ticker} name={name ?? ticker} snapshot={snapshot} locale={locale} t={t} />}
+          {peers && <SectorPeers sector={peers.sector} peers={peers.peers} />}
         </div>
       )}
     </HydrationBoundary>
