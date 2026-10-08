@@ -24,5 +24,10 @@
   "metricSignalWeakHint": "Counts against the company in its Health Score",
   "authGateSignIn": "Sign in",
   "authGateCreateAccount": "Create free account",
-  "exportGuestContext": "Exporting to CSV and PDF is part of Pro: create a free account, then try Pro free for {{trialDays}} days."
+  "exportGuestContext": "Exporting to CSV and PDF is part of Pro: create a free account, then try Pro free for {{trialDays}} days.",
+  "experienceToggleSimple": "Simple",
+  "experienceToggleFull": "Full",
+  "experienceToggleSimpleTitle": "Plain-English labels and the key numbers",
+  "experienceToggleFullTitle": "Full financial terms and every metric",
+  "experienceToggleAria": "Terminology"
 }

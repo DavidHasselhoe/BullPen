@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, LogOut, Loader2, Shield, CreditCard, Sparkles, MessageSquarePlus, Inbox } from 'lucide-react';
+import { User, Settings, LogOut, Loader2, Shield, CreditCard, Sparkles, MessageSquarePlus, Inbox } from 'lucide-react';
 import { ProfileModal } from '@/components/user/ProfileModal';
 import { ProfileAvatar, getUserDisplayName, getUserInitials } from '@/components/user/ProfileAvatar';
 import { ProBadge } from '@/components/billing/ProBadge';
@@ -48,6 +48,13 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
   const [profileOpen, setProfileOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+
+  // Settings > Privacy & security sends people here to edit who sees their profile.
+  useEffect(() => {
+    const open = () => setProfileOpen(true);
+    window.addEventListener('profile:open', open);
+    return () => window.removeEventListener('profile:open', open);
+  }, []);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -102,7 +109,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-9 w-9 rounded-full transition-all hover:scale-105 focus:ring-2 focus:ring-ring p-0"
+          className="relative h-9 w-9 rounded-full p-0 focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={t('navAccountMenuAriaLabel')}
         >
           <ProfileAvatar
@@ -118,7 +125,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className={cn('w-56 animate-fade-in-up', forceDark && 'dark', forceLight && 'landing-force-light')}
+        className={cn('w-56', forceDark && 'dark', forceLight && 'landing-force-light')}
         align="end"
         forceMount
       >
@@ -144,17 +151,25 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
           onClick={() => {
             setProfileOpen(true);
           }}
-          className="cursor-pointer transition-all hover:translate-x-1"
+          className="cursor-pointer"
         >
           <User className="mr-2 h-4 w-4" />
           <span>{t('navProfile')}</span>
+        </DropdownMenuItem>
+        {/* Settings was reachable only through the unlabelled gear in the nav. */}
+        <DropdownMenuItem
+          onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: {} }))}
+          className="cursor-pointer"
+        >
+          <Settings className="mr-2 h-4 w-4" />
+          <span>{t('navSettings')}</span>
         </DropdownMenuItem>
 
         {userIsPro ? (
           <DropdownMenuItem
             onClick={handleManageSubscription}
             disabled={portalLoading}
-            className="cursor-pointer transition-all hover:translate-x-1"
+            className="cursor-pointer"
           >
             {portalLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -166,7 +181,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
         ) : (
           <DropdownMenuItem
             onClick={() => router.push('/upgrade')}
-            className="cursor-pointer items-start transition-all hover:translate-x-1"
+            className="cursor-pointer items-start"
           >
             <Sparkles className="mr-2 mt-0.5 h-4 w-4 text-primary" />
             <span className="flex flex-col gap-0.5">
@@ -184,14 +199,14 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
             </DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => router.push('/admin/costs')}
-              className="cursor-pointer transition-all hover:translate-x-1"
+              className="cursor-pointer"
             >
               <Shield className="mr-2 h-4 w-4" />
               <span>{t('navAiCosts')}</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => router.push('/admin/feedback')}
-              className="cursor-pointer transition-all hover:translate-x-1"
+              className="cursor-pointer"
             >
               <Inbox className="mr-2 h-4 w-4" />
               <span>{t('navFeedbackLabel')}</span>
@@ -202,7 +217,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => setFeedbackOpen(true)}
-          className="cursor-pointer transition-all hover:translate-x-1"
+          className="cursor-pointer"
         >
           <MessageSquarePlus className="mr-2 h-4 w-4" />
           <span>{t('navReportBugOrIdea')}</span>
@@ -211,8 +226,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
         <DropdownMenuItem
           onClick={handleSignOut}
           disabled={isSigningOut}
-          variant="destructive"
-          className="cursor-pointer transition-all hover:translate-x-1"
+          className="cursor-pointer"
         >
           {isSigningOut ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

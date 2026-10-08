@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useAuth } from '@/hooks/use-auth';
+import { useEntitlements } from '@/hooks/use-entitlements';
 import {
   Dialog,
   DialogContent,
@@ -23,8 +25,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ProfileAvatar } from '@/components/user/ProfileAvatar';
-import { Loader2, Upload, Camera, User, Briefcase, Target, TrendingUp, Crown, Calendar, Check, type LucideIcon } from 'lucide-react';
+import { ProfileAvatar, getUserInitials } from '@/components/user/ProfileAvatar';
+import { ToggleSetting, SettingsCard, SettingsGroup } from '@/components/settings/SettingsControls';
+import { AlertCircle, ArrowUpRight, Camera, Check, Loader2, Upload } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { uploadAvatarToStorage } from '@/lib/storage/avatar-upload';
@@ -35,21 +38,7 @@ interface ProfileModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type ProfileSection = 'basic' | 'preferences';
-
-interface SectionMeta {
-  id: ProfileSection;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-}
-
-function getSections(t: TFunction): SectionMeta[] {
-  return [
-    { id: 'basic', label: t('profileModalSectionBasicLabel'), icon: User, description: t('profileModalSectionBasicDescription') },
-    { id: 'preferences', label: t('profileModalSectionPreferencesLabel'), icon: Target, description: t('profileModalSectionPreferencesDescription') },
-  ];
-}
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 // Reuses PublicProfileCard's experience-level wording — same three words, same namespace.
 function getExperienceLabels(t: TFunction): Record<'beginner' | 'intermediate' | 'advanced', string> {
@@ -68,42 +57,58 @@ function getRiskProfileLabels(t: TFunction): Record<'conservative' | 'balanced' 
   };
 }
 
+/**
+ * How you appear to other members: photo, name, bio, market focus and whether
+ * any of it is public. One panel, no sidebar: it was a 1000px modal with its
+ * own navigation for four fields, two of which duplicated Settings.
+ *
+ * Experience level and risk profile are owned by Settings (Customize and Ask
+ * Bull); they show here only as the badges they produce, read-only. This modal
+ * never writes them, so it can't put a stale value back over a Settings change.
+ */
 export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
-  const { t } = useTranslation('user');
+  const { t, i18n } = useTranslation('user');
   const { user, isLoading: authLoading } = useAuth();
-  const SECTIONS = getSections(t);
-  const [activeSection, setActiveSection] = useState<ProfileSection>('basic');
+  const ent = useEntitlements();
   const [error, setError] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Form state
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
-  const [experienceLevel, setExperienceLevel] = useState<'beginner' | 'intermediate' | 'advanced' | ''>('');
   const [marketFocus, setMarketFocus] = useState<'US' | 'EU' | 'BOTH' | ''>('');
-  const [riskProfile, setRiskProfile] = useState<'conservative' | 'balanced' | 'aggressive' | ''>('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  // Visibility lives next to the content it publishes (it was in Settings > Privacy).
+  const [profilePublic, setProfilePublic] = useState(false);
+  const [holdingsPublic, setHoldingsPublic] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const isInitializedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const persistProfileRef = useRef<() => Promise<void>>();
+  const persistProfileRef = useRef<(() => Promise<boolean>) | undefined>(undefined);
   // Tracks the last-persisted values of the free-text fields so blur only
-  // saves when something actually changed (typing pattern, not click pattern —
-  // see docs/… best-practice split: discrete controls autosave on change,
-  // text fields save on blur).
+  // saves when something actually changed. Discrete controls autosave on
+  // change, text fields on blur, so a pause mid-sentence never saves.
   const savedTextRef = useRef({ fullName: '', bio: '' });
+
+  // Fresh status per opening. Not in the load effect below: that re-runs after
+  // every save (auth:refresh hands it a new user) and wiped "All changes saved".
+  useEffect(() => {
+    if (open) setSaveStatus('idle');
+  }, [open]);
 
   // Load user data
   useEffect(() => {
     isInitializedRef.current = false;
     if (user && open) {
+      const settings = (user.settings ?? {}) as Record<string, unknown>;
       setFullName(user.full_name || '');
       setBio(user.bio || '');
-      setExperienceLevel(user.experience_level || '');
       setMarketFocus(user.market_focus || '');
-      setRiskProfile(user.risk_profile || '');
       setAvatarUrl(user.avatar_url || '');
+      // Off unless turned on: saving any setting used to write a public profile.
+      setProfilePublic(settings.profile_public === true);
+      setHoldingsPublic(settings.holdings_public === true);
       setError(null);
       savedTextRef.current = {
         fullName: user.full_name || '',
@@ -125,18 +130,14 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
     try {
       const uploadResult = await uploadAvatarToStorage(user.id, file);
-
       if (!uploadResult.success || !uploadResult.publicUrl) {
-        throw new Error(uploadResult.error || t('profileModalUploadFailed'));
+        throw new Error(uploadResult.error || 'upload failed');
       }
-
-      // Update avatar URL in state
+      // avatarUrl is an autosave dependency, so setting it saves it.
       setAvatarUrl(uploadResult.publicUrl);
-
-      // Optionally auto-save
-      // For now, user needs to click "Save Changes" to persist
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('profileModalAvatarUploadFailed'));
+      logger.error('[ProfileModal] Avatar upload failed', err);
+      setError(t('profileModalAvatarUploadFailed'));
     } finally {
       setIsUploadingAvatar(false);
       // Reset input so same file can be selected again
@@ -144,21 +145,30 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     }
   };
 
-  const persistProfile = async () => {
-    if (!user) return;
-
+  /** True when the change reached the database. */
+  const persistProfile = async (): Promise<boolean> => {
+    if (!user) return false;
     setError(null);
 
     try {
       const supabase = createBrowserClient();
+      // Merge into the freshest settings so the rest of the JSON (written by
+      // the Settings modal and the chart popover) is never overwritten.
+      const { data: latest } = await supabase
+        .from('users')
+        .select('settings')
+        .eq('id', user.id)
+        .single();
+      const existingSettings =
+        ((latest?.settings as Record<string, unknown>) ??
+          (user.settings as Record<string, unknown>)) ?? {};
 
       const updateData = {
         full_name: fullName.trim() || null,
         bio: bio.trim() || null,
-        experience_level: experienceLevel || null,
         market_focus: marketFocus || null,
-        risk_profile: riskProfile || null,
         avatar_url: avatarUrl.trim() || null,
+        settings: { ...existingSettings, profile_public: profilePublic, holdings_public: holdingsPublic },
       };
 
       const { error: updateError } = await supabase
@@ -166,16 +176,15 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         .update(updateData as Record<string, unknown>)
         .eq('id', user.id);
 
-      if (updateError) {
-        logger.error('[ProfileModal] Database update error', updateError);
-        throw new Error(updateError.message || t('profileModalUpdateDbFailed'));
-      }
+      if (updateError) throw updateError;
 
       savedTextRef.current = { fullName, bio };
       window.dispatchEvent(new Event('auth:refresh'));
+      return true;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t('profileModalUpdateFailed');
-      setError(msg);
+      logger.error('[ProfileModal] Profile update failed', err);
+      setError(t('profileModalUpdateFailed'));
+      return false;
     }
   };
 
@@ -183,380 +192,246 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     persistProfileRef.current = persistProfile;
   });
 
-  // Autosave — debounced 500 ms after a discrete-control change (selects, avatar
-  // upload). Free-text fields (name/bio) save on blur instead, below —
-  // see handleTextFieldBlur.
+  const runSave = async () => {
+    if (!persistProfileRef.current) return;
+    setSaveStatus('saving');
+    const ok = await persistProfileRef.current();
+    setSaveStatus(ok ? 'saved' : 'error');
+    if (ok) setTimeout(() => setSaveStatus((s) => (s === 'saved' ? 'idle' : s)), 2000);
+  };
+
+  // Autosave, debounced 500 ms after a discrete-control change.
   useEffect(() => {
     if (!isInitializedRef.current || !user) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      if (!persistProfileRef.current) return;
-      setSaveStatus('saving');
-      await persistProfileRef.current();
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 1500);
-    }, 500);
+    debounceRef.current = setTimeout(runSave, 500);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [experienceLevel, marketFocus, riskProfile, avatarUrl]);
+  }, [marketFocus, avatarUrl, profilePublic, holdingsPublic]);
 
-  // Text fields save on blur, not while typing, so a pause mid-sentence never
-  // triggers a save.
   const handleTextFieldBlur = async () => {
     if (!isInitializedRef.current || !user) return;
     const unchanged =
       fullName === savedTextRef.current.fullName &&
       bio === savedTextRef.current.bio;
-    if (unchanged || !persistProfileRef.current) return;
-    setSaveStatus('saving');
-    await persistProfileRef.current();
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 1500);
+    if (unchanged) return;
+    await runSave();
   };
 
-  const getInitials = () => {
-    if (fullName) {
-      return fullName
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    if (user?.username) {
-      return user.username.slice(0, 2).toUpperCase();
-    }
-    return user?.email.slice(0, 2).toUpperCase() || t('profileAvatarDefaultName').slice(0, 1).toUpperCase();
+  /** Closes this modal and opens Settings on a tab: two stacked dialogs would trap focus twice. */
+  const openSettings = (tab: 'customize' | 'plan') => {
+    onOpenChange(false);
+    window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab } }));
   };
-
-  const displayName = fullName || user?.username || user?.email.split('@')[0] || t('profileAvatarDefaultName');
-  const memberSince = user?.created_at
-    ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-    : '';
-
-  const activeMeta = SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0];
-  const ActiveIcon = activeMeta.icon;
 
   if (authLoading || !user) {
     return null;
   }
 
+  const initials = getUserInitials({ full_name: fullName, username: user.username, email: user.email });
+  const displayName = fullName || user.username || user.email.split('@')[0];
+  const memberSince = user.created_at
+    ? new Date(user.created_at).toLocaleDateString(i18n.language || 'en', { month: 'short', year: 'numeric' })
+    : '';
+  const experienceLevel = user.experience_level ?? null;
+  const riskProfile = user.risk_profile ?? null;
+  const marketBadge = marketFocus === 'US'
+    ? t('profileModalMarketUs')
+    : marketFocus === 'EU'
+      ? t('profileModalMarketEu')
+      : marketFocus === 'BOTH'
+        ? t('profileModalMarketBothBadge')
+        : null;
+
+  const statusLine = (
+    <p aria-live="polite" className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      {saveStatus === 'saving' ? (
+        <><Loader2 className="h-3 w-3 animate-spin" aria-hidden />{t('profileModalSaving')}</>
+      ) : saveStatus === 'saved' ? (
+        <><Check className="h-3 w-3 text-foreground" aria-hidden />{t('profileModalAllChangesSaved')}</>
+      ) : saveStatus === 'error' ? (
+        <span className="flex items-center gap-1.5 text-destructive"><AlertCircle className="h-3 w-3" aria-hidden />{t('profileModalSaveFailed')}</span>
+      ) : (
+        t('profileModalChangesSaveAutomatically')
+      )}
+    </p>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+      <DialogContent className="w-[94vw] !max-w-xl sm:!max-w-xl max-h-[88vh] overflow-hidden flex flex-col gap-0 p-0">
+        <DialogHeader className="border-b px-5 pt-5 pb-4 text-left sm:px-6 sm:pt-6">
           <DialogTitle>{t('profileModalTitle')}</DialogTitle>
-          <DialogDescription>
-            {t('profileModalDescription')}
-          </DialogDescription>
+          <DialogDescription>{t('profileModalDescription')}</DialogDescription>
+          <div className="pt-1">{statusLine}</div>
+          {error && (
+            <p role="alert" className="mt-2 flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              {error}
+            </p>
+          )}
         </DialogHeader>
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar Navigation */}
-          <aside className="flex w-16 flex-shrink-0 flex-col border-r bg-muted/20 sm:w-56">
-            <nav className="flex-1 space-y-1 overflow-y-auto p-2 sm:p-3">
-              {SECTIONS.map((section) => {
-                const Icon = section.icon;
-                const active = activeSection === section.id;
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    aria-current={active ? 'page' : undefined}
-                    title={section.label}
-                    className={cn(
-                      'group relative flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                      'justify-center sm:justify-start',
-                      active
-                        ? 'bg-accent text-foreground'
-                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary transition-opacity',
-                        active ? 'opacity-100' : 'opacity-0'
-                      )}
-                    />
-                    <Icon className={cn('h-4 w-4 shrink-0', active && 'text-primary')} />
-                    <span className="hidden sm:inline">{section.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Identity + autosave status */}
-            <div className="hidden border-t p-3 sm:block">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
-                  {getInitials()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-foreground">{user.email}</p>
-                  <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                    {saveStatus === 'saving' ? (
-                      <><Loader2 className="h-2.5 w-2.5 animate-spin" />{t('profileModalSaving')}</>
-                    ) : saveStatus === 'saved' ? (
-                      <><Check className="h-2.5 w-2.5 text-emerald-500" /><span className="text-emerald-500">{t('profileModalAllChangesSaved')}</span></>
-                    ) : (
-                      t('profileModalChangesSaveAutomatically')
-                    )}
-                  </p>
-                </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="space-y-8 p-5 sm:p-6">
+            {/* Photo */}
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="group relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                aria-label={t('profileModalChangePicture')}
+              >
+                <ProfileAvatar
+                  avatarUrl={avatarUrl}
+                  displayName={displayName}
+                  fallback={initials}
+                  tier={user.account_tier ?? 1}
+                  size="xl"
+                  showTooltip={false}
+                />
+                <span
+                  className={cn(
+                    'absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100',
+                    isUploadingAvatar && 'opacity-100'
+                  )}
+                >
+                  {isUploadingAvatar
+                    ? <Loader2 className="h-5 w-5 animate-spin text-white" aria-hidden />
+                    : <Camera className="h-5 w-5 text-white" aria-hidden />}
+                </span>
+              </button>
+              <div className="flex min-w-0 flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                  disabled={isUploadingAvatar}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isUploadingAvatar}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-fit gap-2"
+                >
+                  {isUploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Upload className="h-4 w-4" aria-hidden />}
+                  {t('profileModalUploadPicture')}
+                </Button>
+                <p className="text-xs text-muted-foreground">{t('profileModalUploadHint')}</p>
               </div>
             </div>
-          </aside>
 
-          {/* Main Content */}
-          <div className="relative min-h-0 flex-1 overflow-y-auto">
-            <div
-              key={activeSection}
-              className="p-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-1 motion-safe:duration-200"
-            >
-              {/* Section header */}
-              <div className="mb-6 max-w-2xl">
-                <div className="flex items-center gap-2">
-                  <ActiveIcon className="h-4 w-4 text-primary" />
-                  <h2 className="text-base font-semibold tracking-tight text-foreground">{activeMeta.label}</h2>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">{activeMeta.description}</p>
+            {/* About you */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full-name">{t('profileModalDisplayNameLabel')}</Label>
+                <Input
+                  id="full-name"
+                  autoComplete="name"
+                  placeholder={t('profileModalDisplayNamePlaceholder')}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  onBlur={handleTextFieldBlur}
+                />
               </div>
 
-              {activeSection === 'basic' && (
-                <div className="space-y-6 max-w-2xl">
-                  {/* Avatar Section */}
-                  <div className="flex items-center gap-6">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploadingAvatar}
-                      className="group relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      aria-label={t('profileModalChangePicture')}
-                    >
-                      <ProfileAvatar
-                        avatarUrl={avatarUrl}
-                        displayName={displayName}
-                        fallback={getInitials()}
-                        tier={user?.account_tier ?? 1}
-                        size="xl"
-                        showTooltip={false}
-                      />
-                      <span
-                        className={cn(
-                          'absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100',
-                          isUploadingAvatar && 'opacity-100'
-                        )}
-                      >
-                        {isUploadingAvatar ? (
-                          <Loader2 className="h-5 w-5 animate-spin text-white" />
-                        ) : (
-                          <Camera className="h-5 w-5 text-white" />
-                        )}
-                      </span>
-                    </button>
-                    <div className="flex flex-col gap-3">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                        onChange={handleAvatarUpload}
-                        className="hidden"
-                        disabled={isUploadingAvatar}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isUploadingAvatar}
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-fit gap-2"
-                      >
-                        {isUploadingAvatar ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4" />
-                        )}
-                        {t('profileModalUploadPicture')}
-                      </Button>
-                      <p className="text-xs text-muted-foreground">
-                        {t('profileModalUploadHint')}
-                      </p>
-                    </div>
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="bio">{t('profileModalBioLabel')}</Label>
+                <Textarea
+                  id="bio"
+                  placeholder={t('profileModalBioPlaceholder')}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  onBlur={handleTextFieldBlur}
+                  rows={3}
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground">{t('profileModalBioCharCount', { count: bio.length })}</p>
+              </div>
 
-                  {/* Account info — read-only */}
-                  <div className="rounded-xl border bg-card p-5">
-                    <div className="flex flex-wrap gap-6">
-                      <div className="space-y-1">
-                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Crown className="h-3 w-3" />
-                          {t('profileModalAccountTier')}
-                        </p>
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            user.account_tier === 3 && 'border-2 border-[#FFD700] text-[#FFD700]'
-                          )}
-                        >
-                          {user.account_tier === 3 ? t('profileAvatarTierGold') : t('profileAvatarTierNormal')}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          {t('profileModalMemberSince')}
-                        </p>
-                        <p className="text-sm font-medium text-foreground">{memberSince}</p>
-                      </div>
-                    </div>
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="market-focus">{t('profileModalMarketFocusLabel')}</Label>
+                <Select value={marketFocus} onValueChange={(value: 'US' | 'EU' | 'BOTH') => setMarketFocus(value)}>
+                  <SelectTrigger id="market-focus" className="w-full">
+                    <SelectValue placeholder={t('profileModalMarketFocusPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="US">{t('profileModalMarketUs')}</SelectItem>
+                    <SelectItem value="EU">{t('profileModalMarketEu')}</SelectItem>
+                    <SelectItem value="BOTH">{t('profileModalMarketBothSelect')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t('profileModalMarketFocusHint')}</p>
+              </div>
+            </div>
 
-                  {/* Basic Info */}
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="full-name">{t('profileModalDisplayNameLabel')}</Label>
-                      <Input
-                        id="full-name"
-                        placeholder={t('profileModalDisplayNamePlaceholder')}
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        onBlur={handleTextFieldBlur}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">{t('profileModalBioLabel')}</Label>
-                      <Textarea
-                        id="bio"
-                        placeholder={t('profileModalBioPlaceholder')}
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        onBlur={handleTextFieldBlur}
-                        rows={4}
-                        maxLength={500}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {t('profileModalBioCharCount', { count: bio.length })}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Profile Badges — live preview of how these read on your public profile */}
-                  {(experienceLevel || marketFocus || riskProfile) && (
-                    <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
-                      <Label className="text-sm font-medium">{t('profileModalBadgesLabel')}</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {experienceLevel && (
-                          <Badge variant="secondary" className="capitalize">
-                            {getExperienceLabels(t)[experienceLevel]}
-                          </Badge>
-                        )}
-                        {marketFocus && (
-                          <Badge variant="secondary">
-                            {marketFocus === 'US' ? t('profileModalMarketUs') : marketFocus === 'EU' ? t('profileModalMarketEu') : t('profileModalMarketBothBadge')}
-                          </Badge>
-                        )}
-                        {riskProfile && (
-                          <Badge variant="secondary" className="capitalize">
-                            {getRiskProfileLabels(t)[riskProfile]}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {t('profileModalBadgesHint')}
-                      </p>
-                    </div>
-                  )}
-                </div>
+            {/* Visibility */}
+            <SettingsGroup title={t('profileModalVisibilityHeading')}>
+              <SettingsCard>
+                <ToggleSetting
+                  label={t('profileModalPublicLabel')}
+                  description={t('profileModalPublicDescription')}
+                  checked={profilePublic}
+                  onCheckedChange={setProfilePublic}
+                />
+                <ToggleSetting
+                  label={t('profileModalShowPortfolioLabel')}
+                  description={t('profileModalShowPortfolioDescription')}
+                  checked={profilePublic && holdingsPublic}
+                  onCheckedChange={setHoldingsPublic}
+                  disabled={!profilePublic}
+                />
+              </SettingsCard>
+              {profilePublic && user.username && (
+                <Link
+                  href={`/users/${user.username}`}
+                  onClick={() => onOpenChange(false)}
+                  className="inline-flex min-h-10 items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  {t('profileModalViewPublic')}
+                  <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                </Link>
               )}
+            </SettingsGroup>
 
-              {activeSection === 'preferences' && (
-                <div className="space-y-6 max-w-2xl">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="experience-level" className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4" />
-                        {t('profileModalExperienceLabel')}
-                      </Label>
-                      <Select
-                        value={experienceLevel}
-                        onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') =>
-                          setExperienceLevel(value)
-                        }
-                      >
-                        <SelectTrigger id="experience-level">
-                          <SelectValue placeholder={t('profileModalExperiencePlaceholder')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="beginner">{getExperienceLabels(t).beginner}</SelectItem>
-                          <SelectItem value="intermediate">{getExperienceLabels(t).intermediate}</SelectItem>
-                          <SelectItem value="advanced">{getExperienceLabels(t).advanced}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        {t('profileModalExperienceHint')}
-                      </p>
-                    </div>
+            {/* Badges, a live preview of the public profile */}
+            {(experienceLevel || marketBadge || riskProfile) && (
+              <SettingsGroup title={t('profileModalBadgesLabel')} hint={t('profileModalBadgesHint')}>
+                <div className="flex flex-wrap items-center gap-2">
+                  {experienceLevel && <Badge variant="secondary">{getExperienceLabels(t)[experienceLevel]}</Badge>}
+                  {marketBadge && <Badge variant="secondary">{marketBadge}</Badge>}
+                  {riskProfile && <Badge variant="secondary">{getRiskProfileLabels(t)[riskProfile]}</Badge>}
+                  <Button variant="link" size="sm" onClick={() => openSettings('customize')} className="h-auto px-1 py-0 text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                    {t('profileModalBadgesSettingsLink')}
+                  </Button>
+                </div>
+              </SettingsGroup>
+            )}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="market-focus" className="flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        {t('profileModalMarketFocusLabel')}
-                      </Label>
-                      <Select
-                        value={marketFocus}
-                        onValueChange={(value: 'US' | 'EU' | 'BOTH') => setMarketFocus(value)}
-                      >
-                        <SelectTrigger id="market-focus">
-                          <SelectValue placeholder={t('profileModalMarketFocusPlaceholder')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="US">{t('profileModalMarketUs')}</SelectItem>
-                          <SelectItem value="EU">{t('profileModalMarketEu')}</SelectItem>
-                          <SelectItem value="BOTH">{t('profileModalMarketBothSelect')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        {t('profileModalMarketFocusHint')}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="risk-profile" className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4" />
-                        {t('profileModalRiskProfileLabel')}
-                      </Label>
-                      <Select
-                        value={riskProfile}
-                        onValueChange={(value: 'conservative' | 'balanced' | 'aggressive') =>
-                          setRiskProfile(value)
-                        }
-                      >
-                        <SelectTrigger id="risk-profile">
-                          <SelectValue placeholder={t('profileModalRiskProfilePlaceholder')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="conservative">{getRiskProfileLabels(t).conservative}</SelectItem>
-                          <SelectItem value="balanced">{getRiskProfileLabels(t).balanced}</SelectItem>
-                          <SelectItem value="aggressive">{getRiskProfileLabels(t).aggressive}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        {t('profileModalRiskProfileHint')}
-                      </p>
-                    </div>
+            {/* Account facts */}
+            <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-xl border bg-card/30 px-4 py-3">
+              <div className="flex flex-wrap gap-x-8 gap-y-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t('profileModalPlanLabel')}</p>
+                  <p className="text-sm font-medium text-foreground">{ent.isPro ? t('profileModalPlanPro') : t('profileModalPlanFree')}</p>
+                </div>
+                {memberSince && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('profileModalMemberSince')}</p>
+                    <p className="text-sm font-medium text-foreground">{memberSince}</p>
                   </div>
-                </div>
-              )}
-
-              {/* Error message */}
-              {error && (
-                <div className="mt-4 max-w-2xl rounded-md bg-destructive/10 p-3 text-sm text-destructive animate-in fade-in slide-in-from-bottom-2">
-                  {error}
-                </div>
-              )}
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => openSettings('plan')}>
+                {t('profileModalManagePlan')}
+              </Button>
             </div>
           </div>
         </div>

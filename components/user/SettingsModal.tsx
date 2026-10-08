@@ -22,13 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { Loader2, Globe, DollarSign, Moon, Bell, Shield, AlertTriangle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Hash, Search, Bot, LayoutGrid, LineChart, Wrench, ChevronDown, Sparkles, Crown, type LucideIcon } from 'lucide-react';
+import { Loader2, Globe, Bell, Shield, AlertCircle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Search, Bot, LineChart, Wrench, ChevronDown, Sparkles, Crown, CreditCard, type LucideIcon } from 'lucide-react';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
+import { startPortal } from '@/lib/billing/checkout';
+import { PRICING } from '@/lib/billing/entitlements';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,10 +45,11 @@ import {
   findHomepageOption,
 } from '@/lib/navigation/homepage-options';
 import { HomepageLayoutEditor } from '@/components/settings/HomepageLayoutEditor';
+import { ToggleSetting, SettingsCard, SettingsGroup, SegmentedChoice } from '@/components/settings/SettingsControls';
 import { DEFAULT_ORDER as DEFAULT_WIDGET_ORDER } from '@/lib/dashboard/widgets';
-import { ExperienceLevelToggle } from '@/components/ui/ExperienceLevelToggle';
 import { ChartPrefsControls } from '@/components/stock/ChartPrefsControls';
 import { useChartPrefs } from '@/hooks/use-chart-prefs';
+import type { ExperienceLevel } from '@/hooks/use-experience-level';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
@@ -75,58 +75,13 @@ type SettingsSection =
   | 'danger';
 
 type ThemeValue = 'dark' | 'light';
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const VALID_THEMES: ThemeValue[] = ['dark', 'light'];
 
 function minimalStockPick(ticker: string): SearchResult {
   const t = ticker.toUpperCase();
   return { ticker: t, name: t, cik: '', has_data: false };
-}
-
-/** A single label + description + switch row. Shared across tabs for consistency. */
-function ToggleSetting({
-  label, description, checked, onCheckedChange, disabled, icon: Icon, badge,
-}: {
-  label: string;
-  description?: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  disabled?: boolean;
-  icon?: LucideIcon;
-  badge?: string;
-}) {
-  return (
-    <div className={cn('flex items-center justify-between gap-4 py-3.5', disabled && 'opacity-70')}>
-      <div className="min-w-0 space-y-0.5">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
-          <span className="text-sm font-medium text-foreground">{label}</span>
-          {badge && (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[11px] font-medium">{badge}</Badge>
-          )}
-        </div>
-        {description && (
-          <p className="text-xs leading-snug text-muted-foreground">{description}</p>
-        )}
-      </div>
-      <Switch
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        disabled={disabled}
-        aria-label={label}
-        className="shrink-0"
-      />
-    </div>
-  );
-}
-
-/** Groups related rows into a single bordered card with hairline dividers. */
-function SettingsCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn('rounded-xl border bg-card/30 px-4 divide-y divide-border/50', className)}>
-      {children}
-    </div>
-  );
 }
 
 export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalProps) {
@@ -144,7 +99,14 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  // Google-only accounts have no password to change. AuthUser (the users row)
+  // carries no provider, so the old `user.app_metadata` check was always
+  // undefined and they got a password form; the auth session knows.
+  const [hasPassword, setHasPassword] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Settings state
   const [defaultCurrency, setDefaultCurrency] = useState<string | null>(null);
@@ -158,7 +120,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [homepageMenuOpen, setHomepageMenuOpen] = useState<boolean>(false);
   const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true);
   const [roundNumbers, setRoundNumbers] = useState<boolean>(false);
-  const [profilePublic, setProfilePublic] = useState<boolean>(false);
+  // Experience level lives here and only here (it used to be a Profile select
+  // and a Simple/Pro toggle on two tabs as well, with "Pro" writing
+  // intermediate over an Advanced user's choice).
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>('beginner');
 
   // Chart preferences — shared with the stock-page chart settings popover via the
   // same hook (localStorage + users.settings.chart_prefs), so edits stay in sync.
@@ -191,7 +156,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         : homepageStockPick.ticker
       : t('homepageStock')
     : currentHomepageOption?.label ?? t('homepageHome');
-  const [holdingsPublic, setHoldingsPublic] = useState<boolean>(false);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGET_ORDER);
   const [widgetHidden, setWidgetHidden] = useState<string[]>([]);
   // AI settings state
@@ -215,6 +179,11 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     // Opt-in: ~6-8 market-wide releases a month is noise for anyone not following macro.
     economic_events: false,
   });
+  type NotificationKey = keyof typeof notifications;
+  const notif = (key: NotificationKey) => ({
+    checked: notifications[key],
+    onCheckedChange: (checked: boolean) => setNotifications((n) => ({ ...n, [key]: checked })),
+  });
 
   // Jump to initialTab when modal opens (e.g. from AI panel gear icon)
   useEffect(() => {
@@ -223,10 +192,34 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }
   }, [open, initialTab]);
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    createBrowserClient().auth.getUser().then(({ data }) => {
+      const meta = data.user?.app_metadata as { provider?: string; providers?: string[] } | undefined;
+      const providers = meta?.providers ?? (meta?.provider ? [meta.provider] : ['email']);
+      if (!cancelled) setHasPassword(providers.includes('email'));
+    });
+    return () => { cancelled = true; };
+  }, [open]);
+
+  // Each section opens at its top, and an error from one section (a password
+  // mismatch) doesn't follow you to the next.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+    setError(null);
+  }, [activeSection]);
+
   // Autosave refs
   const isInitializedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleSaveRef = useRef<() => Promise<void>>();
+  const handleSaveRef = useRef<(() => Promise<boolean>) | undefined>(undefined);
+
+  // Fresh status per opening. Not in the load effect below: that re-runs after
+  // every save (auth:refresh hands it a new user) and wiped "All changes saved".
+  useEffect(() => {
+    if (open) setSaveStatus('idle');
+  }, [open]);
 
   // Load settings when dialog opens
   useEffect(() => {
@@ -271,11 +264,9 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setStockMode(!!stockMatch);
       setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
       setRoundNumbers(settings.round_numbers === true);
-      // Off unless turned on: saving any setting used to write a public profile.
-      setProfilePublic(settings.profile_public === true);
-      setHoldingsPublic(settings.holdings_public === true);
       setWidgetOrder(Array.isArray(settings.homepage_widget_order) ? settings.homepage_widget_order : DEFAULT_WIDGET_ORDER);
       setWidgetHidden(Array.isArray(settings.homepage_widget_hidden) ? settings.homepage_widget_hidden : []);
+      setExperienceLevel(user.experience_level ?? 'beginner');
       // AI settings
       setRiskProfile(user.risk_profile ?? null);
       setInvestmentHorizon((settings.investment_horizon as 'short' | 'medium' | 'long') ?? null);
@@ -289,14 +280,16 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }
   }, [user, open]);
 
-  const handleSave = async () => {
-    if (!user) return;
+  /** True when the change reached the database. */
+  const handleSave = async (): Promise<boolean> => {
+    if (!user) return false;
     setError(null);
     try {
       const supabase = createBrowserClient();
       // Read the freshest settings before merging so we never clobber values
       // written by other surfaces between modal open and save — chart_prefs (the
-      // stock-page chart popover) and anything else saved outside this modal.
+      // stock-page chart popover), profile_public/holdings_public (the Profile
+      // modal) and anything else saved outside this modal.
       const { data: latest } = await supabase
         .from('users')
         .select('settings')
@@ -314,8 +307,6 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         show_welcome_text: showWelcomeText,
         round_numbers: roundNumbers,
         notifications,
-        profile_public: profilePublic,
-        holdings_public: holdingsPublic,
         investment_horizon: investmentHorizon,
         response_style: responseStyle,
         allow_holdings_context: allowHoldingsContext,
@@ -326,12 +317,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const usersTable = (supabase as any).from('users');
       const { error: updateError } = await usersTable
-        .update({ settings: mergedSettings, risk_profile: riskProfile })
+        .update({ settings: mergedSettings, risk_profile: riskProfile, experience_level: experienceLevel })
         .eq('id', user.id);
 
-      if (updateError) {
-        throw new Error(updateError.message || t('errorUpdateSettings'));
-      }
+      if (updateError) throw updateError;
 
       // Was `['en','es','fr','de','ja','zh']` here — missing 'no', so a
       // Norwegian-browser user choosing "System default" silently got
@@ -352,41 +341,45 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       writeLocaleCookie(resolvedLang);
 
       window.dispatchEvent(new Event('auth:refresh'));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorUpdateSettings'));
+      return true;
+    } catch {
+      // The database's own message ("JWT expired", a constraint name) means
+      // nothing to the person reading it.
+      setError(t('errorUpdateSettings'));
+      return false;
     }
   };
 
   // Keep the ref current so the debounced autosave always calls the latest closure
   useEffect(() => { handleSaveRef.current = handleSave; });
 
-  // Autosave — debounced 500 ms after any settings change
+  // Autosave — debounced 500 ms after any settings change. Reports what
+  // actually happened: it used to say "All changes saved" after a failure.
   useEffect(() => {
     if (!isInitializedRef.current || !user) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       if (!handleSaveRef.current) return;
       setSaveStatus('saving');
-      await handleSaveRef.current();
-      setSaveStatus('saved');
-      const t = setTimeout(() => setSaveStatus('idle'), 1500);
-      return () => clearTimeout(t);
+      const ok = await handleSaveRef.current();
+      setSaveStatus(ok ? 'saved' : 'error');
+      if (ok) setTimeout(() => setSaveStatus((s) => (s === 'saved' ? 'idle' : s)), 2000);
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, profilePublic, holdingsPublic, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden]);
+  }, [defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, experienceLevel, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden]);
 
   const handleDeleteAccount = async (): Promise<string | null> => {
     if (!user) return t('errorDeleteAccount');
     try {
       const result = await deleteAccount();
-      if (!result.success) return result.error || t('errorDeleteAccount');
+      if (!result.success) return t('errorDeleteAccount');
       await signOut();
       router.push('/');
       router.refresh();
       return null;
-    } catch (err) {
-      return err instanceof Error ? err.message : t('errorDeleteAccount');
+    } catch {
+      return t('errorDeleteAccount');
     }
   };
 
@@ -399,7 +392,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     try {
       const result = await exportUserData();
       if (!result.success || !result.data) {
-        setError(result.error || t('errorExportData'));
+        setError(t('errorExportData'));
         return;
       }
 
@@ -413,45 +406,62 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorExportData'));
+    } catch {
+      setError(t('errorExportData'));
     } finally {
       setIsExportingData(false);
     }
   };
 
-  const handleChangePassword = async () => {
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    const result = await startPortal();
+    // Comped/admin accounts have no Stripe customer — fall back to pricing.
+    window.location.href = result.url || '/upgrade';
+  };
+
+  const closePasswordForm = () => {
+    setShowPasswordForm(false);
+    setPasswordNew('');
+    setPasswordConfirm('');
+    setPasswordError(null);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!passwordNew || !passwordConfirm) {
-      setError(t('errorPasswordFieldsRequired'));
+      setPasswordError(t('errorPasswordFieldsRequired'));
       return;
     }
     const strengthError = getPasswordStrengthError(passwordNew);
     if (strengthError === 'tooShort') {
-      setError(t('errorPasswordTooShort'));
+      setPasswordError(t('errorPasswordTooShort'));
       return;
     }
     if (strengthError === 'tooWeak') {
-      setError(t('errorPasswordTooWeak'));
+      setPasswordError(t('errorPasswordTooWeak'));
       return;
     }
     if (strengthError === 'tooCommon') {
-      setError(t('errorPasswordTooCommon'));
+      setPasswordError(t('errorPasswordTooCommon'));
       return;
     }
     if (passwordNew !== passwordConfirm) {
-      setError(t('errorPasswordMismatch'));
+      setPasswordError(t('errorPasswordMismatch'));
       return;
     }
 
     setIsChangingPassword(true);
-    setError(null);
+    setPasswordError(null);
     setPasswordSuccess(false);
 
     try {
       const supabase = createBrowserClient();
       const { error: updateError } = await supabase.auth.updateUser({ password: passwordNew });
       if (updateError) {
-        setError(updateError.message || t('errorPasswordUpdateFailed'));
+        // Auth's own messages here are about the password itself ("should be
+        // different from the old password"), which is what the person needs.
+        setPasswordError(updateError.message || t('errorPasswordUpdateFailed'));
         return;
       }
 
@@ -474,11 +484,16 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         setShowPasswordForm(false);
         setPasswordSuccess(false);
       }, 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorPasswordUpdateFailed'));
+    } catch {
+      setPasswordError(t('errorPasswordUpdateFailed'));
     } finally {
       setIsChangingPassword(false);
     }
+  };
+
+  const openProfile = () => {
+    onOpenChange(false);
+    window.dispatchEvent(new Event('profile:open'));
   };
 
   interface SectionMeta {
@@ -501,422 +516,394 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       items: [
         { id: 'plan', label: t('sectionPlanLabel'), icon: Sparkles, description: t('sectionPlanDescription') },
         { id: 'privacy', label: t('privacy'), icon: Shield, description: t('sectionPrivacyDescription') },
-        { id: 'danger', label: t('danger'), icon: AlertTriangle, description: t('sectionDangerDescription') },
+        { id: 'danger', label: t('danger'), icon: Trash2, description: t('sectionDangerDescription') },
       ],
     },
   ];
   const allSections = sectionGroups.flatMap((g) => g.items);
   const activeMeta = allSections.find((s) => s.id === activeSection) ?? allSections[0];
-  const ActiveIcon = activeMeta.icon;
-  const isDangerActive = activeSection === 'danger';
 
   if (!user) {
     return null;
   }
 
-  const emailInitials = (user.email ?? '?')
-    .split('@')[0]
-    .slice(0, 2)
-    .toUpperCase();
+  const statusLine = (
+    <p aria-live="polite" className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+      {saveStatus === 'saving' ? (
+        <><Loader2 className="h-3 w-3 animate-spin" aria-hidden />{t('savingEllipsis')}</>
+      ) : saveStatus === 'saved' ? (
+        <><Check className="h-3 w-3 text-foreground" aria-hidden />{t('allChangesSaved')}</>
+      ) : saveStatus === 'error' ? (
+        <span className="flex items-center gap-1.5 text-destructive"><AlertCircle className="h-3 w-3" aria-hidden />{t('saveFailed')}</span>
+      ) : (
+        t('changesSaveAutomatically')
+      )}
+    </p>
+  );
+
+  const showPasswordToggle = (shown: boolean, toggle: () => void) => (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={shown ? t('privacyHidePasswordAria') : t('privacyShowPasswordAria')}
+      aria-pressed={shown}
+      className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {shown ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+    </button>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] !max-w-[1000px] sm:!max-w-[1000px] h-[85vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+      <DialogContent className="w-[94vw] !max-w-[1000px] sm:!max-w-[1000px] h-[88vh] sm:h-[85vh] overflow-hidden flex flex-col gap-0 p-0">
+        <DialogHeader className="px-5 pt-5 pb-4 border-b text-left sm:px-6 sm:pt-6">
           <DialogTitle>{t('title')}</DialogTitle>
-          <DialogDescription>
-            {t('description')}
-          </DialogDescription>
+          <DialogDescription>{t('description')}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar Navigation */}
-          <aside className="flex w-16 flex-shrink-0 flex-col border-r bg-muted/20 sm:w-56">
-            <nav className="flex-1 space-y-4 overflow-y-auto p-2 sm:p-3">
+        {/* Phones: a scrollable row of labelled tabs. The icon-only rail it
+            replaces named its sections in a hover title, which touch never shows. */}
+        <nav className="scrollbar-hide flex shrink-0 gap-1 overflow-x-auto border-b px-3 py-2 sm:hidden" aria-label={t('title')}>
+          {allSections.map((section) => {
+            const active = activeSection === section.id;
+            return (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => setActiveSection(section.id)}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'min-h-10 shrink-0 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors duration-150',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  active ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {section.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="flex min-h-0 flex-1">
+          {/* Sidebar navigation, tablet and up */}
+          <aside className="hidden w-56 shrink-0 flex-col border-r bg-muted/20 sm:flex">
+            <nav className="flex-1 space-y-4 overflow-y-auto p-3" aria-label={t('title')}>
               {sectionGroups.map((group, gi) => (
                 <div key={gi} className="space-y-1">
                   {group.heading && (
-                    <p className="hidden px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:block">
+                    <p className="px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground">
                       {group.heading}
                     </p>
                   )}
                   {group.items.map((section) => {
                     const Icon = section.icon;
                     const active = activeSection === section.id;
-                    const danger = section.id === 'danger';
                     return (
                       <button
                         key={section.id}
+                        type="button"
                         onClick={() => setActiveSection(section.id)}
                         aria-current={active ? 'page' : undefined}
-                        title={section.label}
                         className={cn(
-                          'group relative flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                          'justify-center sm:justify-start',
+                          'relative flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                           active
                             ? 'bg-accent text-foreground'
-                            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
-                          danger && (active ? 'text-destructive' : 'text-destructive/75 hover:text-destructive')
+                            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                         )}
                       >
-                        <span
-                          className={cn(
-                            'absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full transition-opacity',
-                            danger ? 'bg-destructive' : 'bg-primary',
-                            active ? 'opacity-100' : 'opacity-0'
-                          )}
-                        />
-                        <Icon className={cn('h-4 w-4 shrink-0', active && !danger && 'text-primary')} />
-                        <span className="hidden sm:inline">{section.label}</span>
+                        <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                        <span>{section.label}</span>
                       </button>
                     );
                   })}
                 </div>
               ))}
             </nav>
-
-            {/* Identity + autosave status */}
-            <div className="hidden border-t p-3 sm:block">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
-                  {emailInitials}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-foreground">{user.email}</p>
-                  <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                    {saveStatus === 'saving' ? (
-                      <><Loader2 className="h-2.5 w-2.5 animate-spin" />{t('savingEllipsis')}</>
-                    ) : saveStatus === 'saved' ? (
-                      <><Check className="h-2.5 w-2.5 text-emerald-500" /><span className="text-emerald-500">{t('allChangesSaved')}</span></>
-                    ) : (
-                      t('changesSaveAutomatically')
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
           </aside>
 
-          {/* Main Content */}
-          <div className="relative min-h-0 flex-1 overflow-y-auto">
-            <div
-              key={activeSection}
-              className="p-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-1 motion-safe:duration-200"
-            >
-              {/* Section header */}
-              <div className="mb-6 max-w-2xl">
-                <div className="flex items-center gap-2">
-                  <ActiveIcon className={cn('h-4 w-4', isDangerActive ? 'text-destructive' : 'text-primary')} />
+          {/* Main content: a fixed header carrying the save status and any
+              error, so neither ends up below the fold of a long section. */}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="shrink-0 border-b px-5 py-4 sm:px-6">
+              <div className="flex max-w-2xl flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                <div className="min-w-0">
                   <h2 className="text-base font-semibold tracking-tight text-foreground">{activeMeta.label}</h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{activeMeta.description}</p>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">{activeMeta.description}</p>
+                <div className="pt-1">{statusLine}</div>
               </div>
+              {error && (
+                <p role="alert" className="mt-3 flex max-w-2xl items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                  {error}
+                </p>
+              )}
+            </div>
+
+            <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+              <div
+                key={activeSection}
+                className="max-w-2xl p-5 sm:p-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200"
+              >
 
             {activeSection === 'preferences' && (
-              <div className="space-y-6 max-w-2xl">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="default-currency" className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      {t('currency')}
-                    </Label>
-                    <Select
-                      value={defaultCurrency || 'auto'}
-                      onValueChange={(value) => setDefaultCurrency(value === 'auto' ? null : value)}
-                    >
-                      <SelectTrigger id="default-currency">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="auto">{t('currencyAuto')}</SelectItem>
-                        <SelectItem value="USD">{t('currencyOptionUsd')}</SelectItem>
-                        <SelectItem value="EUR">{t('currencyOptionEur')}</SelectItem>
-                        <SelectItem value="GBP">{t('currencyOptionGbp')}</SelectItem>
-                        <SelectItem value="NOK">{t('currencyOptionNok')}</SelectItem>
-                        <SelectItem value="SEK">{t('currencyOptionSek')}</SelectItem>
-                        <SelectItem value="DKK">{t('currencyOptionDkk')}</SelectItem>
-                        <SelectItem value="JPY">{t('currencyOptionJpy')}</SelectItem>
-                        <SelectItem value="CHF">{t('currencyOptionChf')}</SelectItem>
-                        <SelectItem value="CAD">{t('currencyOptionCad')}</SelectItem>
-                        <SelectItem value="AUD">{t('currencyOptionAud')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {t('currencyDescription')}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="language" className="flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      {t('language')}
-                    </Label>
-                    <Select
-                      value={language || 'system'}
-                      onValueChange={(value) => setLanguage(value === 'system' ? null : value)}
-                    >
-                      <SelectTrigger id="language">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="system">{t('languageSystem')}</SelectItem>
-                        {SUPPORTED_LANGUAGES.map((code) => (
-                          // 'languages' is its own namespace file, not a nested key
-                          // under 'settings' — cross-namespace lookup via 'ns:key'.
-                          <SelectItem key={code} value={code}>{t(`languages:${code}`)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {t('languageDescription')}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Home className="h-4 w-4" />
-                      {t('defaultHomepage')}
-                    </Label>
-
-                    <DropdownMenu open={homepageMenuOpen} onOpenChange={setHomepageMenuOpen}>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          className="flex w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <span className="flex min-w-0 items-center gap-2">
-                            <HomepageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <span className="truncate">{homepageLabel}</span>
-                          </span>
-                          <ChevronDown
-                            className={cn(
-                              'h-4 w-4 shrink-0 opacity-50 transition-transform duration-200',
-                              homepageMenuOpen && 'rotate-180'
-                            )}
-                          />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="start"
-                        className="w-(--radix-dropdown-menu-trigger-width) min-w-[260px]"
-                      >
-                        {HOMEPAGE_PAGES.map((page) => {
-                          const Icon = page.icon;
-                          const selected = !stockMode && defaultHomepage === page.value;
-                          return (
-                            <DropdownMenuItem
-                              key={page.value}
-                              onSelect={() => selectHomepage(page.value)}
-                              className="cursor-pointer gap-2"
-                            >
-                              <Icon className="h-4 w-4" />
-                              <span>{page.label}</span>
-                              {selected && <Check className="ml-auto h-4 w-4 text-primary" />}
-                            </DropdownMenuItem>
-                          );
-                        })}
-
-                        <DropdownMenuSeparator />
-
-                        {/* Tools sub-dropdown */}
-                        <DropdownMenuSub>
-                          <DropdownMenuSubTrigger className="gap-2">
-                            <Wrench className="h-4 w-4" />
-                            <span>{t('homepageTools')}</span>
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent className="max-h-[320px] overflow-y-auto">
-                            {HOMEPAGE_TOOL_OPTIONS.map((tool) => {
-                              const Icon = tool.icon;
-                              const selected = !stockMode && defaultHomepage === tool.value;
-                              return (
-                                <DropdownMenuItem
-                                  key={tool.value}
-                                  onSelect={() => selectHomepage(tool.value)}
-                                  className="cursor-pointer gap-2"
-                                >
-                                  <Icon className="h-4 w-4" />
-                                  <span>{tool.label}</span>
-                                  {selected && <Check className="ml-auto h-4 w-4 text-primary" />}
-                                </DropdownMenuItem>
-                              );
-                            })}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onSelect={() => selectHomepage(ALL_TOOLS_OPTION.value)}
-                              className="cursor-pointer gap-2 font-medium"
-                            >
-                              <Wrench className="h-4 w-4" />
-                              <span>{ALL_TOOLS_OPTION.label}</span>
-                              {!stockMode && defaultHomepage === ALL_TOOLS_OPTION.value && (
-                                <Check className="ml-auto h-4 w-4 text-primary" />
-                              )}
-                            </DropdownMenuItem>
-                          </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-
-                        <DropdownMenuSeparator />
-
-                        <DropdownMenuItem
-                          onSelect={() => enterStockMode()}
-                          className="cursor-pointer gap-2"
-                        >
-                          <LineChart className="h-4 w-4" />
-                          <span>{t('homepageStock')}</span>
-                          {stockMode && <Check className="ml-auto h-4 w-4 text-primary" />}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    {/* Specific-stock search — rendered outside the menu so the
-                        input keeps focus (no Radix typeahead/focus-trap bugs). */}
-                    {stockMode && (
-                      <div className="space-y-1.5 rounded-md border border-border/60 bg-muted/20 p-3">
-                        <Label className="flex items-center gap-2 text-xs">
-                          <Search className="h-3.5 w-3.5" />
-                          {t('homepageStockTickerLabel')}
-                        </Label>
-                        <TickerSelector
-                          value={homepageStockPick}
-                          onChange={(r) => {
-                            if (r) {
-                              setHomepageStockPick(r);
-                              setDefaultHomepage(`/stock/${r.ticker.toUpperCase()}`);
-                            } else {
-                              setHomepageStockPick(null);
-                            }
-                          }}
-                          placeholder={t('homepageStockSearchPlaceholder')}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {homepageStockPick
-                            ? t('homepageStockTickerHint')
-                            : t('homepageStockSearchHint')}
-                        </p>
-                      </div>
-                    )}
-
-                    <p className="text-xs text-muted-foreground">
-                      {t('defaultHomepageDescription')}
-                    </p>
-                  </div>
-
-                  <SettingsCard>
-                    <ToggleSetting
-                      icon={Moon}
-                      label={t('darkMode')}
-                      checked={theme === 'dark'}
-                      onCheckedChange={(on) => setTheme(on ? 'dark' : 'light')}
-                    />
-                    <ToggleSetting
-                      icon={Hash}
-                      label={t('roundNumbers')}
-                      description={t('roundNumbersDescription')}
-                      checked={roundNumbers}
-                      onCheckedChange={setRoundNumbers}
-                    />
-                  </SettingsCard>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="default-currency">{t('currency')}</Label>
+                  <Select
+                    value={defaultCurrency || 'auto'}
+                    onValueChange={(value) => setDefaultCurrency(value === 'auto' ? null : value)}
+                  >
+                    <SelectTrigger id="default-currency" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">{t('currencyAuto')}</SelectItem>
+                      <SelectItem value="USD">{t('currencyOptionUsd')}</SelectItem>
+                      <SelectItem value="EUR">{t('currencyOptionEur')}</SelectItem>
+                      <SelectItem value="GBP">{t('currencyOptionGbp')}</SelectItem>
+                      <SelectItem value="NOK">{t('currencyOptionNok')}</SelectItem>
+                      <SelectItem value="SEK">{t('currencyOptionSek')}</SelectItem>
+                      <SelectItem value="DKK">{t('currencyOptionDkk')}</SelectItem>
+                      <SelectItem value="JPY">{t('currencyOptionJpy')}</SelectItem>
+                      <SelectItem value="CHF">{t('currencyOptionChf')}</SelectItem>
+                      <SelectItem value="CAD">{t('currencyOptionCad')}</SelectItem>
+                      <SelectItem value="AUD">{t('currencyOptionAud')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {defaultCurrency
+                      ? t('currencyDescriptionConverted', { currency: defaultCurrency })
+                      : t('currencyDescription')}
+                  </p>
                 </div>
-              </div>
-            )}
 
-            {activeSection === 'notifications' && (
-              <div className="space-y-6 max-w-2xl">
+                <div className="space-y-2">
+                  <Label htmlFor="language">{t('language')}</Label>
+                  <Select
+                    value={language || 'system'}
+                    onValueChange={(value) => setLanguage(value === 'system' ? null : value)}
+                  >
+                    <SelectTrigger id="language" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="system">{t('languageSystem')}</SelectItem>
+                      {SUPPORTED_LANGUAGES.map((code) => (
+                        // 'languages' is its own namespace file, not a nested key
+                        // under 'settings' — cross-namespace lookup via 'ns:key'.
+                        <SelectItem key={code} value={code}>{t(`languages:${code}`)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">{t('languageDescription')}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="default-homepage">{t('defaultHomepage')}</Label>
+
+                  <DropdownMenu open={homepageMenuOpen} onOpenChange={setHomepageMenuOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        id="default-homepage"
+                        type="button"
+                        className="flex w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <HomepageIcon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                          {/* clamp-ok: a page or company name in a one-line field */}
+                          <span className="truncate">{homepageLabel}</span>
+                        </span>
+                        <ChevronDown
+                          className={cn(
+                            'h-4 w-4 shrink-0 opacity-50 transition-transform duration-200',
+                            homepageMenuOpen && 'rotate-180'
+                          )}
+                          aria-hidden
+                        />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="start"
+                      className="w-(--radix-dropdown-menu-trigger-width) min-w-[260px]"
+                    >
+                      {HOMEPAGE_PAGES.map((page) => {
+                        const Icon = page.icon;
+                        const selected = !stockMode && defaultHomepage === page.value;
+                        return (
+                          <DropdownMenuItem
+                            key={page.value}
+                            onSelect={() => selectHomepage(page.value)}
+                            className="cursor-pointer gap-2"
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span>{page.label}</span>
+                            {selected && <Check className="ml-auto h-4 w-4" />}
+                          </DropdownMenuItem>
+                        );
+                      })}
+
+                      <DropdownMenuSeparator />
+
+                      {/* Tools sub-dropdown */}
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger className="gap-2">
+                          <Wrench className="h-4 w-4" />
+                          <span>{t('homepageTools')}</span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="max-h-[320px] overflow-y-auto">
+                          {HOMEPAGE_TOOL_OPTIONS.map((tool) => {
+                            const Icon = tool.icon;
+                            const selected = !stockMode && defaultHomepage === tool.value;
+                            return (
+                              <DropdownMenuItem
+                                key={tool.value}
+                                onSelect={() => selectHomepage(tool.value)}
+                                className="cursor-pointer gap-2"
+                              >
+                                <Icon className="h-4 w-4" />
+                                <span>{tool.label}</span>
+                                {selected && <Check className="ml-auto h-4 w-4" />}
+                              </DropdownMenuItem>
+                            );
+                          })}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onSelect={() => selectHomepage(ALL_TOOLS_OPTION.value)}
+                            className="cursor-pointer gap-2 font-medium"
+                          >
+                            <Wrench className="h-4 w-4" />
+                            <span>{ALL_TOOLS_OPTION.label}</span>
+                            {!stockMode && defaultHomepage === ALL_TOOLS_OPTION.value && (
+                              <Check className="ml-auto h-4 w-4" />
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuItem
+                        onSelect={() => enterStockMode()}
+                        className="cursor-pointer gap-2"
+                      >
+                        <LineChart className="h-4 w-4" />
+                        <span>{t('homepageStock')}</span>
+                        {stockMode && <Check className="ml-auto h-4 w-4" />}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Specific-stock search — rendered outside the menu so the
+                      input keeps focus (no Radix typeahead/focus-trap bugs). */}
+                  {stockMode && (
+                    <div className="space-y-1.5 rounded-md border border-border/60 bg-muted/20 p-3">
+                      <Label className="flex items-center gap-2 text-xs">
+                        <Search className="h-3.5 w-3.5" aria-hidden />
+                        {t('homepageStockTickerLabel')}
+                      </Label>
+                      <TickerSelector
+                        value={homepageStockPick}
+                        onChange={(r) => {
+                          if (r) {
+                            setHomepageStockPick(r);
+                            setDefaultHomepage(`/stock/${r.ticker.toUpperCase()}`);
+                          } else {
+                            setHomepageStockPick(null);
+                          }
+                        }}
+                        placeholder={t('homepageStockSearchPlaceholder')}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {homepageStockPick
+                          ? t('homepageStockTickerHint')
+                          : t('homepageStockSearchHint')}
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">{t('defaultHomepageDescription')}</p>
+                </div>
+
                 <SettingsCard>
                   <ToggleSetting
-                    label={t('notifEarningsTodayLabel')}
-                    description={t('notifEarningsTodayDescription')}
-                    checked={notifications.upcoming_earnings}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, upcoming_earnings: checked })}
+                    label={t('darkMode')}
+                    checked={theme === 'dark'}
+                    onCheckedChange={(on) => setTheme(on ? 'dark' : 'light')}
                   />
                   <ToggleSetting
-                    label={t('notifEconomicEventsLabel')}
-                    description={t('notifEconomicEventsDescription')}
-                    checked={notifications.economic_events}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, economic_events: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifBigPriceMovesLabel')}
-                    description={t('notifBigPriceMovesDescription')}
-                    checked={notifications.price_alerts}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, price_alerts: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifPortfolioRecapLabel')}
-                    description={t('notifPortfolioRecapDescription')}
-                    checked={notifications.portfolio_recap}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, portfolio_recap: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifAiInsightsLabel')}
-                    description={t('notifAiInsightsDescription')}
-                    checked={notifications.ai_insights}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, ai_insights: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifHealthScoreLabel')}
-                    description={t('notifHealthScoreDescription')}
-                    checked={notifications.health_score_change}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, health_score_change: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifExDividendLabel')}
-                    description={t('notifExDividendDescription')}
-                    checked={notifications.dividend_reminder}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, dividend_reminder: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifDailyBriefLabel')}
-                    description={t('notifDailyBriefDescription')}
-                    checked={notifications.daily_brief_ready}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, daily_brief_ready: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifWeeklyPickLabel')}
-                    description={t('notifWeeklyPickDescription')}
-                    checked={notifications.weekly_pick}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, weekly_pick: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifInstitutionFilingLabel')}
-                    description={t('notifInstitutionFilingDescription')}
-                    checked={notifications.institution_filing}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, institution_filing: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifPoliticianTradesLabel')}
-                    description={t('notifPoliticianTradesDescription')}
-                    checked={notifications.politician_trades}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, politician_trades: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifPoliticianHoldingsLabel')}
-                    description={t('notifPoliticianHoldingsDescription')}
-                    checked={notifications.politician_trades_holdings}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, politician_trades_holdings: checked })}
-                  />
-                  <ToggleSetting
-                    label={t('notifDailyChallengeLabel')}
-                    description={t('notifDailyChallengeDescription')}
-                    checked={notifications.daily_challenge_reminder}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, daily_challenge_reminder: checked })}
+                    label={t('roundNumbers')}
+                    description={t('roundNumbersDescription')}
+                    checked={roundNumbers}
+                    onCheckedChange={setRoundNumbers}
                   />
                 </SettingsCard>
               </div>
             )}
 
+            {activeSection === 'notifications' && (
+              <div className="space-y-6">
+                <SettingsGroup title={t('notifGroupStocks')}>
+                  <SettingsCard>
+                    <ToggleSetting label={t('notifEarningsTodayLabel')} description={t('notifEarningsTodayDescription')} {...notif('upcoming_earnings')} />
+                    <ToggleSetting label={t('notifBigPriceMovesLabel')} description={t('notifBigPriceMovesDescription')} {...notif('price_alerts')} />
+                    <ToggleSetting label={t('notifPortfolioRecapLabel')} description={t('notifPortfolioRecapDescription')} {...notif('portfolio_recap')} />
+                    <ToggleSetting label={t('notifExDividendLabel')} description={t('notifExDividendDescription')} {...notif('dividend_reminder')} />
+                    <ToggleSetting label={t('notifHealthScoreLabel')} description={t('notifHealthScoreDescription')} {...notif('health_score_change')} />
+                    {/* Pro-only: a Free user saw this "on" and could flip it,
+                        for a notification they would never get. */}
+                    <ToggleSetting
+                      label={t('notifPoliticianHoldingsLabel')}
+                      description={t('notifPoliticianHoldingsDescription')}
+                      badge={ent.isPro ? undefined : t('notifProBadge')}
+                      disabled={!ent.isPro}
+                      checked={ent.isPro && notifications.politician_trades_holdings}
+                      onCheckedChange={notif('politician_trades_holdings').onCheckedChange}
+                    />
+                  </SettingsCard>
+                </SettingsGroup>
+
+                <SettingsGroup title={t('notifGroupBullpen')}>
+                  <SettingsCard>
+                    <ToggleSetting label={t('notifDailyBriefLabel')} description={t('notifDailyBriefDescription')} {...notif('daily_brief_ready')} />
+                    <ToggleSetting label={t('notifWeeklyPickLabel')} description={t('notifWeeklyPickDescription')} {...notif('weekly_pick')} />
+                    <ToggleSetting label={t('notifAiInsightsLabel')} description={t('notifAiInsightsDescription')} {...notif('ai_insights')} />
+                    <ToggleSetting label={t('notifEconomicEventsLabel')} description={t('notifEconomicEventsDescription')} {...notif('economic_events')} />
+                  </SettingsCard>
+                </SettingsGroup>
+
+                <SettingsGroup title={t('notifGroupFollowing')}>
+                  <SettingsCard>
+                    <ToggleSetting label={t('notifPoliticianTradesLabel')} description={t('notifPoliticianTradesDescription')} {...notif('politician_trades')} />
+                    <ToggleSetting label={t('notifInstitutionFilingLabel')} description={t('notifInstitutionFilingDescription')} {...notif('institution_filing')} />
+                  </SettingsCard>
+                </SettingsGroup>
+
+                <SettingsGroup title={t('notifGroupAcademy')}>
+                  <SettingsCard>
+                    <ToggleSetting label={t('notifDailyChallengeLabel')} description={t('notifDailyChallengeDescription')} {...notif('daily_challenge_reminder')} />
+                  </SettingsCard>
+                </SettingsGroup>
+              </div>
+            )}
+
             {activeSection === 'customize' && (
-              <div className="space-y-8 max-w-2xl">
-                <div className="space-y-2">
-                  <ExperienceLevelToggle variant="full" />
-                </div>
+              <div className="space-y-8">
+                <SettingsGroup title={t('experienceLabel')} hint={t('experienceHint')}>
+                  <SegmentedChoice
+                    label={t('experienceLabel')}
+                    value={experienceLevel}
+                    onChange={setExperienceLevel}
+                    options={[
+                      { value: 'beginner', label: t('experienceBeginner'), description: t('experienceBeginnerDescription') },
+                      { value: 'intermediate', label: t('experienceIntermediate'), description: t('experienceIntermediateDescription') },
+                      { value: 'advanced', label: t('experienceAdvanced'), description: t('experienceAdvancedDescription') },
+                    ]}
+                  />
+                </SettingsGroup>
 
-                {/* ── Home ──────────────────────────────────────────── */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 border-b pb-2">
-                    <Home className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-semibold">{t('customizeHomeHeading')}</h3>
-                  </div>
-
+                <SettingsGroup title={t('customizeHomeHeading')}>
                   <SettingsCard>
                     <ToggleSetting
                       label={t('customizeShowWelcomeLabel')}
@@ -925,15 +912,9 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       onCheckedChange={setShowWelcomeText}
                     />
                   </SettingsCard>
-
-                  <div className="space-y-3 pt-1">
-                    <Label className="flex items-center gap-2">
-                      <LayoutGrid className="h-4 w-4" />
-                      {t('customizeHomepageLayoutLabel')}
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      {t('customizeHomepageLayoutHint')}
-                    </p>
+                  <div className="space-y-2 pt-2">
+                    <p className="text-sm font-medium text-foreground">{t('customizeHomepageLayoutLabel')}</p>
+                    <p className="text-xs text-muted-foreground">{t('customizeHomepageLayoutHint')}</p>
                     <HomepageLayoutEditor
                       order={widgetOrder}
                       hidden={widgetHidden}
@@ -943,59 +924,72 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       }}
                     />
                   </div>
-                </div>
+                </SettingsGroup>
 
-                {/* ── Charts ────────────────────────────────────────── */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 border-b pb-2">
-                    <LineChart className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-semibold">{t('customizeChartsHeading')}</h3>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {t('customizeChartsHint')}
-                  </p>
-                  <div className="rounded-lg border bg-muted/20 p-4">
+                <SettingsGroup title={t('customizeChartsHeading')} hint={t('customizeChartsHint')}>
+                  <div className="rounded-xl border bg-card/30 p-4">
                     <ChartPrefsControls
                       prefs={chartPrefs.prefs}
                       setPref={chartPrefs.setPref}
+                      setPrefs={chartPrefs.setPrefs}
                       reset={chartPrefs.reset}
                     />
                   </div>
-                </div>
+                </SettingsGroup>
               </div>
             )}
 
             {activeSection === 'plan' && (
-              <div className="space-y-4 max-w-2xl">
+              <div className="space-y-4">
                 <div className="rounded-xl border bg-card p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       {ent.isPro
-                        ? <Crown className="h-5 w-5 shrink-0 text-primary" />
-                        : <Sparkles className="h-5 w-5 shrink-0 text-muted-foreground" />}
+                        ? <Crown className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
+                        : <Sparkles className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />}
                       <div>
                         <p className="text-sm font-semibold text-foreground">{ent.isPro ? t('planProLabel') : t('planFreeLabel')}</p>
                         <p className="text-xs text-muted-foreground">
-                          {ent.isPro
-                            ? t('planProDescription')
-                            : t('planFreeDescription')}
+                          {ent.isPro ? t('planProDescription') : t('planFreeDescription')}
                         </p>
                       </div>
                     </div>
-                    {!ent.isPro && <UpgradeCTA />}
+                    {/* The menu offers the trial, so the Plan tab does too: it
+                        used to say only "Upgrade to Pro" at the point of decision. */}
+                    {!ent.isPro && (
+                      <div className="flex flex-col items-start gap-1">
+                        <UpgradeCTA label={t('navigation:navTryProFree', { days: PRICING.trialDays })} />
+                        <span className="text-xs text-muted-foreground">{t('navigation:navTryProFreeSub')}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {!ent.isPro && (
-                  <div className="rounded-xl border bg-muted/20 p-5">
+                {ent.isPro ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/30 p-5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{t('planManageSubscription')}</p>
+                      <p className="text-xs text-muted-foreground">{t('planManageSubscriptionHint')}</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleManageSubscription} disabled={portalLoading}>
+                      {portalLoading
+                        ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden />
+                        : <CreditCard className="mr-2 h-3.5 w-3.5" aria-hidden />}
+                      {t('planManageSubscription')}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border bg-card/30 p-5">
                     <p className="text-sm font-semibold text-foreground">{t('planUnlocksHeading')}</p>
                     <ul className="mt-2.5 space-y-2 text-sm text-muted-foreground">
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> {t('planUnlockAiChat')}</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> {t('planUnlockDailyBrief')}</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> {t('planUnlockAlerts')}</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-primary" /> {t('planUnlockExports')}</li>
+                      {(['planUnlockAiChat', 'planUnlockDailyBrief', 'planUnlockAlerts', 'planUnlockExports'] as const).map((key) => (
+                        <li key={key} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 shrink-0 text-foreground" aria-hidden />
+                          {t(key)}
+                        </li>
+                      ))}
                     </ul>
-                    <Link href="/upgrade" className="mt-4 inline-block text-xs font-medium text-primary hover:underline">
+                    <Link href="/upgrade" className="mt-4 inline-block text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground">
                       {t('planSeeComparison')}
                     </Link>
                   </div>
@@ -1004,295 +998,163 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
             )}
 
             {activeSection === 'privacy' && (
-              <div className="space-y-6 max-w-2xl">
-                <div className="space-y-4">
+              <div className="space-y-8">
+                <SettingsGroup title={t('privacyVisibilityLabel')} hint={t('privacyVisibilityHint')}>
+                  <Button variant="outline" size="sm" onClick={openProfile} className="w-fit">
+                    {t('privacyEditProfileButton')}
+                  </Button>
+                </SettingsGroup>
 
-                  <div className="space-y-3">
-                    <Label className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      {t('privacyVisibilityLabel')}
-                    </Label>
-                    <SettingsCard>
-                      <ToggleSetting
-                        label={t('privacyPublicProfileLabel')}
-                        description={t('privacyPublicProfileDescription')}
-                        checked={profilePublic}
-                        onCheckedChange={setProfilePublic}
-                      />
-                      <ToggleSetting
-                        label={t('privacyShowPortfolioLabel')}
-                        description={t('privacyShowPortfolioDescription')}
-                        checked={holdingsPublic}
-                        onCheckedChange={setHoldingsPublic}
-                        disabled={!profilePublic}
-                      />
-                    </SettingsCard>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-3">
-                    <Label className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
+                <SettingsGroup title={t('privacyPasswordLabel')}>
+                  {!hasPassword ? (
+                    <p className="text-sm text-muted-foreground">{t('privacyOAuthNotice')}</p>
+                  ) : !showPasswordForm ? (
+                    <Button variant="outline" size="sm" className="w-fit" onClick={() => setShowPasswordForm(true)}>
                       {t('changePassword')}
-                    </Label>
-                    {user.app_metadata?.provider === 'google' ? (
-                      <p className="text-xs text-muted-foreground">
-                        {t('privacyOAuthNotice')}
-                      </p>
-                    ) : !showPasswordForm ? (
-                      <Button variant="outline" onClick={() => { setShowPasswordForm(true); setError(null); }}>
-                        {t('changePassword')}
-                      </Button>
-                    ) : (
-                      <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="pw-new" className="text-xs">{t('privacyNewPasswordLabel')}</Label>
-                          <div className="relative">
-                            <Input
-                              id="pw-new"
-                              type={showPasswordNew ? 'text' : 'password'}
-                              value={passwordNew}
-                              onChange={(e) => setPasswordNew(e.target.value)}
-                              placeholder={t('privacyPasswordMinChars')}
-                              className="pr-10"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPasswordNew((v) => !v)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                              {showPasswordNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="pw-confirm" className="text-xs">{t('privacyConfirmPasswordLabel')}</Label>
-                          <div className="relative">
-                            <Input
-                              id="pw-confirm"
-                              type={showPasswordConfirm ? 'text' : 'password'}
-                              value={passwordConfirm}
-                              onChange={(e) => setPasswordConfirm(e.target.value)}
-                              placeholder={t('privacyRepeatPassword')}
-                              className="pr-10"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPasswordConfirm((v) => !v)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                              {showPasswordConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={handleChangePassword}
-                            disabled={isChangingPassword || passwordSuccess}
-                            size="sm"
-                            className="flex-1"
-                          >
-                            {isChangingPassword ? (
-                              <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />{t('privacyUpdatingPassword')}</>
-                            ) : passwordSuccess ? (
-                              <><Check className="mr-2 h-3.5 w-3.5" />{t('privacyPasswordUpdated')}</>
-                            ) : (
-                              t('privacyUpdatePasswordButton')
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => { setShowPasswordForm(false); setPasswordNew(''); setPasswordConfirm(''); setError(null); }}
-                            disabled={isChangingPassword}
-                          >
-                            {t('privacyCancelButton')}
-                          </Button>
+                    </Button>
+                  ) : (
+                    // A real form, so Enter submits.
+                    <form onSubmit={handleChangePassword} className="space-y-3 rounded-xl border bg-card/30 p-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pw-new">{t('privacyNewPasswordLabel')}</Label>
+                        <div className="relative">
+                          <Input
+                            id="pw-new"
+                            type={showPasswordNew ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            value={passwordNew}
+                            onChange={(e) => setPasswordNew(e.target.value)}
+                            placeholder={t('privacyPasswordMinChars')}
+                            className="pr-10"
+                          />
+                          {showPasswordToggle(showPasswordNew, () => setShowPasswordNew((v) => !v))}
                         </div>
                       </div>
-                    )}
-                  </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pw-confirm">{t('privacyConfirmPasswordLabel')}</Label>
+                        <div className="relative">
+                          <Input
+                            id="pw-confirm"
+                            type={showPasswordConfirm ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            value={passwordConfirm}
+                            onChange={(e) => setPasswordConfirm(e.target.value)}
+                            placeholder={t('privacyRepeatPassword')}
+                            className="pr-10"
+                          />
+                          {showPasswordToggle(showPasswordConfirm, () => setShowPasswordConfirm((v) => !v))}
+                        </div>
+                      </div>
+                      {passwordError && (
+                        <p role="alert" className="text-sm text-destructive">{passwordError}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm" disabled={isChangingPassword || passwordSuccess}>
+                          {isChangingPassword ? (
+                            <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden />{t('privacyUpdatingPassword')}</>
+                          ) : passwordSuccess ? (
+                            <><Check className="mr-2 h-3.5 w-3.5" aria-hidden />{t('privacyPasswordUpdated')}</>
+                          ) : (
+                            t('privacyUpdatePasswordButton')
+                          )}
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={closePasswordForm} disabled={isChangingPassword}>
+                          {t('privacyCancelButton')}
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </SettingsGroup>
 
-                </div>
+                {/* Export is a routine backup, so it lives here, not beside account
+                    deletion under red warning styling. */}
+                <SettingsGroup title={t('exportData')} hint={t('dangerExportDescription')}>
+                  <Button variant="outline" size="sm" className="w-fit" onClick={handleExportData} disabled={isExportingData}>
+                    {isExportingData
+                      ? <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden />{t('dangerExporting')}</>
+                      : <><Download className="mr-2 h-3.5 w-3.5" aria-hidden />{t('exportData')}</>}
+                  </Button>
+                </SettingsGroup>
               </div>
             )}
 
             {activeSection === 'ai' && (
-              <div className="space-y-6 max-w-2xl">
-                <div className="space-y-2">
-                  <ExperienceLevelToggle variant="full" />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-sm font-medium">{t('aiRiskProfileLabel')}</Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {t('aiRiskProfileHint')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    {([
+              <div className="space-y-8">
+                <SettingsGroup title={t('aiRiskProfileLabel')} hint={t('aiRiskProfileHint')}>
+                  <SegmentedChoice
+                    label={t('aiRiskProfileLabel')}
+                    value={riskProfile}
+                    onChange={setRiskProfile}
+                    options={[
                       { value: 'conservative', label: t('aiRiskConservative'), description: t('aiRiskConservativeDescription') },
                       { value: 'balanced', label: t('aiRiskBalanced'), description: t('aiRiskBalancedDescription') },
                       { value: 'aggressive', label: t('aiRiskAggressive'), description: t('aiRiskAggressiveDescription') },
-                    ] as const).map(({ value, label, description }) => (
-                      <button
-                        key={value}
-                        onClick={() => setRiskProfile(value)}
-                        className={`flex-1 flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                          riskProfile === value
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground'
-                        }`}
-                      >
-                        <span className="font-medium">{label}</span>
-                        <span className="text-xs opacity-70">{description}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                    ]}
+                  />
+                </SettingsGroup>
 
-                <Separator />
-
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-sm font-medium">{t('aiHorizonLabel')}</Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {t('aiHorizonHint')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    {([
+                <SettingsGroup title={t('aiHorizonLabel')} hint={t('aiHorizonHint')}>
+                  <SegmentedChoice
+                    label={t('aiHorizonLabel')}
+                    value={investmentHorizon}
+                    onChange={setInvestmentHorizon}
+                    options={[
                       { value: 'short', label: t('aiHorizonShort'), description: t('aiHorizonShortDescription') },
                       { value: 'medium', label: t('aiHorizonMedium'), description: t('aiHorizonMediumDescription') },
                       { value: 'long', label: t('aiHorizonLong'), description: t('aiHorizonLongDescription') },
-                    ] as const).map(({ value, label, description }) => (
-                      <button
-                        key={value}
-                        onClick={() => setInvestmentHorizon(value)}
-                        className={`flex-1 flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                          investmentHorizon === value
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground'
-                        }`}
-                      >
-                        <span className="font-medium">{label}</span>
-                        <span className="text-xs opacity-70">{description}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                    ]}
+                  />
+                </SettingsGroup>
 
-                <Separator />
-
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-sm font-medium">{t('aiResponseStyleLabel')}</Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {t('aiResponseStyleHint')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    {([
+                <SettingsGroup title={t('aiResponseStyleLabel')} hint={t('aiResponseStyleHint')}>
+                  <SegmentedChoice
+                    label={t('aiResponseStyleLabel')}
+                    value={responseStyle}
+                    onChange={setResponseStyle}
+                    options={[
                       { value: 'concise', label: t('aiStyleConcise'), description: t('aiStyleConciseDescription') },
                       { value: 'balanced', label: t('aiStyleBalanced'), description: t('aiStyleBalancedDescription') },
                       { value: 'detailed', label: t('aiStyleDetailed'), description: t('aiStyleDetailedDescription') },
-                    ] as const).map(({ value, label, description }) => (
-                      <button
-                        key={value}
-                        onClick={() => setResponseStyle(value)}
-                        className={`flex-1 flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-left text-sm transition-all ${
-                          responseStyle === value
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground'
-                        }`}
-                      >
-                        <span className="font-medium">{label}</span>
-                        <span className="text-xs opacity-70">{description}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                    ]}
+                  />
+                </SettingsGroup>
 
-                <Separator />
-
-                <ToggleSetting
-                  label={t('aiHoldingsContextLabel')}
-                  description={t('aiHoldingsContextDescription')}
-                  checked={allowHoldingsContext}
-                  onCheckedChange={setAllowHoldingsContext}
-                />
+                <SettingsCard>
+                  <ToggleSetting
+                    label={t('aiHoldingsContextLabel')}
+                    description={t('aiHoldingsContextDescription')}
+                    checked={allowHoldingsContext}
+                    onCheckedChange={setAllowHoldingsContext}
+                  />
+                </SettingsCard>
               </div>
             )}
 
             {activeSection === 'danger' && (
-              <div className="space-y-6 max-w-2xl">
-                <div className="space-y-4">
-                  <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 space-y-4">
-                    <div className="flex items-center gap-2 text-destructive">
-                      <AlertTriangle className="h-5 w-5" />
-                      <Label className="text-base">{t('exportData')}</Label>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {t('dangerExportDescription')}
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={handleExportData}
-                      disabled={isExportingData}
-                      className="w-full"
-                    >
-                      {isExportingData ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t('dangerExporting')}
-                        </>
-                      ) : (
-                        <>
-                          <Download className="mr-2 h-4 w-4" />
-                          {t('exportData')}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  <Separator />
-
-                  <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 space-y-4">
-                    <div className="flex items-center gap-2 text-destructive">
-                      <Trash2 className="h-5 w-5" />
-                      <Label className="text-base">{t('deleteAccount')}</Label>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {t('deleteAccountDescription')}
-                    </p>
-                    <Button
-                      variant="destructive"
-                      onClick={() => setDeleteDialogOpen(true)}
-                      className="w-full"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {t('deleteAccount')}
-                    </Button>
-                    <DeleteAccountDialog
-                      open={deleteDialogOpen}
-                      onOpenChange={setDeleteDialogOpen}
-                      isPro={ent.isPro}
-                      onConfirm={handleDeleteAccount}
-                    />
-                  </div>
+              <div className="rounded-xl border bg-card/30 p-5">
+                <p className="text-sm text-muted-foreground">{t('deleteAccountDescription')}</p>
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={handleExportData} disabled={isExportingData}>
+                    {isExportingData
+                      ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden />
+                      : <Download className="mr-2 h-3.5 w-3.5" aria-hidden />}
+                    {t('exportData')}
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+                    {t('deleteAccount')}
+                  </Button>
                 </div>
+                <DeleteAccountDialog
+                  open={deleteDialogOpen}
+                  onOpenChange={setDeleteDialogOpen}
+                  isPro={ent.isPro}
+                  onConfirm={handleDeleteAccount}
+                  onExport={handleExportData}
+                  isExporting={isExportingData}
+                />
               </div>
             )}
-
-            {error && (
-              <div className="mt-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm animate-in fade-in slide-in-from-bottom-2">
-                {error}
               </div>
-            )}
             </div>
           </div>
         </div>

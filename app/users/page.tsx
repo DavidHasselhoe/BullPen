@@ -28,9 +28,9 @@ async function fetchMembers(q: string): Promise<PublicUser[]> {
   return data.results ?? [];
 }
 
-// Opens Settings on its Privacy tab, the same event the notifications page uses.
-const openPrivacySettings = () =>
-  window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'privacy' } }));
+// Opens the Profile modal, where the public-profile switch lives (it moved
+// there from Settings > Privacy, next to the name and photo it publishes).
+const openPrivacySettings = () => window.dispatchEvent(new Event('profile:open'));
 
 export default function UsersPage() {
   const { t } = useTranslation('user');

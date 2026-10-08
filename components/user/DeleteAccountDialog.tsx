@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Download, Loader2, Trash2 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -15,6 +15,9 @@ interface Props {
   isPro: boolean;
   /** Resolves with an error message, or null on success (the caller navigates away). */
   onConfirm: () => Promise<string | null>;
+  /** Downloads the user's data, so "want a copy first?" is one click, not a trip back out. */
+  onExport?: () => void;
+  isExporting?: boolean;
 }
 
 /**
@@ -22,7 +25,7 @@ interface Props {
  * stray Enter deleted the account. Focus now opens in the confirm field and
  * submit stays disabled until the confirm word is typed.
  */
-export function DeleteAccountDialog({ open, onOpenChange, isPro, onConfirm }: Props) {
+export function DeleteAccountDialog({ open, onOpenChange, isPro, onConfirm, onExport, isExporting = false }: Props) {
   const { t } = useTranslation('settings');
   const [typed, setTyped] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -63,7 +66,15 @@ export function DeleteAccountDialog({ open, onOpenChange, isPro, onConfirm }: Pr
           <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
             <li>{t('deleteDialogDataPoint')}</li>
             {isPro && <li className="text-foreground">{t('deleteDialogSubscriptionPoint')}</li>}
-            <li>{t('deleteDialogExportPoint')}</li>
+            <li>
+              {t('deleteDialogExportPoint')}
+              {onExport && (
+                <Button type="button" variant="link" size="sm" onClick={onExport} disabled={isExporting || deleting} className="ml-1 h-auto p-0 align-baseline">
+                  {isExporting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden /> : <Download className="mr-1 h-3.5 w-3.5" aria-hidden />}
+                  {t('deleteDialogExportButton')}
+                </Button>
+              )}
+            </li>
           </ul>
 
           <div className="space-y-1.5">
