@@ -3151,5 +3151,8 @@
   "tools.toolGateSignIn": "bfd402b2f6f3812529b55596136d3a11c51616317e3b1cd999928e2d4eae7d3f",
   "tools.screenerGuestWatchlistContext_one": "6cc4acf5eb4cb86b5d2303649b48ca0e00f98f7675f2443c76ce8c52be9de489",
   "tools.screenerGuestWatchlistContext_other": "eb10a8d806f7ccc3823c53aa7a2103eef07e8abcf9302b97f6c64ea4af5a3c9f",
-  "watchlist.watchlistThesisBear": "8c578ed3e9d5fec6f0f1f46402fdb52e4b6174ae74aef1487b1905d0b666c168"
+  "watchlist.watchlistThesisBear": "8c578ed3e9d5fec6f0f1f46402fdb52e4b6174ae74aef1487b1905d0b666c168",
+  "stock.sectorPeersHeading": "0a8ffab1e3cfbb23ae4a754b11ae8c81141c829adf2f705743572fbb8b0fe8cd",
+  "stock.sectorPeersSubtitle": "7d0b8784372ab0ec613db0b6c1dfc25062a3f0a21c7b6f3780d21df4dfd033ac",
+  "stock.sectorPeersSeeAll": "69e54f4eda3ba688ecd880602a1cf99e9dc6b38bc129aea34f83da708691aa99"
 }

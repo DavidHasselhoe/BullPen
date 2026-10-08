@@ -119,6 +119,7 @@
   "earningsStreakBeat": "过去 {{total}} 个季度中超过预期 {{count}} 次",
   "earningsStreakMiss": "过去 {{total}} 个季度中未达预期 {{count}} 次",
   "earningsToday": "今天",
+  "earningsUnconfirmed": "等待财报披露",
   "employeesLabel": "员工数",
   "exchangeLabel": "交易所",
   "financialsCardTitle": "财务数据",
@@ -429,13 +430,15 @@
   "washingtonTradeCount_one": "{{count}} 笔交易",
   "washingtonTradeCount_other": "{{count}} 笔交易",
   "healthNoChange": "无变化",
-  "earningsUnconfirmed": "等待财报披露",
   "earningsEstimatedDate": "预计日期",
   "earningsEstimatedDateHint": "根据历往财报发布日期推算。公司尚未公布具体日期。",
   "fiscalQuarterLabel": "第{{quarter}}季度 FY{{year}}",
-  "fiscalYearLabel": "FY{{year}}",
   "financialsPeriodEndTitle": "截至 {{date}} 的季度",
   "financialsYearEndTitle": "截至 {{date}} 的财政年度",
   "financialsReportedOn": "于 {{date}} 披露",
-  "financialsReportPending": "{{period}} 已于 {{date}} 披露。完整财务报表尚未提交。"
+  "financialsReportPending": "{{period}} 已于 {{date}} 披露。完整财务报表尚未提交。",
+  "fiscalYearLabel": "财年{{year}}",
+  "sectorPeersHeading": "{{sector}}行业更多公司",
+  "sectorPeersSubtitle": "同行业规模相近的公司",
+  "sectorPeersSeeAll": "按行业查看所有股票"
 }
