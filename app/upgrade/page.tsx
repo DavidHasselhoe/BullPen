@@ -98,11 +98,16 @@ function Beat({ time, title, desc, children }: { time: string; title: string; de
   );
 }
 
-/** A real capture from the app, framed like a window onto it. */
-function Shot({ src, alt, width, height }: { src: string; alt: string; width: number; height: number }) {
+/**
+ * A real capture from the app, in the theme the reader is using. The dark
+ * captures are taken with the same viewport and crop as the light ones (same
+ * pixel size), so swapping them never moves the layout.
+ */
+function Shot({ src, darkSrc, alt, width, height }: { src: string; darkSrc: string; alt: string; width: number; height: number }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-white ring-1 ring-black/5">
-      <Image src={src} alt={alt} width={width} height={height} sizes="(max-width: 1024px) 92vw, 568px" className="h-auto w-full" />
+    <div className="overflow-hidden rounded-xl border border-border bg-white ring-1 ring-black/5 dark:bg-card dark:ring-white/5">
+      <Image src={src} alt={alt} width={width} height={height} sizes="(max-width: 1024px) 92vw, 568px" className="h-auto w-full dark:hidden" />
+      <Image src={darkSrc} alt={alt} width={width} height={height} sizes="(max-width: 1024px) 92vw, 568px" className="hidden h-auto w-full dark:block" />
     </div>
   );
 }
@@ -319,11 +324,11 @@ function UpgradeContent() {
             <h2 id="day-heading" className="text-sm font-medium text-muted-foreground">{t('upgradeDayHeading')}</h2>
             <ol className="relative mt-6 space-y-14 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-px before:bg-border">
               <Beat time={t('upgradeBeatBriefTime')} title={t('upgradeBeatBriefTitle')} desc={t('upgradeBeatBriefDesc')}>
-                <Shot src="/screenshots/bento-brief.png" alt={t('upgradeBeatBriefAlt')} width={568} height={231} />
+                <Shot src="/screenshots/bento-brief.png" darkSrc="/screenshots/bento-brief-dark.png" alt={t('upgradeBeatBriefAlt')} width={568} height={231} />
               </Beat>
               {/* Generic on purpose: the capture shows another stock, so naming theirs would mislabel it. */}
               <Beat time={t('upgradeBeatWhyTime')} title={t('upgradeBeatWhyTitleGeneric')} desc={t('upgradeBeatWhyDesc')}>
-                <Shot src="/screenshots/bento-why.png" alt={t('upgradeBeatWhyAlt')} width={568} height={307} />
+                <Shot src="/screenshots/bento-why.png" darkSrc="/screenshots/bento-why-dark.png" alt={t('upgradeBeatWhyAlt')} width={568} height={307} />
               </Beat>
               <Beat time={t('upgradeBeatAskTime')} title={t('upgradeBeatAskTitle')} desc={t('upgradeBeatAskDesc')}>
                 {/* Questions only: an invented answer would be a fake product shot. */}

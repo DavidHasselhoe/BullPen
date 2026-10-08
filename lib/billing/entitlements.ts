@@ -94,7 +94,7 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
       { label: 'AI Deep Dive reports', free: `${QUOTAS.deep_dive.count}/month`, pro: `${QUOTAS.deep_dive.proCap}/month` },
       { label: 'AI Portfolio Builder', free: `${QUOTAS.portfolio_builder.count}/month`, pro: 'Unlimited' },
       { label: 'AI Portfolio Checkup', free: `${QUOTAS.risk_analysis.count}/month`, pro: 'Unlimited' },
-      { label: '“Why Today?” move explanations', free: false, pro: true },
+      { label: 'Why Today? move explanations', free: false, pro: true },
       { label: 'Daily Brief (AI market recap)', free: false, pro: true },
       {
         label: "Bull's Weekly Pick",
