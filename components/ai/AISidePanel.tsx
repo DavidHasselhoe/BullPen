@@ -5,7 +5,6 @@ import { X, PanelRightClose, Settings, History, SquarePen, ArrowLeft } from 'luc
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
-import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import type { UIMessage } from 'ai';
 import {
@@ -36,17 +35,6 @@ interface AISidePanelProps {
   onConsumedQuery?: () => void;
   whyToday?: WhyTodayPayload | null;
   onCloseWhyToday?: () => void;
-}
-
-function getStarterPrompts(t: TFunction): string[] {
-  return [
-    t('starterPromptAddHolding'),
-    t('starterPromptSetAlert'),
-    t('starterPromptInsiderBuying'),
-    t('starterPromptHealthCheck'),
-    t('starterPromptGrowthStocks'),
-    t('starterPromptRecentEarnings'),
-  ];
 }
 
 const PANEL_WIDTH = 480;
@@ -86,6 +74,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
   const [initialMessages, setInitialMessages] = useState<UIMessage[] | undefined>(undefined);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState(false);
 
   const { data: history, isLoading: historyLoading } = useQuery({
     queryKey: ['ai-conversations-list'],
@@ -106,13 +95,19 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
       return;
     }
     setLoadingConversationId(id);
+    setHistoryError(false);
     try {
       const res = await fetch(`/api/ai/conversations/${id}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        setHistoryError(true);
+        return;
+      }
       const json = await res.json();
       setInitialMessages(json.conversation?.messages ?? []);
       setConversationId(id);
       setHistoryOpen(false);
+    } catch {
+      setHistoryError(true);
     } finally {
       setLoadingConversationId(null);
     }
@@ -146,15 +141,23 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
   // Escape to close
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
+      if (e.key !== 'Escape' || !open || e.defaultPrevented) return;
+      // A dialog on top (the paywall) closes itself; Escape is not for the panel too.
+      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
+      if (historyOpen) {
+        setHistoryOpen(false);
+        return;
+      }
+      handleClose();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleClose]);
+  }, [handleClose, open, historyOpen]);
 
   return (
     <motion.aside
       aria-hidden={!open}
+      aria-label={t('sidePanelRegionLabel')}
       // inert removes the collapsed panel's buttons from tab order and the
       // accessibility tree — aria-hidden alone leaves focusable descendants.
       inert={!open}
@@ -177,7 +180,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
           <TooltipTrigger asChild>
             <button
               onClick={handleClose}
-              aria-label={t('sidePanelClose')}
+              aria-label={t('sidePanelCollapse')}
               className={cn(
                 'flex items-center justify-center',
                 'w-8 h-16 -ml-px',
@@ -189,17 +192,17 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
               <PanelRightClose className="h-5 w-5" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="left">{t('sidePanelClose')}</TooltipContent>
+          <TooltipContent side="left">{t('sidePanelCollapse')}</TooltipContent>
         </Tooltip>
       </motion.div>
 
-      {/* Main content — absolute fill avoids squishing during width spring animation */}
+      {/* Main content — fixed width, anchored left, so the width spring slides it in rather than squeezing it */}
       <motion.div
         initial={false}
         animate={{ opacity: open ? 1 : 0 }}
         transition={open ? { duration: 0.18, delay: 0.22 } : { duration: 0.13 }}
-        style={{ pointerEvents: open ? 'auto' : 'none' }}
-        className="absolute inset-0 flex flex-col bg-background border-l border-border/60 overflow-hidden"
+        style={{ pointerEvents: open ? 'auto' : 'none', width: panelWidth }}
+        className="absolute inset-y-0 left-0 flex flex-col bg-background border-l border-border/60 overflow-hidden"
       >
         {/* Header */}
         <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-border/50 bg-muted/30">
@@ -224,7 +227,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
               <p className="text-sm font-semibold leading-none truncate">{t('askBull')}</p>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5">
             {!whyToday && isAuthenticated && user && (
               <>
                 <Tooltip>
@@ -233,7 +236,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                       onClick={startNewChat}
                       aria-label={t('sidePanelNewChat')}
                       title={t('sidePanelNewChat')}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                      className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors sm:h-9 sm:w-9"
                     >
                       <SquarePen className="h-4 w-4" />
                     </button>
@@ -248,7 +251,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                       aria-label={t('sidePanelChatHistory')}
                       title={t('sidePanelChatHistory')}
                       className={cn(
-                        'rounded-md p-1.5 transition-colors',
+                        'flex h-10 w-10 items-center justify-center rounded-md transition-colors sm:h-9 sm:w-9',
                         historyOpen
                           ? 'text-primary bg-primary/10'
                           : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -264,7 +267,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                     <button
                       onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'ai' } }))}
                       aria-label={t('sidePanelAiSettings')}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                      className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors sm:h-9 sm:w-9"
                     >
                       <Settings className="h-4 w-4" />
                     </button>
@@ -276,7 +279,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
             <button
               onClick={handleClose}
               aria-label={t('sidePanelClose')}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors sm:h-9 sm:w-9"
             >
               <X className="h-4 w-4" />
             </button>
@@ -286,6 +289,9 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
         {/* Chat history dropdown */}
         {historyOpen && (
           <div className="absolute top-16 right-4 z-30 w-72 max-h-80 overflow-y-auto rounded-lg border border-border/40 bg-background shadow-lg py-1.5">
+            {historyError && (
+              <p role="alert" className="px-3 py-2 text-xs text-destructive">{t('sidePanelHistoryLoadFailed')}</p>
+            )}
             {historyLoading ? (
               <div className="px-3 py-4 text-xs text-muted-foreground text-center">{t('sidePanelHistoryLoading')}</div>
             ) : !history || history.length === 0 ? (
@@ -302,10 +308,11 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                     c.id === conversationId && 'bg-muted/30'
                   )}
                 >
-                  <span className="block font-mono text-[11px] text-muted-foreground">
+                  <span className="block font-mono text-xs text-muted-foreground">
                     {formatShortDate(c.updated_at, locale)}
                   </span>
-                  <span className="block text-foreground/90 truncate">{c.title}</span>
+                  {/* clamp-ok: a conversation title in a one-line list row; full title on hover */}
+                  <span className="block text-foreground/90 truncate" title={c.title}>{c.title}</span>
                 </button>
               ))
             )}
@@ -347,7 +354,6 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                       ref={chatRef}
                       compact
                       user={user}
-                      starterPrompts={getStarterPrompts(t)}
                       open={open}
                       initialQuery={initialQuery ?? undefined}
                       aiContext={aiContext ?? undefined}

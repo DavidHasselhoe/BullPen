@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import { Send, Square, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useStickToBottom } from '@/hooks/use-stick-to-bottom';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateQuota } from '@/hooks/use-quota';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
@@ -109,7 +110,8 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
   const { noteTicker } = useAIPanel();
   const router = useRouter();
   const { getDecision: getNavigateDecision, confirm: confirmNavigate, decline: declineNavigate } = useNavigateConfirmations(router.push);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  // Follows a reply only while the reader is at the bottom; see useStickToBottom.
+  const { scrollRef, contentRef, scrollToBottom } = useStickToBottom();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef('');
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
@@ -160,13 +162,11 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
   // While a tool is running and the assistant hasn't started writing text yet, show what
   // it's doing ("Checking financial health…") instead of a generic "thinking" indicator.
   const toolStatusLabel = isStreaming && !lastMessageHasText
-    ? getToolStatusLabel(getActiveToolName(lastMessage))
+    ? getToolStatusLabel(getActiveToolName(lastMessage), (key, english) => t(key, { ns: 'ai', defaultValue: english }))
     : null;
-  const followups = !isStreaming && lastMessage?.role === 'assistant' ? getFollowups(lastMessage) : [];
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const followups = !isStreaming && lastMessage?.role === 'assistant'
+    ? getFollowups(lastMessage, 3, (key, english) => t(key, { ns: 'ai', defaultValue: english }))
+    : [];
 
   // Panel stays mounted now, so this needs to re-fire whenever it opens
   // (not just once on true mount) to still focus the input each time.
@@ -190,6 +190,7 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
         },
       },
     );
+    requestAnimationFrame(() => scrollToBottom('smooth'));
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -268,9 +269,10 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
       />
 
       {/* Messages */}
-      <div className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-4 py-4 scrollbar-hide">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
+        <div ref={contentRef} className="flex min-h-full flex-col gap-4 px-4 py-4">
         {messages.length === 0 && (
-          <div className="flex h-full flex-col items-center justify-center gap-3 py-6 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
             <BullAiIcon pose="wave" size={112} />
             <div>
               <p className="text-sm font-semibold text-foreground">{t('chartAiWelcomeHeading')}</p>
@@ -415,7 +417,7 @@ export function ChartAIPanel({ open, symbol, snapshot, onAction, onClose }: Prop
           </motion.div>
         )}
 
-        <div ref={bottomRef} />
+        </div>
       </div>
 
       {error && (

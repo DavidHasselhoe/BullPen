@@ -9,12 +9,14 @@ import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Send, Square, User } from 'lucide-react';
+import { ArrowDown, Check, Copy, RotateCcw, Send, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ProfileAvatar, getUserDisplayName, getUserInitials } from '@/components/user/ProfileAvatar';
 import type { AuthUser } from '@/lib/auth/auth';
+import { useStickToBottom } from '@/hooks/use-stick-to-bottom';
+import { useSmoothText } from '@/hooks/use-smooth-text';
 import type { QuotaState } from '@/lib/billing/quotas';
 import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymbol } from '@/hooks/use-holdings';
 import { useAlerts } from '@/hooks/use-alerts';
@@ -104,7 +106,7 @@ const MARKDOWN_CLS = cn(
   '[&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:first:mt-0',
   '[&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:first:mt-0',
   '[&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-1.5 [&_h3]:mb-0.5 [&_h3]:first:mt-0',
-  '[&_p]:my-1 [&_p]:first:mt-0 [&_p]:last:mb-0',
+  '[&_p]:my-2 [&_p]:first:mt-0 [&_p]:last:mb-0',
   '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5',
   '[&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:space-y-0.5',
   '[&_strong]:font-semibold',
@@ -124,7 +126,23 @@ const MARKDOWN_COMPONENTS: Components = {
       <table {...props} />
     </div>
   ),
+  // In-app links navigate client-side: a plain <a> reloaded the page and
+  // wiped the open conversation. Outside links open in a new tab.
+  a: ({ node: _node, href, ...props }) =>
+    href?.startsWith('/') ? (
+      <Link href={href} {...props} />
+    ) : (
+      <a href={href} target="_blank" rel="noopener noreferrer" {...props} />
+    ),
 };
+
+/** The reply's text as written (markdown), for copying and screen-reader announcements. */
+function messageText(message: UIMessage): string {
+  return message.parts
+    .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+    .map((p) => p.text)
+    .join('');
+}
 
 /**
  * Markdown renders while streaming too, so bold, lists and headings format as
@@ -139,16 +157,18 @@ const AssistantMessageContent = memo(function AssistantMessageContent({
   text: string;
   isStreaming: boolean;
 }) {
-  if (isStreaming) {
+  // Released at a steady writing pace rather than in the bursts the model
+  // streams in; keeps going briefly after the stream ends to finish the backlog.
+  const { visible, catchingUp } = useSmoothText(text, isStreaming);
+  if (isStreaming || catchingUp) {
     return (
       // `[&>p:last-child]:inline` keeps the caret on the same line as the last
       // paragraph instead of dropping it onto a line of its own.
       <div className={cn(MARKDOWN_CLS, '[&>p:last-child]:inline')}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
-        <motion.span
-          className="inline-block w-[2px] h-[1em] bg-current ml-0.5 align-middle rounded-full"
-          animate={{ opacity: [1, 0] }}
-          transition={{ duration: 0.6, repeat: Infinity, repeatType: 'reverse', ease: 'linear' }}
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{visible}</ReactMarkdown>
+        {/* CSS, not framer: the global reduced-motion rule stops it. */}
+        <span
+          className="ml-0.5 inline-block h-[1em] w-[2px] rounded-full bg-current align-middle [animation:blink_1.1s_steps(1)_infinite]"
           aria-hidden
         />
       </div>
@@ -179,8 +199,15 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const { create: createAlert } = useAlerts();
   const invalidateQuota = useInvalidateQuota();
   const { lastTicker, noteTicker } = useAIPanel();
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const { scrollRef, contentRef, isAtBottom, scrollToBottom } = useStickToBottom();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [hasInput, setHasInput] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  // The reply the reader stopped, so it is marked as cut short rather than
+  // looking like a finished answer.
+  const [stoppedId, setStoppedId] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState('');
+  const translateUx = useCallback((key: string, english: string) => t(key, { defaultValue: english }), [t]);
   const inputRef = useRef('');
   const lastSentInitialQueryRef = useRef<string | null>(null);
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
@@ -291,6 +318,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const {
     messages,
     sendMessage,
+    regenerate,
     status,
     stop,
     error,
@@ -341,6 +369,9 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     },
     onFinish: async ({ message }) => {
       invalidateQuota('chat');
+      // One announcement per finished reply; announcing per token would talk over itself.
+      const plain = messageText(message).replace(/[*_#`>|]+/g, '').trim();
+      if (plain) setAnnouncement(t('chatReplyAnnouncement', { text: plain }));
       const tickers = extractTickers(message);
       if (tickers.length) noteTicker(tickers[tickers.length - 1]);
       getCompletedToolCalls(message).forEach((call, i) => {
@@ -364,25 +395,46 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   // Before the first tool call fires, or between tool calls while the model plans the next
   // step, fall back to a state label so there's always a real word on screen, not just dots.
   const toolStatusLabel = isStreaming && !lastMessageHasText
-    ? getToolStatusLabel(getActiveToolName(lastMessage))
+    ? getToolStatusLabel(getActiveToolName(lastMessage), translateUx)
     : null;
   const thinkingLabel = isStreaming && !lastMessageHasText
     ? toolStatusLabel ?? (status === 'submitted' ? t('chatThinking') : t('chatReasoning'))
     : null;
-  const followups = !isStreaming && lastMessage?.role === 'assistant' ? getFollowups(lastMessage) : [];
+  const followups = !isStreaming && lastMessage?.role === 'assistant' ? getFollowups(lastMessage, 3, translateUx) : [];
 
-  // Auto-scroll to bottom on new messages
+  // Focus the input on mount: for the full-page chat, and for the side panel's
+  // first open, where the chunk loads after the panel's own focus timer fired
+  // (so the first open used to leave focus nowhere).
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Auto-focus on mount for full-page chat (open === undefined).
-  // Side-panel focus is driven externally via the focusInput ref handle.
-  useEffect(() => {
-    if (open !== undefined) return;
-    const id = setTimeout(() => textareaRef.current?.focus(), 0);
+    if (open === false) return;
+    const id = setTimeout(() => textareaRef.current?.focus({ preventScroll: true }), 0);
     return () => clearTimeout(id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Sending always brings the reader back to the conversation's end. */
+  const send = (text: string) => {
+    setStoppedId(null);
+    sendMessage({ parts: [{ type: 'text', text }] });
+    requestAnimationFrame(() => scrollToBottom('smooth'));
+    refocusInput();
+  };
+
+  const copyReply = async (message: UIMessage) => {
+    try {
+      await navigator.clipboard.writeText(messageText(message));
+      setCopiedId(message.id);
+      setTimeout(() => setCopiedId((id) => (id === message.id ? null : id)), 1500);
+    } catch {
+      // Clipboard blocked (permissions, insecure context): nothing useful to say.
+    }
+  };
+
+  const regenerateReply = () => {
+    setStoppedId(null);
+    clearError();
+    void regenerate();
+    requestAnimationFrame(() => scrollToBottom('smooth'));
+  };
 
   // Send initial query when opened with one (e.g. from command palette), exactly
   // once per distinct query value. Comparing against the last-sent *value*
@@ -439,18 +491,20 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     const text = inputRef.current.trim();
     if (!text || isStreaming) return;
 
-    sendMessage({ parts: [{ type: 'text', text }] });
+    send(text);
 
     inputRef.current = '';
+    setHasInput(false);
     if (textareaRef.current) {
       textareaRef.current.value = '';
       textareaRef.current.style.height = 'auto';
     }
-    refocusInput();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // isComposing: Enter that confirms a Japanese/Chinese IME candidate must
+    // not send the half-typed message.
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSubmit();
     }
@@ -458,6 +512,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     inputRef.current = e.target.value;
+    setHasInput(e.target.value.trim().length > 0);
     // Auto-grow textarea (max ~5 lines)
     e.target.style.height = 'auto';
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
@@ -471,7 +526,15 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     }
   };
 
+  const chipClass =
+    'inline-flex items-center rounded-full border border-border bg-muted/40 px-3.5 min-h-11 text-left text-xs text-muted-foreground transition-colors duration-150 hover:border-foreground/20 hover:bg-muted/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]';
+  const actionClass =
+    'inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+
   return (
+    // reducedMotion="user": framer's own animations (message entrance, chip
+    // stagger) honour prefers-reduced-motion like the CSS ones already do.
+    <MotionConfig reducedMotion="user">
     <div className={cn('flex flex-col h-full', compact ? '' : 'min-h-[460px]')}>
       {/* Quota indicator (free users only — invisible for Pro) */}
       <div className="shrink-0 px-4 pt-3 flex justify-center">
@@ -486,37 +549,41 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
         quota={paywallQuota ?? undefined}
       />
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4 scrollbar-hide">
+      {/* One announcement per finished reply, for screen readers. */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
+
+      {/* Messages. The reader owns the scroll: it follows a reply only while
+          they're at the bottom, and stays put the moment they scroll up. */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
+          <div ref={contentRef} className="flex min-h-full flex-col gap-5 px-4 py-4">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-4 py-8 text-center">
-            <BullAiIcon pose="wave" size={132} />
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 py-8 text-center">
+            <BullAiIcon pose="wave" size={120} />
             <div className="space-y-1">
               <p className="text-base font-semibold text-foreground">{t('chatImBull')}</p>
-              <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
+              <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
                 {aiContext?.label
                   ? t('chatIntroWithContext', { label: aiContext.label })
                   : t('chatIntroDefault')}
               </p>
             </div>
             <motion.div
-              className="flex flex-wrap gap-2 justify-center mt-2 max-w-[340px]"
+              className="mt-2 flex w-full max-w-[340px] flex-col items-stretch gap-2"
               initial="hidden"
               animate="visible"
-              variants={{ visible: { transition: { staggerChildren: 0.06 } }, hidden: {} }}
+              variants={{ visible: { transition: { staggerChildren: 0.05 } }, hidden: {} }}
             >
               {displayPrompts.map((suggestion) => (
                 <motion.button
                   key={suggestion}
+                  type="button"
                   variants={{
-                    hidden: { opacity: 0, y: 8 },
-                    visible: { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' } },
+                    hidden: { opacity: 0, y: 6 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.25, 1, 0.5, 1] } },
                   }}
-                  onClick={() => {
-                    sendMessage({ parts: [{ type: 'text', text: suggestion }] });
-                    refocusInput();
-                  }}
-                  className="inline-flex items-center text-xs px-4 min-h-[44px] rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200 hover:shadow-sm active:scale-[0.97]"
+                  onClick={() => send(suggestion)}
+                  className={cn(chipClass, 'justify-center rounded-xl')}
                 >
                   {suggestion}
                 </motion.button>
@@ -529,6 +596,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           const isUser = message.role === 'user';
           const toolCalls = isUser ? [] : getCompletedToolCalls(message);
           const hasText = message.parts.some((p) => p.type === 'text' && p.text.trim().length > 0);
+          const isLatest = message.id === lastMessage?.id;
           // True while this is the newest assistant message and no text has
           // streamed in for its CURRENT step yet — including right after a
           // tool call (e.g. a navigate action) completes and the model moves
@@ -537,7 +605,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           // rendering AssistantMessageContent's empty-text cursor here too
           // would show a second, bare bubble right next to "Reasoning…",
           // reading as two separate replies instead of one in-progress one.
-          const isAwaitingNextStep = !isUser && isStreaming && message.id === lastMessage?.id && !hasText;
+          const isAwaitingNextStep = !isUser && isStreaming && isLatest && !hasText;
           if (isAwaitingNextStep && toolCalls.length === 0) return null;
           // Navigation prompts go after the text: the reply ends on the
           // question the Yes/No buttons answer. Data cards stay on top.
@@ -561,70 +629,77 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             );
           };
           const isNavigate = (call: (typeof toolCalls)[number]) => call.clientAction?.type === 'navigate';
+
+          if (isUser) {
+            return (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
+                className="flex justify-end"
+              >
+                <div className="min-w-0 max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-sm leading-relaxed text-primary-foreground">
+                  {message.parts.map((part, i) => {
+                    if (part.type === 'text') {
+                      // Strip hidden [display:...] prefix — used to show a clean label
+                      // while the full prompt goes to the AI unchanged.
+                      const displayMatch = part.text.match(/^\[display:([^\]]+)\]/);
+                      const displayText = displayMatch ? displayMatch[1] : part.text;
+                      return <span key={`${message.id}-${i}`}>{displayText}</span>;
+                    }
+                    return null;
+                  })}
+                </div>
+              </motion.div>
+            );
+          }
+
+          // Bull's replies read as a document, full width and unbubbled: a
+          // 400-word answer squeezed into an 82% bubble was a ~45-character
+          // column more than two panels tall.
+          const replyDone = !(isStreaming && isLatest) && hasText;
           return (
             <motion.div
               key={message.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className={cn('flex items-end gap-2', isUser ? 'justify-end' : 'justify-start')}
+              transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
+              className="group/reply min-w-0 space-y-2 text-sm leading-relaxed text-foreground"
             >
-              {!isUser && <BullAiIcon pose="idle" size={32} className="mb-0.5" />}
-              <div
-                className={cn(
-                  'min-w-0 max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
-                  isUser
-                    ? 'rounded-br-sm bg-primary text-primary-foreground'
-                    : 'rounded-bl-sm bg-muted text-foreground'
-                )}
-              >
-                {isUser ? (
-                  <div className="whitespace-pre-wrap break-words">
-                    {message.parts.map((part, i) => {
-                      if (part.type === 'text') {
-                        // Strip hidden [display:...] prefix — used to show a clean label
-                        // while the full prompt goes to the AI unchanged.
-                        const displayMatch = part.text.match(/^\[display:([^\]]+)\]/);
-                        const displayText = displayMatch ? displayMatch[1] : part.text;
-                        return <span key={`${message.id}-${i}`}>{displayText}</span>;
-                      }
-                      return null;
-                    })}
-                  </div>
-                ) : (
-                  <>
-                    {toolCalls.map((call, i) => (isNavigate(call) ? null : renderToolCall(call, i)))}
-                    {!isAwaitingNextStep && <AssistantMessageContent
-                      text={message.parts
-                        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-                        .map((p) => p.text)
-                        .join('')}
-                      isStreaming={
-                        isStreaming &&
-                        message.id === messages[messages.length - 1]?.id
-                      }
-                    />}
-                    {toolCalls.map((call, i) => (isNavigate(call) ? renderToolCall(call, i) : null))}
-                  </>
-                )}
-              </div>
-              {isUser && (
-                user ? (
-                  <ProfileAvatar
-                    avatarUrl={user.avatar_url}
-                    displayName={getUserDisplayName(user)}
-                    fallback={getUserInitials(user)}
-                    tier={user.account_tier ?? 1}
-                    size="sm"
-                    showTooltip={false}
-                    showCrown={false}
-                    className="shrink-0 mb-0.5 [&_[data-slot=avatar-fallback]]:text-sm"
-                  />
-                ) : (
-                  <div className="shrink-0 mb-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <User className="h-4 w-4" />
-                  </div>
-                )
+              {toolCalls.map((call, i) => (isNavigate(call) ? null : renderToolCall(call, i)))}
+              {!isAwaitingNextStep && (
+                <AssistantMessageContent
+                  text={messageText(message)}
+                  isStreaming={isStreaming && isLatest}
+                />
+              )}
+              {toolCalls.map((call, i) => (isNavigate(call) ? renderToolCall(call, i) : null))}
+
+              {stoppedId === message.id && (
+                <p className="text-xs text-muted-foreground">{t('chatStopped')}</p>
+              )}
+
+              {/* Actions: always on the latest reply, on hover or focus for older ones. */}
+              {replyDone && (
+                <div
+                  className={cn(
+                    '-ml-1.5 flex items-center gap-0.5 transition-opacity duration-150',
+                    !isLatest && 'opacity-0 group-hover/reply:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100'
+                  )}
+                >
+                  <button type="button" onClick={() => copyReply(message)} className={actionClass} aria-label={t('chatCopyReply')} title={t('chatCopyReply')}>
+                    {copiedId === message.id ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+                  </button>
+                  {isLatest && (
+                    <button type="button" onClick={regenerateReply} className={actionClass} aria-label={t('chatRegenerate')} title={t('chatRegenerate')}>
+                      <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                  )}
+                  {copiedId === message.id && (
+                    <span className="ml-1 text-xs text-muted-foreground" role="status">{t('chatCopied')}</span>
+                  )}
+                </div>
               )}
             </motion.div>
           );
@@ -634,23 +709,22 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             "Thinking…", "Reasoning…") instead of a generic loading affordance. */}
         {isStreaming && !lastMessageHasText && thinkingLabel && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="flex items-end gap-2 justify-start"
+            transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
+            className="flex items-center gap-2"
+            role="status"
           >
-            <BullAiIcon pose="think" size={32} className="mb-0.5" />
-            <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2.5">
-              <motion.span
-                key={thinkingLabel}
-                className="text-xs text-muted-foreground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0.55, 1, 0.55] }}
-                transition={{ opacity: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }}
-              >
-                {thinkingLabel}
-              </motion.span>
-            </div>
+            <BullAiIcon pose="think" size={28} />
+            <motion.span
+              key={thinkingLabel}
+              className="text-xs text-muted-foreground"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.55, 1, 0.55] }}
+              transition={{ opacity: { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } }}
+            >
+              {thinkingLabel}
+            </motion.span>
           </motion.div>
         )}
 
@@ -659,48 +733,50 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="flex flex-wrap gap-2 pl-10"
+            transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
+            className="flex flex-wrap gap-2"
           >
             {followups.map((s) => (
-              <button
-                key={s}
-                onClick={() => {
-                  sendMessage({ parts: [{ type: 'text', text: s }] });
-                  refocusInput();
-                }}
-                className="inline-flex items-center text-xs px-3.5 min-h-[44px] rounded-full border border-border bg-muted/40 hover:bg-muted/80 hover:border-primary/30 text-muted-foreground hover:text-foreground transition-all duration-200 active:scale-[0.97]"
-              >
+              <button key={s} type="button" onClick={() => send(s)} className={chipClass}>
                 {s}
               </button>
             ))}
           </motion.div>
         )}
+          </div>
+        </div>
 
-        <div ref={bottomRef} />
+        {/* Back to the conversation's end, shown only once the reader has
+            scrolled away from it. */}
+        <AnimatePresence>
+          {!isAtBottom && messages.length > 0 && (
+            <motion.button
+              type="button"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.18, ease: [0.25, 1, 0.5, 1] }}
+              onClick={() => scrollToBottom('smooth')}
+              className="absolute bottom-3 left-1/2 z-10 inline-flex h-9 -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-background/95 px-3.5 text-xs font-medium text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ArrowDown className="h-3.5 w-3.5" aria-hidden />
+              {t('chatJumpToLatest')}
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Error bar */}
       {error && (
-        <div className="mx-3 mb-1 px-3 py-2 rounded-lg bg-destructive/10 text-destructive text-xs flex items-center justify-between gap-2">
+        <div role="alert" className="mx-3 mb-1 px-3 py-2 rounded-lg bg-destructive/10 text-destructive text-xs flex items-center justify-between gap-2">
           <span>{friendlyChatError(error.message, t)}</span>
           <div className="flex items-center gap-3 shrink-0">
-            <button
-              onClick={() => {
-                const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-                const lastText =
-                  (lastUser?.parts as Array<{ type: string; text?: string }>)
-                    ?.find((p) => p.type === 'text')?.text ?? '';
-                if (!lastText) return;
-                clearError();
-                sendMessage({ parts: [{ type: 'text', text: lastText }] });
-                refocusInput();
-              }}
-              className="shrink-0 underline"
-            >
+            {/* regenerate(), not a resend: resending appended a second,
+                identical question to the conversation. */}
+            <button type="button" onClick={regenerateReply} className="shrink-0 underline">
               {t('receiptRetry')}
             </button>
-            <button onClick={clearError} className="shrink-0 underline">
+            <button type="button" onClick={clearError} className="shrink-0 underline">
               {t('chatDismiss')}
             </button>
           </div>
@@ -711,7 +787,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       <form
         onSubmit={handleSubmit}
         onClick={handleFormClick}
-        className="shrink-0 sticky bottom-0 border-t border-border/50 bg-background/95 backdrop-blur-sm p-3 flex items-end gap-2 pointer-events-auto relative z-10"
+        className="shrink-0 border-t border-border/50 bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-end gap-2"
       >
         <textarea
           ref={textareaRef}
@@ -719,9 +795,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           placeholder={t('chatInputPlaceholder')}
-          tabIndex={0}
           aria-label={t('chatInputAriaLabel')}
-          className="flex-1 resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 max-h-[120px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pointer-events-auto"
+          className="flex-1 resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring max-h-[120px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           style={{ height: 'auto' }}
         />
         {isStreaming ? (
@@ -731,26 +806,31 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             variant="outline"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
+              if (lastMessage?.role === 'assistant') setStoppedId(lastMessage.id);
               stop();
               refocusInput();
             }}
             className="shrink-0 h-11 w-11 rounded-xl"
+            aria-label={t('chatStopGenerating')}
             title={t('chatStopGenerating')}
           >
-            <Square className="h-4 w-4" />
+            <Square className="h-4 w-4" aria-hidden />
           </Button>
         ) : (
           <Button
             type="submit"
             size="icon"
+            disabled={!hasInput}
             onMouseDown={(e) => e.preventDefault()}
             className="shrink-0 h-11 w-11 rounded-xl"
+            aria-label={t('chatSendMessage')}
             title={t('chatSendMessage')}
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-4 w-4" aria-hidden />
           </Button>
         )}
       </form>
     </div>
+    </MotionConfig>
   );
 });

@@ -79,6 +79,16 @@ export function AIPanelToggle() {
   const [tuckedOn, setTuckedOn] = useState<string | null>(null);
   const tucked = tuckedOn === pathname;
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // Closing the panel hands focus back here. This button unmounts while the
+  // panel is open, so focus used to fall to <body> and keyboard users had to
+  // tab through the whole page to get back.
+  const wasOpen = useRef(isOpen);
+  useEffect(() => {
+    if (wasOpen.current && !isOpen) {
+      requestAnimationFrame(() => buttonRef.current?.focus({ preventScroll: true }));
+    }
+    wasOpen.current = isOpen;
+  }, [isOpen]);
   useEffect(() => {
     if (!visible) return;
     const el = document.querySelector<HTMLElement>('.app-scroll');

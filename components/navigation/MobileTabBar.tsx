@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
 import { TOOLS } from '@/lib/tools/tools-config';
 import { PinnedTickersPanel } from './PinnedTickersPanel';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
 
 const MORE_PREFIXES = ['/academy', '/tools', '/social', '/users'];
 
@@ -17,6 +18,9 @@ export function MobileTabBar() {
   const { t } = useTranslation('navigation');
   const pathname = usePathname() ?? '';
   const [moreOpen, setMoreOpen] = useState(false);
+  // Ask Bull is full-screen on phones and the bar is fixed on top of it, so it
+  // covered the chat input: nobody could type. The panel has its own close.
+  const { isOpen: aiPanelOpen } = useAIPanel();
 
   const TABS = [
     { name: t('mobileTabHome'), href: '/dashboard', icon: Home },
@@ -45,7 +49,10 @@ export function MobileTabBar() {
   return (
     <>
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden"
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden',
+          aiPanelOpen && 'hidden'
+        )}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         aria-label={t('navPrimaryAriaLabel')}
       >

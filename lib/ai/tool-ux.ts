@@ -113,10 +113,32 @@ export function getActiveToolName(message: MessageLike | undefined): string | nu
   return null;
 }
 
+/**
+ * Looks a label up in the user's language, falling back to the English here.
+ * Callers pass `(key, english) => t(key, { defaultValue: english })` from the
+ * 'ai' namespace; without one, the English is returned as is.
+ */
+export type ToolUxTranslate = (key: string, english: string) => string;
+
+/** Stable i18n key for an English follow-up, e.g. "Show financial health" -> followup_show_financial_health. */
+export function followupKey(english: string): string {
+  return 'followup_' + english.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
+/** Every label this module can show, as i18n key -> English. Feeds the en locale file. */
+export function toolUxEnglishStrings(): Record<string, string> {
+  const out: Record<string, string> = { toolStatus_default: 'Working…' };
+  for (const [tool, label] of Object.entries(STATUS_LABELS)) out[`toolStatus_${tool}`] = label;
+  for (const list of Object.values(FOLLOWUPS)) for (const f of list) out[followupKey(f)] = f;
+  return out;
+}
+
 /** Human-readable status label for a tool name, e.g. "Checking financial health…". */
-export function getToolStatusLabel(toolName: string | null): string | null {
+export function getToolStatusLabel(toolName: string | null, translate?: ToolUxTranslate): string | null {
   if (!toolName) return null;
-  return STATUS_LABELS[toolName] ?? 'Working…';
+  const english = STATUS_LABELS[toolName];
+  if (!english) return translate ? translate('toolStatus_default', 'Working…') : 'Working…';
+  return translate ? translate(`toolStatus_${toolName}`, english) : english;
 }
 
 /** All completed tool calls (name + output) on a message, in order. Parses each output's `__clientAction` (if present) too. */
@@ -141,11 +163,13 @@ export function getCompletedToolCalls(
 }
 
 /** Suggested follow-up prompts based on the last recognized tool call in a message. */
-export function getFollowups(message: MessageLike | undefined, max = 3): string[] {
+export function getFollowups(message: MessageLike | undefined, max = 3, translate?: ToolUxTranslate): string[] {
   const calls = getCompletedToolCalls(message);
   for (let i = calls.length - 1; i >= 0; i--) {
     const suggestions = FOLLOWUPS[calls[i].toolName];
-    if (suggestions?.length) return suggestions.slice(0, max);
+    if (suggestions?.length) {
+      return suggestions.slice(0, max).map((f) => (translate ? translate(followupKey(f), f) : f));
+    }
   }
   return [];
 }
