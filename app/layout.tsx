@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     template: "%s | BullPen",
-    default: "BullPen — Invest smarter",
+    default: "BullPen: investing, explained",
   },
   description: "Track your portfolio, screen stocks, set price alerts, and get AI-powered market insights, all in one place.",
   openGraph: {
@@ -72,7 +72,7 @@ const ORGANIZATION_JSON_LD = {
   url: SITE_URL,
   logo: `${SITE_URL}/icon-light.png`,
   description:
-    "Investment research and portfolio-tracking platform for everyday investors — real-time market data, AI-powered analysis, and educational tools.",
+    "Investment research and portfolio-tracking platform for everyday investors: real-time market data, AI-powered analysis, and educational tools.",
   // Ties the bullpen.no entity to its real public profiles — one of the few
   // legitimate levers for a bare, one-word brand query ("bullpen") to
   // resolve to us rather than an unrelated same-name result.
