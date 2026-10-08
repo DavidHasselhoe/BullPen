@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStripe, statusGrantsPro, TIER_PRO, TIER_FREE } from '@/lib/billing/stripe';
-import { sendRenewalReminderEmail, sendTrialEndingEmail, sendTrialRevokedEmail } from '@/lib/email/billing-reminder';
+import { sendRenewalReminderEmail, sendTrialEndingEmail, sendTrialRevokedEmail, sendTrialStartedEmail } from '@/lib/email/billing-reminder';
 import { shouldSendRenewalReminder } from '@/lib/billing/trial-copy';
 import { createNotification } from '@/lib/notifications/notifications-db';
 import { logSecurityEvent } from '@/lib/security/security-events';
@@ -97,6 +97,14 @@ export async function POST(request: NextRequest) {
           // with the real post-charge status, so skip granting Pro here.
           const revoked = await enforceTrialFingerprint(sub, customerId, userId);
           if (revoked) break;
+          // Trial terms at sign-up: what will be charged, when, and how to
+          // cancel. Best-effort: an email failure must not fail the webhook,
+          // or Stripe retries it and the grant below runs twice.
+          // Same amount the trial-ending email quotes (upcomingAmountCents).
+          const interval = sub.items?.data?.[0]?.price?.recurring?.interval === 'year' ? 'year' : 'month';
+          if (customerId && sub.trial_end) {
+            await sendTrialStartedEmail(customerId, userId, upcomingAmountCents(sub), sub.currency, interval, sub.trial_end).catch((err) => console.error('[billing/webhook] trial-started email failed', err));
+          }
         }
 
         const grantsPro = event.type !== 'customer.subscription.deleted' && statusGrantsPro(sub.status);

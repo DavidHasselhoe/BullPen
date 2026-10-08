@@ -105,6 +105,33 @@ export function buildTrialEndingEmailHtml(amount: string, endDate: string, manag
   );
 }
 
+/**
+ * Sent the moment a trial starts. Visa expects the trial terms at least 7 days
+ * before the first charge, and for a trial this short that means at sign-up;
+ * California's auto-renewal law wants the same terms acknowledged. The
+ * trial-ending email 3 days before the charge stays as the second notice.
+ */
+export function buildTrialStartedEmailHtml(amount: string, period: string, endDate: string, manageUrl: string): string {
+  return emailShell(
+    'Your BullPen Pro trial has started',
+    `
+    <p style="margin: 0; font-size: 16px; color: #94a3b8;">
+      You have full Pro access until <strong>${endDate}</strong>. If you keep Pro, you'll be charged <strong>${amount}</strong> ${period} from then on, renewing automatically until you cancel.
+    </p>
+    <p style="margin: 16px 0 0; font-size: 14px; color: #64748b;">
+      Cancel any time before ${endDate} and you won't be charged anything. We'll also email you 3 days before the trial ends.
+    </p>
+    <p style="margin: 20px 0 0;">
+      <a href="${manageUrl}" style="display: inline-block; background: #22c55e; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600;">
+        Manage or cancel
+      </a>
+    </p>
+    <p style="margin: 24px 0 0; font-size: 12px; color: #64748b;">
+      This is a billing notice sent when every trial starts and isn't optional in Settings.
+    </p>`
+  );
+}
+
 export function buildTrialRevokedEmailHtml(amount: string, moneyBackDays: number): string {
   return emailShell(
     'Your BullPen Pro subscription has started',
@@ -126,6 +153,37 @@ async function emailForCustomer(customerId: string): Promise<string | null> {
     .eq('stripe_customer_id', customerId)
     .maybeSingle();
   return (data as { email?: string | null } | null)?.email ?? null;
+}
+
+/** The account's email by user id: at subscription.created the customer id may not be linked yet. */
+async function emailForUser(userId: string): Promise<string | null> {
+  const { data } = await createServerClient().from('users').select('email').eq('id', userId).maybeSingle();
+  return (data as { email?: string | null } | null)?.email ?? null;
+}
+
+export async function sendTrialStartedEmail(
+  customerId: string,
+  userId: string | null,
+  amountInCents: number,
+  currency: string,
+  interval: 'month' | 'year',
+  trialEndUnixSeconds: number
+): Promise<void> {
+  const email = (userId ? await emailForUser(userId) : null) ?? (await emailForCustomer(customerId));
+  const stripe = getStripe();
+  if (!email || !stripe) return;
+
+  const portalSession = await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${APP_URL}/dashboard`,
+  });
+  const endDate = formatDate(trialEndUnixSeconds);
+  await sendEmail({
+    to: email,
+    subject: `Your BullPen Pro trial has started. It ends on ${endDate}`,
+    html: buildTrialStartedEmailHtml(formatAmount(amountInCents, currency), interval === 'year' ? 'a year' : 'a month', endDate, portalSession.url),
+    kind: 'transactional',
+  });
 }
 
 export async function sendTrialEndingEmail(
