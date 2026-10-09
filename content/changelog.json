@@ -1,5 +1,22 @@
 [
   {
+    "date": "2026-10-09",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Signing up with email now takes you straight into BullPen. You only confirm your email address when you start a free trial, so the trial details and the reminder before any charge reach your inbox"
+      },
+      {
+        "type": "fixed",
+        "text": "In the Stock Screener, My Holdings no longer lists positions you have fully sold"
+      },
+      {
+        "type": "fixed",
+        "text": "Switching views in the Stock Screener shows a loading state instead of briefly saying there are no matches"
+      }
+    ]
+  },
+  {
     "date": "2026-10-08",
     "entries": [
       {
