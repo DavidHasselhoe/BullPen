@@ -857,6 +857,9 @@ function cleanCompanyName(name: string): string {
 }
 
 interface MoversListSlideProps {
+  /** Footer key: what the % is measured against ("previous close" daily,
+   *  the period's first close weekly/monthly). */
+  changeNote: string;
   title: string;
   subtitle: string;
   entries: MarketMoverEntry[];
@@ -866,7 +869,7 @@ interface MoversListSlideProps {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function MoversListSlide({ title, subtitle, entries, positive, slideIndex, totalSlides }: MoversListSlideProps): any {
+export function MoversListSlide({ title, subtitle, entries, positive, changeNote, slideIndex, totalSlides }: MoversListSlideProps): any {
   const maxAbs = Math.max(...entries.map((e) => Math.abs(e.changePercent)), 0.01);
   // "Daily Winners": the session word in sans, the result word as the serif
   // accent in its own gain/loss color, so the slide says which side it is.
@@ -886,11 +889,14 @@ export function MoversListSlide({ title, subtitle, entries, positive, slideIndex
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, marginBottom: 10 }}>
+        {/* One phrase, not two labels: one word space between them (W
+            carries extra italic bearing, L none), and the serif only a step larger
+            so both share roughly one cap height. */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 10 }}>
           {lead && (
-            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 64, letterSpacing: '-0.035em', color: FG }}>{lead}</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 68, letterSpacing: '-0.035em', color: FG }}>{lead}</span>
           )}
-          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 80, color: positive ? GAIN_TEXT : LOSS_TEXT }}>{accent}</span>
+          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 78, letterSpacing: '-0.01em', color: positive ? GAIN_TEXT : LOSS_TEXT }}>{accent}</span>
         </div>
         <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, color: MUTED }}>
           {subtitle}
@@ -929,7 +935,7 @@ export function MoversListSlide({ title, subtitle, entries, positive, slideIndex
         ))}
       </div>
 
-      <SlideFooter note="Change in price from the previous close." />
+      <SlideFooter note={changeNote} />
     </div>
   );
 }

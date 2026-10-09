@@ -95,6 +95,13 @@ export async function GET(
       : <CTASlide slideIndex={slideIndex} totalSlides={total} variant="earnings_deep_dive" ticker={d.ticker} />;
   } else if (slides.contentType === 'market_movers') {
     const sessionPrefix = slides.sessionLabel ?? 'Daily';
+    // What the % is measured from (lib/instagram/movers-period.ts: the last
+    // close before the period). "Previous close" was printed on all three.
+    const changeNote = slides.period === 'week'
+      ? 'Change in price since the last close of the previous week.'
+      : slides.period === 'month'
+        ? 'Change in price since the last close of the previous month.'
+        : 'Change in price from the previous close.';
     if (kind === 'movers_cover') {
       // Period first: weekly/monthly editions also carry sessionLabel ("Weekly"),
       // which would read "Weekly's biggest".
@@ -118,6 +125,7 @@ export async function GET(
           subtitle={`S&P 500 & Nasdaq 100 · ${slides.dateLabel}`}
           entries={slides.winners}
           positive
+          changeNote={changeNote}
           slideIndex={slideIndex}
           totalSlides={total}
         />
@@ -129,6 +137,7 @@ export async function GET(
           subtitle={`S&P 500 & Nasdaq 100 · ${slides.dateLabel}`}
           entries={slides.losers}
           positive={false}
+          changeNote={changeNote}
           slideIndex={slideIndex}
           totalSlides={total}
         />
