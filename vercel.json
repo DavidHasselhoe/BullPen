@@ -46,6 +46,10 @@
       "schedule": "0 14 * * 6"
     },
     {
+      "path": "/api/cron/instagram-picks-scoreboard",
+      "schedule": "0 15 * * 6"
+    },
+    {
       "path": "/api/cron/instagram-earnings-weekly",
       "schedule": "0 12 * * 0"
     },

@@ -28,7 +28,11 @@ import {
   MoversCoverSlide,
   CTASlide,
   DeepDiveSummarySlide,
+  ScoreboardCoverSlide,
+  ScoreboardListSlide,
+  ScoreboardCalloutsSlide,
 } from '@/lib/instagram/render/slides';
+import { SCOREBOARD_DISCLAIMER } from '@/lib/instagram/content/picks-scoreboard';
 import type { EarningsCalendarSlides, EarningsResultsSlides, EarningsDeepDiveSlides, InstagramPostSlides } from '@/lib/instagram/content/schema';
 
 export const runtime = 'nodejs';
@@ -72,7 +76,8 @@ export async function GET(
     post.content_type !== 'market_movers' &&
     post.content_type !== 'market_movers_weekly' &&
     post.content_type !== 'market_movers_monthly' &&
-    post.content_type !== 'earnings_deep_dive'
+    post.content_type !== 'earnings_deep_dive' &&
+    post.content_type !== 'picks_scoreboard'
   ) {
     // Only content types built so far — a future content type would branch here.
     return NextResponse.json({ error: 'unsupported_content_type' }, { status: 500 });
@@ -93,6 +98,16 @@ export async function GET(
     element = kind === 'deepdive_summary'
       ? <DeepDiveSummarySlide data={d} />
       : <CTASlide slideIndex={slideIndex} totalSlides={total} variant="earnings_deep_dive" ticker={d.ticker} />;
+  } else if (slides.contentType === 'picks_scoreboard') {
+    if (kind === 'scoreboard_cover') {
+      element = <ScoreboardCoverSlide data={slides} slideIndex={slideIndex} totalSlides={total} disclaimer={SCOREBOARD_DISCLAIMER} />;
+    } else if (kind === 'scoreboard_list') {
+      element = <ScoreboardListSlide data={slides} page={slideIndex - 1} slideIndex={slideIndex} totalSlides={total} />;
+    } else if (kind === 'scoreboard_callouts') {
+      element = <ScoreboardCalloutsSlide data={slides} slideIndex={slideIndex} totalSlides={total} />;
+    } else {
+      element = <CTASlide slideIndex={slideIndex} totalSlides={total} variant="picks_scoreboard" />;
+    }
   } else if (slides.contentType === 'market_movers') {
     const sessionPrefix = slides.sessionLabel ?? 'Daily';
     // What the % is measured from (lib/instagram/movers-period.ts: the last

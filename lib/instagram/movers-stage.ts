@@ -1,7 +1,8 @@
 /**
- * Stage a market movers carousel in instagram_posts, preview it in Discord,
- * then publish it. Shared by the daily edition and the weekly/monthly ones so
- * the three can't drift on how a movers post goes out.
+ * Stage a carousel in instagram_posts, preview it in Discord, then publish
+ * it. stageAndPublishPost is the generic path (also the Weekly Pick
+ * scoreboard); stageAndPublishMovers wraps it for the daily, weekly and
+ * monthly movers so the three can't drift on how a movers post goes out.
  */
 
 import { createServerClient } from '@/lib/supabase/client';
@@ -10,7 +11,7 @@ import { contentVersion } from '@/lib/instagram/render/cache-bust';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
 import { publishStagedPost } from '@/lib/instagram/publish';
-import type { MarketMoversSlides } from '@/lib/instagram/content/schema';
+import type { InstagramPostSlides, MarketMoversSlides } from '@/lib/instagram/content/schema';
 
 import { SITE_URL } from '@/lib/site';
 export interface StagedMovers {
@@ -28,7 +29,26 @@ export async function stageAndPublishMovers(opts: {
   /** Stage only: no Discord message, no publish. For manual test runs. */
   dryRun?: boolean;
 }): Promise<StagedMovers> {
-  const { contentType, periodKey, content, dryRun = false } = opts;
+  const { content } = opts;
+  const topGainer = content.winners[0];
+  const topLoser = content.losers[0];
+  return stageAndPublishPost({
+    ...opts,
+    discordTitle: `${content.sessionLabel ? `${content.sessionLabel} m` : 'M'}arket movers auto-publishing — ${content.dateLabel}`,
+    discordSummary: `Top gainer: ${topGainer.symbol} +${topGainer.changePercent.toFixed(2)}%. Top loser: ${topLoser.symbol} ${topLoser.changePercent.toFixed(2)}%.`,
+  });
+}
+
+export async function stageAndPublishPost(opts: {
+  contentType: string;
+  periodKey: string;
+  content: InstagramPostSlides & { caption: string };
+  discordTitle: string;
+  /** One line above the slide links in the Discord preview. */
+  discordSummary: string;
+  dryRun?: boolean;
+}): Promise<StagedMovers> {
+  const { contentType, periodKey, content, discordTitle, discordSummary, dryRun = false } = opts;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createServerClient() as any; // instagram_posts isn't in the generated Database type yet
 
@@ -61,16 +81,14 @@ export async function stageAndPublishMovers(opts: {
 
   if (dryRun) return { postId, slideCount, previewLinks, publish: null };
 
-  const topGainer = content.winners[0];
-  const topLoser = content.losers[0];
   const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
   if (webhookUrl) {
     try {
       await postToDiscord(webhookUrl, {
         embeds: [
           {
-            title: `${content.sessionLabel ? `${content.sessionLabel} m` : 'M'}arket movers auto-publishing — ${content.dateLabel}`,
-            description: `Top gainer: ${topGainer.symbol} +${topGainer.changePercent.toFixed(2)}%. Top loser: ${topLoser.symbol} ${topLoser.changePercent.toFixed(2)}%. ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
+            title: discordTitle,
+            description: `${discordSummary} ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
             color: 0x34d399,
             fields: [{ name: 'Bio link', value: instagramBioLink(contentType, periodKey) }],
             timestamp: new Date().toISOString(),
@@ -86,7 +104,7 @@ export async function stageAndPublishMovers(opts: {
     console.warn(`[${contentType}] DISCORD_INSTAGRAM_WEBHOOK_URL not set, skipping pre-publish notification`);
   }
 
-  // Movers are news for the period that just closed — publish immediately.
+  // News for the period that just closed: publish immediately.
   // publishStagedPost posts its own Discord confirmation (or failure) message
   // and updates the row's status.
   const publish = await publishStagedPost(postId);

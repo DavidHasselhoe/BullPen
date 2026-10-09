@@ -17,7 +17,7 @@ const TRAILING = new RegExp(
     '(?:ordinary|common)\\s+shares?',
     'class [a-c]\\s+shares',
     'common stock',
-    'non-voting',
+    'non-?voting',
     'class [a-c]',
     'inc\\.?', 'incorporated', 'corporation', 'corp\\.?', 'company', 'and company', '& co\\.?', 'co\\.?',
     'plc', 'n\\.v\\.', 's\\.a\\.', 'se', 'ag', 'a/s', 'ltd\\.?', 'limited', 'holdings?', 'group', 'l\\.p\\.',

@@ -222,4 +222,48 @@ export interface EarningsDeepDiveSlides {
 }
 
 /** Every shape instagram_posts.slides can hold, keyed by contentType. */
-export type InstagramPostSlides = EarningsCalendarSlides | EarningsResultsSlides | MarketMoversSlides | EarningsDeepDiveSlides;
+/** One Weekly Pick in the scoreboard post, measured the /picks page's way. */
+export interface ScoreboardPick {
+  symbol: string;
+  name: string;
+  logoUrl: string | null;
+  pickDate: string; // YYYY-MM-DD
+  /** % from the first open on/after pickDate (lib/picks/performance.ts). */
+  returnPct: number;
+  /** SPY over the same window, same entry day. */
+  benchmarkReturnPct: number;
+}
+
+export interface ScoreboardCallout extends ScoreboardPick {
+  /** Why it was picked: the pick's own one-liner, from ai_stock_picks. */
+  pickedFor: string;
+  /** What moved it since, from a news search. Null when the search found
+   *  nothing usable; the slide then shows only pickedFor. */
+  movedBy: string | null;
+}
+
+/**
+ * Weekly Pick track record vs the S&P 500 (content_type 'picks_scoreboard').
+ * Every number comes from computePerformance(), the same maths as /picks:
+ * $100 into each pick at its first open, and $100 into SPY on the same days.
+ * Claude writes only the caption and the two movedBy lines.
+ */
+export interface PicksScoreboardSlides {
+  contentType: 'picks_scoreboard';
+  asOfLabel: string;   // "Oct 9, 2026"
+  sinceLabel: string;  // "Jul 27"
+  pickCount: number;
+  totalReturnPct: number;
+  benchmarkReturnPct: number;
+  /** Change in the lead (points) since the previous scoreboard post. Null on the first. */
+  weekChangePts: number | null;
+  /** Picks ahead of SPY over their own window. */
+  beatCount: number;
+  /** Every tracked pick, newest first. */
+  picks: ScoreboardPick[];
+  best: ScoreboardCallout;
+  worst: ScoreboardCallout;
+  caption: string;
+}
+
+export type InstagramPostSlides = EarningsCalendarSlides | EarningsResultsSlides | MarketMoversSlides | EarningsDeepDiveSlides | PicksScoreboardSlides;

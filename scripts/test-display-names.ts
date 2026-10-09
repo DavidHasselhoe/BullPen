@@ -33,6 +33,7 @@ const cases: Array<[string, string]> = [
   // Non-voting share class (MKC on the earnings results post, 2026-10-09); "& Company" leaves no dangling "&".
   ['McCormick & Company, Incorporated Non-Voting Common Stock', 'McCormick'],
   ['Brown-Forman Corporation Class B Non-Voting', 'Brown-Forman'],
+  ['Brady Corporation Class A Nonvoting', 'Brady'], // ai_stock_picks.company_name, 2026-10-09
   ['The Procter & Gamble Company', 'Procter & Gamble'],
   ['AT&T Inc.', 'AT&T'],
   ['CRH plc Ordinary Shares', 'CRH'],

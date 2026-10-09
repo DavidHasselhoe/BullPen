@@ -52,6 +52,8 @@ import type {
   MarketMoverEntry,
   InstagramPostSlides,
   EarningsDeepDiveData,
+  PicksScoreboardSlides,
+  ScoreboardCallout,
 } from '@/lib/instagram/content/schema';
 
 import { SITE_HOST } from '@/lib/site';
@@ -101,7 +103,15 @@ export const COMPANIES_PER_LIST_SLIDE = 30;
 
 export type SlideKind =
   | 'hook' | 'list' | 'cta' | 'movers_cover' | 'winners' | 'losers'
-  | 'deepdive_summary';
+  | 'deepdive_summary'
+  | 'scoreboard_cover' | 'scoreboard_list' | 'scoreboard_callouts';
+
+/** Picks per scoreboard list page. Every pick is shown; past this the list paginates. */
+export const SCOREBOARD_PER_PAGE = 16;
+
+function scoreboardPageCount(n: number): number {
+  return Math.max(1, Math.ceil(n / SCOREBOARD_PER_PAGE));
+}
 
 function listSlideCount(companyCount: number): number {
   return Math.max(1, Math.ceil(companyCount / COMPANIES_PER_LIST_SLIDE));
@@ -115,6 +125,7 @@ function listSlideCount(companyCount: number): number {
 export function totalSlideCount(slides: InstagramPostSlides): number {
   if (slides.contentType === 'market_movers') return 4;
   if (slides.contentType === 'earnings_deep_dive') return 2;
+  if (slides.contentType === 'picks_scoreboard') return 1 + scoreboardPageCount(slides.picks.length) + 2;
   return 1 + listSlideCount(slides.companies.length) + 1;
 }
 
@@ -128,6 +139,12 @@ export function slideKindAt(index: number, slides: InstagramPostSlides): SlideKi
   }
   if (slides.contentType === 'earnings_deep_dive') {
     return index === 0 ? 'deepdive_summary' : 'cta';
+  }
+  if (slides.contentType === 'picks_scoreboard') {
+    const pages = scoreboardPageCount(slides.picks.length);
+    if (index === 0) return 'scoreboard_cover';
+    if (index <= pages) return 'scoreboard_list';
+    return index === pages + 1 ? 'scoreboard_callouts' : 'cta';
   }
   const lists = listSlideCount(slides.companies.length);
   if (index === 0) return 'hook';
@@ -160,6 +177,14 @@ export function altTextForSlide(
     if (kind === 'winners') return `${when} top S&P 500 and Nasdaq 100 gainers on BullPen: ${content.winners.map((w) => w.symbol).join(', ')}.`;
     if (kind === 'losers') return `${when} top S&P 500 and Nasdaq 100 losers on BullPen: ${content.losers.map((l) => l.symbol).join(', ')}.`;
     return 'Open the BullPen app to track every S&P 500 and Nasdaq 100 stock in real time.';
+  }
+  if (content.contentType === 'picks_scoreboard') {
+    const kind = slideKindAt(slideIndex, content);
+    const c = content;
+    if (kind === 'scoreboard_cover') return `BullPen Weekly Pick track record since ${c.sinceLabel}: all ${c.pickCount} picks ${c.totalReturnPct.toFixed(1)}%, S&P 500 on the same days ${c.benchmarkReturnPct.toFixed(1)}%. ${c.beatCount} of ${c.pickCount} picks ahead of the S&P 500.`;
+    if (kind === 'scoreboard_list') return `Every BullPen Weekly Pick with its return and the S&P 500 over the same days: ${c.picks.map((p) => `${p.symbol} ${p.returnPct.toFixed(1)}%`).join(', ')}.`;
+    if (kind === 'scoreboard_callouts') return `Biggest winner ${c.best.symbol} ${c.best.returnPct.toFixed(1)}% and biggest loser ${c.worst.symbol} ${c.worst.returnPct.toFixed(1)}% among BullPen's Weekly Picks, and what moved them.`;
+    return 'Open the BullPen app to see every Weekly Pick, the thesis behind it, and the full track record.';
   }
   if (content.contentType === 'earnings_deep_dive') {
     const kind = slideKindAt(slideIndex, content);
@@ -1268,6 +1293,175 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
   );
 }
 
+// ── Weekly Pick scoreboard (picks vs the S&P 500) ──────────────────────────
+// Numbers are colored by their own sign, never by who is winning: red means a
+// number went down, so the S&P in red on a week it rose would be false.
+
+const signColor = (v: number, onInk: boolean) => (v >= 0 ? (onInk ? BRAND : GAIN_TEXT) : (onInk ? LOSS : LOSS_TEXT));
+
+/** "Aug 4" from YYYY-MM-DD. */
+const shortDate = (d: string) => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+function ScoreColumn({ label, icon, value, note }: { label: string; icon: boolean; value: number; note: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {icon && <img src={getBrandIcon(true)} alt="" width={40} height={40} />}
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 30, color: ON_INK }}>{label}</span>
+      </div>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 104, lineHeight: 1, letterSpacing: '-0.045em', color: signColor(value, true) }}>
+        {formatPercentSigned(value)}
+      </span>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, color: ON_INK_MUTED }}>{note}</span>
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ScoreboardCoverSlide({ data, slideIndex, totalSlides, disclaimer }: { data: PicksScoreboardSlides; slideIndex: number; totalSlides: number; disclaimer: string }): any {
+  const lead = data.totalReturnPct - data.benchmarkReturnPct;
+  const ahead = lead >= 0;
+  const week = data.weekChangePts;
+  return (
+    <InkCover slideIndex={slideIndex} totalSlides={totalSlides}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 64 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 76, lineHeight: 1.02, letterSpacing: '-0.04em', color: ON_INK }}>Our picks vs</span>
+          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 108, lineHeight: 1, color: ON_INK }}>the S&amp;P 500.</span>
+        </div>
+
+        <div style={{ display: 'flex', gap: 40 }}>
+          <ScoreColumn label="All picks" icon value={data.totalReturnPct} note={`since ${data.sinceLabel}, ${data.pickCount} picks`} />
+          <div style={{ display: 'flex', width: 1, backgroundColor: INK_BORDER }} />
+          <ScoreColumn label="S&P 500" icon={false} value={data.benchmarkReturnPct} note="bought on the same days" />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'flex-start' }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 34, color: BRAND_INK, backgroundColor: ahead ? BRAND : LOSS, padding: '12px 26px', borderRadius: 999 }}>
+            {`${Math.abs(lead).toFixed(1)} points ${ahead ? 'ahead of' : 'behind'} the S&P 500`}
+          </span>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED }}>
+            {[
+              week != null ? `This week ${week >= 0 ? '+' : ''}${week.toFixed(1)} points` : null,
+              `${data.beatCount} of ${data.pickCount} picks beat the S&P 500`,
+            ].filter(Boolean).join(' · ')}
+          </span>
+        </div>
+      </div>
+
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 19, lineHeight: 1.45, color: ON_INK_MUTED }}>{disclaimer}</span>
+    </InkCover>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ScoreboardListSlide({ data, page, slideIndex, totalSlides }: { data: PicksScoreboardSlides; page: number; slideIndex: number; totalSlides: number }): any {
+  const rows = data.picks.slice(page * SCOREBOARD_PER_PAGE, (page + 1) * SCOREBOARD_PER_PAGE);
+  // Rows share ~840px: up to 11 picks get the roomy size, 16 the compact one.
+  const unit = 840 / Math.max(rows.length, 11);
+  const badge = Math.round(Math.min(58, unit * 0.68));
+  const gap = Math.round(Math.min(22, unit * 0.26));
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 80, backgroundColor: BG, color: FG }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <Wordmark />
+        <SlideIndicator index={slideIndex} total={totalSlides} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 10 }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 68, letterSpacing: '-0.035em', color: FG }}>Every</span>
+          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 78, color: FG }}>pick</span>
+        </div>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, lineHeight: 1.4, color: MUTED }}>
+          {`Return since each pick's first open, next to the S&P 500 over the same days. As of ${data.asOfLabel}.`}
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap, flex: 1 }}>
+        {rows.map((p) => {
+          const ahead = p.returnPct > p.benchmarkReturnPct;
+          return (
+            <div key={p.symbol + p.pickDate} style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <CompanyBadge symbol={p.symbol} logoUrl={p.logoUrl} size={badge} />
+              <NameStack
+                name={truncateName(displayCompanyName(p.name), 26)}
+                ticker={`${p.symbol} · picked ${shortDate(p.pickDate)}`}
+                nameSize={Math.round(badge * 0.46)}
+                tickerSize={Math.round(badge * 0.34)}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+                <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(badge * 0.5), letterSpacing: '-0.02em', color: signColor(p.returnPct, false) }}>
+                  {formatPercentSigned(p.returnPct)}
+                </span>
+                <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: Math.round(badge * 0.34), color: MUTED }}>
+                  {`S&P ${formatPercentSigned(p.benchmarkReturnPct)}`}
+                </span>
+              </div>
+              <span style={{ display: 'flex', width: Math.round(badge * 1.9), justifyContent: 'center', flexShrink: 0, fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(badge * 0.32), padding: `${Math.round(badge * 0.1)}px 0`, borderRadius: 999, color: ahead ? GAIN_TEXT : MUTED, backgroundColor: ahead ? `${BRAND}26` : SURFACE }}>
+                {ahead ? 'Ahead' : 'Behind'}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <SlideFooter note="Ahead means the pick beat the S&P 500 over the same days." />
+    </div>
+  );
+}
+
+/** Model-written lines are never cut on a slide (CLAUDE.md): they wrap. The
+ *  generator drops a line too long to fit (MAX_WHY_CHARS) rather than slicing it. */
+function LabeledLine({ label, text }: { label: string; text: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 20, letterSpacing: '0.06em', color: MUTED }}>{label}</span>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 27, lineHeight: 1.38, color: FG }}>{text}</span>
+    </div>
+  );
+}
+
+function Callout({ c, best }: { c: ScoreboardCallout; best: boolean }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 22, letterSpacing: '0.08em', color: best ? GAIN_TEXT : LOSS_TEXT }}>
+        {best ? 'BIGGEST WINNER' : 'BIGGEST LOSER'}
+      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={84} />
+        <NameStack name={truncateName(displayCompanyName(c.name), 27)} ticker={`${c.symbol} · picked ${shortDate(c.pickDate)}`} nameSize={36} tickerSize={24} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 64, lineHeight: 1, letterSpacing: '-0.04em', color: signColor(c.returnPct, false) }}>{formatPercentSigned(c.returnPct)}</span>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED, marginTop: 6 }}>{`S&P ${formatPercentSigned(c.benchmarkReturnPct)}, same days`}</span>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <LabeledLine label="PICKED FOR" text={c.pickedFor} />
+        {c.movedBy && <LabeledLine label="WHAT MOVED IT" text={c.movedBy} />}
+      </div>
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ScoreboardCalloutsSlide({ data, slideIndex, totalSlides }: { data: PicksScoreboardSlides; slideIndex: number; totalSlides: number }): any {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 80, backgroundColor: BG, color: FG }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 48 }}>
+        <Wordmark />
+        <SlideIndicator index={slideIndex} total={totalSlides} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 44, flex: 1 }}>
+        <Callout c={data.best} best />
+        <div style={{ display: 'flex', height: 1, backgroundColor: BORDER }} />
+        <Callout c={data.worst} best={false} />
+      </div>
+      <SlideFooter note="Picked for: the reason given on the pick day. What moved it: news since then." />
+    </div>
+  );
+}
+
 function BellIcon({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={FG} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1329,7 +1523,7 @@ function FeatureRow() {
  *  pairing it shows, so the conversion pitch actually follows from what the
  *  viewer just scrolled through instead of always pitching earnings alerts
  *  on a market-movers or deep-dive post that never mentioned a "report". */
-export type CTAVariant = 'earnings_calendar' | 'earnings_results' | 'market_movers' | 'earnings_deep_dive';
+export type CTAVariant = 'earnings_calendar' | 'earnings_results' | 'market_movers' | 'earnings_deep_dive' | 'picks_scoreboard';
 
 const CTA_COPY: Record<CTAVariant, { headline: string; subtitle: (ticker?: string) => string }> = {
   earnings_calendar: {
@@ -1343,6 +1537,10 @@ const CTA_COPY: Record<CTAVariant, { headline: string; subtitle: (ticker?: strin
   market_movers: {
     headline: 'Never miss a move again',
     subtitle: () => "Track the market's biggest winners and losers, every single day.",
+  },
+  picks_scoreboard: {
+    headline: 'A new pick every Monday',
+    subtitle: () => 'See every pick, why it was made, and the full track record on BullPen.',
   },
   earnings_deep_dive: {
     headline: 'Get this deep dive on any stock',
