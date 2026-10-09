@@ -25,6 +25,7 @@ import {
   EarningsListSlide,
   EarningsResultsListSlide,
   MoversListSlide,
+  MoversCoverSlide,
   CTASlide,
   DeepDiveSummarySlide,
 } from '@/lib/instagram/render/slides';
@@ -94,7 +95,23 @@ export async function GET(
       : <CTASlide slideIndex={slideIndex} totalSlides={total} variant="earnings_deep_dive" ticker={d.ticker} />;
   } else if (slides.contentType === 'market_movers') {
     const sessionPrefix = slides.sessionLabel ?? 'Daily';
-    if (kind === 'winners') {
+    if (kind === 'movers_cover') {
+      // Period first: weekly/monthly editions also carry sessionLabel ("Weekly"),
+      // which would read "Weekly's biggest".
+      const when = slides.period === 'week' ? "The week's"
+        : slides.period === 'month' ? "The month's"
+        : slides.sessionLabel ? `${slides.sessionLabel}'s` : "The day's";
+      element = (
+        <MoversCoverSlide
+          when={when}
+          dateLabel={slides.dateLabel}
+          gainer={slides.winners[0]}
+          loser={slides.losers[0]}
+          slideIndex={slideIndex}
+          totalSlides={total}
+        />
+      );
+    } else if (kind === 'winners') {
       element = (
         <MoversListSlide
           title={`${sessionPrefix} Winners`}
@@ -121,20 +138,20 @@ export async function GET(
     }
   } else {
     const isResults = slides.contentType === 'earnings_results';
-    const companyCount = slides.companies.length;
 
     if (kind === 'hook') {
-      const pillText = isResults
-        ? `${(slides as EarningsResultsSlides).beatCount} OF ${companyCount} BEAT ESTIMATES`
-        : undefined;
       element = (
         <HookSlide
           headline={slides.headline}
           weekLabel={slides.weekLabel}
-          companyCount={companyCount}
+          companies={slides.companies.map((c) => ({
+            symbol: c.symbol,
+            logoUrl: c.logoUrl,
+            status: isResults ? (c as EarningsResultsSlides['companies'][number]).status : undefined,
+          }))}
+          beatCount={isResults ? (slides as EarningsResultsSlides).beatCount : undefined}
           slideIndex={slideIndex}
           totalSlides={total}
-          pillText={pillText}
         />
       );
     } else if (kind === 'cta') {

@@ -26,11 +26,21 @@
  * reading as "this company's earnings are bad." Company identity is
  * already carried by real logos, not a color-coded initial badge.
  *
- * The bull mascot (public/illustrations/bull-alert.png) appears on the hook
- * and CTA slides — the two moments built to earn a scroll-stop and a tap,
- * respectively. The data-dense list slide has no mascot at all: a corner
- * accent (bull-chalkboard.png) was tried there but overlapped the last
- * row(s) of companies on busy weeks, so it was removed rather than fixed.
+ * COVERS ARE INK (2026-10-09 critique): the first slide is all most people
+ * see, and a white tile dissolves into Instagram's white UI and repeats
+ * across the whole grid. Every post now opens on an ink cover in the landing
+ * page's identity that states the news itself (the day's biggest gain and
+ * drop, the week's logos), with white data slides after it, where the logo
+ * reasoning above still applies. Numbers are Geist Sans: Geist Mono gives
+ * "." a full digit cell, so "$3.62" read as "$3 . 62" at display sizes.
+ *
+ * The bull mascot (public/illustrations/bull-alert.png) appears only on the
+ * CTA slide now (its line art is black and disappears on ink). The
+ * data-dense list slide has no mascot at all: a corner accent
+ * (bull-chalkboard.png) was tried there but overlapped the last row(s) of
+ * companies on busy weeks, so it was removed rather than fixed.
+ *
+ * Preview against real posts: npm run render-instagram-preview -- --latest
  */
 
 import { readFileSync } from 'fs';
@@ -51,14 +61,33 @@ export const SLIDE_HEIGHT = 1350;
 const BG = '#ffffff';
 const FG = '#0a0a0a';
 const SURFACE = '#f7f7f7';
-const MUTED = '#71717a';
-const MUTED_DIM = '#a1a1aa';
+// Secondary text. Was #71717a with #a1a1aa labels: ~4.3:1 and ~2.4:1 on
+// SURFACE, and a slide is seen at about a third of its size in the feed.
+const MUTED = '#5f5f69';
 const BORDER = '#e4e4e7';
 const BORDER_STRONG = '#d4d4d8';
 const BRAND = '#34d399'; // Signal Emerald (emerald-400) — same hex used elsewhere (e.g. app/api/og/share/[id]/route.tsx)
 const BRAND_INK = '#0a0a0a'; // text/icon color on top of BRAND — dark reads better on emerald-400 than white does
 const BMO_COLOR = '#0ea5e9'; // Tailwind sky-500 — matches EarningsCalendarWidget's BMO tag
 const AMC_COLOR = '#f59e0b'; // Tailwind amber-500 — matches EarningsCalendarWidget's AMC tag
+// Text on the BMO/AMC tints: the 500s themselves are ~2:1 on their own tint.
+const BMO_TEXT = '#0369a1'; // sky-700
+const AMC_TEXT = '#b45309'; // amber-700
+
+// Covers (the first slide, which is all most people see) are ink, in the
+// landing page's identity, so a BullPen post is recognisable in the grid and
+// doesn't dissolve into Instagram's own white UI. Data slides stay white:
+// that is where the logos need it (see the header comment).
+const INK = '#0c100e'; // DESIGN.md bg-dark, oklch(0.145 0.008 162)
+const INK_SURFACE = '#181d1b'; // surface-dark
+const INK_BORDER = 'rgba(255,255,255,0.10)';
+const ON_INK = '#fafafa';
+const ON_INK_MUTED = '#a3a8a6';
+const INK_GLOW = 'radial-gradient(circle at 12% 0%, rgba(52,211,153,0.20), rgba(52,211,153,0) 55%)';
+const LOSS = '#f87171'; // red-400, the mirror of BRAND; dark text on it, like BRAND
+// Gain/loss as TEXT on white: the 400s are under 3:1 there.
+const GAIN_TEXT = '#059669'; // emerald-600
+const LOSS_TEXT = '#dc2626'; // red-600
 
 /**
  * Companies per list-page. Set comfortably above MAX_COMPANIES
@@ -70,20 +99,20 @@ const AMC_COLOR = '#f59e0b'; // Tailwind amber-500 — matches EarningsCalendarW
 export const COMPANIES_PER_LIST_SLIDE = 30;
 
 export type SlideKind =
-  | 'hook' | 'list' | 'cta' | 'winners' | 'losers'
+  | 'hook' | 'list' | 'cta' | 'movers_cover' | 'winners' | 'losers'
   | 'deepdive_summary';
 
 function listSlideCount(companyCount: number): number {
   return Math.max(1, Math.ceil(companyCount / COMPANIES_PER_LIST_SLIDE));
 }
 
-/** Total slide count for a given post. market_movers is always a fixed 3
- *  slides (winners, losers, cta); earnings_deep_dive is always a fixed 2
+/** Total slide count for a given post. market_movers is always a fixed 4
+ *  slides (ink cover, winners, losers, cta); earnings_deep_dive is always a fixed 2
  *  (the info-dense summary card, then the shared conversion CTA slide every
  *  other content type ends on); earnings_calendar/earnings_results paginate
  *  their company list across a hook, 1+ list slides, and a CTA. */
 export function totalSlideCount(slides: InstagramPostSlides): number {
-  if (slides.contentType === 'market_movers') return 3;
+  if (slides.contentType === 'market_movers') return 4;
   if (slides.contentType === 'earnings_deep_dive') return 2;
   return 1 + listSlideCount(slides.companies.length) + 1;
 }
@@ -91,8 +120,9 @@ export function totalSlideCount(slides: InstagramPostSlides): number {
 /** Which kind of slide a given 0-indexed slide position is, for a given post. */
 export function slideKindAt(index: number, slides: InstagramPostSlides): SlideKind {
   if (slides.contentType === 'market_movers') {
-    if (index === 0) return 'winners';
-    if (index === 1) return 'losers';
+    if (index === 0) return 'movers_cover';
+    if (index === 1) return 'winners';
+    if (index === 2) return 'losers';
     return 'cta';
   }
   if (slides.contentType === 'earnings_deep_dive') {
@@ -121,6 +151,11 @@ export function altTextForSlide(
   if (content.contentType === 'market_movers') {
     const kind = slideKindAt(slideIndex, content);
     const when = content.period ? `This ${content.period}'s` : "Today's";
+    if (kind === 'movers_cover') {
+      const g = content.winners[0];
+      const l = content.losers[0];
+      return `${when} biggest S&P 500 and Nasdaq 100 moves on BullPen: ${g.symbol} up ${g.changePercent.toFixed(1)}%, ${l.symbol} down ${Math.abs(l.changePercent).toFixed(1)}%.`;
+    }
     if (kind === 'winners') return `${when} top S&P 500 and Nasdaq 100 gainers on BullPen: ${content.winners.map((w) => w.symbol).join(', ')}.`;
     if (kind === 'losers') return `${when} top S&P 500 and Nasdaq 100 losers on BullPen: ${content.losers.map((l) => l.symbol).join(', ')}.`;
     return 'Open the BullPen app to track every S&P 500 and Nasdaq 100 stock in real time.';
@@ -153,16 +188,14 @@ export function altTextForSlide(
 
 /** All fonts every slide kind might need — fetched once per render, cached across warm invocations by loadOgFont itself. */
 export async function loadSlideFonts() {
-  const [sans, sansBold, mono, serif] = await Promise.all([
+  const [sans, sansBold, serif] = await Promise.all([
     loadOgFont('Geist', 400),
     loadOgFont('Geist', 700),
-    loadOgFont('Geist Mono', 500),
     loadOgFont('Instrument Serif', 400, true),
   ]);
   return [
     { name: 'Geist', data: sans, weight: 400 as const, style: 'normal' as const },
     { name: 'Geist', data: sansBold, weight: 700 as const, style: 'normal' as const },
-    { name: 'Geist Mono', data: mono, weight: 500 as const, style: 'normal' as const },
     { name: 'Instrument Serif', data: serif, weight: 400 as const, style: 'italic' as const },
   ];
 }
@@ -171,7 +204,7 @@ export async function loadSlideFonts() {
 // More reliable than fetching our own deployed URL: no network round-trip,
 // works identically in local dev and production without needing to know
 // the app's own base URL.
-let brandIconDataUri: string | null = null;
+const imageCache = new Map<string, string>();
 let mascotDataUri: string | null = null;
 
 function loadLocalImageDataUri(relativePath: string): string {
@@ -179,9 +212,10 @@ function loadLocalImageDataUri(relativePath: string): string {
   return `data:image/png;base64,${buf.toString('base64')}`;
 }
 
-function getBrandIcon(): string {
-  if (!brandIconDataUri) brandIconDataUri = loadLocalImageDataUri('BullPenLogo.png');
-  return brandIconDataUri;
+function getBrandIcon(onInk = false): string {
+  const file = onInk ? 'BullPenLogo-dark.png' : 'BullPenLogo.png';
+  if (!imageCache.has(file)) imageCache.set(file, loadLocalImageDataUri(file));
+  return imageCache.get(file)!;
 }
 
 function getMascot(): string {
@@ -206,8 +240,8 @@ function formatEps(v: number): string {
  *  sorts Nasdaq-100 names first, then date), since it buckets by date
  *  across the WHOLE list rather than assuming same-day entries are already
  *  consecutive. Within a date, original relative order is preserved. */
-function groupByDate(companies: EarningsSlideCompany[]): { date: string; items: EarningsSlideCompany[] }[] {
-  const map = new Map<string, EarningsSlideCompany[]>();
+function groupByDate<T extends { date: string }>(companies: T[]): { date: string; items: T[] }[] {
+  const map = new Map<string, T[]>();
   for (const c of companies) {
     const arr = map.get(c.date) ?? [];
     arr.push(c);
@@ -222,12 +256,12 @@ function groupByDate(companies: EarningsSlideCompany[]): { date: string; items: 
  *  component exactly (bold, -0.02em tracking, lowercase) rather than the
  *  spaced-out uppercase text used before — that treatment doesn't match
  *  the brand mark anywhere else in the app. */
-function Wordmark({ size = 36 }: { size?: number }) {
+function Wordmark({ size = 36, onInk = false }: { size?: number; onInk?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={getBrandIcon()} alt="" width={size} height={size} />
-      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, letterSpacing: '-0.02em', fontSize: size * 0.8, color: FG }}>
+      <img src={getBrandIcon(onInk)} alt="" width={size} height={size} />
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, letterSpacing: '-0.02em', fontSize: size * 0.8, color: onInk ? ON_INK : FG }}>
         bullpen
       </span>
     </div>
@@ -237,10 +271,60 @@ function Wordmark({ size = 36 }: { size?: number }) {
 /** "N / total" — shown on every slide (not just multi-page lists) so a
  *  viewer mid-scroll on Explore recognizes it's one carousel and knows
  *  how much is left, per the cross-slide consistency feedback. */
-function SlideIndicator({ index, total }: { index: number; total: number }) {
+function SlideIndicator({ index, total, onInk = false }: { index: number; total: number; onInk?: boolean }) {
   return (
-    <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED, letterSpacing: '0.02em' }}>
-      {index + 1} / {total}
+    <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: onInk ? ON_INK_MUTED : MUTED }}>
+      {`${index + 1} / ${total}`}
+    </div>
+  );
+}
+
+/** Plain-language key at the foot of a data slide: what the numbers mean, for
+ *  a reader who doesn't know what EPS is, plus where to go next. Also anchors
+ *  the bottom of the canvas so a short list doesn't end in a blank half. */
+function SlideFooter({ note }: { note: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 40, paddingTop: 28, borderTop: `1px solid ${BORDER}` }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, lineHeight: 1.45, color: MUTED, maxWidth: 680 }}>{note}</span>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 22, color: FG, flexShrink: 0 }}>Link in bio</span>
+    </div>
+  );
+}
+
+/** Shared frame for the ink covers: wordmark and counter on top, a faint
+ *  emerald glow from the corner (the landing page's atmosphere), content
+ *  spread over the rest. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function InkCover({ slideIndex, totalSlides, children }: { slideIndex: number; totalSlides: number; children: any }) {
+  return (
+    <div
+      style={{
+        width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        padding: 88, backgroundColor: INK, backgroundImage: INK_GLOW, color: ON_INK,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Wordmark onInk />
+        <SlideIndicator index={slideIndex} total={totalSlides} onInk />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** A company logo on ink: a white disc (third-party logos are drawn for white),
+ *  optionally ringed in the gain/loss color when the post is about a result. */
+function InkLogo({ symbol, logoUrl, size, ring }: { symbol: string; logoUrl: string | null; size: number; ring?: string }) {
+  return (
+    <div style={{ display: 'flex', padding: ring ? 6 : 0, borderRadius: 999, backgroundColor: ring ?? 'transparent' }}>
+      <div style={{ display: 'flex', width: size, height: size, borderRadius: 999, backgroundColor: BG, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: ring ? `4px solid ${INK}` : 'none' }}>
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt={`${symbol} logo`} width={size} height={size} style={{ objectFit: 'cover' }} />
+        ) : (
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(size * 0.3), color: FG }}>{symbol.slice(0, 4)}</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -271,6 +355,19 @@ function lerp(n: number, spacious: number, compact: number): number {
   return spacious + (compact - spacious) * t;
 }
 
+/** Above lerp's spacious end: a 3-company week used to render 3 rows and leave
+ *  over half the slide blank. At 3 or fewer rows grow to `roomy`, easing back
+ *  to `spacious` by 6. */
+function fit(n: number, roomy: number, spacious: number, compact: number): number {
+  if (n >= 6) return Math.round(lerp(n, spacious, compact));
+  const t = Math.min(1, Math.max(0, (n - 3) / 3));
+  return Math.round(roomy + (spacious - roomy) * t);
+}
+
+/** Busy weeks are height-budgeted to the pixel (see rowMetrics); the footer
+ *  key only fits while the list leaves room for it. */
+const FOOTER_MAX_ROWS = 10;
+
 /**
  * Row sizing scales down smoothly as the week's company count grows, so
  * every week fits on ONE list slide (see COMPANIES_PER_LIST_SLIDE above)
@@ -298,21 +395,21 @@ function rowMetrics(n: number): RowMetrics {
     // fill change alone already makes logos read as bigger since they now
     // fill the whole circle instead of floating small inside it — that's
     // the fix "bigger logos" actually needed, not a larger circle.
-    badgeSize: Math.round(lerp(n, 56, 34)),
-    rowPaddingV: Math.round(lerp(n, 20, 6)),
-    rowPaddingH: Math.round(lerp(n, 28, 16)),
-    rowGap: Math.round(lerp(n, 20, 6)),
-    rowRadius: Math.round(lerp(n, 20, 12)),
-    symbolFontSize: Math.round(lerp(n, 34, 19)),
-    nameFontSize: Math.round(lerp(n, 22, 13)),
-    dateFontSize: Math.round(lerp(n, 20, 12)),
-    timeFontSize: Math.round(lerp(n, 20, 11)),
-    timePaddingV: Math.round(lerp(n, 6, 3)),
-    timePaddingH: Math.round(lerp(n, 16, 8)),
-    epsLabelFontSize: Math.round(lerp(n, 13, 9)),
-    epsValueFontSize: Math.round(lerp(n, 22, 14)),
-    headerMarginBottom: Math.round(lerp(n, 40, 16)),
-    dateHeaderFontSize: Math.round(lerp(n, 20, 12)),
+    badgeSize: fit(n, 88, 56, 34),
+    rowPaddingV: fit(n, 30, 20, 6),
+    rowPaddingH: fit(n, 34, 28, 16),
+    rowGap: fit(n, 24, 20, 6),
+    rowRadius: fit(n, 26, 20, 12),
+    symbolFontSize: fit(n, 50, 34, 19),
+    nameFontSize: fit(n, 28, 22, 13),
+    dateFontSize: fit(n, 24, 20, 12),
+    timeFontSize: fit(n, 24, 20, 11),
+    timePaddingV: fit(n, 8, 6, 3),
+    timePaddingH: fit(n, 18, 16, 8),
+    epsLabelFontSize: fit(n, 18, 15, 10),
+    epsValueFontSize: fit(n, 40, 28, 16),
+    headerMarginBottom: fit(n, 48, 40, 16),
+    dateHeaderFontSize: fit(n, 22, 20, 12),
   };
 }
 
@@ -355,7 +452,7 @@ function TimeBadge({ time, fontSize, paddingV, paddingH }: { time: 'BMO' | 'AMC'
   return (
     <div
       style={{
-        display: 'flex', fontSize, fontWeight: 500, color,
+        display: 'flex', fontSize, fontWeight: 700, color: time === 'BMO' ? BMO_TEXT : AMC_TEXT,
         fontFamily: 'Geist', padding: `${paddingV}px ${paddingH}px`, borderRadius: 999,
         backgroundColor: `${color}1a`,
       }}
@@ -372,10 +469,10 @@ function TimeBadge({ time, fontSize, paddingV, paddingH }: { time: 'BMO' | 'AMC'
 function EpsStat({ value, labelFontSize, valueFontSize }: { value: number | null; labelFontSize: number; valueFontSize: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: labelFontSize, letterSpacing: '0.06em', color: MUTED_DIM }}>
-        EST. EPS
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: labelFontSize, color: MUTED }}>
+        EPS est.
       </span>
-      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: valueFontSize, color: value != null ? FG : MUTED_DIM }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: valueFontSize, letterSpacing: '-0.02em', color: value != null ? FG : MUTED }}>
         {value != null ? formatEps(value) : 'N/A'}
       </span>
     </div>
@@ -390,7 +487,7 @@ function EpsStat({ value, labelFontSize, valueFontSize }: { value: number | null
 function DateHeader({ dateStr, fontSize }: { dateStr: string; fontSize: number }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize, letterSpacing: '0.06em', color: MUTED }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize, letterSpacing: '0.08em', color: MUTED }}>
         {formatDateHeader(dateStr)}
       </span>
       <div style={{ display: 'flex', flex: 1, height: 1, backgroundColor: BORDER }} />
@@ -401,59 +498,74 @@ function DateHeader({ dateStr, fontSize }: { dateStr: string; fontSize: number }
 interface HookSlideProps {
   headline: string;
   weekLabel: string;
-  companyCount: number;
+  /** The week's companies, in the post's own order. Their logos are the
+   *  cover: the names are the news, so they no longer wait on slide 2. */
+  companies: { symbol: string; logoUrl: string | null; status?: 'beat' | 'missed' }[];
   slideIndex: number;
   totalSlides: number;
-  /** Overrides the default "{n} COMPANIES REPORTING" pill text — e.g.
-   *  earnings-results.ts's "9 OF 12 BEAT ESTIMATES" for the results recap. */
-  pillText?: string;
+  /** Results recap only: how many beat, which switches the cover's fact line
+   *  and rings each logo in its result color. */
+  beatCount?: number;
 }
 
+const COVER_LOGO_MAX = 8;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function HookSlide({ headline, weekLabel, companyCount, slideIndex, totalSlides, pillText }: HookSlideProps): any {
+export function HookSlide({ headline, weekLabel, companies, slideIndex, totalSlides, beatCount }: HookSlideProps): any {
+  const isResults = beatCount != null;
+  const n = companies.length;
+  const overflow = n > COVER_LOGO_MAX ? n - (COVER_LOGO_MAX - 1) : 0;
+  const shown = overflow ? companies.slice(0, COVER_LOGO_MAX - 1) : companies;
+  const tiles = shown.length + (overflow ? 1 : 0);
+  // Balanced rows (7 → 4 + 3, not 6 + 1), and bigger logos when there are few.
+  const perRow = tiles <= 5 ? tiles : Math.ceil(tiles / 2);
+  const logo = tiles <= 3 ? 168 : tiles <= 5 ? 136 : 120;
+  const rows: typeof shown[] = [];
+  for (let i = 0; i < shown.length; i += perRow) rows.push(shown.slice(i, i + perRow));
+  const lastRowHasRoom = rows.length === 0 || rows[rows.length - 1].length < perRow;
+
   return (
-    <div
-      style={{
-        width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
-        justifyContent: 'space-between', padding: 96, backgroundColor: BG, color: FG,
-        position: 'relative', overflow: 'hidden',
-      }}
-    >
-      {/* Mascot bleeds off the bottom-right corner — a hero moment for the
-          one slide where it counts most, not repeated across the carousel. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={getMascot()}
-        alt=""
-        width={520}
-        height={520}
-        style={{ position: 'absolute', bottom: -70, right: -90, opacity: 0.9 }}
-      />
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
-        <Wordmark />
-        <SlideIndicator index={slideIndex} total={totalSlides} />
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', zIndex: 1 }}>
-        <div
-          style={{
-            display: 'flex', alignSelf: 'flex-start', fontFamily: 'Geist', fontWeight: 700, fontSize: 22,
-            letterSpacing: '0.02em', color: BRAND_INK, backgroundColor: BRAND,
-            padding: '10px 20px', borderRadius: 999, marginBottom: 28,
-          }}
-        >
-          {pillText ?? `${companyCount} ${companyCount === 1 ? 'COMPANY' : 'COMPANIES'} REPORTING`}
-        </div>
-        <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 84, lineHeight: 1.05, color: FG, maxWidth: 820 }}>
+    <InkCover slideIndex={slideIndex} totalSlides={totalSlides}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 64 }}>
+        <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 80, lineHeight: 1.04, letterSpacing: '-0.035em', color: ON_INK, maxWidth: 900 }}>
           {headline}
         </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+          {rows.map((row, r) => (
+          <div key={r} style={{ display: 'flex', gap: 40 }}>
+          {row.map((c) => (
+            <div key={c.symbol} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+              <InkLogo symbol={c.symbol} logoUrl={c.logoUrl} size={logo} ring={c.status ? (c.status === 'beat' ? BRAND : LOSS) : undefined} />
+              <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 28, color: ON_INK }}>{c.symbol}</span>
+              {c.status && (
+                <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 22, color: c.status === 'beat' ? BRAND : LOSS }}>
+                  {c.status === 'beat' ? 'Beat' : 'Missed'}
+                </span>
+              )}
+            </div>
+          ))}
+          {overflow > 0 && r === rows.length - 1 && lastRowHasRoom && (
+            <div style={{ display: 'flex', width: logo, height: logo, borderRadius: 999, border: `2px solid ${INK_BORDER}`, alignItems: 'center', justifyContent: 'center', fontFamily: 'Geist', fontWeight: 700, fontSize: 36, color: ON_INK }}>
+              {`+${overflow}`}
+            </div>
+          )}
+          </div>
+          ))}
+        </div>
       </div>
 
-      <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 28, color: MUTED, zIndex: 1 }}>
-        {weekLabel}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 40 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 36, letterSpacing: '-0.02em', color: ON_INK }}>
+            {isResults
+              ? `${beatCount} of ${n} beat what analysts expected`
+              : `${n} ${n === 1 ? 'company reports' : 'companies report'} earnings`}
+          </span>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED }}>{weekLabel}</span>
+        </div>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 26, color: BRAND, flexShrink: 0 }}>Swipe for details</span>
       </div>
-    </div>
+    </InkCover>
   );
 }
 
@@ -468,6 +580,7 @@ interface EarningsListSlideProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, totalSlides }: EarningsListSlideProps): any {
   const m = rowMetrics(companies.length);
+  const footerNote = 'EPS est. is the profit per share analysts expect. Times are US market hours.';
   const groups = groupByDate(companies);
   return (
     <div
@@ -511,7 +624,7 @@ export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, to
                         {c.symbol}
                       </span>
                       <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED, flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                        {earningsRowName(c.name)}
+                        {earningsRowName(c.name, m.nameFontSize)}
                       </span>
                     </div>
                   </div>
@@ -527,10 +640,11 @@ export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, to
       </div>
 
       {overflowCount > 0 && (
-        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED, marginTop: 24 }}>
-          +{overflowCount} more this week on BullPen
+        <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED, marginTop: 24 }}>
+          {`+${overflowCount} more this week on BullPen`}
         </div>
       )}
+      {companies.length > 0 && companies.length <= FOOTER_MAX_ROWS && <SlideFooter note={footerNote} />}
     </div>
   );
 }
@@ -553,7 +667,7 @@ function ResultBadge({ status, fontSize, paddingV, paddingH }: { status: 'beat' 
     <div
       style={{
         display: 'flex', fontSize, fontWeight: 700, letterSpacing: '0.04em',
-        color: isBeat ? BRAND_INK : '#ffffff',
+        color: BRAND_INK,
         fontFamily: 'Geist', padding: `${paddingV}px ${paddingH}px`, borderRadius: 999,
         backgroundColor: isBeat ? BRAND : MISSED_COLOR,
       }}
@@ -569,10 +683,10 @@ function ResultBadge({ status, fontSize, paddingV, paddingH }: { status: 'beat' 
 function EpsCompareStat({ estimate, actual, labelFontSize, valueFontSize }: { estimate: number; actual: number; labelFontSize: number; valueFontSize: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: labelFontSize, letterSpacing: '0.06em', color: MUTED_DIM }}>
-        EST {formatEps(estimate)}
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: labelFontSize, color: MUTED }}>
+        {`Expected ${formatEps(estimate)}`}
       </span>
-      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: valueFontSize, color: FG }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: valueFontSize, letterSpacing: '-0.02em', color: FG }}>
         {formatEps(actual)}
       </span>
     </div>
@@ -589,6 +703,7 @@ interface EarningsResultsListSlideProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIndex, totalSlides }: EarningsResultsListSlideProps): any {
   const m = rowMetrics(companies.length);
+  const footerNote = 'Beat means profit per share (EPS) came in above what analysts expected.';
   const groups = groupByDate(companies);
   return (
     <div
@@ -622,7 +737,7 @@ export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIn
                       {c.symbol}
                     </span>
                     <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED, flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                      {earningsRowName(c.name)}
+                      {earningsRowName(c.name, m.nameFontSize)}
                     </span>
                   </div>
                 </div>
@@ -637,10 +752,11 @@ export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIn
       </div>
 
       {overflowCount > 0 && (
-        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED, marginTop: 24 }}>
-          +{overflowCount} more this week on BullPen
+        <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED, marginTop: 24 }}>
+          {`+${overflowCount} more this week on BullPen`}
         </div>
       )}
+      {companies.length > 0 && companies.length <= FOOTER_MAX_ROWS && <SlideFooter note={footerNote} />}
     </div>
   );
 }
@@ -655,7 +771,7 @@ export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIn
 /** Fixed track width for the % bar badge, sized to comfortably fit a
  *  5-character label ("+13.70%") inside even a floored 20%-width bar. */
 const MOVER_BAR_TRACK_WIDTH = 380;
-const MOVER_BAR_HEIGHT = 56;
+const MOVER_BAR_HEIGHT = 60;
 /** Floor so the smallest mover's bar (relative to the largest on the same
  *  slide) never shrinks to an illegibly thin sliver. */
 const MOVER_BAR_MIN_FRACTION = 0.2;
@@ -666,12 +782,12 @@ const MOVER_BAR_MIN_FRACTION = 0.2;
  *  meaningful here (gain vs loss), the same case DESIGN.md's One Signal
  *  Rule already carves out — see this file's header comment on
  *  MISSED_COLOR, which is reused here rather than defining a new red. */
-/** Geist Mono's per-character advance width at MOVER_BAR_LABEL_FONT_SIZE,
- *  bold — empirical estimate (Satori/next-og has no text-measurement API to
- *  ask for the real value). Used only to guarantee the pill never renders
- *  narrower than its own label needs. */
-const MOVER_BAR_LABEL_CHAR_WIDTH = 14.5;
-const MOVER_BAR_LABEL_FONT_SIZE = 24;
+/** Upper-bound per-character advance at MOVER_BAR_LABEL_FONT_SIZE, bold
+ *  (Satori has no text-measurement API). Was measured for Geist Mono; Geist
+ *  Sans is narrower, so it stays a safe ceiling. Used only to guarantee the
+ *  pill never renders narrower than its own label needs. */
+const MOVER_BAR_LABEL_CHAR_WIDTH = 15.5;
+const MOVER_BAR_LABEL_FONT_SIZE = 26;
 const MOVER_BAR_LABEL_PADDING = 18; // matches the pill's `padding: '0 18px'` below, per side
 
 function MoverBar({ changePercent, maxAbs, positive }: { changePercent: number; maxAbs: number; positive: boolean }) {
@@ -698,7 +814,7 @@ function MoverBar({ changePercent, maxAbs, positive }: { changePercent: number; 
           padding: `0 ${MOVER_BAR_LABEL_PADDING}px`,
         }}
       >
-        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: MOVER_BAR_LABEL_FONT_SIZE, color: positive ? BRAND_INK : '#ffffff' }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: MOVER_BAR_LABEL_FONT_SIZE, color: BRAND_INK }}>
           {label}
         </span>
       </div>
@@ -719,9 +835,25 @@ function truncateName(name: string, maxChars = 26): string {
  *  legal names, then caps length. MKC's full legal name pushed the EPS stat
  *  and time badge off the canvas. The row's flex guard is the second line
  *  of defence if a name still runs long. */
-function earningsRowName(name: string): string {
-  const cleaned = name.replace(/\s+(Class [A-Z]\s+)?(Non-Voting\s+)?(Common|Ordinary)\s+(Stock|Shares)$/i, '');
-  return truncateName(cleaned, 32);
+function earningsRowName(name: string, fontSize: number): string {
+  // The row's room for the name is roughly fixed, so a bigger font (short
+  // weeks) fits fewer characters: STZ clipped mid-letter at 28px on 32.
+  const maxChars = Math.max(16, Math.min(32, Math.floor(560 / fontSize)));
+  return truncateName(cleanCompanyName(name), maxChars);
+}
+
+/** Drops listing boilerplate from a legal name: "GoDaddy Inc. Class A Common
+ *  Stock" → "GoDaddy Inc.", "Arm Holdings plc ADR" → "Arm Holdings plc".
+ *  Movers rows showed "GoDaddy Inc. Class A Commo..." before this applied
+ *  to them too. */
+function cleanCompanyName(name: string): string {
+  return name
+    .replace(/\s+(American Depositary Shares|ADR|ADS)$/i, '')
+    .replace(/\s+(Class [A-Z]\b)?(\s*(Non-Voting\s+)?(Common|Ordinary|Subordinate Voting)\s+(Stock|Shares))?$/i, '')
+    // Legal suffixes carry nothing on a slide and are what got cut to
+    // "Chipotle Mexican Grill, In...".
+    .replace(/,?\s+(Inc\.?|Incorporated|Corp\.?|Corporation|Co\.|Ltd\.?|Limited|PLC|plc|N\.V\.|S\.A\.)$/, '')
+    .trim();
 }
 
 interface MoversListSlideProps {
@@ -736,6 +868,11 @@ interface MoversListSlideProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function MoversListSlide({ title, subtitle, entries, positive, slideIndex, totalSlides }: MoversListSlideProps): any {
   const maxAbs = Math.max(...entries.map((e) => Math.abs(e.changePercent)), 0.01);
+  // "Daily Winners": the session word in sans, the result word as the serif
+  // accent in its own gain/loss color, so the slide says which side it is.
+  const words = title.trim().split(/\s+/);
+  const accent = words.pop() ?? title;
+  const lead = words.join(' ');
   return (
     <div
       style={{
@@ -743,25 +880,28 @@ export function MoversListSlide({ title, subtitle, entries, positive, slideIndex
         padding: 80, backgroundColor: BG, color: FG,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <Wordmark />
         <SlideIndicator index={slideIndex} total={totalSlides} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 40 }}>
-        <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 72, color: FG, marginBottom: 12 }}>
-          {title}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, marginBottom: 10 }}>
+          {lead && (
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 64, letterSpacing: '-0.035em', color: FG }}>{lead}</span>
+          )}
+          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 80, color: positive ? GAIN_TEXT : LOSS_TEXT }}>{accent}</span>
         </div>
-        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
+        <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, color: MUTED }}>
           {subtitle}
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 22, flex: 1 }}>
         {entries.map((entry) => (
           <div key={entry.symbol} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
-              <CompanyBadge symbol={entry.symbol} logoUrl={entry.logoUrl} size={52} />
+              <CompanyBadge symbol={entry.symbol} logoUrl={entry.logoUrl} size={60} />
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flex: 1, minWidth: 0 }}>
                 <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 32, color: FG, flexShrink: 0 }}>
                   {entry.symbol}
@@ -780,7 +920,7 @@ export function MoversListSlide({ title, subtitle, entries, positive, slideIndex
                     flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap',
                   }}
                 >
-                  {truncateName(entry.name)}
+                  {truncateName(cleanCompanyName(entry.name))}
                 </span>
               </div>
             </div>
@@ -788,7 +928,75 @@ export function MoversListSlide({ title, subtitle, entries, positive, slideIndex
           </div>
         ))}
       </div>
+
+      <SlideFooter note="Change in price from the previous close." />
     </div>
+  );
+}
+
+interface MoversCoverSlideProps {
+  /** "The day's" / "The week's" / "The month's" / "Pre-market's". */
+  when: string;
+  dateLabel: string;
+  gainer: MarketMoverEntry;
+  loser: MarketMoverEntry;
+  slideIndex: number;
+  totalSlides: number;
+}
+
+function CoverMover({ entry, positive }: { entry: MarketMoverEntry; positive: boolean }) {
+  const color = positive ? BRAND : LOSS;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, letterSpacing: '0.08em', color }}>
+        {positive ? 'BIGGEST GAIN' : 'BIGGEST DROP'}
+      </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28, minWidth: 0, flex: 1 }}>
+          <InkLogo symbol={entry.symbol} logoUrl={entry.logoUrl} size={120} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, flex: 1 }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 56, letterSpacing: '-0.03em', color: ON_INK }}>{entry.symbol}</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              {truncateName(cleanCompanyName(entry.name), 24)}
+            </span>
+          </div>
+        </div>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 112, letterSpacing: '-0.045em', color, flexShrink: 0 }}>
+          {formatPercentSigned(entry.changePercent)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Movers cover: the one number someone stops scrolling for, each way. The
+ *  full top 10s follow on white list slides. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function MoversCoverSlide({ when, dateLabel, gainer, loser, slideIndex, totalSlides }: MoversCoverSlideProps): any {
+  return (
+    <InkCover slideIndex={slideIndex} totalSlides={totalSlides}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 72 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 84, lineHeight: 1.02, letterSpacing: '-0.04em', color: ON_INK }}>
+            {`${when} biggest`}
+          </span>
+          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 120, lineHeight: 1, color: ON_INK }}>moves.</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 44 }}>
+          <CoverMover entry={gainer} positive />
+          <div style={{ display: 'flex', height: 1, backgroundColor: INK_BORDER }} />
+          <CoverMover entry={loser} positive={false} />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 40 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 30, color: ON_INK }}>Top 10 up and down</span>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, color: ON_INK_MUTED }}>{`S&P 500 and Nasdaq 100 · ${dateLabel}`}</span>
+        </div>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 26, color: BRAND, flexShrink: 0 }}>Swipe for the list</span>
+      </div>
+    </InkCover>
   );
 }
 
@@ -853,7 +1061,7 @@ function formatUsdRange(low: number, high: number): string {
  *  misrepresent it either direction. */
 function DeepDiveStatusBadge({ status, size = 'lg' }: { status: 'beat' | 'missed' | 'inline'; size?: 'lg' | 'sm' }) {
   const color = status === 'beat' ? BRAND : status === 'missed' ? MISSED_COLOR : INLINE_COLOR;
-  const ink = status === 'beat' ? BRAND_INK : '#ffffff';
+  const ink = BRAND_INK;
   const label = status === 'beat' ? 'BEAT' : status === 'missed' ? 'MISS' : 'IN LINE';
   const fontSize = size === 'lg' ? 30 : 20;
   const padding = size === 'lg' ? '14px 32px' : '8px 18px';
@@ -868,7 +1076,7 @@ function ReportTimingBadge({ timing }: { timing: 'BMO' | 'AMC' | null }) {
   if (!timing) return null;
   const color = timing === 'BMO' ? BMO_COLOR : AMC_COLOR;
   return (
-    <div style={{ display: 'flex', fontSize: 20, fontWeight: 500, color, fontFamily: 'Geist', padding: '8px 18px', borderRadius: 999, backgroundColor: `${color}1a` }}>
+    <div style={{ display: 'flex', fontSize: 22, fontWeight: 700, color, fontFamily: 'Geist', padding: '8px 18px', borderRadius: 999, backgroundColor: `${color}26` }}>
       {timing === 'BMO' ? 'Before Open' : 'After Close'}
     </div>
   );
@@ -877,12 +1085,12 @@ function ReportTimingBadge({ timing }: { timing: 'BMO' | 'AMC' | null }) {
 function CompanyIdentity({ data, badgeSize = 72 }: { data: EarningsDeepDiveData; badgeSize?: number }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
-      <CompanyBadge symbol={data.ticker} logoUrl={data.logoUrl} size={badgeSize} />
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(badgeSize * 0.5), color: FG }}>
+      <InkLogo symbol={data.ticker} logoUrl={data.logoUrl} size={badgeSize} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(badgeSize * 0.5), letterSpacing: '-0.03em', color: ON_INK }}>
           ${data.ticker}
         </span>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: Math.round(badgeSize * 0.26), color: MUTED }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: Math.round(badgeSize * 0.26), color: ON_INK_MUTED }}>
           {data.companyName}
         </span>
       </div>
@@ -938,21 +1146,21 @@ function MetricCell({
 }: {
   label: string; fromValue: string | null; toValue: string; status?: 'beat' | 'missed' | 'inline' | null; footnote?: string | null;
 }) {
-  const toColor = status === 'beat' ? BRAND : FG;
+  const toColor = status === 'beat' ? BRAND : status === 'missed' ? LOSS : ON_INK;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, padding: 40, borderRadius: 28, backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}>
-      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 19, letterSpacing: '0.06em', color: MUTED_DIM }}>
-        {label.toUpperCase()}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, padding: 40, borderRadius: 28, backgroundColor: INK_SURFACE, border: `1px solid ${INK_BORDER}` }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, color: ON_INK }}>
+        {label}
       </span>
       {fromValue && (
-        <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED_DIM }}>{fromValue}</span>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: ON_INK_MUTED }}>{fromValue}</span>
       )}
-      <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontWeight: 700, fontSize: 54, color: toColor }}>{toValue}</span>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 64, letterSpacing: '-0.04em', color: toColor }}>{toValue}</span>
       {(status || footnote) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
           {status && <DeepDiveStatusBadge status={status} size="sm" />}
           {footnote && (
-            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 20, color: MUTED }}>{footnote}</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: ON_INK_MUTED }}>{footnote}</span>
           )}
         </div>
       )}
@@ -1013,7 +1221,7 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
     hasGuidanceRange ? (
       <MetricCell
         key="guidance"
-        label="Next Q Guidance"
+        label="Next quarter's revenue outlook"
         fromValue={null}
         toValue={formatUsdRange(data.guidanceRevenueLow as number, data.guidanceRevenueHigh as number)}
         status={guidanceStatus(data.guidanceRevenueLow, data.guidanceRevenueHigh, data.guidanceConsensus)}
@@ -1023,15 +1231,15 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
   ].filter(Boolean);
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 88, backgroundColor: BG, color: FG }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 88, backgroundColor: INK, backgroundImage: INK_GLOW, color: ON_INK }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
         <div style={{ display: 'flex', zIndex: 1 }}>
-          <Wordmark />
+          <Wordmark onInk />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <CompanyIdentity data={data} badgeSize={80} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 22, color: MUTED }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, color: ON_INK_MUTED }}>
               {data.fiscalPeriodLabel ? `${data.fiscalPeriodLabel} · ` : ''}{formatDateHeader(data.reportDate)}
             </span>
             <ReportTimingBadge timing={data.reportTiming} />
@@ -1042,7 +1250,7 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
         <div style={{ display: 'flex', gap: 20 }}>
           <MetricCell
-            label="EPS"
+            label="Profit per share (EPS)"
             fromValue={data.epsEstimate != null ? `Est. ${formatEps(data.epsEstimate)}` : null}
             toValue={data.epsActual != null ? formatEps(data.epsActual) : 'N/A'}
             status={data.epsStatus}
@@ -1062,10 +1270,10 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: MUTED }}>
-          Track ${data.ticker} free on BullPen
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED }}>
+          {`Track $${data.ticker} free on BullPen. Link in bio.`}
         </span>
-        <div style={{ display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, fontWeight: 500, color: BRAND_INK, backgroundColor: BRAND, padding: '18px 44px', borderRadius: 999 }}>
+        <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, fontWeight: 700, color: BRAND_INK, backgroundColor: BRAND, padding: '18px 44px', borderRadius: 999 }}>
           {SITE_HOST}
         </div>
       </div>
@@ -1112,18 +1320,18 @@ function FeatureRow() {
     { Icon: WalletIcon, label: 'Portfolio' },
   ];
   return (
-    <div style={{ display: 'flex', gap: 48, marginBottom: 44 }}>
+    <div style={{ display: 'flex', gap: 56, marginBottom: 48 }}>
       {items.map(({ Icon, label }) => (
-        <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+        <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
           <div
             style={{
-              display: 'flex', width: 56, height: 56, borderRadius: 999,
-              border: `1px solid ${BORDER}`, alignItems: 'center', justifyContent: 'center',
+              display: 'flex', width: 84, height: 84, borderRadius: 999,
+              backgroundColor: SURFACE, border: `1px solid ${BORDER}`, alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Icon size={24} />
+            <Icon size={36} />
           </div>
-          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 18, color: MUTED }}>{label}</span>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, color: FG }}>{label}</span>
         </div>
       ))}
     </div>
@@ -1203,11 +1411,14 @@ export function CTASlide({ slideIndex, totalSlides, variant = 'earnings_calendar
 
       <div
         style={{
-          display: 'flex', fontFamily: 'Geist Mono', fontSize: 24, fontWeight: 500, color: BRAND_INK,
-          backgroundColor: BRAND, padding: '18px 44px', borderRadius: 999,
+          display: 'flex', fontFamily: 'Geist', fontSize: 28, fontWeight: 700, color: BRAND_INK,
+          backgroundColor: BRAND, padding: '20px 48px', borderRadius: 999,
         }}
       >
         {SITE_HOST}
+      </div>
+      <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, color: MUTED, marginTop: 18 }}>
+        Free to start. Tap the link in our bio.
       </div>
     </div>
   );
