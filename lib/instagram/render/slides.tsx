@@ -480,6 +480,21 @@ function EpsStat({ value, labelFontSize, valueFontSize }: { value: number | null
   );
 }
 
+/** Company name (bold) over its ticker (muted): the app's list convention
+ *  (see lib/market-data/display-names.ts), since several tickers mean nothing
+ *  to a beginner on their own ("IT" is Gartner, "P" is Everpure). */
+function NameStack({ name, ticker, nameSize, tickerSize, onInk = false }: { name: string; ticker: string; nameSize: number; tickerSize: number; onInk?: boolean }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+      {/* clamp-ok: names are capped by truncateName before they get here */}
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: nameSize, lineHeight: 1.15, letterSpacing: '-0.02em', color: onInk ? ON_INK : FG, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+        {name}
+      </span>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: tickerSize, lineHeight: 1.2, color: onInk ? ON_INK_MUTED : MUTED }}>{ticker}</span>
+    </div>
+  );
+}
+
 /** "TUE, AUG 18 ────" — groups the list by report day (see groupByDate)
  *  instead of one undifferentiated stack, which read as random when a
  *  Nasdaq-100 name from Wednesday could sort ahead of an S&P name from
@@ -620,14 +635,12 @@ export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, to
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
                     <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flex: 1, minWidth: 0 }}>
-                      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG, flexShrink: 0 }}>
-                        {c.symbol}
-                      </span>
-                      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED, flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                        {earningsRowName(c.name, m.nameFontSize)}
-                      </span>
-                    </div>
+                    <NameStack
+                      name={earningsRowName(c.name, Math.round(m.symbolFontSize * 0.82))}
+                      ticker={c.symbol}
+                      nameSize={Math.round(m.symbolFontSize * 0.82)}
+                      tickerSize={Math.round(m.nameFontSize * 0.85)}
+                    />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexShrink: 0, marginLeft: 20 }}>
                     <EpsStat value={c.epsEstimate} labelFontSize={m.epsLabelFontSize} valueFontSize={m.epsValueFontSize} />
@@ -733,14 +746,12 @@ export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIn
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
                   <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: m.symbolFontSize, color: FG, flexShrink: 0 }}>
-                      {c.symbol}
-                    </span>
-                    <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: m.nameFontSize, color: MUTED, flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                      {earningsRowName(c.name, m.nameFontSize)}
-                    </span>
-                  </div>
+                  <NameStack
+                    name={earningsRowName(c.name, Math.round(m.symbolFontSize * 0.82))}
+                    ticker={c.symbol}
+                    nameSize={Math.round(m.symbolFontSize * 0.82)}
+                    tickerSize={Math.round(m.nameFontSize * 0.85)}
+                  />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexShrink: 0, marginLeft: 20 }}>
                   <EpsCompareStat estimate={c.epsEstimate} actual={c.epsActual} labelFontSize={m.epsLabelFontSize} valueFontSize={m.epsValueFontSize} />
@@ -838,7 +849,7 @@ function truncateName(name: string, maxChars = 26): string {
 function earningsRowName(name: string, fontSize: number): string {
   // The row's room for the name is roughly fixed, so a bigger font (short
   // weeks) fits fewer characters: STZ clipped mid-letter at 28px on 32.
-  const maxChars = Math.max(16, Math.min(32, Math.floor(560 / fontSize)));
+  const maxChars = Math.max(16, Math.min(32, Math.floor(900 / fontSize)));
   return truncateName(displayCompanyName(name), maxChars);
 }
 
@@ -894,27 +905,10 @@ export function MoversListSlide({ title, subtitle, entries, positive, changeNote
           <div key={entry.symbol} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
               <CompanyBadge symbol={entry.symbol} logoUrl={entry.logoUrl} size={60} />
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 32, color: FG, flexShrink: 0 }}>
-                  {entry.symbol}
-                </span>
-                {/* flex+minWidth:0+overflow:hidden is what lets this shrink
-                    instead of growing the row past the canvas — some legal
-                    company names (e.g. "Coinbase Global, Inc. Class A Common
-                    Stock") are long enough to otherwise push MoverBar off its
-                    intended position, breaking the magnitude-ordered
-                    stair-step look the bars are supposed to have. Truncation
-                    itself is manual text (truncateName), not CSS
-                    text-overflow — see that function's comment. */}
-                <span
-                  style={{
-                    display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED,
-                    flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap',
-                  }}
-                >
-                  {truncateName(displayCompanyName(entry.name), 30)}
-                </span>
-              </div>
+              {/* Name first: beginners know "Gartner", not "IT". Stacked over
+                  the ticker so a long name gets the row's full width; the
+                  fixed 380px bar track sits to the right either way. */}
+              <NameStack name={truncateName(displayCompanyName(entry.name), 30)} ticker={entry.symbol} nameSize={26} tickerSize={20} />
             </div>
             <MoverBar changePercent={entry.changePercent} maxAbs={maxAbs} positive={positive} />
           </div>
@@ -946,11 +940,12 @@ function CoverMover({ entry, positive }: { entry: MarketMoverEntry; positive: bo
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 28, minWidth: 0, flex: 1 }}>
           <InkLogo symbol={entry.symbol} logoUrl={entry.logoUrl} size={120} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, flex: 1 }}>
-            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 56, letterSpacing: '-0.03em', color: ON_INK }}>{entry.symbol}</span>
-            <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              {truncateName(displayCompanyName(entry.name), 24)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, flex: 1 }}>
+            {/* Wraps to a second line rather than cut: "Cognizant Technology Solutions". */}
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 46, lineHeight: 1.05, letterSpacing: '-0.03em', color: ON_INK }}>
+              {truncateName(displayCompanyName(entry.name), 32)}
             </span>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED }}>{entry.symbol}</span>
           </div>
         </div>
         <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 112, letterSpacing: '-0.045em', color, flexShrink: 0 }}>
@@ -1080,10 +1075,10 @@ function CompanyIdentity({ data, badgeSize = 72 }: { data: EarningsDeepDiveData;
       <InkLogo symbol={data.ticker} logoUrl={data.logoUrl} size={badgeSize} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(badgeSize * 0.5), letterSpacing: '-0.03em', color: ON_INK }}>
-          ${data.ticker}
+          {displayCompanyName(data.companyName)}
         </span>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: Math.round(badgeSize * 0.26), color: ON_INK_MUTED }}>
-          {data.companyName}
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: Math.round(badgeSize * 0.3), color: ON_INK_MUTED }}>
+          {`$${data.ticker}`}
         </span>
       </div>
     </div>
