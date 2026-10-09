@@ -66,7 +66,7 @@ function buildEmailHtml(amount: string, renewalDate: string, manageUrl: string):
 }
 
 /** Shared shell so all billing emails look the same. `body` is trusted HTML built here. */
-function emailShell(title: string, body: string): string {
+export function emailShell(title: string, body: string): string {
   return `
 <!DOCTYPE html>
 <html>

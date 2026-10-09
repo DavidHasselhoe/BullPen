@@ -12,6 +12,7 @@ import {
   TIER_PRO,
 } from '@/lib/billing/stripe';
 import { checkoutReturnUrls, parseReturnTarget } from '@/lib/billing/checkout-return';
+import { getVerificationState } from '@/lib/auth/email-verification';
 
 /**
  * POST /api/billing/checkout  { plan: 'pro', cycle: 'monthly' | 'annual' }
@@ -48,6 +49,14 @@ async function checkoutHandler(
   // Already Pro? Nothing to sell — surface it so the UI can send them to the portal.
   if (isPro(tierFromUser(row?.account_tier as number | null, row?.role as string | null))) {
     return NextResponse.json({ url: null, alreadyPro: true });
+  }
+
+  // Every checkout starts a trial, and its terms email and the reminder before
+  // the first charge must reach a real inbox (Visa). Email signups get into the
+  // app unverified, so this is where it's enforced. See lib/auth/email-verification.ts.
+  const verification = await getVerificationState(userId);
+  if (!verification.verified) {
+    return NextResponse.json({ url: null, emailUnverified: true, email: verification.email });
   }
 
   const stripe = getStripe();

@@ -14,6 +14,7 @@ import { PRICING } from '@/lib/billing/entitlements';
 import { startCheckout, type BillingCycle } from '@/lib/billing/checkout';
 import { renewalTerms } from '@/lib/billing/trial-copy';
 import { TrialTimeline } from '@/components/billing/TrialTimeline';
+import { VerifyEmailNotice } from '@/components/billing/VerifyEmailNotice';
 import { trackEvent } from '@/lib/analytics/track';
 import { AWAITING_CONFIRMATION_KEY } from '@/lib/onboarding/pending-onboarding';
 import '@/components/landing/landing-styles.css';
@@ -24,7 +25,8 @@ export default function TrialOfferPage() {
   const { data: watchlist } = useWatchlist();
   const router = useRouter();
   const [cycle, setCycle] = useState<BillingCycle>('annual');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'unavailable'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'unavailable' | 'verify'>('idle');
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   // Arrived straight from confirming the email: in this tab via the wait
   // screen (session flag), or in the tab the email link opened (?confirmed=1).
   // Read in an initializer, not an effect: nothing renders until auth has
@@ -73,6 +75,11 @@ export default function TrialOfferPage() {
     }
     if (result.alreadyPro) {
       router.replace('/dashboard');
+      return;
+    }
+    if (result.emailUnverified) {
+      setUnverifiedEmail(result.email ?? null);
+      setStatus('verify');
       return;
     }
     setStatus(result.waitlisted ? 'unavailable' : 'error');
@@ -170,6 +177,9 @@ export default function TrialOfferPage() {
               <Link href="/terms" style={{ textDecoration: 'underline' }}>Terms</Link>
             </p>
 
+            {status === 'verify' && (
+              <VerifyEmailNotice email={unverifiedEmail} onVerified={start} className="mt-4" />
+            )}
             {status === 'error' && (
               <p role="alert" style={{ margin: '12px 0 0', textAlign: 'center', fontSize: 13, color: 'var(--down)' }}>
                 We couldn&apos;t open checkout. Please try again.

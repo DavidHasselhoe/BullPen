@@ -13,6 +13,9 @@ export interface CheckoutResult {
   waitlisted?: boolean;
   /** True when the user is already Pro (no checkout needed). */
   alreadyPro?: boolean;
+  /** The account's email isn't verified yet; show VerifyEmailNotice. */
+  emailUnverified?: boolean;
+  email?: string | null;
   error?: boolean;
 }
 

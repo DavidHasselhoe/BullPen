@@ -22,6 +22,7 @@ import { renewalTerms } from '@/lib/billing/trial-copy';
 import { trackEvent } from '@/lib/analytics/track';
 import { UpgradeSuccessModal } from '@/components/billing/UpgradeSuccessModal';
 import { TrialTimeline } from '@/components/billing/TrialTimeline';
+import { VerifyEmailNotice } from '@/components/billing/VerifyEmailNotice';
 
 /** The comparison is English in entitlements.ts; each string is looked up by a key derived from it. */
 function planText(t: TFunction, kind: 'group' | 'row' | 'hint' | 'value', english: string): string {
@@ -123,7 +124,8 @@ function UpgradeContent() {
 
   // Preselect the plan the user clicked on the landing page (?checkout=monthly|annual).
   const [annual, setAnnual] = useState(searchParams.get('checkout') !== 'monthly');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'verify'>('idle');
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [successModalDismissed, setSuccessModalDismissed] = useState(false);
   const justSubscribed = searchParams.get('checkout') === 'success' && !successModalDismissed;
   const cameBackCancelled = searchParams.get('checkout') === 'cancelled';
@@ -153,6 +155,7 @@ function UpgradeContent() {
     setStatus('loading');
     const result = await startCheckout(cycle);
     if (result.url) { window.location.href = result.url; return; } // real Stripe checkout
+    if (result.emailUnverified) { setUnverifiedEmail(result.email ?? null); setStatus('verify'); return; }
     setStatus(result.error ? 'error' : 'done');
   }
 
@@ -292,6 +295,7 @@ function UpgradeContent() {
               )}
               {status === 'done' && <p className="mt-3 text-center text-xs text-muted-foreground">{t('upgradeCheckoutSoon')}</p>}
               {status === 'error' && <p role="alert" className="mt-3 text-center text-xs text-destructive">{t('upgradeCheckoutError')}</p>}
+              {status === 'verify' && <VerifyEmailNotice email={unverifiedEmail} onVerified={handleUpgrade} className="mt-4" />}
 
               {/* What happens when, before they commit: Pro today, a reminder, then the charge. */}
               {!isPro && (
