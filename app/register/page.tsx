@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { signInWithGoogle } from '@/lib/auth/auth';
+import { setupOr, signInWithGoogle } from '@/lib/auth/auth';
 import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormSignup } from '@/components/auth/AuthFormSignup';
 import { Separator } from '@/components/ui/separator';
@@ -42,8 +42,9 @@ function RegisterContent() {
     }
   };
 
-  const handleSuccess = () => {
-    router.replace(redirectTo);
+  const handleSuccess = async () => {
+    // A new account goes through setup unless a real destination was asked for.
+    router.replace(await setupOr(redirectTo));
   };
 
   return (

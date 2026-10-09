@@ -642,3 +642,20 @@ export async function needsSetup(userId: string): Promise<boolean> {
     .from('users').select('experience_level, created_at').eq('id', userId).maybeSingle();
   return !!data && data.experience_level == null && Date.now() - Date.parse(data.created_at) < 7 * 864e5;
 }
+
+export const SETUP_PATH = '/get-started?setup=1';
+
+/**
+ * Where to send someone who just signed in or up in place (no redirect):
+ * a default landing (Home, /) gives way to setup for a brand-new account,
+ * any real destination (checkout, the stock they were on) wins. Same rule as
+ * /auth/callback. Needed since Confirm email went off (2026-10-09): email
+ * signups no longer pass through the callback, so /register sent them
+ * straight to Home past setup and the trial offer.
+ */
+export async function setupOr(dest: string): Promise<string> {
+  if (dest !== '/dashboard' && dest !== '/') return dest;
+  const { data } = await createBrowserClient().auth.getUser();
+  const setup = data.user ? await needsSetup(data.user.id).catch(() => false) : false;
+  return setup ? SETUP_PATH : dest;
+}

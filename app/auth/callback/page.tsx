@@ -14,10 +14,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { maybeClaimShareAttribution } from '@/lib/auth/share-attribution';
 import { setLastUsedAuthMethod } from '@/lib/auth/last-used-method';
-import { needsSetup } from '@/lib/auth/auth';
+import { needsSetup, SETUP_PATH } from '@/lib/auth/auth';
 import { Loader2 } from 'lucide-react';
-
-const SETUP_PATH = '/get-started?setup=1';
 
 function AuthCallbackContent() {
   const router = useRouter();

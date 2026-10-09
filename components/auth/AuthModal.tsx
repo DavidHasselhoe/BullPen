@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signInWithGoogle } from '@/lib/auth/auth';
+import { setupOr, signInWithGoogle } from '@/lib/auth/auth';
 import { getLastUsedAuthMethod } from '@/lib/auth/last-used-method';
 import { AuthOAuthButtons } from './AuthOAuthButtons';
 import { AuthFormLogin } from './AuthFormLogin';
@@ -76,10 +76,10 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
     }
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = async () => {
     if (onSuccess) return onSuccess();
     onOpenChange(false);
-    router.replace(redirectTo || '/');
+    router.replace(await setupOr(redirectTo || '/'));
   };
 
   const handleModeChange = (newMode: AuthMode) => {
