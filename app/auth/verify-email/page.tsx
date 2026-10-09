@@ -4,7 +4,7 @@ import { CheckCircle2, MailWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { markVerified } from '@/lib/auth/email-verification';
 
-export const metadata: Metadata = { title: 'Confirm email | BullPen', robots: { index: false } };
+export const metadata: Metadata = { title: 'Confirm email', robots: { index: false } };
 export const dynamic = 'force-dynamic';
 
 /**
