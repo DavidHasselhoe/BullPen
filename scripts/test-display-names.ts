@@ -30,6 +30,11 @@ const cases: Array<[string, string]> = [
   ['Fresenius Medical Care AG - Depositary Receipt', 'Fresenius Medical Care'],
   ['Harmony Gold Mining Company Limited - Depositary Receipt (Common Stock)', 'Harmony Gold Mining'],
   ['Arm Holdings plc ADR', 'Arm'], // search_index, 2026-10-08
+  // Non-voting share class (MKC on the earnings results post, 2026-10-09); "& Company" leaves no dangling "&".
+  ['McCormick & Company, Incorporated Non-Voting Common Stock', 'McCormick'],
+  ['Brown-Forman Corporation Class B Non-Voting', 'Brown-Forman'],
+  ['The Procter & Gamble Company', 'Procter & Gamble'],
+  ['AT&T Inc.', 'AT&T'],
   ['CRH plc Ordinary Shares', 'CRH'],
   ['Brookfield Asset Management Ltd. Class A Limited Voting Shares', 'Brookfield Asset Management'],
   ['BRP Inc. Subordinate Voting Shares', 'BRP'],

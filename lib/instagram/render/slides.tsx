@@ -55,6 +55,7 @@ import type {
 } from '@/lib/instagram/content/schema';
 
 import { SITE_HOST } from '@/lib/site';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 export const SLIDE_WIDTH = 1080;
 export const SLIDE_HEIGHT = 1350;
 
@@ -830,30 +831,15 @@ function truncateName(name: string, maxChars = 26): string {
   return name.length > maxChars ? `${name.slice(0, maxChars).trimEnd()}...` : name;
 }
 
-/** Earnings-row company name: drops share-class boilerplate ("Non-Voting
- *  Common Stock", "Class A Common Stock") that TwelveData appends to some
- *  legal names, then caps length. MKC's full legal name pushed the EPS stat
- *  and time badge off the canvas. The row's flex guard is the second line
- *  of defence if a name still runs long. */
+/** Earnings-row company name: the app's short display name (no share-class
+ *  or legal suffixes), then capped. MKC's full legal name once pushed the EPS
+ *  stat and time badge off the canvas. The row's flex guard is the second
+ *  line of defence if a name still runs long. */
 function earningsRowName(name: string, fontSize: number): string {
   // The row's room for the name is roughly fixed, so a bigger font (short
   // weeks) fits fewer characters: STZ clipped mid-letter at 28px on 32.
   const maxChars = Math.max(16, Math.min(32, Math.floor(560 / fontSize)));
-  return truncateName(cleanCompanyName(name), maxChars);
-}
-
-/** Drops listing boilerplate from a legal name: "GoDaddy Inc. Class A Common
- *  Stock" → "GoDaddy Inc.", "Arm Holdings plc ADR" → "Arm Holdings plc".
- *  Movers rows showed "GoDaddy Inc. Class A Commo..." before this applied
- *  to them too. */
-function cleanCompanyName(name: string): string {
-  return name
-    .replace(/\s+(American Depositary Shares|ADR|ADS)$/i, '')
-    .replace(/\s+(Class [A-Z]\b)?(\s*(Non-Voting\s+)?(Common|Ordinary|Subordinate Voting)\s+(Stock|Shares))?$/i, '')
-    // Legal suffixes carry nothing on a slide and are what got cut to
-    // "Chipotle Mexican Grill, In...".
-    .replace(/,?\s+(Inc\.?|Incorporated|Corp\.?|Corporation|Co\.|Ltd\.?|Limited|PLC|plc|N\.V\.|S\.A\.)$/, '')
-    .trim();
+  return truncateName(displayCompanyName(name), maxChars);
 }
 
 interface MoversListSlideProps {
@@ -926,7 +912,7 @@ export function MoversListSlide({ title, subtitle, entries, positive, changeNote
                     flex: 1, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap',
                   }}
                 >
-                  {truncateName(cleanCompanyName(entry.name))}
+                  {truncateName(displayCompanyName(entry.name), 30)}
                 </span>
               </div>
             </div>
@@ -963,7 +949,7 @@ function CoverMover({ entry, positive }: { entry: MarketMoverEntry; positive: bo
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, flex: 1 }}>
             <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 56, letterSpacing: '-0.03em', color: ON_INK }}>{entry.symbol}</span>
             <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              {truncateName(cleanCompanyName(entry.name), 24)}
+              {truncateName(displayCompanyName(entry.name), 24)}
             </span>
           </div>
         </div>

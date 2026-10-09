@@ -17,6 +17,7 @@ const TRAILING = new RegExp(
     '(?:ordinary|common)\\s+shares?',
     'class [a-c]\\s+shares',
     'common stock',
+    'non-voting',
     'class [a-c]',
     'inc\\.?', 'incorporated', 'corporation', 'corp\\.?', 'company', 'and company', '& co\\.?', 'co\\.?',
     'plc', 'n\\.v\\.', 's\\.a\\.', 'se', 'ag', 'a/s', 'ltd\\.?', 'limited', 'holdings?', 'group', 'l\\.p\\.',
@@ -29,7 +30,8 @@ export function displayCompanyName(raw: string): string {
   let prev;
   do {
     prev = name;
-    name = name.replace(TRAILING, '').replace(/,\s*$/, '').trim();
+    // A dangling "&"/"and" is what's left of "McCormick & Company".
+    name = name.replace(TRAILING, '').replace(/,\s*$/, '').replace(/\s+(?:&|and)$/i, '').trim();
   } while (name !== prev);
   return name || raw.trim();
 }
