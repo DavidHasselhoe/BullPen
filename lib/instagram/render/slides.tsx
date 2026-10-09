@@ -916,9 +916,9 @@ export function MoversListSlide({ title, subtitle, entries, positive, changeNote
             so both share roughly one cap height. */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 10 }}>
           {lead && (
-            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 68, letterSpacing: '-0.035em', color: FG }}>{lead}</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 68, lineHeight: 1, letterSpacing: '-0.035em', color: FG }}>{lead}</span>
           )}
-          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 78, letterSpacing: '-0.01em', color: positive ? GAIN_TEXT : LOSS_TEXT }}>{accent}</span>
+          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 72, lineHeight: 1, letterSpacing: '-0.01em', color: positive ? GAIN_TEXT : LOSS_TEXT }}>{accent}</span>
         </div>
         <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, color: MUTED }}>
           {subtitle}
@@ -1332,7 +1332,7 @@ export function ScoreboardCoverSlide({ data, slideIndex, totalSlides, disclaimer
         </div>
 
         <div style={{ display: 'flex', gap: 40 }}>
-          <ScoreColumn label="All picks" icon value={data.totalReturnPct} note={`since ${data.sinceLabel}, ${data.pickCount} picks`} />
+          <ScoreColumn label="Our picks" icon value={data.totalReturnPct} note={`since ${data.sinceLabel}, ${data.pickCount} picks`} />
           <div style={{ display: 'flex', width: 1, backgroundColor: INK_BORDER }} />
           <ScoreColumn label="S&P 500" icon={false} value={data.benchmarkReturnPct} note="bought on the same days" />
         </div>
@@ -1370,8 +1370,8 @@ export function ScoreboardListSlide({ data, page, slideIndex, totalSlides }: { d
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 10 }}>
-          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 68, letterSpacing: '-0.035em', color: FG }}>Every</span>
-          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 78, color: FG }}>pick</span>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 68, lineHeight: 1, letterSpacing: '-0.035em', color: FG }}>Every</span>
+          <span style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 72, lineHeight: 1, color: FG }}>pick</span>
         </div>
         <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, lineHeight: 1.4, color: MUTED }}>
           {`Return since each pick's first open, next to the S&P 500 over the same days. As of ${data.asOfLabel}.`}
