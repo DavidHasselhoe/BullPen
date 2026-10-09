@@ -97,7 +97,9 @@ export function ScreenerViewBar({ activeView, onViewChange, totalCount }: Props)
   const { isAuthenticated } = useAuth();
   const { data: watchlistItems = [] } = useWatchlist();
   const { data: watchlistLists = [] } = useWatchlistLists();
-  const { data: holdings = [] } = useHoldings();
+  const { data: allHoldings = [] } = useHoldings();
+  // Fully sold positions keep their row at quantity 0; null quantity is a tracked holding.
+  const holdings = allHoldings.filter((h) => h.quantity == null || h.quantity > 1e-9);
   const { data: customViews = [] } = useScreenerViews();
   const createView = useCreateScreenerView();
   const deleteView = useDeleteScreenerView();

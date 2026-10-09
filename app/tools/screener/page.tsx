@@ -149,7 +149,9 @@ function ScreenerContent() {
     if (pickedTickers.length > 0) return pickedTickers.join(',');
     if (activeView.type === 'sp500') return null;
     if (activeView.type === 'holdings') {
-      const symbols = [...new Set(userHoldings.map((h) => h.symbol))];
+      // Fully sold positions keep their row at quantity 0; null quantity is a tracked holding.
+      const held = userHoldings.filter((h) => h.quantity == null || h.quantity > 1e-9);
+      const symbols = [...new Set(held.map((h) => h.symbol))];
       return symbols.length > 0 ? symbols.join(',') : '__none__';
     }
     if (activeView.type === 'watchlist') {
