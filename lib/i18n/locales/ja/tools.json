@@ -606,7 +606,7 @@
   "screenerSaveFilterPreset": "現在のフィルターを保存",
   "screenerSearchAriaLabel": "株式を検索して選択",
   "screenerSearchHint": "ティッカーまたは企業名を入力して S&P 500 を検索してください",
-  "screenerSearchPlaceholderEmpty": "比較する株式を検索してください。例: nvidia、broadcom、marvell",
+  "screenerSearchPlaceholderEmpty": "比較する銘柄を検索",
   "screenerSearchPlaceholderMore": "別のものを追加…",
   "screenerSectorLabel": "セクター",
   "screenerSelectAllOnPage": "このページの全て選択",

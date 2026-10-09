@@ -608,7 +608,7 @@
   "screenerSaveFilterPreset": "Save current filters",
   "screenerSearchAriaLabel": "Search and pick stocks",
   "screenerSearchHint": "Type a ticker or company name to search the S&P 500",
-  "screenerSearchPlaceholderEmpty": "Search stocks to compare, e.g. nvidia, broadcom, marvell",
+  "screenerSearchPlaceholderEmpty": "Search stocks to compare",
   "screenerSearchPlaceholderMore": "Add another…",
   "screenerSectorLabel": "Sector",
   "screenerSelectAllOnPage": "Select all on this page",

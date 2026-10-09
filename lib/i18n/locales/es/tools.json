@@ -604,7 +604,7 @@
   "screenerSaveFilterPreset": "Guardar filtros actuales",
   "screenerSearchAriaLabel": "Buscar y seleccionar acciones",
   "screenerSearchHint": "Escribe un símbolo o nombre de empresa para buscar en el S&P 500",
-  "screenerSearchPlaceholderEmpty": "Busca acciones para comparar, p. ej. nvidia, broadcom, marvell",
+  "screenerSearchPlaceholderEmpty": "Buscar acciones para comparar",
   "screenerSearchPlaceholderMore": "Agregar otra…",
   "screenerSelectAllOnPage": "Seleccionar todos en esta página",
   "screenerSelectRow": "Seleccionar {{ticker}}",

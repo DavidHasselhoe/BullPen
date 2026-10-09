@@ -601,7 +601,7 @@
   "screenerSaveFilterPreset": "Lagre gjeldende filtre",
   "screenerSearchAriaLabel": "Søk og velg aksjer",
   "screenerSearchHint": "Skriv en ticker eller selskapsnavn for å søke i S&P 500",
-  "screenerSearchPlaceholderEmpty": "Søk etter aksjer å sammenligne, f.eks. nvidia, broadcom, marvell",
+  "screenerSearchPlaceholderEmpty": "Søk etter aksjer å sammenligne",
   "screenerSearchPlaceholderMore": "Legg til en til…",
   "screenerSectorLabel": "Sektor",
   "screenerSelectAllOnPage": "Velg alle på denne siden",

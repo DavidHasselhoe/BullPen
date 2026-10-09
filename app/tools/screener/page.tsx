@@ -135,12 +135,27 @@ function ScreenerContent() {
   const universeRef = useRef<ScreenerRow[]>([]);
 
   // Holdings data (for "My Holdings" view)
-  const { data: userHoldings = [] } = useHoldings();
+  const { data: userHoldings = [], isLoading: holdingsLoading } = useHoldings();
+  // Fully sold positions keep their row at quantity 0; null quantity is a tracked holding.
+  const heldHoldings = useMemo(
+    () => userHoldings.filter((h) => h.quantity == null || h.quantity > 1e-9),
+    [userHoldings],
+  );
 
   // Watchlist data
-  const { data: allWatchlistItems = [] } = useWatchlist();
+  const { data: allWatchlistItems = [], isLoading: watchlistLoading } = useWatchlist();
   const watchlistListId = activeView.type === 'watchlist' ? activeView.listId : null;
-  const { data: listItems = [] } = useWatchlistItems(watchlistListId);
+  const { data: listItems = [], isLoading: listItemsLoading } = useWatchlistItems(watchlistListId);
+
+  // The view's ticker list hasn't arrived yet. Without this it reads as an
+  // empty list and the results flash "No matches" before the real rows load.
+  const viewSourceLoading = pickedTickers.length === 0 && (
+    activeView.type === 'holdings'
+      ? holdingsLoading
+      : activeView.type === 'watchlist'
+        ? (watchlistListId ? listItemsLoading : watchlistLoading)
+        : false
+  );
 
   // Symbol allowlist based on active view.
   // Picked tickers (the search bar) take precedence over the view — the user is
@@ -149,9 +164,7 @@ function ScreenerContent() {
     if (pickedTickers.length > 0) return pickedTickers.join(',');
     if (activeView.type === 'sp500') return null;
     if (activeView.type === 'holdings') {
-      // Fully sold positions keep their row at quantity 0; null quantity is a tracked holding.
-      const held = userHoldings.filter((h) => h.quantity == null || h.quantity > 1e-9);
-      const symbols = [...new Set(held.map((h) => h.symbol))];
+      const symbols = [...new Set(heldHoldings.map((h) => h.symbol))];
       return symbols.length > 0 ? symbols.join(',') : '__none__';
     }
     if (activeView.type === 'watchlist') {
@@ -164,7 +177,7 @@ function ScreenerContent() {
         : '__none__';
     }
     return null;
-  }, [pickedTickers, activeView, userHoldings, allWatchlistItems, listItems, watchlistListId]);
+  }, [pickedTickers, activeView, heldHoldings, allWatchlistItems, listItems, watchlistListId]);
 
   const qs = useMemo(
     () => buildQueryString(
@@ -182,6 +195,7 @@ function ScreenerContent() {
     [debouncedFilters, symbolsFilter, activeView.type, pickedTickers.length]
   );
 
+  const viewParam = viewToParam(activeView);
   const { data, isLoading, isFetching, refetch } = useQuery<{
     success: boolean;
     results: ScreenerRow[];
@@ -191,20 +205,26 @@ function ScreenerContent() {
     universeSize: number;
     financialsLoaded: number;
     stale: boolean;
+    view: string;
   }>({
-    queryKey: ['screener', qs],
+    queryKey: ['screener', viewParam, qs],
     queryFn: async () => {
       if (symbolsFilter === '__none__') {
-        return { success: true, results: [], sectors: [], industries: [], total: 0, universeSize: 0, financialsLoaded: 0, stale: false };
+        return { success: true, results: [], sectors: [], industries: [], total: 0, universeSize: 0, financialsLoaded: 0, stale: false, view: viewParam };
       }
       const url = `/api/screener${qs ? `?${qs}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch screener data');
-      return res.json();
+      return { ...(await res.json()), view: viewParam };
     },
+    enabled: !viewSourceLoading,
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
+  // keepPreviousData keeps the filter sidebar steady, but the previous view's
+  // rows (or its "No matches") must not stand in for the new view's results.
+  const switchingView = viewSourceLoading || (data != null && data.view !== viewParam);
+  const resultsLoading = isLoading || switchingView;
 
   // Tell Bull what is on screen, so "which of these has the highest health
   // score?" is answered from these results instead of sending the user back to
@@ -245,10 +265,10 @@ function ScreenerContent() {
 
   // Cache company universe whenever we have a full market set loaded
   useEffect(() => {
-    if ((activeView.type === 'sp500' || activeView.type === 'all') && data?.results && data.results.length > 10) {
+    if ((activeView.type === 'sp500' || activeView.type === 'all') && data?.view === viewParam && data.results.length > 10) {
       universeRef.current = data.results;
     }
-  }, [activeView.type, data?.results]);
+  }, [activeView.type, viewParam, data]);
 
   // Ensure the company universe is loaded so the search bar can resolve names →
   // tickers. The sp500/all views populate it from their own results; for every
@@ -393,7 +413,7 @@ function ScreenerContent() {
             <Filter className="h-5 w-5 text-primary" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('screenerTitle', 'Stock Screener')}</h1>
-          {!isLoading && !customViewEmpty && (
+          {!resultsLoading && !customViewEmpty && (
             <Badge variant="secondary" className="text-xs">
               {t('screenerResultCount', { count: data?.total ?? 0 })}
             </Badge>
@@ -447,12 +467,12 @@ function ScreenerContent() {
             ? t('screenerDescriptionCherryPicked', { count: pickedTickers.length })
             : activeView.type === 'all'
               ? t('screenerDescriptionAll', "Every stock in BullPen's database: {{total}} tickers with live prices and fundamental data.", {
-                  total: data?.total ?? '…',
+                  total: switchingView ? '…' : data?.total ?? '…',
                 })
               : activeView.type === 'sp500'
                 ? t('screenerDescriptionSp500', 'Screen the full S&P 500 with live prices and fundamental data.')
                 : activeView.type === 'holdings'
-                  ? t('screenerDescriptionHoldings', { count: userHoldings.length })
+                  ? t('screenerDescriptionHoldings', { count: heldHoldings.length })
                   : activeView.type === 'watchlist'
                     ? t('screenerDescriptionWatchlist', 'Screening your watchlist.')
                     : t('screenerDescriptionCustomView', 'Screening {{name}}', { name: activeView.view.name })}
@@ -555,7 +575,7 @@ function ScreenerContent() {
                 />
               </div>
             </div>
-          ) : isLoading ? (
+          ) : resultsLoading ? (
             <Card>
               <CardContent className="p-4">
                 <div className="space-y-3">

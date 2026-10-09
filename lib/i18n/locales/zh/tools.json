@@ -606,7 +606,7 @@
   "screenerSaveFilterPreset": "保存当前筛选条件",
   "screenerSearchAriaLabel": "搜索并选择股票",
   "screenerSearchHint": "输入代码或公司名称来搜索 S&P 500",
-  "screenerSearchPlaceholderEmpty": "搜索要比较的股票，例如 nvidia、broadcom、marvell",
+  "screenerSearchPlaceholderEmpty": "搜索要比较的股票",
   "screenerSearchPlaceholderMore": "添加另一个…",
   "screenerSectorLabel": "板块",
   "screenerSelectAllOnPage": "选择本页全部",

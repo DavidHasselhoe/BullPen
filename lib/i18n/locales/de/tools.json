@@ -594,7 +594,7 @@
   "screenerSaveFilterPreset": "Aktuelle Filter speichern",
   "screenerSearchAriaLabel": "Aktien suchen und auswählen",
   "screenerSearchHint": "Gib einen Ticker oder Unternehmensnamen ein, um den S&P 500 zu durchsuchen",
-  "screenerSearchPlaceholderEmpty": "Aktien zum Vergleichen suchen, z.B. nvidia, broadcom, marvell",
+  "screenerSearchPlaceholderEmpty": "Aktien zum Vergleichen suchen",
   "screenerSearchPlaceholderMore": "Weitere hinzufügen…",
   "screenerSectorLabel": "Sektor",
   "screenerSelectAllOnPage": "Alle auf dieser Seite auswählen",
