@@ -123,15 +123,29 @@ export async function publishCarousel(params: PublishCarouselParams): Promise<Pu
   const childIds: string[] = [];
   for (let i = 0; i < params.imageUrls.length; i++) {
     const altText = params.altTexts?.[i];
-    const item = await graphPost(
-      `/${userId}/media`,
-      {
-        image_url: params.imageUrls[i],
-        is_carousel_item: 'true',
-        ...(altText ? { alt_text: altText } : {}),
-      },
-      accessToken
-    );
+    const body = {
+      image_url: params.imageUrls[i],
+      is_carousel_item: 'true',
+      ...(altText ? { alt_text: altText } : {}),
+    };
+    let item: Record<string, unknown>;
+    try {
+      item = await graphPost(`/${userId}/media`, body, accessToken);
+    } catch {
+      // Meta answers a slide it couldn't download in time with "Only photo or
+      // video can be accepted as media type." A cold render of a 24-logo list
+      // slide takes 8s+, and that is what failed the W42 2026 calendar post.
+      // Render it ourselves (warms the instance and the CDN copy, and turns
+      // Meta's vague message into a real one if the slide is broken), then
+      // give Meta one more try.
+      const res = await fetch(params.imageUrls[i], { signal: AbortSignal.timeout(60_000) });
+      const type = res.headers.get('content-type') ?? '';
+      await res.arrayBuffer();
+      if (!res.ok || !type.startsWith('image/')) {
+        throw new Error(`Slide ${i + 1} did not render as an image (${res.status} ${type}): ${params.imageUrls[i]}`);
+      }
+      item = await graphPost(`/${userId}/media`, body, accessToken);
+    }
     childIds.push(item.id as string);
   }
 
