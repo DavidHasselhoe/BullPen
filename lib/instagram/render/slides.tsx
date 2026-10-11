@@ -877,7 +877,9 @@ function truncateName(name: string, maxChars = 26): string {
 function earningsRowName(name: string, fontSize: number): string {
   // The row's room for the name is roughly fixed, so a bigger font (short
   // weeks) fits fewer characters: STZ clipped mid-letter at 28px on 32.
-  const maxChars = Math.max(16, Math.min(32, Math.floor(900 / fontSize)));
+  // Capped at 40, not 32: a busy week's small font fits "Taiwan Semiconductor
+  // Manufacturing" (34), which used to end in "Manufacturi…".
+  const maxChars = Math.max(16, Math.min(40, Math.floor(900 / fontSize)));
   return truncateName(displayCompanyName(name), maxChars);
 }
 
