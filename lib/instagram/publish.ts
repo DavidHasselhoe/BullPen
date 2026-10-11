@@ -68,7 +68,10 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   const slideCount = totalSlideCount(post.slides);
-  const imageUrls = Array.from({ length: slideCount }, (_, i) => `${appUrl}/api/instagram/render/${post.id}/${i}`);
+  // `v` is ignored by the route. It gives every publish attempt fresh URLs, so
+  // neither our CDN nor Meta can hand back a slide rendered before a fix.
+  const v = Date.now();
+  const imageUrls = Array.from({ length: slideCount }, (_, i) => `${appUrl}/api/instagram/render/${post.id}/${i}?v=${v}`);
   const altTexts = Array.from({ length: slideCount }, (_, i) => altTextForSlide(post.slides, i));
 
   if (!isInstagramConfigured()) {
