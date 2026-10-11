@@ -82,7 +82,11 @@ for (const file of workflowFiles) {
   }
 }
 
-const allScheduledPaths = new Set([...vercelCronPaths, ...referencedByScheduledWorkflow]);
+// Scheduled in the Upstash QStash console, which has no file in the repo to
+// read (see CLAUDE.md "Scheduled work"). Remove an entry if its schedule is.
+const QSTASH_CRON_PATHS = ['/api/cron/check-user-alerts'];
+
+const allScheduledPaths = new Set([...vercelCronPaths, ...referencedByScheduledWorkflow, ...QSTASH_CRON_PATHS]);
 
 // ── 1. Every cron route has a real scheduler (Vercel cron or a workflow with `schedule:`) ──
 console.log('Every app/api/cron/* route has a scheduler:');
