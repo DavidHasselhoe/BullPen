@@ -86,3 +86,15 @@ export function periodMoves(
   }
   return moves;
 }
+
+/**
+ * Moves too big to trust as real. A split or spin-off shows up as one: TD's
+ * history adjusts for it a day or more late, so CTVA's Oct 2026 spin-off
+ * posted as -83.8% (daily) and -84.8% (weekly) though nothing crashed. A 2:1
+ * split reads -50%, a 1:2 reverse split +100%.
+ * ponytail: fixed bounds. A real -40% day in an index name gets dropped too;
+ * the caller names it in Discord so a person can check.
+ */
+export function isImplausibleMove(changePercent: number): boolean {
+  return changePercent <= -40 || changePercent >= 100;
+}

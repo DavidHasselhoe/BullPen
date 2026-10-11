@@ -5,7 +5,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { isLastTradingDayOf, periodChange, periodMoves } from '../lib/instagram/movers-period';
+import { isImplausibleMove, isLastTradingDayOf, periodChange, periodMoves } from '../lib/instagram/movers-period';
 
 const none = new Set<string>();
 // 2026 NYSE full-day closures that sit next to a period end.
@@ -55,3 +55,11 @@ const moves = periodMoves(
 assert.deepEqual(moves.map((m) => m.symbol), ['AAA']);
 
 console.log('movers period: all assertions passed');
+
+// Split and spin-off artifacts never rank.
+assert.equal(isImplausibleMove(-84.8), true, 'CTVA spin-off, Oct 2026');
+assert.equal(isImplausibleMove(-50), true, '2:1 split');
+assert.equal(isImplausibleMove(100), true, '1:2 reverse split');
+assert.equal(isImplausibleMove(-23.4), false, 'FICO, a real W40 drop');
+assert.equal(isImplausibleMove(35), false, 'PTC, a real W41 gain');
+console.log('isImplausibleMove: ok');

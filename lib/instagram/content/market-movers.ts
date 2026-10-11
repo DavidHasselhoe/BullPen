@@ -28,7 +28,8 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { batchFetch, getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
-import type { DailyClose, MoversPeriod, PeriodMove } from '@/lib/instagram/movers-period';
+import { isImplausibleMove, type DailyClose, type MoversPeriod, type PeriodMove } from '@/lib/instagram/movers-period';
+import { postToDiscord } from '@/lib/discord/post-message';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
@@ -288,7 +289,18 @@ export async function generateMarketMoversContent(
   opts: GenerateMarketMoversOptions = {}
 ): Promise<MarketMoversSlides> {
   const { preMarket = false, contextNote, period } = opts;
-  const ranked: RankedQuote[] = period ? period.moves : await fetchRankedQuotes(preMarket);
+  const all: RankedQuote[] = period ? period.moves : await fetchRankedQuotes(preMarket);
+  const ranked = all.filter((r) => !isImplausibleMove(r.changePercent));
+  const dropped = all.filter((r) => isImplausibleMove(r.changePercent));
+  const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
+  if (dropped.length > 0 && webhookUrl) {
+    await postToDiscord(webhookUrl, {
+      content:
+        `⚠️ Left out of the movers post as a likely split or spin-off: ` +
+        dropped.map((r) => `${r.symbol} ${r.changePercent.toFixed(1)}%`).join(', ') +
+        `. If one is a real move, it is missing from the post.`,
+    }).catch((err) => console.error('[market-movers] Discord drop notice failed:', err));
+  }
 
   const winnersRanked = [...ranked].sort((a, b) => b.changePercent - a.changePercent).slice(0, TOP_N);
   const losersRanked = [...ranked].sort((a, b) => a.changePercent - b.changePercent).slice(0, TOP_N);
