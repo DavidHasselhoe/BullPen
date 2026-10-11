@@ -93,13 +93,16 @@ const GAIN_TEXT = '#059669'; // emerald-600
 const LOSS_TEXT = '#dc2626'; // red-600
 
 /**
- * Companies per list-page. Set comfortably above MAX_COMPANIES
- * (lib/instagram/content/earnings-calendar.ts) so a week's full list always
- * fits on ONE slide — EarningsListSlide scales row size down as the count
- * grows (see rowMetrics below) rather than spilling into a second page for
- * a single leftover company, which read as an awkward near-empty slide.
+ * Most rows one list slide holds: rowMetrics' sizing bottoms out at 15. Was a
+ * flat 30 per page ("always one slide"), which nothing ever rendered at: the
+ * first 24-company week (W42 2026) ran rows off the bottom of the slide.
  */
-export const COMPANIES_PER_LIST_SLIDE = 30;
+const MAX_ROWS_PER_LIST_SLIDE = 15;
+
+/** Pages split evenly, so 16 companies read as 8 + 8, never 15 + a lonely 1. */
+export function companiesPerListSlide(companyCount: number): number {
+  return Math.max(1, Math.ceil(companyCount / listSlideCount(companyCount)));
+}
 
 export type SlideKind =
   | 'hook' | 'list' | 'cta' | 'movers_cover' | 'winners' | 'losers'
@@ -114,7 +117,7 @@ function scoreboardPageCount(n: number): number {
 }
 
 function listSlideCount(companyCount: number): number {
-  return Math.max(1, Math.ceil(companyCount / COMPANIES_PER_LIST_SLIDE));
+  return Math.max(1, Math.ceil(companyCount / MAX_ROWS_PER_LIST_SLIDE));
 }
 
 /** Total slide count for a given post. market_movers is always a fixed 4
@@ -396,7 +399,7 @@ const FOOTER_MAX_ROWS = 10;
 
 /**
  * Row sizing scales down smoothly as the week's company count grows, so
- * every week fits on ONE list slide (see COMPANIES_PER_LIST_SLIDE above)
+ * every week fits on ONE list slide (see MAX_ROWS_PER_LIST_SLIDE above)
  * instead of spilling a single leftover company onto an awkward
  * near-empty second page.
  *

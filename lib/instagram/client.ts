@@ -128,25 +128,20 @@ export async function publishCarousel(params: PublishCarouselParams): Promise<Pu
       is_carousel_item: 'true',
       ...(altText ? { alt_text: altText } : {}),
     };
-    let item: Record<string, unknown>;
-    try {
-      item = await graphPost(`/${userId}/media`, body, accessToken);
-    } catch {
-      // Meta answers a slide it couldn't download in time with "Only photo or
-      // video can be accepted as media type." A cold render of a 24-logo list
-      // slide takes 8s+, and that is what failed the W42 2026 calendar post.
-      // Render it ourselves (warms the instance and the CDN copy, and turns
-      // Meta's vague message into a real one if the slide is broken), then
-      // give Meta one more try.
-      const res = await fetch(params.imageUrls[i], { signal: AbortSignal.timeout(60_000) });
-      const type = res.headers.get('content-type') ?? '';
-      await res.arrayBuffer();
-      if (!res.ok || !type.startsWith('image/')) {
-        throw new Error(`Slide ${i + 1} did not render as an image (${res.status} ${type}): ${params.imageUrls[i]}`);
-      }
-      item = await graphPost(`/${userId}/media`, body, accessToken);
-    }
+    const item = await graphPost(`/${userId}/media`, body, accessToken);
     childIds.push(item.id as string);
+  }
+
+  // Meta downloads each slide in the background. Creating the carousel before
+  // every child is FINISHED fails with "Only photo or video can be accepted as
+  // media type", which is what stopped the W42 2026 calendar post: its 24-logo
+  // list slide renders slowly cold, where the 3-7 company weeks never noticed.
+  for (let i = 0; i < childIds.length; i++) {
+    try {
+      await waitForContainerReady(childIds[i], accessToken);
+    } catch (err) {
+      throw new Error(`Slide ${i + 1} (${params.imageUrls[i]}): ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   const carousel = await graphPost(

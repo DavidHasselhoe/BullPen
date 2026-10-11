@@ -17,7 +17,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import {
   SLIDE_WIDTH,
   SLIDE_HEIGHT,
-  COMPANIES_PER_LIST_SLIDE,
+  companiesPerListSlide,
   loadSlideFonts,
   slideKindAt,
   totalSlideCount,
@@ -188,21 +188,21 @@ export async function GET(
       );
     } else {
       const listSlideIdx = slideIndex - 1;
-      const pageCompanies = slides.companies.slice(
-        listSlideIdx * COMPANIES_PER_LIST_SLIDE,
-        (listSlideIdx + 1) * COMPANIES_PER_LIST_SLIDE
-      );
+      const perPage = companiesPerListSlide(slides.companies.length);
+      const pageCompanies = slides.companies.slice(listSlideIdx * perPage, (listSlideIdx + 1) * perPage);
+      // "+N more" belongs after the last row, not on every page.
+      const overflowCount = slideIndex === total - 2 ? slides.overflowCount : 0;
       element = isResults ? (
         <EarningsResultsListSlide
           companies={pageCompanies as EarningsResultsSlides['companies']}
-          overflowCount={slides.overflowCount}
+          overflowCount={overflowCount}
           slideIndex={slideIndex}
           totalSlides={total}
         />
       ) : (
         <EarningsListSlide
           companies={pageCompanies as EarningsCalendarSlides['companies']}
-          overflowCount={slides.overflowCount}
+          overflowCount={overflowCount}
           slideIndex={slideIndex}
           totalSlides={total}
         />
