@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
+import { addWatchlistItem } from '@/lib/watchlist/add-item';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 
 /** GET /api/watchlist — list current user's watchlist */
@@ -112,16 +113,15 @@ async function postHandler(
     }
   }
 
-  const { data, error } = await supabase
-    .from('user_watchlist')
-    .upsert(
-      { user_id: session.userId, symbol, company_name, list_id },
-      { onConflict: 'user_id,symbol', ignoreDuplicates: false }
-    )
-    .select()
-    .single();
+  const { data, error } = await addWatchlistItem(supabase, {
+    user_id: session.userId,
+    symbol,
+    company_name: company_name ?? symbol,
+    // Set by both branches above: the caller's own list, or their first/new one.
+    list_id: list_id as string,
+  });
 
-  if (error) {
+  if (error || !data) {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Failed to add to watchlist' }, { status: 500 })
     );
@@ -165,16 +165,24 @@ async function deleteHandler(
     );
   }
 
-  // Remove all alerts for this symbol — if the user is unwatching, alerts are no longer relevant.
-  // Fire-and-forget; a failure here is non-critical.
-  supabase
-    .from('user_alerts')
-    .delete()
+  // Unwatched entirely, so its alerts are no longer relevant. Taken out of
+  // one list while still in another, it is still watched and they stay.
+  const { count: stillWatched } = await supabase
+    .from('user_watchlist')
+    .select('id', { count: 'exact', head: true })
     .eq('user_id', session.userId)
-    .eq('symbol', symbol)
-    .then(({ error: alertErr }) => {
-      if (alertErr) console.warn('[DELETE /api/watchlist] Failed to remove alerts for', symbol, alertErr);
-    });
+    .eq('symbol', symbol);
+  if (!stillWatched) {
+    // Fire-and-forget; a failure here is non-critical.
+    supabase
+      .from('user_alerts')
+      .delete()
+      .eq('user_id', session.userId)
+      .eq('symbol', symbol)
+      .then(({ error: alertErr }) => {
+        if (alertErr) console.warn('[DELETE /api/watchlist] Failed to remove alerts for', symbol, alertErr);
+      });
+  }
 
   return addSecurityHeaders(NextResponse.json({ success: true }));
 }

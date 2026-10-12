@@ -170,7 +170,7 @@ function ScreenerContent() {
     }
     if (activeView.type === 'watchlist') {
       const items = watchlistListId ? listItems : allWatchlistItems;
-      return items.length > 0 ? items.map((i) => i.symbol).join(',') : '__none__';
+      return items.length > 0 ? [...new Set(items.map((i) => i.symbol))].join(',') : '__none__';
     }
     if (activeView.type === 'custom') {
       return activeView.view.tickers.length > 0

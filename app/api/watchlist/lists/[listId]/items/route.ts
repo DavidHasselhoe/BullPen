@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
+import { addWatchlistItem } from '@/lib/watchlist/add-item';
 import { createServerClient } from '@/lib/supabase/client';
 
 interface RouteContext {
@@ -50,17 +51,10 @@ async function postHandler(
     );
   }
 
-  // Upsert with conflict on (user_id, symbol); update list_id to point to the new list
-  const { data, error } = await supabase
-    .from('user_watchlist')
-    .upsert(
-      { user_id: session.userId, symbol, company_name, list_id: listId },
-      { onConflict: 'user_id,symbol', ignoreDuplicates: false }
-    )
-    .select()
-    .single();
+  // Adds to this list without taking it out of any other.
+  const { data, error } = await addWatchlistItem(supabase, { user_id: session.userId, symbol, company_name: company_name ?? symbol, list_id: listId });
 
-  if (error) {
+  if (error || !data) {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Failed to add item to list' }, { status: 500 })
     );

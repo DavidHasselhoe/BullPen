@@ -1224,10 +1224,9 @@ export function getPortfolioContextTool(userId: string) {
         holdingsCount: positions.length,
         positions,
         weightBasis: 'cost' as const,
-        watchlist: ((watchlistRes.data ?? []) as Array<{ symbol: string; company_name: string }>).map((w) => ({
-          ticker: w.symbol,
-          companyName: w.company_name,
-        })),
+        // One row per stock per list, so a stock in two lists comes back twice.
+        watchlist: [...new Map(((watchlistRes.data ?? []) as Array<{ symbol: string; company_name: string }>)
+          .map((w) => [w.symbol, { ticker: w.symbol, companyName: w.company_name }])).values()],
       };
     },
   });

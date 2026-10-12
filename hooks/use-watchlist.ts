@@ -87,7 +87,10 @@ export function useAddToWatchlist() {
       // Update the flat watchlist cache
       await queryClient.cancelQueries({ queryKey: ['watchlist'] });
       const previousAll = queryClient.getQueryData<WatchlistItem[]>(['watchlist']);
-      queryClient.setQueryData<WatchlistItem[]>(['watchlist'], (old) => [optimistic, ...(old ?? [])]);
+      // One row per stock per list; already in this list means nothing to add.
+      queryClient.setQueryData<WatchlistItem[]>(['watchlist'], (old) =>
+        (old ?? []).some((w) => w.symbol === symUp && (!listId || w.list_id === listId)) ? (old ?? []) : [optimistic, ...(old ?? [])]
+      );
 
       // Also update the list-specific cache so the card appears immediately in list view
       let previousList: WatchlistItem[] | undefined;
@@ -145,13 +148,14 @@ export function useToggleWatchlistAlert() {
   });
 }
 
-/** Remove a symbol from the watchlist */
+/** Remove a symbol from one list, or from every list when no listId is given */
 export function useRemoveFromWatchlist() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ symbol }: { symbol: string; listId?: string | null }) => {
-      const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' });
+    mutationFn: async ({ symbol, listId }: { symbol: string; listId?: string | null }) => {
+      const scope = listId ? `&list_id=${encodeURIComponent(listId)}` : '';
+      const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}${scope}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to remove from watchlist');
     },
     onMutate: async ({ symbol, listId }) => {
@@ -161,7 +165,7 @@ export function useRemoveFromWatchlist() {
       await queryClient.cancelQueries({ queryKey: ['watchlist'] });
       const previousAll = queryClient.getQueryData<WatchlistItem[]>(['watchlist']);
       queryClient.setQueryData<WatchlistItem[]>(['watchlist'], (old) =>
-        (old ?? []).filter((item) => item.symbol !== symUp)
+        (old ?? []).filter((item) => item.symbol !== symUp || (listId != null && item.list_id !== listId))
       );
 
       // Remove from list-specific cache so the card vanishes immediately in list view

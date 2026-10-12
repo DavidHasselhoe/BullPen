@@ -79,7 +79,8 @@ export default function WatchlistPage() {
   const { results: searchResults, isSettled: searchSettled } = useInstantSearch(searchQuery, 6);
 
   // Live price stream for all watchlist symbols via WsManager SSE
-  const allSymbols = (watchlist ?? []).map((w) => w.symbol);
+  // A stock in two lists is two rows; prices and charts are per stock.
+  const allSymbols = [...new Set((watchlist ?? []).map((w) => w.symbol))];
   // Every 3s, same as holdings, which is what the pre-market subtitle promises.
   const livePrices = useThrottle(useLivePrices(allSymbols), 3000);
   const { data: enhancedData } = useWatchlistEnhanced(allSymbols);
@@ -147,7 +148,8 @@ export default function WatchlistPage() {
     setShowDropdown(false);
   };
 
-  const alreadyWatched = new Set((watchlist ?? []).map((w) => w.symbol));
+  // Already in the list being viewed. Being in another list doesn't stop adding it here.
+  const alreadyWatched = new Set(displayItems.map((w) => w.symbol));
 
   // One click removes, so the bar below offers it back instead of a
   // confirmation in front of every removal.

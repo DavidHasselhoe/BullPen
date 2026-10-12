@@ -186,7 +186,7 @@ export function ScreenerViewBar({ activeView, onViewChange, totalCount }: Props)
                 className="text-xs"
               >
                 {t('screenerAllWatchlists')}
-                <span className="ml-auto text-[11px] text-muted-foreground">{watchlistItems.length}</span>
+                <span className="ml-auto text-[11px] text-muted-foreground">{new Set(watchlistItems.map((i) => i.symbol)).size}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {watchlistLists.map((list) => (
