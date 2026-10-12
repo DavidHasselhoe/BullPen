@@ -145,7 +145,11 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
         closeWhyToday,
       }}
     >
-      <div className="flex h-screen min-h-full w-full overflow-x-hidden">
+      {/* overflow-x-clip, not hidden: the closed side panel's 480px sits past the
+          right edge, and `hidden` still lets a script scroll to it (scrollIntoView,
+          focus), which slid the whole app sideways. `clip` cannot be scrolled at all.
+          Safe here because this box never scrolls vertically; app-scroll below does. */}
+      <div className="flex h-screen min-h-full w-full overflow-x-clip">
         {/* `relative` is load-bearing: this is the app's real scroll container, and
             without it any absolutely positioned descendant that has no positioned
             ancestor of its own resolves against the initial containing block
