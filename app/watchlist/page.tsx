@@ -204,13 +204,13 @@ export default function WatchlistPage() {
               <div className="flex items-center gap-2.5 mb-0.5">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('watchlistPageTitle')}</h1>
                 {isPreMarket ? (
-                  // Same pill and wording as the holdings page, so a pre-market price reads the same everywhere.
+                  // Same pills and wording as the holdings page (pre-market and live), so a price reads the same everywhere.
                   <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
                     <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                     {t('watchlistBadgePreMarket')}
                   </span>
                 ) : isLive && livePrices.size > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
                     <Radio className="h-3 w-3 animate-pulse" />
                     {t('watchlistLiveLabel')}
                   </span>
