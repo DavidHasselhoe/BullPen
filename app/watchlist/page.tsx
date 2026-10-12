@@ -102,10 +102,17 @@ export default function WatchlistPage() {
     queryFn: async (): Promise<{ sparklines: Record<string, number[]>; previousSession: string[] }> => {
       const empty = { sparklines: {}, previousSession: [] };
       if (allSymbols.length === 0) return empty;
-      const res = await fetch(`/api/watchlist/sparklines?symbols=${encodeURIComponent(allSymbols.join(','))}`);
-      if (!res.ok) return empty;
-      const data = await res.json();
-      return { sparklines: data.sparklines ?? {}, previousSession: data.previousSession ?? [] };
+      // The route takes at most 20 symbols, and the watchlist spans every list.
+      const chunks: string[][] = [];
+      for (let i = 0; i < allSymbols.length; i += 20) chunks.push(allSymbols.slice(i, i + 20));
+      const parts = await Promise.all(chunks.map(async (chunk) => {
+        const res = await fetch(`/api/watchlist/sparklines?symbols=${encodeURIComponent(chunk.join(','))}`);
+        return res.ok ? res.json() : null;
+      }));
+      return {
+        sparklines: Object.assign({}, ...parts.map((d) => d?.sparklines ?? {})),
+        previousSession: parts.flatMap((d) => d?.previousSession ?? []),
+      };
     },
     enabled: allSymbols.length > 0,
     staleTime: 2 * 60_000,
