@@ -19,6 +19,7 @@ import { PoliticianAvatar } from './PoliticianAvatar';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { CongressMemberDetail, CongressHoldingRow } from '@/app/api/congress/[slug]/route';
 import type { CongressTradeRow } from '@/lib/congress/types';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 type TradeFilter = 'all' | 'buy' | 'sell';
 
@@ -422,7 +423,7 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
                   </Link>
                   {/* clamp-ok: company name in a dense allocation row */}
                   <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={h.name}>
-                    {h.name}
+                    {h.symbol ? displayCompanyName(h.name, h.symbol) : h.name}
                   </span>
                   {/* Column widths and weights follow HoldingsBarList's rows,
                       so the two allocation lists line up as one pattern. */}

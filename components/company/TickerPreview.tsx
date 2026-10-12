@@ -157,7 +157,7 @@ export function TickerPreview({ ticker, className, children }: Props) {
   const profile = profileQuery.data;
   const quote = quoteQuery.data;
   // "Microsoft", not "Microsoft Corporation Common Stock"; the full name is on hover.
-  const name = displayCompanyName(profile?.name ?? ticker);
+  const name = displayCompanyName(profile?.name ?? ticker, ticker);
   const href = slugToAssetPath(ticker);
 
   const membership = useListMembership(ticker, name);

@@ -9,6 +9,7 @@ import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { fmtEPS, fmtRevenue } from './format';
 import { fmtShortDate } from '@/lib/dates/calendar-format';
 import type { UnifiedEvent, EarningsItem, DividendItem, SplitItem, IPOItem } from './types';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 // TYPE_ICONS moved to ./LogoTile, which is now the shared owner of type
 // iconography across tiles, the day-cell count strip and the list rows.
@@ -92,7 +93,7 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
               effectively every row). */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              {e.name && <p className="text-xs text-muted-foreground truncate leading-tight">{e.name}</p>}
+              {e.name && <p className="text-xs text-muted-foreground truncate leading-tight" title={e.name}>{displayCompanyName(e.name, e.symbol)}</p>}
               {e.time === 'BMO' && (
                 <span className="shrink-0 text-[10px] font-medium px-1 py-px bg-muted/60 rounded text-muted-foreground">
                   {t('calendarBeforeOpen')}
@@ -168,7 +169,7 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
             {d.symbol}
           </Link>
           <div className="min-w-0">
-            {d.name && <p className="text-xs text-muted-foreground truncate">{d.name}</p>}
+            {d.name && <p className="text-xs text-muted-foreground truncate" title={d.name}>{displayCompanyName(d.name, d.symbol)}</p>}
             <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground flex-wrap">
               {d.payment_date && <span>{t('calendarPayDate', { date: fmtShortDate(d.payment_date) })}</span>}
               {d.frequency && <span className="capitalize px-1 bg-muted/60 rounded">{d.frequency}</span>}
@@ -202,7 +203,7 @@ export function DetailEventRow({ event }: { event: UnifiedEvent }) {
           >
             {s.symbol}
           </Link>
-          {s.name && <p className="text-xs text-muted-foreground truncate">{s.name}</p>}
+          {s.name && <p className="text-xs text-muted-foreground truncate" title={s.name}>{displayCompanyName(s.name, s.symbol)}</p>}
         </div>
         {s.ratio && (
           <span className="text-xs font-bold font-mono text-foreground shrink-0 bg-muted px-2 py-0.5 rounded">

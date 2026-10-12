@@ -10,6 +10,11 @@ import { intlLocale } from '@/lib/i18n/intl-locale';
 import type { PickWithPerformance } from '@/lib/picks/types';
 import { quarterLabel, quarterOf } from '@/lib/picks/quarters';
 import { CATALYST_KEY, DIRECTION_TEXT, directionOf, fmtDate, fmtPct, fmtPrice } from './pick-format';
+import { displayCompanyName } from '@/lib/market-data/company-name';
+
+/** The name a row leads with, which is also what the Pick column sorts by. */
+const nameOf = (p: { companyName: string | null; symbol: string }) =>
+  displayCompanyName(p.companyName ?? p.symbol, p.symbol);
 
 type SortKey = 'pickDate' | 'symbol' | 'returnPct' | 'vsBenchmark';
 type SortDir = 'asc' | 'desc';
@@ -43,7 +48,7 @@ export function PicksTable({ picks }: Props) {
     rows.sort((a, b) => {
       switch (sortKey) {
         case 'symbol':
-          return a.symbol.localeCompare(b.symbol) * factor;
+          return nameOf(a).localeCompare(nameOf(b)) * factor;
         case 'returnPct':
         case 'vsBenchmark': {
           const av = sortKey === 'returnPct' ? a.returnPct : vsBenchmarkOf(a);
@@ -113,8 +118,11 @@ export function PicksTable({ picks }: Props) {
               >
                 <CompanyLogo name={p.companyName ?? p.symbol} ticker={p.symbol} logoUrl={p.logoUrl} size={32} className="shrink-0" />
                 <span className="min-w-0 flex-1">
-                  <span className="block font-mono text-sm font-bold text-foreground">{p.symbol}</span>
-                  <span className="block text-xs text-muted-foreground">{fmtDate(p.pickDate, locale)}</span>
+                  {/* clamp-ok: company name in a list row; the pick page shows it in full */}
+                  <span className="block truncate text-sm font-bold text-foreground" title={p.companyName ?? undefined}>{nameOf(p)}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    <span className="font-mono">{p.symbol}</span> · {fmtDate(p.pickDate, locale)}
+                  </span>
                 </span>
                 <span className="shrink-0 text-right">
                   <span className={cn('inline-flex items-center gap-1 font-mono text-sm font-semibold tabular-nums', DIRECTION_TEXT[dir])}>
@@ -181,13 +189,11 @@ export function PicksTable({ picks }: Props) {
                         className="shrink-0"
                       />
                       <span className="min-w-0">
-                        <span className="block font-mono text-[13px] font-bold text-foreground group-hover:text-primary transition-colors">
-                          {p.symbol}
-                        </span>
                         {/* clamp-ok: company name in a table cell, not a sentence */}
-                        <span className="block max-w-[160px] truncate text-[11px] text-muted-foreground" title={p.companyName ?? undefined}>
-                          {p.companyName ?? '—'}
+                        <span className="block max-w-[160px] truncate text-[13px] font-bold text-foreground group-hover:text-primary transition-colors" title={p.companyName ?? undefined}>
+                          {nameOf(p)}
                         </span>
+                        <span className="block font-mono text-[11px] text-muted-foreground">{p.symbol}</span>
                       </span>
                     </Link>
                   </td>

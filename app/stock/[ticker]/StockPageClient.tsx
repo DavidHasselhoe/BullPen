@@ -182,7 +182,7 @@ export default function StockPageClient({ initialName }: { initialName?: string 
   // names carry legal and share-class wording ("Nebius Group N.V. Class A
   // Ordinary Shares"). The full name stays on the heading's hover.
   const legalName = profileData?.profile?.name ?? company?.name ?? initialName ?? ticker;
-  const displayName = displayCompanyName(legalName);
+  const displayName = displayCompanyName(legalName, ticker);
 
   // Prefer the TwelveData profile for sector/industry — the Supabase `companies`
   // row is scoped to SEC-filing-ingested companies (a small hand-ingested

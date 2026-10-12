@@ -9,6 +9,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
 import type { IndexMover, IndexMovers, PremarketMovers } from '@/lib/market-data/index-movers';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 const SHOWN = 5;
 
@@ -132,18 +133,18 @@ function MoverList({ title, rows, earningsLabel, className }: { title: string; r
             >
               <CompanyLogo ticker={m.symbol} name={m.name ?? m.symbol} logoUrl={m.logo_url} size={28} />
               <span className="min-w-0 flex-1">
+                {/* clamp-ok: a company name in a dense row; the full name is one click away */}
+                <span className="block truncate text-sm font-semibold text-foreground group-hover:underline" title={m.name ?? undefined}>
+                  {displayCompanyName(m.name ?? m.symbol, m.symbol)}
+                </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold text-foreground group-hover:underline">{m.symbol}</span>
+                  <span className="text-xs text-muted-foreground">{m.symbol}</span>
                   {/* Most pre-market moves in index names are earnings reactions; this says which. */}
                   {m.earnings && (
                     <span className="rounded border border-border/70 px-1 py-px text-[10px] font-medium leading-none text-muted-foreground">
                       {earningsLabel}
                     </span>
                   )}
-                </span>
-                {/* clamp-ok: a company name in a dense row; the full name is one click away */}
-                <span className="block truncate text-xs text-muted-foreground" title={m.name ?? undefined}>
-                  {m.name ?? m.symbol}
                 </span>
               </span>
               <span className="shrink-0 text-right">

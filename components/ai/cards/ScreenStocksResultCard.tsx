@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { CardShell } from './CardPrimitives';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 interface ScreenStocksRow {
   rank: number;
@@ -72,9 +73,11 @@ export function ScreenStocksResultCard({ output }: { output: ScreenStocksOutput 
                 <span className="w-4 shrink-0 text-right tabular-nums text-[11px] text-muted-foreground">{r.rank}</span>
                 <CompanyLogo name={r.name ?? r.ticker} ticker={r.ticker} size={24} />
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-foreground">{r.ticker}</span>
                   {/* clamp-ok: company name in a dense ranked row, full name in title */}
-                  <span className="block truncate text-[11px] text-muted-foreground" title={r.name ?? undefined}>{r.name}</span>
+                  <span className="block truncate font-semibold text-foreground" title={r.name ?? undefined}>
+                    {displayCompanyName(r.name ?? r.ticker, r.ticker)}
+                  </span>
+                  <span className="block text-[11px] text-muted-foreground">{r.ticker}</span>
                 </span>
                 {value != null && <span className="shrink-0 tabular-nums font-medium text-foreground">{value}</span>}
                 {r.healthScore != null && (

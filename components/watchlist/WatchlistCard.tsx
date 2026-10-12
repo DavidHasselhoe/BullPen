@@ -128,7 +128,7 @@ export function WatchlistCard({
           <div className="min-w-0 flex-1 [@media(hover:none)]:pr-16">
             {/* clamp-ok: a company name is a short label; the full legal name is on hover. */}
             <p className="flex items-baseline gap-1.5 text-sm font-semibold text-foreground leading-none" title={company_name || undefined}>
-              <span className="truncate">{display_name || displayCompanyName(company_name || symbol)}</span>
+              <span className="truncate">{display_name || displayCompanyName(company_name || symbol, symbol)}</span>
               {thesisSentiment && (
                 <span className={cn('text-xs font-medium', thesisColor(thesisSentiment))}>
                   {t(THESIS_KEY[thesisSentiment])}

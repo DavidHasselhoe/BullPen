@@ -12,6 +12,7 @@ import type { PickDetail } from '@/lib/picks/types';
 import { CATALYST_KEY, DIRECTION_TEXT, HORIZON_KEY, directionOf, fmtPct, fmtPrice, pickedAgo } from './pick-format';
 import { ConvictionMeter } from './ConvictionMeter';
 import { VoteChip } from './VoteChip';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 /**
  * Shared query for the current pick. DiscoverClient uses it to fold the pick's
@@ -106,13 +107,10 @@ export function WeeklyPickHero() {
               />
               <div className="min-w-0">
                 {/* The thesis argues valuation, not what the company does; the card answers that. */}
-                <TickerPreview ticker={pick.symbol} className="font-mono text-base font-bold text-foreground hover:text-primary transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-                  {pick.symbol}
+                <TickerPreview ticker={pick.symbol} className="text-base font-bold text-foreground hover:text-primary transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                  {displayCompanyName(pick.companyName ?? pick.symbol, pick.symbol)}
                 </TickerPreview>
-                {/* clamp-ok: company name, and it carries a title attribute with the full value */}
-                <p className="text-xs text-muted-foreground truncate" title={pick.companyName ?? undefined}>
-                  {pick.companyName ?? '—'}
-                </p>
+                <p className="font-mono text-xs text-muted-foreground">{pick.symbol}</p>
               </div>
             </div>
 

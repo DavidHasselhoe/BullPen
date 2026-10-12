@@ -24,6 +24,7 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 import { useWhyTodayGate } from '@/hooks/use-why-today-gate';
 import { formatCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 import { cn } from '@/lib/utils';
 import type { UserHolding } from '@/lib/types/database';
 
@@ -161,10 +162,12 @@ function MoverRow({ mover, why, onWhy }: { mover: HomeMover; why: InlineWhy | 'l
       <div className="flex items-center gap-3">
         <CompanyLogo ticker={mover.symbol} name={mover.name} logoUrl={mover.logoUrl} size={28} />
         <Link href={slugToAssetPath(mover.symbol)} className="group min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-foreground group-hover:underline">{mover.symbol}</span>
-          {/* clamp-ok: a company name in a dense row; the full name is one click away */}
-          <span className="block truncate text-xs text-muted-foreground" title={mover.name}>
-            {mover.held ? t('homeMoverHeld', { name: mover.name }) : t('homeMoverWatching', { name: mover.name })}
+          {/* clamp-ok: a company name in a dense row; the full name is in the title */}
+          <span className="block truncate text-sm font-semibold text-foreground group-hover:underline" title={mover.name}>
+            {displayCompanyName(mover.name || mover.symbol, mover.symbol)}
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            {mover.held ? t('homeMoverHeld', { name: mover.symbol }) : t('homeMoverWatching', { name: mover.symbol })}
           </span>
         </Link>
         <Change pct={mover.changePercent} className="text-sm font-medium" />

@@ -7,6 +7,7 @@ import { AlertCard } from './AlertCard';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 import type { UserAlert } from '@/types/alerts';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 type Filter = 'all' | 'active' | 'paused';
 
@@ -116,12 +117,12 @@ export function AlertList({ alerts, onToggle, onDelete, onAddCondition }: Props)
                   size={26}
                   className="rounded-md"
                 />
-                <span className="font-mono font-bold text-sm text-foreground leading-none">
-                  {group.symbol}
+                <span className="font-bold text-sm text-foreground truncate leading-none" title={group.companyName ?? undefined}>
+                  {displayCompanyName(group.companyName ?? group.symbol, group.symbol)}
                 </span>
                 {group.companyName && (
-                  <span className="text-xs text-muted-foreground truncate leading-none">
-                    {group.companyName}
+                  <span className="font-mono text-xs text-muted-foreground shrink-0 leading-none">
+                    {group.symbol}
                   </span>
                 )}
                 <span className="ml-auto text-[11px] font-mono text-muted-foreground shrink-0">

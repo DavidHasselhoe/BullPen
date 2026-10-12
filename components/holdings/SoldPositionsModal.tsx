@@ -17,6 +17,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { useHoldingSales, useDeleteHoldingSale, useUpdateHoldingSale } from '@/hooks/use-holdings';
 import type { HoldingSale } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 function SoldPositionRow({ sale }: { sale: HoldingSale }) {
   const { t } = useTranslation('holdings');
@@ -64,8 +65,10 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
     return (
       <div className="space-y-3 rounded-xl border bg-card px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">{sale.symbol}</span>
-          <span className="truncate text-xs text-muted-foreground">{sale.company_name}</span>
+          <span className="truncate text-sm font-semibold text-foreground" title={sale.company_name ?? undefined}>
+            {displayCompanyName(sale.company_name || sale.symbol, sale.symbol)}
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground">{sale.symbol}</span>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="space-y-1">
@@ -129,8 +132,10 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
     <div className="flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">{sale.symbol}</span>
-          <span className="truncate text-xs text-muted-foreground">{sale.company_name}</span>
+          <span className="truncate text-sm font-semibold text-foreground" title={sale.company_name ?? undefined}>
+            {displayCompanyName(sale.company_name || sale.symbol, sale.symbol)}
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground">{sale.symbol}</span>
         </div>
         <div className="text-xs text-muted-foreground">
           {t('soldPositionsSummary', {

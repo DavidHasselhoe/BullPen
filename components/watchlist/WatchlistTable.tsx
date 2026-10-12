@@ -163,7 +163,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
                   <Link href={slugToAssetPath(item.symbol)} onMouseEnter={() => prefetchSnapshot(item.symbol)} className="hover:underline">
                     {/* clamp-ok: a company name is a short label; the full legal name is on hover. */}
                     <span className="font-semibold text-foreground truncate max-w-[180px] inline-block align-middle" title={item.company_name || undefined}>
-                      {item.display_name || displayCompanyName(item.company_name || item.symbol)}
+                      {item.display_name || displayCompanyName(item.company_name || item.symbol, item.symbol)}
                     </span>
                     <span className="ml-2 text-xs text-muted-foreground align-middle">{item.symbol}</span>
                   </Link>

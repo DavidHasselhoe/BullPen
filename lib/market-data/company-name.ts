@@ -26,7 +26,13 @@ const TRAILING = new RegExp(
   'i',
 );
 
-export function displayCompanyName(raw: string): string {
+// Companies the public knows by their acronym, not their legal name.
+const KNOWN_AS: Record<string, string> = { IBM: 'IBM', AMD: 'AMD' };
+
+/** Pass the ticker when there is one, so IBM stays "IBM" rather than "International Business Machines". */
+export function displayCompanyName(raw: string, ticker?: string): string {
+  const known = ticker && KNOWN_AS[ticker.toUpperCase()];
+  if (known) return known;
   let name = raw.trim().replace(/^the\s+/i, '');
   let prev;
   do {

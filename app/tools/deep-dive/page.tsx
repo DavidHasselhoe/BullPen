@@ -19,6 +19,7 @@ import { ToolPage, ToolHeader, ToolSectionTitle } from '@/components/tools/ToolH
 import { TickerSelector, type SearchResult } from '@/components/tools/buy-here/TickerSelector';
 import type { Verdict } from '@/lib/ai/deep-dive/schema';
 import type { SavedDivePreview } from '@/app/api/ai/deep-dive/route';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 const POPULAR = [
   { ticker: 'NVDA', name: 'NVIDIA' },
@@ -163,14 +164,13 @@ function SavedDiveRow({ dive: d, onDelete }: { dive: SavedDivePreview; onDelete:
         <div className="flex min-w-0 items-baseline gap-2">
           <Link
             href={`/tools/deep-dive/${d.symbol}`}
-            className="shrink-0 text-sm font-semibold text-foreground after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
-          >
-            {d.symbol}
-          </Link>
-          {d.companyName && (
             // clamp-ok: company name beside its ticker; the report it links to shows it in full
-            <span className="min-w-0 truncate text-xs text-muted-foreground">{d.companyName}</span>
-          )}
+            className="min-w-0 truncate text-sm font-semibold text-foreground after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+            title={d.companyName ?? undefined}
+          >
+            {displayCompanyName(d.companyName ?? d.symbol, d.symbol)}
+          </Link>
+          <span className="shrink-0 font-mono text-xs text-muted-foreground">{d.symbol}</span>
         </div>
         {d.headline && (
           <ClampedText className="mt-0.5 text-sm text-foreground/85" toggleClassName="relative z-10">

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 interface Holding {
   symbol: string;
@@ -42,9 +43,12 @@ export function PublicHoldingsList({ holdings, className }: PublicHoldingsListPr
             logoUrl={null}
             size={22}
           />
-          <div className="flex flex-col">
-            <span className="text-xs font-semibold leading-none text-foreground">{h.symbol}</span>
-            <span className="text-[11px] text-muted-foreground truncate max-w-[120px]">{h.company_name}</span>
+          <div className="flex min-w-0 flex-col">
+            {/* clamp-ok: company name in a chip, full name in title */}
+            <span className="max-w-[120px] truncate text-xs font-semibold leading-tight text-foreground" title={h.company_name ?? undefined}>
+              {displayCompanyName(h.company_name || h.symbol, h.symbol)}
+            </span>
+            <span className="text-[11px] text-muted-foreground">{h.symbol}</span>
           </div>
         </Link>
       ))}

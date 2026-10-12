@@ -19,6 +19,7 @@ import { useTradingSession } from '@/hooks/use-trading-session';
 import { STARTER_STOCKS } from '@/lib/onboarding/starter-stocks';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics/track';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 type Pick = { ticker: string; name: string };
 
@@ -121,9 +122,11 @@ export function StarterPicker({ onPick, onDone }: { onPick: () => void; onDone: 
                 >
                   <CompanyLogo ticker={s.ticker} name={s.name} size={28} />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-foreground">{s.ticker}</span>
-                    {/* clamp-ok: a company name in a tile; the ticker beside it identifies the pick */}
-                    <span className="block truncate text-xs text-muted-foreground" title={s.name}>{s.name}</span>
+                    {/* clamp-ok: a company name in a tile; the full name is in the title */}
+                    <span className="block truncate text-sm font-semibold text-foreground" title={s.name}>
+                      {displayCompanyName(s.name || s.ticker, s.ticker)}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">{s.ticker}</span>
                   </span>
                   {pct !== undefined && (
                     <span

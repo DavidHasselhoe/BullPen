@@ -49,4 +49,8 @@ const cases: Array<[string, string]> = [
   ['SPDR Gold Shares', 'SPDR Gold Shares'],
 ];
 for (const [raw, want] of cases) assert.equal(displayCompanyName(raw), want, raw);
+// Known by acronym once the ticker is passed, on the client as well as the server.
+assert.equal(displayCompanyName('International Business Machines Corporation', 'IBM'), 'IBM');
+assert.equal(displayCompanyName('Advanced Micro Devices, Inc.', 'amd'), 'AMD');
+assert.equal(displayCompanyName('Oracle Corporation', 'ORCL'), 'Oracle');
 console.log(`ok, ${cases.length} cases`);

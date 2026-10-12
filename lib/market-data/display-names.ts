@@ -14,9 +14,6 @@ import { displayCompanyName } from './company-name';
 // The name rule itself lives in company-name.ts so client components can use it.
 export { displayCompanyName };
 
-// Companies the public knows by their acronym, not their legal name.
-const KNOWN_AS: Record<string, string> = { IBM: 'IBM', AMD: 'AMD' };
-
 // Per-instance memo. Company names effectively never change, and the movers
 // REST route and SSE stream ask for the same ~50 tickers on every request.
 // A miss is remembered too (as ''), so an unnamed ticker is not re-queried.
@@ -51,10 +48,9 @@ async function fetchDisplayNames(upper: string[]): Promise<Map<string, string> |
   for (const rows of [companies.data, search.data]) {
     for (const r of (rows ?? []) as Array<{ ticker: string; name: string | null }>) {
       if (r.name && r.name.toUpperCase() !== r.ticker.toUpperCase()) {
-        out.set(r.ticker.toUpperCase(), displayCompanyName(r.name)); // search_index written last, wins
+        out.set(r.ticker.toUpperCase(), displayCompanyName(r.name, r.ticker)); // search_index written last, wins
       }
     }
   }
-  for (const t of upper) if (KNOWN_AS[t]) out.set(t, KNOWN_AS[t]);
   return out;
 }

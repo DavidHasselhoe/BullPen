@@ -335,7 +335,7 @@ const HoldingRow = memo(function HoldingRow({
             <div className="flex items-center gap-1.5">
               {/* clamp-ok: a company name is a short label; the full legal name is on hover. */}
               <span className="max-w-32 xl:max-w-40 truncate font-medium text-foreground group-hover:underline" title={holding.company_name ?? undefined}>
-                {holding.display_name || displayCompanyName(holding.company_name || holding.symbol)}
+                {holding.display_name || displayCompanyName(holding.company_name || holding.symbol, holding.symbol)}
               </span>
               {holding.source === 'snaptrade' && (
                 <span className="inline-flex items-center rounded-full bg-blue-500/10 px-1.5 py-0 text-[11px] font-medium text-blue-400 border border-blue-500/20">
@@ -942,8 +942,11 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                   <Link href={slugToAssetPath(holding.symbol)} className="flex min-w-0 items-center gap-2.5">
                     <CompanyLogo name={holding.company_name} ticker={holding.symbol} logoUrl={holding.logoUrl || null} size={36} />
                     <div className="min-w-0">
-                      <span className="text-sm font-semibold text-foreground">{holding.symbol}</span>
-                      <span className="block truncate text-xs text-muted-foreground">{holding.company_name}</span>
+                      {/* clamp-ok: a company name is a short label; the full legal name is on hover. */}
+                      <span className="block truncate text-sm font-semibold text-foreground" title={holding.company_name ?? undefined}>
+                        {holding.display_name || displayCompanyName(holding.company_name || holding.symbol, holding.symbol)}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">{holding.symbol}</span>
                     </div>
                   </Link>
                   <HoldingActionsMenu

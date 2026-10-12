@@ -34,6 +34,7 @@ import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { SCREENER_COLUMNS, getScreenerColumns, type ScreenerColumn } from './screener-columns';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
 import { useSignupGate, useResumeAction } from '@/components/auth/SignupGate';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 type SortDir = 'asc' | 'desc';
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
@@ -443,7 +444,7 @@ export function ScreenerResults({
                         {stale && <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400/70" title={stale} />}
                         {row.sector && <Badge variant="outline" className="px-1 py-0 text-[11px]">{row.sector}</Badge>}
                       </div>
-                      <span className="block truncate text-xs text-muted-foreground">{row.name}</span>
+                      <span className="block truncate text-xs text-muted-foreground" title={row.name}>{displayCompanyName(row.name, row.ticker)}</span>
                     </div>
                   </Link>
                 </div>
@@ -604,8 +605,9 @@ export function ScreenerResults({
                               />
                             ) : null;
                           })()}
-                          <span className="ml-1.5 text-xs text-muted-foreground hidden sm:inline truncate">
-                            {row.name.length > 22 ? `${row.name.slice(0, 22)}…` : row.name}
+                          {/* clamp-ok: company name beside its ticker in a sticky column, full name in title */}
+                          <span className="ml-1.5 hidden max-w-[11rem] truncate align-bottom text-xs text-muted-foreground sm:inline-block" title={row.name}>
+                            {displayCompanyName(row.name, row.ticker)}
                           </span>
                           {row.sector && (
                             <div>
