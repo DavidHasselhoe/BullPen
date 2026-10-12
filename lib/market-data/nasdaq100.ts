@@ -3,7 +3,7 @@
  * Source: Nasdaq's own official Nasdaq-100 constituents API.
  * Auto-synced weekly by scripts/sync-index-constituents.ts — do not hand-edit,
  * changes will be overwritten on the next sync run.
- * Last synced: 2026-09-21
+ * Last synced: 2026-10-12
  */
 export const NASDAQ100_TICKERS: string[] = [
   'AAPL', 'ABNB', 'ADBE', 'ADI', 'ADP', 'ADSK', 'AEP', 'ALAB', 'ALNY', 'AMAT',
@@ -12,9 +12,9 @@ export const NASDAQ100_TICKERS: string[] = [
   'CTAS', 'DASH', 'DDOG', 'DXCM', 'EXC', 'FANG', 'FAST', 'FER', 'FTNT', 'GEHC',
   'GILD', 'GOOG', 'GOOGL', 'HON', 'HONA', 'IDXX', 'INTC', 'INTU', 'ISRG', 'KDP',
   'KLAC', 'LIN', 'LITE', 'LRCX', 'MAR', 'MCHP', 'MDLZ', 'MELI', 'META', 'MNST',
-  'MPWR', 'MRVL', 'MSFT', 'MSTR', 'MU', 'NBIS', 'NFLX', 'NVDA', 'NXPI', 'ODFL',
-  'ORLY', 'PANW', 'PAYX', 'PCAR', 'PDD', 'PEP', 'PLTR', 'PYPL', 'QCOM', 'REGN',
-  'RKLB', 'ROP', 'ROST', 'SBUX', 'SHOP', 'SNDK', 'SNPS', 'SPCX', 'STX', 'TER',
-  'TMUS', 'TRI', 'TSLA', 'TTWO', 'TXN', 'VRTX', 'WBD', 'WDAY', 'WDC', 'WMT',
+  'MPWR', 'MRNA', 'MRVL', 'MSFT', 'MSTR', 'MU', 'NBIS', 'NFLX', 'NVDA', 'NXPI',
+  'ODFL', 'ORLY', 'PANW', 'PAYX', 'PCAR', 'PDD', 'PEP', 'PLTR', 'PYPL', 'QCOM',
+  'REGN', 'RKLB', 'ROP', 'ROST', 'SBUX', 'SHOP', 'SNDK', 'SNPS', 'SPCX', 'STX',
+  'TER', 'TMUS', 'TRI', 'TSLA', 'TTWO', 'TXN', 'VRTX', 'WDAY', 'WDC', 'WMT',
   'XEL',
 ];
