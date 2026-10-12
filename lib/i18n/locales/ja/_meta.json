@@ -3444,5 +3444,12 @@
   "watchlist.watchlistPickerNewList": "a992f172cd22e463095bd28eda67d725b177cd7d1ea5998be3747addf3d02963",
   "watchlist.watchlistSparklineSinceLastOpenAriaLabel": "e741ae3a654a0f26d20afd07cfc4d53a5c62dd7933aca70421adf9b8dcccc2a5",
   "watchlist.watchlistBadgePreMarket": "46d2743448de0f1b362938e8985a803f0edd4db556f33c1a9363cad51b111716",
-  "watchlist.watchlistSubtitlePreMarket": "a754ff1098e319b95cc2bee06de78591a9d863744c54322ad3da89ba112d00cf"
+  "watchlist.watchlistSubtitlePreMarket": "a754ff1098e319b95cc2bee06de78591a9d863744c54322ad3da89ba112d00cf",
+  "discover.moversSubtitlePremarket": "c5e3b5edbf2076f6152544f559c4193a6a541c491e962d795265a1a419bf2cd0",
+  "discover.moversFooterPremarket": "c5a7363c14620e95a541612cdd24697f54fadaa133e50cb0efdc7bb0e5fd70c3",
+  "discover.moversToggleLabel": "370f76f6ba0e2f3ea720592ff1ff66ab79a92f03f26da4e89bba455adf5a41c9",
+  "discover.moversToggleLast": "793398c5a6927f5aa216378b2fb4850e9ff2644e203d438d046ee0c40f3941f4",
+  "discover.moversToggleLastFallback": "9519eac2bc5d56d64200cacdc6a3368849d64d6c06b957dcb60ebefd427133b6",
+  "discover.moversTogglePremarket": "46d2743448de0f1b362938e8985a803f0edd4db556f33c1a9363cad51b111716",
+  "discover.moversEarnings": "81920761dd55a077b4b95ba6bd8fb64fdc63e7d79c74a7d6c2023d7925a1a38d"
 }
