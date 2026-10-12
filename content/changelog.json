@@ -1,5 +1,50 @@
 [
   {
+    "date": "2026-10-12",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Biggest movers on Discover now has a Pre-market view before the open, showing which S&P 500 and Nasdaq-100 stocks are moving this morning, with earnings reactions marked. One tap switches back to the last session's movers"
+      },
+      {
+        "type": "new",
+        "text": "A stock can now be in more than one watchlist. The Watch button on a stock page asks which lists to add it to, and you can create a new list right there"
+      },
+      {
+        "type": "improved",
+        "text": "You can change a watchlist's colour after creating it, not just its name"
+      },
+      {
+        "type": "new",
+        "text": "Hover a company in the Weekly Pick, a stock's peers, Why Today, Deep Dive or a Bull answer to see a short profile, and add it to any of your watchlists from there"
+      },
+      {
+        "type": "new",
+        "text": "Search a fund's holdings by ticker or company name, so you can see how much Bridgewater or Citadel owns of one stock without scrolling through a thousand positions"
+      },
+      {
+        "type": "improved",
+        "text": "Holdings, watchlists, Home, Discover movers, the Weekly Pick and alerts now lead with the company's everyday name, like Micron, with the ticker underneath"
+      },
+      {
+        "type": "improved",
+        "text": "Before the open, watchlist cards show today's pre-market move on a chart that continues from the last session, with the same pre-market indicator as Holdings"
+      },
+      {
+        "type": "fixed",
+        "text": "Stocks you have fully sold no longer show up as yours in the Market Calendar, on Discover or in Deep Dive"
+      },
+      {
+        "type": "fixed",
+        "text": "Every watchlist card now gets its price chart. In bigger lists some cards were left blank"
+      },
+      {
+        "type": "fixed",
+        "text": "The page can no longer be dragged sideways to reveal the closed Ask Bull panel"
+      }
+    ]
+  },
+  {
     "date": "2026-10-09",
     "entries": [
       {
