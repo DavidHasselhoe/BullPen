@@ -1596,56 +1596,6 @@ export async function getCompanyProfile(symbol: string): Promise<CompanyProfile>
   };
 }
 
-// -------- Key Executives --------
-
-export interface KeyExecutive {
-  name: string;
-  title: string;
-  age: number | null;
-  gender: string | null;
-  total_compensation: number | null;
-  currency: string;
-}
-
-interface TwelveDataExecutive {
-  name?: string;
-  title?: string;
-  age?: number | null;
-  gender?: string | null;
-  total_compensation?: number | null;
-  currency?: string;
-}
-
-interface TwelveDataExecutivesResponse {
-  symbol?: string;
-  executives?: TwelveDataExecutive[];
-  status?: string;
-  code?: number;
-  message?: string;
-}
-
-export async function getKeyExecutives(symbol: string): Promise<KeyExecutive[]> {
-  logUsage('key_executives', symbol);
-  const url = buildUrl('/key_executives', { symbol: symbol.toUpperCase() });
-  const response = await tdFetch(url);
-  const data = (await response.json()) as TwelveDataExecutivesResponse;
-
-  if (!response.ok || data.code || data.status === 'error') {
-    const msg = data.message || `Twelve Data executives error for ${symbol}`;
-    if (data.code === 429 || /rate.?limit|credits? exceeded/i.test(msg)) throw new TwelveDataRateLimitError(msg);
-    throw new Error(msg);
-  }
-
-  return (data.executives ?? []).map((e) => ({
-    name: e.name ?? '',
-    title: e.title ?? '',
-    age: e.age ?? null,
-    gender: e.gender ?? null,
-    total_compensation: e.total_compensation ?? null,
-    currency: e.currency ?? 'USD',
-  }));
-}
-
 // -------- Logo --------
 
 export interface TwelveDataLogoResponse {

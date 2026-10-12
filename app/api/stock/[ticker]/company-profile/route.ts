@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCompanyProfile, getKeyExecutives, withRateLimitRetry, TwelveDataRateLimitError, TwelveDataInvalidSymbolError } from '@/lib/twelvedata/twelvedata-client';
+import { getCompanyProfile, withRateLimitRetry, TwelveDataRateLimitError, TwelveDataInvalidSymbolError } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached, COMPANY_PROFILE_TTL_SECONDS } from '@/lib/cache/market-data-cache';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { translateText } from '@/lib/i18n/translate';
@@ -18,7 +18,6 @@ async function handler(
   try {
     const cached = await getCached<{
       profile: Awaited<ReturnType<typeof getCompanyProfile>>;
-      executives: Awaited<ReturnType<typeof getKeyExecutives>>;
     }>(cacheKey);
     if (cached) {
       const profile = { ...cached.profile };
@@ -27,28 +26,19 @@ async function handler(
       }
       return addSecurityHeaders(
         NextResponse.json(
-          { success: true, symbol: sym, profile, executives: cached.executives },
+          { success: true, symbol: sym, profile },
           { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } },
         ),
       );
     }
 
-    // Fetch profile and executives in parallel. getCompanyProfile is retry-wrapped because
-    // a transient network blip here (common intermittently on Vercel's outbound TwelveData
-    // calls — see withRateLimitRetry) would otherwise surface as "no profile", which the
-    // stock page treats as a signal the ticker doesn't exist for symbols with no Supabase
-    // companies row.
-    // /key_executives may be Ultra/Enterprise only on some plan configs — always degrade gracefully.
-    const [profile, executives] = await Promise.all([
-      withRateLimitRetry(() => getCompanyProfile(sym)),
-      getKeyExecutives(sym).catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (/plan|enterprise|higher tier|not available|access/i.test(msg)) return [];
-        return [];
-      }),
-    ]);
+    // Retry-wrapped because a transient network blip here (common intermittently
+    // on Vercel's outbound TwelveData calls, see withRateLimitRetry) would
+    // otherwise surface as "no profile", which the stock page treats as a sign
+    // the ticker doesn't exist for symbols with no Supabase companies row.
+    const profile = await withRateLimitRetry(() => getCompanyProfile(sym));
 
-    await setCached(cacheKey, sym, 'company_profile', { profile, executives }, COMPANY_PROFILE_TTL_SECONDS);
+    await setCached(cacheKey, sym, 'company_profile', { profile }, COMPANY_PROFILE_TTL_SECONDS);
 
     const translatedProfile = { ...profile };
     if (translatedProfile.description) {
@@ -57,7 +47,7 @@ async function handler(
 
     return addSecurityHeaders(
       NextResponse.json(
-        { success: true, symbol: sym, profile: translatedProfile, executives },
+        { success: true, symbol: sym, profile: translatedProfile },
         { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } },
       ),
     );

@@ -13,15 +13,13 @@ import {
   Calendar,
   Building2,
   Briefcase,
-  DollarSign,
 } from 'lucide-react';
-import type { CompanyProfile, KeyExecutive } from '@/lib/twelvedata/twelvedata-client';
+import type { CompanyProfile } from '@/lib/twelvedata/twelvedata-client';
 
 interface ProfileResponse {
   success: boolean;
   symbol: string;
   profile?: CompanyProfile;
-  executives?: KeyExecutive[];
   error?: string;
 }
 
@@ -30,12 +28,6 @@ function fmtEmployees(n: number | null): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
   return n.toLocaleString();
-}
-
-function fmtCompensation(n: number | null, currency: string): string {
-  if (!n) return '—';
-  const m = n / 1_000_000;
-  return `${currency} ${m.toFixed(1)}M`;
 }
 
 function fmtDate(dateStr: string | null): string {
@@ -97,7 +89,7 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
 
   if (!data?.success || !data.profile) return null;
 
-  const { profile, executives = [] } = data;
+  const { profile } = data;
 
   const location = [profile.city, profile.state, profile.country].filter(Boolean).join(', ');
 
@@ -174,33 +166,6 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
           </div>
         )}
 
-        {/* Key Executives */}
-        {executives.length > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold mb-3 text-foreground">{t('keyExecutivesHeading')}</h3>
-            <div className="divide-y divide-border">
-              {executives.slice(0, 8).map((exec, i) => (
-                <div key={i} className="flex items-center justify-between py-2.5 gap-4">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{exec.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{exec.title}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    {exec.total_compensation ? (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <DollarSign className="h-3 w-3" />
-                        {fmtCompensation(exec.total_compensation, exec.currency)}
-                      </div>
-                    ) : null}
-                    {exec.age && (
-                      <p className="text-xs text-muted-foreground">{t('ageLabel', { age: exec.age })}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

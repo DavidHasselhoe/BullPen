@@ -200,7 +200,7 @@ async function getProfileFields(
       );
       return { name: null, sector: null, industry: null, logoUrl: null };
     }
-    void setCached(cacheKey, sym, 'company_profile', { profile, executives: [] }, COMPANY_PROFILE_TTL_SECONDS);
+    void setCached(cacheKey, sym, 'company_profile', { profile }, COMPANY_PROFILE_TTL_SECONDS);
     return { name: profile.name ?? null, sector: profile.sector ?? null, industry: profile.industry ?? null, logoUrl: profile.logo ?? null };
   } catch {
     return { name: null, sector: null, industry: null, logoUrl: null };
