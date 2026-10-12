@@ -50,6 +50,7 @@
   "watchlistGridViewAriaLabel": "グリッドビュー",
   "watchlistTableViewAriaLabel": "テーブルビュー",
   "watchlistSearchPlaceholder": "銘柄を追加…",
+  "watchlistSignInTitle": "あなたが注目する銘柄をフォローしましょう",
   "watchlistSignInDescription": "好きな銘柄を追跡して、価格が変動したときにアラートを受け取ります。",
   "watchlistEmptyTitle": "まだ何もありません",
   "watchlistEmptySubtitle": "上記で銘柄を検索して追加するか、人気のある銘柄から始めてください：",
@@ -67,7 +68,16 @@
   "watchlistSearchNoMatches": "「{{query}}」に一致する結果がありません",
   "watchlistSearchAdded": "追加済み",
   "watchlistThesisBull": "Bull",
-  "watchlistSignInTitle": "あなたが注目する銘柄をフォローしましょう",
   "watchlistThesisBear": "弱気",
-  "watchlistThesisNeutral": "中立"
+  "watchlistThesisNeutral": "中立",
+  "editListTitle": "リストを編集",
+  "editListSave": "保存",
+  "editListSaving": "保存中…",
+  "watchlistEditListTitle": "リストを編集",
+  "watchlistPickerAddHeading": "{{ticker}}の追加先",
+  "watchlistPickerInHeading": "{{ticker}}の登録先",
+  "watchlistPickerNewList": "新規リスト",
+  "watchlistSparklineSinceLastOpenAriaLabel": "{{symbol}}の前回セッション開始時からの株価、前営業日の終値をマーク",
+  "watchlistBadgePreMarket": "プリマーケット",
+  "watchlistSubtitlePreMarket": "プリマーケットの価格を表示しています。3秒ごとに更新されます。"
 }

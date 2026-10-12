@@ -68,6 +68,16 @@
   "watchlistSearchAdded": "Agregada",
   "watchlistThesisBull": "Bull",
   "watchlistThesisBear": "Bajista",
+  "editListTitle": "Editar lista",
+  "editListSave": "Guardar",
+  "editListSaving": "Guardando…",
+  "watchlistEditListTitle": "Editar lista",
+  "watchlistPickerAddHeading": "Agregar {{ticker}} a",
+  "watchlistPickerInHeading": "{{ticker}} está en",
+  "watchlistPickerNewList": "Nueva lista",
+  "watchlistSparklineSinceLastOpenAriaLabel": "Precio de {{symbol}} desde que abrió la última sesión, con el cierre anterior marcado",
   "watchlistTableEarningsInDays": "{{days}}d",
+  "watchlistBadgePreMarket": "Pre-mercado",
+  "watchlistSubtitlePreMarket": "Mostrando precios pre-mercado. Se actualiza cada 3 segundos.",
   "watchlistThesisNeutral": "Neutral"
 }

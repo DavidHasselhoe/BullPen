@@ -50,6 +50,7 @@
   "watchlistGridViewAriaLabel": "Affichage en grille",
   "watchlistTableViewAriaLabel": "Affichage en tableau",
   "watchlistSearchPlaceholder": "Ajouter une action…",
+  "watchlistSignInTitle": "Suivez les actions qui vous intéressent",
   "watchlistSignInDescription": "Suivez vos actions préférées et recevez des alertes lorsque les prix changent.",
   "watchlistEmptyTitle": "Rien pour le moment",
   "watchlistEmptySubtitle": "Recherchez ci-dessus pour ajouter n'importe quelle action, ou commencez avec quelques actions populaires :",
@@ -67,7 +68,16 @@
   "watchlistSearchNoMatches": "Aucun résultat pour {{query}}",
   "watchlistSearchAdded": "Ajouté",
   "watchlistThesisBull": "Bull",
-  "watchlistSignInTitle": "Suivez les actions qui vous intéressent",
   "watchlistThesisBear": "Baissier",
-  "watchlistThesisNeutral": "Neutre"
+  "watchlistThesisNeutral": "Neutre",
+  "editListTitle": "Modifier la liste",
+  "editListSave": "Enregistrer",
+  "editListSaving": "Enregistrement…",
+  "watchlistEditListTitle": "Modifier la liste",
+  "watchlistPickerAddHeading": "Ajouter {{ticker}} à",
+  "watchlistPickerInHeading": "{{ticker}} est dans",
+  "watchlistPickerNewList": "Nouvelle liste",
+  "watchlistSparklineSinceLastOpenAriaLabel": "Prix de {{symbol}} depuis l'ouverture de la dernière séance, avec la clôture précédente marquée",
+  "watchlistBadgePreMarket": "Pré-marché",
+  "watchlistSubtitlePreMarket": "Affichage des prix de pré-marché. Mise à jour toutes les 3 secondes."
 }

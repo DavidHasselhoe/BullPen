@@ -67,7 +67,17 @@
   "watchlistSearchAdded": "Hinzugefügt",
   "watchlistThesisBull": "Bull",
   "watchlistThesisBear": "Bärisch",
+  "editListTitle": "Liste bearbeiten",
+  "editListSave": "Speichern",
+  "editListSaving": "Wird gespeichert…",
+  "watchlistEditListTitle": "Liste bearbeiten",
+  "watchlistPickerAddHeading": "{{ticker}} hinzufügen zu",
+  "watchlistPickerInHeading": "{{ticker}} ist in",
+  "watchlistPickerNewList": "Neue Liste",
+  "watchlistSparklineSinceLastOpenAriaLabel": "{{symbol}}-Kurs seit der letzten Sitzungseröffnung, mit dem vorherigen Schlusspreis markiert",
   "watchlistColSymbol": "Symbol",
   "watchlistLiveLabel": "Live",
+  "watchlistBadgePreMarket": "Vormarkt",
+  "watchlistSubtitlePreMarket": "Zeigt vorbörsliche Kurse. Wird alle 3 Sekunden aktualisiert.",
   "watchlistThesisNeutral": "Neutral"
 }

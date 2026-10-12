@@ -68,6 +68,16 @@
   "watchlistThesisBull": "Bull",
   "watchlistThesisBear": "Bearish",
   "watchlistThesisNeutral": "Nøytral",
+  "editListTitle": "Rediger liste",
+  "editListSave": "Lagre",
+  "editListSaving": "Lagrer…",
+  "watchlistEditListTitle": "Rediger liste",
+  "watchlistPickerAddHeading": "Legg {{ticker}} til",
+  "watchlistPickerInHeading": "{{ticker}} er i",
+  "watchlistPickerNewList": "Ny liste",
+  "watchlistSparklineSinceLastOpenAriaLabel": "{{symbol}} pris siden siste økt åpnet, med forrige lukking markert",
   "watchlistColSymbol": "Symbol",
-  "watchlistTableEarningsInDays": "{{days}}d"
+  "watchlistTableEarningsInDays": "{{days}}d",
+  "watchlistBadgePreMarket": "Før markedsåpning",
+  "watchlistSubtitlePreMarket": "Viser priser før markedsåpning. Oppdateres hvert 3. sekund."
 }
