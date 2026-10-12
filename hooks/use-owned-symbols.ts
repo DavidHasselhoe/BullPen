@@ -16,6 +16,7 @@
 
 import { useMemo } from 'react';
 import { useHoldings } from '@/hooks/use-holdings';
+import { isOpenPosition } from '@/lib/holdings/open-position';
 
 export function useOwnedSymbols(): Set<string> {
   const { data: holdings } = useHoldings();
@@ -23,7 +24,7 @@ export function useOwnedSymbols(): Set<string> {
   return useMemo(() => {
     const set = new Set<string>();
     for (const h of holdings ?? []) {
-      if (h.symbol) set.add(h.symbol.toUpperCase());
+      if (h.symbol && isOpenPosition(h)) set.add(h.symbol.toUpperCase());
     }
     return set;
   }, [holdings]);

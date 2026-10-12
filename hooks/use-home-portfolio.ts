@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useHoldings } from '@/hooks/use-holdings';
+import { isOpenPosition } from '@/lib/holdings/open-position';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useCashValue } from '@/hooks/use-cash-value';
@@ -45,7 +46,7 @@ export function useHomePortfolio() {
 
   // Fully sold positions keep a zero-quantity row for undo and chart history.
   const holdings = useMemo(
-    () => (allHoldings ?? []).filter((h) => h.quantity == null || h.quantity > 1e-9),
+    () => (allHoldings ?? []).filter(isOpenPosition),
     [allHoldings],
   );
 

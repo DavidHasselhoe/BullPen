@@ -17,6 +17,7 @@ import { PerformanceCalendarCard } from '@/components/holdings/performance-calen
 import { liveDay } from '@/lib/holdings/daily-performance';
 import { todayET } from '@/lib/dates/calendar-format';
 import { useHoldings, useHoldingSales } from '@/hooks/use-holdings';
+import { isOpenPosition } from '@/lib/holdings/open-position';
 import { totalReturn } from '@/lib/holdings/total-return';
 import { useTradingSession } from '@/hooks/use-trading-session';
 import { fetchHoldingQuotes } from '@/lib/holdings/holding-quotes';
@@ -48,7 +49,7 @@ export default function HoldingsPage() {
   // still work — but a fully-sold position shouldn't linger in the active table.
   // A never-set quantity (manually-tracked position with no share count) is kept.
   const holdings = useMemo(
-    () => (allHoldings ?? []).filter((h) => h.quantity == null || h.quantity > 1e-9),
+    () => (allHoldings ?? []).filter(isOpenPosition),
     [allHoldings]
   );
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

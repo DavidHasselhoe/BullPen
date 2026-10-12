@@ -26,6 +26,7 @@ import { useScreenerColumns } from '@/hooks/use-screener-columns';
 import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
 import { useWatchlist, useWatchlistItems } from '@/hooks/use-watchlist';
 import { useHoldings } from '@/hooks/use-holdings';
+import { isOpenPosition } from '@/lib/holdings/open-position';
 import { useScreenerViews, useUpdateScreenerView, type ScreenerView } from '@/hooks/use-screener-views';
 import { useAuth } from '@/hooks/use-auth';
 import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvider';
@@ -138,7 +139,7 @@ function ScreenerContent() {
   const { data: userHoldings = [], isLoading: holdingsLoading } = useHoldings();
   // Fully sold positions keep their row at quantity 0; null quantity is a tracked holding.
   const heldHoldings = useMemo(
-    () => userHoldings.filter((h) => h.quantity == null || h.quantity > 1e-9),
+    () => userHoldings.filter(isOpenPosition),
     [userHoldings],
   );
 

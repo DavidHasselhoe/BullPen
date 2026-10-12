@@ -15,6 +15,7 @@ import { useBackground } from '@/hooks/use-background';
 import { useAuth } from '@/hooks/use-auth';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useHoldings } from '@/hooks/use-holdings';
+import { isOpenPosition } from '@/lib/holdings/open-position';
 import { HoldingsContextToggle } from '@/components/holdings/HoldingsContextToggle';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
@@ -74,7 +75,7 @@ export default function DeepDivePage() {
   const queryClient = useQueryClient();
   const markEntityRead = useMarkEntityNotificationsRead();
 
-  const holds = !!holdings?.some((h) => h.symbol.toUpperCase() === symbol);
+  const holds = !!holdings?.some((h) => h.symbol.toUpperCase() === symbol && isOpenPosition(h));
   // Off by default and decided per report, same consent shape as the portfolio
   // builder: the positions are listed on screen before anything is sent.
   const [checkFit, setCheckFit] = useState(false);

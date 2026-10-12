@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useWatchlist, useWatchlistLists } from '@/hooks/use-watchlist';
 import { useHoldings } from '@/hooks/use-holdings';
+import { isOpenPosition } from '@/lib/holdings/open-position';
 import {
   useScreenerViews,
   useCreateScreenerView,
@@ -99,7 +100,7 @@ export function ScreenerViewBar({ activeView, onViewChange, totalCount }: Props)
   const { data: watchlistLists = [] } = useWatchlistLists();
   const { data: allHoldings = [] } = useHoldings();
   // Fully sold positions keep their row at quantity 0; null quantity is a tracked holding.
-  const holdings = allHoldings.filter((h) => h.quantity == null || h.quantity > 1e-9);
+  const holdings = allHoldings.filter(isOpenPosition);
   const { data: customViews = [] } = useScreenerViews();
   const createView = useCreateScreenerView();
   const deleteView = useDeleteScreenerView();

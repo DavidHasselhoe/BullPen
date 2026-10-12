@@ -9,6 +9,7 @@ import { ToolPage, ToolHeader } from '@/components/tools/ToolHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useHoldings } from '@/hooks/use-holdings';
+import { isOpenPosition } from '@/lib/holdings/open-position';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -102,7 +103,7 @@ export function CalendarClientPage() {
   const { data: watchlist } = useWatchlist();
   const holdingSymbols = useMemo(() => {
     const set = new Set<string>();
-    for (const h of holdings ?? []) set.add(h.symbol.toUpperCase());
+    for (const h of holdings ?? []) if (isOpenPosition(h)) set.add(h.symbol.toUpperCase());
     return set;
   }, [holdings]);
   const watchlistSymbols = useMemo(() => {
