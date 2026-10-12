@@ -5,7 +5,7 @@ import { inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
 
 /** 24h of 5-min bars: a full extended US session, or a day of crypto. Same 1 credit as a smaller request. */
 const BARS = 288;
-/** An hour of bars. Below this, today's line is a stub and the last full session says more. */
+/** An hour of regular-session bars. Below this, today's line is a stub. */
 const MIN_TODAY_BARS = 12;
 
 interface TsValue { datetime: string; close: string }
@@ -44,8 +44,9 @@ async function handler(
   try {
     const raw = await batchFetch<TsResponse>(requests);
     const sparklines: Record<string, number[]> = {};
-    // Symbols whose line is the previous session, so the card can say so
-    // rather than pair yesterday's shape with today's change badge.
+    // Symbols whose line starts at the last session's open and runs up to now,
+    // so the card draws the previous close as a baseline: the gap between it
+    // and the line's end is exactly the change badge.
     const previousSession: string[] = [];
 
     for (const [sym, data] of Object.entries(raw)) {
@@ -53,17 +54,25 @@ async function handler(
       // TwelveData returns values in descending order; reverse to chronological.
       let bars = [...data.values].reverse();
       if (!has24hTrading(inferAssetType(sym))) {
-        // Stocks: one session only. Datetimes are exchange-local, so the date prefix is the session.
-        // Only today's bars count as today. No trades yet today means the newest bars are the last session.
+        // Stocks. Datetimes are exchange-local, so the date prefix is the session
+        // and the time suffix compares as a string ("09:30" is the open).
+        // Pre-market trades are sparse (a 5-min bar only exists when something
+        // traded), so until today's regular session has an hour of bars the line
+        // is the last session from its open, then its after-hours and today's
+        // trades as a tail. It ends at the current price, which is what the
+        // change badge describes.
         const today = bars.filter((v) => v.datetime.startsWith(todayET));
-        if (today.length >= MIN_TODAY_BARS) {
+        const todayRegular = today.filter((v) => v.datetime.slice(11, 16) >= '09:30');
+        if (todayRegular.length >= MIN_TODAY_BARS) {
           bars = today;
         } else {
           const prior = bars.filter((v) => v.datetime.slice(0, 10) < todayET);
           const priorDate = prior.length ? prior[prior.length - 1].datetime.slice(0, 10) : null;
-          const priorBars = priorDate ? prior.filter((v) => v.datetime.startsWith(priorDate)) : [];
-          if (priorBars.length > 1) {
-            bars = priorBars;
+          const fromOpen = priorDate
+            ? prior.filter((v) => v.datetime.startsWith(priorDate) && v.datetime.slice(11, 16) >= '09:30')
+            : [];
+          if (fromOpen.length > 1) {
+            bars = [...fromOpen, ...today];
             previousSession.push(sym);
           } else {
             bars = today;

@@ -9,6 +9,7 @@ import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { useLivePrices } from '@/hooks/use-live-prices';
+import { useThrottle } from '@/hooks/use-throttle';
 import { WatchlistCard } from '@/components/watchlist/WatchlistCard';
 import { WatchlistTable } from '@/components/watchlist/WatchlistTable';
 import { WatchlistTemplatesDialog } from '@/components/watchlist/WatchlistTemplatesDialog';
@@ -18,25 +19,9 @@ import { AuthGate } from '@/components/ui/AuthGate';
 import Link from 'next/link';
 import { Bookmark, Search, Plus, Radio, TrendingUp, LayoutGrid, List, Sparkles, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTradingSession } from '@/hooks/use-trading-session';
 
 type ViewMode = 'grid' | 'table';
-
-function isRegularSession(): boolean {
-  const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const day = nowET.getDay();
-  if (day === 0 || day === 6) return false;
-  const mins = nowET.getHours() * 60 + nowET.getMinutes();
-  return mins >= 570 && mins < 960; // 9:30 AM – 4:00 PM ET
-}
-
-function useIsRegularSession(): boolean {
-  const [open, setOpen] = useState(isRegularSession);
-  useEffect(() => {
-    const id = setInterval(() => setOpen(isRegularSession()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return open;
-}
 
 interface SearchResult {
   ticker: string;
@@ -69,7 +54,9 @@ export default function WatchlistPage() {
 
   // selectedListId is the user's explicit choice; activeListId derives the first list
   // as the default once loaded, avoiding a useEffect-driven setState.
-  const isLive = useIsRegularSession();
+  const session = useTradingSession();
+  const isLive = session === 'regular';
+  const isPreMarket = session === 'pre-market';
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const { data: watchlist, isLoading: watchlistLoading } = useWatchlist();
   const { data: lists, isLoading: listsLoading } = useWatchlistLists();
@@ -93,7 +80,8 @@ export default function WatchlistPage() {
 
   // Live price stream for all watchlist symbols via WsManager SSE
   const allSymbols = (watchlist ?? []).map((w) => w.symbol);
-  const livePrices = useLivePrices(allSymbols);
+  // Every 3s, same as holdings, which is what the pre-market subtitle promises.
+  const livePrices = useThrottle(useLivePrices(allSymbols), 3000);
   const { data: enhancedData } = useWatchlistEnhanced(allSymbols);
 
   // Sparkline charts: today's 5min candles, or the last full session while today is still empty
@@ -146,7 +134,7 @@ export default function WatchlistPage() {
       const res = await createListMutation.mutateAsync({ name: 'Watchlist 1', color: null });
       if (res.success && res.list) {
         listId = res.list.id;
-        setSelectedListId(listId);
+        setSelectedListId(res.list.id);
       }
     }
 
@@ -213,7 +201,13 @@ export default function WatchlistPage() {
             <div>
               <div className="flex items-center gap-2.5 mb-0.5">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('watchlistPageTitle')}</h1>
-                {isLive && livePrices.size > 0 && (
+                {isPreMarket ? (
+                  // Same pill and wording as the holdings page, so a pre-market price reads the same everywhere.
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    {t('watchlistBadgePreMarket')}
+                  </span>
+                ) : isLive && livePrices.size > 0 && (
                   <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
                     <Radio className="h-3 w-3 animate-pulse" />
                     {t('watchlistLiveLabel')}
@@ -224,6 +218,7 @@ export default function WatchlistPage() {
                 {(displayItems.length) > 0
                   ? t('watchlistCountTracked', { count: displayItems.length })
                   : t('watchlistEmptyHint')}
+                {isPreMarket && displayItems.length > 0 && <> · {t('watchlistSubtitlePreMarket')}</>}
               </p>
             </div>
           </div>
@@ -443,7 +438,6 @@ export default function WatchlistPage() {
                   display_name={item.display_name}
                   logo_url={item.logo_url}
                   quote={quote}
-                  alerts_enabled={item.alerts_enabled}
                   onRemove={handleRemove}
                   isRemoving={removeMutation.isPending && removeMutation.variables?.symbol === item.symbol}
                   healthScore={enhanced?.healthScore}

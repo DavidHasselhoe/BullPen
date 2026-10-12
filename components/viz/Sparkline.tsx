@@ -35,6 +35,8 @@ interface SparklineProps {
   className?: string;
   /** Screen-reader description. Falls back to a generic trend label. */
   ariaLabel?: string;
+  /** Draws a faint dashed reference line at this value (e.g. the previous close) and keeps it in range. */
+  baseline?: number;
 }
 
 const STROKE: Record<SparkDirection, string> = {
@@ -62,6 +64,7 @@ export function Sparkline({
   preserveAspectRatio = 'none',
   className,
   ariaLabel,
+  baseline,
 }: SparklineProps) {
   const gradientId = useId();
   const dir = direction ?? inferDirection(data);
@@ -90,8 +93,9 @@ export function Sparkline({
     );
   }
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
+  const domain = baseline != null && Number.isFinite(baseline) ? [...data, baseline] : data;
+  const min = Math.min(...domain);
+  const max = Math.max(...domain);
   const range = max - min || 1;
   // Leave a little vertical headroom so the peak isn't clipped by the stroke.
   const pad = strokeWidth;
@@ -107,6 +111,7 @@ export function Sparkline({
     .map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)},${p[1].toFixed(2)}`)
     .join(' ');
   const areaPath = `${linePath} L${width},${height} L0,${height} Z`;
+  const baselineY = domain === data ? null : pad + (1 - (baseline! - min) / range) * usableH;
 
   return (
     <svg
@@ -127,6 +132,19 @@ export function Sparkline({
         </defs>
       )}
       {area && <path d={areaPath} fill={`url(#${gradientId})`} stroke="none" />}
+      {baselineY != null && (
+        <line
+          x1={0}
+          x2={width}
+          y1={baselineY}
+          y2={baselineY}
+          stroke="var(--muted-foreground)"
+          strokeOpacity={0.6}
+          strokeWidth={1}
+          strokeDasharray="3 3"
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
       <path
         d={linePath}
         fill="none"

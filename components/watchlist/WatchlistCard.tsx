@@ -39,7 +39,7 @@ interface WatchlistCardProps {
   daysToEarnings?: number | null;
   thesisSentiment?: 'bull' | 'bear' | 'neutral' | null;
   sparkline?: number[];
-  /** The line is the last full session (today has barely traded yet), not today. */
+  /** The line starts at the last session's open and runs to now (today's regular session is under an hour old). */
   sparklineIsPreviousSession?: boolean;
 }
 
@@ -174,21 +174,17 @@ export function WatchlistCard({
         {/* Sparkline */}
         {sparkline && sparkline.length > 1 && (
           <div className="-mx-1 -mb-1">
-            {sparklineIsPreviousSession && (
-              <p className="mb-0.5 px-1 text-right text-xs text-muted-foreground" aria-hidden>
-                {t('watchlistSparklinePreviousLabel')}
-              </p>
-            )}
             <Sparkline
               data={sparkline}
-              // Last session's line is coloured by its own move, not today's change badge.
-              direction={sparklineIsPreviousSession
-                ? (sparkline[sparkline.length - 1] >= sparkline[0] ? 'up' : 'down')
-                : isUp ? 'up' : isDown ? 'down' : 'neutral'}
+              // Today's direction; a flat badge (often no pre-market trades yet) lets the line colour itself.
+              direction={isUp ? 'up' : isDown ? 'down' : undefined}
+              // The previous close the badge measures from, so its % is the
+              // visible gap between this dashed line and the end of the line.
+              baseline={sparklineIsPreviousSession && quote ? quote.price - quote.change : undefined}
               area
-              className={cn('w-full h-9', sparklineIsPreviousSession && 'opacity-50')}
+              className="w-full h-9"
               ariaLabel={sparklineIsPreviousSession
-                ? t('watchlistSparklinePreviousAriaLabel', { symbol })
+                ? t('watchlistSparklineSinceLastOpenAriaLabel', { symbol })
                 : t('watchlistSparklineAriaLabel', { symbol })}
             />
           </div>
