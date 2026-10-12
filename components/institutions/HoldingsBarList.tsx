@@ -30,6 +30,7 @@ import { useOwnedSymbols } from '@/hooks/use-owned-symbols';
 import { buildStatusIndex, holdingKey } from '@/lib/institutions/compute-diff';
 import { friendlyIssuerName, holdingName, type Allocation, type AllocationEntry } from '@/lib/institutions/allocation';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
+import { ListSearch } from '@/components/congress/ListSearch';
 import type { DiffableHolding, HoldingChange, HoldingsDiff, HoldingStatus } from '@/lib/institutions/compute-diff';
 
 /** Rows revealed per "show more" step once the tail is expanded. */
@@ -222,21 +223,68 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
     change: qoqChangeFor(key),
   });
 
-  const shownRest = expanded ? allocation.rest.slice(0, visibleRest) : [];
-  const hiddenRestCount = allocation.rest.length - shownRest.length;
-  const exited = diff?.exited ?? [];
+  // Search reaches every position, not just the rows expanded so far: on a
+  // 1000-name book like Bridgewater's, paging to find one stock is hopeless.
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const searching = q.length > 0;
+  const haystacks = useMemo(
+    () => [...allocation.top, ...allocation.rest].map((e) => ({
+      entry: e,
+      text: `${e.symbol ?? ''} ${e.name} ${friendlyIssuerName(e.name)}`.toLowerCase(),
+    })),
+    [allocation]
+  );
+  const matchesHolding = (h: DiffableHolding) =>
+    `${h.symbol ?? ''} ${h.nameOfIssuer} ${holdingName(h)}`.toLowerCase().includes(q);
+  // Portfolio order, except an exact ticker goes first so "A" finds Agilent
+  // ahead of every company with an "a" in its name.
+  const found = searching
+    ? haystacks
+        .filter((h) => h.text.includes(q))
+        .map((h) => h.entry)
+        .sort((a, b) => Number(b.symbol?.toLowerCase() === q) - Number(a.symbol?.toLowerCase() === q))
+    : [];
+
+  const listed = searching ? found : allocation.rest;
+  const shownRest = searching || expanded ? listed.slice(0, visibleRest) : [];
+  const hiddenRestCount = listed.length - shownRest.length;
+  const shownOptions = searching ? options.filter(matchesHolding) : options;
+  const exited = searching ? (diff?.exited ?? []).filter(matchesHolding) : (diff?.exited ?? []);
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/50">
-      <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
-        <span className="text-xs font-medium text-muted-foreground">{t('barHeaderHolding')}</span>
-        <span className="text-xs font-medium text-muted-foreground">
+      <div className="flex items-center justify-between gap-3 border-b border-border/50 px-4 py-2.5">
+        {/* Only worth a box once there is a tail to hide a position in. */}
+        {allocation.rest.length > 0 ? (
+          <div className="min-w-0 flex-1 sm:flex-none">
+          <ListSearch
+            id="fund-holdings-search"
+            value={query}
+            onChange={(v) => {
+              setQuery(v);
+              setVisibleRest(REST_PAGE_SIZE);
+            }}
+            placeholder={t('memberFilterPlaceholder')}
+            label={t('memberFilterPositionsLabel')}
+          />
+          </div>
+        ) : (
+          <span className="text-xs font-medium text-muted-foreground">{t('barHeaderHolding')}</span>
+        )}
+        <span className="shrink-0 text-xs font-medium text-muted-foreground">
           {t('barHeaderPct')}
         </span>
       </div>
 
+      {searching && found.length === 0 && shownOptions.length === 0 && exited.length === 0 && (
+        <p className="px-4 py-6 text-center text-sm text-muted-foreground" aria-live="polite">
+          {t('memberNoPositionMatch', { query: query.trim() })}
+        </p>
+      )}
+
       <ul className="divide-y divide-border/30">
-        {allocation.top.map((entry) => (
+        {!searching && allocation.top.map((entry) => (
           <HoldingRow
             key={entry.key}
             entry={entry}
@@ -261,7 +309,22 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
         ))}
       </ul>
 
-      {allocation.rest.length > 0 && (
+      {searching ? (
+        hiddenRestCount > 0 && (
+          <div className="border-t border-border/30 px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setVisibleRest((n) => n + REST_PAGE_SIZE)}
+              className="rounded-md text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {t('barShowMore', { count: Math.min(REST_PAGE_SIZE, hiddenRestCount) })}
+              <span className="ml-1.5 font-normal text-muted-foreground">
+                {t('barLeft', { formatted: hiddenRestCount.toLocaleString(locale) })}
+              </span>
+            </button>
+          </div>
+        )
+      ) : allocation.rest.length > 0 && (
         <div className="border-t border-border/30">
           {!expanded ? (
             <button
@@ -313,18 +376,21 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
 
       {/* Collapsed unless the options outweigh the shares above, as they do
           for a fund whose 13F is mostly puts: there they are the picture. */}
-      {options.length > 0 && (
+      {shownOptions.length > 0 && (
         <div className="border-t border-border/50">
+          {/* Remounted when a search starts or ends: open while searching, so a
+              hit here isn't hidden behind a collapsed section. */}
           <Accordion
+            key={searching ? 'search' : 'browse'}
             type="single"
             collapsible
-            defaultValue={optionsValue > allocation.total ? 'options' : undefined}
+            defaultValue={searching || optionsValue > allocation.total ? 'options' : undefined}
           >
             <AccordionItem value="options" className="border-none">
               <AccordionTrigger className="px-4 py-3 text-xs font-medium text-muted-foreground hover:no-underline">
                 {t('barOptions')}
                 <span className="ml-2 font-mono text-muted-foreground">
-                  {options.length}
+                  {shownOptions.length}
                 </span>
               </AccordionTrigger>
               <AccordionContent className="pb-0">
@@ -332,7 +398,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                   {t('barOptionsNote')}
                 </p>
                 <ul className="divide-y divide-border/20 border-t border-border/20">
-                  {options.slice(0, visibleOptions).map((h) => {
+                  {shownOptions.slice(0, visibleOptions).map((h) => {
                     const key = holdingKey(h);
                     return (
                       <li key={key} className="flex items-center gap-3 px-4 py-2.5">
@@ -367,15 +433,15 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
                     );
                   })}
                 </ul>
-                {options.length > visibleOptions && (
+                {shownOptions.length > visibleOptions && (
                   <button
                     type="button"
                     onClick={() => setVisibleOptions((n) => n + REST_PAGE_SIZE)}
                     className="w-full border-t border-border/20 px-4 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                   >
-                    {t('barShowMore', { count: Math.min(REST_PAGE_SIZE, options.length - visibleOptions) })}
+                    {t('barShowMore', { count: Math.min(REST_PAGE_SIZE, shownOptions.length - visibleOptions) })}
                     <span className="ml-1.5 font-normal text-muted-foreground">
-                      {t('barLeft', { formatted: (options.length - visibleOptions).toLocaleString(locale) })}
+                      {t('barLeft', { formatted: (shownOptions.length - visibleOptions).toLocaleString(locale) })}
                     </span>
                   </button>
                 )}
@@ -390,7 +456,7 @@ export function HoldingsBarList({ allocation, options, diff, highlightedKey, onH
           always-open second list reads as a wall (DESIGN.md 6). */}
       {exited.length > 0 && (
         <div className="border-t border-border/50 bg-muted/10">
-          <Accordion type="single" collapsible>
+          <Accordion key={searching ? 'search' : 'browse'} type="single" collapsible defaultValue={searching ? 'exited' : undefined}>
             <AccordionItem value="exited" className="border-none">
               <AccordionTrigger className="px-4 py-3 text-xs font-medium text-muted-foreground hover:no-underline">
                 {t('barExited')}
