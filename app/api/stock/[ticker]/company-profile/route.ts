@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCompanyProfile, getKeyExecutives, withRateLimitRetry, TwelveDataRateLimitError, TwelveDataInvalidSymbolError } from '@/lib/twelvedata/twelvedata-client';
-import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { getCached, setCached, COMPANY_PROFILE_TTL_SECONDS } from '@/lib/cache/market-data-cache';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { translateText } from '@/lib/i18n/translate';
 
 export const dynamic = 'force-dynamic';
-const PROFILE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 async function handler(
   request: NextRequest,
@@ -49,7 +48,7 @@ async function handler(
       }),
     ]);
 
-    await setCached(cacheKey, sym, 'company_profile', { profile, executives }, PROFILE_TTL_SECONDS);
+    await setCached(cacheKey, sym, 'company_profile', { profile, executives }, COMPANY_PROFILE_TTL_SECONDS);
 
     const translatedProfile = { ...profile };
     if (translatedProfile.description) {

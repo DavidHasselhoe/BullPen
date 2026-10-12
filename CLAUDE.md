@@ -341,7 +341,7 @@ Every TwelveData call costs API credits. The rules below are binding — violati
 | `/balance_sheet` | `getBalanceSheet()` | **~101 per request** | Supabase 12 h |
 | `/cash_flow` | `getCashFlow()` | **~101 per request** | Supabase 12 h |
 | `/last_change/{type}` | `getFundamentalsLastChange()` | 1 per symbol per type (5 for the full check) | no-store (freshness check) |
-| `/profile` | `getCompanyProfile()` | **10 per request** | Supabase 24 h |
+| `/profile` | `getCompanyProfile()` | **10 per request** | Supabase 90 d (`COMPANY_PROFILE_TTL_SECONDS`) |
 | `/logo` | `getLogoUrl()` | 1 per symbol | Next.js 24 h |
 | `/press_releases` | `getPressReleases()` | 1 per request | Next.js 1 h |
 | `/symbol_search` | `symbolSearch()` | 1 per request | no-store |

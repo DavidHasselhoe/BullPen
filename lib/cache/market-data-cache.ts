@@ -160,6 +160,15 @@ export async function getCachedWithMeta<T>(key: string): Promise<{ payload: T; f
 }
 
 /**
+ * TTL for `profile:${sym}` (TwelveData /profile, 10 credits a call). Name,
+ * sector, industry, description and logo barely change; at 7 days the daily
+ * prefetch cron re-bought ~500 identical profiles a week (~21.5k credits a
+ * month, measured 2026-10-12). Not forever, because renames, spin-offs and
+ * recycled tickers do happen.
+ */
+export const COMPANY_PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60;
+
+/**
  * Write/refresh cache key with a TTL.
  */
 export async function setCached<T>(

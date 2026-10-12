@@ -51,7 +51,7 @@ import {
   reportDateToFiscalQuarter,
   sanitizeDividendYield,
 } from '@/lib/twelvedata/twelvedata-client';
-import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { getCached, setCached, COMPANY_PROFILE_TTL_SECONDS } from '@/lib/cache/market-data-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { getActiveUniverse } from '@/lib/market-data/screener-universe';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
@@ -64,7 +64,6 @@ const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 
 const STATS_TTL = 24 * 60 * 60;           // 24h — price-dependent, refresh daily
 const FINANCIALS_TTL = 7 * 24 * 60 * 60;  // 7 days — quarterly reports, slow-moving
-const PROFILE_TTL = 7 * 24 * 60 * 60;     // 7 days — sector/industry/name change essentially never
 const STATS_BATCH_SIZE = 5;               // symbols per batch (5 × 70 credits ≈ 350/call)
 /** /statistics (~50 credits/symbol) + /earnings (20 credits/symbol), reserved
  *  worst-case per symbol before firing — same shared per-minute budget
@@ -201,7 +200,7 @@ async function getProfileFields(
       );
       return { name: null, sector: null, industry: null, logoUrl: null };
     }
-    void setCached(cacheKey, sym, 'company_profile', { profile, executives: [] }, PROFILE_TTL);
+    void setCached(cacheKey, sym, 'company_profile', { profile, executives: [] }, COMPANY_PROFILE_TTL_SECONDS);
     return { name: profile.name ?? null, sector: profile.sector ?? null, industry: profile.industry ?? null, logoUrl: profile.logo ?? null };
   } catch {
     return { name: null, sector: null, industry: null, logoUrl: null };
