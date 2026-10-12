@@ -110,6 +110,9 @@ export function whyTodayRequest(move: WhyTodayMove, language: string) {
       'peer move, the broader market, or follow-through on an earlier move. For example "No company news today. ' +
       'Shares are giving back part of Tuesday\'s 11% surge." or "No company news today. Shares rose with other ' +
       'nuclear power stocks." Name a sector or market cause only if you found it in the news. Never invent a cause. ' +
+      'When the cause is another listed company (a customer, rival or partner), put its ticker after its name with a ' +
+      'dollar sign: "Shares rose after Oracle ($ORCL) raised its cloud forecast." Readers can hover it. Only when you ' +
+      'are certain of the ticker, and never for the stock being explained. ' +
       'Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.',
     messages: [{
       role: 'user' as const,

@@ -6,7 +6,7 @@ import type { UIMessage } from 'ai';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
+import { Children, useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo, type ReactNode } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
@@ -26,6 +26,7 @@ import { useInvalidateQuota } from '@/hooks/use-quota';
 import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
+import { splitTickers, useKnownTickers } from '@/components/company/TickerText';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, useNavigateConfirmations, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
 
 // Byte-identical to AISidePanel's starterPromptHealthCheck/InsiderBuying/GrowthStocks — reused rather than duplicated.
@@ -120,7 +121,22 @@ const MARKDOWN_CLS = cn(
 );
 
 /** Tables scroll inside the bubble instead of pushing it past the panel edge. */
+/**
+ * Every `$TICKER` in Bull's plain text becomes a company hover card, so a
+ * reply that compares NVIDIA with three rivals lets the reader see who they
+ * are without leaving the chat. Only bare strings are split: links, code and
+ * other elements pass through untouched.
+ */
+function WithTickers({ children }: { children?: ReactNode }) {
+  const known = useKnownTickers();
+  return <>{Children.map(children, (c) => (typeof c === 'string' ? splitTickers(c, known, (part) => part) : c))}</>;
+}
+
 const MARKDOWN_COMPONENTS: Components = {
+  p: ({ node: _node, children, ...props }) => <p {...props}><WithTickers>{children}</WithTickers></p>,
+  li: ({ node: _node, children, ...props }) => <li {...props}><WithTickers>{children}</WithTickers></li>,
+  td: ({ node: _node, children, ...props }) => <td {...props}><WithTickers>{children}</WithTickers></td>,
+  strong: ({ node: _node, children, ...props }) => <strong {...props}><WithTickers>{children}</WithTickers></strong>,
   table: ({ node: _node, ...props }) => (
     <div className="my-2 -mx-1 overflow-x-auto">
       <table {...props} />

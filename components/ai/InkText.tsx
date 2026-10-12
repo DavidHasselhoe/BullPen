@@ -2,6 +2,8 @@
 
 import { Fragment, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { TickerPreview } from '@/components/company/TickerPreview';
+import { isKnownTicker, useKnownTickers } from '@/components/company/TickerText';
 
 /**
  * How an AI explanation arrives: the space opens smoothly instead of the card
@@ -20,6 +22,28 @@ export function InkReveal({ children, className }: { children: ReactNode; classN
     <div className={cn('ink-reveal', className)}>
       <div className="min-h-0 overflow-hidden">{children}</div>
     </div>
+  );
+}
+
+/** A word carrying a cashtag, with whatever punctuation hugs it: "($ORCL)," */
+const CASHTAG_WORD = /^(.*?)\$([A-Z]{1,5})\b(.*)$/;
+
+/**
+ * One word, with a company hover card if it is a `$TICKER` the catalogue
+ * knows ("Oracle ($ORCL) reported..."), so a sympathy move names who moved it.
+ */
+function InkWord({ word, known }: { word: string; known: Set<string> | null }) {
+  const m = word.match(CASHTAG_WORD);
+  if (!m || !isKnownTicker(m[2], known)) return <>{word}</>;
+  return (
+    <>
+      {m[1]}
+      <TickerPreview
+        ticker={m[2]}
+        className="font-mono font-medium text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
+      />
+      {m[3]}
+    </>
   );
 }
 
@@ -42,6 +66,7 @@ export function InkBullets({
   className?: string;
   bulletClassName?: (index: number) => string | undefined;
 }) {
+  const known = useKnownTickers();
   const total = bullets.reduce((n, b) => n + b.split(/\s+/).filter(Boolean).length, 0);
   const step = stagger ? Math.min(40, Math.max(8, SETTLE_MS / Math.max(total, 1))) : 0;
   let i = 0;
@@ -54,7 +79,7 @@ export function InkBullets({
             /^\s*$/.test(part) ? (
               <Fragment key={p}>{part}</Fragment>
             ) : (
-              <span key={p} className="ink-word" style={{ ['--i' as string]: i++ }}>{part}</span>
+              <span key={p} className="ink-word" style={{ ['--i' as string]: i++ }}><InkWord word={part} known={known} /></span>
             ),
           )}
         </span>

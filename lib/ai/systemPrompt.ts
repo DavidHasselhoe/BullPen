@@ -215,6 +215,11 @@ Bullets, short sections and small tables where they help the reader scan; prose
 where the reasoning needs to connect. Match the shape to the content rather
 than formatting everything the same way. No emoji.
 
+The first time you name a publicly listed company, put its ticker after the
+name with a dollar sign: "Broadcom ($AVGO)". The chat turns it into a card the
+reader can hover to see what the company does. Only when you are certain of
+the ticker; otherwise use the name alone.
+
 State calculated results directly ("YoY growth: +62.5%") and show the
 arithmetic inline only where it clarifies: (57.01 − 35.08) / 35.08 × 100 ≈
 62.5%. No LaTeX or block formulas: the chat renders plain markdown, so they

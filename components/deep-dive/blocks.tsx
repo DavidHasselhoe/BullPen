@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { tierBadgeClass, tierTextClass, type Tier } from '@/lib/ui/severity-tiers';
 import { RangeBar } from '@/components/viz/RangeBar';
 import { glossaryText } from '@/components/ui/GlossaryText';
+import { splitTickers, useKnownTickers } from '@/components/company/TickerText';
 import { ClampedText } from '@/components/ui/ClampedText';
 import type { Block, BullBearPoint } from '@/lib/ai/deep-dive/schema';
 
@@ -56,6 +57,15 @@ function severityTier(severity: 'low' | 'medium' | 'high'): Tier {
 }
 
 const SEVERITY_KEY = { low: 'deepDiveSeverityLow', medium: 'deepDiveSeverityMedium', high: 'deepDiveSeverityHigh' } as const;
+
+/**
+ * Glossary tooltips plus a company hover card on every `$TICKER`: the
+ * report names rivals and suppliers ("vs AWS"), and the reader can see who
+ * they are without leaving it.
+ */
+function richText(text: string, seen: Set<string>, known: Set<string> | null): React.ReactNode {
+  return splitTickers(text, known, (part, key) => <span key={key}>{glossaryText(part, seen)}</span>);
+}
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   if (!children) return null;
@@ -284,6 +294,7 @@ function PriceTargets({
 
 function MetricTable({ block }: { block: Extract<Block, { type: 'metric_table' }> }) {
   const seen = new Set<string>();
+  const known = useKnownTickers();
   return (
     <section>
       <SectionTitle>{block.title}</SectionTitle>
@@ -299,7 +310,7 @@ function MetricTable({ block }: { block: Extract<Block, { type: 'metric_table' }
             </div>
             {row.note && (
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                {glossaryText(row.note, seen)}
+                {richText(row.note, seen, known)}
                 <Source source={row.source} />
               </p>
             )}
@@ -320,6 +331,7 @@ function BulletItem({
   icon: ComponentType<{ className?: string }>;
   iconColor: string;
 }) {
+  const known = useKnownTickers();
   const text = typeof point === 'string' ? point : point.text;
   const source = typeof point === 'string' ? undefined : point.source;
 
@@ -330,7 +342,7 @@ function BulletItem({
     <li className="flex gap-2 text-sm text-foreground/90">
       <Icon className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', iconColor)} />
       <ClampedText lines={2}>
-        {glossaryText(text, seen)}
+        {richText(text, seen, known)}
         <Source source={source} />
       </ClampedText>
     </li>
@@ -374,6 +386,7 @@ function BullBear({ block }: { block: Extract<Block, { type: 'bull_bear' }> }) {
 // ─── catalysts ────────────────────────────────────────────────────────────────
 
 function Catalysts({ block }: { block: Extract<Block, { type: 'catalysts' }> }) {
+  const known = useKnownTickers();
   const { t } = useTranslation('tools');
   const seen = new Set<string>();
   return (
@@ -388,12 +401,12 @@ function Catalysts({ block }: { block: Extract<Block, { type: 'catalysts' }> }) 
               <Icon className={cn('h-4 w-4 mt-0.5 shrink-0', color)} />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
-                  {glossaryText(item.title, seen)}
+                  {richText(item.title, seen, known)}
                   {item.timeframe && <span className="ml-2 text-[11px] text-muted-foreground font-normal">{item.timeframe}</span>}
                 </p>
                 {item.detail && (
                   <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                    {glossaryText(item.detail, seen)}
+                    {richText(item.detail, seen, known)}
                     <Source source={item.source} />
                   </p>
                 )}
@@ -409,6 +422,7 @@ function Catalysts({ block }: { block: Extract<Block, { type: 'catalysts' }> }) 
 // ─── risks ────────────────────────────────────────────────────────────────────
 
 function Risks({ block }: { block: Extract<Block, { type: 'risks' }> }) {
+  const known = useKnownTickers();
   const { t } = useTranslation('tools');
   const seen = new Set<string>();
   return (
@@ -429,7 +443,7 @@ function Risks({ block }: { block: Extract<Block, { type: 'risks' }> }) {
               </p>
               {item.detail && (
                 <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                  {glossaryText(item.detail, seen)}
+                  {richText(item.detail, seen, known)}
                   <Source source={item.source} />
                 </p>
               )}
@@ -443,13 +457,13 @@ function Risks({ block }: { block: Extract<Block, { type: 'risks' }> }) {
 
 // ─── prose (minimal, safe markdown) ────────────────────────────────────────────
 
-function renderInline(text: string, seen: Set<string>): React.ReactNode[] {
+function renderInline(text: string, seen: Set<string>, known: Set<string> | null): React.ReactNode[] {
   // Split on **bold** — bold segments render as-is (unchanged), plain
   // segments get the jargon-tooltip sweep. No HTML injection either way.
   return text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean).map((part, i) =>
     part.startsWith('**') && part.endsWith('**')
       ? <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>
-      : <span key={i}>{glossaryText(part, seen)}</span>
+      : <span key={i}>{richText(part, seen, known)}</span>
   );
 }
 
@@ -457,6 +471,7 @@ function Prose({ block }: { block: Extract<Block, { type: 'prose' }> }) {
   const lines = block.markdown.split('\n').map((l) => l.trim()).filter(Boolean);
   const { t } = useTranslation('tools');
   const seen = new Set<string>();
+  const known = useKnownTickers();
   return (
     <section>
       <SectionTitle>{block.title ?? t('deepDiveBlockBottomLine')}</SectionTitle>
@@ -465,10 +480,10 @@ function Prose({ block }: { block: Extract<Block, { type: 'prose' }> }) {
           line.startsWith('- ') || line.startsWith('• ') ? (
             <div key={i} className="flex gap-2">
               <span className="text-muted-foreground mt-0.5">•</span>
-              <span>{renderInline(line.replace(/^[-•]\s+/, ''), seen)}</span>
+              <span>{renderInline(line.replace(/^[-•]\s+/, ''), seen, known)}</span>
             </div>
           ) : (
-            <p key={i}>{renderInline(line, seen)}</p>
+            <p key={i}>{renderInline(line, seen, known)}</p>
           )
         )}
       </div>

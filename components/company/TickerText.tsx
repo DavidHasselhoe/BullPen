@@ -110,3 +110,33 @@ export function TickerText({ text }: { text: string }) {
   const known = useKnownTickers();
   return <>{renderTickerText(text, known)}</>;
 }
+
+const TICKER_ONLY = /\$([A-Z]{1,5})\b/g;
+const TICKER_LINK_CLASS = 'font-mono font-medium text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors';
+
+/**
+ * Split text on `$TICKER` only, handing everything between tickers to
+ * `renderPlain`, for surfaces that already have their own inline pass (the
+ * Deep Dive's glossary tooltips) and need tickers layered on top of it.
+ */
+export function splitTickers(
+  text: string,
+  known: Set<string> | null,
+  renderPlain: (part: string, key: number) => React.ReactNode,
+): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  for (const m of text.matchAll(TICKER_ONLY)) {
+    if (m.index > last) nodes.push(renderPlain(text.slice(last, m.index), key++));
+    const ticker = m[1];
+    nodes.push(
+      isKnownTicker(ticker, known)
+        ? <TickerPreview key={key++} ticker={ticker} className={TICKER_LINK_CLASS} />
+        : <span key={key++} className="font-mono font-medium">${ticker}</span>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) nodes.push(renderPlain(text.slice(last), key++));
+  return nodes;
+}

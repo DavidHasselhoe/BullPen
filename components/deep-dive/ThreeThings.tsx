@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { TrendingUp, AlertTriangle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { glossaryText } from '@/components/ui/GlossaryText';
+import { splitTickers, useKnownTickers } from '@/components/company/TickerText';
 import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 
 interface CardSpec {
@@ -78,6 +79,7 @@ function ThingCard({ kind, text, seen }: { kind: keyof typeof SPECS; text: strin
 /** Pre-threeThings reports: the old two-row strip, unchanged. */
 function LegacyHighlights({ report }: { report: Report }) {
   const { t } = useTranslation('tools');
+  const known = useKnownTickers();
   const risksBlock = report.blocks.find((b) => b.type === 'risks');
   const catalystsBlock = report.blocks.find((b) => b.type === 'catalysts');
   const topRisk = risksBlock?.type === 'risks' ? risksBlock.items[0] : undefined;
@@ -92,14 +94,14 @@ function LegacyHighlights({ report }: { report: Report }) {
           <div className="text-xs font-semibold text-muted-foreground">{t('deepDiveLegacyKeyRisk')}</div>
           <div className="mt-0.5 text-sm font-medium text-foreground">{glossaryText(topRisk.title, seen)}</div>
           {topRisk.detail && (
-            <div className="text-[13px] text-muted-foreground">{glossaryText(topRisk.detail, seen)}</div>
+            <div className="text-[13px] text-muted-foreground">{splitTickers(topRisk.detail, known, (p, k) => <span key={k}>{glossaryText(p, seen)}</span>)}</div>
           )}
         </div>
       )}
       {topCatalyst && (
         <div className="min-w-0">
           <div className="text-xs font-semibold text-muted-foreground">{t('deepDiveLegacyCatalyst')}</div>
-          <div className="mt-0.5 text-sm font-medium text-foreground">{glossaryText(topCatalyst.title, seen)}</div>
+          <div className="mt-0.5 text-sm font-medium text-foreground">{splitTickers(topCatalyst.title, known, (p, k) => <span key={k}>{glossaryText(p, seen)}</span>)}</div>
           {topCatalyst.timeframe && (
             <div className="text-[13px] text-muted-foreground">{topCatalyst.timeframe}</div>
           )}
