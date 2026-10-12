@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
-import { useWatchlist, useWatchlistLists, useAddToWatchlist, useRemoveFromWatchlist } from '@/hooks/use-watchlist';
+import { useListMembership, type WatchlistList } from '@/hooks/use-watchlist';
 import { useWatchlistLimits } from '@/hooks/use-watchlist-limits';
 import { useSignupGate, useResumeAction } from '@/components/auth/SignupGate';
 import { CreateListDialog } from '@/components/watchlist/CreateListDialog';
@@ -29,13 +29,8 @@ interface AddToListPickerProps {
 export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
   const { t } = useTranslation('watchlist');
   const symUp = symbol.toUpperCase();
-  const { data: lists } = useWatchlistLists();
-  const { data: watchlist } = useWatchlist();
-  const inLists = new Set((watchlist ?? []).filter((w) => w.symbol === symUp).map((w) => w.list_id));
-  const isWatched = inLists.size > 0;
+  const { lists, inLists, isWatched, isPending, addTo, toggle } = useListMembership(symbol, companyName);
   const memberLists = (lists ?? []).filter((l) => inLists.has(l.id));
-  const addToWatchlist = useAddToWatchlist();
-  const removeFromWatchlist = useRemoveFromWatchlist();
   const { canCreateList } = useWatchlistLimits();
   const [createOpen, setCreateOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -45,7 +40,7 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
   // given, so the API uses their first list, creating it if needed).
   useResumeAction('watch', (value) => {
     if (value !== symUp) return false;
-    if (!isWatched) addToWatchlist.mutate({ symbol, company_name: companyName });
+    if (!isWatched) addTo();
     return true;
   });
 
@@ -67,9 +62,6 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
     );
   }
 
-  const busy = addToWatchlist.isPending || removeFromWatchlist.isPending;
-  const addTo = (listId: string) => addToWatchlist.mutate({ symbol, company_name: companyName, listId });
-
   // No lists yet: nothing to choose between, so one click adds and the API
   // creates their first list.
   if (!isWatched && lists !== undefined && lists.length === 0) {
@@ -78,8 +70,8 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
         variant="outline"
         size="sm"
         className="gap-2"
-        disabled={busy}
-        onClick={() => addToWatchlist.mutate({ symbol, company_name: companyName })}
+        disabled={isPending}
+        onClick={() => addTo()}
       >
         <Bookmark className="h-4 w-4" />
         {t('watchlistWatch')}
@@ -119,27 +111,11 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
                 // Stay open so several lists can be ticked in one go.
                 onSelect={(e) => {
                   e.preventDefault();
-                  if (selected) removeFromWatchlist.mutate({ symbol, listId: list.id });
-                  else addTo(list.id);
+                  toggle(list.id);
                 }}
                 className="gap-2 py-2"
               >
-                <span
-                  className={cn(
-                    'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
-                    selected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'
-                  )}
-                  aria-hidden
-                >
-                  {selected && <Check className="h-3 w-3 text-primary-foreground" />}
-                </span>
-                <span
-                  className={cn('h-2 w-2 shrink-0 rounded-full', !list.color && 'border border-muted-foreground/50')}
-                  style={list.color ? { backgroundColor: list.color } : undefined}
-                  aria-hidden
-                />
-                <span className={cn('flex-1 truncate', selected && 'font-medium')}>{list.name}</span>
-                <span className="text-xs tabular-nums text-muted-foreground">{list.item_count}</span>
+                <ListRowContent list={list} selected={selected} />
               </DropdownMenuItem>
             );
           })}
@@ -157,6 +133,30 @@ export function AddToListPicker({ symbol, companyName }: AddToListPickerProps) {
       {/* A list made from here gets the stock straight away, alongside any lists it is already in. */}
       <CreateListDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={addTo} />
       <PaywallDialog open={paywallOpen} onOpenChange={setPaywallOpen} />
+    </>
+  );
+}
+
+/** One list as a checkbox row: tick, colour dot, name, stock count. Shared with the company hover card. */
+export function ListRowContent({ list, selected }: { list: WatchlistList; selected: boolean }) {
+  return (
+    <>
+      <span
+        className={cn(
+          'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
+          selected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'
+        )}
+        aria-hidden
+      >
+        {selected && <Check className="h-3 w-3 text-primary-foreground" />}
+      </span>
+      <span
+        className={cn('h-2 w-2 shrink-0 rounded-full', !list.color && 'border border-muted-foreground/50')}
+        style={list.color ? { backgroundColor: list.color } : undefined}
+        aria-hidden
+      />
+      <span className={cn('flex-1 truncate', selected && 'font-medium')}>{list.name}</span>
+      <span className="text-xs tabular-nums text-muted-foreground">{list.item_count}</span>
     </>
   );
 }

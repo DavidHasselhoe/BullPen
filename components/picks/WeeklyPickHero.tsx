@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ArrowUpRight, Lock, Minus } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { TickerPreview } from '@/components/company/TickerPreview';
 import { cn } from '@/lib/utils';
 import { useLivePrice } from '@/components/discover/v2/LivePriceContext';
 import type { PickDetail } from '@/lib/picks/types';
@@ -105,12 +105,10 @@ export function WeeklyPickHero() {
                 className="shrink-0"
               />
               <div className="min-w-0">
-                <Link
-                  href={slugToAssetPath(pick.symbol)}
-                  className="font-mono text-base font-bold text-foreground hover:text-primary transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
+                {/* The thesis argues valuation, not what the company does; the card answers that. */}
+                <TickerPreview ticker={pick.symbol} className="font-mono text-base font-bold text-foreground hover:text-primary transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
                   {pick.symbol}
-                </Link>
+                </TickerPreview>
                 {/* clamp-ok: company name, and it carries a title attribute with the full value */}
                 <p className="text-xs text-muted-foreground truncate" title={pick.companyName ?? undefined}>
                   {pick.companyName ?? '—'}

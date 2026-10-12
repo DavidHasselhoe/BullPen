@@ -284,3 +284,30 @@ export function useDeleteWatchlistList() {
     },
   });
 }
+
+/**
+ * Which of the user's lists a stock is in, and toggling it in and out of
+ * them. Shared by the stock page's Watch menu and the company hover card so
+ * the two can't disagree. A stock can be in any number of lists, one row each.
+ */
+export function useListMembership(symbol: string, companyName: string) {
+  const symUp = symbol.toUpperCase();
+  const { data: lists } = useWatchlistLists();
+  const { data: watchlist } = useWatchlist();
+  const add = useAddToWatchlist();
+  const remove = useRemoveFromWatchlist();
+  const inLists = new Set((watchlist ?? []).filter((w) => w.symbol === symUp).map((w) => w.list_id));
+
+  return {
+    lists,
+    inLists,
+    isWatched: inLists.size > 0,
+    isPending: add.isPending || remove.isPending,
+    /** No listId: the API picks the first list, creating one if there are none. */
+    addTo: (listId?: string) => add.mutate({ symbol, company_name: companyName, listId }),
+    toggle: (listId: string) =>
+      inLists.has(listId)
+        ? remove.mutate({ symbol, listId })
+        : add.mutate({ symbol, company_name: companyName, listId }),
+  };
+}

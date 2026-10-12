@@ -4,15 +4,20 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Loader2, Plus } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Loader2, Plus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { formatCurrency } from '@/lib/currency/currency-conversion';
-import { useAddToWatchlist, useIsWatched } from '@/hooks/use-watchlist';
+import { useListMembership } from '@/hooks/use-watchlist';
+import { useWatchlistLimits } from '@/hooks/use-watchlist-limits';
+import { ListRowContent } from '@/components/watchlist/AddToListPicker';
+import { CreateListDialog } from '@/components/watchlist/CreateListDialog';
+import { PaywallDialog } from '@/components/watchlist/PaywallDialog';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 /** Long enough that sweeping the cursor across a paragraph of tickers doesn't
  *  fire four cards, short enough that a deliberate hover feels immediate. */
@@ -88,6 +93,7 @@ interface Props {
  */
 export function TickerPreview({ ticker, className, children }: Props) {
   const { t, i18n } = useTranslation('common');
+  const { t: tw } = useTranslation('watchlist');
   const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   // Latches on first open so reopening the same card is instant, and so a
@@ -150,14 +156,24 @@ export function TickerPreview({ ticker, className, children }: Props) {
 
   const profile = profileQuery.data;
   const quote = quoteQuery.data;
-  const name = profile?.name ?? ticker;
+  // "Microsoft", not "Microsoft Corporation Common Stock"; the full name is on hover.
+  const name = displayCompanyName(profile?.name ?? ticker);
   const href = slugToAssetPath(ticker);
 
-  const isWatched = useIsWatched(ticker);
-  const addToWatchlist = useAddToWatchlist();
+  const membership = useListMembership(ticker, name);
+  const { lists, inLists, isWatched } = membership;
+  const { canCreateList } = useWatchlistLimits();
+  // The lists open inside the card rather than as a dropdown: a dropdown
+  // renders outside the card, and moving the pointer onto it would count as
+  // leaving the card and close it.
+  const [listsOpen, setListsOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const hasLists = (lists?.length ?? 0) > 0;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setListsOpen(false); }}>
       <PopoverTrigger asChild>
         <Link
           href={href}
@@ -208,7 +224,7 @@ export function TickerPreview({ ticker, className, children }: Props) {
             {profileQuery.isLoading ? (
               <Skeleton className="h-4 w-32" />
             ) : (
-              <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{name}</p>
+              <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground" title={profile?.name}>{name}</p>
             )}
             <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
               ${ticker}
@@ -260,28 +276,68 @@ export function TickerPreview({ ticker, className, children }: Props) {
           {isAuthenticated && (
             <button
               type="button"
-              disabled={isWatched || addToWatchlist.isPending}
-              onClick={() => addToWatchlist.mutate({ symbol: ticker, company_name: name })}
+              disabled={lists === undefined || (!hasLists && membership.isPending)}
+              // No lists yet: one click adds, and the API creates the first list.
+              onClick={() => (hasLists ? setListsOpen((o) => !o) : membership.addTo())}
+              aria-expanded={hasLists ? listsOpen : undefined}
               aria-label={isWatched ? t('tickerPreviewWatched') : t('tickerPreviewAdd')}
               title={isWatched ? t('tickerPreviewWatched') : t('tickerPreviewAdd')}
               className={cn(
-                'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border',
-                'text-muted-foreground transition-colors duration-150',
-                'hover:bg-muted/60 hover:text-foreground disabled:cursor-default disabled:hover:bg-transparent',
+                'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border',
+                'transition-colors duration-150 disabled:cursor-default',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                isWatched || listsOpen
+                  ? 'border-primary/40 bg-primary/10 text-primary'
+                  : 'border-border text-muted-foreground hover:bg-muted/60 hover:text-foreground',
               )}
             >
-              {addToWatchlist.isPending ? (
+              {!hasLists && membership.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : isWatched ? (
-                <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                <BookmarkCheck className="h-3.5 w-3.5" />
               ) : (
-                <Plus className="h-3.5 w-3.5" />
+                <Bookmark className="h-3.5 w-3.5" />
               )}
             </button>
           )}
         </div>
+
+        {listsOpen && hasLists && (
+          <div className="mt-3 border-t border-border pt-2.5">
+            <p className="mb-1 px-1 text-xs text-muted-foreground">
+              {isWatched ? tw('watchlistPickerInHeading', { ticker }) : tw('watchlistPickerAddHeading', { ticker })}
+            </p>
+            {lists!.map((list) => {
+              const selected = inLists.has(list.id);
+              return (
+                <button
+                  key={list.id}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={selected}
+                  onClick={() => membership.toggle(list.id)}
+                  className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left text-sm transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <ListRowContent list={list} selected={selected} />
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => (canCreateList ? setCreateOpen(true) : setPaywallOpen(true))}
+              className="mt-0.5 flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              {tw('watchlistPickerNewList')}
+            </button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
+
+    {/* Outside the card so they survive it closing when focus moves into the dialog. */}
+    <CreateListDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={(id) => membership.addTo(id)} />
+    <PaywallDialog open={paywallOpen} onOpenChange={setPaywallOpen} />
+    </>
   );
 }

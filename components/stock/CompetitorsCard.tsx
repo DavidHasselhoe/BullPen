@@ -1,11 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { CompetitorEntry } from '@/app/api/stock/[ticker]/competitors/route';
-import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { TickerPreview } from '@/components/company/TickerPreview';
 
 interface CompetitorsResponse {
   competitors: CompetitorEntry[];
@@ -13,7 +12,6 @@ interface CompetitorsResponse {
 
 export function CompetitorPills({ ticker }: { ticker: string }) {
   const { t } = useTranslation('stock');
-  const router = useRouter();
 
   const { data } = useQuery<CompetitorsResponse>({
     queryKey: ['stock-competitors', ticker],
@@ -28,15 +26,16 @@ export function CompetitorPills({ ticker }: { ticker: string }) {
   return (
     <div className="mt-2 flex items-center gap-1.5 flex-wrap">
       <span className="text-xs text-muted-foreground">{t('peersLabel')}</span>
+      {/* A bare ticker says nothing about who the peer is; the hover card does. */}
       {competitors.map((c) => (
-        <button
+        <TickerPreview
           key={c.ticker}
-          onClick={() => router.push(slugToAssetPath(c.ticker))}
+          ticker={c.ticker}
           className="flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:border-primary/40 max-sm:px-2.5 max-sm:py-1.5"
         >
           <CompanyLogo name={c.name} ticker={c.ticker} logoUrl={c.logoUrl} size={14} />
           {c.ticker}
-        </button>
+        </TickerPreview>
       ))}
     </div>
   );

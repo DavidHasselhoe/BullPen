@@ -11,8 +11,8 @@ import { X, ArrowUpRight, ChevronLeft, ChevronRight, ChevronDown, ExternalLink, 
 import { cn } from '@/lib/utils';
 import { Sparkline } from '@/components/viz/Sparkline';
 import { TickerPreview } from '@/components/company/TickerPreview';
+import { isKnownTicker, useKnownTickers, renderTickerText as renderInline } from '@/components/company/TickerText';
 import { useAuth } from '@/hooks/use-auth';
-import { useSymbolIndex } from '@/hooks/use-symbol-index';
 import { ClampedText } from '@/components/ui/ClampedText';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
 import { trackEvent } from '@/lib/analytics/track';
@@ -117,102 +117,6 @@ function getNextBriefLocalTime(locale: string): string {
 function estimateReadingTime(content: string): number {
   const words = content.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 220));
-}
-
-/** A null catalogue means "not loaded yet", not "nothing is a ticker". */
-function isKnownTicker(ticker: string, known: Set<string> | null): boolean {
-  return known === null || known.has(ticker);
-}
-
-/**
- * The catalogue as a lookup set, built once per reader rather than per section.
- * This is the same shared query every search surface uses (the global command
- * palette already fetches it during idle time), so it costs no extra request.
- */
-function useKnownTickers(): Set<string> | null {
-  const index = useSymbolIndex();
-  return useMemo(
-    () => (index.length > 0 ? new Set(index.map((e) => e.ticker)) : null),
-    [index],
-  );
-}
-
-// Tokenize a line into <strong>, ticker link, and plain text in a single pass.
-// Patterns: **bold text**, $TICKER
-//
-// `known` is the symbol catalogue every search surface already uses. The model
-// writes $VIX, $SPX and $DJI the same way it writes $AAPL, but those are
-// indices with no company, no page and no quote — linking them produced a dead
-// link and an empty hover card. Anything the catalogue does not list renders as
-// plain text. A null set means the catalogue has not loaded (or failed), where
-// linking everything is better than stripping every link off the brief.
-function renderInline(text: string, known: Set<string> | null): React.ReactNode {
-  const nodes: React.ReactNode[] = [];
-  const combined = /\*\*([^*]+)\*\*|\$([A-Z]{1,5})\b/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-
-  while ((match = combined.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      nodes.push(text.slice(lastIndex, match.index));
-    }
-    if (match[1] != null) {
-      const boldContent = match[1];
-      // Bold content that starts with a ticker, e.g. **$ANF** or **$ANF (Abercrombie & Fitch)**
-      const tickerInBold = boldContent.match(/^(\$[A-Z]{1,5})\b(.*)?$/s);
-      if (tickerInBold) {
-        const ticker = tickerInBold[1].slice(1);
-        const rest = tickerInBold[2] ?? '';
-        const linkEl = isKnownTicker(ticker, known) ? (
-          <TickerPreview
-            key={key++}
-            ticker={ticker}
-            className="font-mono font-semibold text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
-          />
-        ) : (
-          <span key={key++} className="font-mono font-semibold text-foreground">
-            ${ticker}
-          </span>
-        );
-        if (rest) {
-          nodes.push(
-            <strong key={key++} className="font-semibold text-foreground">
-              {linkEl}{rest}
-            </strong>
-          );
-        } else {
-          nodes.push(linkEl);
-        }
-      } else {
-        nodes.push(
-          <strong key={key++} className="font-semibold text-foreground">
-            {boldContent}
-          </strong>
-        );
-      }
-    } else if (match[2]) {
-      const ticker = match[2];
-      nodes.push(
-        isKnownTicker(ticker, known) ? (
-          <TickerPreview
-            key={key++}
-            ticker={ticker}
-            className="font-mono font-medium text-primary/85 hover:text-primary border-b border-primary/20 hover:border-primary/60 transition-colors"
-          />
-        ) : (
-          <span key={key++} className="font-mono font-medium text-foreground/90">
-            ${ticker}
-          </span>
-        )
-      );
-    }
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < text.length) {
-    nodes.push(text.slice(lastIndex));
-  }
-  return nodes;
 }
 
 type LineKind = 'bullet' | 'sub-header' | 'paragraph';

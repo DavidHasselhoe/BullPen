@@ -9,7 +9,8 @@ import {
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useBackground } from '@/hooks/use-background';
 import { humanizeError } from '@/lib/errors/humanize';
-import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { TickerPreview } from '@/components/company/TickerPreview';
+import { TickerText } from '@/components/company/TickerText';
 import { intlLocale } from '@/lib/i18n/intl-locale';
 import { cn } from '@/lib/utils';
 import type { LockReason, PickDetail } from '@/lib/picks/types';
@@ -127,12 +128,9 @@ function PickBody({
             className="shrink-0"
           />
           <div className="min-w-0">
-            <Link
-              href={slugToAssetPath(pick.symbol)}
-              className="rounded font-mono text-lg font-bold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
+            <TickerPreview ticker={pick.symbol} className="rounded font-mono text-lg font-bold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
               {pick.symbol}
-            </Link>
+            </TickerPreview>
             {/* clamp-ok: company name and sector, a label, with the full value in title */}
             <p className="truncate text-sm text-muted-foreground" title={pick.companyName ?? undefined}>
               {pick.companyName ?? '—'}
@@ -257,7 +255,7 @@ function UnlockedThesis({ pick }: { pick: PickDetail }) {
             {thesis.sections.map((s, i) => (
               <div key={i}>
                 <h3 className="text-[15px] font-semibold text-foreground">{s.title}</h3>
-                <p className="mt-1.5 max-w-prose text-[15px] leading-7 text-foreground/80">{s.body}</p>
+                <p className="mt-1.5 max-w-prose text-[15px] leading-7 text-foreground/80"><TickerText text={s.body} /></p>
               </div>
             ))}
           </div>
@@ -312,7 +310,7 @@ function UnlockedThesis({ pick }: { pick: PickDetail }) {
                         {SEVERITY_KEY[r.severity] ? t(SEVERITY_KEY[r.severity]) : r.severity}
                       </span>
                     </h3>
-                    <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{r.detail}</p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground"><TickerText text={r.detail} /></p>
                   </div>
                 </div>
               </div>
@@ -327,7 +325,7 @@ function UnlockedThesis({ pick }: { pick: PickDetail }) {
             {t('pickWatchHeading')}
           </h2>
           <p className="max-w-prose rounded-xl border border-border/50 bg-card/40 px-4 py-3.5 text-sm leading-relaxed text-foreground/85">
-            {thesis.invalidation}
+            <TickerText text={thesis.invalidation} />
           </p>
         </section>
       )}
@@ -338,7 +336,7 @@ function UnlockedThesis({ pick }: { pick: PickDetail }) {
             {t('pickCheckpointHeading', { quarter: quarterLabel(quarterOf(pick.pickDate)) })}
           </h2>
           <p className="max-w-prose rounded-xl border border-border/50 bg-card/40 px-4 py-3.5 text-sm leading-relaxed text-foreground/85">
-            {thesis.quarterCheckpoint}
+            <TickerText text={thesis.quarterCheckpoint} />
           </p>
         </section>
       )}

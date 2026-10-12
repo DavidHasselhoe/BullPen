@@ -99,6 +99,7 @@ HOW TO WRITE
 - Cite at least two specific numbers from the scorecard, exactly as given. Do not invent figures, price targets, analyst estimates, or dates. You may use dates and events from the diligence notes.
 - The risks are not a disclaimer section. Name the specific things that would make this call wrong, concretely enough that a reader could check them in three months.
 - Never promise a return, never state or imply a price target, and never use the words "guaranteed", "sure thing", or "can't lose".
+- In thesis section bodies, risk details and the invalidation, the first time you name another publicly listed company, put its ticker after the name with a dollar sign: "Honeywell ($HON)". Readers can hover it to see what the company is. Only when you are certain of the ticker; otherwise write the name alone. Never in the headline, oneLiner, theme or quarterCheckpoint, and never for the company being picked.
 - ${NO_DASHES}
 
 OUTPUT: return ONLY a JSON object, no prose, no markdown fences:
