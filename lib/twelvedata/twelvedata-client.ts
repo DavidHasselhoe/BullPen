@@ -165,6 +165,8 @@ export interface StockQuote {
   t: number;
   /** Cumulative day volume in full shares (from REST /quote). Optional — not provided by WS ticks. */
   volume?: number;
+  /** When the extended-hours trade behind `c` happened (unix seconds). Set only when `c` is an extended-hours price. */
+  et?: number;
 }
 
 export interface StockCandles {
@@ -315,6 +317,7 @@ export function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string
         o: parseFloat(data.open || String(close)),
         pc: base,
         t: timestamp,
+        et: data.extended_timestamp,
       };
     }
   }

@@ -4,7 +4,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { rankMovers } from '../lib/market-data/index-movers';
+import { rankMovers, rankPremarket } from '../lib/market-data/index-movers';
 
 // 2026-09-29 15:00 New York, and a day earlier.
 const today = Date.UTC(2026, 8, 29, 19) / 1000;
@@ -33,4 +33,18 @@ assert.equal(r.rows.length, 5);
 const lateNY = Date.UTC(2026, 8, 30, 3, 30) / 1000; // 23:30 on the 29th in New York
 assert.equal(rankMovers(new Map([['LATE', q(1, lateNY)]])).asOf, '2026-09-29');
 
+// Pre-market: only names that traded since 4:00 today count. 2026-10-12 08:15 New York.
+const preNow = Date.UTC(2026, 9, 12, 12, 15) / 1000;
+const lastNight = Date.UTC(2026, 9, 9, 23, 0) / 1000; // Friday 19:00 New York, after hours
+const pq = (dp: number, et?: number, c = 100, pc = 100) => ({ c, pc, dp, et });
+const pre = rankPremarket(new Map([
+  ['UP', pq(6.1, preNow)],
+  ['DOWN', pq(-4.4, preNow)],
+  ['SMALL', pq(0.3, preNow)],
+  ['FRIDAY', pq(9.0, lastNight)], // has not traded this morning: last night's print is not a pre-market move
+  ['REGULAR', pq(5.0)], // no extended print at all
+]), '2026-10-12', 5);
+assert.deepEqual(pre.gainers, ['UP', 'SMALL']);
+assert.deepEqual(pre.losers, ['DOWN']);
+assert.equal(pre.traded.length, 3);
 console.log('index movers: all checks passed');

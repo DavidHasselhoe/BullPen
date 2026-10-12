@@ -78,3 +78,42 @@ export function sessionDateET(now = new Date(), allDay = false): string {
   }
   return date();
 }
+
+/** New York wall-clock time on a given date, as unix seconds (handles EST/EDT). */
+function etWallToUnix(y: number, m: number, d: number, hh: number, mm: number): number {
+  const guess = Date.UTC(y, m - 1, d, hh, mm);
+  const at = new Date(guess);
+  const etWall = new Date(at.toLocaleString('en-US', { timeZone: 'America/New_York' })).getTime();
+  const utcWall = new Date(at.toLocaleString('en-US', { timeZone: 'UTC' })).getTime();
+  return (guess + (utcWall - etWall)) / 1000;
+}
+
+/** True during US pre-market (4:00 to 9:30 New York) on a trading day. */
+export function isPreMarketET(now = new Date()): boolean {
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = et.getDay();
+  if (day === 0 || day === 6) return false;
+  if (usMarketHolidays(et.getFullYear()).has(iso(et.getFullYear(), et.getMonth() + 1, et.getDate()))) return false;
+  const mins = et.getHours() * 60 + et.getMinutes();
+  return mins >= 240 && mins < 570;
+}
+
+/**
+ * Seconds until the next regular-session open (9:30 New York on a trading
+ * day). For data that cannot change while the market is shut, like the last
+ * session's movers, so a cache can hold it until it can.
+ */
+export function secondsUntilNextOpenET(now = new Date()): number {
+  const nowSec = now.getTime() / 1000;
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  for (let i = 0; i < 10; i++) {
+    const d = new Date(et.getFullYear(), et.getMonth(), et.getDate() + i);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+    if (d.getDay() === 0 || d.getDay() === 6 || usMarketHolidays(y).has(iso(y, m, day))) continue;
+    const open = etWallToUnix(y, m, day, 9, 30);
+    if (open > nowSec) return Math.round(open - nowSec);
+  }
+  return 30 * 60;
+}

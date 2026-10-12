@@ -31,6 +31,9 @@ import { rget, rset, rsetnx, rdel, getMarketSession } from '@/lib/cache/redis-ca
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
+import { getCalendarDay } from '@/lib/market-data/calendar-days';
+import { isPreMarketET, secondsUntilNextOpenET, sessionDateET, usMarketHolidays } from '@/lib/market-data/trading-day';
+import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 
 export interface IndexMover {
   symbol: string;
@@ -38,6 +41,23 @@ export interface IndexMover {
   logo_url: string | null;
   price: number;
   changePercent: number;
+  /** Reported earnings this morning or after the previous close (pre-market list only). */
+  earnings?: boolean;
+}
+
+/**
+ * Today's pre-market movers: the same universe, price now vs the previous
+ * regular close, ranked only among names that have actually traded since
+ * 4:00 New York today. A stock still showing last night's after-hours print
+ * has not moved this morning and is left out.
+ */
+export interface PremarketMovers {
+  /** The trading day this pre-market belongs to (YYYY-MM-DD, New York). */
+  asOf: string;
+  /** How many index members have traded pre-market so far. */
+  traded: number;
+  gainers: IndexMover[];
+  losers: IndexMover[];
 }
 
 export interface IndexMovers {
@@ -105,16 +125,17 @@ export function rankMovers(
  * which would have ranked a biased two thirds of the index. So each chunk
  * waits for budget, and whatever is still missing gets retried.
  */
-async function quoteUniverse(): Promise<Map<string, { c: number; pc: number; dp: number; t: number }>> {
-  const quotes = new Map<string, { c: number; pc: number; dp: number; t: number }>();
+async function quoteUniverse(prepost = false): Promise<Map<string, { c: number; pc: number; dp: number; t: number; et?: number }>> {
+  const quotes = new Map<string, { c: number; pc: number; dp: number; t: number; et?: number }>();
   for (let attempt = 0; attempt <= RETRIES; attempt++) {
     const missing = UNIVERSE.filter((s) => !quotes.has(s));
     if (missing.length === 0) break;
     for (let i = 0; i < missing.length; i += QUOTE_CHUNK) {
       const chunk = missing.slice(i, i + QUOTE_CHUNK);
       if (!(await tryReserveCredits(chunk.length, 70_000))) continue;
-      // prepost: false, always. See the definition above.
-      const got = await getStockQuotes(chunk, { prepost: false });
+      // The session list never uses extended hours (see the definition above);
+      // only the separate pre-market list asks for them.
+      const got = await getStockQuotes(chunk, { prepost });
       for (const [sym, q] of got) quotes.set(sym.toUpperCase(), q);
     }
   }
@@ -173,8 +194,11 @@ export async function refreshIndexMovers(): Promise<IndexMovers | null> {
     const etHHMM = Number(new Date().toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }).replace(':', ''));
     const settling = session === 'extended' && etHHMM >= 1600 && etHHMM < 1630;
     const open = session === 'regular';
+    // Once the session is over and its close has settled, the list cannot
+    // change until the next open. It used to expire every 30 minutes all night
+    // and weekend, re-quoting ~515 names (one credit each) to get the same list.
     await Promise.all([
-      rset(FRESH_KEY, movers, open || settling ? 5 * 60 : 30 * 60),
+      rset(FRESH_KEY, movers, open || settling ? 5 * 60 : Math.min(secondsUntilNextOpenET(), 4 * 24 * 60 * 60)),
       rset(STALE_KEY, movers, 7 * 24 * 60 * 60),
     ]);
     return movers;
@@ -195,4 +219,110 @@ export async function getIndexMovers(): Promise<IndexMovers | null> {
   if (fresh) return fresh;
   after(() => refreshIndexMovers());
   return rget<IndexMovers>(STALE_KEY);
+}
+
+// ── Pre-market ──────────────────────────────────────────────────────────────
+
+const PRE_KEY = 'movers:premarket:v1';
+/** Last good pre-market list, kept until the open so a failed refresh still has something to show. */
+const PRE_STALE_KEY = 'movers:premarket:v1:last';
+const PRE_LOCK_KEY = 'movers:premarket:v1:lock';
+/** One refresh is a full ~515-credit sweep, so every 10 minutes, not every 5. */
+const PRE_TTL = 10 * 60;
+
+/**
+ * Pure ranking step for the pre-market list, exported for the self-check.
+ * Only quotes whose extended-hours trade happened on `today` (New York) count:
+ * from 4:00 a stock that has not traded yet still carries last night's
+ * after-hours print, and that is not a pre-market move.
+ */
+export function rankPremarket(
+  quotes: Map<string, { c: number; pc: number; dp: number; et?: number }>,
+  today: string,
+  limit = TOP_N,
+): { traded: { symbol: string; price: number; changePercent: number }[]; gainers: string[]; losers: string[] } {
+  const traded = [...quotes.entries()]
+    .filter(([, q]) => q.c > 0 && q.pc > 0 && Number.isFinite(q.dp) && q.et != null && nyDate(q.et) === today)
+    .map(([symbol, q]) => ({ symbol, price: q.c, changePercent: q.dp }));
+  const gainers = traded.filter((r) => r.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent).slice(0, limit);
+  const losers = traded.filter((r) => r.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent).slice(0, limit);
+  return { traded, gainers: gainers.map((g) => g.symbol), losers: losers.map((l) => l.symbol) };
+}
+
+function previousTradingDay(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  do d.setUTCDate(d.getUTCDate() - 1);
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6 || usMarketHolidays(d.getUTCFullYear()).has(d.toISOString().slice(0, 10)));
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Who reported earnings in time to move this morning: on today's calendar
+ * unless marked after the close (that is tonight), or on the previous trading
+ * day's unless marked before the open (that moved yesterday). Most rows carry
+ * no time at all and count. Both days are warmed daily by prefetch-calendar.
+ */
+async function earningsReporters(today: string): Promise<Set<string>> {
+  const [todayRows, prevRows] = await Promise.all([
+    getCalendarDay<EarningsCalendarItem>('earnings', today).catch(() => null),
+    getCalendarDay<EarningsCalendarItem>('earnings', previousTradingDay(today)).catch(() => null),
+  ]);
+  const after = /^(amc|after)/i;
+  const before = /^(bmo|pre|before)/i;
+  const set = new Set<string>();
+  for (const r of todayRows ?? []) if (!after.test(r.time ?? '')) set.add(r.symbol.toUpperCase());
+  for (const r of prevRows ?? []) if (!before.test(r.time ?? '')) set.add(r.symbol.toUpperCase());
+  return set;
+}
+
+export async function refreshPremarketMovers(): Promise<PremarketMovers | null> {
+  if (!isPreMarketET()) return null;
+  if (!(await rsetnx(PRE_LOCK_KEY, 5 * 60))) return null;
+  try {
+    const today = sessionDateET();
+    const [quotes, reporters] = await Promise.all([quoteUniverse(true), earningsReporters(today)]);
+    if (quotes.size < UNIVERSE.length * MIN_COVERAGE) {
+      console.warn(`[index-movers] pre-market: only ${quotes.size}/${UNIVERSE.length} quoted, keeping the last good list`);
+      return null;
+    }
+    const { traded, gainers, losers } = rankPremarket(quotes, today);
+    const bySymbol = new Map(traded.map((r) => [r.symbol, r]));
+    const pick = (syms: string[]) => syms.map((s): { symbol: string; name?: string; price: number; changePercent: number } => bySymbol.get(s)!);
+    const [g, l] = await Promise.all([attachCalendarMeta(pick(gainers)), attachCalendarMeta(pick(losers))]);
+    const strip = (r: (typeof g)[number]): IndexMover => ({
+      symbol: r.symbol,
+      name: r.name ?? null,
+      logo_url: r.logo_url,
+      price: r.price,
+      changePercent: r.changePercent,
+      earnings: reporters.has(r.symbol) || undefined,
+    });
+    const movers: PremarketMovers = { asOf: today, traded: traded.length, gainers: g.map(strip), losers: l.map(strip) };
+    const untilOpen = secondsUntilNextOpenET();
+    await Promise.all([
+      rset(PRE_KEY, movers, Math.min(PRE_TTL, untilOpen)),
+      rset(PRE_STALE_KEY, movers, untilOpen),
+    ]);
+    return movers;
+  } catch (err) {
+    if (!(err instanceof TwelveDataRateLimitError)) console.error('[index-movers] pre-market refresh failed:', err);
+    return null;
+  } finally {
+    await rdel(PRE_LOCK_KEY);
+  }
+}
+
+/**
+ * Today's pre-market list during pre-market, otherwise null. Same pattern as
+ * getIndexMovers: the cached list instantly, a refresh after the response
+ * when it has expired, the last good one meanwhile.
+ */
+export async function getPremarketMovers(): Promise<PremarketMovers | null> {
+  if (!isPreMarketET()) return null;
+  const fresh = await rget<PremarketMovers>(PRE_KEY);
+  if (fresh) return fresh;
+  after(() => refreshPremarketMovers());
+  const stale = await rget<PremarketMovers>(PRE_STALE_KEY);
+  // A list from an earlier morning (a key that outlived its day) is not today's pre-market.
+  return stale?.asOf === sessionDateET() ? stale : null;
 }
