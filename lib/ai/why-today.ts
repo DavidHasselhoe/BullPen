@@ -112,7 +112,8 @@ export function whyTodayRequest(move: WhyTodayMove, language: string) {
       'nuclear power stocks." Name a sector or market cause only if you found it in the news. Never invent a cause. ' +
       'When the cause is another listed company (a customer, rival or partner), put its ticker after its name with a ' +
       'dollar sign: "Shares rose after Oracle ($ORCL) raised its cloud forecast." Readers can hover it. Only when you ' +
-      'are certain of the ticker, and never for the stock being explained. ' +
+      'are certain of the ticker, and never for the stock being explained. Never after a possessive: "a forecast from ' +
+      'Oracle ($ORCL)", not "Oracle\'s ($ORCL) forecast". ' +
       'Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.',
     messages: [{
       role: 'user' as const,
