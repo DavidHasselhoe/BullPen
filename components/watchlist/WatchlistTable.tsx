@@ -15,6 +15,7 @@ import type { EnhancedDataMap } from '@/hooks/use-watchlist-enhanced';
 import { TermTooltip } from '@/components/ui/TermTooltip';
 import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 const THESIS_KEY = { bull: 'watchlistThesisBull', bear: 'watchlistThesisBear', neutral: 'watchlistThesisNeutral' } as const;
 
@@ -160,10 +161,11 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
               <TableRow key={item.symbol} className={cn(removing && 'opacity-40')}>
                 <TableCell>
                   <Link href={slugToAssetPath(item.symbol)} onMouseEnter={() => prefetchSnapshot(item.symbol)} className="hover:underline">
-                    <span className="font-semibold text-foreground">{item.symbol}</span>
-                    <span className="ml-2 text-xs text-muted-foreground truncate max-w-[140px] inline-block align-middle">
-                      {item.company_name}
+                    {/* clamp-ok: a company name is a short label; the full legal name is on hover. */}
+                    <span className="font-semibold text-foreground truncate max-w-[180px] inline-block align-middle" title={item.company_name || undefined}>
+                      {item.display_name || displayCompanyName(item.company_name || item.symbol)}
                     </span>
+                    <span className="ml-2 text-xs text-muted-foreground align-middle">{item.symbol}</span>
                   </Link>
                 </TableCell>
 

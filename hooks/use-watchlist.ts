@@ -11,6 +11,8 @@ export interface WatchlistItem {
   added_at: string;
   list_id?: string | null;
   logo_url?: string | null;
+  /** Short, properly cased company name, attached by the API. */
+  display_name?: string | null;
 }
 
 export interface WatchlistList {

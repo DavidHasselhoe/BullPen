@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
+import { getDisplayNames } from '@/lib/market-data/display-names';
 
 interface RouteContext {
   params: Promise<{ listId: string }>;
@@ -55,8 +56,13 @@ async function getHandler(
   }
 
   const rows = data ?? [];
-  const logoUrls = await getLogoUrlsForTickers(rows.map((r) => r.symbol));
-  const items = rows.map((row) => ({ ...row, logo_url: logoUrls.get(row.symbol) ?? null }));
+  const symbols = rows.map((r) => r.symbol);
+  const [logoUrls, displayNames] = await Promise.all([getLogoUrlsForTickers(symbols), getDisplayNames(symbols)]);
+  const items = rows.map((row) => ({
+    ...row,
+    logo_url: logoUrls.get(row.symbol) ?? null,
+    display_name: displayNames.get(row.symbol.toUpperCase()) ?? null,
+  }));
 
   return addSecurityHeaders(NextResponse.json({ success: true, items }));
 }

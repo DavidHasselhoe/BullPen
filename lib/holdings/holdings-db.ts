@@ -7,6 +7,7 @@ import { logger } from '@/lib/utils/logger';
 import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
 import { recordPortfolioActivity } from '@/lib/holdings/portfolio-activity';
 import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
+import { getDisplayNames } from '@/lib/market-data/display-names';
 
 /** Cap how many profiles we resolve per fetch so a fresh portfolio doesn't burst the API. */
 const MAX_CURRENCY_BACKFILL = 25;
@@ -129,17 +130,19 @@ export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
     let result = holdings as UserHolding[];
     const tickers = [...new Set(result.map((h) => h.symbol.toUpperCase()))];
 
-    const [backfilled, logoUrls] = await Promise.all([
+    const [backfilled, logoUrls, displayNames] = await Promise.all([
       backfillTradingCurrencies(supabase, userId, result).catch((err) => {
         logger.warn('trading_currency backfill skipped:', err);
         return result;
       }),
       getLogoUrlsForTickers(tickers),
+      getDisplayNames(tickers).catch(() => new Map<string, string>()),
     ]);
 
     result = backfilled.map((h) => ({
       ...h,
       logo_url: logoUrls.get(h.symbol.toUpperCase()) ?? null,
+      display_name: displayNames.get(h.symbol.toUpperCase()) ?? null,
     }));
 
     return {

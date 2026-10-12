@@ -145,6 +145,8 @@ export interface UserHolding {
   updated_at: string;
   /** Not a real `user_holdings` column — attached by getHoldings() from `companies.logo_url` so the first fetch already carries it, instead of a second client-side query. */
   logo_url?: string | null;
+  /** Not a real column either: the short, properly cased name ("Amazon", not "AMAZON COM INC"), attached by getHoldings(). */
+  display_name?: string | null;
 }
 
 export interface HoldingSale {

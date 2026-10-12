@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { Sparkline } from '@/components/viz/Sparkline';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 interface Quote {
   price: number;
@@ -27,6 +28,8 @@ interface HealthScore {
 interface WatchlistCardProps {
   symbol: string;
   company_name: string;
+  /** Short, properly cased name from the API; falls back to cleaning company_name. */
+  display_name?: string | null;
   logo_url?: string | null;
   quote?: Quote | null;
   onRemove: (symbol: string) => void;
@@ -63,6 +66,7 @@ const THESIS_KEY = { bull: 'watchlistThesisBull', bear: 'watchlistThesisBear', n
 export function WatchlistCard({
   symbol,
   company_name,
+  display_name,
   logo_url,
   quote,
   onRemove,
@@ -122,15 +126,16 @@ export function WatchlistCard({
         <div className="flex items-center gap-3">
           <CompanyLogo name={company_name} ticker={symbol} logoUrl={logo_url ?? null} size={36} />
           <div className="min-w-0 flex-1 [@media(hover:none)]:pr-16">
-            <p className="flex items-baseline gap-1.5 text-sm font-semibold text-foreground leading-none">
-              {symbol}
+            {/* clamp-ok: a company name is a short label; the full legal name is on hover. */}
+            <p className="flex items-baseline gap-1.5 text-sm font-semibold text-foreground leading-none" title={company_name || undefined}>
+              <span className="truncate">{display_name || displayCompanyName(company_name || symbol)}</span>
               {thesisSentiment && (
                 <span className={cn('text-xs font-medium', thesisColor(thesisSentiment))}>
                   {t(THESIS_KEY[thesisSentiment])}
                 </span>
               )}
             </p>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">{company_name}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{symbol}</p>
           </div>
         </div>
 

@@ -77,6 +77,7 @@ import type { UserHolding } from '@/lib/types/database';
 import { convertCurrency, formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
+import { displayCompanyName } from '@/lib/market-data/company-name';
 
 /** A gain reads '+$1,406.40', not a green '$1,406.40': direction never rides on colour alone. */
 const formatSignedCurrency = (value: number, currency: CurrencyCode, opts?: { round: boolean }) =>
@@ -332,8 +333,9 @@ const HoldingRow = memo(function HoldingRow({
           />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="font-medium text-foreground group-hover:underline">
-                {holding.symbol}
+              {/* clamp-ok: a company name is a short label; the full legal name is on hover. */}
+              <span className="max-w-32 xl:max-w-40 truncate font-medium text-foreground group-hover:underline" title={holding.company_name ?? undefined}>
+                {holding.display_name || displayCompanyName(holding.company_name || holding.symbol)}
               </span>
               {holding.source === 'snaptrade' && (
                 <span className="inline-flex items-center rounded-full bg-blue-500/10 px-1.5 py-0 text-[11px] font-medium text-blue-400 border border-blue-500/20">
@@ -341,11 +343,7 @@ const HoldingRow = memo(function HoldingRow({
                 </span>
               )}
             </div>
-            {/* clamp-ok: a company name is a short label, and wrapped it stacked
-                three lines tall ("Advanced / Micro / Devices") and set the row height. */}
-            <div className="max-w-32 xl:max-w-40 truncate text-xs text-muted-foreground" title={holding.company_name ?? undefined}>
-              {holding.company_name}
-            </div>
+            <div className="text-xs text-muted-foreground">{holding.symbol}</div>
           </div>
         </Link>
       </td>
