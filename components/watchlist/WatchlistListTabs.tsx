@@ -1,11 +1,11 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { WatchlistList } from '@/hooks/use-watchlist';
-import { useUpdateWatchlistList, useDeleteWatchlistList } from '@/hooks/use-watchlist';
+import { useDeleteWatchlistList } from '@/hooks/use-watchlist';
 import { CreateListDialog } from '@/components/watchlist/CreateListDialog';
 import { PaywallDialog } from '@/components/watchlist/PaywallDialog';
 import { useWatchlistLimits } from '@/hooks/use-watchlist-limits';
@@ -20,53 +20,6 @@ interface WatchlistListTabsProps {
   onListDeleted?: (deletedId: string) => void;
 }
 
-/** Inline rename — uncontrolled so re-renders can't wipe the typed value */
-function RenameInput({
-  list,
-  isActive,
-  onDone,
-}: {
-  list: WatchlistList;
-  isActive: boolean;
-  onDone: () => void;
-}) {
-  const { t } = useTranslation('watchlist');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const updateList = useUpdateWatchlistList();
-  const didSave = useRef(false);
-
-  const save = async () => {
-    if (didSave.current) return;
-    didSave.current = true;
-    const trimmed = (inputRef.current?.value ?? '').trim();
-    if (trimmed && trimmed !== list.name) {
-      await updateList.mutateAsync({ listId: list.id, name: trimmed }).catch(() => {});
-    }
-    onDone();
-  };
-
-  return (
-    <input
-      ref={inputRef}
-      autoFocus
-      defaultValue={list.name}
-      onBlur={save}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') { e.preventDefault(); save(); }
-        if (e.key === 'Escape') { didSave.current = true; onDone(); }
-        e.stopPropagation();
-      }}
-      onClick={(e) => e.stopPropagation()}
-      className={cn(
-        'bg-transparent outline-none w-28 text-sm font-medium border-b',
-        isActive ? 'border-primary-foreground/50 text-primary-foreground' : 'border-muted-foreground/50'
-      )}
-      maxLength={60}
-      placeholder={t('watchlistRenamePlaceholder')}
-    />
-  );
-}
-
 export function WatchlistListTabs({
   lists,
   activeListId,
@@ -77,7 +30,9 @@ export function WatchlistListTabs({
   const { t } = useTranslation('watchlist');
   const [createOpen, setCreateOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
+  // Kept after close so the dialog keeps its content while it animates out.
+  const [editing, setEditing] = useState<WatchlistList | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const { canCreateList } = useWatchlistLimits();
   const deleteList = useDeleteWatchlistList();
   // A list goes with every stock in it, so deleting asks first.
@@ -104,14 +59,13 @@ export function WatchlistListTabs({
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
         {lists.map((list) => {
           const isActive = activeListId === list.id;
-          const isRenaming = renamingId === list.id;
 
           return (
             <div
               key={list.id}
               className={cn(
                 'group relative flex items-center gap-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
-                isRenaming ? 'px-3 py-1.5' : 'pr-[4.25rem] pl-3 py-1.5',
+                'pr-[4.25rem] pl-3 py-1.5',
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -124,68 +78,58 @@ export function WatchlistListTabs({
                 />
               )}
 
-              {isRenaming ? (
-                <RenameInput
-                  list={list}
-                  isActive={isActive}
-                  onDone={() => setRenamingId(null)}
-                />
-              ) : (
-                <button
-                  onClick={() => onSelect(list.id)}
-                  className="flex items-center gap-1.5 min-w-0"
-                  title={t('watchlistTabTitle')}
-                >
-                  <span className="truncate max-w-[160px]">{list.name}</span>
-                  <span className={cn(
-                    'text-xs px-1.5 py-0.5 rounded-full shrink-0',
-                    isActive
-                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                      : 'bg-muted text-muted-foreground'
-                  )}>
-                    {list.item_count}
-                  </span>
-                </button>
-              )}
+              <button
+                onClick={() => onSelect(list.id)}
+                className="flex items-center gap-1.5 min-w-0"
+                title={t('watchlistTabTitle')}
+              >
+                <span className="truncate max-w-[160px]">{list.name}</span>
+                <span className={cn(
+                  'text-xs px-1.5 py-0.5 rounded-full shrink-0',
+                  isActive
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
+                )}>
+                  {list.item_count}
+                </span>
+              </button>
 
               {/* Pencil + trash — visible on hover or when active */}
-              {!isRenaming && (
-                <div className={cn(
-                  'absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5',
-                  'opacity-0 group-hover:opacity-100 transition-opacity',
-                  isActive && 'opacity-100'
-                )}>
-                  <button
-                    type="button"
-                    title={t('watchlistRenameTitle')}
-                    aria-label={t('watchlistRenameTitle')}
-                    onClick={(e) => { e.stopPropagation(); setRenamingId(list.id); }}
-                    className={cn(
-                      'h-7 w-7 rounded flex items-center justify-center transition-colors',
-                      isActive
-                        ? 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-white/15'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                    )}
-                  >
-                    <Pencil className="h-3.5 w-3.5" aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    title={t('watchlistDeleteTitle')}
-                    aria-label={t('watchlistDeleteTitle')}
-                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(list); }}
-                    disabled={deleteList.isPending}
-                    className={cn(
-                      'h-7 w-7 rounded flex items-center justify-center transition-colors',
-                      isActive
-                        ? 'text-primary-foreground/60 hover:text-red-300 hover:bg-white/15'
-                        : 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
-                    )}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                  </button>
-                </div>
-              )}
+              <div className={cn(
+                'absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5',
+                'opacity-0 group-hover:opacity-100 transition-opacity',
+                isActive && 'opacity-100'
+              )}>
+                <button
+                  type="button"
+                  title={t('watchlistEditListTitle')}
+                  aria-label={t('watchlistEditListTitle')}
+                  onClick={(e) => { e.stopPropagation(); setEditing(list); setEditOpen(true); }}
+                  className={cn(
+                    'h-7 w-7 rounded flex items-center justify-center transition-colors',
+                    isActive
+                      ? 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-white/15'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  <Pencil className="h-3.5 w-3.5" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  title={t('watchlistDeleteTitle')}
+                  aria-label={t('watchlistDeleteTitle')}
+                  onClick={(e) => { e.stopPropagation(); setConfirmDelete(list); }}
+                  disabled={deleteList.isPending}
+                  className={cn(
+                    'h-7 w-7 rounded flex items-center justify-center transition-colors',
+                    isActive
+                      ? 'text-primary-foreground/60 hover:text-red-300 hover:bg-white/15'
+                      : 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
+                  )}
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              </div>
             </div>
           );
         })}
@@ -206,10 +150,9 @@ export function WatchlistListTabs({
         onCreated={(id) => {
           onListCreated(id);
           setCreateOpen(false);
-          // Start renaming the new list immediately
-          setRenamingId(id);
         }}
       />
+      <CreateListDialog key={editing?.id} list={editing} open={editOpen} onOpenChange={setEditOpen} />
       <PaywallDialog open={paywallOpen} onOpenChange={setPaywallOpen} />
       <Dialog open={confirmDelete !== null} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <DialogContent>

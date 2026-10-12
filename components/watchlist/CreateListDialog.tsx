@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useCreateWatchlistList } from '@/hooks/use-watchlist';
+import { useCreateWatchlistList, useUpdateWatchlistList, type WatchlistList } from '@/hooks/use-watchlist';
 import { cn } from '@/lib/utils';
 
 const PRESET_COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'];
@@ -16,17 +16,27 @@ interface CreateListDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (listId: string) => void;
+  /** Edit this list instead of creating one. Give the dialog a `key` per list so its fields reset. */
+  list?: WatchlistList | null;
 }
 
-export function CreateListDialog({ open, onOpenChange, onCreated }: CreateListDialogProps) {
+export function CreateListDialog({ open, onOpenChange, onCreated, list }: CreateListDialogProps) {
   const { t } = useTranslation('watchlist');
-  const [name, setName] = useState('');
-  const [color, setColor] = useState<string | null>(null);
+  const [name, setName] = useState(list?.name ?? '');
+  const [color, setColor] = useState<string | null>(list?.color ?? null);
   const createList = useCreateWatchlistList();
+  const updateList = useUpdateWatchlistList();
+  const pending = createList.isPending || updateList.isPending;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
+
+    if (list) {
+      await updateList.mutateAsync({ listId: list.id, name: name.trim(), color }).catch(() => {});
+      onOpenChange(false);
+      return;
+    }
 
     const result = await createList.mutateAsync({ name: name.trim(), color });
     if (result.success && result.list) {
@@ -41,7 +51,7 @@ export function CreateListDialog({ open, onOpenChange, onCreated }: CreateListDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>{t('createListTitle')}</DialogTitle>
+          <DialogTitle>{list ? t('editListTitle') : t('createListTitle')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -67,6 +77,7 @@ export function CreateListDialog({ open, onOpenChange, onCreated }: CreateListDi
                   )}
                   style={{ backgroundColor: c }}
                   aria-label={c}
+                  aria-pressed={color === c}
                 />
               ))}
             </div>
@@ -76,8 +87,10 @@ export function CreateListDialog({ open, onOpenChange, onCreated }: CreateListDi
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               {t('createListCancel')}
             </Button>
-            <Button type="submit" disabled={!name.trim() || createList.isPending}>
-              {createList.isPending ? t('createListCreating') : t('createListCreate')}
+            <Button type="submit" disabled={!name.trim() || pending}>
+              {list
+                ? (pending ? t('editListSaving') : t('editListSave'))
+                : (pending ? t('createListCreating') : t('createListCreate'))}
             </Button>
           </DialogFooter>
         </form>
