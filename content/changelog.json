@@ -1,5 +1,46 @@
 [
   {
+    "date": "2026-10-13",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Every Pro course in the Academy now has a free first lesson, so you can try a course before upgrading"
+      },
+      {
+        "type": "improved",
+        "text": "The Academy path is now five sections in learning order, from Foundations and Money & Mindset through to company research, strategies and advanced topics"
+      },
+      {
+        "type": "improved",
+        "text": "Academy lessons are more hands-on. Reading comes one short part at a time with a quick check after it, and six courses have new guided tours on real BullPen screens"
+      },
+      {
+        "type": "improved",
+        "text": "Finishing an Academy lesson now shows your XP, your score, your streak and how close you are to the next level, with one tap straight into the next lesson. Missed a question? Try it again from the same screen"
+      },
+      {
+        "type": "fixed",
+        "text": "Academy quiz answers are now shuffled, so the right answer is no longer usually in the same spot"
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull can now answer questions about BullPen itself: this week's Weekly Pick and its track record, the Daily Brief, upcoming economic events, Investing Ideas, what the funds we track own, and what's new in the app. It shows you the same content your plan shows on each page"
+      },
+      {
+        "type": "fixed",
+        "text": "Ask Bull no longer runs sentences together after offering to open a page, and no longer says you're there before you've said yes"
+      },
+      {
+        "type": "fixed",
+        "text": "Pershing Square's holdings now show its latest quarter instead of stopping at March, and a few fund positions that showed a foreign ticker now show the right US one"
+      },
+      {
+        "type": "improved",
+        "text": "Recent portfolios in the Portfolio Builder show the logos of each portfolio's largest holdings"
+      }
+    ]
+  },
+  {
     "date": "2026-10-12",
     "entries": [
       {
