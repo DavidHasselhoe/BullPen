@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X } from 'lucide-react';
@@ -26,6 +26,8 @@ export function QuizLesson({ content, onComplete }: Props) {
   const isLast = index === total - 1;
   const isCorrect = picked !== null && picked === question.correctIndex;
   const answered = picked !== null;
+  const order = optionOrder(question.options.length, question.question);
+  const nextRef = useRef<HTMLButtonElement>(null);
 
   function handlePick(i: number) {
     if (answered) return;
@@ -45,19 +47,35 @@ export function QuizLesson({ content, onComplete }: Props) {
     setPicked(null);
   }
 
+  // Feedback takes focus so Enter moves on, and keyboard users aren't left on a
+  // disabled option with focus dropped to the page.
+  useEffect(() => {
+    if (answered) nextRef.current?.focus({ preventScroll: true });
+  }, [answered]);
+
+  // 1-4 picks the option shown in that position.
+  useEffect(() => {
+    if (answered) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      const n = Number(e.key);
+      if (Number.isInteger(n) && n >= 1 && n <= order.length) handlePick(order[n - 1]);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   return (
     <div className="space-y-6">
-      {/* Progress bar */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-1.5 rounded-full bg-muted/40 overflow-hidden">
-          <motion.div
-            className="h-full bg-emerald-500 rounded-full"
-            initial={false}
-            animate={{ width: `${((index + (answered ? 1 : 0)) / total) * 100}%` }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-          />
+        <div className="flex flex-1 gap-1.5" aria-hidden>
+          {content.questions.map((_, i) => (
+            <div key={i} className={cn('h-1 flex-1 rounded-full transition-colors duration-300', i < index + (answered ? 1 : 0) ? 'bg-foreground' : 'bg-muted')} />
+          ))}
         </div>
-        <span className="text-xs font-mono text-muted-foreground tabular-nums">
+        <span className="text-xs tabular-nums text-muted-foreground">
           {t('quizLessonProgress', { current: index + 1, total })}
         </span>
       </div>
@@ -71,13 +89,13 @@ export function QuizLesson({ content, onComplete }: Props) {
           transition={{ duration: 0.2 }}
           className="space-y-5"
         >
-          <h2 className="text-xl sm:text-2xl font-semibold leading-tight text-foreground">
+          <h2 className="text-xl font-semibold leading-tight text-foreground sm:text-2xl">
             {question.question}
           </h2>
 
           <div className="grid gap-2.5">
             {/* Shown shuffled; i stays the option's original index, so scoring is unchanged. */}
-            {optionOrder(question.options.length, question.question).map((i) => {
+            {order.map((i, pos) => {
               const option = question.options[i];
               const isPicked = picked === i;
               const isThisCorrect = i === question.correctIndex;
@@ -90,27 +108,27 @@ export function QuizLesson({ content, onComplete }: Props) {
                   type="button"
                   disabled={answered}
                   onClick={() => handlePick(i)}
-                  whileHover={!answered ? { scale: 1.005 } : undefined}
                   whileTap={!answered ? { scale: 0.99 } : undefined}
-                  animate={
-                    showAsCorrect
-                      ? { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgb(34,197,94)' }
-                      : showAsWrong
-                        ? { backgroundColor: 'rgba(239,68,68,0.10)', borderColor: 'rgb(239,68,68)' }
-                        : answered
-                          ? { opacity: 0.45 }
-                          : {}
-                  }
                   className={cn(
-                    'flex items-center justify-between gap-3 text-left',
-                    'rounded-xl border border-border bg-card px-4 py-3.5',
-                    'transition-colors text-sm sm:text-base',
-                    !answered && 'hover:border-foreground/30 cursor-pointer'
+                    'flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-colors duration-200 sm:text-base',
+                    showAsCorrect
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : showAsWrong
+                        ? 'border-amber-500 bg-amber-500/10'
+                        : answered
+                          ? 'border-border bg-card opacity-50'
+                          : 'cursor-pointer border-border bg-card hover:border-foreground/30'
                   )}
                 >
+                  <span
+                    aria-hidden
+                    className="hidden h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border text-xs tabular-nums text-muted-foreground sm:flex"
+                  >
+                    {pos + 1}
+                  </span>
                   <span className="flex-1">{option}</span>
-                  {showAsCorrect && <Check className="h-4 w-4 text-emerald-500 shrink-0" />}
-                  {showAsWrong && <X className="h-4 w-4 text-red-500 shrink-0" />}
+                  {showAsCorrect && <Check className="h-4 w-4 shrink-0 text-emerald-500" aria-label={t('quizLessonCorrect')} />}
+                  {showAsWrong && <X className="h-4 w-4 shrink-0 text-amber-500" aria-label={t('quizLessonIncorrect')} />}
                 </motion.button>
               );
             })}
@@ -118,41 +136,28 @@ export function QuizLesson({ content, onComplete }: Props) {
         </motion.div>
       </AnimatePresence>
 
-      <AnimatePresence>
-        {answered && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className={cn(
-              'rounded-2xl border p-4 sm:p-5',
-              isCorrect
-                ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
-                : 'border-amber-400/30 bg-amber-400/[0.06]'
-            )}
-          >
-            <div
-              className={cn(
-                'text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5',
-                isCorrect ? 'text-emerald-500' : 'text-amber-400'
-              )}
+      <div role="status" aria-live="polite">
+        <AnimatePresence>
+          {answered && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="rounded-2xl border border-border bg-card p-4 sm:p-5"
             >
-              {isCorrect ? t('quizLessonCorrect') : t('quizLessonIncorrect')}
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {question.explanation}
-            </p>
-            <Button
-              onClick={handleNext}
-              size="lg"
-              className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
-            >
-              {isLast ? t('quizLessonFinish') : t('quizLessonNextQuestion')}
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <p className={cn('mb-1.5 flex items-center gap-1.5 text-sm font-semibold', isCorrect ? 'text-emerald-500' : 'text-amber-500')}>
+                {isCorrect ? <Check className="h-4 w-4" aria-hidden /> : <X className="h-4 w-4" aria-hidden />}
+                {isCorrect ? t('quizLessonCorrect') : t('quizLessonIncorrect')}
+              </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{question.explanation}</p>
+              <Button ref={nextRef} onClick={handleNext} size="lg" className="mt-4 w-full font-semibold">
+                {isLast ? t('quizLessonFinish') : t('quizLessonNextQuestion')}
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

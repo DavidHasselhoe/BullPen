@@ -84,13 +84,13 @@ export function DailyChallengeCard() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/[0.07] to-transparent p-5"
+      className="rounded-2xl border border-border bg-card p-5"
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15">
-            <Flame className="h-4 w-4 text-emerald-500" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted">
+            <Flame className="h-4 w-4 text-orange-400" aria-hidden />
           </span>
           <div>
             <p className="text-sm font-semibold text-foreground">
@@ -99,8 +99,8 @@ export function DailyChallengeCard() {
             <p className="text-[11px] text-muted-foreground">{t('dailyChallengeSubtitle')}</p>
           </div>
         </div>
-        <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80">
-          <Zap className="h-3 w-3" />
+        <span className="flex items-center gap-1 text-xs font-medium tabular-nums text-muted-foreground">
+          <Zap className="h-3 w-3" aria-hidden />
           {t('dailyChallengeXpReward', { xp: challenge.xpReward })}
         </span>
       </div>
@@ -145,18 +145,15 @@ export function DailyChallengeCard() {
                   disabled={done || submit.isPending}
                   onClick={() => handlePick(i)}
                   whileTap={!done ? { scale: 0.99 } : undefined}
-                  animate={
-                    showCorrect
-                      ? { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgb(34,197,94)' }
-                      : showWrong
-                        ? { backgroundColor: 'rgba(245,158,11,0.10)', borderColor: 'rgb(245,158,11)' }
-                        : done
-                          ? { opacity: 0.45 }
-                          : {}
-                  }
                   className={cn(
-                    'flex items-center justify-between gap-3 text-left rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm transition-colors',
-                    !done && 'hover:border-foreground/30 cursor-pointer',
+                    'flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm transition-colors duration-200',
+                    showCorrect
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : showWrong
+                        ? 'border-amber-500 bg-amber-500/10'
+                        : done
+                          ? 'border-border bg-card opacity-50'
+                          : 'cursor-pointer border-border bg-card hover:border-foreground/30',
                   )}
                 >
                   <span className="flex-1">{option}</span>
@@ -168,24 +165,20 @@ export function DailyChallengeCard() {
           </div>
 
           {/* Explanation after answering */}
+          <div role="status" aria-live="polite">
           <AnimatePresence>
             {result && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={cn(
-                  'mt-3 rounded-xl border p-3.5',
-                  result.wasCorrect
-                    ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
-                    : 'border-amber-400/30 bg-amber-400/[0.06]',
-                )}
+                className="mt-3 rounded-xl border border-border bg-background/60 p-3.5"
               >
                 <div className={cn(
                   'mb-1 flex items-center justify-between text-sm font-semibold',
                   result.wasCorrect ? 'text-emerald-500' : 'text-amber-500',
                 )}>
                   <span>{result.wasCorrect ? t('dailyChallengeCorrect') : t('quizLessonIncorrect')}</span>
-                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                  <span className="flex items-center gap-1 tabular-nums text-emerald-500">
                     <Zap className="h-3 w-3" /> {t('dailyChallengeXpReward', { xp: result.xpAwarded })}
                   </span>
                 </div>
@@ -196,6 +189,7 @@ export function DailyChallengeCard() {
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
         </>
       )}
     </motion.div>

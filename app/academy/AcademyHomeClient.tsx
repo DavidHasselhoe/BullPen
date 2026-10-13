@@ -80,7 +80,7 @@ export function AcademyHomeClient() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="flex items-center gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] px-5 py-4"
+          className="flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

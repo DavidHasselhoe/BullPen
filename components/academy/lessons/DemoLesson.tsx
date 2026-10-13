@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
+import { PlayCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { DemoContent } from '@/types/academy';
 import { DemoTour } from './DemoTour';
 
@@ -17,14 +21,19 @@ const MarketMoodDemo = dynamic(() => import('./demo/MarketMoodDemo').then((m) =>
 interface Props {
   content: DemoContent;
   onComplete: () => void;
+  /** Where "Back to course" goes when the tour is closed before the end. */
+  courseHref: string;
 }
 
 /**
  * Demo-mode lesson: opens a real app surface fullscreen with a guided DemoTour.
  * Mirrors ChartTourLesson's shape — holds step/active state here, gates step
- * advancement on a surface-reported action, and finishes on skip/close/last step.
+ * advancement on a surface-reported action. Only reaching the last step
+ * completes it: closing or skipping used to award the full XP, so a demo could
+ * be "done" without being looked at.
  */
-export function DemoLesson({ content, onComplete }: Props) {
+export function DemoLesson({ content, onComplete, courseHref }: Props) {
+  const { t } = useTranslation('academy');
   const [stepIndex, setStepIndex] = useState(0);
   const [active, setActive] = useState(true);
   // Set by the active surface when its step-gating action (if any) is done —
@@ -46,7 +55,37 @@ export function DemoLesson({ content, onComplete }: Props) {
     onComplete();
   };
 
-  if (!active) return null;
+  const [closedEarly, setClosedEarly] = useState(false);
+  const leave = () => {
+    setActive(false);
+    setClosedEarly(true);
+  };
+
+  if (!active) {
+    if (!closedEarly) return null;
+    return (
+      <div className="space-y-4 rounded-2xl border border-border bg-card p-5 text-center sm:p-6">
+        <p className="text-sm text-muted-foreground">{t('demoLessonClosedEarly')}</p>
+        <div className="grid gap-2">
+          <Button
+            size="lg"
+            className="w-full gap-2 font-semibold"
+            onClick={() => {
+              setStepIndex(0);
+              setClosedEarly(false);
+              setActive(true);
+            }}
+          >
+            <PlayCircle className="h-4 w-4" aria-hidden />
+            {t('demoLessonRestart')}
+          </Button>
+          <Button asChild size="sm" variant="ghost" className="text-muted-foreground">
+            <Link href={courseHref}>{t('lessonCompleteBackToCourse')}</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const tour = (
     <DemoTour
@@ -54,7 +93,7 @@ export function DemoLesson({ content, onComplete }: Props) {
       stepIndex={stepIndex}
       onStepIndexChange={setStepIndex}
       isActionSatisfied={isActionSatisfied}
-      onSkip={finish}
+      onSkip={leave}
       onFinish={finish}
     />
   );
@@ -62,13 +101,13 @@ export function DemoLesson({ content, onComplete }: Props) {
   switch (content.surface) {
     case 'stock-stats':
       return (
-        <StockStatsDemo ticker={content.ticker} onClose={finish}>
+        <StockStatsDemo ticker={content.ticker} onClose={leave}>
           {tour}
         </StockStatsDemo>
       );
     case 'demo-portfolio':
       return (
-        <PortfolioDemo fixtureId={content.fixtureId} onClose={finish}>
+        <PortfolioDemo fixtureId={content.fixtureId} onClose={leave}>
           {tour}
         </PortfolioDemo>
       );
@@ -78,7 +117,7 @@ export function DemoLesson({ content, onComplete }: Props) {
           holdings={content.holdings}
           years={content.years}
           onCalculated={() => markActionSatisfied('run-calculation')}
-          onClose={finish}
+          onClose={leave}
         >
           {tour}
         </DividendDemo>
@@ -87,7 +126,7 @@ export function DemoLesson({ content, onComplete }: Props) {
       return (
         <ScreenerDemo
           onFilterApplied={() => markActionSatisfied('apply-valuation-filter')}
-          onClose={finish}
+          onClose={leave}
         >
           {tour}
         </ScreenerDemo>
@@ -97,14 +136,14 @@ export function DemoLesson({ content, onComplete }: Props) {
         <AiResearchDemo
           fixtureId={content.fixtureId}
           onResearched={() => markActionSatisfied('run-research')}
-          onClose={finish}
+          onClose={leave}
         >
           {tour}
         </AiResearchDemo>
       );
     case 'market-mood':
       return (
-        <MarketMoodDemo onClose={finish}>
+        <MarketMoodDemo onClose={leave}>
           {tour}
         </MarketMoodDemo>
       );

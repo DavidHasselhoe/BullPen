@@ -76,7 +76,7 @@ export function XPBar() {
         <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
           <motion.div
             style={{ width: widthPct }}
-            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+            className="h-full rounded-full bg-foreground"
           />
         </div>
       </div>

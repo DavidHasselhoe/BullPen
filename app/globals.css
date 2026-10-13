@@ -825,8 +825,8 @@ html.animated-background-active [data-slot="dialog-content"] {
      bouncy. The global prefers-reduced-motion rule below already snaps this
      to a single static frame; no separate override needed. */
   @keyframes academy-current-pulse {
-    0%, 100% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12); }
-    50%      { box-shadow: 0 0 0 7px rgba(34, 197, 94, 0.16); }
+    0%, 100% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--foreground) 12%, transparent); }
+    50%      { box-shadow: 0 0 0 7px color-mix(in oklch, var(--foreground) 18%, transparent); }
   }
   .academy-current-pulse {
     animation: academy-current-pulse 2.4s ease-in-out infinite;

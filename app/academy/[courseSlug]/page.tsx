@@ -95,106 +95,50 @@ export default function CourseOverviewPage() {
             </span>
           )}
         </div>
-        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+        <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
           {course.description}
         </p>
-        <div className="flex items-center gap-3 mt-3 text-[11px] font-mono uppercase tracking-[0.16em] text-muted-foreground">
-          <span>{t('courseOverviewLessonCount', { count: lessons.length })}</span>
-          <span>•</span>
-          <span className="text-emerald-500/80 flex items-center gap-1">
-            <Zap className="h-3 w-3" />
-            {t('courseOverviewXpAvailable', { xp: totalXp })}
-          </span>
-        </div>
+        <p className="mt-3 flex items-center gap-1.5 text-sm tabular-nums text-muted-foreground">
+          {t('courseOverviewLessonCount', { count: lessons.length })}
+          <span aria-hidden>·</span>
+          <Zap className="h-3.5 w-3.5" aria-hidden />
+          {t('courseOverviewXpAvailable', { xp: totalXp })}
+        </p>
       </div>
 
-      <div className="space-y-2.5">
-        {lessons.map((lesson) => {
-          const meta = TYPE_META[lesson.type];
-          // A Pro course's first lesson stays playable for everyone: the free sample.
-          const rowLocked = locked && !lesson.isSample;
-          const Icon = rowLocked ? Lock : meta.icon;
-          const row = (
-            <div
-              className={cn(
-                'flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors',
-                'bg-card',
-                rowLocked
-                  ? 'border-border/40 opacity-70'
-                  : 'hover:border-emerald-500/30',
-                lesson.completed ? 'border-emerald-500/30 bg-emerald-500/[0.04]' : 'border-border/50'
-              )}
-            >
-              <div
-                className={cn(
-                  'h-9 w-9 rounded-lg flex items-center justify-center shrink-0',
-                  lesson.completed ? 'bg-emerald-500/15' : 'bg-muted/40'
-                )}
-              >
-                {lesson.completed ? (
-                  <Check className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-foreground truncate">{lesson.title}</div>
-                <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
-                  {meta.label}
-                  {locked && lesson.isSample && (
-                    <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-foreground">{t('courseOverviewFreeSample')}</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-500/80 shrink-0">
-                <Zap className="h-3 w-3" />
-                {lesson.xpReward}
-              </div>
-            </div>
-          );
-          return rowLocked ? (
-            <div key={lesson.id}>{row}</div>
-          ) : (
-            <Link key={lesson.id} href={`/academy/${course.slug}/${lesson.slug}`}>
-              {row}
-            </Link>
-          );
-        })}
-      </div>
-
+      {/* The next step sits above the list, not under seven rows of it. */}
       {locked ? (
         <div className="space-y-3">
           {sampleLesson && !sampleLesson.completed && (
-            <Link href={`/academy/${course.slug}/${sampleLesson.slug}`}>
-              <Button size="lg" className="w-full font-semibold">
-                {t('courseOverviewTrySampleLesson')}
-              </Button>
-            </Link>
+            <Button asChild size="lg" className="w-full font-semibold">
+              <Link href={`/academy/${course.slug}/${sampleLesson.slug}`}>{t('courseOverviewTrySampleLesson')}</Link>
+            </Button>
           )}
           <ProGate
             feature="academy_pro"
             title={t('academyProGateTitle')}
-            description={t('academyProGateDescriptionLesson')}
+            description={
+              sampleLesson?.completed
+                ? t('academyProGateDescriptionAfterSample', { count: lessons.length - 1 })
+                : t('academyProGateDescriptionLesson')
+            }
           />
         </div>
       ) : (
         nextLesson &&
         completedCount < lessons.length && (
-          <div className="pt-2">
-            <Link href={`/academy/${course.slug}/${nextLesson.slug}`}>
-              <Button
-                size="lg"
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
-              >
+          <div>
+            <Button asChild size="lg" className="w-full font-semibold">
+              <Link href={`/academy/${course.slug}/${nextLesson.slug}`}>
                 {completedCount === 0 ? t('courseOverviewStartCourse') : t('pathNodeContinue')}
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             {canSkip && (
               <button
                 type="button"
                 onClick={handleSkip}
                 disabled={skipping}
-                className="mt-2.5 w-full text-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors disabled:opacity-50"
+                className="mt-2.5 w-full text-center text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-50"
               >
                 {skipping ? t('courseOverviewSkipping') : t('courseOverviewSkipCourse')}
               </button>
@@ -204,35 +148,78 @@ export default function CourseOverviewPage() {
       )}
 
       {hasFinalQuiz && completedCount === lessons.length && !progress?.completed_at && (
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4 text-center space-y-3">
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-4 text-center">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-500 mb-1">
-              {t('courseOverviewLessonsDone')}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {t('courseOverviewFinalQuizPrompt')}
-            </p>
+            <p className="mb-1 text-sm font-semibold text-foreground">{t('courseOverviewLessonsDone')}</p>
+            <p className="text-sm text-muted-foreground">{t('courseOverviewFinalQuizPrompt')}</p>
           </div>
-          <Link href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}>
-            <Button size="lg" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
-              {t('courseOverviewTakeFinalQuiz')}
-            </Button>
-          </Link>
+          <Button asChild size="lg" className="w-full font-semibold">
+            <Link href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}>{t('courseOverviewTakeFinalQuiz')}</Link>
+          </Button>
         </div>
       )}
 
       {(!hasFinalQuiz || progress?.completed_at) && completedCount === lessons.length && lessons.length > 0 && (
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4 text-center">
-          <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-500 mb-1">
+        <div className="rounded-2xl border border-border bg-card p-4 text-center">
+          <p className="mb-1 flex items-center justify-center gap-1.5 text-sm font-semibold text-foreground">
+            <Check className="h-4 w-4" aria-hidden />
             {t('courseOverviewCourseComplete')}
-          </div>
+          </p>
           <p className="text-sm text-muted-foreground">
-            {hasFinalQuiz
-              ? t('courseOverviewPassedQuizMessage')
-              : t('courseOverviewFinishedLessonsMessage')}
+            {hasFinalQuiz ? t('courseOverviewPassedQuizMessage') : t('courseOverviewFinishedLessonsMessage')}
           </p>
         </div>
       )}
+
+      <ol className="space-y-2.5">
+        {lessons.map((lesson) => {
+          const meta = TYPE_META[lesson.type];
+          // A Pro course's first lesson stays playable for everyone: the free sample.
+          const rowLocked = locked && !lesson.isSample;
+          const isNext = !locked && nextLesson?.id === lesson.id && !lesson.completed;
+          const Icon = rowLocked ? Lock : meta.icon;
+          const row = (
+            <div
+              className={cn(
+                'flex items-center gap-3 rounded-xl border bg-card px-4 py-3.5 transition-colors',
+                isNext ? 'border-foreground/40' : 'border-border/50',
+                rowLocked ? 'opacity-70 hover:opacity-100' : 'hover:border-foreground/30'
+              )}
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/60">
+                {lesson.completed ? (
+                  <Check className="h-4 w-4 text-foreground" aria-label={t('courseOverviewLessonDone')} />
+                ) : (
+                  <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-foreground">{lesson.title}</div>
+                <div className="text-xs text-muted-foreground">
+                  {meta.label}
+                  {isNext && <span className="ml-2 font-medium text-foreground">{t('courseOverviewUpNext')}</span>}
+                  {locked && lesson.isSample && (
+                    <span className="ml-2 rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">{t('courseOverviewFreeSample')}</span>
+                  )}
+                  {rowLocked && <span className="sr-only">, {t('courseOverviewLockedPro')}</span>}
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted-foreground">
+                <Zap className="h-3 w-3" aria-hidden />
+                {lesson.xpReward}
+              </div>
+            </div>
+          );
+          return (
+            <li key={lesson.id}>
+              {/* Locked rows used to be inert; tapping one now goes where it can be opened. */}
+              <Link href={rowLocked ? '/upgrade' : `/academy/${course.slug}/${lesson.slug}`} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                {row}
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -39,16 +39,14 @@ function HighlightedTerm({ term, definition }: HighlightedTermProps) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline text-emerald-500 underline decoration-emerald-500/40 decoration-dotted underline-offset-[3px] hover:decoration-emerald-500 hover:bg-emerald-500/5 rounded px-0.5 transition-colors"
+          className="inline rounded px-0.5 font-medium text-foreground underline decoration-foreground/40 decoration-dotted underline-offset-[3px] transition-colors hover:bg-muted hover:decoration-foreground"
         >
           {term}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="space-y-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1">
-            {term}
-          </div>
+          <div className="mb-1 text-sm font-semibold text-foreground">{term}</div>
           <p className="text-sm text-foreground leading-relaxed">{definition}</p>
         </div>
 
@@ -59,7 +57,7 @@ function HighlightedTerm({ term, definition }: HighlightedTermProps) {
           onClick={askAI}
           className="w-full gap-1.5 text-xs h-7"
         >
-          <Sparkles className="h-3 w-3 text-emerald-500" />
+          <Sparkles className="h-3 w-3" />
           {t('readLessonAskAiForMore')}
         </Button>
       </PopoverContent>
@@ -84,48 +82,77 @@ function renderTextWithHighlights(text: string, terms: HighlightedTermProps[]) {
   });
 }
 
+/**
+ * One section per screen, the way a lesson game paces it: read a few lines,
+ * tap Continue, see how far through you are. It used to render every section
+ * at once as a stack of cards, which read as a page of a textbook.
+ */
 export function ReadLesson({ content, onComplete }: Props) {
   const { t } = useTranslation('academy');
+  const reduced = useReducedMotion();
+  const [step, setStep] = useState(0);
+  const continueRef = useRef<HTMLButtonElement>(null);
+  const total = content.sections.length;
+  const isLast = step === total - 1;
+  const section = content.sections[step];
+
+  // Enter keeps going, and a long section on a phone starts from its top.
+  useEffect(() => {
+    continueRef.current?.focus({ preventScroll: true });
+    if (step > 0) window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  }, [step, reduced]);
+
   return (
     <div className="space-y-6">
-      {content.sections.map((section, i) => (
+      <div
+        className="flex gap-1.5"
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={total}
+        aria-valuenow={step + 1}
+        aria-label={t('readLessonProgress', { current: step + 1, total })}
+      >
+        {content.sections.map((_, i) => (
+          <div key={i} className={cn('h-1 flex-1 rounded-full transition-colors duration-300', i <= step ? 'bg-foreground' : 'bg-muted')} />
+        ))}
+      </div>
+
+      <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: i * 0.06 }}
-          className={cn(
-            'rounded-2xl border border-border/40 bg-gradient-to-br from-emerald-500/[0.03] to-transparent p-5 sm:p-6'
-          )}
+          key={step}
+          initial={reduced ? false : { opacity: 0, x: 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={reduced ? undefined : { opacity: 0, x: -8 }}
+          transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
+          className="space-y-5"
         >
-          <p className="text-base sm:text-lg leading-relaxed text-foreground">
+          <p className="text-lg leading-relaxed text-foreground sm:text-xl sm:leading-relaxed">
             {renderTextWithHighlights(section.text, section.highlightedTerms)}
           </p>
-        </motion.div>
-      ))}
 
-      {content.funFact && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: content.sections.length * 0.06 }}
-          className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-4 sm:p-5"
-        >
-          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400/70 mb-1.5">
-            {t('readLessonFunFact')}
-          </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">{content.funFact}</p>
+          {isLast && content.funFact && (
+            <aside className="rounded-xl bg-muted/50 px-4 py-3.5">
+              <p className="mb-1 text-sm font-semibold text-foreground">{t('readLessonFunFact')}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{content.funFact}</p>
+            </aside>
+          )}
         </motion.div>
-      )}
+      </AnimatePresence>
 
-      <div className="pt-2">
+      <div className="grid gap-2 pt-2">
         <Button
-          onClick={onComplete}
+          ref={continueRef}
+          onClick={() => (isLast ? onComplete() : setStep((n) => n + 1))}
           size="lg"
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+          className="w-full font-semibold"
         >
           {t('scenarioLessonContinue')}
         </Button>
+        {step > 0 && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setStep((n) => n - 1)} className="text-muted-foreground">
+            {t('lessonPlayerBack')}
+          </Button>
+        )}
       </div>
     </div>
   );

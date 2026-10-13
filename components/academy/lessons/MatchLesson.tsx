@@ -40,6 +40,8 @@ export function MatchLesson({ content, onComplete }: Props) {
   const [selectedTermIdx, setSelectedTermIdx] = useState<number | null>(null);
   const [matchedSet, setMatchedSet] = useState<Set<number>>(new Set());
   const [wrongPair, setWrongPair] = useState<{ termIdx: number; defIdx: number } | null>(null);
+  // Screen readers get the result in words; sighted users get the shake and the check.
+  const [announcement, setAnnouncement] = useState('');
 
   const allMatched = matchedSet.size === pairs.length;
 
@@ -59,12 +61,15 @@ export function MatchLesson({ content, onComplete }: Props) {
     if (matchedSet.has(defOriginalIdx)) return;
     if (selectedTermIdx === null) return;
 
+    const term = pairs.find((p) => p.index === selectedTermIdx)?.term ?? '';
     if (selectedTermIdx === defOriginalIdx) {
       // Correct match
       setMatchedSet((s) => new Set(s).add(selectedTermIdx));
+      setAnnouncement(t('matchLessonMatched', { term }));
       setSelectedTermIdx(null);
     } else {
       setWrongPair({ termIdx: selectedTermIdx, defIdx: defOriginalIdx });
+      setAnnouncement(t('matchLessonNotAMatch', { term }));
       setSelectedTermIdx(null);
     }
   }
@@ -90,6 +95,7 @@ export function MatchLesson({ content, onComplete }: Props) {
                 key={`t-${p.index}`}
                 type="button"
                 disabled={isMatched}
+                aria-pressed={isSelected}
                 onClick={() => handleTermClick(p.index)}
                 whileTap={!isMatched ? { scale: 0.97 } : undefined}
                 animate={shakeAnim(!!isWrong)}
@@ -97,14 +103,16 @@ export function MatchLesson({ content, onComplete }: Props) {
                   'w-full rounded-xl border px-3 py-3 text-sm font-medium text-left transition-colors',
                   isMatched
                     ? 'border-emerald-500/40 bg-emerald-500/[0.08] text-emerald-500 cursor-default'
-                    : isSelected
-                      ? 'border-emerald-500 bg-emerald-500/[0.10] text-foreground'
-                      : 'border-border bg-card hover:border-foreground/30 text-foreground'
+                    : isWrong
+                      ? 'border-amber-500 bg-card text-foreground'
+                      : isSelected
+                        ? 'border-foreground bg-muted text-foreground'
+                        : 'border-border bg-card hover:border-foreground/30 text-foreground'
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span>{p.term}</span>
-                  {isMatched && <Check className="h-3.5 w-3.5 shrink-0" />}
+                  {isMatched && <Check className="h-3.5 w-3.5 shrink-0" aria-label={t('matchLessonMatchedShort')} />}
                 </div>
               </motion.button>
             );
@@ -128,9 +136,11 @@ export function MatchLesson({ content, onComplete }: Props) {
                   'w-full rounded-xl border px-3 py-3 text-xs sm:text-sm text-left transition-colors leading-relaxed',
                   isMatched
                     ? 'border-emerald-500/40 bg-emerald-500/[0.08] text-muted-foreground cursor-default'
-                    : selectedTermIdx !== null
-                      ? 'border-border bg-card hover:border-emerald-500/40 text-foreground cursor-pointer'
-                      : 'border-border bg-card text-muted-foreground'
+                    : isWrong
+                      ? 'border-amber-500 bg-card text-foreground'
+                      : selectedTermIdx !== null
+                        ? 'border-border bg-card hover:border-foreground/30 text-foreground cursor-pointer'
+                        : 'border-border bg-card text-muted-foreground'
                 )}
               >
                 {p.definition}
@@ -140,6 +150,8 @@ export function MatchLesson({ content, onComplete }: Props) {
         </div>
       </div>
 
+      <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
+
       <AnimatePresence>
         {allMatched && (
           <motion.div
@@ -147,11 +159,7 @@ export function MatchLesson({ content, onComplete }: Props) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <Button
-              onClick={onComplete}
-              size="lg"
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
-            >
+            <Button autoFocus onClick={onComplete} size="lg" className="w-full font-semibold">
               {t('matchLessonAllMatched')}
             </Button>
           </motion.div>

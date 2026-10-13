@@ -137,7 +137,7 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
                 onClick={() =>
                   router.push(result.nextCourseSlug ? `/academy/${result.nextCourseSlug}` : '/academy')
                 }
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold gap-1.5"
+                className="w-full gap-1.5 font-semibold"
               >
                 {t('pathNodeContinue')}
                 <ArrowRight className="h-4 w-4" />
@@ -147,7 +147,7 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
                 <Button
                   size="lg"
                   onClick={handleRetry}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold gap-1.5"
+                  className="w-full gap-1.5 font-semibold"
                 >
                   <RotateCcw className="h-4 w-4" />
                   {t('courseFinalQuizTryAgain')}

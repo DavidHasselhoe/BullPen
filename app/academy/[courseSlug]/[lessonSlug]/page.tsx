@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { LessonPlayer } from '@/components/academy/LessonPlayer';
 import { useUserProgress } from '@/hooks/use-user-progress';
@@ -14,6 +14,7 @@ export default function LessonPage() {
   const courseSlug = params?.courseSlug ?? null;
   const lessonSlug = params?.lessonSlug ?? null;
   const { data, isLoading } = useUserProgress(courseSlug);
+  const searchParams = useSearchParams();
 
   if (isLoading || !data) {
     return (
@@ -60,7 +61,17 @@ export default function LessonPage() {
     content: lessonRow.content,
   };
 
-  const next = data.lessons[data.lessons.indexOf(lessonRow) + 1];
+  const index = data.lessons.indexOf(lessonRow);
+  const next = data.lessons[index + 1];
+  const isSample = data.locked && !!lessonRow.isSample;
+  // A read and the check drafted from it ("<slug>-check") play as one unit.
+  const pairedCheck = lesson.type === 'read' && next?.slug === `${lesson.slug}-check` && next.content ? next : null;
+  const prev = data.lessons[index - 1];
+  // ?carry is display-only (what the paired read just earned); XP itself is
+  // always awarded server-side. Ignored unless this lesson really is that read's check.
+  const carry = Number(searchParams.get('carry'));
+  const carriedXp = prev && lesson.slug === `${prev.slug}-check` && Number.isFinite(carry) && carry > 0 ? Math.min(carry, prev.xpReward) : 0;
+  const rest = data.lessons.slice(index + 1);
   return (
     <LessonPlayer
       // A new lesson is a fresh player: the reward screen must not carry over.
@@ -70,7 +81,15 @@ export default function LessonPage() {
       courseTitle={data.course.title}
       // A free account's next lesson in a Pro course is behind the paywall.
       nextLesson={next && next.content ? { slug: next.slug, title: next.title } : null}
-      isSample={data.locked && !!lessonRow.isSample}
+      isSample={isSample}
+      position={{ current: index + 1, total: data.lessons.length }}
+      continueInto={pairedCheck ? { slug: pairedCheck.slug } : null}
+      carriedXp={carriedXp}
+      lockedAhead={
+        isSample
+          ? { remaining: rest.length, xp: rest.reduce((n, l) => n + l.xpReward, 0), lessons: rest.slice(0, 3).map((l) => ({ title: l.title })) }
+          : null
+      }
     />
   );
 }

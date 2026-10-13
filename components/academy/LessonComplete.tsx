@@ -5,19 +5,26 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { ArrowRight, Flame } from 'lucide-react';
+import { ArrowRight, Flame, Lock, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
 import { useAcademyCourses } from '@/hooks/use-user-progress';
 import { findCurrentCourse } from '@/lib/academy/path-chapters';
-import { xpToNextLevel, type AcademyStats } from '@/types/academy';
+import { levelForXp, xpToNextLevel, type AcademyStats } from '@/types/academy';
 
 export interface LessonCompleteResult {
   xpAwarded: number;
   isFirstCompletion: boolean;
   courseCompleted: boolean;
   stats: AcademyStats;
+}
+
+/** What a free account would unlock: the rest of the course after its sample. */
+export interface LockedAhead {
+  remaining: number;
+  xp: number;
+  lessons: { title: string }[];
 }
 
 interface Props {
@@ -33,6 +40,13 @@ interface Props {
   /** Null while the completion request is in flight. */
   result: LessonCompleteResult | null;
   failed: boolean;
+  /** Quiz result, shown as "1 of 2 right". Null for lessons without questions. */
+  score: { correct: number; total: number } | null;
+  /** XP from the read lesson this check was paired with. */
+  carriedXp: number;
+  lockedAhead: LockedAhead | null;
+  /** Offered when some answers were wrong. */
+  onRetry?: () => void;
 }
 
 /**
@@ -45,16 +59,24 @@ interface Props {
  * one next step. XP is known before the save returns, so it shows at once;
  * level and streak wait for the server's numbers rather than guessing.
  */
-export function LessonComplete({ courseSlug, courseTitle, xpReward, nextLesson, finishedSample, before, result, failed }: Props) {
+export function LessonComplete({
+  courseSlug, courseTitle, xpReward, nextLesson, finishedSample, before: beforeThisLesson, result, failed, score, carriedXp, lockedAhead, onRetry,
+}: Props) {
   const { t } = useTranslation('academy');
   const reduced = useReducedMotion();
   const primaryRef = useRef<HTMLAnchorElement>(null);
   const { data: courses } = useAcademyCourses();
 
-  const xp = result ? result.xpAwarded : xpReward;
-  const alreadyEarned = result != null && !result.isFirstCompletion;
+  // A paired check reports the read's XP too, and its level bar starts from
+  // before the read, so the screen shows the whole unit.
+  const before = beforeThisLesson && carriedXp > 0
+    ? { ...beforeThisLesson, totalXp: Math.max(0, beforeThisLesson.totalXp - carriedXp), level: levelForXp(Math.max(0, beforeThisLesson.totalXp - carriedXp)) }
+    : beforeThisLesson;
+  const xp = (result ? result.xpAwarded : xpReward) + carriedXp;
+  const alreadyEarned = result != null && xp === 0;
   const courseDone = result?.courseCompleted ?? false;
   const leveledUp = !!(result && before && result.stats.level > before.level);
+  const streakGrew = !!(result && result.stats.currentStreak > (beforeThisLesson?.currentStreak ?? 0));
   const nextCourse = courseDone ? findCurrentCourse(courses ?? []) : null;
 
   // Enter continues, like every other step in a lesson.
@@ -63,9 +85,14 @@ export function LessonComplete({ courseSlug, courseTitle, xpReward, nextLesson, 
   }, [result]);
 
   useEffect(() => {
-    if (reduced || !(leveledUp || courseDone)) return;
-    confetti({ particleCount: 70, spread: 75, origin: { y: 0.35 }, colors: ['#34d399', '#d4d4d4', '#737373'], scalar: 0.85, ticks: 180 });
-  }, [leveledUp, courseDone, reduced]);
+    // First lesson of the day, a new level, or a finished course: the moments worth a burst.
+    if (reduced || !(leveledUp || courseDone || streakGrew)) return;
+    // Main-thread instance: the default one starts a blob: Web Worker, which the
+    // app's CSP (script-src without worker-src) refuses with a console error.
+    const fire = confetti.create(undefined, { resize: true, useWorker: false });
+    fire({ particleCount: 70, spread: 75, origin: { y: 0.35 }, colors: ['#34d399', '#d4d4d4', '#737373'], scalar: 0.85, ticks: 180 });
+    return () => fire.reset();
+  }, [leveledUp, courseDone, streakGrew, reduced]);
 
   // Last lesson but the course isn't done: its final quiz is still ahead, on the course page.
   const primary = finishedSample
@@ -98,6 +125,11 @@ export function LessonComplete({ courseSlug, courseTitle, xpReward, nextLesson, 
       <p className="mt-1 text-sm text-muted-foreground">
         {finishedSample ? t('lessonCompleteSampleDescription') : courseTitle}
       </p>
+      {score && (
+        <p className="mt-3 text-sm font-medium text-foreground">
+          {t('lessonCompleteScore', { correct: score.correct, total: score.total })}
+        </p>
+      )}
 
       <div className="mt-8 grid w-full grid-cols-2 gap-3">
         <Stat label={alreadyEarned ? t('lessonCompleteAlreadyEarned') : t('completionCelebrationXpEarned')}>
@@ -108,7 +140,7 @@ export function LessonComplete({ courseSlug, courseTitle, xpReward, nextLesson, 
         <Stat label={t('completePageDayStreak')}>
           {result ? (
             <span className="inline-flex items-center gap-1.5">
-              <Flame className="h-5 w-5 text-muted-foreground" aria-hidden />
+              <Flame className={streakGrew ? 'h-5 w-5 fill-orange-400/30 text-orange-400' : 'h-5 w-5 text-muted-foreground'} aria-hidden />
               {result.stats.currentStreak}
             </span>
           ) : (
@@ -125,6 +157,22 @@ export function LessonComplete({ courseSlug, courseTitle, xpReward, nextLesson, 
         </p>
       )}
 
+      {finishedSample && lockedAhead && lockedAhead.remaining > 0 && (
+        <div className="mt-6 w-full rounded-2xl border border-border/50 bg-card px-4 py-3.5 text-left">
+          <p className="mb-2 text-sm font-semibold text-foreground">
+            {t('lessonCompleteStillAhead', { count: lockedAhead.remaining, xp: lockedAhead.xp })}
+          </p>
+          <ul className="space-y-1.5">
+            {lockedAhead.lessons.map((l) => (
+              <li key={l.title} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="min-w-0">{l.title}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-8 grid w-full gap-2.5">
         {finishedSample ? (
           <UpgradeCTA size="lg" label={t('lessonCompleteUnlockCourse', { course: courseTitle })} className="w-full" />
@@ -137,6 +185,12 @@ export function LessonComplete({ courseSlug, courseTitle, xpReward, nextLesson, 
               </Link>
             </Button>
           )
+        )}
+        {onRetry && (
+          <Button type="button" size="lg" variant="outline" className="w-full gap-2" onClick={onRetry}>
+            <RotateCcw className="h-4 w-4" aria-hidden />
+            {t('lessonCompleteRetry')}
+          </Button>
         )}
         <Button asChild size="lg" variant="ghost" className="w-full text-muted-foreground">
           <Link href={finishedSample || courseDone ? '/academy' : `/academy/${courseSlug}`}>

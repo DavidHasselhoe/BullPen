@@ -7,6 +7,7 @@ import { useAIPanel } from './AIPanelProvider';
 import { BullAiIcon } from './BullAiIcon';
 import { cn } from '@/lib/utils';
 import { isStandalonePage } from '@/components/navigation/AuthNavigation';
+import { isAcademyLessonRoute } from '@/lib/academy/routes';
 
 // Public marketing/support pages have no app context (tickers, portfolio) for
 // the assistant to act on. Same list as the app nav, so a new page is added once.
@@ -56,7 +57,7 @@ export function AIPanelToggle() {
   const { t } = useTranslation('ai');
   const { isOpen, toggle } = useAIPanel();
   const pathname = usePathname();
-  const hiddenForRoute = isStandalonePage(pathname);
+  const hiddenForRoute = isStandalonePage(pathname) || isAcademyLessonRoute(pathname);
   const visible = !hiddenForRoute && !isOpen;
 
   // Reserve room for the button at the end of the page on phones, the same

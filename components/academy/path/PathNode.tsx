@@ -19,8 +19,8 @@ interface Props {
 
 /**
  * One node on the /academy path. State is carried by shape + icon + label
- * together, never color alone: completed (filled emerald, check), current
- * (outlined emerald ring, course icon, "Continue" chip), available-but-not-
+ * together, never color alone: completed (filled ink, check), current
+ * (outlined ink ring, course icon, "Continue" chip), available-but-not-
  * current (plain outline, course icon — free and Pro tracks unlock
  * independently in app/api/academy/courses/route.ts, so more than one course
  * can be unlocked at once even though only one is ever "current"), locked —
@@ -48,8 +48,8 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
       ref={circleRef}
       className={cn(
         'relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors',
-        course.isCompleted && 'border-emerald-500 bg-emerald-500',
-        isCurrent && 'border-2 border-emerald-500 bg-card shadow-[0_0_0_4px_rgba(34,197,94,0.12)] academy-current-pulse',
+        course.isCompleted && 'border-foreground bg-foreground',
+        isCurrent && 'border-2 border-foreground bg-card academy-current-pulse',
         course.isLocked && 'border-border bg-muted',
         !course.isCompleted && !isCurrent && !course.isLocked && 'border-border bg-card'
       )}
@@ -57,11 +57,11 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
       {/* A locked course keeps its own icon, with the lock as a badge: 21 of
           23 nodes rendering the same grey padlock made the path one wall. */}
       {course.isCompleted ? (
-        <Check className="h-6 w-6 text-white" strokeWidth={2.5} />
+        <Check className="h-6 w-6 text-background" strokeWidth={2.5} aria-hidden />
       ) : (
         <CourseIcon
           name={course.icon}
-          className={cn('h-5 w-5', isCurrent ? 'text-emerald-500' : course.isLocked ? 'text-muted-foreground' : 'text-foreground/70')}
+          className={cn('h-5 w-5', isCurrent ? 'text-foreground' : course.isLocked ? 'text-muted-foreground' : 'text-foreground/70')}
         />
       )}
       {isProgressionLocked && (
@@ -109,7 +109,7 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
         </span>
       </div>
       {isCurrent && (
-        <div className={cn('mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400', align === 'left' && 'flex-row-reverse')}>
+        <div className={cn('mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-foreground', align === 'left' && 'flex-row-reverse')}>
           <Play className="h-2.5 w-2.5 fill-current" />
           {course.completedLessons > 0 ? t('pathNodeContinue') : t('pathNodeStart')}
         </div>
@@ -167,7 +167,7 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
       <Link
         // Pro courses open their overview too: the first lesson is a free sample.
         href={`/academy/${course.slug}`}
-        className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         {content}
       </Link>

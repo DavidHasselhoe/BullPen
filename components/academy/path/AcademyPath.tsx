@@ -141,7 +141,7 @@ export function AcademyPath({ courses }: Props) {
         aria-hidden="true"
       >
         <path d={pathD.todo} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-border" />
-        <path d={pathD.done} fill="none" stroke="rgb(34,197,94)" strokeWidth="2.5" strokeLinecap="round" opacity="0.55" />
+        <path d={pathD.done} fill="none" stroke="currentColor" className="text-foreground" strokeWidth="2.5" strokeLinecap="round" opacity="0.45" />
       </svg>
 
       <motion.ol
