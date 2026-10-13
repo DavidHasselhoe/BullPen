@@ -24,5 +24,10 @@
   "metricSignalWeakHint": "«Coouunts aagaaiinst thee coompaany iin iits Heeaalth Scooree»",
   "authGateSignIn": "«Siign iin»",
   "authGateCreateAccount": "«Creeaatee freeee aaccoouunt»",
-  "exportGuestContext": "«EExpoortiing too CSV aand PDF iis paart oof Proo: creeaatee aa freeee aaccoouunt, theen try Proo freeee foor {{trialDays}} daays.»"
+  "exportGuestContext": "«EExpoortiing too CSV aand PDF iis paart oof Proo: creeaatee aa freeee aaccoouunt, theen try Proo freeee foor {{trialDays}} daays.»",
+  "experienceToggleSimple": "«Siimplee»",
+  "experienceToggleFull": "«Fuull»",
+  "experienceToggleSimpleTitle": "«Plaaiin-EEngliish laabeels aand thee keey nuumbeers»",
+  "experienceToggleFullTitle": "«Fuull fiinaanciiaal teerms aand eeveery meetriic»",
+  "experienceToggleAria": "«Teermiinooloogy»"
 }
