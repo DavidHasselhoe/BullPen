@@ -18,6 +18,7 @@ import type { SavedGeneration } from '@/app/api/ai/portfolio-builder/history/rou
 import type { QuotaState } from '@/lib/billing/quotas';
 import { cn } from '@/lib/utils';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
+import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
 import { useInvalidateQuota } from '@/hooks/use-quota';
 import { useMarkEntityNotificationsRead } from '@/hooks/use-notifications';
@@ -511,14 +512,18 @@ function RecentPortfolioRow({
             {gen.portfolio.theme_summary}
           </span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className={cn('font-semibold tabular-nums', scoreColor)}>
-            {t('portfolioBuilderConfidenceScore', { score })}
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+          <HoldingLogoStack gen={gen} />
+          {/* One unit, so on a narrow card it drops below the logos whole rather than breaking "71 confidence" in two. */}
+          <span className="flex items-center gap-3 whitespace-nowrap">
+            <span className={cn('font-semibold tabular-nums', scoreColor)}>
+              {t('portfolioBuilderConfidenceScore', { score })}
+            </span>
+            <span>·</span>
+            <span>{t('portfolioBuilderHoldingsCount', { count: gen.portfolio.holdings.length })}</span>
+            <span>·</span>
+            <span>{label}</span>
           </span>
-          <span>·</span>
-          <span>{t('portfolioBuilderHoldingsCount', { count: gen.portfolio.holdings.length })}</span>
-          <span>·</span>
-          <span>{label}</span>
         </div>
       </button>
 
@@ -552,6 +557,26 @@ function RecentPortfolioRow({
         )}
       </div>
     </div>
+  );
+}
+
+/** The portfolio's five largest positions as overlapping logos. Decorative: the holdings count beside it says the same thing in words. */
+function HoldingLogoStack({ gen }: { gen: SavedGeneration }) {
+  const top = [...gen.portfolio.holdings].sort((a, b) => b.allocation_pct - a.allocation_pct).slice(0, 5);
+  if (top.length === 0) return null;
+  return (
+    <span className="flex shrink-0 items-center -space-x-2" aria-hidden>
+      {top.map((h) => (
+        <CompanyLogo
+          key={h.ticker}
+          ticker={h.ticker}
+          name={h.company}
+          logoUrl={gen.logoMap[h.ticker] ?? undefined}
+          size={22}
+          className="border border-border/60 bg-card ring-2 ring-card"
+        />
+      ))}
+    </span>
   );
 }
 
