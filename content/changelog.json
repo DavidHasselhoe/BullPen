@@ -37,6 +37,10 @@
       {
         "type": "improved",
         "text": "Recent portfolios in the Portfolio Builder show the logos of each portfolio's largest holdings"
+      },
+      {
+        "type": "fixed",
+        "text": "The Manage or cancel button in trial and renewal emails now always opens your billing settings, even days after the email arrived"
       }
     ]
   },
