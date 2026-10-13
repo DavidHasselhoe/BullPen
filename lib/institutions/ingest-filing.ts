@@ -91,9 +91,17 @@ export interface IngestOptions {
 /** Every 13F-HR for a CIK, newest first. Excludes amendments (13F-HR/A). */
 export async function list13FFilings(cik: string): Promise<EdgarFiling[]> {
   const filings = await fetchRecentFilings(cik);
-  return filings
+  const hr = filings
     .filter((f) => f.form === '13F-HR')
     .sort((a, b) => b.filingDate.localeCompare(a.filingDate));
+  // A 13F-NT means another manager now reports this one's holdings. Nothing
+  // here would ever see a newer 13F-HR, so the fund just stops updating:
+  // Pershing Square sat on Q1 2026 for two months that way (migration 166).
+  const notice = filings.find((f) => f.form === '13F-NT' && (!hr[0] || f.filingDate > hr[0].filingDate));
+  if (notice) {
+    console.error(`[13F] CIK ${cik} filed a 13F-NT on ${notice.filingDate}: its holdings are reported by another manager now. Repoint the fund's CIK (see the NT's otherManagersInfo).`);
+  }
+  return hr;
 }
 
 export async function ingestFiling(
