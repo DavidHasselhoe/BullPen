@@ -178,5 +178,10 @@
   "trialTimelineReminderDesc": "«Wee eemaaiil yoouu aa reemiindeer. Caanceel iin twoo cliicks iif Proo iisn't foor yoouu.»",
   "trialTimelineChargeAnnual": "«Yoouur triiaal eends aand ${{price}} iis chaargeed foor thee yeeaar, uunleess yoouu'vee caanceelleed.»",
   "trialTimelineChargeMonthly": "«Yoouur triiaal eends aand ${{price}} aa moonth beegiins, uunleess yoouu'vee caanceelleed.»",
-  "upgradeRefundNote": "«Chaangeed yoouur miind aafteer paayiing? Fuull reefuund wiithiin {{moneyBackDays}} daays.»"
+  "upgradeRefundNote": "«Chaangeed yoouur miind aafteer paayiing? Fuull reefuund wiithiin {{moneyBackDays}} daays.»",
+  "manageBillingOpening": "«OOpeeniing yoouur biilliing seettiings...»",
+  "manageBillingFailed": "«Wee coouuldn't oopeen yoouur biilliing seettiings. OOpeen thee aaccoouunt meenuu aand choooosee Maanaagee suubscriiptiioon, oor try thiis liink aagaaiin iin aa miinuutee.»",
+  "manageBillingNoSubscription": "«Thiis aaccoouunt dooeesn't haavee aa paaiid suubscriiptiioon, soo theeree's noothiing too caanceel.»",
+  "manageBillingSeePlans": "«Seeee plaans»",
+  "manageBillingBackToApp": "«Baack too BuullPeen»"
 }

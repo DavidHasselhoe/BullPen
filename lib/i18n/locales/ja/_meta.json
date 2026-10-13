@@ -3474,5 +3474,17 @@
   "academy.academyProGateDescriptionAfterSample_other": "c2f8e85ba375431c5793ea49df915729a76b5de4f3c407c3a316677737f109f3",
   "academy.courseOverviewLessonDone": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516",
   "academy.courseOverviewUpNext": "e31da5b25f8b7324861e9aadaf5c503e7fd43e739fa3be17ebe63e999fb13df1",
-  "academy.courseOverviewLockedPro": "ce5899dfc7da18b87e19c3b7c74137b5118995d26548527887400a5873db25c6"
+  "academy.courseOverviewLockedPro": "ce5899dfc7da18b87e19c3b7c74137b5118995d26548527887400a5873db25c6",
+  "billing.verifyEmailTitle": "ea811f6885c3b0977069d4a919b8d2ea8d7ba08e01b876dc39ff775851b1852f",
+  "billing.verifyEmailBodyAddress": "93f5deb29eb85db7cc2ae37ed0644983b7082eca39d406dd53cd0ed6327722c1",
+  "billing.verifyEmailBody": "181dc11c2f46f2d282ab62ceaf7d2cdfd8c0bfcdf16ed7ee42050c17c23007a5",
+  "billing.verifyEmailNotArrived": "2ed10d28e13a9d6ffafbacf5eaf87874c7ad67e035cb4186abc7f046554a9262",
+  "billing.verifyEmailResend": "065cc0e625bad220fe9fa31f8f6d73281e47e1f6e7424c87edda78c72ee2c762",
+  "billing.verifyEmailResent": "21533543543e086684a20dfb11f67585c26367dd9b5931fac040baa38e8194f5",
+  "billing.verifyEmailResendError": "ee347c7d3b7c8a8b8bde046333079eebd5ada449f59a92d7280749dfe77f626b",
+  "billing.manageBillingOpening": "89b93863c58ea2b21d3ee030652df880e593a198544475d60bc8d9a8a31e882c",
+  "billing.manageBillingFailed": "6e715d49b170e8a29f832b59028820b4919308ecf6f420d3f186dc7457db4b87",
+  "billing.manageBillingNoSubscription": "933c4d04830ec0dd4d86b1040a478397dbbd4cfd1ceea430c98b1591874c9cf2",
+  "billing.manageBillingSeePlans": "d989893356eeff0f22804648f79ee465c509800917fe8d64ec31ab5aa6557220",
+  "billing.manageBillingBackToApp": "0352d507a45a087e62340914423af974d7361b684c0230609fc88683b4f9eb9d"
 }
