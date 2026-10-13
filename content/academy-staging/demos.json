@@ -1,0 +1,113 @@
+[
+  {
+    "courseSlug": "investing-psychology",
+    "beforeLessonSlug": "everyone-is-talking-about-it",
+    "slug": "crowd-mood-demo",
+    "title": "Feel the Crowd's Mood, Live",
+    "xpReward": 25,
+    "content": {
+      "surface": "market-mood",
+      "steps": [
+        { "id": "intro", "target": "none", "requiredAction": "none", "title": "The crowd has a mood", "body": "Every bias in this course is something a whole market can feel at once. This is BullPen's real Market Mood tool. It turns that crowd feeling into a number you can actually look at." },
+        { "id": "score", "target": "mood-hero", "requiredAction": "none", "title": "Fear and greed, scored", "body": "0 is extreme fear, 100 is extreme greed. When this sits near the top, FOMO is everywhere and \"everyone is buying it\" feels true. That is exactly when your own judgment matters most." },
+        { "id": "momentum", "target": "mood-signal-s-p-500-momentum", "requiredAction": "none", "title": "Recency bias, in one signal", "body": "This compares the S&P 500 to its 125-day average. After a long run up, it feels like prices can only keep rising. That feeling is recency bias: the recent past standing in for the future." },
+        { "id": "safe-haven", "target": "mood-signal-safe-haven-demand", "requiredAction": "none", "title": "Loss aversion, in one signal", "body": "When investors rush from stocks into safer bonds, this swings toward fear. Losses feel worse than gains feel good, so selling in a panic can feel safe even when it locks in the loss." },
+        { "id": "wrap", "target": "none", "requiredAction": "none", "title": "Check the mood, then decide", "body": "You can't switch your biases off, but you can notice when the crowd is pulling hardest. A glance at this before a big decision is a simple way to ask whether it's you deciding, or the mood." }
+      ]
+    }
+  },
+  {
+    "courseSlug": "taxes-on-investing",
+    "beforeLessonSlug": "sell-now-or-wait",
+    "slug": "unrealized-gains-demo",
+    "title": "Spot the Unrealized Gains",
+    "xpReward": 25,
+    "content": {
+      "surface": "demo-portfolio",
+      "fixtureId": "starter-three-stock",
+      "steps": [
+        { "id": "intro", "target": "none", "requiredAction": "none", "title": "A sample portfolio", "body": "This is a sample portfolio, not yours. Let's find where tax would and wouldn't apply, using the ideas from this course." },
+        { "id": "overview", "target": "portfolio-overview", "requiredAction": "none", "title": "Gains on paper", "body": "The total gain up here is real money in value, but it is unrealized: nothing has been sold. In most countries, no tax is due on it yet. Tax usually comes when you sell and the gain becomes realized." },
+        { "id": "position", "target": "largest-position", "requiredAction": "none", "title": "Your cost basis", "body": "Each position compares today's value with what was paid for it, its cost basis. Selling this one would turn its gain into a realized gain, and the difference from your cost basis is what usually gets taxed." },
+        { "id": "wrap", "target": "none", "requiredAction": "none", "title": "When you sell is a decision", "body": "Because selling is what usually triggers tax, when you sell, and which position, is part of the decision. Check your own country's rules before acting on it." }
+      ]
+    }
+  },
+  {
+    "courseSlug": "research-routine-watchlist",
+    "beforeLessonSlug": "watchlist-or-buy-now",
+    "slug": "pre-buy-checklist-demo",
+    "title": "Run the Checklist on a Real Stock",
+    "xpReward": 25,
+    "content": {
+      "surface": "stock-stats",
+      "ticker": "COST",
+      "steps": [
+        { "id": "intro", "target": "company-header", "requiredAction": "none", "title": "A real company page", "body": "Here is Costco's page in BullPen. Let's run the pre-purchase checklist from this course on it, one item at a time." },
+        { "id": "size", "target": "stat-market-cap", "requiredAction": "none", "title": "1. How big is it?", "body": "Market cap tells you the size of the business. A giant like this moves differently from a small company, and it helps you judge how much of your portfolio it should be." },
+        { "id": "valuation", "target": "stat-p-e-ttm", "requiredAction": "none", "title": "2. What are you paying?", "body": "The P/E shows the price you pay for each dollar of profit. Compare it with similar companies and with its own history, not with a single magic number." },
+        { "id": "growth", "target": "stat-rev-growth", "requiredAction": "none", "title": "3. Is it still growing?", "body": "Revenue growth tells you whether the business is selling more each year. A high price is easier to justify when this keeps rising." },
+        { "id": "range", "target": "stat-52w-high", "requiredAction": "none", "title": "4. Where is it in its range?", "body": "The 52-week high and low show where the price sits today against the past year. Buying right at the top after a run is when impulse is most likely doing the deciding." },
+        { "id": "wrap", "target": "none", "requiredAction": "none", "title": "Then add it to a watchlist", "body": "Four checks, one page, a couple of minutes. If anything gives you pause, a watchlist keeps it in view while you find out more, instead of buying on the first impulse." }
+      ]
+    }
+  },
+  {
+    "courseSlug": "earnings-reports-calls",
+    "beforeLessonSlug": "beat-but-dropped",
+    "slug": "news-without-the-filing-demo",
+    "title": "Get the Story Without the Filing",
+    "xpReward": 25,
+    "content": {
+      "surface": "ai-research",
+      "fixtureId": "nvda-why-today",
+      "steps": [
+        { "id": "intro", "target": "ai-ask", "requiredAction": "none", "title": "Start from the move", "body": "Earnings, guidance and analyst calls are what usually move a stock. Here's a stock that moved today. Instead of opening a 100-page filing, let's ask what happened." },
+        { "id": "ask", "target": "ai-ask", "requiredAction": "run-research", "title": "Ask why it moved", "body": "Click to ask. BullPen reads the day's news and explains the move in plain language." },
+        { "id": "answer", "target": "ai-answer", "requiredAction": "none", "title": "Look forward, not back", "body": "Notice what drove it: signals about future demand and an analyst's outlook. That is the same lesson as guidance in an earnings report. The market cares most about what comes next." },
+        { "id": "sources", "target": "ai-sources", "requiredAction": "none", "title": "Then check the source", "body": "Every claim links to where it came from. Open one when a number matters to your decision. That's the part of the filing worth reading." },
+        { "id": "wrap", "target": "none", "requiredAction": "none", "title": "Earnings day, handled", "body": "Next time a company you own reports, open its stock page and ask why it moved. Results tell you what happened. Guidance tells you why the price reacted." }
+      ]
+    }
+  },
+  {
+    "courseSlug": "dividend-investing-deep-dive",
+    "beforeLessonSlug": "the-yield-looks-amazing",
+    "slug": "growth-vs-yield-demo",
+    "title": "Growers vs. High Yield, Projected",
+    "xpReward": 25,
+    "content": {
+      "surface": "dividend-calculator",
+      "years": 15,
+      "holdings": [
+        { "ticker": "SCHD", "name": "Schwab US Dividend ETF", "mode": "amount", "value": "10,000" },
+        { "ticker": "JNJ", "name": "Johnson & Johnson", "mode": "amount", "value": "5,000" },
+        { "ticker": "O", "name": "Realty Income", "mode": "amount", "value": "5,000" }
+      ],
+      "steps": [
+        { "id": "intro", "target": "dividend-holdings", "requiredAction": "none", "title": "Growers and a yielder", "body": "This mix holds steady dividend growers next to a higher-yield payer. The higher yield pays more today. The growers raise their payout each year. Let's see what that difference does over time." },
+        { "id": "settings", "target": "dividend-settings", "requiredAction": "none", "title": "15 years, reinvested", "body": "The projection runs 15 years with dividends reinvested, so each payout buys more shares. Time is where dividend growth shows up, so the window is longer than usual." },
+        { "id": "calculate", "target": "dividend-calculate", "requiredAction": "run-calculation", "title": "Run it", "body": "Click Calculate dividends to project the income using each holding's real dividend history." },
+        { "id": "results", "target": "dividend-results", "requiredAction": "none", "title": "Watch the income climb", "body": "Look at how the yearly income grows, not just where it starts. A rising payout plus reinvestment is how income outgrows a bigger starting yield." },
+        { "id": "wrap", "target": "none", "requiredAction": "none", "title": "Yield today, growth tomorrow", "body": "Neither kind is always better. Ask whether a payout can keep growing, not just how big it is today. Try swapping holdings to test your own mix." }
+      ]
+    }
+  },
+  {
+    "courseSlug": "international-crypto-deep-dive",
+    "beforeLessonSlug": "diversified-or-just-foreign",
+    "slug": "geography-vs-sector-demo",
+    "title": "Diversified, or Just Spread Out?",
+    "xpReward": 25,
+    "content": {
+      "surface": "demo-portfolio",
+      "fixtureId": "concentrated-tech",
+      "steps": [
+        { "id": "intro", "target": "none", "requiredAction": "none", "title": "A concentrated portfolio", "body": "This sample portfolio, not yours, is built almost entirely from one kind of company. Let's see why adding a foreign stock wouldn't fix it on its own." },
+        { "id": "allocation", "target": "allocation-chart", "requiredAction": "none", "title": "One sector dominates", "body": "Nearly all of the money sits in one sector. If that industry falls, almost everything here falls together." },
+        { "id": "largest", "target": "largest-position", "requiredAction": "none", "title": "Now imagine going global", "body": "Picture swapping some of this for a chipmaker listed abroad. The country changes, but the sector bar barely moves. It would still rise and fall with the same industry." },
+        { "id": "wrap", "target": "none", "requiredAction": "none", "title": "Two different kinds of spread", "body": "Geographic diversification spreads you across countries and currencies. Sector diversification spreads you across industries. You need both, and buying foreign stocks gives you only the first." }
+      ]
+    }
+  }
+]

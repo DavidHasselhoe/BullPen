@@ -1,0 +1,408 @@
+{
+  "ai-research": {
+    "before": [
+      "read: What Makes a Good Investment Thesis",
+      "read: Asking Better Questions",
+      "read: Sources & Skepticism",
+      "quiz: Quick Check: AI Research",
+      "demo: Research a Move with AI",
+      "scenario: Build & Defend a Thesis"
+    ],
+    "after": [
+      "read: What Makes a Good Investment Thesis",
+      "+ quiz: Check: What Makes a Good Investment Thesis",
+      "read: Asking Better Questions",
+      "+ quiz: Check: Asking Better Questions",
+      "read: Sources & Skepticism",
+      "quiz: Quick Check: AI Research",
+      "demo: Research a Move with AI",
+      "scenario: Build & Defend a Thesis"
+    ]
+  },
+  "bonds-fixed-income": {
+    "before": [
+      "read: What is a Bond?",
+      "read: Yield, Price & Interest Rates",
+      "quiz: Quick Check: Bonds",
+      "match: Match the Bond Terms",
+      "scenario: Balancing Stocks and Bonds"
+    ],
+    "after": [
+      "read: What is a Bond?",
+      "+ quiz: Check: What is a Bond?",
+      "read: Yield, Price & Interest Rates",
+      "quiz: Quick Check: Bonds",
+      "match: Match the Bond Terms",
+      "scenario: Balancing Stocks and Bonds"
+    ]
+  },
+  "company-fundamentals": {
+    "before": [
+      "read: Revenue, Profit & Margins",
+      "read: EPS & the P/E Ratio",
+      "quiz: Quick Check: Fundamentals",
+      "match: Match the Fundamentals",
+      "read: Cash Flow & Debt",
+      "scenario: Cheap or Expensive?",
+      "demo: See It Live: A Real Fundamentals Page"
+    ],
+    "after": [
+      "read: Revenue, Profit & Margins",
+      "+ quiz: Check: Revenue, Profit & Margins",
+      "read: EPS & the P/E Ratio",
+      "quiz: Quick Check: Fundamentals",
+      "match: Match the Fundamentals",
+      "read: Cash Flow & Debt",
+      "scenario: Cheap or Expensive?",
+      "demo: See It Live: A Real Fundamentals Page"
+    ]
+  },
+  "dividend-investing-deep-dive": {
+    "before": [
+      "read: Dividend Growth vs. High Yield",
+      "read: Reinvesting vs. Taking the Cash",
+      "read: Building a Resilient Income Portfolio",
+      "quiz: Quick Check: Dividend Investing",
+      "scenario: The Yield Looks Amazing"
+    ],
+    "after": [
+      "read: Dividend Growth vs. High Yield",
+      "+ quiz: Check: Dividend Growth vs. High Yield",
+      "read: Reinvesting vs. Taking the Cash",
+      "+ quiz: Check: Reinvesting vs. Taking the Cash",
+      "read: Building a Resilient Income Portfolio",
+      "quiz: Quick Check: Dividend Investing",
+      "+ demo: Growers vs. High Yield, Projected",
+      "scenario: The Yield Looks Amazing"
+    ]
+  },
+  "dividends-income": {
+    "before": [
+      "read: What is a Dividend?",
+      "read: Payout Ratio & Sustainability",
+      "quiz: Quick Check: Dividends",
+      "match: Match the Dividend Terms",
+      "scenario: Too Good to Be True?",
+      "demo: See It Live: Project Your Passive Income"
+    ],
+    "after": [
+      "read: What is a Dividend?",
+      "+ quiz: Check: What is a Dividend?",
+      "read: Payout Ratio & Sustainability",
+      "quiz: Quick Check: Dividends",
+      "match: Match the Dividend Terms",
+      "scenario: Too Good to Be True?",
+      "demo: See It Live: Project Your Passive Income"
+    ]
+  },
+  "earnings-reports-calls": {
+    "before": [
+      "read: What's Actually in an Earnings Report",
+      "read: You Don't Have to Read the Filing Yourself",
+      "read: Why a \"Good\" Report Can Still Tank the Stock",
+      "quiz: Quick Check: Earnings Reports",
+      "scenario: The Report Beat, But the Stock Dropped"
+    ],
+    "after": [
+      "read: What's Actually in an Earnings Report",
+      "+ quiz: Check: What's Actually in an Earnings Report",
+      "read: You Don't Have to Read the Filing Yourself",
+      "+ quiz: Check: You Don't Have to Read the Filing Yourself",
+      "read: Why a \"Good\" Report Can Still Tank the Stock",
+      "quiz: Quick Check: Earnings Reports",
+      "+ demo: Get the Story Without the Filing",
+      "scenario: The Report Beat, But the Stock Dropped"
+    ]
+  },
+  "etfs-and-crypto": {
+    "before": [
+      "read: What is an ETF?",
+      "read: Intro to Crypto & Commodities",
+      "quiz: Quick Check: Beyond Stocks",
+      "match: Match the Asset Terms",
+      "scenario: Stock, ETF, or Both?"
+    ],
+    "after": [
+      "read: What is an ETF?",
+      "+ quiz: Check: What is an ETF?",
+      "read: Intro to Crypto & Commodities",
+      "quiz: Quick Check: Beyond Stocks",
+      "match: Match the Asset Terms",
+      "scenario: Stock, ETF, or Both?"
+    ]
+  },
+  "financial-statements": {
+    "before": [
+      "read: The Three Statements",
+      "read: The Income Statement",
+      "read: Balance Sheet & Cash Flow",
+      "quiz: Quick Check: Financial Statements",
+      "match: Match the Statement Lines",
+      "demo: See It Live: A Company’s Real Numbers",
+      "scenario: Healthy or Fragile?"
+    ],
+    "after": [
+      "read: The Three Statements",
+      "+ quiz: Check: The Three Statements",
+      "read: The Income Statement",
+      "+ quiz: Check: The Income Statement",
+      "read: Balance Sheet & Cash Flow",
+      "quiz: Quick Check: Financial Statements",
+      "match: Match the Statement Lines",
+      "demo: See It Live: A Company’s Real Numbers",
+      "scenario: Healthy or Fragile?"
+    ]
+  },
+  "international-crypto-deep-dive": {
+    "before": [
+      "read: Home-Country Bias",
+      "read: Currency Exposure & ADRs",
+      "read: Crypto Beyond the Basics",
+      "quiz: Quick Check: Global & Crypto Investing",
+      "scenario: Diversified, or Just Foreign?"
+    ],
+    "after": [
+      "read: Home-Country Bias",
+      "+ quiz: Check: Home-Country Bias",
+      "read: Currency Exposure & ADRs",
+      "+ quiz: Check: Currency Exposure & ADRs",
+      "read: Crypto Beyond the Basics",
+      "quiz: Quick Check: Global & Crypto Investing",
+      "+ demo: Diversified, or Just Spread Out?",
+      "scenario: Diversified, or Just Foreign?"
+    ]
+  },
+  "investing-psychology": {
+    "before": [
+      "read: Why Your Brain Fights You",
+      "read: FOMO, Herding & Recency Bias",
+      "quiz: Quick Check: Investing Psychology",
+      "match: Match the Biases",
+      "scenario: Everyone's Talking About It"
+    ],
+    "after": [
+      "read: Why Your Brain Fights You",
+      "+ quiz: Check: Why Your Brain Fights You",
+      "read: FOMO, Herding & Recency Bias",
+      "quiz: Quick Check: Investing Psychology",
+      "match: Match the Biases",
+      "+ demo: Feel the Crowd's Mood, Live",
+      "scenario: Everyone's Talking About It"
+    ]
+  },
+  "macro-basics": {
+    "before": [
+      "read: Stocks Don't Move Alone",
+      "read: The Big Four: Rates, Jobs, Inflation, Oil",
+      "quiz: Quick Check: Macro Basics",
+      "match: Match the Macro Terms",
+      "scenario: Is It Them, or the Market?"
+    ],
+    "after": [
+      "read: Stocks Don't Move Alone",
+      "+ quiz: Check: Stocks Don't Move Alone",
+      "read: The Big Four: Rates, Jobs, Inflation, Oil",
+      "quiz: Quick Check: Macro Basics",
+      "match: Match the Macro Terms",
+      "scenario: Is It Them, or the Market?"
+    ]
+  },
+  "macro-mechanics": {
+    "before": [
+      "read: Why Rate Hikes Hit Growth Stocks Harder",
+      "read: Reading the Yield Curve & Credit Spreads",
+      "read: Oil's Two-Sided Effect and How Sectors Rotate",
+      "quiz: Quick Check: Macro Mechanics",
+      "match: Match the Market Gauges",
+      "demo: Market Mood: See the Signals Live",
+      "scenario: The Rate Hike Rotation"
+    ],
+    "after": [
+      "read: Why Rate Hikes Hit Growth Stocks Harder",
+      "+ quiz: Check: Why Rate Hikes Hit Growth Stocks Harder",
+      "read: Reading the Yield Curve & Credit Spreads",
+      "+ quiz: Check: Reading the Yield Curve & Credit Spreads",
+      "read: Oil's Two-Sided Effect and How Sectors Rotate",
+      "quiz: Quick Check: Macro Mechanics",
+      "match: Match the Market Gauges",
+      "demo: Market Mood: See the Signals Live",
+      "scenario: The Rate Hike Rotation"
+    ]
+  },
+  "options-basics": {
+    "before": [
+      "read: What Options Actually Are",
+      "read: Why Options Risk Is Asymmetric",
+      "read: A Covered Call in Plain English",
+      "quiz: Quick Check: Options Basics",
+      "match: Match the Options Terms",
+      "scenario: Is This Options Trade as Safe as It Sounds?"
+    ],
+    "after": [
+      "read: What Options Actually Are",
+      "+ quiz: Check: What Options Actually Are",
+      "read: Why Options Risk Is Asymmetric",
+      "+ quiz: Check: Why Options Risk Is Asymmetric",
+      "read: A Covered Call in Plain English",
+      "quiz: Quick Check: Options Basics",
+      "match: Match the Options Terms",
+      "scenario: Is This Options Trade as Safe as It Sounds?"
+    ]
+  },
+  "portfolio-diversification": {
+    "before": [
+      "read: Why Diversification Matters",
+      "read: Position Sizing & Risk",
+      "quiz: Quick Check: Portfolio Basics",
+      "match: Match the Portfolio Terms",
+      "scenario: Building Your First Portfolio",
+      "demo: See It Live: A Diversified Portfolio"
+    ],
+    "after": [
+      "read: Why Diversification Matters",
+      "+ quiz: Check: Why Diversification Matters",
+      "read: Position Sizing & Risk",
+      "quiz: Quick Check: Portfolio Basics",
+      "match: Match the Portfolio Terms",
+      "scenario: Building Your First Portfolio",
+      "demo: See It Live: A Diversified Portfolio"
+    ]
+  },
+  "portfolio-risk": {
+    "before": [
+      "read: Risk Isn’t Just Volatility",
+      "read: Correlation & Why It Matters",
+      "read: Concentration & Position Sizing",
+      "quiz: Quick Check: Portfolio Risk",
+      "match: Match the Risk Metrics",
+      "demo: Stress-Test a Portfolio",
+      "scenario: Rebalance or Hold?"
+    ],
+    "after": [
+      "read: Risk Isn’t Just Volatility",
+      "+ quiz: Check: Risk Isn’t Just Volatility",
+      "read: Correlation & Why It Matters",
+      "+ quiz: Check: Correlation & Why It Matters",
+      "read: Concentration & Position Sizing",
+      "quiz: Quick Check: Portfolio Risk",
+      "match: Match the Risk Metrics",
+      "demo: Stress-Test a Portfolio",
+      "scenario: Rebalance or Hold?"
+    ]
+  },
+  "reading-a-stock-quote": {
+    "before": [
+      "read: Anatomy of a Quote",
+      "read: Bid, Ask & Spread",
+      "quiz: Quick Check: Quote Fields",
+      "match: Match the Quote Terms",
+      "read: What Volume Tells You",
+      "scenario: Make the Call"
+    ],
+    "after": [
+      "read: Anatomy of a Quote",
+      "+ quiz: Check: Anatomy of a Quote",
+      "read: Bid, Ask & Spread",
+      "quiz: Quick Check: Quote Fields",
+      "match: Match the Quote Terms",
+      "read: What Volume Tells You",
+      "scenario: Make the Call"
+    ]
+  },
+  "research-routine-watchlist": {
+    "before": [
+      "read: Why a Watchlist Beats Impulse Buying",
+      "read: What to Check Before You Buy",
+      "read: Alerts as a Research Tool",
+      "quiz: Quick Check: Research Routine",
+      "scenario: Add It to the Watchlist, or Buy Now?"
+    ],
+    "after": [
+      "read: Why a Watchlist Beats Impulse Buying",
+      "+ quiz: Check: Why a Watchlist Beats Impulse Buying",
+      "read: What to Check Before You Buy",
+      "+ quiz: Check: What to Check Before You Buy",
+      "read: Alerts as a Research Tool",
+      "quiz: Quick Check: Research Routine",
+      "+ demo: Run the Checklist on a Real Stock",
+      "scenario: Add It to the Watchlist, or Buy Now?"
+    ]
+  },
+  "tax-advantaged-accounts": {
+    "before": [
+      "read: What Makes an Account Tax-Advantaged",
+      "read: Finding Your Country's Version",
+      "quiz: Quick Check: Tax-Advantaged Accounts",
+      "match: Match the Account Concepts",
+      "scenario: Where Should the Next Contribution Go?"
+    ],
+    "after": [
+      "read: What Makes an Account Tax-Advantaged",
+      "+ quiz: Check: What Makes an Account Tax-Advantaged",
+      "read: Finding Your Country's Version",
+      "quiz: Quick Check: Tax-Advantaged Accounts",
+      "match: Match the Account Concepts",
+      "scenario: Where Should the Next Contribution Go?"
+    ]
+  },
+  "taxes-on-investing": {
+    "before": [
+      "read: How Investment Gains Get Taxed",
+      "read: Why Holding Period Can Matter",
+      "quiz: Quick Check: Taxes",
+      "match: Match the Tax Terms",
+      "scenario: Sell Now or Wait?"
+    ],
+    "after": [
+      "read: How Investment Gains Get Taxed",
+      "+ quiz: Check: How Investment Gains Get Taxed",
+      "read: Why Holding Period Can Matter",
+      "quiz: Quick Check: Taxes",
+      "match: Match the Tax Terms",
+      "+ demo: Spot the Unrealized Gains",
+      "scenario: Sell Now or Wait?"
+    ]
+  },
+  "technical-analysis-basics": {
+    "before": [
+      "read: Support and Resistance",
+      "read: Beyond the Moving Average: RSI & MACD",
+      "read: Common Chart Patterns",
+      "quiz: Quick Check: Technical Analysis",
+      "match: Match the Technical Terms",
+      "scenario: Signal or Noise?"
+    ],
+    "after": [
+      "read: Support and Resistance",
+      "+ quiz: Check: Support and Resistance",
+      "read: Beyond the Moving Average: RSI & MACD",
+      "+ quiz: Check: Beyond the Moving Average: RSI & MACD",
+      "read: Common Chart Patterns",
+      "quiz: Quick Check: Technical Analysis",
+      "match: Match the Technical Terms",
+      "scenario: Signal or Noise?"
+    ]
+  },
+  "valuation": {
+    "before": [
+      "read: Price ≠ Value",
+      "read: The P/E Ratio in Depth",
+      "read: Beyond P/E: P/S, P/B & EV/EBITDA",
+      "quiz: Quick Check: Valuation Multiples",
+      "match: Match the Valuation Metrics",
+      "demo: Find Undervalued Stocks",
+      "scenario: Cheap, or a Value Trap?"
+    ],
+    "after": [
+      "read: Price ≠ Value",
+      "+ quiz: Check: Price ≠ Value",
+      "read: The P/E Ratio in Depth",
+      "+ quiz: Check: The P/E Ratio in Depth",
+      "read: Beyond P/E: P/S, P/B & EV/EBITDA",
+      "quiz: Quick Check: Valuation Multiples",
+      "match: Match the Valuation Metrics",
+      "demo: Find Undervalued Stocks",
+      "scenario: Cheap, or a Value Trap?"
+    ]
+  }
+}

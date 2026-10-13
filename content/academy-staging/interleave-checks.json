@@ -1,0 +1,1055 @@
+[
+  {
+    "courseSlug": "portfolio-risk",
+    "afterLessonSlug": "risk-is-not-volatility",
+    "slug": "risk-is-not-volatility-check",
+    "title": "Check: Risk Isn’t Just Volatility",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A stock has a beta of 1.5. When the overall market rises about 10%, what does this suggest the stock tends to do?",
+          "options": [
+            "Rise about 10%, the same as the market",
+            "Rise about 15%, swinging harder than the market",
+            "Rise about 5%, moving more gently than the market",
+            "Fall about 15%, moving opposite the market"
+          ],
+          "correctIndex": 1,
+          "explanation": "A beta of 1.5 means the stock tends to swing about 50% harder than the market, so a 10% market move points to roughly a 15% move in the stock."
+        },
+        {
+          "question": "Your investment drops 50% from its peak. According to the lesson, how big a gain do you then need just to break even?",
+          "options": [
+            "A 50% gain",
+            "A 75% gain",
+            "A 100% gain",
+            "A 150% gain"
+          ],
+          "correctIndex": 2,
+          "explanation": "After a 50% drawdown you're starting from half your money, so you need to double it, a 100% gain, just to get back to even. That's why deep holes are so damaging."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "portfolio-risk",
+    "afterLessonSlug": "correlation",
+    "slug": "correlation-check",
+    "title": "Check: Correlation & Why It Matters",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "You own ten different technology stocks. Why isn't this real diversification?",
+          "options": [
+            "Because owning only stocks is never diversified",
+            "Because the stocks are highly correlated and tend to fall together",
+            "Because ten stocks is too few to count as diversified",
+            "Because technology stocks always lose money over time"
+          ],
+          "correctIndex": 1,
+          "explanation": "The lesson warns that tech stocks are highly correlated, so one selloff drags them all down at once. Real diversification mixes things that react differently to the same news."
+        },
+        {
+          "question": "Two assets have a correlation of −1. What does that tell you about how they move?",
+          "options": [
+            "They move in lockstep, up and down together",
+            "They are completely unrelated to each other",
+            "They tend to move in opposite directions",
+            "They never change in price"
+          ],
+          "correctIndex": 2,
+          "explanation": "A correlation of −1 means two holdings move in opposite directions. That's why pairing low or negatively correlated assets, like stocks and bonds, can cushion the ride."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "options-basics",
+    "afterLessonSlug": "what-options-are",
+    "slug": "what-options-are-check",
+    "title": "Check: What Options Actually Are",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Your friend buys an option that gives her the right to buy a stock at $50. But when the deadline comes, the stock is doing poorly and she doesn't want it. What can she do?",
+          "options": [
+            "She must buy the stock at $50 anyway",
+            "She can simply walk away and not buy it",
+            "She is forced to sell the stock instead",
+            "She has to pay an extra fee to avoid buying"
+          ],
+          "correctIndex": 1,
+          "explanation": "An option is a right, not an obligation. Just like a deposit on a house, you can choose to walk away if you change your mind."
+        },
+        {
+          "question": "You want the right to sell a stock at a set price. Which flavor of option do you need?",
+          "options": [
+            "A call, because it lets you buy",
+            "A put, because it lets you sell",
+            "Either one works the same way",
+            "Neither, options only let you buy"
+          ],
+          "correctIndex": 1,
+          "explanation": "A put gives you the right to sell. The memory trick: you put something away from you (sell), while you call something toward you (buy)."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "options-basics",
+    "afterLessonSlug": "asymmetric-risk",
+    "slug": "asymmetric-risk-check",
+    "title": "Check: Why Options Risk Is Asymmetric",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "You pay a $200 premium to buy an option. The bet goes wrong and the option expires worthless. How much do you lose?",
+          "options": [
+            "$200, the premium you paid",
+            "More than $200, because losses can grow",
+            "Nothing, since it expired",
+            "It depends on how far the stock fell"
+          ],
+          "correctIndex": 0,
+          "explanation": "For a buyer, the premium is the most you can lose. If the option expires worthless, you simply lose what you paid, in this case $200."
+        },
+        {
+          "question": "Why is selling (writing) an option described as having the more dangerous side of this uneven risk?",
+          "options": [
+            "The seller pays a premium they can never get back",
+            "The seller's possible losses can be far larger than the premium they collected",
+            "The seller is guaranteed to lose money every time",
+            "The seller cannot collect any money upfront"
+          ],
+          "correctIndex": 1,
+          "explanation": "The seller collects the premium but takes on an obligation to complete the trade, which can lead to losses many times bigger than the premium received."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "macro-mechanics",
+    "afterLessonSlug": "discount-rate-growth-vs-value",
+    "slug": "discount-rate-growth-vs-value-check",
+    "title": "Check: Why Rate Hikes Hit Growth Stocks Harder",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Two companies both expect to earn $1 million in profit. Company A will earn most of it 8 years from now; Company B earns most of it this year. Rates just rose. Whose stock price is likely hit harder, and why?",
+          "options": [
+            "Company A, because profits far in the future lose more value when rates rise",
+            "Company B, because profits arriving soon are discounted more",
+            "Both equally, since the total profit is the same",
+            "Neither, because rate changes don't affect stock prices"
+          ],
+          "correctIndex": 0,
+          "explanation": "Rising rates shrink the value of far-off profits much more than near-term ones, so the company relying on distant earnings (A) takes the bigger hit."
+        },
+        {
+          "question": "The lesson says fast-growing companies often face a 'second punch' when rates rise. What is it?",
+          "options": [
+            "Their customers suddenly stop buying",
+            "Their borrowing costs climb, eating into current profits",
+            "They have to pay higher taxes on future earnings",
+            "Investors are banned from buying their shares"
+          ],
+          "correctIndex": 1,
+          "explanation": "Many growth companies borrow heavily to expand, so higher rates raise their borrowing costs and cut into profits at the same time their future earnings are discounted harder."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "macro-mechanics",
+    "afterLessonSlug": "yield-curve-and-credit-spreads",
+    "slug": "yield-curve-and-credit-spreads-check",
+    "title": "Check: Reading the Yield Curve & Credit Spreads",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A 3-month government bond is paying more than a 10-year government bond. According to the lesson, what is this called, and what does it often hint at?",
+          "options": [
+            "A normal yield curve, hinting the economy is healthy",
+            "A yield curve inversion, often watched as a possible recession warning",
+            "A credit spread, meaning company bonds got riskier",
+            "A rate hike, meaning the Fed just raised interest rates"
+          ],
+          "correctIndex": 1,
+          "explanation": "When short-term yields climb above long-term ones, the line flips upside down. That inversion is one of the more closely watched warning signs of a possible recession, though it is a signal, not a promise."
+        },
+        {
+          "question": "Investors suddenly get nervous and demand a much bigger reward to hold risky company bonds instead of safe government bonds. What happens to the credit spread?",
+          "options": [
+            "It widens, because people want more reward for taking on risk",
+            "It shrinks, because risky bonds became safer",
+            "It disappears, because government bonds stop paying",
+            "It stays the same, since spreads never change"
+          ],
+          "correctIndex": 0,
+          "explanation": "A credit spread is the extra yield demanded for riskier company bonds. When people get nervous, that gap widens because they want more reward for the added risk."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "taxes-on-investing",
+    "afterLessonSlug": "how-gains-get-taxed",
+    "slug": "how-gains-get-taxed-check",
+    "title": "Check: How Investment Gains Get Taxed",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Maya and Tom each own the same stock, and both are up $500. During the year, Maya sells her shares and Tom keeps his. Based on the lesson, who likely owes tax on that gain this year?",
+          "options": [
+            "Only Maya, because she sold and realized the gain",
+            "Only Tom, because he still holds the stock",
+            "Both of them, since they have the same profit",
+            "Neither, because gains are never taxed"
+          ],
+          "correctIndex": 0,
+          "explanation": "Tax usually kicks in when you sell and lock in the profit. Maya realized her gain by selling, while Tom's is still just a paper gain."
+        },
+        {
+          "question": "According to the lesson, how are profits from selling investments often treated compared to the money you earn at a job?",
+          "options": [
+            "They are taxed exactly the same way as wages",
+            "They often get their own rules, commonly called capital gains treatment",
+            "They are never taxed at all",
+            "They are always taxed at a higher rate than wages"
+          ],
+          "correctIndex": 1,
+          "explanation": "Wages are usually taxed as ordinary income, while investment profits often follow a separate set of rules called capital gains treatment."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "dividends-income",
+    "afterLessonSlug": "what-is-a-dividend",
+    "slug": "what-is-a-dividend-check",
+    "title": "Check: What is a Dividend?",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A stock costs $50 per share and pays $2 in dividends per year. What is its dividend yield?",
+          "options": [
+            "2%",
+            "4%",
+            "25%",
+            "50%"
+          ],
+          "correctIndex": 1,
+          "explanation": "Dividend yield is the yearly dividend divided by the stock price: $2 ÷ $50 = 0.04, or 4%. It shows how much cash you earn relative to what you paid."
+        },
+        {
+          "question": "A young, fast-growing company pays no dividend at all. Based on the lesson, what is it most likely doing with its profit?",
+          "options": [
+            "Hiding its profit from shareholders",
+            "Reinvesting the profit back into the business to grow bigger",
+            "Losing money every quarter",
+            "Paying its profit to the government"
+          ],
+          "correctIndex": 1,
+          "explanation": "Fast-growing companies often keep their profit (shown as retained earnings) and pour it back into things like hiring and building, betting the stock price will climb instead."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "ai-research",
+    "afterLessonSlug": "what-is-a-thesis",
+    "slug": "what-is-a-thesis-check",
+    "title": "Check: What Makes a Good Investment Thesis",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Your friend says: \"I bought this stock because it feels like it's going up.\" Based on the lesson, what does your friend actually have?",
+          "options": [
+            "A complete investment thesis",
+            "A hunch, not a thesis",
+            "A catalyst",
+            "A written risk analysis"
+          ],
+          "correctIndex": 1,
+          "explanation": "The lesson says if you can't state your argument in a few sentences, you have a hunch, not a thesis. A feeling about price direction isn't an honest, testable argument."
+        },
+        {
+          "question": "Someone writes up a stock: what the company does, why it will win, and the good news that could prove them right, but leaves out the risks. Why does the lesson warn against this?",
+          "options": [
+            "Leaving out the risks is how hype masquerades as analysis",
+            "A thesis only needs two parts anyway",
+            "Risks aren't part of a thesis",
+            "It makes the thesis too long"
+          ],
+          "correctIndex": 0,
+          "explanation": "A good thesis includes catalysts AND risks. Skipping the risks (and the catalysts) is exactly how the lesson says hype gets dressed up as real analysis."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "ai-research",
+    "afterLessonSlug": "asking-better-questions",
+    "slug": "asking-better-questions-check",
+    "title": "Check: Asking Better Questions",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "You want to use AI to research a company you're considering. Based on the lesson, which question would get you the most useful, actionable answer?",
+          "options": [
+            "\"Is this a good stock to buy?\"",
+            "\"What are the biggest risks to this company's main revenue source?\"",
+            "\"Will this stock go up?\"",
+            "\"Should I invest my money here?\""
+          ],
+          "correctIndex": 1,
+          "explanation": "Specific, focused questions earn answers you can act on, while vague ones like \"is this a good buy?\" get vague, hedged replies."
+        },
+        {
+          "question": "The lesson says to \"ask for the bear case on purpose.\" What's the main reason for doing this?",
+          "options": [
+            "The AI gives longer answers to negative questions",
+            "It helps you stress-test your idea instead of just confirming what you already believe",
+            "Bad news is more accurate than good news",
+            "It's the only way to get the AI to mention risks"
+          ],
+          "correctIndex": 1,
+          "explanation": "We naturally hunt for reasons we're right, so deliberately asking why you might be wrong tests your thesis instead of just decorating it."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "earnings-reports-calls",
+    "afterLessonSlug": "whats-in-an-earnings-report",
+    "slug": "whats-in-an-earnings-report-check",
+    "title": "Check: What's Actually in an Earnings Report",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A company reports strong profits for the past three months, but its stock price falls right after. Based on the lesson, what's the most likely reason?",
+          "options": [
+            "Its guidance for the future looked weak",
+            "The SEC rejected the report",
+            "It skipped the management commentary section",
+            "Profits don't affect stock prices at all"
+          ],
+          "correctIndex": 0,
+          "explanation": "Stock prices move on the future, not just the past. Great past results can be outweighed by weak guidance, which is the company's own forecast for what's coming next."
+        },
+        {
+          "question": "A CEO writes a note explaining that sales grew because a new product sold well, but shipping costs hurt profits. Which part of the earnings report is this?",
+          "options": [
+            "The results",
+            "Guidance",
+            "Management commentary",
+            "The SEC filing requirement"
+          ],
+          "correctIndex": 2,
+          "explanation": "Management commentary is where leaders explain the numbers in plain words: what went well, what struggled, and why. It's the story behind the spreadsheet."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "earnings-reports-calls",
+    "afterLessonSlug": "we-already-read-it-for-you",
+    "slug": "we-already-read-it-for-you-check",
+    "title": "Check: You Don't Have to Read the Filing Yourself",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Your friend owns a stock and says, \"The company just reported, but I don't want to read that huge legal document.\" Based on the lesson, what should you tell her?",
+          "options": [
+            "She has to read the full filing to understand the results",
+            "BullPen reads the filing and shows the key numbers like Revenue and Net Income for her",
+            "Nobody can understand company results without a finance degree",
+            "She should just ignore the report completely"
+          ],
+          "correctIndex": 1,
+          "explanation": "The lesson's main point is that BullPen pulls the numbers that matter out of the filing, so you get the highlights without reading the dense document yourself."
+        },
+        {
+          "question": "The lesson suggests a real-life habit for when a company you own reports its results. What is it?",
+          "options": [
+            "Immediately buy more shares before reading anything",
+            "Open the stock page and read the key fundamentals and the Why Today note before reacting",
+            "Wait a year before checking how the company did",
+            "Call the company directly to ask about the numbers"
+          ],
+          "correctIndex": 1,
+          "explanation": "The lesson's homework is to skim the key fundamentals and read the plain-English Why Today note first, so you stay informed and avoid reacting without context."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "technical-analysis-basics",
+    "afterLessonSlug": "support-and-resistance",
+    "slug": "support-and-resistance-check",
+    "title": "Check: Support and Resistance",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A stock keeps climbing to $50 and then gets pushed back down each time. What is $50 acting as?",
+          "options": [
+            "Support, a floor where buyers step in",
+            "Resistance, a ceiling where sellers step in",
+            "A guaranteed price target",
+            "The stock's lowest possible price"
+          ],
+          "correctIndex": 1,
+          "explanation": "When a price repeatedly stops a stock from rising higher, it acts as a ceiling. That ceiling is called resistance because sellers keep showing up there."
+        },
+        {
+          "question": "A stock finally breaks above its resistance at $50 and keeps climbing. According to the lesson, what can happen to that $50 level?",
+          "options": [
+            "It disappears and no longer matters",
+            "It becomes a guaranteed buy signal",
+            "It can flip and become the new floor (support)",
+            "It forces the stock back down to where it started"
+          ],
+          "correctIndex": 2,
+          "explanation": "The lesson explains that when a stock breaks through resistance and keeps climbing, the old ceiling can flip and become the new floor, or support."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "technical-analysis-basics",
+    "afterLessonSlug": "beyond-moving-average",
+    "slug": "beyond-moving-average-check",
+    "title": "Check: Beyond the Moving Average: RSI & MACD",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A stock's RSI reading is 78. Based on the lesson, what does that suggest?",
+          "options": [
+            "It's oversold and may have fallen too far",
+            "It's overbought and may have climbed too quickly",
+            "Its moving averages just crossed",
+            "Its momentum has stopped completely"
+          ],
+          "correctIndex": 1,
+          "explanation": "RSI runs from 0 to 100, and a reading above 70 often signals 'overbought,' meaning the price may have risen too fast."
+        },
+        {
+          "question": "Your RSI shows a stock is overbought, but it keeps climbing. What's the best takeaway from the lesson?",
+          "options": [
+            "Sell right away because overbought always means a drop is coming",
+            "A stock can stay overbought while still rising, so don't act on one signal alone",
+            "RSI must be broken if the price is still going up",
+            "Switch to only using moving averages instead"
+          ],
+          "correctIndex": 1,
+          "explanation": "These tools are clues, not crystal balls. A stock can stay overbought for a long time while rising, so you should use signals alongside the bigger picture."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "reading-a-stock-quote",
+    "afterLessonSlug": "anatomy-of-a-quote",
+    "slug": "anatomy-of-a-quote-check",
+    "title": "Check: Anatomy of a Quote",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A stock closed yesterday at $50. Right now it's trading at $48. What is the change, and what color would you expect?",
+          "options": [
+            "+$2, green",
+            "-$2, red",
+            "-$2, green",
+            "+$2, red"
+          ],
+          "correctIndex": 1,
+          "explanation": "The change is measured against yesterday's close of $50, so $48 is a drop of $2. A price that's down today shows in red."
+        },
+        {
+          "question": "A stock's day range shows a low of $99.80 and a high of $100.20. What does this tell you about today's trading?",
+          "options": [
+            "The price bounced around a lot and was very bumpy",
+            "The price stayed fairly steady, since the range is narrow",
+            "The stock is up compared to yesterday",
+            "The stock's most recent trade was exactly $100"
+          ],
+          "correctIndex": 1,
+          "explanation": "A narrow gap between the day's low and high means the price barely moved, so the ride was steady. The range doesn't tell you the last price or how it compares to yesterday."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "portfolio-diversification",
+    "afterLessonSlug": "why-diversification-matters",
+    "slug": "why-diversification-matters-check",
+    "title": "Check: Why Diversification Matters",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Sam owns 10 different stocks, but all 10 are tech companies. Based on the lesson, how diversified is Sam really?",
+          "options": [
+            "Very diversified, because owning 10 stocks always spreads risk",
+            "Not truly diversified, because the stocks are in the same industry and tend to move together",
+            "Perfectly safe, because one bad company won't affect the others",
+            "Diversified only if all 10 companies are large"
+          ],
+          "correctIndex": 1,
+          "explanation": "Owning many stocks in one industry means they're highly correlated, so they often rise and fall together. A bad day for tech can drag all 10 down at once, so the risk isn't really spread out."
+        },
+        {
+          "question": "Which of these portfolios best matches the lesson's idea of true diversification?",
+          "options": [
+            "A mix of tech, healthcare, energy, and consumer goods stocks",
+            "Five different oil and gas companies",
+            "Ten different software companies",
+            "Your entire savings in one large, stable company"
+          ],
+          "correctIndex": 0,
+          "explanation": "True diversification means owning things that don't all move in the same direction. A spread across different industries means no single bad event can wipe you out."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "tax-advantaged-accounts",
+    "afterLessonSlug": "what-makes-it-tax-advantaged",
+    "slug": "what-makes-it-tax-advantaged-check",
+    "title": "Check: What Makes an Account Tax-Advantaged",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Maria puts $2,000 into an account this year. The money lowers her taxable income now, but she'll pay tax when she withdraws it in retirement. Which type of tax-advantaged account is this?",
+          "options": [
+            "The pay-tax-now, skip-it-later type",
+            "The pay-tax-later type, where you skip the tax today",
+            "A normal account with no tax break at all",
+            "An employer matching account"
+          ],
+          "correctIndex": 1,
+          "explanation": "The lesson describes one type where your contribution lowers your taxable income today and you pay the tax later when you withdraw. That matches Maria exactly."
+        },
+        {
+          "question": "Jordan's employer adds fifty cents for every dollar he contributes, up to a limit. If Jordan puts in $100 within that limit, how much does his employer add?",
+          "options": [
+            "$100",
+            "$50",
+            "$25",
+            "Nothing until retirement"
+          ],
+          "correctIndex": 1,
+          "explanation": "Fifty cents per dollar means half of what you contribute, so $100 earns an extra $50. The lesson calls this free money, which is why grabbing the full match is usually smart."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "etfs-and-crypto",
+    "afterLessonSlug": "what-is-an-etf",
+    "slug": "what-is-an-etf-check",
+    "title": "Check: What is an ETF?",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Maya buys one share of an ETF that holds 200 different companies. What does she own?",
+          "options": [
+            "Just the single biggest company in the basket",
+            "A tiny slice of all 200 companies at once",
+            "Full ownership of one company she picks",
+            "Nothing until she buys 200 separate shares"
+          ],
+          "correctIndex": 1,
+          "explanation": "An ETF is like a basket: buying one share instantly gives you a tiny slice of everything inside, which is why it spreads your risk across many companies."
+        },
+        {
+          "question": "An ETF has an expense ratio of 0.20%. About how much would you pay per year for every $100 invested?",
+          "options": [
+            "About 2 cents",
+            "About 20 cents",
+            "About 2 dollars",
+            "About 20 dollars"
+          ],
+          "correctIndex": 1,
+          "explanation": "The expense ratio is a yearly percentage fee. At 0.20%, you pay about 20 cents a year for every $100, since 0.10% was about 10 cents in the lesson's example."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "bonds-fixed-income",
+    "afterLessonSlug": "what-is-a-bond",
+    "slug": "what-is-a-bond-check",
+    "title": "Check: What is a Bond?",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Maria buys a bond from a company. Based on the lesson, what is her role?",
+          "options": [
+            "She owns a small slice of the company",
+            "She is lending money to the company",
+            "She is a part-owner who shares the profits",
+            "She is buying the company's products"
+          ],
+          "correctIndex": 1,
+          "explanation": "A bond is like an IOU. When you buy one, you are lending your money to the borrower, not owning part of the company."
+        },
+        {
+          "question": "A bond's maturity date arrives. What happens on that day?",
+          "options": [
+            "You start receiving your first interest payment",
+            "The borrower returns your original principal in full",
+            "You become a part-owner of the company",
+            "Your interest rate doubles"
+          ],
+          "correctIndex": 1,
+          "explanation": "The maturity date is the day the borrower pays back your original amount, the principal, in full."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "company-fundamentals",
+    "afterLessonSlug": "revenue-profit-margins",
+    "slug": "revenue-profit-margins-check",
+    "title": "Check: Revenue, Profit & Margins",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A bakery sells $500 of bread in a week. After paying for flour, rent, and workers, $75 is left over. What is the bakery's profit margin?",
+          "options": [
+            "75%",
+            "15%",
+            "25%",
+            "42.5%"
+          ],
+          "correctIndex": 1,
+          "explanation": "Profit margin is net income divided by revenue: $75 ÷ $500 = 15%. It shows you keep 15 cents of every dollar that comes in."
+        },
+        {
+          "question": "Company A earns $800 million in profit with a 4% margin. Company B earns $10 million in profit with a 25% margin. Which company is more efficient at turning sales into profit?",
+          "options": [
+            "Company A, because it makes far more total profit",
+            "Company B, because it keeps more cents out of every dollar of sales",
+            "They are equally efficient since both make a profit"
+          ],
+          "correctIndex": 1,
+          "explanation": "Margin, not raw dollars, measures efficiency. Company B keeps 25 cents per dollar versus Company A's 4 cents, so B turns sales into profit much more efficiently."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "investing-psychology",
+    "afterLessonSlug": "why-your-brain-fights-you",
+    "slug": "why-your-brain-fights-you-check",
+    "title": "Check: Why Your Brain Fights You",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Maria owns two stocks. One has dropped a lot since she bought it, and one has climbed nicely. Based on the lesson, which mistake is she most likely to make?",
+          "options": [
+            "Sell the climbing stock too early and hold the dropping stock too long",
+            "Sell the dropping stock quickly and hold the climbing stock forever",
+            "Buy more of both stocks right away",
+            "Ignore both stocks and never check them again"
+          ],
+          "correctIndex": 0,
+          "explanation": "The lesson calls this 'snip our flowers and water our weeds': we lock in gains too soon on winners and cling to losers to avoid admitting a real loss."
+        },
+        {
+          "question": "The lesson says losing $100 hurts about twice as much as gaining $100 feels good. What does this tell us about ourselves?",
+          "options": [
+            "We feel the pain of losses more strongly than the joy of equal gains",
+            "We feel gains and losses with exactly equal intensity",
+            "Most people never feel anything about money",
+            "Gains feel twice as good as losses feel bad"
+          ],
+          "correctIndex": 0,
+          "explanation": "This lopsided feeling is called loss aversion: the sting of a loss is roughly double the pleasure of an equal gain, which nudges us toward avoiding losses at all costs."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "valuation",
+    "afterLessonSlug": "price-is-not-value",
+    "slug": "price-is-not-value-check",
+    "title": "Check: Price ≠ Value",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Stock A trades at $500 per share; Stock B trades at $20 per share. Which company is bigger?",
+          "options": [
+            "Stock A, because its share price is higher",
+            "Stock B, because lower-priced stocks are usually bigger companies",
+            "You can't tell from share price alone; you need the market cap",
+            "They must be the same size since both are public"
+          ],
+          "correctIndex": 2,
+          "explanation": "Share price depends on how many shares a company splits itself into, so it says nothing about size. Market cap (price times all shares) is what tells you how big a business really is."
+        },
+        {
+          "question": "Company X has a share price of $40 and 10 million shares. What is its market cap?",
+          "options": [
+            "$40 million",
+            "$400 million",
+            "$10 million",
+            "$4 million"
+          ],
+          "correctIndex": 1,
+          "explanation": "Market cap is share price multiplied by the total number of shares: $40 x 10 million = $400 million. That total, not the $40 price, shows the company's overall size."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "valuation",
+    "afterLessonSlug": "pe-in-depth",
+    "slug": "pe-in-depth-check",
+    "title": "Check: The P/E Ratio in Depth",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A company trades at a P/E of 25. What does that tell you in plain English?",
+          "options": [
+            "You pay $25 for every $1 of the company's yearly profit",
+            "The company earns $25 for every share you buy",
+            "The stock price will rise 25% this year",
+            "You pay $1 for every $25 of the company's profit"
+          ],
+          "correctIndex": 0,
+          "explanation": "P/E is price divided by earnings per share, so a P/E of 25 means $25 of price for each $1 of annual profit."
+        },
+        {
+          "question": "A software firm has a P/E of 38 and a utility has a P/E of 14. Based on the lesson, what's the best conclusion?",
+          "options": [
+            "The utility is a better buy because its P/E is lower",
+            "The software firm is overpriced and should be avoided",
+            "Both can be fair; the higher P/E likely reflects faster expected growth",
+            "A P/E above 20 is always too expensive"
+          ],
+          "correctIndex": 2,
+          "explanation": "There's no single 'good' P/E. Faster-growing companies command higher P/Es, and both can be perfectly fair when judged against their growth and peers."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "macro-basics",
+    "afterLessonSlug": "stocks-dont-move-alone",
+    "slug": "stocks-dont-move-alone-check",
+    "title": "Check: Stocks Don't Move Alone",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A company reports surprisingly strong earnings, and its stock jumps while competitors barely move. Which kind of catalyst is this?",
+          "options": [
+            "A macro catalyst, because it affects the whole market",
+            "A company-specific catalyst, because it happened to that one business",
+            "An interest rate decision",
+            "A jobs report"
+          ],
+          "correctIndex": 1,
+          "explanation": "Earnings reports happen to one business, so they explain why a single stock moves while its competitors stay put. That's the company-specific bucket."
+        },
+        {
+          "question": "Your stock dropped today, and you notice nearly every other stock dropped too after the Fed signaled higher rates. What's the most likely explanation?",
+          "options": [
+            "Something is specifically wrong with your company",
+            "The whole market moved together because of a macro event",
+            "Your company launched a bad product",
+            "Your company changed its leadership"
+          ],
+          "correctIndex": 1,
+          "explanation": "When the whole market falls on Fed news, a healthy stock can drop just because it's part of that ocean. Checking if everything moved together saves you from a false alarm."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "dividend-investing-deep-dive",
+    "afterLessonSlug": "growth-vs-high-yield",
+    "slug": "growth-vs-high-yield-check",
+    "title": "Check: Dividend Growth vs. High Yield",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A stock pays a 6% dividend yield. If you invest $200, how much do you earn in dividends per year?",
+          "options": [
+            "$6",
+            "$12",
+            "$60",
+            "$120"
+          ],
+          "correctIndex": 1,
+          "explanation": "A 6% yield pays $6 for every $100 invested, so $200 earns $12 a year. Yield is simply the yearly payment compared to the price you paid."
+        },
+        {
+          "question": "A stock's price suddenly crashes, and now its dividend yield shows a very high number. According to the lesson, why might this be a warning sign rather than good news?",
+          "options": [
+            "A high yield always means the company is doing great",
+            "The yield rose automatically because the price fell, and the struggling company may cut its dividend later",
+            "A crashing price means the dividend will definitely double",
+            "High yields are never risky"
+          ],
+          "correctIndex": 1,
+          "explanation": "When the price drops, the yield goes up on its own even if the business is in trouble. That kind of high yield can be a trap if the dividend gets cut."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "dividend-investing-deep-dive",
+    "afterLessonSlug": "reinvest-or-take-cash",
+    "slug": "reinvest-or-take-cash-check",
+    "title": "Check: Reinvesting vs. Taking the Cash",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Maya is 30, still working, and doesn't need her dividend money for bills. Based on the lesson's rule of thumb, what should she probably do?",
+          "options": [
+            "Take the cash and spend it right away",
+            "Reinvest the dividends to buy more shares",
+            "Sell all her shares to avoid dividends",
+            "Stop investing until she retires"
+          ],
+          "correctIndex": 1,
+          "explanation": "Maya is in her growth phase and doesn't need the income, so reinvesting lets the snowball effect and compounding do the heavy lifting over time."
+        },
+        {
+          "question": "The lesson calls reinvesting a 'snowball effect.' Why does that snowball keep growing?",
+          "options": [
+            "The company raises its dividend every single year",
+            "New shares bought with dividends pay their own dividends, which buy even more shares",
+            "Cash dividends gain interest while sitting in your account",
+            "The stock price is guaranteed to rise each year"
+          ],
+          "correctIndex": 1,
+          "explanation": "That's compounding: your dividends buy more shares, those shares pay their own dividends, and your money starts earning money too."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "research-routine-watchlist",
+    "afterLessonSlug": "watchlist-vs-impulse",
+    "slug": "watchlist-vs-impulse-check",
+    "title": "Check: Why a Watchlist Beats Impulse Buying",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Your friend says they research a stock carefully, but only after they buy it. Based on the lesson, what is the main problem with this?",
+          "options": [
+            "Once they own it, their brain roots for the stock and they ignore bad news",
+            "Researching after buying takes more time than researching before",
+            "They won't be able to find Revenue or Profit Margin data anymore",
+            "Owning the stock makes it harder to add other companies to a watchlist"
+          ],
+          "correctIndex": 0,
+          "explanation": "The lesson warns that owning a stock makes you quietly ignore bad news and celebrate the good, like grading your own homework and giving yourself an A."
+        },
+        {
+          "question": "You add a company to your watchlist. According to the lesson, what should happen before it moves into your real portfolio?",
+          "options": [
+            "It should sit in the waiting room for exactly one week",
+            "You should buy a small amount first, then decide whether to keep it",
+            "It should pass your checklist, like a healthy Revenue trend and reasonable Valuation",
+            "A friend should confirm it's a good company"
+          ],
+          "correctIndex": 2,
+          "explanation": "The lesson describes the watchlist as a staging area: you check things like Revenue trend, Profit Margin, and Valuation, and only after it passes does it earn a spot in your portfolio."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "research-routine-watchlist",
+    "afterLessonSlug": "what-to-check-before-buying",
+    "slug": "what-to-check-before-buying-check",
+    "title": "Check: What to Check Before You Buy",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Your friend finds a stock with a very low P/E compared to similar companies. Based on the lesson, what does the P/E help her understand?",
+          "options": [
+            "How much she pays for each dollar of the company's yearly profit",
+            "How many shares she should buy",
+            "Whether the company will grow next year",
+            "How risky the whole stock market is right now"
+          ],
+          "correctIndex": 0,
+          "explanation": "The lesson defines P/E as a shortcut for valuation: it shows how much you pay for each dollar of the company's yearly profit, helping you judge if a stock is cheap or expensive."
+        },
+        {
+          "question": "You already own three tech companies and are thinking about buying a fourth tech stock. What does the lesson say to watch out for here?",
+          "options": [
+            "That one industry would drive most of your results instead of spreading your risk",
+            "That your P/E would get too high",
+            "That tech stocks always have bad earnings",
+            "That you should sell everything first"
+          ],
+          "correctIndex": 0,
+          "explanation": "The sector rotation step warns that adding a fourth tech stock stacks your risk in one industry, so a new buy should spread risk rather than concentrate it."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "financial-statements",
+    "afterLessonSlug": "the-three-statements",
+    "slug": "the-three-statements-check",
+    "title": "Check: The Three Statements",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A company wants to know exactly what it owns and what it owes on December 31st. Which statement should it look at?",
+          "options": [
+            "The income statement",
+            "The balance sheet",
+            "The cash flow statement"
+          ],
+          "correctIndex": 1,
+          "explanation": "The balance sheet is a snapshot at a single moment showing total assets on one side and debts on the other, which is exactly what this question asks."
+        },
+        {
+          "question": "A business reports a healthy profit on paper, but its managers are worried there isn't enough actual money in the bank. Which statement best helps them see the real cash moving in and out?",
+          "options": [
+            "The cash flow statement",
+            "The income statement",
+            "The balance sheet"
+          ],
+          "correctIndex": 0,
+          "explanation": "The cash flow statement exists precisely because profit on paper and cash in the bank are not the same thing. Operating Cash Flow tracks the real money moving in and out."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "financial-statements",
+    "afterLessonSlug": "the-income-statement",
+    "slug": "the-income-statement-check",
+    "title": "Check: The Income Statement",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "A company has $1,000 in revenue and $600 in direct costs to make its product. What is its gross profit, and its gross margin?",
+          "options": [
+            "$600 gross profit, 60% gross margin",
+            "$400 gross profit, 40% gross margin",
+            "$400 gross profit, 60% gross margin",
+            "$1,000 gross profit, 100% gross margin"
+          ],
+          "correctIndex": 1,
+          "explanation": "Gross profit is revenue minus direct costs ($1,000 - $600 = $400), and gross margin is that divided by revenue ($400 / $1,000 = 40%)."
+        },
+        {
+          "question": "Which figure shows profit from the core business before interest and taxes are removed?",
+          "options": [
+            "Revenue",
+            "Gross Profit",
+            "Operating Income",
+            "Net Income"
+          ],
+          "correctIndex": 2,
+          "explanation": "Operating Income is what's left after subtracting the costs of running the business, but before interest and taxes, so it's often the cleanest read on whether the business itself works."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "international-crypto-deep-dive",
+    "afterLessonSlug": "home-country-bias",
+    "slug": "home-country-bias-check",
+    "title": "Check: Home-Country Bias",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "Maria lives in the US and owns only American companies because they feel familiar. What is this an example of?",
+          "options": [
+            "Diversification",
+            "Home-country bias",
+            "A weak currency",
+            "A local recession"
+          ],
+          "correctIndex": 1,
+          "explanation": "Leaning toward companies from your own country just because you know them better is exactly what home-country bias means. Familiar does not always mean safe."
+        },
+        {
+          "question": "Why is owning stocks from only one country risky, according to the lesson?",
+          "options": [
+            "Foreign companies always grow faster than local ones",
+            "Your whole portfolio rises and falls with that single economy",
+            "Familiar companies are guaranteed to lose money",
+            "Owning one country's stocks costs more in fees"
+          ],
+          "correctIndex": 1,
+          "explanation": "If everything you own comes from one country, a local recession, policy change, or weak currency could hit all your holdings at once, since your results depend on that single economy."
+        }
+      ]
+    }
+  },
+  {
+    "courseSlug": "international-crypto-deep-dive",
+    "afterLessonSlug": "currency-exposure-adrs",
+    "slug": "currency-exposure-adrs-check",
+    "title": "Check: Currency Exposure & ADRs",
+    "xpReward": 10,
+    "content": {
+      "questions": [
+        {
+          "question": "You buy a German company's stock and it rises 8% in euros. During that same time, the euro loses 8% of its value against the US dollar. What is the likely result when you convert back to dollars?",
+          "options": [
+            "A gain of about 16%, because both numbers add together",
+            "A gain close to zero, because the currency drop cancels out the stock's rise",
+            "A guaranteed loss of 8%, no matter what the stock did",
+            "A gain of exactly 8%, because the currency never matters"
+          ],
+          "correctIndex": 1,
+          "explanation": "When the foreign currency weakens by about the same amount the stock rises, the two roughly cancel out, leaving your dollar gain near zero. That's the hidden currency variable at work."
+        },
+        {
+          "question": "A friend says: \"I bought an ADR, so I don't have to worry about currency moving my return at all.\" Based on the lesson, is that right?",
+          "options": [
+            "Yes, ADRs are priced in dollars so currency no longer affects you",
+            "No, the currency variable is still baked into the ADR's price in the background",
+            "Yes, ADRs remove all foreign risk including the stock's performance",
+            "No, ADRs can only be bought using foreign currency"
+          ],
+          "correctIndex": 1,
+          "explanation": "An ADR lets you buy in US dollars on a US exchange, but the foreign currency's movement is still built into its price. The convenience doesn't erase the currency risk."
+        }
+      ]
+    }
+  }
+]
