@@ -156,8 +156,11 @@ const MARKDOWN_COMPONENTS: Components = {
 function messageText(message: UIMessage): string {
   return message.parts
     .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-    .map((p) => p.text)
-    .join('');
+    .map((p) => p.text.trim())
+    .filter(Boolean)
+    // One text part per step: the words before a tool call and the words
+    // after it are separate paragraphs, not one run-on ("for you?Let me know").
+    .join('\n\n');
 }
 
 /**

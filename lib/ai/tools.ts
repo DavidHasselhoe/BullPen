@@ -492,7 +492,16 @@ const EXPLICIT_USER_REQUEST_SCHEMA = {
 };
 
 function navigateAction(path: string, label: string, explicitUserRequest: boolean) {
-  return clientAction({ type: 'navigate', path, label, requiresConfirmation: !explicitUserRequest });
+  return {
+    ...clientAction({ type: 'navigate', path, label, requiresConfirmation: !explicitUserRequest }),
+    // The model writes again after this result. Without saying what the user
+    // actually sees, it improvised: re-asked the question it had just asked,
+    // or announced "Done, you should now be on the page" while the Yes/No
+    // prompt was still waiting for an answer.
+    note: explicitUserRequest
+      ? `${label} is opening now. Do not announce it or say it is done; only add something if it answers the question.`
+      : 'The user now sees Yes/No buttons under your reply. They have not moved. Do not repeat the offer, ask again, or say they are there; only add something if it answers the question.',
+  };
 }
 
 /** Filter params shared by openScreener and screenStocks. Market cap is in billions, percents are 0-100. */
