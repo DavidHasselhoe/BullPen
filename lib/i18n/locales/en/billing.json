@@ -178,5 +178,10 @@
   "trialTimelineReminderDesc": "We email you a reminder. Cancel in two clicks if Pro isn't for you.",
   "trialTimelineChargeAnnual": "Your trial ends and ${{price}} is charged for the year, unless you've cancelled.",
   "trialTimelineChargeMonthly": "Your trial ends and ${{price}} a month begins, unless you've cancelled.",
-  "upgradeRefundNote": "Changed your mind after paying? Full refund within {{moneyBackDays}} days."
+  "upgradeRefundNote": "Changed your mind after paying? Full refund within {{moneyBackDays}} days.",
+  "manageBillingOpening": "Opening your billing settings...",
+  "manageBillingFailed": "We couldn't open your billing settings. Open the account menu and choose Manage subscription, or try this link again in a minute.",
+  "manageBillingNoSubscription": "This account doesn't have a paid subscription, so there's nothing to cancel.",
+  "manageBillingSeePlans": "See plans",
+  "manageBillingBackToApp": "Back to BullPen"
 }

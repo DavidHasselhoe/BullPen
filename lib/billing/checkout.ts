@@ -17,6 +17,8 @@ export interface CheckoutResult {
   emailUnverified?: boolean;
   email?: string | null;
   error?: boolean;
+  /** With `error`: the account has no Stripe customer, so there is nothing to manage. */
+  noSubscription?: boolean;
 }
 
 /**
@@ -49,7 +51,10 @@ export async function startCheckout(
 export async function startPortal(): Promise<CheckoutResult> {
   try {
     const res = await fetch('/api/billing/portal', { method: 'POST' });
-    if (!res.ok) return { error: true };
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      return { error: true, noSubscription: body?.error === 'no_customer' };
+    }
     return await res.json();
   } catch {
     return { error: true };

@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { PRICING } from '../lib/billing/entitlements';
 import { renewalTerms, trialTermsLine, shouldSendRenewalReminder } from '../lib/billing/trial-copy';
-import { buildTrialEndingEmailHtml, buildTrialRevokedEmailHtml } from '../lib/email/billing-reminder';
+import { buildTrialEndingEmailHtml, buildTrialRevokedEmailHtml, MANAGE_BILLING_URL } from '../lib/email/billing-reminder';
 import { checkoutReturnUrls, parseReturnTarget } from '../lib/billing/checkout-return';
 import {
   parsePendingOnboarding,
@@ -56,6 +56,10 @@ const ending = buildTrialEndingEmailHtml('$108.00', 'September 22, 2026', 'https
 assert.ok(ending.includes('September 22, 2026'), 'trial-ending email states the end date');
 assert.ok(ending.includes('$108.00'), 'trial-ending email states the amount');
 assert.ok(ending.includes('https://billing.example/portal'), 'trial-ending email links to manage/cancel');
+// The link the emails really send must outlive the email: a Stripe portal
+// session URL is short-lived, and Visa requires a working online-cancel link.
+assert.ok(MANAGE_BILLING_URL.endsWith('/billing/manage'), 'billing emails link the stable manage page');
+assert.ok(!MANAGE_BILLING_URL.includes('billing.stripe.com'), 'billing emails never carry a one-time portal session URL');
 assert.ok(!hasDash(ending), 'trial-ending email has no dash');
 
 const revoked = buildTrialRevokedEmailHtml('$12.00', 30);

@@ -12,12 +12,19 @@
  */
 
 import { createServerClient } from '@/lib/supabase/client';
-import { getStripe } from '@/lib/billing/stripe';
 import { PRICING } from '@/lib/billing/entitlements';
 import { sendEmail } from './resend';
 
 import { SITE_URL } from '@/lib/site';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
+/**
+ * Every billing email's "Manage or cancel" link. A stable page that opens a
+ * fresh Stripe portal session when clicked: a portal session URL minted when
+ * the email was sent is short-lived per Stripe, so it was likely expired by
+ * the time anyone used it, and Visa and California both require that link to
+ * actually let the cardholder cancel online.
+ */
+export const MANAGE_BILLING_URL = `${APP_URL}/billing/manage`;
 
 function formatAmount(amountInCents: number, currency: string): string {
   return new Intl.NumberFormat('en-US', {
@@ -170,18 +177,13 @@ export async function sendTrialStartedEmail(
   trialEndUnixSeconds: number
 ): Promise<void> {
   const email = (userId ? await emailForUser(userId) : null) ?? (await emailForCustomer(customerId));
-  const stripe = getStripe();
-  if (!email || !stripe) return;
+  if (!email) return;
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${APP_URL}/dashboard`,
-  });
   const endDate = formatDate(trialEndUnixSeconds);
   await sendEmail({
     to: email,
     subject: `Your BullPen Pro trial has started. It ends on ${endDate}`,
-    html: buildTrialStartedEmailHtml(formatAmount(amountInCents, currency), interval === 'year' ? 'a year' : 'a month', endDate, portalSession.url),
+    html: buildTrialStartedEmailHtml(formatAmount(amountInCents, currency), interval === 'year' ? 'a year' : 'a month', endDate, MANAGE_BILLING_URL),
     kind: 'transactional',
   });
 }
@@ -193,18 +195,13 @@ export async function sendTrialEndingEmail(
   trialEndUnixSeconds: number
 ): Promise<void> {
   const email = await emailForCustomer(customerId);
-  const stripe = getStripe();
-  if (!email || !stripe) return;
+  if (!email) return;
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${APP_URL}/dashboard`,
-  });
   const endDate = formatDate(trialEndUnixSeconds);
   await sendEmail({
     to: email,
     subject: `Your BullPen Pro trial ends on ${endDate}`,
-    html: buildTrialEndingEmailHtml(formatAmount(amountInCents, currency), endDate, portalSession.url),
+    html: buildTrialEndingEmailHtml(formatAmount(amountInCents, currency), endDate, MANAGE_BILLING_URL),
     kind: 'transactional',
   });
 }
@@ -222,7 +219,7 @@ export async function sendTrialRevokedEmail(customerId: string, amountInCents: n
 
 /**
  * Send a renewal reminder for the given Stripe customer. Looks up the owning
- * user by `stripe_customer_id`, generates a fresh Customer Portal link, and
+ * user by `stripe_customer_id`, links the stable /billing/manage page, and
  * emails them. Silently no-ops if the user or their email can't be found —
  * this must never throw and break the webhook's 200 response.
  */
@@ -242,17 +239,11 @@ export async function sendRenewalReminderEmail(
   const email = (user as { email?: string | null } | null)?.email;
   if (!email) return;
 
-  const stripe = getStripe();
-  if (!stripe) return;
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${APP_URL}/upgrade`,
-  });
 
   const amount = formatAmount(amountInCents, currency);
   const renewalDate = formatDate(renewsAtUnixSeconds);
-  const html = buildEmailHtml(amount, renewalDate, portalSession.url);
+  const html = buildEmailHtml(amount, renewalDate, MANAGE_BILLING_URL);
 
   await sendEmail({
     to: email,
