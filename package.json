@@ -92,7 +92,8 @@
     "test-email-verification": "tsx scripts/test-email-verification.ts",
     "render-instagram-preview": "tsx scripts/render-instagram-preview.ts",
     "test-fund-names": "tsx scripts/test-fund-names.ts",
-    "check-weekly-pick": "tsx scripts/check-weekly-pick.ts"
+    "check-weekly-pick": "tsx scripts/check-weekly-pick.ts",
+    "test-academy-option-order": "tsx scripts/test-academy-option-order.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.119",

@@ -7,6 +7,7 @@ import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { QuizContent } from '@/types/academy';
+import { optionOrder } from '@/lib/academy/option-order';
 
 interface Props {
   content: QuizContent;
@@ -75,7 +76,9 @@ export function QuizLesson({ content, onComplete }: Props) {
           </h2>
 
           <div className="grid gap-2.5">
-            {question.options.map((option, i) => {
+            {/* Shown shuffled; i stays the option's original index, so scoring is unchanged. */}
+            {optionOrder(question.options.length, question.question).map((i) => {
+              const option = question.options[i];
               const isPicked = picked === i;
               const isThisCorrect = i === question.correctIndex;
               const showAsCorrect = answered && isThisCorrect;

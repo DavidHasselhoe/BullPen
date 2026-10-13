@@ -7,6 +7,7 @@ import { Check, X, Flame, CalendarClock, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDailyChallenge, type DailySubmitResult } from '@/hooks/use-daily-challenge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { optionOrder } from '@/lib/academy/option-order';
 
 /** Hours:minutes until the next ET midnight, for the "resets in" copy. */
 function timeUntilEtMidnight(): string {
@@ -131,7 +132,9 @@ export function DailyChallengeCard() {
 
           {/* Options */}
           <div className="grid gap-2">
-            {challenge.options.map((option, i) => {
+            {/* Shown shuffled; i stays the original index the server grades against. */}
+            {optionOrder(challenge.options.length, challenge.question).map((i) => {
+              const option = challenge.options[i];
               const isPicked = picked === i;
               const showCorrect = done && correctIndex === i;
               const showWrong = done && isPicked && correctIndex !== i;

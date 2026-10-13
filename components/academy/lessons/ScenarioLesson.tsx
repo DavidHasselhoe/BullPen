@@ -7,6 +7,7 @@ import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ScenarioContent } from '@/types/academy';
+import { optionOrder } from '@/lib/academy/option-order';
 
 interface Props {
   content: ScenarioContent;
@@ -38,7 +39,9 @@ export function ScenarioLesson({ content, onComplete }: Props) {
       </div>
 
       <div className="space-y-2.5">
-        {content.choices.map((c, i) => {
+        {/* Shown shuffled; i stays the choice's original index. */}
+        {optionOrder(content.choices.length, content.setup).map((i) => {
+          const c = content.choices[i];
           const isPicked = picked === i;
           const isDimmed = answered && !isPicked;
           return (
