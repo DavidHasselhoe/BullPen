@@ -36,6 +36,16 @@ import { getHoldings } from '@/lib/holdings/holdings-db';
 import { APP_DESTINATION_IDS, resolveDestination, type AppDestinationId } from '@/lib/ai/app-destinations';
 import { loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
 import type { ScreenerRow } from '@/app/api/screener/route';
+import { getLatestPickRow, getPickRowByDate, toDetail } from '@/lib/picks/picks-db';
+import { resolveThesisAccess } from '@/lib/picks/thesis-access';
+import { getCachedPerformance, livePerformanceFor } from '@/lib/picks/performance';
+import { QUARTER_RE } from '@/lib/picks/quarters';
+import { toTeaser } from '@/lib/briefs/teaser';
+import { getEconomicEvents } from '@/lib/market-data/economic-calendar';
+import { THEME_DISPLAY_ORDER } from '@/lib/discover/theme-config';
+import { loadFundHoldings } from '@/lib/institutions/load-holdings';
+import type { DiffableHolding, HoldingChange } from '@/lib/institutions/compute-diff';
+import changelog from '@/content/changelog.json';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -1675,6 +1685,220 @@ const getPoliticianTrades = tool({
     return { windowDays: days, count: trades.length, trades };
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BullPen's own published content — read-only, gated exactly like its page.
+//
+// The rule for what Bull may read: whatever THIS viewer would see on that page
+// right now, never more. "It's shown in the app" is not the line, because most
+// of these surfaces have a free layer and a Pro layer cut server-side (the
+// pick thesis, the brief body, fund holdings). Each tool below reuses the
+// page's own gate, so the chat can't become a way round the paywall.
+// Nothing here writes: selects only. Other users' rows, billing, auth, admin
+// tables and unpublished drafts are out of scope entirely.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function byValue<T extends { valueUsd: number }>(rows: T[], n = 10): T[] {
+  return [...rows].sort((a, b) => b.valueUsd - a.valueUsd).slice(0, n);
+}
+
+const PRO_LOCKED_NOTE =
+  'This part is Pro. Do not guess at or paraphrase what it says. Tell the user it is part of Pro and where in the app it lives.';
+
+export function appContentTools(userId: string | null) {
+  return {
+    getWeeklyPicks: tool({
+      description:
+        "Read Bull's Weekly Pick: the latest (or a given week's) pick with its headline, one-liner, entry price and " +
+        'live return vs the S&P 500, plus the full track record of every past pick (wins and losses), optionally ' +
+        "for one quarter. Use for any question about the weekly pick(s), this quarter's picks, or how the picks " +
+        'have performed. The thesis and risks are included only when this user can read them on /picks. ' +
+        'Free: stored data plus a couple of cached quotes.',
+      inputSchema: jsonSchema<{ pickDate?: string; quarter?: string }>({
+        type: 'object',
+        properties: {
+          pickDate: { type: 'string', description: 'YYYY-MM-DD of a specific pick. Omit for the latest.' },
+          quarter: { type: 'string', description: 'Scope the track record to picks made in one quarter, e.g. 2026-Q4. Omit for all.' },
+        },
+        additionalProperties: false,
+      }),
+      execute: async ({ pickDate, quarter }) => {
+        if (quarter && !QUARTER_RE.test(quarter)) return { error: 'quarter must look like 2026-Q4.' };
+        try {
+          const row = pickDate ? await getPickRowByDate(pickDate) : await getLatestPickRow();
+          if (!row) return { error: pickDate ? `No pick was published on ${pickDate}.` : 'No pick has been published yet.' };
+          const [access, perf, record] = await Promise.all([
+            resolveThesisAccess(userId ? { userId } : null, row.pick_date, row.model),
+            livePerformanceFor(row),
+            getCachedPerformance(quarter),
+          ]);
+          // metricsSnapshot is the pipeline's working data, not something the page shows as prose.
+          const { metricsSnapshot: _m, logoUrl: _l, ...pick } = toDetail(row, perf, access);
+          return {
+            pick: { ...pick, page: `/picks/${row.pick_date}` },
+            ...(pick.locked
+              ? {
+                  thesisNote:
+                    access.lockReason === 'anonymous'
+                      ? 'The full thesis is for signed-in users. Do not guess at it.'
+                      : access.lockReason === 'free_available'
+                      ? 'This free account can unlock one full thesis a month with the "Read the full thesis" button on the pick page. Do not guess at the thesis.'
+                      : PRO_LOCKED_NOTE,
+                }
+              : {}),
+            trackRecord: {
+              quarter: quarter ?? 'all',
+              summary: record.summary,
+              quartersAvailable: record.quarters,
+              picks: record.picks.map((p) => ({
+                pickDate: p.pickDate, symbol: p.symbol, company: p.companyName, headline: p.headline,
+                status: p.status, entryPrice: p.entryPrice, currentPrice: p.currentPrice,
+                returnPct: p.returnPct, sp500ReturnPct: p.benchmarkReturnPct,
+              })),
+            },
+            disclaimer: 'Hypothetical returns from a published research pick, not advice. Never frame a pick as a reason to buy.',
+          };
+        } catch (err) {
+          if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+          return { error: 'Could not load the weekly pick.' };
+        }
+      },
+    }),
+
+    getDailyBrief: tool({
+      description:
+        "Read BullPen's Daily Brief, the market summary published each morning before the US open (most recent " +
+        'of the last two days). Use for "what\'s in today\'s brief", "what happened in the market today/yesterday" ' +
+        'when the brief covers it. Free accounts get the title and TL;DR; Pro gets the full brief. Free: stored data.',
+      inputSchema: jsonSchema<Record<string, never>>({ type: 'object', properties: {}, additionalProperties: false }),
+      execute: async () => {
+        if (!userId) return { error: 'The Daily Brief is for signed-in users. Suggest signing up to read it on Home.' };
+        const [tier, { data }] = await Promise.all([
+          getTier(userId),
+          supabase()
+            .from('daily_briefs')
+            .select('published_date, title, content')
+            .gte('published_date', new Date(Date.now() - 2 * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }))
+            .order('published_date', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+        if (!data) return { error: 'No brief has been published in the last two days.' };
+        // sources is dropped for everyone: they are raw web titles/URLs, and
+        // nothing in a chat answer needs them.
+        const brief = data as { published_date: string; title: string; content: string };
+        if (isPro(tier)) return { ...brief, page: '/' };
+        return { ...toTeaser(brief), locked: true, note: `The rest of the brief is Pro. ${PRO_LOCKED_NOTE}`, page: '/' };
+      },
+    }),
+
+    getEconomicCalendar: tool({
+      description:
+        'Scheduled US economic releases (jobs report, CPI, PCE, GDP, jobless claims, Fed decisions) in a date range, ' +
+        'from the Market Events Calendar. Use for "when is the next Fed meeting", "is CPI this week". ' +
+        'Times are UTC ISO; say them in ET. Free: stored data.',
+      inputSchema: jsonSchema<{ from?: string; to?: string }>({
+        type: 'object',
+        properties: {
+          from: { type: 'string', description: 'YYYY-MM-DD, default today' },
+          to: { type: 'string', description: 'YYYY-MM-DD, default from + 31 days. At most 62 days after from.' },
+        },
+        additionalProperties: false,
+      }),
+      execute: async ({ from, to }) => {
+        const start = from ?? new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+        const end = to ?? new Date(Date.parse(start) + 31 * 86_400_000).toISOString().slice(0, 10);
+        if (Number.isNaN(Date.parse(start)) || Number.isNaN(Date.parse(end)) || end < start) return { error: 'Invalid date range.' };
+        if ((Date.parse(end) - Date.parse(start)) / 86_400_000 > 62) return { error: 'Range too long: 62 days at most.' };
+        try {
+          const rows = await getEconomicEvents(start, end);
+          return { from: start, to: end, events: rows.map(({ source: _s, id: _id, ...e }) => e), page: '/tools/calendar' };
+        } catch {
+          return { error: 'Could not load the economic calendar.' };
+        }
+      },
+    }),
+
+    getInvestingIdeas: tool({
+      description:
+        "List BullPen's Investing Ideas: curated theme baskets on Discover (AI infrastructure and others) with the " +
+        'tickers in each. Use for "what themes does BullPen have", "which stocks are in the X idea". These are ' +
+        'ticker lists for research, not recommendations. Free: no data calls.',
+      inputSchema: jsonSchema<Record<string, never>>({ type: 'object', properties: {}, additionalProperties: false }),
+      execute: async () => ({
+        ideas: THEME_DISPLAY_ORDER.map((t) => ({
+          title: t.title, tagline: t.tagline, description: t.description, tickers: t.tickers, page: `/discover/ideas/${t.slug}`,
+        })),
+      }),
+    }),
+
+    getWhatsNew: tool({
+      description:
+        "BullPen's changelog: what has recently been added, improved or fixed in the app. Use for \"what's new\", " +
+        '"can BullPen do X yet", "when did X ship". Free.',
+      inputSchema: jsonSchema<{ days?: number }>({
+        type: 'object',
+        properties: { days: { type: 'number', minimum: 1, maximum: 30, description: 'How many changelog days to return, newest first. Default 5.' } },
+        additionalProperties: false,
+      }),
+      execute: async ({ days = 5 }) => ({ entries: (changelog as unknown[]).slice(0, Math.min(30, Math.max(1, days))), page: '/changelog' }),
+    }),
+
+    getFundHoldings: tool({
+      description:
+        'The famous investment funds BullPen tracks from SEC 13F filings (Berkshire Hathaway, Bridgewater, ' +
+        'Pershing Square, ARK and others). Without a fund: the list of tracked funds (free). With a fund: its ' +
+        'latest reported top holdings and what it bought, sold and exited last quarter (Pro). 13Fs are filed up ' +
+        'to 45 days after quarter end and list US long positions only: always say the data is that old. Free: stored data.',
+      inputSchema: jsonSchema<{ fund?: string }>({
+        type: 'object',
+        properties: { fund: { type: 'string', description: 'Fund or manager name, e.g. "Berkshire", "Ackman", "Cathie Wood"' } },
+        additionalProperties: false,
+      }),
+      execute: async ({ fund }) => {
+        const { data } = await supabase()
+          .from('institutional_investors')
+          .select('slug, display_name, manager_name, description')
+          .eq('is_active', true)
+          .order('sort_order');
+        const funds = (data ?? []) as Array<{ slug: string; display_name: string; manager_name: string | null; description: string | null }>;
+        if (!fund) {
+          return { funds: funds.map((f) => ({ name: f.display_name, manager: f.manager_name, page: `/discover/institutions/${f.slug}` })) };
+        }
+        const q = fund.toLowerCase();
+        const match = funds.find((f) =>
+          [f.slug, f.display_name, f.manager_name ?? ''].some((s) => s.toLowerCase().includes(q))
+        );
+        if (!match) return { error: `BullPen does not track "${fund}". Tracked funds: ${funds.map((f) => f.display_name).join(', ')}.` };
+        const page = `/discover/institutions/${match.slug}`;
+        if (!userId || !isPro(await getTier(userId))) {
+          return { fund: match.display_name, manager: match.manager_name, page, locked: true, note: `Fund holdings are Pro. ${PRO_LOCKED_NOTE}` };
+        }
+        const result = await loadFundHoldings(match.slug, null);
+        if (!result.ok) return { error: 'Could not load this fund\'s holdings.' };
+        const { fund: f, filing, holdings, diff } = result.data;
+        const brief = (h: DiffableHolding) => ({ ticker: h.symbol, name: h.companyName ?? h.nameOfIssuer, option: h.putCall ?? undefined, valueUsd: h.valueUsd, portfolioPct: h.portfolioPct });
+        const change = (h: HoldingChange) => ({ ...brief(h), sharesChangePct: h.sharesChangePct });
+        return {
+          fund: f.displayName, manager: f.managerName, page,
+          quarterEnded: filing.periodOfReport, filedOn: filing.filedDate,
+          reportedValueUsd: filing.totalValueUsd, positions: filing.totalPositions,
+          topHoldings: byValue(holdings, 25).map(brief),
+          ...(diff ? {
+            lastQuarter: {
+              // Largest by dollars, not by % change: a tiny position tripling
+              // is not what "what did Berkshire add" is asking about.
+              newPositions: byValue(diff.newPositions).map(brief),
+              exited: byValue(diff.exited).map(brief),
+              increased: byValue(diff.increased).map(change),
+              decreased: byValue(diff.decreased).map(change),
+            },
+          } : {}),
+        };
+      },
+    }),
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Exported tool map (passed directly to streamText)

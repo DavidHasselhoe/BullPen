@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isPro } from '@/lib/billing/tier';
+import { toTeaser } from '@/lib/briefs/teaser';
 
 async function handler(
   _request: NextRequest,
@@ -49,12 +50,6 @@ async function handler(
       { headers: { 'Cache-Control': 'private, max-age=300, stale-while-revalidate=600' } }
     )
   );
-}
-
-/** Title plus the `## TL;DR` section only. No TL;DR section means no body at all. */
-function toTeaser<T extends { content: string }>(brief: T): T {
-  const match = brief.content.match(/^##\s*TL;DR\s*\n([\s\S]*?)(?=\n##\s|$)/m);
-  return { ...brief, content: match ? `## TL;DR\n\n${match[1].trim()}` : '', sources: [] };
 }
 
 export const GET = withAuth(handler);

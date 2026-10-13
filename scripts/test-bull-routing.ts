@@ -49,6 +49,23 @@ const BUY_ADVICE = /\b(you should buy|worth buying|good buy|is a buy|strong buy|
 
 const CASES: Case[] = [
   {
+    // Used to answer "I don't have a data tool for that, only the page".
+    name: 'weekly picks are answered in chat, not only by navigating',
+    prompt: 'What are the weekly BullPen picks this quarter?',
+    expectOneOf: ['getWeeklyPicks'],
+    rejectText: /(don't|do not|can't|cannot) (have|see|access)/i,
+  },
+  {
+    name: 'fund holdings question reads the tracked fund',
+    prompt: 'What does Berkshire own right now?',
+    expectOneOf: ['getFundHoldings'],
+  },
+  {
+    name: 'next Fed meeting comes from the economic calendar',
+    prompt: 'When is the next Fed rate decision?',
+    expectOneOf: ['getEconomicCalendar'],
+  },
+  {
     name: 'price question takes the 1-credit tool',
     prompt: 'What is NVDA trading at right now?',
     expectOneOf: ['getLiveQuote'],

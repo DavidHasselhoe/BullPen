@@ -36,7 +36,7 @@ import {
   type StockCandles,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
-import { getMarketSession } from '@/lib/cache/redis-cache';
+import { getMarketSession, rget, rset } from '@/lib/cache/redis-cache';
 import {
   MIN_PICKS_FOR_HEADLINE,
   type PerformanceResponse,
@@ -196,6 +196,33 @@ async function stampMissingEntries(
 }
 
 // ─── Main computation ────────────────────────────────────────────────────────
+
+/** Bump the version suffix whenever the payload's shape or semantics change,
+ *  so a deploy doesn't serve the previous shape for another 30 minutes. */
+const PERFORMANCE_CACHE_KEY = 'picks:performance:v3';
+const PERFORMANCE_CACHE_TTL_SECONDS = 30 * 60;
+
+/**
+ * computePerformance behind a 30-minute Redis cache, shared by
+ * /api/picks/performance and Ask Bull so neither recomputes what the other
+ * just did. The picks only change weekly; the live quotes inside refresh on
+ * each recompute.
+ */
+export async function getCachedPerformance(quarter?: string): Promise<PerformanceResponse & { cached?: true }> {
+  const cacheKey = `${PERFORMANCE_CACHE_KEY}:${quarter ?? 'all'}`;
+  const cached = await rget<PerformanceResponse>(cacheKey);
+  if (cached) return { ...cached, cached: true };
+
+  const result = await computePerformance(quarter);
+  // A transient TD failure (rate limit, network blip) can leave every pick's
+  // currentPrice null even though the picks themselves loaded fine. Caching
+  // that degraded result for 30 minutes would make it survive repeated
+  // refreshes — only cache once at least one pick actually resolved a price.
+  if (result.picks.length === 0 || result.picks.some((p) => p.currentPrice != null)) {
+    void rset(cacheKey, result, PERFORMANCE_CACHE_TTL_SECONDS);
+  }
+  return result;
+}
 
 /**
  * @param quarter e.g. '2026-Q3': only picks *made* in that quarter, tracked to
