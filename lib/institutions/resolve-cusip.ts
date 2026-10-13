@@ -23,6 +23,20 @@ import { resolveSecurity } from '@/lib/import/resolve-security';
 import { tryReserveCredits } from '@/lib/twelvedata/credit-budget';
 import type { Raw13FHolding } from './parse-13f-xml';
 import { normalizeShareClassSymbol } from './symbol-format';
+import { listingMic } from '@/lib/assets/asset-type';
+import { isOtcProxy } from '@/lib/import/rank-import-candidates';
+
+/**
+ * Everything on the SEC's 13(f) list trades in the US, so a non-US listing is
+ * always the wrong answer. TwelveData's ISIN index often knows only a German
+ * cross-listing of a US security (Pershing Square USA came back as Frankfurt
+ * "1E8", not NYSE PSUS), and resolveSecurity stops at the first search that
+ * returns anything, so a name search never got the chance.
+ */
+function isUsListing(r: { candidate: { mic_code: string }; quote: { currency?: string | null } }): boolean {
+  const mic = r.candidate.mic_code;
+  return (r.quote.currency ?? 'USD') === 'USD' && (!mic || listingMic(mic) === null || isOtcProxy({ mic_code: mic }));
+}
 
 export interface ResolvedHolding extends Raw13FHolding {
   symbol: string | null;
@@ -142,14 +156,28 @@ export async function resolveHoldingsForFiling(holdings: Raw13FHolding[]): Promi
       break;
     }
 
-    const resolution = await resolveSecurity({
+    let resolution = await resolveSecurity({
       isin: cusipToIsin(cusip),
       rawSymbol: null,
       name: holding.nameOfIssuer,
       priceCurrency: 'USD',
     });
+    // A foreign listing from the ISIN search: retry by name, which ranks US
+    // USD listings first. The foreign hit's own name, not the 13F's
+    // abbreviation ("CHAGEE HLDGS LTD" finds nothing, "Chagee Holdings Ltd."
+    // does). Still not US means unresolved, never a foreign ticker.
+    // The retry must land on the same instrument: TwelveData names every
+    // listing of a security identically, and a near-miss name search took
+    // "Robinhood Ventures Fund I" to Fund II.
+    if (resolution.status === 'resolved' && !isUsListing(resolution) && (await tryReserveCredits(3))) {
+      const foreignName = resolution.candidate.instrument_name;
+      resolution = await resolveSecurity({ isin: null, rawSymbol: null, name: foreignName, priceCurrency: 'USD' });
+      if (resolution.status === 'resolved' && resolution.candidate.instrument_name.toLowerCase() !== foreignName.toLowerCase()) {
+        resolution = { status: 'unmatched', bestGuesses: [], creditsUsed: resolution.creditsUsed };
+      }
+    }
 
-    if (resolution.status === 'resolved') {
+    if (resolution.status === 'resolved' && isUsListing(resolution)) {
       // ISIN search can answer "BRK-B"; everything else in the app keys on "BRK.B".
       const symbol = normalizeShareClassSymbol(resolution.candidate.symbol);
       cacheMap.set(cusip, symbol);
