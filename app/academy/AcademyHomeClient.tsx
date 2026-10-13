@@ -24,12 +24,14 @@ export function AcademyHomeClient() {
   // "new to Academy" banner for returning users on every load.
   const isFirstVisit = isAuthenticated && !isStatsLoading && (stats?.totalXp ?? 0) === 0;
 
-  // "Graduated the free track" nudge: a free user who has finished every free
-  // course (optional ones count once skipped) and now faces the Pro courses.
-  const freeCourses = courses?.filter((c) => !c.requiresPro) ?? [];
+  // Finished Foundations: the first moment a free learner has shown they will
+  // stick with it, so it's where Pro gets offered. This used to wait for every
+  // free course (13 of them), which in practice nobody ever reached.
+  const firstUnit = courses?.[0]?.unitLabel ?? null;
+  const foundations = courses?.filter((c) => c.unitLabel === firstUnit && !c.requiresPro) ?? [];
   const hasProCourses = courses?.some((c) => c.requiresPro) ?? false;
-  const finishedFreeLadder =
-    !isPro && hasProCourses && freeCourses.length > 0 && freeCourses.every((c) => c.isCompleted);
+  const finishedFoundations =
+    !isPro && hasProCourses && foundations.length > 0 && foundations.every((c) => c.isCompleted);
 
   return (
     <div className="space-y-6 pt-2">
@@ -99,8 +101,8 @@ export function AcademyHomeClient() {
       {/* Daily challenge — requires a signed-in user */}
       {isAuthenticated && <DailyChallengeCard />}
 
-      {/* Graduated the free track → nudge toward Pro courses */}
-      {finishedFreeLadder && (
+      {/* Finished Foundations → nudge toward Pro courses */}
+      {finishedFoundations && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -115,9 +117,9 @@ export function AcademyHomeClient() {
             className="h-16 w-16 shrink-0 opacity-95 dark:invert"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-foreground">{t('homePageGraduatedTitle')}</p>
+            <p className="text-sm font-semibold text-foreground">{t('homePageFoundationsDoneTitle')}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {t('homePageGraduatedDescription')}
+              {t('homePageFoundationsDoneDescription')}
             </p>
           </div>
           <UpgradeCTA label={t('homePageUnlockProCourses')} className="shrink-0" />

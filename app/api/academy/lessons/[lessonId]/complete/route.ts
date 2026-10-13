@@ -15,6 +15,7 @@ import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isPro } from '@/lib/billing/tier';
 import { applyActivityAndXp, fetchStatsRow } from '@/lib/academy/streak';
+import { isProSampleLesson } from '@/lib/academy/pro-sample';
 
 const BodySchema = z.object({
   score: z.number().min(0).max(1).optional(),
@@ -84,7 +85,7 @@ async function handler(
   // award themselves Pro-course XP by calling this route directly.
   if (courseGate?.requires_pro) {
     const tier = await getTier(session.userId);
-    if (!isPro(tier)) {
+    if (!isPro(tier) && !(await isProSampleLesson(supabase, lesson.course_id, lessonId))) {
       return addSecurityHeaders(
         NextResponse.json({ success: false, error: 'Pro subscription required' }, { status: 403 })
       );

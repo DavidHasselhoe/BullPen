@@ -57,6 +57,7 @@ export default function CourseOverviewPage() {
     lessons.find((l) => !l.completed) ||
     lessons[0];
   const canSkip = course.isOptional && !locked && completedCount < lessons.length;
+  const sampleLesson = lessons.find((l) => l.isSample);
 
   const handleSkip = async () => {
     if (skipping) return;
@@ -110,13 +111,15 @@ export default function CourseOverviewPage() {
       <div className="space-y-2.5">
         {lessons.map((lesson) => {
           const meta = TYPE_META[lesson.type];
-          const Icon = locked ? Lock : meta.icon;
+          // A Pro course's first lesson stays playable for everyone: the free sample.
+          const rowLocked = locked && !lesson.isSample;
+          const Icon = rowLocked ? Lock : meta.icon;
           const row = (
             <div
               className={cn(
                 'flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors',
                 'bg-card',
-                locked
+                rowLocked
                   ? 'border-border/40 opacity-70'
                   : 'hover:border-emerald-500/30',
                 lesson.completed ? 'border-emerald-500/30 bg-emerald-500/[0.04]' : 'border-border/50'
@@ -138,6 +141,9 @@ export default function CourseOverviewPage() {
                 <div className="text-sm font-medium text-foreground truncate">{lesson.title}</div>
                 <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
                   {meta.label}
+                  {locked && lesson.isSample && (
+                    <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-foreground">{t('courseOverviewFreeSample')}</span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-500/80 shrink-0">
@@ -146,7 +152,7 @@ export default function CourseOverviewPage() {
               </div>
             </div>
           );
-          return locked ? (
+          return rowLocked ? (
             <div key={lesson.id}>{row}</div>
           ) : (
             <Link key={lesson.id} href={`/academy/${course.slug}/${lesson.slug}`}>
@@ -157,11 +163,20 @@ export default function CourseOverviewPage() {
       </div>
 
       {locked ? (
-        <ProGate
-          feature="academy_pro"
-          title={t('academyProGateTitle')}
-          description={t('academyProGateDescriptionLesson')}
-        />
+        <div className="space-y-3">
+          {sampleLesson && !sampleLesson.completed && (
+            <Link href={`/academy/${course.slug}/${sampleLesson.slug}`}>
+              <Button size="lg" className="w-full font-semibold">
+                {t('courseOverviewTrySampleLesson')}
+              </Button>
+            </Link>
+          )}
+          <ProGate
+            feature="academy_pro"
+            title={t('academyProGateTitle')}
+            description={t('academyProGateDescriptionLesson')}
+          />
+        </div>
       ) : (
         nextLesson &&
         completedCount < lessons.length && (

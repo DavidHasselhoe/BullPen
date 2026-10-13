@@ -228,9 +228,11 @@ export interface UserCourseProgress {
 }
 
 export interface LessonWithCompletion extends Omit<Lesson, 'content'> {
-  /** Omitted by the API when the course is Pro-gated and the user isn't Pro. */
+  /** Omitted by the API when the course is Pro-gated and the user isn't Pro, except for the free sample. */
   content?: Lesson['content'];
   completed: boolean;
+  /** The Pro course's free sample (its first lesson), open to every account. */
+  isSample?: boolean;
 }
 
 // ─── Level helpers ──────────────────────────────────────────────────────────

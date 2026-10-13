@@ -87,18 +87,24 @@ async function handler(
   );
 
   // Locked (Pro-gated, non-Pro viewer): titles/types/XP stay visible as a
-  // teaser, but the actual content never crosses the wire.
-  const lessons: LessonWithCompletion[] = lessonRows.map((l) => ({
-    id: l.id,
-    courseId: l.course_id,
-    slug: l.slug,
-    title: l.title,
-    type: l.type,
-    orderIndex: l.order_index,
-    xpReward: l.xp_reward,
-    ...(locked ? {} : { content: l.content as LessonWithCompletion['content'] }),
-    completed: completedIds.has(l.id),
-  }));
+  // teaser, but the actual content never crosses the wire, except for the
+  // first lesson, which is every Pro course's free sample. The complete route
+  // applies the same rule (isProSampleLesson).
+  const lessons: LessonWithCompletion[] = lessonRows.map((l, i) => {
+    const isSample = course.requires_pro && i === 0;
+    return {
+      id: l.id,
+      courseId: l.course_id,
+      slug: l.slug,
+      title: l.title,
+      type: l.type,
+      orderIndex: l.order_index,
+      xpReward: l.xp_reward,
+      ...(locked && !isSample ? {} : { content: l.content as LessonWithCompletion['content'] }),
+      completed: completedIds.has(l.id),
+      ...(isSample ? { isSample: true } : {}),
+    };
+  });
 
   const courseDto: Course = {
     id: course.id,

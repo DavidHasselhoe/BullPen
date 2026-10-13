@@ -165,7 +165,8 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
   return (
     <div className="flex justify-center py-2.5">
       <Link
-        href={isProLocked ? '/upgrade' : `/academy/${course.slug}`}
+        // Pro courses open their overview too: the first lesson is a free sample.
+        href={`/academy/${course.slug}`}
         className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         {content}

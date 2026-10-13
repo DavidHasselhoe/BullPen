@@ -36,9 +36,10 @@ export default function LessonPage() {
   }
 
   // Content is omitted by the API for Pro-gated courses viewed by non-Pro
-  // users. The course overview page already stops sequential navigation here,
-  // but direct URL access hits this defensively too.
-  if (data.locked || !lessonRow.content) {
+  // users, except the first lesson (the free sample). The course overview page
+  // already stops sequential navigation here, but direct URL access hits this
+  // defensively too.
+  if (!lessonRow.content) {
     return (
       <ProGate
         feature="academy_pro"
@@ -59,5 +60,17 @@ export default function LessonPage() {
     content: lessonRow.content,
   };
 
-  return <LessonPlayer lesson={lesson} courseSlug={courseSlug} />;
+  const next = data.lessons[data.lessons.indexOf(lessonRow) + 1];
+  return (
+    <LessonPlayer
+      // A new lesson is a fresh player: the reward screen must not carry over.
+      key={lesson.id}
+      lesson={lesson}
+      courseSlug={courseSlug}
+      courseTitle={data.course.title}
+      // A free account's next lesson in a Pro course is behind the paywall.
+      nextLesson={next && next.content ? { slug: next.slug, title: next.title } : null}
+      isSample={data.locked && !!lessonRow.isSample}
+    />
+  );
 }

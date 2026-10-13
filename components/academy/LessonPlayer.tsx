@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +12,7 @@ import { MatchLesson } from '@/components/academy/lessons/MatchLesson';
 import { ScenarioLesson } from '@/components/academy/lessons/ScenarioLesson';
 import { ChartTourLesson } from '@/components/academy/lessons/ChartTourLesson';
 import { DemoLesson } from '@/components/academy/lessons/DemoLesson';
-import { CompletionCelebration } from '@/components/academy/CompletionCelebration';
+import { LessonComplete, type LessonCompleteResult } from '@/components/academy/LessonComplete';
 import { ACADEMY_STATS_QUERY_KEY } from '@/hooks/use-academy-stats';
 import {
   ReadContentSchema,
@@ -33,25 +33,26 @@ import type {
   DemoContent,
 } from '@/types/academy';
 
-interface CompleteResponse {
+interface CompleteResponse extends LessonCompleteResult {
   success: boolean;
-  xpAwarded: number;
-  isFirstCompletion: boolean;
-  courseCompleted: boolean;
-  stats: AcademyStats;
 }
 
 interface Props {
   lesson: Lesson;
   courseSlug: string;
+  courseTitle: string;
+  nextLesson: { slug: string; title: string } | null;
+  /** A free account playing a Pro course's free sample. */
+  isSample: boolean;
 }
 
-export function LessonPlayer({ lesson, courseSlug }: Props) {
+export function LessonPlayer({ lesson, courseSlug, courseTitle, nextLesson, isSample }: Props) {
   const { t } = useTranslation('academy');
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [celebrating, setCelebrating] = useState(false);
-  const pendingCompletion = useRef<Promise<CompleteResponse> | null>(null);
+  // Stats as they were before this lesson, so the reward screen's level bar
+  // fills from where the learner actually was.
+  const [finished, setFinished] = useState<{ before: AcademyStats | null } | null>(null);
 
   // Validate the JSONB content against its lesson type's schema.
   const validatedContent = useMemo(() => {
@@ -84,32 +85,10 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
   });
 
   function handleLessonComplete(score?: number) {
-    // Show the celebration immediately — the XP value is already known
-    // client-side (lesson.xpReward), so there's no reason to block the
-    // overlay on the completion request's round-trip to Supabase.
-    setCelebrating(true);
-    pendingCompletion.current = completeMutation.mutateAsync({ score });
-  }
-
-  // Fires once the celebration overlay's own display timer elapses. Awaits
-  // the (very likely already-resolved, by then) completion request so the
-  // next screen always gets real stats instead of guessed ones.
-  async function handleCelebrationDismiss() {
-    try {
-      const data = await pendingCompletion.current;
-      if (!data) return;
-      const params = new URLSearchParams({
-        courseSlug,
-        xp: String(data.xpAwarded),
-        streak: String(data.stats.currentStreak),
-        courseDone: data.courseCompleted ? '1' : '0',
-      });
-      router.push(`/academy/complete?${params.toString()}`);
-    } catch {
-      // Completion failed to save — don't strand the user on a screen
-      // celebrating progress that wasn't recorded.
-      router.push(`/academy/${courseSlug}`);
-    }
+    // The reward screen shows at once: the XP is already known client-side,
+    // and level and streak fill in when the save returns.
+    setFinished({ before: queryClient.getQueryData<AcademyStats>(ACADEMY_STATS_QUERY_KEY) ?? null });
+    completeMutation.mutate({ score });
   }
 
   if (!validatedContent?.success) {
@@ -119,6 +98,21 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
           {t('lessonPlayerInvalidContent')}
         </p>
       </div>
+    );
+  }
+
+  if (finished) {
+    return (
+      <LessonComplete
+        courseSlug={courseSlug}
+        courseTitle={courseTitle}
+        xpReward={lesson.xpReward}
+        nextLesson={nextLesson}
+        finishedSample={isSample}
+        before={finished.before}
+        result={completeMutation.data ?? null}
+        failed={completeMutation.isError}
+      />
     );
   }
 
@@ -187,9 +181,6 @@ export function LessonPlayer({ lesson, courseSlug }: Props) {
         />
       )}
 
-      {celebrating && (
-        <CompletionCelebration xpEarned={lesson.xpReward} onDismiss={handleCelebrationDismiss} />
-      )}
     </div>
   );
 }
