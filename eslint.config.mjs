@@ -54,6 +54,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Harness scratch space (agent worktrees) — never lint their build artifacts.
     ".claude/**",
+    // Browser-automation scratch (git-ignored throwaway scripts); it made
+    // `npm run lint` fail on files that aren't part of the repo.
+    ".playwright-mcp/**",
     "**/.next/**",
     // Compiled Vercel output — not source
     ".vercel/**",
