@@ -28,6 +28,10 @@
       },
       {
         "type": "fixed",
+        "text": "Biggest movers now switches to the day's list about a minute after the market opens, instead of showing the previous day's for several minutes or longer"
+      },
+      {
+        "type": "fixed",
         "text": "A stock's price change over a falling period now shows its minus sign"
       }
     ]
