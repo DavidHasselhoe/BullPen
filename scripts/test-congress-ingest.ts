@@ -251,6 +251,8 @@ assert.equal(isNonCommonFiling('AllianceBernstein Holding L.P. Units'), false, '
   assert.deepEqual(withNew.map((g) => g.symbol), ['MSFT', 'NVDA'], 'a stock with new trades leads, though NVDA traded later');
   assert.equal(withNew[0].newCount, 1);
   assert.equal(withNew[0].people.find((p) => p.slug === 'hern')?.newCount, 1);
+  assert.equal(withNew[0].people[0].slug, 'hern', 'within a stock, the person with news leads');
+  assert.equal(withNew[0].latestDate, '2026-09-28', 'the stock date is still its newest trade');
   assert.equal(withNew[1].newCount, 0, 'ingested before the last visit');
   assert.equal(isNewTrade({ addedAt: null }, since), false, 'no ingest time: never claimed as new');
   assert.equal(isNewTrade({ addedAt: '2026-10-13T00:00:00Z' }, null), false);

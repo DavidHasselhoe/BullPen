@@ -87,11 +87,14 @@ export function groupOverlap(trades: ActivityTrade[], held: Set<string>, newSinc
     } else people.set(t.slug, { slug: t.slug, displayName: t.displayName, latest: t, count: 1, newCount: isNew });
   }
   const groups = [...stocks].map(([symbol, people]) => {
-    const list = [...people.values()];
+    const all = [...people.values()];
+    // Within a stock too, whoever brought news leads; a late filing of an old
+    // trade would otherwise sit mid-list under its trade date.
+    const list = [...all.filter((p) => p.newCount > 0), ...all.filter((p) => p.newCount === 0)];
     return {
       symbol,
       held: held.has(symbol),
-      latestDate: list[0].latest.transactionDate,
+      latestDate: all[0].latest.transactionDate,
       people: list,
       buyers: list.filter((p) => tradeDirection(p.latest.tradeType) === 'buy').length,
       sellers: list.filter((p) => tradeDirection(p.latest.tradeType) === 'sell').length,

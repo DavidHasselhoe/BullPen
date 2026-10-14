@@ -79,23 +79,39 @@ function isoDaysAgo(days: number): string {
   return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 }
 
-/** Tracked members' trades in given symbols since `sinceDays` ago, newest first. */
+/** PostgREST returns at most 1,000 rows per request, whatever the limit says. */
+const PAGE = 1000;
+
+/**
+ * Tracked members' trades in given symbols since `sinceDays` ago, newest
+ * first, paged up to `limit`. A caller that counts (the overlap panel) passes
+ * a high limit: rows are ordered by trade date, so a cap cuts late filings
+ * first, which are exactly the trades that just became public.
+ */
 export async function getTradesForSymbols(symbols: string[], sinceDays: number, limit = 200): Promise<ActivityTrade[]> {
   const upper = [...new Set(symbols.map((s) => s.toUpperCase()))];
   if (upper.length === 0) return [];
-  const { data, error } = await createServerClient()
-    .from('congress_trades')
-    .select(TRADE_SELECT)
-    .in('symbol', upper)
-    .eq('congress_politicians.is_active', true)
-    .gte('transaction_date', isoDaysAgo(sinceDays))
-    .order('transaction_date', { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(error.message);
+  const rows: TradeJoinRow[] = [];
+  for (let from = 0; from < limit; from += PAGE) {
+    const to = Math.min(from + PAGE, limit) - 1;
+    const { data, error } = await createServerClient()
+      .from('congress_trades')
+      .select(TRADE_SELECT)
+      .in('symbol', upper)
+      .eq('congress_politicians.is_active', true)
+      .gte('transaction_date', isoDaysAgo(sinceDays))
+      .order('transaction_date', { ascending: false })
+      // A tiebreak, so pages never overlap or skip and same-day trades keep one order.
+      .order('dc_trade_id', { ascending: false })
+      .range(from, to);
+    if (error) throw new Error(error.message);
+    const page = (data ?? []) as unknown as TradeJoinRow[];
+    rows.push(...page);
+    if (page.length < to - from + 1) break;
+  }
+  if (rows.length >= limit) console.warn(`[congress] getTradesForSymbols hit its ${limit}-row limit for ${upper.length} symbols`);
   // These rows read "Traded {date}", so a trade without a believable date is left out.
-  return ((data ?? []) as unknown as TradeJoinRow[])
-    .filter((r) => isPlausibleTradeDate(r.transaction_date, r.disclosure_date))
-    .map(toActivity);
+  return rows.filter((r) => isPlausibleTradeDate(r.transaction_date, r.disclosure_date)).map(toActivity);
 }
 
 // ─── Scorecard ──────────────────────────────────────────────────────────────
