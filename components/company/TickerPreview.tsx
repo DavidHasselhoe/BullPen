@@ -70,12 +70,24 @@ export function shorten(text: string): string {
   return `${cut.slice(0, cut.lastIndexOf(' '))}…`;
 }
 
+/** A whole card or row as the trigger: a cursor crossing a grid of them must not open each one. */
+const CARD_OPEN_DELAY_MS = 450;
+
 interface Props {
   ticker: string;
   /** Classes for the inline trigger itself, so each surface keeps its own look. */
   className?: string;
   /** Trigger content. Defaults to `$TICKER`. */
   children?: ReactNode;
+  /**
+   * The trigger is a whole card or list row (Discover, the screener), not a
+   * ticker in a sentence. It opens on a deliberate hover only, and a tap on a
+   * phone follows the link the way a card always has, instead of previewing.
+   */
+  card?: boolean;
+  'aria-label'?: string;
+  /** Runs on hover alongside the preview, e.g. to prefetch the stock page. */
+  onPointerEnter?: () => void;
 }
 
 /**
@@ -91,7 +103,7 @@ interface Props {
  * that reader has the most to lose from navigating away); a second tap on the
  * ticker follows the link as usual.
  */
-export function TickerPreview({ ticker, className, children }: Props) {
+export function TickerPreview({ ticker, className, children, card = false, 'aria-label': ariaLabel, onPointerEnter }: Props) {
   const { t, i18n } = useTranslation('common');
   const { t: tw } = useTranslation('watchlist');
   const { isAuthenticated } = useAuth();
@@ -114,8 +126,8 @@ export function TickerPreview({ ticker, className, children }: Props) {
     timer.current = setTimeout(() => {
       setOpen(true);
       setEverOpened(true);
-    }, OPEN_DELAY_MS);
-  }, [cancelTimer]);
+    }, card ? CARD_OPEN_DELAY_MS : OPEN_DELAY_MS);
+  }, [cancelTimer, card]);
 
   const closeSoon = useCallback(() => {
     cancelTimer();
@@ -178,10 +190,12 @@ export function TickerPreview({ ticker, className, children }: Props) {
         <Link
           href={href}
           className={className}
+          aria-label={ariaLabel}
           onPointerDown={(e) => {
             lastPointerType.current = e.pointerType;
           }}
           onPointerEnter={(e) => {
+            onPointerEnter?.();
             if (e.pointerType === 'mouse') openSoon();
           }}
           onPointerLeave={(e) => {
@@ -194,7 +208,7 @@ export function TickerPreview({ ticker, className, children }: Props) {
             // suppressing navigation here also suppresses that — open it
             // explicitly rather than relying on the trigger. A second tap has
             // `open` set and falls through to the link.
-            if (lastPointerType.current !== 'mouse' && !open) {
+            if (!card && lastPointerType.current !== 'mouse' && !open) {
               e.preventDefault();
               setOpen(true);
               setEverOpened(true);

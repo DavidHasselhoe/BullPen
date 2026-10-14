@@ -25,6 +25,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Bell, Scale, ListPlus, X, Loader2 } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { TickerPreview } from '@/components/company/TickerPreview';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
@@ -581,8 +582,10 @@ export function ScreenerResults({
                   </TableCell>
                   <TableCell className="sticky left-9 z-10 bg-background">
                     <div className="flex items-center gap-2.5 group/row">
-                      <Link
-                        href={slugToAssetPath(row.ticker)}
+                      {/* Screening is how people meet companies they don't know: hover previews one. */}
+                      <TickerPreview
+                        ticker={row.ticker}
+                        card
                         className="flex items-center gap-2.5 group min-w-0"
                       >
                         <CompanyLogo
@@ -605,8 +608,8 @@ export function ScreenerResults({
                               />
                             ) : null;
                           })()}
-                          {/* clamp-ok: company name beside its ticker in a sticky column, full name in title */}
-                          <span className="ml-1.5 hidden max-w-[11rem] truncate align-bottom text-xs text-muted-foreground sm:inline-block" title={row.name}>
+                          {/* clamp-ok: company name beside its ticker in a sticky column, full name in the hover preview */}
+                          <span className="ml-1.5 hidden max-w-[11rem] truncate align-bottom text-xs text-muted-foreground sm:inline-block">
                             {displayCompanyName(row.name, row.ticker)}
                           </span>
                           {row.sector && (
@@ -617,7 +620,7 @@ export function ScreenerResults({
                             </div>
                           )}
                         </div>
-                      </Link>
+                      </TickerPreview>
                       <div className="opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0">
                         <AlertDialog
                           symbol={row.ticker}

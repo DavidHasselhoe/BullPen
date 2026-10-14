@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { TickerPreview } from '@/components/company/TickerPreview';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
 import { displayCompanyName } from '@/lib/market-data/company-name';
@@ -86,14 +87,11 @@ export function TickerCard({ item, href, showReason = false }: Props) {
 
   const name = displayCompanyName(item.name, item.ticker);
   const computedHref = href ?? slugToAssetPath(item.ticker);
+  // Stocks and ETFs get the company preview on hover; crypto and commodities route to /asset/ and have no profile.
+  const previewed = computedHref.startsWith('/stock/');
   const label = `${name}, ${item.ticker}${changePct != null ? `, ${formatPct(changePct)}` : ''}`;
 
-  return (
-    <Link
-      href={computedHref}
-      aria-label={label}
-      onMouseEnter={prefetch}
-      className={cn(
+  const cardClass = cn(
         // Fluid width: every surface that renders this is now a grid, so the
         // grid owns the sizing. (It used to be pinned to a 168px rail slot.)
         'group flex h-full w-full min-w-0 flex-col justify-between',
@@ -102,8 +100,10 @@ export function TickerCard({ item, href, showReason = false }: Props) {
         'hover:border-border hover:bg-card hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/20',
         'active:scale-[0.97] active:shadow-none active:translate-y-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-      )}
-    >
+  );
+
+  const body = (
+    <>
       {/* Name first, ticker under it: beginners know "Johnson & Johnson", not
           JNJ. A ticker with no known name shows once, not twice. */}
       <div className="flex items-start gap-2 min-w-0">
@@ -116,7 +116,7 @@ export function TickerCard({ item, href, showReason = false }: Props) {
         />
         <div className="min-w-0">
           {/* clamp-ok: a company name, not prose; two lines fit "Johnson & Johnson", full name in title */}
-          <div className="line-clamp-2 break-words text-sm font-semibold leading-tight text-foreground" title={item.name}>
+          <div className="line-clamp-2 break-words text-sm font-semibold leading-tight text-foreground" title={previewed ? undefined : item.name}>
             {name}
           </div>
           {name !== item.ticker && (
@@ -156,6 +156,22 @@ export function TickerCard({ item, href, showReason = false }: Props) {
           <PriceSkeleton />
         )}
       </div>
+    </>
+  );
+
+  // Discover is where people meet stocks they don't know yet, so a stock card
+  // previews the company on hover (TickerPreview). Crypto and commodities route to
+  // /asset/ pages and have no company profile to show.
+  if (previewed) {
+    return (
+      <TickerPreview ticker={item.ticker} card aria-label={label} onPointerEnter={prefetch} className={cardClass}>
+        {body}
+      </TickerPreview>
+    );
+  }
+  return (
+    <Link href={computedHref} aria-label={label} onMouseEnter={prefetch} className={cardClass}>
+      {body}
     </Link>
   );
 }

@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { TickerPreview } from '@/components/company/TickerPreview';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
 import type { IndexMover, IndexMovers, PremarketMovers } from '@/lib/market-data/index-movers';
 import { displayCompanyName } from '@/lib/market-data/company-name';
@@ -128,14 +127,16 @@ function MoverList({ title, rows, earningsLabel, className }: { title: string; r
       <ul className="py-1">
         {rows.map((m) => (
           <li key={m.symbol}>
-            <Link
-              href={slugToAssetPath(m.symbol)}
+            {/* A mover you don't know is the commonest case here: hover previews the company. */}
+            <TickerPreview
+              ticker={m.symbol}
+              card
               className="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none sm:px-5"
             >
               <CompanyLogo ticker={m.symbol} name={m.name ?? m.symbol} logoUrl={m.logo_url} size={28} />
               <span className="min-w-0 flex-1">
                 {/* clamp-ok: a company name in a dense row; the full name is one click away */}
-                <span className="block truncate text-sm font-semibold text-foreground group-hover:underline" title={m.name ?? undefined}>
+                <span className="block truncate text-sm font-semibold text-foreground group-hover:underline">
                   {displayCompanyName(m.name ?? m.symbol, m.symbol)}
                 </span>
                 <span className="flex items-center gap-1.5">
@@ -152,7 +153,7 @@ function MoverList({ title, rows, earningsLabel, className }: { title: string; r
                 <Pct value={m.changePercent} />
                 <span className="block font-mono text-xs tabular-nums text-muted-foreground">${m.price.toFixed(2)}</span>
               </span>
-            </Link>
+            </TickerPreview>
           </li>
         ))}
       </ul>
