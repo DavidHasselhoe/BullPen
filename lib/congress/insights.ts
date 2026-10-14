@@ -32,6 +32,8 @@ export interface ActivityTrade {
   priceAtDisclosure: number | null;
   /** 'Stock', 'Option', ... as filed. An option is labelled, never read as shares. */
   assetType?: string | null;
+  /** When we first ingested the row (ISO). What "new since your last visit" compares against. */
+  addedAt?: string | null;
 }
 
 interface TradeJoinRow {
@@ -45,11 +47,12 @@ interface TradeJoinRow {
   price_at_trade: number | null;
   price_at_disclosure: number | null;
   asset_type: string | null;
+  created_at: string | null;
   congress_politicians: { slug: string; display_name: string; party: string | null; chamber: string | null; is_active: boolean } | null;
 }
 
 const TRADE_SELECT =
-  'symbol, trade_type, amount_range, amount_low, amount_high, transaction_date, disclosure_date, price_at_trade, price_at_disclosure, asset_type, congress_politicians!inner(slug, display_name, party, chamber, is_active)';
+  'symbol, trade_type, amount_range, amount_low, amount_high, transaction_date, disclosure_date, price_at_trade, price_at_disclosure, asset_type, created_at, congress_politicians!inner(slug, display_name, party, chamber, is_active)';
 
 function toActivity(r: TradeJoinRow): ActivityTrade {
   const p = r.congress_politicians!;
@@ -68,6 +71,7 @@ function toActivity(r: TradeJoinRow): ActivityTrade {
     priceAtTrade: r.price_at_trade == null ? null : Number(r.price_at_trade),
     priceAtDisclosure: r.price_at_disclosure == null ? null : Number(r.price_at_disclosure),
     assetType: r.asset_type,
+    addedAt: r.created_at,
   };
 }
 

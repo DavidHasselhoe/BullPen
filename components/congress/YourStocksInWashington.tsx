@@ -14,7 +14,7 @@
  * user's own gain and loss everywhere else, and a politician's buy is neither.
  */
 
-import { useState } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,7 @@ import { formatAmountRange, tradeDirection } from '@/lib/congress/types';
 import { groupOverlap, type OverlapPerson, type OverlapStock } from '@/lib/congress/overlap-groups';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 import type { ActivityTrade } from '@/lib/congress/insights';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 interface Person {
@@ -45,18 +46,63 @@ interface OverlapResponse {
   /** Free: the traded stocks newest first, and everyone who traded them. */
   symbols?: string[];
   people?: Person[];
+  /** The line between new and seen for this visit; null on a first visit. */
+  newSince?: string | null;
+  /** Free: how many of their stocks have new trades. */
+  newStocks?: number;
 }
 
 const INITIAL_STOCKS = 5;
 const FACES = 3;
 const LOCKED_LOGOS = 8;
 
+/**
+ * The panel arrives after the page, so without a placeholder everything below
+ * it jumps down. But most loads end with no overlap and no panel, and a box
+ * that appears and vanishes is worse than none. So the last load's shape is
+ * remembered on this device, and only a load expected to show the panel holds
+ * its space. Per-device convenience only: a missing value means no placeholder.
+ */
+const SHAPE_KEY = 'bullpen:washington-overlap-shape';
+type Shape = { kind: 'locked' } | { kind: 'pro'; rows: number; more: boolean };
+
+function readShape(): string | null {
+  try {
+    return localStorage.getItem(SHAPE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeShape(shape: Shape | null) {
+  try {
+    if (shape) localStorage.setItem(SHAPE_KEY, JSON.stringify(shape));
+    else localStorage.removeItem(SHAPE_KEY);
+  } catch {
+    // Private mode or blocked storage: the panel just loads without a placeholder.
+  }
+}
+
+function parseShape(raw: string | null): Shape | null {
+  if (!raw) return null;
+  try {
+    const s = JSON.parse(raw) as Shape;
+    return s.kind === 'locked' || (s.kind === 'pro' && s.rows > 0) ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+const noSubscribe = () => () => {};
+
 export function YourStocksInWashington() {
   const { t, i18n } = useTranslation('discover');
   const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [showAll, setShowAll] = useState(false);
-  const { data } = useQuery({
+  // Null on the server and during hydration, so the first client render matches.
+  const shapeRaw = useSyncExternalStore(noSubscribe, readShape, () => null);
+  const { data, isLoading } = useQuery({
     queryKey: ['congress-overlap'],
     queryFn: async (): Promise<OverlapResponse | null> => {
       const res = await fetch('/api/congress/overlap');
@@ -67,6 +113,19 @@ export function YourStocksInWashington() {
     staleTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (data === undefined) return;
+    if (!data || data.symbolCount === 0) writeShape(null);
+    else if (data.locked) writeShape({ kind: 'locked' });
+    else {
+      const stocks = new Set((data.trades ?? []).map((tr) => tr.symbol)).size;
+      writeShape({ kind: 'pro', rows: Math.min(stocks, INITIAL_STOCKS), more: stocks > INITIAL_STOCKS });
+    }
+  }, [data]);
+
+  const shape = isAuthenticated && isLoading ? parseShape(shapeRaw) : null;
+  if (shape) return <OverlapSkeleton shape={shape} />;
 
   if (!data || data.symbolCount === 0) return null;
 
@@ -82,6 +141,8 @@ export function YourStocksInWashington() {
       timeZone: 'UTC',
     });
   };
+  // A visit is a moment, not a calendar date: shown in the reader's own zone.
+  const lastVisit = data.newSince ? new Date(data.newSince).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' }) : '';
 
   if (data.locked) {
     const symbols = data.symbols ?? [];
@@ -93,6 +154,7 @@ export function YourStocksInWashington() {
             <h3 id="overlap-heading" className="text-sm font-semibold text-foreground">
               {title} <ProBadge className="ml-1 align-middle" />
             </h3>
+            {(data.newStocks ?? 0) > 0 && <NewLine>{t('congOverlapLockedNew', { count: data.newStocks, date: lastVisit })}</NewLine>}
             {people.length > 0 && (
               <p className="mt-1 text-sm text-muted-foreground">{t('congOverlapLockedBody', { count: people.length })}</p>
             )}
@@ -124,11 +186,15 @@ export function YourStocksInWashington() {
     );
   }
 
-  const stocks = groupOverlap(data.trades ?? [], new Set(data.held ?? []));
+  const stocks = groupOverlap(data.trades ?? [], new Set(data.held ?? []), data.newSince);
   if (stocks.length === 0) return null;
+  const newTrades = stocks.reduce((n, s) => n + s.newCount, 0);
 
   // The catch-up sentence: the newest trade, and the stock with the most people on it.
-  const newest = stocks[0].people[0];
+  // Stocks with news lead the list, so the newest trade is searched for, not taken from the top.
+  const newest = stocks
+    .map((s) => s.people[0])
+    .reduce((a, b) => (b.latest.transactionDate > a.latest.transactionDate ? b : a));
   const newestDir = tradeDirection(newest.latest.tradeType);
   const busiest = stocks.reduce((a, b) => (b.people.length > a.people.length ? b : a));
   const shown = showAll ? stocks : stocks.slice(0, INITIAL_STOCKS);
@@ -145,6 +211,7 @@ export function YourStocksInWashington() {
     <section aria-labelledby="overlap-heading" className="mb-6 rounded-xl border border-border/50 bg-card/40">
       <div className="px-4 pt-4 sm:px-5">
         <h3 id="overlap-heading" className="text-sm font-semibold text-foreground">{title}</h3>
+        {newTrades > 0 && <NewLine>{t('congOverlapNewSince', { count: newTrades, date: lastVisit })}</NewLine>}
         <p className="mt-1 text-sm text-muted-foreground">
           {t(newestDir === 'buy' ? 'congOverlapNewestBuy' : newestDir === 'sell' ? 'congOverlapNewestSell' : 'congOverlapNewestOther', {
             name: newest.displayName,
@@ -205,7 +272,11 @@ function StockRow({
         aria-expanded={isOpen}
         aria-controls={panelId}
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none sm:px-5"
+        className={cn(
+          'flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none sm:px-5',
+          // Same unread tint as the notification list.
+          stock.newCount > 0 && 'bg-primary/[0.04]',
+        )}
       >
         <CompanyLogo ticker={stock.symbol} name={name} size={36} />
         <span className="min-w-0 flex-1">
@@ -216,6 +287,12 @@ function StockRow({
             <span className="shrink-0 text-xs text-muted-foreground">· {stock.held ? t('congOverlapOwned') : t('congOverlapWatching')}</span>
           </span>
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-xs tabular-nums text-muted-foreground">
+            {stock.newCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                <NewDot />
+                {t('congOverlapRowNew', { count: stock.newCount })}
+              </span>
+            )}
             {stock.buyers > 0 && (
               <span className="inline-flex items-center gap-1 text-foreground">
                 <ArrowUp className="h-3 w-3" aria-hidden />
@@ -264,13 +341,21 @@ function PersonRow({ person, fmtDate }: { person: OverlapPerson; fmtDate: (iso: 
     <li className="flex items-center gap-3 border-t border-border/40 py-2.5 first:border-t-0">
       <PoliticianAvatar displayName={person.displayName} slug={person.slug} size={28} />
       <div className="min-w-0 flex-1">
-        <Link
-          href={`/discover/politicians/${person.slug}`}
-          className="block truncate rounded-sm text-sm font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {/* clamp-ok: a person's name in a dense row */}
-          {person.displayName}
-        </Link>
+        <span className="flex min-w-0 items-center gap-2">
+          <Link
+            href={`/discover/politicians/${person.slug}`}
+            className="block truncate rounded-sm text-sm font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {/* clamp-ok: a person's name in a dense row */}
+            {person.displayName}
+          </Link>
+          {person.newCount > 0 && (
+            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-foreground">
+              <NewDot />
+              {t('congOverlapPersonNew')}
+            </span>
+          )}
+        </span>
         {/* Each fact stays whole: a wrap may fall between them, never inside "filed Oct 12". */}
         <p className="text-xs tabular-nums text-muted-foreground">
           <span className="whitespace-nowrap">{t('congOverlapTradedOn', { date: fmtDate(tr.transactionDate) })}</span>
@@ -287,6 +372,64 @@ function PersonRow({ person, fmtDate }: { person: OverlapPerson; fmtDate: (iso: 
         <p className="font-mono text-xs tabular-nums text-muted-foreground">{formatAmountRange(tr.amountLow, tr.amountHigh, tr.amountRange)}</p>
       </div>
     </li>
+  );
+}
+
+/** The notification list's unread dot, so "new" looks the same everywhere. */
+function NewDot() {
+  return <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />;
+}
+
+function NewLine({ children }: { children: ReactNode }) {
+  return (
+    <p className="mt-1.5 flex items-center gap-2 text-sm font-medium text-foreground">
+      <NewDot />
+      {children}
+    </p>
+  );
+}
+
+/** Holds the panel's space in the shape the last load had (see SHAPE_KEY). */
+function OverlapSkeleton({ shape }: { shape: Shape }) {
+  if (shape.kind === 'locked') {
+    return (
+      <div aria-hidden className="mb-6 rounded-xl border border-border/50 bg-card/40 p-4 sm:p-5">
+        <Skeleton className="h-4 w-2/3 max-w-md" />
+        <Skeleton className="mt-2.5 h-4 w-1/3 max-w-xs" />
+        <Skeleton className="mt-2.5 h-4 w-1/2 max-w-sm" />
+        <div className="mt-5 flex gap-2">
+          {Array.from({ length: 6 }, (_, i) => (
+            <Skeleton key={i} className="h-8 w-8 rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div aria-hidden className="mb-6 rounded-xl border border-border/50 bg-card/40">
+      <div className="px-4 pt-4 sm:px-5">
+        <Skeleton className="h-4 w-2/3 max-w-md" />
+        <Skeleton className="mt-2.5 h-4 w-1/3 max-w-xs" />
+        <Skeleton className="mt-2.5 h-4 w-5/6 max-w-xl" />
+      </div>
+      <ul className="mt-3 divide-y divide-border/50 border-t border-border/50">
+        {Array.from({ length: shape.rows }, (_, i) => (
+          <li key={i} className="flex items-center gap-3 px-4 py-3 sm:px-5">
+            <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+            <span className="min-w-0 flex-1">
+              <Skeleton className="h-4 w-40 max-w-full" />
+              <Skeleton className="mt-1.5 h-3 w-32 max-w-full" />
+            </span>
+            <Skeleton className="h-[26px] w-16 shrink-0 rounded-full" />
+          </li>
+        ))}
+      </ul>
+      {shape.more && (
+        <div className="border-t border-border/50 px-4 py-2.5 sm:px-5">
+          <Skeleton className="h-9 w-28" />
+        </div>
+      )}
+    </div>
   );
 }
 

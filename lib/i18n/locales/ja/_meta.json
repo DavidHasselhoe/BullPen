@@ -3515,5 +3515,12 @@
   "discover.congOverlapShowFewer": "255beb6510e7827d37ec1cd22d080f910888ae00f29374dd9545c8b3d1fce43a",
   "discover.congOverlapLockedBody_one": "d2200411d86eedd96c9c4bcdfa8db4c38ec05902ffe32d6a2b4b1e7fc62e4836",
   "discover.congOverlapLockedBody_other": "1cfad3bb58636560987d7dcae69b500247bfa9af20ef201297e21ad18cc5ad03",
-  "discover.congOverlapLockedStocks": "cb443ab1d8c9145f863b13f3b5bc0171981203e4041d27234fec0f1e54f2f356"
+  "discover.congOverlapLockedStocks": "cb443ab1d8c9145f863b13f3b5bc0171981203e4041d27234fec0f1e54f2f356",
+  "discover.congOverlapNewSince_one": "24eb588d05bf308e1eb0f12b9e6f4e7c8444197215b48c5cfb70f64926990ff5",
+  "discover.congOverlapNewSince_other": "d5c401b12d42b0598304392550aa77055ffef5e96c1944de99ff0fc021f20912",
+  "discover.congOverlapRowNew_one": "e771323ae1bdc219b7a87df3016f3045ae7ca94de236fd0baf3e3465ed10f60c",
+  "discover.congOverlapRowNew_other": "7e563ede9d0428724e9b5aa5f9c182d7f16a7a59d869c01d06244be2027fa166",
+  "discover.congOverlapPersonNew": "18fdd549b2ed367ac0c74cbec1214644728515b30edbcb78e7d322757a7c8359",
+  "discover.congOverlapLockedNew_one": "f13d25fc39e0c20cef1232db8370306cff7e7a1bf7327b8011b458a4ed5ecf51",
+  "discover.congOverlapLockedNew_other": "9c897c9adae9dfe84ddc7031d61f492baeebfdaf3820947f60e3e6a7ae0820ab"
 }

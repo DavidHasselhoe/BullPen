@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict';
 import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cleanFiledName, namesAgree, isNonCommonFiling } from '../lib/congress/ingest-trades';
 import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } from '../lib/congress/types';
-import { groupOverlap } from '../lib/congress/overlap-groups';
+import { groupOverlap, isNewTrade, overlapVisit } from '../lib/congress/overlap-groups';
 import type { ActivityTrade } from '../lib/congress/insights';
 
 // Both ends always survive. Nothing here may ever average them into one
@@ -240,6 +240,32 @@ assert.equal(isNonCommonFiling('AllianceBernstein Holding L.P. Units'), false, '
   assert.equal(msft.people[0].count, 3);
   assert.equal(msft.sellers, 1);
   assert.equal(msft.buyers, 1);
+  assert.equal(msft.newCount, 0, 'no newSince (first visit): nothing is new');
+
+  // New since the last visit: by ingest time, not trade date. A late filing of
+  // an old trade is still new, and the stock carrying it leads.
+  const since = '2026-10-10T12:00:00.000Z';
+  const late = { ...tr('hern', 'MSFT', 'Purchase', '2026-07-15'), addedAt: '2026-10-13 14:00:12.123456+00' };
+  const old = { ...tr('pelosi', 'NVDA', 'Purchase', '2026-10-02'), addedAt: '2026-10-06T09:00:00Z' };
+  const withNew = groupOverlap([old, late, tr('khanna', 'MSFT', 'Sale', '2026-09-28')], new Set(), since);
+  assert.deepEqual(withNew.map((g) => g.symbol), ['MSFT', 'NVDA'], 'a stock with new trades leads, though NVDA traded later');
+  assert.equal(withNew[0].newCount, 1);
+  assert.equal(withNew[0].people.find((p) => p.slug === 'hern')?.newCount, 1);
+  assert.equal(withNew[1].newCount, 0, 'ingested before the last visit');
+  assert.equal(isNewTrade({ addedAt: null }, since), false, 'no ingest time: never claimed as new');
+  assert.equal(isNewTrade({ addedAt: '2026-10-13T00:00:00Z' }, null), false);
+
+  // Visits: the line holds through a reload, moves after a 2-hour gap.
+  const at = (iso: string) => new Date(iso);
+  const first = overlapVisit(null, null, at('2026-10-14T10:00:00Z'));
+  assert.equal(first.newSince, null, 'first ever load: nothing new');
+  assert.equal(first.store.congress_overlap_seen_at, '2026-10-14T10:00:00.000Z');
+  const reload = overlapVisit('2026-10-14T10:00:00.000Z', '2026-10-07T08:00:00.000Z', at('2026-10-14T10:20:00Z'));
+  assert.equal(reload.newSince, '2026-10-07T08:00:00.000Z', 'a reload keeps the visit line');
+  assert.equal(reload.store.congress_overlap_since, '2026-10-07T08:00:00.000Z');
+  const next = overlapVisit('2026-10-14T10:20:00.000Z', '2026-10-07T08:00:00.000Z', at('2026-10-14T15:00:00Z'));
+  assert.equal(next.newSince, '2026-10-14T10:20:00.000Z', 'after a gap, the last load becomes the line');
+  assert.equal(next.store.congress_overlap_seen_at, '2026-10-14T15:00:00.000Z');
 }
 
 console.log('congress ingest checks passed');
