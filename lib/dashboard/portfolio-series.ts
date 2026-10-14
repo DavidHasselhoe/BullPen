@@ -3,8 +3,11 @@
 export type SeriesRange = '1D' | '1W' | '1M' | '1Y';
 export const SERIES_RANGES: SeriesRange[] = ['1D', '1W', '1M', '1Y'];
 
+export type MarketSession = 'pre' | 'regular' | 'post';
+
 export interface SeriesInput {
-  candles: { t: number[]; c: number[] };
+  /** `session` is present on US stock 1D bars (the candles route tags them); crypto has none. */
+  candles: { t: number[]; c: number[]; session?: MarketSession[] };
   quantity: number;
   /** When the position was opened (ms epoch). Bars before it don't count. */
   openedAt: number;
@@ -17,6 +20,21 @@ export interface SeriesPoint {
   t: number;
   pl: number;
   plPct: number;
+  /** 1D only, when the portfolio holds US stocks: which part of the trading day this is. */
+  session?: MarketSession;
+}
+
+const etClock = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+/**
+ * The US session a moment falls in, by the New York clock (same cut-offs as
+ * the candles route's classifyTradingSession). From the clock rather than one
+ * position's tags: the merged line has points where only crypto traded.
+ */
+export function sessionAt(unixSeconds: number): MarketSession {
+  const [h, m] = etClock.format(new Date(unixSeconds * 1000)).split(':').map(Number);
+  const mins = h * 60 + m;
+  return mins < 570 ? 'pre' : mins < 960 ? 'regular' : 'post';
 }
 
 /**
@@ -43,6 +61,9 @@ export function buildPortfolioSeries(inputs: SeriesInput[], range: SeriesRange) 
       return { ...i, base, idx: -1 };
     });
 
+  // Split by session only where it means something: a day of US stock bars.
+  // A crypto-only portfolio trades around the clock and has no pre-market.
+  const tagSessions = range === '1D' && legs.some((l) => (l.candles.session?.length ?? 0) > 0);
   const times = [...new Set(legs.flatMap((l) => l.candles.t))].sort((a, b) => a - b);
   const points: SeriesPoint[] = [];
   for (const t of times) {
@@ -55,7 +76,7 @@ export function buildPortfolioSeries(inputs: SeriesInput[], range: SeriesRange) 
       pl += (price - l.base) * l.quantity;
       basis += l.base * l.quantity;
     }
-    if (basis > 0) points.push({ t, pl, plPct: (pl / basis) * 100 });
+    if (basis > 0) points.push({ t, pl, plPct: (pl / basis) * 100, ...(tagSessions ? { session: sessionAt(t) } : {}) });
   }
 
   const last = points[points.length - 1];

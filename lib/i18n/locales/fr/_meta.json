@@ -3471,5 +3471,9 @@
   "discover.congOverlapMoreStocks_other": "6ba3331061b3e3be3ae990036b5b181609fb8b94f709bcb40cd97acf02816798",
   "discover.congOverlapRangeSr": "2a76200f8807fe850d5efe59157cb39126034c14995785834f0d30470627fe52",
   "discover.congOverlapError": "3c51c78de494168dfbe4c429ad58ada4e9cb69f8d6d80c4f538182f4a3af79ca",
-  "discover.congOverlapRetry": "d8b8392e2c542950ca64867168e4ef87d4ad606882d5898f826b51c6d553988f"
+  "discover.congOverlapRetry": "d8b8392e2c542950ca64867168e4ef87d4ad606882d5898f826b51c6d553988f",
+  "discover.homeChartSession": "6959b4159575d8dd76d9f3bbe2c6437904f861e7860c35abd18deffb1c3425a0",
+  "discover.homeSessionPre": "46d2743448de0f1b362938e8985a803f0edd4db556f33c1a9363cad51b111716",
+  "discover.homeSessionRegular": "b68f05ea363c994d103ed234ca20163be981a0497fdd550d1b965c9938851160",
+  "discover.homeSessionPost": "6597277e957a2ef567627817ac09030cdc3c83b1e7ee5c987f1910a63e0cf9c9"
 }

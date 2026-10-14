@@ -15,7 +15,8 @@ import { InkReveal, InkBullets } from '@/components/ai/InkText';
 import { AskBullChips } from '@/components/dashboard/AskBullChips';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { WHY_TODAY_MIN_MOVE, whyBullets, type InlineWhy } from '@/lib/ai/why-today-shared';
-import { SERIES_RANGES, buildPortfolioSeries, type SeriesRange } from '@/lib/dashboard/portfolio-series';
+import { SERIES_RANGES, buildPortfolioSeries, type MarketSession, type SeriesRange } from '@/lib/dashboard/portfolio-series';
+import { SessionLine, type SessionRegion } from '@/components/charts/session-line';
 import { trackEvent } from '@/lib/analytics/track';
 import type { BatchQuote } from '@/lib/market-data/quote-batcher';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
@@ -28,7 +29,12 @@ import { displayCompanyName } from '@/lib/market-data/company-name';
 import { cn } from '@/lib/utils';
 import type { UserHolding } from '@/lib/types/database';
 
-type CandleData = { t: number[]; c: number[] };
+type CandleData = { t: number[]; c: number[]; session?: MarketSession[] };
+
+const SESSIONS: MarketSession[] = ['pre', 'regular', 'post'];
+/** The stock chart's pre/after-hours look (SessionLine's defaults), repeated for the legend swatches. */
+const MUTED_STROKE = '#6b7280';
+const DASH: Record<MarketSession, string | undefined> = { pre: '4,3', regular: undefined, post: '1,3' };
 
 /**
  * The portfolio line over the chosen period, from each position's candles
@@ -241,9 +247,23 @@ export function PortfolioHero() {
   // The series is in USD; the headline above is in the user's currency, so the
   // tooltip converts the same way the headline does.
   const chartData = useMemo(
-    () => series.points.map((pt) => ({ date: new Date(pt.t * 1000), pl: pt.pl * home.usdRate, plPct: pt.plPct })),
+    () => series.points.map((pt) => ({ date: new Date(pt.t * 1000), pl: pt.pl * home.usdRate, plPct: pt.plPct, session: pt.session })),
     [series.points, home.usdRate],
   );
+  // On 1D, pre-market and after-hours draw like the stock chart's (muted,
+  // dashed / dotted, no fill), so the regular session reads as the day.
+  // Consecutive same-session runs, as in StockPricePanel.
+  const sessionRegions = useMemo<SessionRegion[]>(() => {
+    const regions: SessionRegion[] = [];
+    series.points.forEach((pt, i) => {
+      if (!pt.session) return;
+      const current = regions[regions.length - 1];
+      if (current && current.session === pt.session) current.endIndex = i;
+      else regions.push({ startIndex: i, endIndex: i, session: pt.session });
+    });
+    return regions.some((r) => r.session !== 'regular') ? regions : [];
+  }, [series.points]);
+  const sessionsShown = SESSIONS.filter((s) => sessionRegions.some((r) => r.session === s));
   const whyFor = useInlineWhy(home.movers);
   const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
   const canWhy = useEntitlements().can('why_today');
@@ -294,6 +314,8 @@ export function PortfolioHero() {
   );
 
   const p = home.portfolio;
+  const sessionLabel = (s: MarketSession) =>
+    s === 'pre' ? t('homeSessionPre') : s === 'post' ? t('homeSessionPost') : t('homeSessionRegular');
   const chartUp = (series.changePct ?? 0) >= 0;
   const chartColor = chartUp ? '#10b981' : '#ef4444';
   const rangeLabel: Record<SeriesRange, string> = {
@@ -361,7 +383,11 @@ export function PortfolioHero() {
                     style={{ touchAction: 'pan-y' }}
                     zeroBaseline={false}
                   >
-                    <Area dataKey="pl" stroke={chartColor} strokeWidth={1.5} fill={chartColor} fillOpacity={0.2} showMarkers={false} />
+                    {sessionRegions.length > 0 ? (
+                      <SessionLine dataKey="pl" regions={sessionRegions} regularStroke={chartColor} strokeWidth={1.5} showArea fillOpacity={0.2} />
+                    ) : (
+                      <Area dataKey="pl" stroke={chartColor} strokeWidth={1.5} fill={chartColor} fillOpacity={0.2} showMarkers={false} />
+                    )}
                     <ChartTooltip
                       showTime={range === '1D' || range === '1W'}
                       showYear={range === '1Y'}
@@ -370,11 +396,15 @@ export function PortfolioHero() {
                         const pct = point.plPct as number;
                         const sign = pct > 0.005 ? '+' : pct < -0.005 ? '−' : '';
                         const money = formatCurrency(Math.abs(pl), home.currency, roundNumbers ? { round: true } : undefined);
-                        return [{
-                          label: t('homeChartTooltipPl'),
-                          value: `${sign}${money} (${sign}${Math.abs(pct).toFixed(2)}%)`,
-                          color: chartColor,
-                        }];
+                        const session = sessionRegions.length > 0 ? (point.session as MarketSession | undefined) : undefined;
+                        return [
+                          {
+                            label: t('homeChartTooltipPl'),
+                            value: `${sign}${money} (${sign}${Math.abs(pct).toFixed(2)}%)`,
+                            color: session && session !== 'regular' ? MUTED_STROKE : chartColor,
+                          },
+                          ...(session ? [{ label: t('homeChartSession'), value: sessionLabel(session), color: MUTED_STROKE }] : []),
+                        ];
                       }}
                     />
                   </LineChart>
@@ -384,6 +414,29 @@ export function PortfolioHero() {
                   <p className="pt-6 text-center text-xs text-muted-foreground">{t('homeChartEmpty')}</p>
                 )}
               </div>
+              {/* Says what the dashed and dotted parts are; only when the line has them. */}
+              {sessionsShown.length > 1 && (
+                <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-hidden>
+                  {sessionsShown.map((s) => (
+                    <li key={s} className="inline-flex items-center gap-1.5">
+                      <svg width="16" height="6" className="shrink-0">
+                        <line
+                          x1="0"
+                          y1="3"
+                          x2="16"
+                          y2="3"
+                          stroke={s === 'regular' ? chartColor : MUTED_STROKE}
+                          strokeOpacity={s === 'regular' ? 1 : 0.8}
+                          strokeWidth="1.5"
+                          strokeDasharray={DASH[s]}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      {sessionLabel(s)}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         )}
