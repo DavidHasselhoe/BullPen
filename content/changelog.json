@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-10-14",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Washington Trading for your own stocks is now quick to catch up on: company logos and politicians' photos, how many bought and sold each stock, and a tap to see who traded, when they traded and filed, and for roughly how much"
+      },
+      {
+        "type": "new",
+        "text": "Washington Trading now marks the trades that came in since your last visit and puts those stocks first. Free accounts see which of their stocks politicians traded and how many have news"
+      },
+      {
+        "type": "fixed",
+        "text": "Washington Trading showed each politician's oldest trade in a stock instead of their latest, so someone who bought and then sold still showed as buying"
+      },
+      {
+        "type": "new",
+        "text": "Hover a stock on Discover, in Biggest movers or in the screener to see what the company does and its price, without leaving the page"
+      },
+      {
+        "type": "improved",
+        "text": "On Home, the one-day portfolio chart now shows pre-market and after-hours trading apart from regular market hours"
+      },
+      {
+        "type": "fixed",
+        "text": "The pre-market view of Biggest movers now appears within a minute of the morning list being ready, instead of several minutes later"
+      },
+      {
+        "type": "fixed",
+        "text": "A stock's price change over a falling period now shows its minus sign"
+      }
+    ]
+  },
+  {
     "date": "2026-10-13",
     "entries": [
       {
