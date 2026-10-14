@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withRateLimit } from '@/lib/security/api-security';
 import { getIndexMovers, getPremarketMovers } from '@/lib/market-data/index-movers';
+import { isPreMarketET } from '@/lib/market-data/trading-day';
 
 export const dynamic = 'force-dynamic';
 // The response is instant; this is for the paced refresh getIndexMovers()
@@ -18,8 +19,11 @@ async function handler() {
     // Nothing cached yet (first refresh still running): the section stays hidden and polls.
     return NextResponse.json({ success: false, error: 'plan_restricted' }, { status: 200 });
   }
-  const res = NextResponse.json({ success: true, movers, premarket });
-  res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=240');
+  // The first request of the morning starts the pre-market sweep (a minute or
+  // two); say so, and keep the CDN from serving the empty answer for minutes.
+  const premarketPending = premarket === null && isPreMarketET();
+  const res = NextResponse.json({ success: true, movers, premarket, premarketPending });
+  res.headers.set('Cache-Control', premarketPending ? 'public, s-maxage=15' : 'public, s-maxage=60, stale-while-revalidate=240');
   return res;
 }
 

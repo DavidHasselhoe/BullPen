@@ -29,7 +29,7 @@ const SHOWN = 5;
 export function MarketMovers() {
   const { t, i18n } = useTranslation('discover');
   const [view, setView] = useState<'premarket' | 'last'>('premarket');
-  const { data } = useQuery<{ success: boolean; movers?: IndexMovers; premarket?: PremarketMovers | null }>({
+  const { data } = useQuery<{ success: boolean; movers?: IndexMovers; premarket?: PremarketMovers | null; premarketPending?: boolean }>({
     queryKey: ['market-movers'],
     queryFn: async () => {
       const res = await fetch('/api/market/movers');
@@ -39,8 +39,9 @@ export function MarketMovers() {
     staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     // A cheap CDN-cached read. Polling picks up the refresh the server runs in
-    // the background: a "last session" list at the open rolls over to live.
-    refetchInterval: (q) => (q.state.data?.movers ? 5 * 60 * 1000 : 60 * 1000),
+    // the background: a "last session" list at the open rolls over to live, and
+    // a pre-market list still being built shows up within the minute.
+    refetchInterval: (q) => (q.state.data?.movers && !q.state.data.premarketPending ? 5 * 60 * 1000 : 30 * 1000),
     refetchOnWindowFocus: false,
   });
 
