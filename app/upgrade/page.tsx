@@ -103,11 +103,13 @@ function Beat({ time, title, desc, children }: { time: string; title: string; de
 /**
  * A real capture from the app, in the theme the reader is using. The dark
  * captures are taken with the same viewport and crop as the light ones (same
- * pixel size), so swapping them never moves the layout.
+ * pixel size), so swapping them never moves the layout. The captures are
+ * clipped tight to their content, so the frame pads them in the page colour
+ * they were shot on; edge to edge, the text sat against the rounded corner.
  */
 function Shot({ src, darkSrc, alt, width, height }: { src: string; darkSrc: string; alt: string; width: number; height: number }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-white ring-1 ring-black/5 dark:bg-card dark:ring-white/5">
+    <div className="overflow-hidden rounded-xl border border-border bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-background dark:ring-white/5">
       <Image src={src} alt={alt} width={width} height={height} sizes="(max-width: 1024px) 92vw, 568px" className="h-auto w-full dark:hidden" />
       <Image src={darkSrc} alt={alt} width={width} height={height} sizes="(max-width: 1024px) 92vw, 568px" className="hidden h-auto w-full dark:block" />
     </div>
