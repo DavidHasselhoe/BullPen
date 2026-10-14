@@ -682,7 +682,7 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
                 <span className="text-sm font-semibold">
                   {perfIsPos ? '+' : ''}{fmtPrice(perfDiff)}
                   {' '}
-                  ({perfIsPos ? '+' : ''}{Math.abs(perfPct).toFixed(2)}%)
+                  ({perfIsPos ? '+' : '-'}{Math.abs(perfPct).toFixed(2)}%)
                 </span>
                 {' '}
                 <span className="text-xs font-normal text-muted-foreground">{RANGE_LABEL[range]}</span>
