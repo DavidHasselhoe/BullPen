@@ -172,6 +172,38 @@ async function computeMovers(): Promise<IndexMovers> {
 }
 
 /**
+ * How long a freshly computed list stays fresh. Pure, for the self-check.
+ *
+ * - Just after 9:30 most quotes still carry yesterday's date, so the ranking
+ *   comes back as yesterday's list. Watched on 2026-10-14: the 9:30 refresh
+ *   stored Oct 13 for 5 minutes and today's only arrived at 9:37. So until
+ *   today's quotes are in, ask again every minute. Guarded twice, because each
+ *   retry re-quotes ~515 names: only on a real trading day (getMarketSession()
+ *   does not know holidays, and on one the list is yesterday's all day) and
+ *   only in the open's first half hour.
+ * - While trading, 5 minutes: the list moves.
+ * - 16:00-16:30: the closing auction print reaches TwelveData a few minutes
+ *   after the bell, so a list computed then carries pre-close prices (CEG
+ *   253.59 vs its 253.97 close on 2026-09-30). Short TTL until it settles.
+ * - Otherwise the list cannot change until the next open. It used to expire
+ *   every 30 minutes all night and weekend, re-quoting ~515 names for the
+ *   same list.
+ */
+export function moversTtlSeconds(p: {
+  session: 'regular' | 'extended' | 'closed' | string;
+  etHHMM: number;
+  tradingDay: boolean;
+  listSession: 'live' | 'last';
+  untilOpen: number;
+}): number {
+  const open = p.session === 'regular';
+  if (open && p.listSession === 'last' && p.tradingDay && p.etHHMM >= 930 && p.etHHMM < 1000) return 60;
+  const settling = p.session === 'extended' && p.etHHMM >= 1600 && p.etHHMM < 1630;
+  if (open || settling) return 5 * 60;
+  return Math.min(p.untilOpen, 4 * 24 * 60 * 60);
+}
+
+/**
  * Recomputes and caches the list. Takes a minute or two when the budget is
  * busy, so it never runs inside a user's request: the market-movers-daily
  * cron seeds it after the close, and getIndexMovers() schedules it after a
@@ -187,20 +219,14 @@ export async function refreshIndexMovers(): Promise<IndexMovers | null> {
       console.warn(`[index-movers] only ${movers.ranked}/${UNIVERSE.length} quoted, keeping the last good list`);
       return null;
     }
-    // The closing auction print reaches TwelveData a few minutes after 4pm, so
-    // a list computed right after the bell carries pre-close prices (CEG
-    // 253.59 vs its 253.97 close on 2026-09-30). Keep the short TTL until then.
-    const session = getMarketSession();
-    const etHHMM = Number(new Date().toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }).replace(':', ''));
-    const settling = session === 'extended' && etHHMM >= 1600 && etHHMM < 1630;
-    const open = session === 'regular';
-    // Once the session is over and its close has settled, the list cannot
-    // change until the next open. It used to expire every 30 minutes all night
-    // and weekend, re-quoting ~515 names (one credit each) to get the same list.
-    await Promise.all([
-      rset(FRESH_KEY, movers, open || settling ? 5 * 60 : Math.min(secondsUntilNextOpenET(), 4 * 24 * 60 * 60)),
-      rset(STALE_KEY, movers, 7 * 24 * 60 * 60),
-    ]);
+    const ttl = moversTtlSeconds({
+      session: getMarketSession(),
+      etHHMM: Number(new Date().toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }).replace(':', '')),
+      tradingDay: sessionDateET() === nyDate(Date.now() / 1000),
+      listSession: movers.session,
+      untilOpen: secondsUntilNextOpenET(),
+    });
+    await Promise.all([rset(FRESH_KEY, movers, ttl), rset(STALE_KEY, movers, 7 * 24 * 60 * 60)]);
     return movers;
   } catch (err) {
     if (!(err instanceof TwelveDataRateLimitError)) console.error('[index-movers] refresh failed:', err);

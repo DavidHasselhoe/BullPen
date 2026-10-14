@@ -4,7 +4,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { rankMovers, rankPremarket } from '../lib/market-data/index-movers';
+import { moversTtlSeconds, rankMovers, rankPremarket } from '../lib/market-data/index-movers';
 
 // 2026-09-29 15:00 New York, and a day earlier.
 const today = Date.UTC(2026, 8, 29, 19) / 1000;
@@ -47,4 +47,16 @@ const pre = rankPremarket(new Map([
 assert.deepEqual(pre.gainers, ['UP', 'SMALL']);
 assert.deepEqual(pre.losers, ['DOWN']);
 assert.equal(pre.traded.length, 3);
+// Freshness. At the open a list can still be yesterday's: retry each minute,
+// but never on a holiday or past the first half hour (each retry is ~515 credits).
+const ttl = (o: Partial<Parameters<typeof moversTtlSeconds>[0]>) =>
+  moversTtlSeconds({ session: 'regular', etHHMM: 931, tradingDay: true, listSession: 'last', untilOpen: 70000, ...o });
+assert.equal(ttl({}), 60, 'open, still yesterday: ask again in a minute');
+assert.equal(ttl({ listSession: 'live' }), 300, 'open, today in: the usual 5 minutes');
+assert.equal(ttl({ tradingDay: false }), 300, 'holiday: never the per-minute retry');
+assert.equal(ttl({ etHHMM: 1000 }), 300, 'after 10:00: back to 5 minutes, whatever the list');
+assert.equal(ttl({ session: 'extended', etHHMM: 1605, listSession: 'live' }), 300, 'closing print settling');
+assert.equal(ttl({ session: 'closed', etHHMM: 2200, listSession: 'live', untilOpen: 41000 }), 41000, 'closed: until the next open');
+assert.equal(ttl({ session: 'closed', untilOpen: 9e6 }), 4 * 24 * 60 * 60, 'capped at four days');
+
 console.log('index movers: all checks passed');
