@@ -11,6 +11,8 @@
 import assert from 'node:assert/strict';
 import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cleanFiledName, namesAgree, isNonCommonFiling } from '../lib/congress/ingest-trades';
 import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } from '../lib/congress/types';
+import { groupOverlap } from '../lib/congress/overlap-groups';
+import type { ActivityTrade } from '../lib/congress/insights';
 
 // Both ends always survive. Nothing here may ever average them into one
 // figure: a filing discloses a bracket, so a midpoint is a number nobody filed.
@@ -212,6 +214,32 @@ assert.equal(isNonCommonFiling('AllianceBernstein Holding L.P. Units'), false, '
 
   assert.equal(dropVendorDuplicates([buy, { ...purchase, symbol: 'GOOG' }], []).length, 2, 'different ticker is a different trade');
   assert.equal(dropVendorDuplicates([{ ...buy, symbol: null }, { ...purchase, symbol: null }], []).length, 2);
+}
+
+// The overlap panel shows each person's LATEST trade per stock. The first
+// version showed the oldest (a Map keeps the last value it sees, and the rows
+// arrive newest first), so bought-then-sold read "bought".
+{
+  const tr = (slug: string, symbol: string, tradeType: string, transactionDate: string): ActivityTrade => ({
+    slug, displayName: slug, party: null, chamber: null, symbol, tradeType, amountRange: '', amountLow: null, amountHigh: null,
+    transactionDate, disclosureDate: null, priceAtTrade: null, priceAtDisclosure: null,
+  });
+  const groups = groupOverlap([
+    tr('khanna', 'MSFT', 'Sale', '2026-09-28'),
+    tr('pelosi', 'NVDA', 'Purchase', '2026-10-02'),
+    tr('khanna', 'MSFT', 'Buy', '2026-08-01'),
+    tr('hern', 'MSFT', 'Purchase', '2026-09-01'),
+    tr('khanna', 'MSFT', 'Exchange', '2026-07-01'),
+  ], new Set(['MSFT']));
+  assert.deepEqual(groups.map((g) => g.symbol), ['NVDA', 'MSFT'], 'stocks ordered by their newest trade, whatever the input order');
+  const msft = groups[1];
+  assert.equal(msft.held, true);
+  assert.equal(msft.latestDate, '2026-09-28');
+  assert.deepEqual(msft.people.map((p) => p.slug), ['khanna', 'hern'], 'people newest first');
+  assert.equal(msft.people[0].latest.tradeType, 'Sale', 'bought then sold shows the sale');
+  assert.equal(msft.people[0].count, 3);
+  assert.equal(msft.sellers, 1);
+  assert.equal(msft.buyers, 1);
 }
 
 console.log('congress ingest checks passed');
