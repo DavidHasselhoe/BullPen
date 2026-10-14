@@ -327,7 +327,7 @@ function UpgradeContent() {
               </Beat>
               {/* Generic on purpose: the capture shows another stock, so naming theirs would mislabel it. */}
               <Beat time={t('upgradeBeatWhyTime')} title={t('upgradeBeatWhyTitleGeneric')} desc={t('upgradeBeatWhyDesc')}>
-                <Shot src="/screenshots/bento-why.png" darkSrc="/screenshots/bento-why-dark.png" alt={t('upgradeBeatWhyAlt')} width={568} height={307} />
+                <Shot src="/screenshots/bento-why.png" darkSrc="/screenshots/bento-why-dark.png" alt={t('upgradeBeatWhyAlt')} width={568} height={316} />
               </Beat>
               <Beat time={t('upgradeBeatAskTime')} title={t('upgradeBeatAskTitle')} desc={t('upgradeBeatAskDesc')}>
                 {/* Questions only: an invented answer would be a fake product shot. */}

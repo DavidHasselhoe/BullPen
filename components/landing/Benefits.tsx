@@ -57,8 +57,8 @@ const BENEFITS: Benefit[] = [
   {
     title: 'Know why a stock moved.',
     body: "BullPen reads the day's news and filings and tells you why in a sentence or two. Free for your biggest mover each day, any stock with Pro.",
-    file: 'bento-why.png', width: 568, height: 307, shotWidth: 540,
-    alt: "Reddit up 4.98% today, explained: no company news, shares bounced off a support level they have held since July",
+    file: 'bento-why.png', width: 568, height: 316, shotWidth: 540,
+    alt: "Vistra up 2.68% today, explained: a rally in nuclear power stocks after Constellation Energy's deal with Google and a $4.2 billion Energy Department loan",
   },
   {
     title: 'Your market in a minute, every morning.',
