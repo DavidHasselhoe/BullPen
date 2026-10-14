@@ -189,18 +189,41 @@ async function computeMovers(): Promise<IndexMovers> {
  *   every 30 minutes all night and weekend, re-quoting ~515 names for the
  *   same list.
  */
-export function moversTtlSeconds(p: {
+interface ClockState {
   session: 'regular' | 'extended' | 'closed' | string;
   etHHMM: number;
   tradingDay: boolean;
   listSession: 'live' | 'last';
-  untilOpen: number;
-}): number {
-  const open = p.session === 'regular';
-  if (open && p.listSession === 'last' && p.tradingDay && p.etHHMM >= 930 && p.etHHMM < 1000) return 60;
+}
+
+/** The open's first half hour on a trading day, with yesterday's list still in hand. */
+function isRollingOver(p: ClockState): boolean {
+  return p.session === 'regular' && p.listSession === 'last' && p.tradingDay && p.etHHMM >= 930 && p.etHHMM < 1000;
+}
+
+export function moversTtlSeconds(p: ClockState & { untilOpen: number }): number {
+  if (isRollingOver(p)) return 60;
   const settling = p.session === 'extended' && p.etHHMM >= 1600 && p.etHHMM < 1630;
-  if (open || settling) return 5 * 60;
+  if (p.session === 'regular' || settling) return 5 * 60;
   return Math.min(p.untilOpen, 4 * 24 * 60 * 60);
+}
+
+function clockNow(listSession: 'live' | 'last'): ClockState {
+  return {
+    session: getMarketSession(),
+    etHHMM: Number(new Date().toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }).replace(':', '')),
+    tradingDay: sessionDateET() === nyDate(Date.now() / 1000),
+    listSession,
+  };
+}
+
+/**
+ * True when the list in hand is yesterday's but today's is on its way (the
+ * open's first half hour). The route says so, so the page asks again in
+ * seconds rather than at its usual 5-minute poll.
+ */
+export function moversRollingOver(movers: IndexMovers): boolean {
+  return isRollingOver(clockNow(movers.session));
 }
 
 /**
@@ -219,13 +242,7 @@ export async function refreshIndexMovers(): Promise<IndexMovers | null> {
       console.warn(`[index-movers] only ${movers.ranked}/${UNIVERSE.length} quoted, keeping the last good list`);
       return null;
     }
-    const ttl = moversTtlSeconds({
-      session: getMarketSession(),
-      etHHMM: Number(new Date().toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }).replace(':', '')),
-      tradingDay: sessionDateET() === nyDate(Date.now() / 1000),
-      listSession: movers.session,
-      untilOpen: secondsUntilNextOpenET(),
-    });
+    const ttl = moversTtlSeconds({ ...clockNow(movers.session), untilOpen: secondsUntilNextOpenET() });
     await Promise.all([rset(FRESH_KEY, movers, ttl), rset(STALE_KEY, movers, 7 * 24 * 60 * 60)]);
     return movers;
   } catch (err) {

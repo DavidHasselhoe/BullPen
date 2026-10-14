@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withRateLimit } from '@/lib/security/api-security';
-import { getIndexMovers, getPremarketMovers } from '@/lib/market-data/index-movers';
+import { getIndexMovers, getPremarketMovers, moversRollingOver } from '@/lib/market-data/index-movers';
 import { isPreMarketET } from '@/lib/market-data/trading-day';
 
 export const dynamic = 'force-dynamic';
@@ -22,8 +22,10 @@ async function handler() {
   // The first request of the morning starts the pre-market sweep (a minute or
   // two); say so, and keep the CDN from serving the empty answer for minutes.
   const premarketPending = premarket === null && isPreMarketET();
-  const res = NextResponse.json({ success: true, movers, premarket, premarketPending });
-  res.headers.set('Cache-Control', premarketPending ? 'public, s-maxage=15' : 'public, s-maxage=60, stale-while-revalidate=240');
+  // Same at the open: yesterday's list in hand, today's being built.
+  const moversPending = moversRollingOver(movers);
+  const res = NextResponse.json({ success: true, movers, premarket, premarketPending, moversPending });
+  res.headers.set('Cache-Control', premarketPending || moversPending ? 'public, s-maxage=15' : 'public, s-maxage=60, stale-while-revalidate=240');
   return res;
 }
 

@@ -28,7 +28,7 @@ const SHOWN = 5;
 export function MarketMovers() {
   const { t, i18n } = useTranslation('discover');
   const [view, setView] = useState<'premarket' | 'last'>('premarket');
-  const { data } = useQuery<{ success: boolean; movers?: IndexMovers; premarket?: PremarketMovers | null; premarketPending?: boolean }>({
+  const { data } = useQuery<{ success: boolean; movers?: IndexMovers; premarket?: PremarketMovers | null; premarketPending?: boolean; moversPending?: boolean }>({
     queryKey: ['market-movers'],
     queryFn: async () => {
       const res = await fetch('/api/market/movers');
@@ -38,9 +38,13 @@ export function MarketMovers() {
     staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     // A cheap CDN-cached read. Polling picks up the refresh the server runs in
-    // the background: a "last session" list at the open rolls over to live, and
-    // a pre-market list still being built shows up within the minute.
-    refetchInterval: (q) => (q.state.data?.movers && !q.state.data.premarketPending ? 5 * 60 * 1000 : 30 * 1000),
+    // the background. While a list is still being built (this morning's
+    // pre-market one, or today's at the open) ask every 30 seconds so it shows
+    // up within the minute; otherwise every 5 minutes.
+    refetchInterval: (q) => {
+      const d = q.state.data;
+      return d?.movers && !d.premarketPending && !d.moversPending ? 5 * 60 * 1000 : 30 * 1000;
+    },
     refetchOnWindowFocus: false,
   });
 
