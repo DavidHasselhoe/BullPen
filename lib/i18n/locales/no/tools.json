@@ -771,6 +771,7 @@
   "deepDiveSectionRisks": "Risikoer",
   "deepDiveSeverityHigh": "Høy",
   "deepDiveSeverityLow": "Lav",
+  "deepDiveSeverityMedium": "Moderat",
   "deepDiveStaleNotice": "Denne rapporten er fra {{date}}. Resultater og nyheter siden da er ikke inkludert.",
   "deepDiveStanceMixed": "Blandet",
   "deepDiveStanceNeutral": "Nøytral",
@@ -835,7 +836,6 @@
   "economicEtTime": "{{time}} ET",
   "deepDiveBlockBullBear": "Bull vs bear",
   "deepDiveSectionBullBear": "Bull vs bear",
-  "deepDiveSeverityMedium": "Moderat",
   "deepDiveStanceBearish": "Bearish",
   "deepDiveStanceBullish": "Bullish",
   "screenerColVs200dLabel": "vs 200D"

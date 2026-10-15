@@ -91,6 +91,7 @@
   "starterPromptInsiderBuying": "最近 NVDA 有内部人士买入吗？",
   "starterPromptRecentEarnings": "显示 AAPL 最近的财报",
   "starterPromptSetAlert": "如果 TSLA 跌破 $200 就提醒我",
+  "statisticsBeta": "贝塔",
   "statisticsDivYield": "股息收益率",
   "statisticsMarketCap": "市值",
   "statisticsPb": "P/B",
@@ -98,6 +99,7 @@
   "statisticsRangeSrLabel": "52周区间 ${{low}} 至 ${{high}}",
   "statisticsRangeSrLabelWithCurrent": "52周范围 ${{low}} 至 ${{high}}，当前 ${{current}}",
   "statisticsValuationTitle": "{{ticker}} 估值",
+  "termsGateBeta": "贝塔",
   "termsGateDisclosureAi": "您正在与 AI 交流，而不是真人顾问，AI 可能会出错。",
   "termsGateDisclosureData": "您的信息会被发送至 Anthropic（Claude 背后的公司）进行处理。我们不会使用您的数据来训练 AI 模型。",
   "termsGateDisclosureNotAdvice": "Ask Bull 仅提供一般性教育信息。这不是个人财务建议。在投资前请务必自己做功课。请查看我们的<disclosuresLink>信息披露</disclosuresLink>。",
@@ -173,7 +175,5 @@
   "receiptQtySharesOf_other": "{{count}} 股 ",
   "receiptSharesCount_one": "{{count}} 股",
   "receiptSharesCount_other": "{{count}} 股",
-  "statisticsBeta": "贝塔",
-  "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "贝塔"
+  "statisticsEvEbitda": "EV/EBITDA"
 }

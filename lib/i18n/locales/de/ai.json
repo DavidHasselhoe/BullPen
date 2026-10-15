@@ -172,7 +172,7 @@
   "receiptSharesCount_one": "{{count}} Aktie",
   "receiptSharesCount_other": "{{count}} Aktien",
   "financialsCapex": "CapEx",
-  "financialsOperatingCf": "Operating CF",
+  "financialsOperatingCf": "Betrieblicher CF",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
   "termsGateBeta": "Beta"

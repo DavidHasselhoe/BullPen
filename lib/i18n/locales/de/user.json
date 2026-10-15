@@ -90,6 +90,7 @@
   "publicProfileFollowerCount_one": "{{count}} Follower",
   "publicProfileFollowerCount_other": "{{count}} Follower",
   "profileModalBadgesSettingsLink": "Ändern in den Einstellungen",
+  "profileModalPlanLabel": "Tarif",
   "profileModalPlanFree": "Kostenlos",
   "profileModalPlanPro": "Pro",
   "profileModalManagePlan": "Plan verwalten",
@@ -101,6 +102,5 @@
   "profileModalViewPublic": "Öffentliches Profil anzeigen",
   "profileModalSaveFailed": "Nicht gespeichert",
   "profileAvatarTierGold": "Gold",
-  "profileAvatarTierNormal": "Normal",
-  "profileModalPlanLabel": "Tarif"
+  "profileAvatarTierNormal": "Normal"
 }

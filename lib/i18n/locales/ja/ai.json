@@ -45,6 +45,7 @@
   "screenRankedBy": "{{metric}}でランク付け",
   "screenDataAsOf": "{{date}}時点",
   "healthScoreBadge": "{{score}}/100 · {{grade}}",
+  "healthScoreNotAvailable": "利用できません",
   "healthScoreTitle": "{{ticker}}の財務健全性",
   "insiderActivityTitle": "{{ticker}}のインサイダー取引",
   "insiderBought": "{{value}}を買付",
@@ -172,8 +173,7 @@
   "receiptQtySharesOf_other": "{{count}}株の",
   "receiptSharesCount_one": "{{count}}株",
   "receiptSharesCount_other": "{{count}}株",
-  "healthScoreNotAvailable": "利用できません",
-  "statisticsBeta": "Beta",
+  "statisticsBeta": "ベータ値",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "ベータ値"
 }

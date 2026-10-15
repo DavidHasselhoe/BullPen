@@ -130,11 +130,6 @@
   "courseOverviewCourseComplete": "コース完了",
   "courseOverviewPassedQuizMessage": "最終クイズに合格しました。ホームページから次のコースに進みましょう。",
   "courseOverviewFinishedLessonsMessage": "すべてのレッスンが完了しました。ホームページから次のコースに進みましょう。",
-  "xpBarXpSuffix": " XP",
-  "pathNodePro": "PRO",
-  "lessonPlayerXpReward": "{{xp}} XP",
-  "dailyChallengeXpReward": "+{{xp}} XP",
-  "leaderboardXpUnit": "XP",
   "courseOverviewFreeSample": "無料",
   "courseOverviewTrySampleLesson": "最初のレッスンを無料で試す",
   "homePageFoundationsDoneTitle": "ファンデーションズを完了しました",
@@ -163,5 +158,10 @@
   "academyProGateDescriptionAfterSample_other": "これが無料のレッスンです。Pro でこのコースの残り {{count}} レッスンと、すべての中級・応用コースがアンロックされます。",
   "courseOverviewLessonDone": "完了",
   "courseOverviewUpNext": "次",
-  "courseOverviewLockedPro": "ロック中、Pro に含まれています"
+  "courseOverviewLockedPro": "ロック中、Pro に含まれています",
+  "xpBarXpSuffix": " XP",
+  "pathNodePro": "PRO",
+  "lessonPlayerXpReward": "{{xp}} XP",
+  "dailyChallengeXpReward": "+{{xp}} XP",
+  "leaderboardXpUnit": "XP"
 }

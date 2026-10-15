@@ -130,11 +130,6 @@
   "courseOverviewCourseComplete": "Curso completado",
   "courseOverviewPassedQuizMessage": "Pasaste la prueba final. Continúa con el siguiente curso en la página de inicio.",
   "courseOverviewFinishedLessonsMessage": "Completaste todas las lecciones. Continúa con el siguiente curso en la página de inicio.",
-  "xpBarXpSuffix": " XP",
-  "pathNodePro": "PRO",
-  "lessonPlayerXpReward": "{{xp}} XP",
-  "dailyChallengeXpReward": "+{{xp}} XP",
-  "leaderboardXpUnit": "XP",
   "courseOverviewFreeSample": "Gratis",
   "courseOverviewTrySampleLesson": "Prueba la primera lección gratis",
   "homePageFoundationsDoneTitle": "Completaste Fundamentos",
@@ -163,5 +158,10 @@
   "academyProGateDescriptionAfterSample_other": "Esa fue la lección gratis. Pro desbloquea las otras {{count}} lecciones en este curso, más todos los cursos intermedios y avanzados.",
   "courseOverviewLessonDone": "Completado",
   "courseOverviewUpNext": "Próximo",
-  "courseOverviewLockedPro": "bloqueado, parte de Pro"
+  "courseOverviewLockedPro": "bloqueado, parte de Pro",
+  "xpBarXpSuffix": " XP",
+  "pathNodePro": "PRO",
+  "lessonPlayerXpReward": "{{xp}} XP",
+  "dailyChallengeXpReward": "+{{xp}} XP",
+  "leaderboardXpUnit": "XP"
 }

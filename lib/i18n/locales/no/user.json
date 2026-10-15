@@ -20,6 +20,7 @@
   "profileAvatarAlt": "{{name}} profilbilde",
   "profileAvatarDefaultName": "Bruker",
   "profileAvatarTierGold": "Gull",
+  "profileAvatarTierNormal": "Ordinær",
   "profileModalAccountTier": "Kontotype",
   "profileModalAllChangesSaved": "Alle endringer lagret",
   "profileModalAvatarUploadFailed": "Kunne ikke laste opp det bildet. Prøv en JPEG, PNG eller WebP under 5 MB.",
@@ -100,7 +101,6 @@
   "profileModalShowPortfolioDescription": "Vis også hvilke aksjer du eier (ticker og selskapsnavn bare, ingen mengder eller priser).",
   "profileModalViewPublic": "Vis offentlig profil",
   "profileModalSaveFailed": "Ikke lagret",
-  "profileAvatarTierNormal": "Ordinær",
   "profileModalUsernamePlaceholder": "johndoe",
   "profileModalPlanLabel": "Plan"
 }

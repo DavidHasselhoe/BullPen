@@ -131,10 +131,6 @@
   "courseOverviewCourseComplete": "课程完成",
   "courseOverviewPassedQuizMessage": "您通过了最终测验。在主页上继续学习下一门课程。",
   "courseOverviewFinishedLessonsMessage": "您已完成所有课程。在主页上继续学习下一门课程。",
-  "pathNodePro": "PRO",
-  "lessonPlayerXpReward": "{{xp}} XP",
-  "dailyChallengeXpReward": "+{{xp}} XP",
-  "leaderboardXpUnit": "XP",
   "courseOverviewFreeSample": "免费",
   "courseOverviewTrySampleLesson": "免费试听第一课",
   "homePageFoundationsDoneTitle": "你已完成基础课程",
@@ -163,5 +159,9 @@
   "academyProGateDescriptionAfterSample_other": "这是免费课程。Pro 版本解锁该课程的其他 {{count}} 课，以及所有中阶和进阶课程。",
   "courseOverviewLessonDone": "已完成",
   "courseOverviewUpNext": "接下来",
-  "courseOverviewLockedPro": "已锁定，需要 Pro 版本"
+  "courseOverviewLockedPro": "已锁定，需要 Pro 版本",
+  "pathNodePro": "PRO",
+  "lessonPlayerXpReward": "{{xp}} XP",
+  "dailyChallengeXpReward": "+{{xp}} XP",
+  "leaderboardXpUnit": "XP"
 }
