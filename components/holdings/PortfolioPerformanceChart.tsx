@@ -198,6 +198,16 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
     const plByTime = new Map<number, number>();
     let periodBasis = 0;
 
+    // Every holding is valued at every timestamp any holding has, carrying its
+    // last close forward. Crypto trades on weekends and already has today's
+    // candle before the US open; summing only the holdings that had a candle
+    // at each time made those points crypto-only, so a mixed portfolio's line
+    // dropped every weekend and its headline % (the last point) showed the
+    // crypto P/L alone. Found 2026-10-15 on an account holding BTC.
+    const allTimes = Array.from(
+      new Set(candleResults.flatMap(({ candles }) => candles?.t ?? []))
+    ).sort((a, b) => a - b);
+
     for (const { holding, candles } of candleResults) {
       if (!candles || holding.avg_price == null) continue;
 
@@ -255,12 +265,15 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
 
       periodBasis += basePrice * sharesHeldAt(periodStartMs);
 
-      for (let i = 0; i < t.length; i++) {
-        const tsMs = t[i] * 1000;
+      let j = -1; // index of this holding's latest candle at or before ts
+      for (const ts of allTimes) {
+        while (j + 1 < t.length && t[j + 1] <= ts) j++;
+        if (j < 0) continue; // before this holding's first candle
+        const tsMs = ts * 1000;
         if (tsMs < holdingStart) continue;
         const shares = sharesHeldAt(tsMs);
-        const pl = (c[i] - basePrice) * shares + realizedAt(tsMs);
-        plByTime.set(t[i], (plByTime.get(t[i]) ?? 0) + pl);
+        const pl = (c[j] - basePrice) * shares + realizedAt(tsMs);
+        plByTime.set(ts, (plByTime.get(ts) ?? 0) + pl);
       }
     }
 

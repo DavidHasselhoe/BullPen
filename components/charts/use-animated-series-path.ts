@@ -72,36 +72,49 @@ export function useAnimatedSeriesPath({
 
   const prevTransitionSignatureRef = useRef(transitionSignature);
 
+  // The running animation reads the scales and data through this ref, not
+  // through effect deps. The y-domain tweens alongside a data transition, so
+  // yScale changes every frame; as a dep it re-ran the effect, whose cleanup
+  // stopped the animation before onComplete could clear `animatedPoints`. The
+  // re-run then saw an unchanged signature and returned, leaving the line
+  // frozen on its first interpolated frame (the previous range's shape) while
+  // hover dots used the live scale. Found on the holdings S&P line 2026-10-15.
+  const latestRef = useRef({ renderData, xAccessor, xScale, yScale, dataKey, targetPoints });
   useEffect(() => {
+    latestRef.current = { renderData, xAccessor, xScale, yScale, dataKey, targetPoints };
     if (!animatingRef.current) {
       displayedPointsRef.current = targetPoints;
     }
-  }, [targetPoints]);
+  }, [renderData, xAccessor, xScale, yScale, dataKey, targetPoints]);
 
   useEffect(() => {
+    const latest = latestRef.current;
     const shouldAnimate =
       enabled &&
       !reducedMotion &&
       chartPhase === "ready" &&
       durationMs > 0 &&
-      renderData.length > 0;
+      latest.renderData.length > 0;
 
     if (!shouldAnimate) {
       animatingRef.current = false;
       setAnimatedPoints(null);
-      displayedPointsRef.current = targetPoints;
+      displayedPointsRef.current = latest.targetPoints;
       prevTransitionSignatureRef.current = transitionSignature;
       return;
     }
 
     if (prevTransitionSignatureRef.current === transitionSignature) {
+      // Same data, but an animation was stopped by the cleanup below (it never
+      // reaches onComplete): drop its last frame rather than freeze on it.
+      if (!animatingRef.current) setAnimatedPoints(null);
       return;
     }
     prevTransitionSignatureRef.current = transitionSignature;
 
-    const fromPoints = displayedPointsRef.current ?? targetPoints;
+    const fromPoints = displayedPointsRef.current ?? latest.targetPoints;
     if (fromPoints.length === 0) {
-      displayedPointsRef.current = targetPoints;
+      displayedPointsRef.current = latest.targetPoints;
       return;
     }
 
@@ -112,12 +125,13 @@ export function useAnimatedSeriesPath({
       duration: durationMs / 1000,
       ease: [...LINE_LOADING_PULSE_EASE],
       onUpdate: (progress) => {
+        const live = latestRef.current;
         const currentTarget = computeSeriesPathPoints(
-          renderData,
-          xAccessor,
-          xScale,
-          yScale,
-          dataKey
+          live.renderData,
+          live.xAccessor,
+          live.xScale,
+          live.yScale,
+          live.dataKey
         );
         const next = interpolateSeriesPathPoints(
           fromSnapshot,
@@ -129,7 +143,7 @@ export function useAnimatedSeriesPath({
       },
       onComplete: () => {
         animatingRef.current = false;
-        displayedPointsRef.current = targetPoints;
+        displayedPointsRef.current = latestRef.current.targetPoints;
         setAnimatedPoints(null);
       },
     });
@@ -138,19 +152,7 @@ export function useAnimatedSeriesPath({
       control.stop();
       animatingRef.current = false;
     };
-  }, [
-    transitionSignature,
-    chartPhase,
-    durationMs,
-    enabled,
-    reducedMotion,
-    renderData,
-    xAccessor,
-    xScale,
-    yScale,
-    dataKey,
-    targetPoints,
-  ]);
+  }, [transitionSignature, chartPhase, durationMs, enabled, reducedMotion]);
 
   const activePoints = animatedPoints ?? targetPoints;
   const pathD = useMemo(
