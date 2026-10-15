@@ -15,6 +15,7 @@ import { createBrowserClient } from '@/lib/supabase/client';
 import { maybeClaimShareAttribution } from '@/lib/auth/share-attribution';
 import { setLastUsedAuthMethod } from '@/lib/auth/last-used-method';
 import { needsSetup, SETUP_PATH } from '@/lib/auth/auth';
+import { trackEvent } from '@/lib/analytics/track';
 import { Loader2 } from 'lucide-react';
 
 function AuthCallbackContent() {
@@ -37,6 +38,8 @@ function AuthCallbackContent() {
 
     const supabase = createBrowserClient();
     let redirected = false;
+    // SIGNED_IN and INITIAL_SESSION can both arrive for one sign-in.
+    let trackedSignup = false;
     const DEBUG = false; // Set true to log callback flow
 
     // Honor ?next (relative paths only) so OAuth can resume checkout on /upgrade.
@@ -91,8 +94,17 @@ function AuthCallbackContent() {
       // SIGNED_IN. Gated on `code` so a plain visit with an old session no-ops.
       if ((event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && code)) && session) {
         // Email confirmation links land here too, not only Google OAuth.
-        setLastUsedAuthMethod(session.user.app_metadata?.provider === 'google' ? 'google' : 'email');
+        const isGoogle = session.user.app_metadata?.provider === 'google';
+        setLastUsedAuthMethod(isGoogle ? 'google' : 'email');
         void maybeClaimShareAttribution();
+        // The Google button logs signup_form_submitted, then the page is gone,
+        // so its success can only be seen here. "New" = created moments ago
+        // (One Tap uses the same test); a returning user signing in is not a signup.
+        const isNew = Date.now() - Date.parse(session.user.created_at) < 120_000;
+        if (isGoogle && isNew && !trackedSignup) {
+          trackedSignup = true;
+          trackEvent('signup_form_succeeded', { source: 'google_redirect', method: 'google' });
+        }
       }
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) void redirectHome(session.user.id);
     });

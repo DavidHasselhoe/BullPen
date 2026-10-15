@@ -81,6 +81,9 @@ export function GoogleOneTap() {
           const isNew = Date.now() - Date.parse(data.user.created_at) < 60_000;
           const path = window.location.pathname;
           trackEvent('one_tap_signed_in', { isNew, path });
+          // A new account here is a completed signup like any other, so the
+          // signup funnel counts it next to email and the Google redirect.
+          if (isNew) trackEvent('signup_form_succeeded', { source: 'one_tap', method: 'google' });
           setLastUsedAuthMethod('google');
           void maybeClaimShareAttribution();
           // Same rule as /auth/callback: the landing page is a default
