@@ -486,7 +486,6 @@
   "congressH1": "{{name}} 国会成员交易记录",
   "congressIntro": "国会成员必须在45天内报告股票交易。这些是 {{name}} 的报告交易，最新优先。金额以范围形式报告，非确切数字。",
   "congressNone": "还没有国会成员报告过 {{name}} 的交易。",
-  "congressSummary": "自 {{since}} 以来，{{members}} 位成员报告了 {{count}} 笔交易：{{buys}} 笔买入和 {{sells}} 笔卖出。",
   "congressColMember": "成员",
   "congressColType": "交易类型",
   "congressColAmount": "金额",

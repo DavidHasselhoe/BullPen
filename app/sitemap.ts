@@ -19,6 +19,10 @@ import { getSubpageCoverage } from '@/lib/stock/subpage-data';
 // the sitemap on the next deploy (found 2026-09-28: live stopped at 09-21).
 export const revalidate = 86400;
 
+// Below these, a stock subpage is a sentence and a couple of rows.
+const MIN_CONGRESS_TRADES = 5;
+const MIN_FUND_HOLDERS = 3;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const BASE_URL = SITE_URL;
 
@@ -87,14 +91,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  // Stock subpages, only where there is something to show (an empty one is
-  // noindex anyway, and a sitemap of empty pages wastes the crawl).
+  // Stock subpages, only where there is enough to show. A page with one or
+  // two rows is still linked from its stock page, just not offered here: on
+  // 2026-10-15 Search Console had 155 subpages "crawled, not indexed", and a
+  // sitemap of thin pages spends the crawl a young domain gets on them.
   const coverage = await getSubpageCoverage([...SIGNIFICANT_TICKERS]).catch(() => null);
   const subpageEntries = coverage
     ? [...SIGNIFICANT_TICKERS].flatMap((ticker) => [
         ...(coverage.dividends.has(ticker) ? [`/stock/${ticker}/dividends`] : []),
-        ...(coverage.congress.has(ticker) ? [`/stock/${ticker}/congress-trades`] : []),
-        ...(coverage.funds.has(ticker) ? [`/stock/${ticker}/fund-holders`] : []),
+        ...((coverage.congress.get(ticker) ?? 0) >= MIN_CONGRESS_TRADES ? [`/stock/${ticker}/congress-trades`] : []),
+        ...((coverage.funds.get(ticker) ?? 0) >= MIN_FUND_HOLDERS ? [`/stock/${ticker}/fund-holders`] : []),
       ]).map((path) => ({
         url: `${BASE_URL}${path}`,
         lastModified,

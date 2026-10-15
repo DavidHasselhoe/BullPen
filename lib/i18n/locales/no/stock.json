@@ -486,7 +486,6 @@
   "congressH1": "{{name}} handler av medlemmer i Kongressen",
   "congressIntro": "Medlemmer av Kongressen må rapportere sine aksjehandler innen 45 dager. Dette er de rapporterte handelene i {{name}}, nyeste først. Beløp rapporteres som områder, ikke eksakte tall.",
   "congressNone": "Ingen medlem av Kongressen har rapportert en handel i {{name}} ennå.",
-  "congressSummary": "{{count}} rapporterte handler av {{members}} medlemmer siden {{since}}: {{buys}} kjøp og {{sells}} salg.",
   "congressColMember": "Medlem",
   "congressColType": "Handler",
   "congressColAmount": "Beløp",

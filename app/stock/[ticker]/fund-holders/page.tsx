@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { cache } from 'react';
 import { Lock } from 'lucide-react';
 import { getDisplayNames } from '@/lib/market-data/display-names';
-import { getFundHolders } from '@/lib/stock/subpage-data';
+import { getFundHolders, getSubpageCoverage } from '@/lib/stock/subpage-data';
+import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getTier, isPro } from '@/lib/billing/tier';
@@ -19,12 +20,15 @@ import { StockSubpageShell, subpageFormat } from '@/components/stock/StockSubpag
  */
 const load = cache(async (ticker: string) => {
   const db = createServerClient();
-  const [names, holders, fundCount] = await Promise.all([
+  const [names, holders, fundCount, peerCounts] = await Promise.all([
     getDisplayNames([ticker]).catch(() => new Map<string, string>()),
     getFundHolders(ticker).catch(() => []),
     db.from('institutional_investors').select('id', { count: 'exact', head: true }).eq('is_active', true).then((r) => r.count ?? 0),
+    // How many tracked funds hold each S&P 500 / Nasdaq-100 stock, for the one
+    // fact on this page that is about this stock and not the template.
+    getSubpageCoverage([...SIGNIFICANT_TICKERS]).then((c) => c.funds).catch(() => null),
   ]);
-  return { name: names.get(ticker) ?? ticker, holders, fundCount };
+  return { name: names.get(ticker) ?? ticker, holders, fundCount, peerCounts };
 });
 
 export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }): Promise<Metadata> {
@@ -42,13 +46,23 @@ export default async function StockFundHoldersPage({ params }: { params: Promise
   const ticker = (await params).ticker.toUpperCase();
   const locale = await getRequestLocale();
   const userId = await getCurrentUserId().catch(() => null);
-  const [{ name, holders, fundCount }, t, pro] = await Promise.all([
+  const [{ name, holders, fundCount, peerCounts }, t, pro] = await Promise.all([
     load(ticker),
     getServerT(locale, `/stock/${ticker}`),
     userId ? getTier(userId).then(isPro).catch(() => false) : Promise.resolve(false),
   ]);
   const f = subpageFormat(locale);
   const latestQuarter = holders.reduce<string | null>((max, h) => (!max || h.periodOfReport > max ? h.periodOfReport : max), null);
+  // Share of the covered stocks held by MORE of these funds. Said only when
+  // it is notable (top quarter); "41% are held by more" is not worth a line.
+  // Stocks no fund holds are absent from the map but still count as peers.
+  let popularity: string | null = null;
+  if (peerCounts && holders.length > 0 && SIGNIFICANT_TICKERS.has(ticker)) {
+    const more = [...peerCounts.values()].filter((n) => n > holders.length).length;
+    const share = more / SIGNIFICANT_TICKERS.size;
+    if (more === 0) popularity = t('stock:fundsPopularityTop');
+    else if (share <= 0.25) popularity = t('stock:fundsPopularity', { pct: f.pct(Math.max(share, 0.01), 0) });
+  }
 
   return (
     <StockSubpageShell ticker={ticker} name={name} active="funds" t={t}>
@@ -61,6 +75,7 @@ export default async function StockFundHoldersPage({ params }: { params: Promise
         <>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-foreground">
             {t('stock:fundsSummary', { held: holders.length, count: fundCount, name, quarter: latestQuarter ? f.longDate(latestQuarter) : '' })}
+            {popularity && <> {popularity}</>}
           </p>
 
           <ul className="mt-6 divide-y divide-border/50 rounded-xl border">

@@ -486,7 +486,6 @@
   "congressH1": "Transactions de {{name}} par les membres du Congrès",
   "congressIntro": "Les membres du Congrès doivent signaler leurs transactions boursières dans les 45 jours. Ce sont les transactions signalées de {{name}}, les plus récentes d'abord. Les montants sont signalés sous forme de plages, pas des chiffres exacts.",
   "congressNone": "Aucun membre du Congrès n'a encore signalé de transaction de {{name}}.",
-  "congressSummary": "{{count}} transactions signalées par {{members}} membres depuis {{since}} : {{buys}} achats et {{sells}} ventes.",
   "congressColMember": "Membre",
   "congressColType": "Transaction",
   "congressColAmount": "Montant",

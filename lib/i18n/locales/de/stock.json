@@ -486,7 +486,6 @@
   "congressH1": "{{name}} Geschäfte von Kongressmitgliedern",
   "congressIntro": "Kongressmitglieder müssen ihre Aktiengeschäfte innerhalb von 45 Tagen melden. Dies sind die gemeldeten Geschäfte in {{name}}, die neuesten zuerst. Die Beträge werden als Spannen angegeben, nicht als genaue Zahlen.",
   "congressNone": "Kein Kongressmitglied hat bisher einen Handel in {{name}} gemeldet.",
-  "congressSummary": "{{count}} gemeldete Geschäfte von {{members}} Mitgliedern seit {{since}}: {{buys}} Käufe und {{sells}} Verkäufe.",
   "congressColMember": "Mitglied",
   "congressColType": "Geschäft",
   "congressColAmount": "Betrag",

@@ -130,23 +130,24 @@ export async function getDividendHistory(symbol: string): Promise<{ items: Divid
 }
 
 /**
- * Of the given tickers, which have congress trades / fund holders / a dividend,
- * for the sitemap and robots allow-list. Every query is bounded by the list
- * (~520), under PostgREST's 1000-row cap; see migration 163 for why the first
- * two are functions.
+ * Of the given tickers, how many congress trades / tracked funds (latest
+ * filing) each has, and which pay a dividend, for the sitemap and the stock
+ * page's subpage links. A ticker with none is absent, so `.has()` means "has
+ * a page". Every query is bounded by the list (~520), under PostgREST's
+ * 1000-row cap; see migrations 163 and 171 for why the first two are functions.
  */
-export async function getSubpageCoverage(tickers: string[]): Promise<{ congress: Set<string>; funds: Set<string>; dividends: Set<string> }> {
+export async function getSubpageCoverage(tickers: string[]): Promise<{ congress: Map<string, number>; funds: Map<string, number>; dividends: Set<string> }> {
   const db = createServerClient();
   const [congress, funds, divs] = await Promise.all([
-    db.rpc('congress_symbols_among' as never, { p_symbols: tickers } as never),
-    db.rpc('fund_symbols_among' as never, { p_symbols: tickers } as never),
+    db.rpc('congress_trade_counts_among' as never, { p_symbols: tickers } as never),
+    db.rpc('fund_holder_counts_among' as never, { p_symbols: tickers } as never),
     db.from('screener_stats').select('ticker').in('ticker', tickers).gt('dividend_yield', 0),
   ]);
-  const toSet = (rows: unknown, key: string) =>
-    new Set(((rows ?? []) as Array<Record<string, string>>).map((r) => String(r[key]).toUpperCase()));
+  const toMap = (rows: unknown, key: string) =>
+    new Map(((rows ?? []) as Array<{ symbol: string } & Record<string, number>>).map((r) => [r.symbol.toUpperCase(), Number(r[key])]));
   return {
-    congress: toSet(congress.data, 'symbol'),
-    funds: toSet(funds.data, 'symbol'),
-    dividends: toSet(divs.data, 'ticker'),
+    congress: toMap(congress.data, 'trades'),
+    funds: toMap(funds.data, 'funds'),
+    dividends: new Set(((divs.data ?? []) as Array<{ ticker: string }>).map((r) => r.ticker.toUpperCase())),
   };
 }

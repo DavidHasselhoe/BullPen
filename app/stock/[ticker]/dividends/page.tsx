@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { cache } from 'react';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 import { getDividendHistory } from '@/lib/stock/subpage-data';
+import type { DividendItem } from '@/lib/twelvedata/twelvedata-client';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 import { StockSubpageShell, subpageFormat } from '@/components/stock/StockSubpageShell';
 
@@ -18,6 +19,36 @@ const load = cache(async (ticker: string) => {
   ]);
   return { name: names.get(ticker) ?? ticker, ...history };
 });
+
+const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+
+/**
+ * The most recent change to the regular dividend, or null when it can't be
+ * told apart from a one-off. A change only counts if the amount before it had
+ * held for two payments and the new one held for two, so a special dividend
+ * (15.00 between two 1.16s) is neither a raise nor a cut. A latest payment
+ * that differs from the one before is unknown yet, so nothing is said rather
+ * than an older change being called the last one. Amounts are split-adjusted
+ * by TwelveData (NVDA's pre-split $0.04 arrives as $0.004).
+ */
+function lastRegularChange(chrono: DividendItem[]): { from: number; to: number; date: string } | null {
+  const n = chrono.length;
+  if (n < 2 || !same(chrono[n - 1].amount, chrono[n - 2].amount)) return null;
+  for (let i = n - 2; i >= 2; i--) {
+    const [before2, before, at, after] = [chrono[i - 2], chrono[i - 1], chrono[i], chrono[i + 1]];
+    if (!same(at.amount, before.amount) && same(before.amount, before2.amount) && same(after.amount, at.amount)) {
+      return { from: before.amount, to: at.amount, date: at.ex_dividend_date };
+    }
+  }
+  return null;
+}
+
+const FREQUENCY_KEY: Record<number, string> = {
+  12: 'stock:dividendsFrequencyMonthly',
+  4: 'stock:dividendsFrequencyQuarterly',
+  2: 'stock:dividendsFrequencyTwice',
+  1: 'stock:dividendsFrequencyYearly',
+};
 
 export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }): Promise<Metadata> {
   const ticker = (await params).ticker.toUpperCase();
@@ -45,6 +76,30 @@ export default async function StockDividendsPage({ params }: { params: Promise<{
     const prev = byYear.get(y) ?? { total: 0, count: 0 };
     byYear.set(y, { total: prev.total + d.amount, count: prev.count + 1 });
   }
+  const money = (v: number) => f.usd(v, v < 0.1 ? 4 : 2);
+
+  // Facts only this company's history gives, so ~500 of these pages don't
+  // read as one template with the rows swapped (Search Console 2026-10-15).
+  const lastYear = String(new Date().getUTCFullYear() - 1);
+  const yearBefore = String(Number(lastYear) - 1);
+  const last = byYear.get(lastYear);
+  const prior = byYear.get(yearBefore);
+  const facts: string[] = [];
+  const freqKey = last ? FREQUENCY_KEY[last.count] : undefined;
+  if (freqKey) facts.push(t(freqKey, { name }));
+  if (last && prior) {
+    const change = (last.total - prior.total) / prior.total;
+    const vars = { year: lastYear, prev: yearBefore, amount: money(last.total), change: f.pct(Math.abs(change), 0) };
+    facts.push(Math.abs(change) < 0.005 ? t('stock:dividendsYearSame', vars) : t(change > 0 ? 'stock:dividendsYearUp' : 'stock:dividendsYearDown', vars));
+  }
+  const lastChange = lastRegularChange([...sorted].reverse());
+  if (lastChange) {
+    const vars = { from: money(lastChange.from), to: money(lastChange.to), date: f.monthYear(lastChange.date) };
+    facts.push(t(lastChange.to > lastChange.from ? 'stock:dividendsLastRaise' : 'stock:dividendsLastCut', vars));
+  }
+  // TwelveData's /dividends carries no pay dates (verified 2026-10-15), so a
+  // column of dashes is dropped rather than shown.
+  const hasPaid = sorted.some((d) => d.payment_date);
 
   return (
     <StockSubpageShell ticker={ticker} name={name} active="dividends" t={t}>
@@ -61,6 +116,9 @@ export default async function StockDividendsPage({ params }: { params: Promise<{
             {t('stock:dividendsSummaryLatest', { amount: f.usd(latest.amount, latest.amount < 0.1 ? 4 : 2), date: f.longDate(latest.ex_dividend_date) })}{' '}
             <Link href="/glossary/dividend-yield" className="underline underline-offset-4 hover:text-foreground">{t('stock:dividendsWhatIsYield')}</Link>
           </p>
+          {facts.length > 0 && (
+            <p className="mt-3 max-w-3xl text-pretty text-sm leading-relaxed text-foreground">{facts.join(' ')}</p>
+          )}
 
           <h2 className="mt-10 text-lg font-semibold text-foreground">{t('stock:dividendsByYearHeading')}</h2>
           <table className="mt-3 w-full max-w-md text-left text-sm">
@@ -89,7 +147,7 @@ export default async function StockDividendsPage({ params }: { params: Promise<{
               <tr className="border-b text-xs text-muted-foreground">
                 <th scope="col" className="py-2 font-medium">{t('stock:dividendsColExDate')}</th>
                 <th scope="col" className="py-2 text-right font-medium">{t('stock:dividendsColAmount')}</th>
-                <th scope="col" className="py-2 text-right font-medium">{t('stock:dividendsColPaid')}</th>
+                {hasPaid && <th scope="col" className="py-2 text-right font-medium">{t('stock:dividendsColPaid')}</th>}
               </tr>
             </thead>
             <tbody>
@@ -97,7 +155,7 @@ export default async function StockDividendsPage({ params }: { params: Promise<{
                 <tr key={d.ex_dividend_date} className="border-b border-border/50">
                   <th scope="row" className="py-2 font-normal text-foreground">{f.date(d.ex_dividend_date)}</th>
                   <td className="py-2 text-right font-mono tabular-nums">{f.usd(d.amount, d.amount < 0.1 ? 4 : 2)}</td>
-                  <td className="py-2 text-right text-muted-foreground">{d.payment_date ? f.date(d.payment_date) : '–'}</td>
+                  {hasPaid && <td className="py-2 text-right text-muted-foreground">{d.payment_date ? f.date(d.payment_date) : '–'}</td>}
                 </tr>
               ))}
             </tbody>

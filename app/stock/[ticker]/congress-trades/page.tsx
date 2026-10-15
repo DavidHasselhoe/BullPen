@@ -17,7 +17,8 @@ const load = cache(async (ticker: string) => {
     getDisplayNames([ticker]).catch(() => new Map<string, string>()),
     getCongressTrades(ticker).catch(() => []),
   ]);
-  return { name: names.get(ticker) ?? ticker, trades };
+  const yearAgo = new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10);
+  return { name: names.get(ticker) ?? ticker, trades, yearAgo };
 });
 
 const isBuy = (type: string) => /purchase|buy/i.test(type);
@@ -37,13 +38,39 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
 export default async function StockCongressTradesPage({ params }: { params: Promise<{ ticker: string }> }) {
   const ticker = (await params).ticker.toUpperCase();
   const locale = await getRequestLocale();
-  const [{ name, trades }, t] = await Promise.all([load(ticker), getServerT(locale, `/stock/${ticker}`)]);
+  const [{ name, trades, yearAgo }, t] = await Promise.all([load(ticker), getServerT(locale, `/stock/${ticker}`)]);
   const f = subpageFormat(locale);
 
   const members = new Set(trades.map((tr) => tr.politician.slug));
   const buys = trades.filter((tr) => isBuy(tr.tradeType)).length;
   const sells = trades.filter((tr) => isSell(tr.tradeType)).length;
   const earliest = trades.reduce<string | null>((min, tr) => (tr.transactionDate && (!min || tr.transactionDate < min) ? tr.transactionDate : min), null);
+
+  // Facts only this stock's trades give, so ~500 of these pages don't read as
+  // one template with the rows swapped (Search Console 2026-10-15).
+  const facts: string[] = [];
+  if (buys > sells) facts.push(t('stock:congressMoreBuys', { buys, sells }));
+  else if (sells > buys) facts.push(t('stock:congressMoreSells', { buys, sells }));
+  else if (buys > 0) facts.push(t('stock:congressEven', { count: buys }));
+  // Newest by date, not row order: Postgres sorts null dates first on desc.
+  const latest = trades
+    .filter((tr) => tr.transactionDate && (isBuy(tr.tradeType) || isSell(tr.tradeType)))
+    .sort((a, b) => b.transactionDate!.localeCompare(a.transactionDate!))[0];
+  if (latest) {
+    facts.push(t(isBuy(latest.tradeType) ? 'stock:congressLatestBuy' : 'stock:congressLatestSell', {
+      member: latest.politician.name,
+      date: f.longDate(latest.transactionDate!),
+    }));
+  }
+  const perMember = new Map<string, { name: string; n: number }>();
+  for (const tr of trades) {
+    const m = perMember.get(tr.politician.slug) ?? { name: tr.politician.name, n: 0 };
+    perMember.set(tr.politician.slug, { ...m, n: m.n + 1 });
+  }
+  const [top, second] = [...perMember.values()].sort((a, b) => b.n - a.n);
+  if (top && top.n >= 2 && (!second || second.n < top.n)) facts.push(t('stock:congressTopMember', { member: top.name, count: top.n }));
+  const recent = trades.filter((tr) => tr.transactionDate && tr.transactionDate >= yearAgo).length;
+  facts.push(recent === 0 ? t('stock:congressRecentNone') : t('stock:congressRecent', { count: recent }));
 
   return (
     <StockSubpageShell ticker={ticker} name={name} active="congress" t={t}>
@@ -55,13 +82,12 @@ export default async function StockCongressTradesPage({ params }: { params: Prom
       ) : (
         <>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-foreground">
-            {t('stock:congressSummary', {
-              count: trades.length,
-              members: members.size,
-              buys,
-              sells,
+            {t('stock:congressSummaryCounts', {
+              trades: t('stock:congressTradeCount', { count: trades.length }),
+              members: t('stock:congressMemberCount', { count: members.size }),
               since: earliest ? f.longDate(earliest) : '',
-            })}
+            })}{' '}
+            {facts.join(' ')}
           </p>
 
           <div className="mt-6 overflow-x-auto">

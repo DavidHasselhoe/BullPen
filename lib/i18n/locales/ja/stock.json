@@ -486,7 +486,6 @@
   "congressH1": "{{name}} の議会議員による取引",
   "congressIntro": "議会議員は株取引を45日以内に報告する必要があります。以下は {{name}} の報告された取引で、最新順です。金額は正確な数字ではなく範囲で報告されています。",
   "congressNone": "{{name}} で報告された議会議員の取引はまだありません。",
-  "congressSummary": "{{since}} 以降に {{members}} 人の議員による {{count}} 件の報告取引：{{buys}} 件の買い、{{sells}} 件の売り。",
   "congressColMember": "議員",
   "congressColType": "取引",
   "congressColAmount": "金額",

@@ -486,7 +486,6 @@
   "congressH1": "Transacciones de {{name}} por miembros del Congreso",
   "congressIntro": "Los miembros del Congreso deben reportar sus transacciones de acciones dentro de 45 días. Estos son los reportes de transacciones en {{name}}, de más reciente a más antiguo. Los montos se reportan como rangos, no cifras exactas.",
   "congressNone": "Ningún miembro del Congreso ha reportado una transacción en {{name}} aún.",
-  "congressSummary": "{{count}} transacciones reportadas por {{members}} miembros desde {{since}}: {{buys}} compras y {{sells}} ventas.",
   "congressColMember": "Miembro",
   "congressColType": "Transacción",
   "congressColAmount": "Cantidad",

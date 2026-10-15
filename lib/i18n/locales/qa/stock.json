@@ -486,7 +486,6 @@
   "congressH1": "«{{name}} traadees by meembeers oof Coongreess»",
   "congressIntro": "«Meembeers oof Coongreess haavee too reepoort theeiir stoock traadees wiithiin 45 daays. Theesee aaree thee reepoorteed traadees iin {{name}}, neeweest fiirst. AAmoouunts aaree reepoorteed aas raangees, noot eexaact fiiguurees.»",
   "congressNone": "«Noo meembeer oof Coongreess haas reepoorteed aa traadee iin {{name}} yeet.»",
-  "congressSummary": "«{{count}} reepoorteed traadees by {{members}} meembeers siincee {{since}}: {{buys}} buuys aand {{sells}} seells.»",
   "congressColMember": "«Meembeer»",
   "congressColType": "«Traadee»",
   "congressColAmount": "«AAmoouunt»",

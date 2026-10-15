@@ -73,6 +73,7 @@ export function subpageFormat(locale: string) {
       new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(v),
     pct: (v: number, digits = 2) => new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: digits }).format(v),
     date: (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }),
+    monthYear: (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, { year: 'numeric', month: 'long', timeZone: 'UTC' }),
     longDate: (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }),
   };
 }
