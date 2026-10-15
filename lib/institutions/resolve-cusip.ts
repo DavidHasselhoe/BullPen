@@ -105,7 +105,13 @@ async function matchCompanyIndex(nameOfIssuer: string): Promise<CompanyIndexMatc
  * later reaches it only through fill_13f_symbols_from_cache() (migration 172),
  * which the weekly sync runs.
  */
-export async function resolveHoldingsForFiling(holdings: Raw13FHolding[]): Promise<ResolvedHolding[]> {
+export async function resolveHoldingsForFiling(
+  holdings: Raw13FHolding[],
+  /** How long to wait for cron credit budget before giving up on the paid
+   *  tier. The cron keeps the 8s default; the backfill script's
+   *  --fill-missing waits minutes so a big fund can finish in one run. */
+  { budgetWaitMs }: { budgetWaitMs?: number } = {}
+): Promise<ResolvedHolding[]> {
   const supabase = createServerClient();
   const distinctCusips = Array.from(new Set(holdings.map((h) => h.cusip)));
 
@@ -149,7 +155,7 @@ export async function resolveHoldingsForFiling(holdings: Raw13FHolding[]): Promi
     }
 
     // Tier 3: synthetic-ISIN TwelveData search, gated by the cron credit budget.
-    if (!(await tryReserveCredits(3))) {
+    if (!(await tryReserveCredits(3, budgetWaitMs))) {
       // Budget exhausted -- fall back to a marginal tier-2 match rather than
       // leaving this holding fully unresolved, if one exists.
       if (nameMatch) {
@@ -176,7 +182,7 @@ export async function resolveHoldingsForFiling(holdings: Raw13FHolding[]): Promi
     // The retry must land on the same instrument: TwelveData names every
     // listing of a security identically, and a near-miss name search took
     // "Robinhood Ventures Fund I" to Fund II.
-    if (resolution.status === 'resolved' && !isUsListing(resolution) && (await tryReserveCredits(3))) {
+    if (resolution.status === 'resolved' && !isUsListing(resolution) && (await tryReserveCredits(3, budgetWaitMs))) {
       const foreignName = resolution.candidate.instrument_name;
       resolution = await resolveSecurity({ isin: null, rawSymbol: null, name: foreignName, priceCurrency: 'USD' });
       if (resolution.status === 'resolved' && resolution.candidate.instrument_name.toLowerCase() !== foreignName.toLowerCase()) {

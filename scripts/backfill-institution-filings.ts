@@ -4,6 +4,7 @@
  *
  * Usage:
  *   npx tsx scripts/backfill-institution-filings.ts [--slug=<fund>] [--quarters=5] [--no-resolve] [--reingest] [--dry-run]
+ *   npx tsx scripts/backfill-institution-filings.ts --fill-missing [--dry-run]   (tickers for stored holdings without one)
  *
  * Why a script and not a cron route: the weekly sync is capped at
  * maxDuration=300 and Citadel alone is 7166 holdings per quarter. A local run
@@ -34,6 +35,8 @@ import {
   type IngestTarget,
   type IngestResult,
 } from '../lib/institutions/ingest-filing';
+import { resolveHoldingsForFiling } from '../lib/institutions/resolve-cusip';
+import type { Raw13FHolding } from '../lib/institutions/parse-13f-xml';
 
 /**
  * ingestFiling makes 3 EDGAR requests per filing (index, cover page, info
@@ -50,6 +53,68 @@ function flag(name: string): string | undefined {
   const hit = process.argv.find((a) => a === `--${name}` || a.startsWith(`--${name}=`));
   if (!hit) return undefined;
   return hit.includes('=') ? hit.slice(hit.indexOf('=') + 1) : '';
+}
+
+/**
+ * --fill-missing: resolve every CUSIP that stored holdings carry without a
+ * ticker and that was never looked up, biggest position first, then copy the
+ * results onto the holdings (fill_13f_symbols_from_cache, migration 172).
+ *
+ * Exists because a stored filing is never re-resolved, and the resolver gives
+ * up once the cron credit budget stays full for 8s: Citadel's ~13,500
+ * holdings could never finish in one pass (found 2026-10-15, 3,178 CUSIPs
+ * worth $27.9B left). Here the resolver waits for budget instead. ~3 credits
+ * per CUSIP at the 400/min cron share, so 3,000 CUSIPs take ~25 minutes.
+ */
+async function fillMissingSymbols(supabase: ReturnType<typeof createServerClient>, dryRun: boolean) {
+  const rows: Array<{ cusip: string; name_of_issuer: string; value_usd: number | null }> = [];
+  for (let from = 0; ; from += 1000) {
+    // Paged: PostgREST returns at most 1000 rows per request.
+    const { data, error } = await supabase
+      .from('institutional_holdings')
+      .select('cusip, name_of_issuer, value_usd')
+      .is('symbol', null)
+      .is('put_call', null)
+      .order('id')
+      .range(from, from + 999);
+    if (error) throw error;
+    rows.push(...((data ?? []) as typeof rows));
+    if (!data || data.length < 1000) break;
+  }
+
+  const byCusip = new Map<string, Raw13FHolding>();
+  for (const r of rows) {
+    const prev = byCusip.get(r.cusip);
+    const value = Number(r.value_usd ?? 0);
+    if (!prev || value > prev.valueUsd) {
+      byCusip.set(r.cusip, { cusip: r.cusip, nameOfIssuer: r.name_of_issuer, valueUsd: value, shares: 0, shareType: null, putCall: null });
+    }
+  }
+
+  // Skip CUSIPs already tried (a map row with symbol null): retrying those
+  // spends credits on the same no-match.
+  const tried = new Set<string>();
+  const cusips = [...byCusip.keys()];
+  for (let i = 0; i < cusips.length; i += 300) {
+    const { data } = await supabase.from('cusip_ticker_map').select('cusip').in('cusip', cusips.slice(i, i + 300));
+    for (const m of (data ?? []) as Array<{ cusip: string }>) tried.add(m.cusip);
+  }
+  const todo = [...byCusip.values()].filter((h) => !tried.has(h.cusip)).sort((a, b) => b.valueUsd - a.valueUsd);
+  console.log(`${rows.length} holdings without a ticker, ${byCusip.size} distinct CUSIPs, ${todo.length} never looked up.`);
+  if (dryRun || todo.length === 0) return;
+
+  // One CUSIP per call so progress shows and a kill loses nothing: every
+  // resolution is written to cusip_ticker_map as it happens.
+  let resolved = 0;
+  for (let i = 0; i < todo.length; i++) {
+    const [h] = await resolveHoldingsForFiling([todo[i]], { budgetWaitMs: 5 * 60_000 });
+    if (h.symbol) resolved++;
+    if ((i + 1) % 50 === 0 || i === todo.length - 1) console.log(`  ${i + 1}/${todo.length} looked up, ${resolved} resolved`);
+  }
+
+  const { data: filled, error } = await supabase.rpc('fill_13f_symbols_from_cache' as never);
+  if (error) throw error;
+  console.log(`Filled ${filled} holdings. Clear the institutions:% rows in market_data_cache so pages show it.`);
 }
 
 async function main() {
@@ -74,6 +139,12 @@ async function main() {
   }
 
   const supabase = createServerClient();
+
+  if (flag('fill-missing') !== undefined) {
+    await fillMissingSymbols(supabase, dryRun);
+    return;
+  }
+
   let query = supabase
     .from('institutional_investors')
     .select('id, slug, cik')
