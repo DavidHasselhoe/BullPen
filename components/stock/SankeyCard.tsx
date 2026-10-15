@@ -431,7 +431,6 @@ function SankeyChart({ graph, width, revenue, currency, isDark, ticker, periodLa
   );
 
   const reducedMotion = useReducedMotion();
-  const titleId = `sankey-title-${ticker}`;
   const descId = `sankey-desc-${ticker}`;
   // Which node has keyboard focus, so its rect can show a ring.
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -473,11 +472,13 @@ function SankeyChart({ graph, width, revenue, currency, isDark, ticker, periodLa
       height={chartH}
       style={{ overflow: 'visible', display: 'block' }}
       role="img"
-      aria-labelledby={`${titleId} ${descId}`}
+      // aria-label, not <title>: browsers show an svg <title> as a native
+      // hover tooltip, which covered the chart's own value tooltip.
+      aria-label={t('sankeyA11yTitle', { ticker, period: periodLabel })}
+      aria-describedby={descId}
     >
       {/* The chart's content in words. Built from the same links the chart
           draws, so a screen reader and the picture can never disagree. */}
-      <title id={titleId}>{t('sankeyA11yTitle', { ticker, period: periodLabel })}</title>
       <desc id={descId}>
         {graph.links
           .map((l) =>
