@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-10-15",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Invite friends from your account menu with your own link. When a friend signs up through it, you both get a free month of Pro"
+      },
+      {
+        "type": "improved",
+        "text": "Stock pages for dividends, congress trades and fund holders now open with facts about that stock, like when it last raised its dividend or who in Congress traded it most"
+      },
+      {
+        "type": "fixed",
+        "text": "In My Holdings, the S&P 500 line on the performance chart could freeze in the wrong shape after you switched time ranges, so the dot you hovered did not sit on the line"
+      },
+      {
+        "type": "fixed",
+        "text": "If you hold crypto, the performance chart in My Holdings dipped every weekend and its headline return counted only your crypto. Your stocks now keep their Friday price over the weekend"
+      },
+      {
+        "type": "fixed",
+        "text": "Thousands of positions held by the big funds, Citadel and Renaissance especially, were missing their ticker, so those funds did not show up as holders of stocks they own"
+      },
+      {
+        "type": "fixed",
+        "text": "Hovering the revenue flow chart on a stock page no longer pops up an extra browser label over the values"
+      },
+      {
+        "type": "improved",
+        "text": "More of the app is translated, including the newest Academy, tools and stock page text"
+      }
+    ]
+  },
+  {
     "date": "2026-10-14",
     "entries": [
       {
