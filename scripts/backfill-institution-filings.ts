@@ -107,8 +107,15 @@ async function fillMissingSymbols(supabase: ReturnType<typeof createServerClient
   // resolution is written to cusip_ticker_map as it happens.
   let resolved = 0;
   for (let i = 0; i < todo.length; i++) {
-    const [h] = await resolveHoldingsForFiling([todo[i]], { budgetWaitMs: 5 * 60_000 });
-    if (h.symbol) resolved++;
+    // One timed-out TwelveData call ended the first run at 3,000 of 5,077
+    // (2026-10-15). Skip the CUSIP instead: it stays untried and a re-run
+    // picks it up.
+    try {
+      const [h] = await resolveHoldingsForFiling([todo[i]], { budgetWaitMs: 5 * 60_000 });
+      if (h.symbol) resolved++;
+    } catch (err) {
+      console.warn(`  skipped ${todo[i].cusip} (${todo[i].nameOfIssuer}): ${err instanceof Error ? err.message : err}`);
+    }
     if ((i + 1) % 50 === 0 || i === todo.length - 1) console.log(`  ${i + 1}/${todo.length} looked up, ${resolved} resolved`);
   }
 
