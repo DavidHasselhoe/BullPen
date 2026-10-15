@@ -94,6 +94,16 @@ export async function GET(request: NextRequest) {
     await sleep(INTER_FUND_DELAY_MS);
   }
 
+  // Tickers resolved since a filing was stored (by another fund's run, or the
+  // budget freeing up) never reach its rows otherwise: filings are not re-read.
+  let symbolsFilled = 0;
+  try {
+    const { data } = await supabase.rpc('fill_13f_symbols_from_cache' as never);
+    symbolsFilled = Number(data ?? 0);
+  } catch (err) {
+    console.error('[sync-institutional-holdings] symbol fill failed:', err);
+  }
+
   // "Filing since" for the Discover sort. Only a newly added fund is missing
   // it, so on almost every run this does nothing.
   const firstFiled: Record<string, string> = {};
@@ -153,5 +163,5 @@ export async function GET(request: NextRequest) {
     console.error('[sync-institutional-holdings] screener sector enrichment failed:', err);
   }
 
-  return NextResponse.json({ success: true, results, firstFiled, sectors, trackedSectors, screenerSectors });
+  return NextResponse.json({ success: true, results, symbolsFilled, firstFiled, sectors, trackedSectors, screenerSectors });
 }

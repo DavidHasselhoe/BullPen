@@ -101,19 +101,26 @@ async function matchCompanyIndex(nameOfIssuer: string): Promise<CompanyIndexMatc
  * against the cache first. Stops attempting new TwelveData resolutions (but
  * keeps everything already resolved) if the cron credit budget is exhausted
  * — an unresolved holding is still stored with symbol=NULL, valid,
- * displayable data, and gets picked up by next week's run.
+ * displayable data. A stored filing is never re-resolved, so a CUSIP resolved
+ * later reaches it only through fill_13f_symbols_from_cache() (migration 172),
+ * which the weekly sync runs.
  */
 export async function resolveHoldingsForFiling(holdings: Raw13FHolding[]): Promise<ResolvedHolding[]> {
   const supabase = createServerClient();
   const distinctCusips = Array.from(new Set(holdings.map((h) => h.cusip)));
 
-  const { data: cached } = await supabase
-    .from('cusip_ticker_map')
-    .select('cusip, symbol')
-    .in('cusip', distinctCusips);
-  const cacheMap = new Map<string, string | null>(
-    ((cached as CusipMapRow[] | null) ?? []).map((r) => [r.cusip, r.symbol])
-  );
+  // Chunked: one .in() over a big fund's CUSIPs (Citadel files ~13,500) is
+  // capped at 1000 rows by PostgREST and too long for a URL, so most of the
+  // cache came back missing and those holdings were stored without a ticker
+  // (found 2026-10-15). 300 CUSIPs stays well under both limits.
+  const cacheMap = new Map<string, string | null>();
+  for (let i = 0; i < distinctCusips.length; i += 300) {
+    const { data: cached } = await supabase
+      .from('cusip_ticker_map')
+      .select('cusip, symbol')
+      .in('cusip', distinctCusips.slice(i, i + 300));
+    for (const r of (cached as CusipMapRow[] | null) ?? []) cacheMap.set(r.cusip, r.symbol);
+  }
 
   const misses = distinctCusips.filter((c) => !cacheMap.has(c));
   let budgetExhausted = false;
