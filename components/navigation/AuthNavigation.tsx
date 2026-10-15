@@ -27,6 +27,7 @@ const NO_APP_NAV_ROUTES = [
   '/dmca',
   // Dynamic, so it never had an exact path to list: one route per share.
   '/share',
+  '/invite',
 ];
 
 /**

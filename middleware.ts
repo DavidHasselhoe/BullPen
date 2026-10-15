@@ -131,6 +131,17 @@ export async function middleware(request: NextRequest) {
     });
   }
 
+  // Same first-touch rule for personal invite links (/invite/<code>).
+  const inviteMatch = request.nextUrl.pathname.match(/^\/invite\/([a-f0-9]{10})$/i);
+  if (inviteMatch && !request.cookies.has('bp_inv')) {
+    response.cookies.set('bp_inv', inviteMatch[1].toLowerCase(), {
+      maxAge: 60 * 60 * 24 * 30,
+      httpOnly: false, // read by maybeClaimShareAttribution() after signup
+      sameSite: 'lax',
+      path: '/',
+    });
+  }
+
   // Security Headers (OWASP recommended)
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('X-Content-Type-Options', 'nosniff');

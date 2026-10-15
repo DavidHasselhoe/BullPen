@@ -47,5 +47,20 @@
   "navReportBugOrIdea": "Report a bug or idea",
   "navSignOut": "Sign out",
   "navTryProFree": "Try Pro free for {{days}} days",
-  "navTryProFreeSub": "$0 today. Cancel anytime."
+  "navTryProFreeSub": "$0 today. Cancel anytime.",
+  "navInviteFriends": "Invite friends",
+  "navInviteFriendsSub": "You both get a month of Pro",
+  "inviteTitle": "Invite friends to BullPen",
+  "inviteDescription": "Send your link to a friend. When they sign up through it, you both get a free month of Pro.",
+  "inviteLinkLabel": "Your invite link",
+  "inviteLoading": "Loading your link…",
+  "inviteLoadError": "We couldn't load your invite link. Try again in a moment.",
+  "inviteCopy": "Copy",
+  "inviteCopied": "Copied",
+  "inviteShare": "Share link",
+  "inviteShareTitle": "Join me on BullPen",
+  "inviteShareText": "I use BullPen to understand my stocks. Sign up through my link and we both get a free month of Pro.",
+  "inviteStats_one": "{{count}} friend has joined so far. Free months earned: {{months}}.",
+  "inviteStats_other": "{{count}} friends have joined so far. Free months earned: {{months}}.",
+  "inviteLimits": "Only new accounts count. You can earn up to 3 free months every 30 days, and 12 in total."
 }

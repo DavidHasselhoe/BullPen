@@ -45,7 +45,22 @@
   "navAiCosts": "AI コスト",
   "navFeedbackLabel": "フィードバック",
   "navReportBugOrIdea": "バグまたはアイデアを報告",
+  "navSignOut": "ログアウト",
   "navTryProFree": "{{days}}日間 Pro を無料でお試しください",
   "navTryProFreeSub": "今日は$0。いつでもキャンセルできます。",
-  "navSignOut": "ログアウト"
+  "navInviteFriends": "友達を招待",
+  "navInviteFriendsSub": "お互いにProの1ヶ月間が無料",
+  "inviteTitle": "BullPenに友達を招待",
+  "inviteDescription": "友達にあなたのリンクを送信してください。そのリンクから登録すると、あなたたち両方がProを1ヶ月間無料で使えます。",
+  "inviteLinkLabel": "あなたの招待リンク",
+  "inviteLoading": "リンクを読み込み中…",
+  "inviteLoadError": "招待リンクを読み込めませんでした。少し待ってから再度お試しください。",
+  "inviteCopy": "コピー",
+  "inviteCopied": "コピーしました",
+  "inviteShare": "リンクをシェア",
+  "inviteShareTitle": "BullPenで一緒に始めよう",
+  "inviteShareText": "私はBullPenで株式について学んでいます。私のリンクから登録してくれたら、私たち両方がProを1ヶ月間無料で使えます。",
+  "inviteStats_one": "{{count}}人の友達が参加しました。獲得した無料月数: {{months}}。",
+  "inviteStats_other": "{{count}}人の友達が参加しました。獲得した無料月数: {{months}}。",
+  "inviteLimits": "新規アカウントのみがカウントされます。30日ごとに最大3ヶ月、合計で最大12ヶ月まで無料月を獲得できます。"
 }

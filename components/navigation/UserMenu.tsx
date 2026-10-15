@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, Settings, LogOut, Loader2, Shield, CreditCard, Sparkles, MessageSquarePlus, Inbox } from 'lucide-react';
+import { User, Settings, LogOut, Loader2, Shield, CreditCard, Sparkles, MessageSquarePlus, Inbox, Gift } from 'lucide-react';
+import { InviteDialog } from '@/components/navigation/InviteDialog';
 import { ProfileModal } from '@/components/user/ProfileModal';
 import { ProfileAvatar, getUserDisplayName, getUserInitials } from '@/components/user/ProfileAvatar';
 import { ProBadge } from '@/components/billing/ProBadge';
@@ -47,6 +48,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
   // Settings > Privacy & security sends people here to edit who sees their profile.
@@ -164,6 +166,13 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
           <Settings className="mr-2 h-4 w-4" />
           <span>{t('navSettings')}</span>
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setInviteOpen(true)} className="cursor-pointer items-start">
+          <Gift className="mr-2 mt-0.5 h-4 w-4" />
+          <span className="flex flex-col gap-0.5">
+            <span>{t('navInviteFriends')}</span>
+            <span className="text-xs text-muted-foreground">{t('navInviteFriendsSub')}</span>
+          </span>
+        </DropdownMenuItem>
 
         {userIsPro ? (
           <DropdownMenuItem
@@ -238,6 +247,7 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
       </DropdownMenuContent>
       <ProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
       <ReportFeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+      <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} />
     </DropdownMenu>
   );
 }

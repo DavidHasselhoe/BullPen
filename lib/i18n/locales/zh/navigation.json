@@ -45,7 +45,22 @@
   "navAiCosts": "AI 成本",
   "navFeedbackLabel": "反馈",
   "navReportBugOrIdea": "报告问题或建议",
+  "navSignOut": "登出",
   "navTryProFree": "免费试用 Pro {{days}} 天",
   "navTryProFreeSub": "今天 $0。随时取消。",
-  "navSignOut": "登出"
+  "navInviteFriends": "邀请朋友",
+  "navInviteFriendsSub": "你们都能获得一个月的 Pro",
+  "inviteTitle": "邀请朋友加入 BullPen",
+  "inviteDescription": "分享你的链接给朋友。他们通过你的链接注册后，你们都能获得一个月免费的 Pro。",
+  "inviteLinkLabel": "你的邀请链接",
+  "inviteLoading": "正在加载你的链接…",
+  "inviteLoadError": "无法加载你的邀请链接。请稍后重试。",
+  "inviteCopy": "复制",
+  "inviteCopied": "已复制",
+  "inviteShare": "分享链接",
+  "inviteShareTitle": "加入我在 BullPen 的社区",
+  "inviteShareText": "我用 BullPen 来深入了解我的股票。通过我的链接注册，我们都能获得一个月免费的 Pro。",
+  "inviteStats_one": "{{count}} 位朋友已加入。获得的免费月数：{{months}}。",
+  "inviteStats_other": "{{count}} 位朋友已加入。获得的免费月数：{{months}}。",
+  "inviteLimits": "只有新账户才计入。你每 30 天最多可赚取 3 个免费月，总共最多 12 个月。"
 }

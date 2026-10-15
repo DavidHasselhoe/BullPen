@@ -57,5 +57,7 @@ export function namespacesForPath(pathname: string): Namespace[] {
   // /get-started/trial shows the TrialTimeline, whose copy lives in billing.
   if (pathname.startsWith('/upgrade') || pathname.startsWith('/pricing') || pathname.startsWith('/get-started/trial')) return ['billing'];
   if (pathname.startsWith('/watchlist')) return ['watchlist'];
+  // The invite landing renders its copy on the server, from 'auth'.
+  if (pathname.startsWith('/invite')) return ['auth'];
   return [];
 }

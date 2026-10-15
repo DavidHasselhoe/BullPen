@@ -45,7 +45,22 @@
   "navAiCosts": "Costos de IA",
   "navFeedbackLabel": "Comentarios",
   "navReportBugOrIdea": "Reportar un error o idea",
+  "navSignOut": "Cerrar sesión",
   "navTryProFree": "Prueba Pro gratis por {{days}} días",
   "navTryProFreeSub": "$0 hoy. Cancela cuando quieras.",
-  "navSignOut": "Cerrar sesión"
+  "navInviteFriends": "Invita amigos",
+  "navInviteFriendsSub": "Ambos obtienen un mes de Pro",
+  "inviteTitle": "Invita amigos a BullPen",
+  "inviteDescription": "Envía tu enlace a un amigo. Cuando se registren a través de él, ambos obtienen un mes gratis de Pro.",
+  "inviteLinkLabel": "Tu enlace de invitación",
+  "inviteLoading": "Cargando tu enlace…",
+  "inviteLoadError": "No pudimos cargar tu enlace de invitación. Intenta de nuevo en un momento.",
+  "inviteCopy": "Copiar",
+  "inviteCopied": "Copiado",
+  "inviteShare": "Compartir enlace",
+  "inviteShareTitle": "Únete a mí en BullPen",
+  "inviteShareText": "Uso BullPen para entender mis acciones. Regístrate a través de mi enlace y ambos obtenemos un mes gratis de Pro.",
+  "inviteStats_one": "{{count}} amigo se ha unido hasta ahora. Meses gratis ganados: {{months}}.",
+  "inviteStats_other": "{{count}} amigos se han unido hasta ahora. Meses gratis ganados: {{months}}.",
+  "inviteLimits": "Solo cuentan las cuentas nuevas. Puedes ganar hasta 3 meses gratis cada 30 días, y 12 en total."
 }

@@ -20,8 +20,25 @@ export function getShareRefCookie(): string | null {
  */
 export async function maybeClaimShareAttribution(): Promise<void> {
   const shareId = getShareRefCookie();
-  if (!shareId) return;
+  const inviteCode = readCookie(INVITE_COOKIE_NAME);
+  if (!shareId && !inviteCode) return;
 
+  // Both RPCs go through record_referral (migration 173): only an account
+  // under 24h old can claim, once, so whichever runs second is a no-op.
   const supabase = createBrowserClient();
-  await supabase.rpc('grant_share_referral_reward' as never, { share_id_param: shareId } as never);
+  if (shareId) {
+    await supabase.rpc('grant_share_referral_reward' as never, { share_id_param: shareId } as never);
+  }
+  if (inviteCode) {
+    await supabase.rpc('grant_invite_referral_reward' as never, { invite_code_param: inviteCode } as never);
+  }
+}
+
+/** Set by middleware on /invite/[code], first touch only. */
+const INVITE_COOKIE_NAME = 'bp_inv';
+
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
 }

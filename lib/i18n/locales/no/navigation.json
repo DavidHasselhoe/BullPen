@@ -45,7 +45,22 @@
   "navAiCosts": "AI-kostnader",
   "navFeedbackLabel": "Tilbakemelding",
   "navReportBugOrIdea": "Rapporter en feil eller idé",
+  "navSignOut": "Logg ut",
   "navTryProFree": "Prøv BullPen Pro gratis i {{days}} dager",
   "navTryProFreeSub": "$0 i dag. Avbryt når som helst.",
-  "navSignOut": "Logg ut"
+  "navInviteFriends": "Inviter venner",
+  "navInviteFriendsSub": "Dere får begge en måned Pro",
+  "inviteTitle": "Inviter venner til BullPen",
+  "inviteDescription": "Send lenken din til en venn. Når de registrerer seg gjennom den, får dere begge en gratis måned Pro.",
+  "inviteLinkLabel": "Din invitasjonslenke",
+  "inviteLoading": "Laster inn lenken din…",
+  "inviteLoadError": "Vi kunne ikke laste inn invitasjonslenken din. Prøv igjen om et øyeblikk.",
+  "inviteCopy": "Kopier",
+  "inviteCopied": "Kopiert",
+  "inviteShare": "Del lenke",
+  "inviteShareTitle": "Bli med meg på BullPen",
+  "inviteShareText": "Jeg bruker BullPen for å forstå aksjene mine. Registrer deg gjennom lenken min, og vi får begge en gratis måned Pro.",
+  "inviteStats_one": "{{count}} venn har registrert seg så langt. Gratis måneder opptjent: {{months}}.",
+  "inviteStats_other": "{{count}} venner har registrert seg så langt. Gratis måneder opptjent: {{months}}.",
+  "inviteLimits": "Bare nye kontoer teller. Du kan tjene inntil 3 gratis måneder hver 30. dag, og 12 totalt."
 }

@@ -47,5 +47,20 @@
   "navSectionTools": "Tools",
   "navSectionCommunity": "Community",
   "navAdminLabel": "Admin",
-  "navFeedbackLabel": "Feedback"
+  "navFeedbackLabel": "Feedback",
+  "navInviteFriends": "Freunde einladen",
+  "navInviteFriendsSub": "Ihr beide bekommt einen Monat Pro",
+  "inviteTitle": "Lade Freunde zu BullPen ein",
+  "inviteDescription": "Schreib deinen Link an einen Freund. Wenn er sich damit anmeldet, bekommt ihr beide einen kostenlosen Monat Pro.",
+  "inviteLinkLabel": "Dein Einladungslink",
+  "inviteLoading": "Lädt deinen Link…",
+  "inviteLoadError": "Wir konnten deinen Einladungslink nicht laden. Versuche es gleich noch mal.",
+  "inviteCopy": "Kopieren",
+  "inviteCopied": "Kopiert",
+  "inviteShare": "Link teilen",
+  "inviteShareTitle": "Komm mit mir zu BullPen",
+  "inviteShareText": "Ich nutze BullPen, um meine Aktien zu verstehen. Melde dich über meinen Link an und wir bekommen beide einen kostenlosen Monat Pro.",
+  "inviteStats_one": "{{count}} Freund ist bisher beigetreten. Verdiente kostenlose Monate: {{months}}.",
+  "inviteStats_other": "{{count}} Freunde sind bisher beigetreten. Verdiente kostenlose Monate: {{months}}.",
+  "inviteLimits": "Nur neue Konten zählen. Du kannst alle 30 Tage bis zu 3 kostenlose Monate verdienen, insgesamt maximal 12."
 }
