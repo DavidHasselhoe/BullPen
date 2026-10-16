@@ -31,6 +31,7 @@ import { AdvancedChart, type ChartTool } from './AdvancedChart';
 import { ChartToolbar } from './ChartToolbar';
 import { ChartAIPanel } from './ChartAIPanel';
 import { buildChartSnapshot, type ChartAction } from './chart-context';
+import { etDayKey } from '@/lib/charts/intraday-axis';
 import { useChartPresets, type ChartPreset } from '@/hooks/use-chart-presets';
 
 interface CandlesResponse {
@@ -201,6 +202,13 @@ export function AdvancedChartModal({
   // render). Bars before this are warm-up only so long SMAs cover the window.
   const displayFrom = useMemo(() => {
     const t = data?.candles?.t;
+    // 5D is the last five trading days, as on the stock page: the fetch spans
+    // 7 calendar days, so it started partway through a sixth session (and the
+    // header read -13.5% where the stock page said -10.4%).
+    if (range === '1W' && t?.length) {
+      const firstOfFive = [...new Set(t.map(etDayKey))].slice(-5)[0];
+      return t.find((x) => etDayKey(x) === firstOfFive);
+    }
     if (range === '1D' || maxPeriod <= 0 || !t?.length) return undefined;
     let lastT = t[0];
     for (const x of t) if (x > lastT) lastT = x;

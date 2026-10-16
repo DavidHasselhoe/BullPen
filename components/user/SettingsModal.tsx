@@ -232,16 +232,27 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSaveRef = useRef<(() => Promise<boolean>) | undefined>(undefined);
 
-  // Fresh status per opening. Not in the load effect below: that re-runs after
-  // every save (auth:refresh hands it a new user) and wiped "All changes saved".
+  // Fresh status per opening.
   useEffect(() => {
     if (open) setSaveStatus('idle');
   }, [open]);
 
-  // Load settings when dialog opens
+  // Load settings once per opening. It used to re-run on every `user` change,
+  // and every save hands it a new user (auth:refresh): the form was reset to
+  // the account as it stood a moment ago and autosave paused for 400 ms, so a
+  // second setting changed right after the first (language, then time zone)
+  // silently reverted. The form is the source of truth while open; handleSave
+  // still re-reads the row first, so values written elsewhere are kept.
+  const loadedForOpenRef = useRef(false);
   useEffect(() => {
-    isInitializedRef.current = false;
-    if (user?.settings && open) {
+    if (!open) {
+      loadedForOpenRef.current = false;
+      return;
+    }
+    if (loadedForOpenRef.current) return;
+    if (user?.settings) {
+      loadedForOpenRef.current = true;
+      isInitializedRef.current = false;
       const settings = user.settings as Record<string, unknown>;
       setDefaultCurrency(settings.default_currency || null);
       setLanguage(settings.language || null);
