@@ -113,7 +113,9 @@ export function GetStartedSignupForm() {
 
       <AuthFormSignup
         onSuccess={handleSuccess}
-        onError={(msg) => { setInUse(null); setError(msg); }}
+        // The form shows its own errors next to the field; only clear the
+        // email-in-use notice here, or the error would show twice.
+        onError={() => setInUse(null)}
         onConfirmationRequired={(email, password) => setWaitingFor({ email, password })}
         onEmailInUse={(email) => { setError(''); setInUse(email); }}
         submitLabel="Create my BullPen"

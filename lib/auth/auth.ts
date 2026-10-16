@@ -60,6 +60,8 @@ export interface AuthResult {
   requiresEmailConfirmation?: boolean;
   /** Signup only: the address already has an account. */
   emailInUse?: boolean;
+  /** Sign-in only: which failure, so the form can say it in the user's language. */
+  errorCode?: 'invalid_credentials' | 'email_not_confirmed' | 'network' | 'rate_limited';
 }
 
 const EMAIL_IN_USE_ERROR = 'An account with this email already exists. Sign in instead.';
@@ -384,7 +386,7 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
 
   try {
     if (!(await checkAuthThrottle('login', params.email))) {
-      return { success: false, error: RATE_LIMITED_ERROR };
+      return { success: false, error: RATE_LIMITED_ERROR, errorCode: 'rate_limited' };
     }
 
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -401,6 +403,7 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
         return {
           success: false,
           error: 'Please confirm your email before signing in. Check your inbox (and spam folder) for the confirmation link.',
+          errorCode: 'email_not_confirmed',
         };
       }
       const isNetworkError = /fetch|network|timeout|abort|signal/i.test(authError.message);
@@ -408,7 +411,12 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
       // connection isn't evidence of a guessed password.
       if (!isNetworkError) reportLoginOutcome(params.email, 'failure');
       const msg = isNetworkError ? 'Connection failed. Please check your network and try again.' : authError.message;
-      return { success: false, error: msg };
+      const errorCode = isNetworkError
+        ? 'network'
+        : (authError as { code?: string }).code === 'invalid_credentials' || /invalid login credentials/i.test(authError.message)
+          ? 'invalid_credentials'
+          : undefined;
+      return { success: false, error: msg, errorCode };
     }
 
     if (!authData.user) {

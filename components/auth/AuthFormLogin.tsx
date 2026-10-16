@@ -25,11 +25,14 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword, source = '
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  // A wrong password gets a reset link inside the error, where the person is looking.
+  const [offerReset, setOfferReset] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setOfferReset(false);
 
     if (!email || !password) {
       const errorMsg = t('loginMissingFields');
@@ -45,7 +48,15 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword, source = '
       const result = await signIn({ email, password });
 
       if (!result.success) {
-        const errorMsg = result.error || t('loginFailed');
+        // Supabase's own wording ("Invalid login credentials") is English and
+        // jargon; the known failures are said in the user's language instead.
+        const errorMsg =
+          result.errorCode === 'invalid_credentials' ? t('loginInvalidCredentials')
+          : result.errorCode === 'email_not_confirmed' ? t('loginEmailNotConfirmed')
+          : result.errorCode === 'network' ? t('loginNetworkError')
+          : result.errorCode === 'rate_limited' ? t('loginRateLimited')
+          : result.error || t('loginFailed');
+        setOfferReset(result.errorCode === 'invalid_credentials' && !!onForgotPassword);
         setError(errorMsg);
         onError?.(errorMsg);
         trackEvent('login_form_failed', { source, method: 'email' });
@@ -56,16 +67,14 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword, source = '
       trackEvent('login_form_succeeded', { source, method: 'email' });
       setIsLoading(false);
       onSuccess?.();
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : t('unexpectedError');
+    } catch {
+      const errorMsg = t('unexpectedError');
       setError(errorMsg);
       onError?.(errorMsg);
       trackEvent('login_form_failed', { source, method: 'email' });
       setIsLoading(false);
     }
   };
-
-  const isValid = email.includes('@') && password.length >= 8;
 
   return (
     <motion.form
@@ -87,6 +96,14 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword, source = '
             role="alert"
           >
             {error}
+            {offerReset && (
+              <>
+                {' '}
+                <button type="button" onClick={onForgotPassword} className="font-medium underline underline-offset-2 hover:text-foreground">
+                  {t('forgotPasswordLink')}
+                </button>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -119,7 +136,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword, source = '
             <button
               type="button"
               onClick={onForgotPassword}
-              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="rounded-sm text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t('forgotPasswordLink')}
             </button>
@@ -127,7 +144,6 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword, source = '
         </div>
         <PasswordInput
           id="login-password"
-          placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading}
@@ -140,7 +156,7 @@ export function AuthFormLogin({ onSuccess, onError, onForgotPassword, source = '
       <Button
         type="submit"
         className="h-11 w-full rounded-lg"
-        disabled={isLoading || !isValid}
+        disabled={isLoading}
       >
         {isLoading ? (
           <>

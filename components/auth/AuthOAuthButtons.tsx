@@ -60,7 +60,9 @@ export function AuthOAuthButtons({ onGoogleClick, isLoading = false, disabled = 
             <GoogleIcon />
             <span>{t('oauthContinueWithGoogle')}</span>
             {lastUsed && (
-              <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm ring-2 ring-background">
+              // Neutral, in the app's own surface colours: a saturated blue
+              // caps pill was a third accent the palette doesn't have.
+              <span className="absolute -top-2.5 -right-2 inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-foreground ring-2 ring-background">
                 <Check className="size-2.5" strokeWidth={3} />
                 {t('oauthLastUsed')}
               </span>

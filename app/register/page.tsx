@@ -1,19 +1,23 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { setupOr, signInWithGoogle } from '@/lib/auth/auth';
 import { AuthOAuthButtons } from '@/components/auth/AuthOAuthButtons';
 import { AuthFormSignup } from '@/components/auth/AuthFormSignup';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 import { trackEvent } from '@/lib/analytics/track';
+import { useAuth } from '@/hooks/use-auth';
 
 function RegisterContent() {
+  const { t } = useTranslation('auth');
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  // Google only: the email form shows its own errors, once, next to the field.
   const [error, setError] = useState('');
 
   // Honor ?redirect so post-signup we can land users on checkout (/upgrade),
@@ -21,6 +25,17 @@ function RegisterContent() {
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const signInHref =
     redirectTo !== '/dashboard' ? `/login?redirect=${encodeURIComponent(redirectTo)}` : '/login';
+
+  // Already signed in when the page opened: there is no second account to
+  // make, so go where they were headed. Only that first check: a signup here
+  // must still reach handleSuccess, which sends a new account through setup.
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const checkedSignedIn = useRef(false);
+  useEffect(() => {
+    if (authLoading || checkedSignedIn.current) return;
+    checkedSignedIn.current = true;
+    if (isAuthenticated) router.replace(redirectTo);
+  }, [authLoading, isAuthenticated, redirectTo, router]);
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -30,13 +45,13 @@ function RegisterContent() {
     try {
       const result = await signInWithGoogle(redirectTo !== '/dashboard' ? redirectTo : undefined);
       if (!result.success) {
-        setError(result.error || 'Failed to sign in with Google');
+        setError(t('modalGoogleFailed'));
         setIsGoogleLoading(false);
         trackEvent('signup_form_failed', { source: 'register', method: 'google' });
       }
       // If successful, redirect will happen automatically via OAuth flow
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } catch {
+      setError(t('modalGoogleFailed'));
       setIsGoogleLoading(false);
       trackEvent('signup_form_failed', { source: 'register', method: 'google' });
     }
@@ -48,7 +63,9 @@ function RegisterContent() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden">
+    // max-md:pb-56: room to scroll the form clear of the cookie banner, which
+    // sits above the (absent here) tab bar on phones and covered the button.
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4 max-md:pb-56">
       {/* Atmospheric glow */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-[480px]"
@@ -71,8 +88,8 @@ function RegisterContent() {
 
         {/* Header */}
         <div className="space-y-1.5 text-center">
-          <h1 className="text-xl font-semibold">Create an account</h1>
-          <p className="text-sm text-muted-foreground">Track, analyze, and understand the market</p>
+          <h1 className="text-xl font-semibold">{t('modalTitleSignup')}</h1>
+          <p className="text-sm text-muted-foreground">{t('modalDescriptionSignup')}</p>
         </div>
 
         {/* OAuth Buttons - First class */}
@@ -97,7 +114,7 @@ function RegisterContent() {
             <Separator />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+            <span className="bg-background px-2 text-muted-foreground">{t('modalOrContinueWithEmail')}</span>
           </div>
         </div>
 
@@ -106,7 +123,6 @@ function RegisterContent() {
             does; it always went to /dashboard, dropping every ?redirect. */}
         <AuthFormSignup
           onSuccess={handleSuccess}
-          onError={setError}
           source="register"
           emailRedirectPath={redirectTo !== '/dashboard' ? redirectTo : undefined}
         />
@@ -119,12 +135,12 @@ function RegisterContent() {
           className="text-center"
         >
           <p className="text-sm text-muted-foreground">
-            Already have an account?{' '}
+            {t('modalHasAccount')}{' '}
             <a
               href={signInHref}
               className="font-medium text-primary underline-offset-4 hover:underline transition-colors"
             >
-              Sign in
+              {t('loginSubmit')}
             </a>
           </p>
         </motion.div>

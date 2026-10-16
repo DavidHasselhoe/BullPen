@@ -191,7 +191,6 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
               <AuthFormLogin
                 key="login"
                 onSuccess={handleSuccess}
-                onError={setError}
                 onForgotPassword={() => handleModeChange('forgot-password')}
                 redirectTo={redirectTo}
                 source={source}
@@ -202,7 +201,6 @@ export function AuthModal({ open, onOpenChange, initialMode = 'login', redirectT
               <AuthFormSignup
                 key="signup"
                 onSuccess={handleSuccess}
-                onError={setError}
                 source={source}
                 // With email confirmation on, the link is how most email
                 // signups come back: it has to come back here too.

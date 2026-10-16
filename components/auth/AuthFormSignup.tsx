@@ -24,6 +24,11 @@ import {
   rememberAgeGateFailure,
 } from '@/lib/auth/age-gate';
 
+interface FieldError {
+  field: 'email' | 'password' | 'dob' | 'accept';
+  message: string;
+}
+
 interface AuthFormSignupProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
@@ -58,55 +63,56 @@ export function AuthFormSignup({
   // Set once an under-age date has been submitted. Keeps the form closed for
   // the rest of the session instead of inviting a second guess at the year.
   const [ageBlocked, setAgeBlocked] = useState(false);
-  const [dobInvalid, setDobInvalid] = useState(false);
   // The date field verifies the age; this is the account holder representing
   // it and accepting the terms, which nothing asked for before.
   const [accepted, setAccepted] = useState(false);
+  // Server outcomes (signup failed, check your inbox) show above the button;
+  // a rule the form itself checks shows under the field it is about.
   const [error, setError] = useState('');
+  const [fieldError, setFieldError] = useState<FieldError | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const resolvedSubmitLabel = submitLabel ?? t('signupSubmit');
   const resolvedSubmitLoadingLabel = submitLoadingLabel ?? t('signupSubmitting');
 
-  const validateForm = (): string | null => {
-    if (!email) {
-      return t('signupEmailRequired');
-    }
-    if (!email.includes('@')) {
-      return t('forgotInvalidEmail');
-    }
-    if (!password) {
-      return t('signupPasswordRequired');
-    }
+  const validateForm = (): FieldError | null => {
+    if (!email) return { field: 'email', message: t('signupEmailRequired') };
+    if (!email.includes('@')) return { field: 'email', message: t('forgotInvalidEmail') };
+    if (!password) return { field: 'password', message: t('signupPasswordRequired') };
+    const strengthError = getPasswordStrengthError(password);
+    if (strengthError === 'tooShort') return { field: 'password', message: t('signupPasswordTooShort') };
+    if (strengthError === 'tooWeak') return { field: 'password', message: t('signupPasswordTooWeak') };
+    if (strengthError === 'tooCommon') return { field: 'password', message: t('signupPasswordTooCommon') };
     const dobError = checkDateOfBirth(dob);
-    setDobInvalid(!!dobError);
     if (dobError) {
       if (dobError === 'tooYoung') {
         rememberAgeGateFailure();
         setAgeBlocked(true);
-        return t('signupDobTooYoung', { minAge: MIN_SIGNUP_AGE_YEARS });
+        return { field: 'dob', message: t('signupDobTooYoung', { minAge: MIN_SIGNUP_AGE_YEARS }) };
       }
-      if (dobError === 'missing') return t('signupDobRequired');
-      if (dobError === 'future') return t('signupDobFuture');
-      return t('signupDobInvalid');
+      if (dobError === 'missing') return { field: 'dob', message: t('signupDobRequired') };
+      if (dobError === 'future') return { field: 'dob', message: t('signupDobFuture') };
+      return { field: 'dob', message: t('signupDobInvalid') };
     }
-
-    const strengthError = getPasswordStrengthError(password);
-    if (strengthError === 'tooShort') return t('signupPasswordTooShort');
-    if (strengthError === 'tooWeak') return t('signupPasswordTooWeak');
-    if (strengthError === 'tooCommon') return t('signupPasswordTooCommon');
-    if (!accepted) return t('signupAcceptRequired');
+    if (!accepted) return { field: 'accept', message: t('signupAcceptRequired') };
     return null;
   };
+
+  /** Typing in the field an error is about clears it. */
+  const clearFieldError = (field: FieldError['field']) =>
+    setFieldError((current) => (current?.field === field ? null : current));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
+    // The button stays pressable: disabled until every rule passed, it went
+    // grey with no reason ("password1" fits the hint but is on the common
+    // list), and these messages could never show.
     const validationError = validateForm();
+    setFieldError(validationError);
     if (validationError) {
-      setError(validationError);
-      onError?.(validationError);
+      onError?.(validationError.message);
       return;
     }
 
@@ -184,11 +190,13 @@ export function AuthFormSignup({
   };
 
   const blocked = ageBlocked || isAgeGateBlocked();
-  const isValid =
-    email.includes('@') &&
-    getPasswordStrengthError(password) === null &&
-    checkDateOfBirth(dob) === null &&
-    accepted;
+  const invalid = (field: FieldError['field']) => fieldError?.field === field;
+  const errorFor = (field: FieldError['field']) =>
+    invalid(field) ? (
+      <p id={`signup-${field}-error`} role="alert" className="text-xs text-destructive">
+        {fieldError!.message}
+      </p>
+    ) : null;
 
   return (
     <motion.form
@@ -197,6 +205,7 @@ export function AuthFormSignup({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onSubmit={handleSubmit}
+      noValidate
       className="space-y-5 ph-no-capture"
     >
       <div className="space-y-2">
@@ -208,14 +217,19 @@ export function AuthFormSignup({
           type="email"
           placeholder={t('emailPlaceholder')}
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            clearFieldError('email');
+          }}
           disabled={isLoading}
           required
           autoComplete="email"
           autoFocus
           className="h-11"
-          aria-invalid={!!error && error.toLowerCase().includes('email')}
+          aria-invalid={invalid('email')}
+          aria-describedby={invalid('email') ? 'signup-email-error' : undefined}
         />
+        {errorFor('email')}
       </div>
 
       <div className="space-y-2">
@@ -224,16 +238,22 @@ export function AuthFormSignup({
         </Label>
         <PasswordInput
           id="signup-password"
-          placeholder="••••••••"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            clearFieldError('password');
+          }}
           disabled={isLoading}
           required
           autoComplete="new-password"
-          aria-invalid={!!error && error.toLowerCase().includes('password')}
+          aria-invalid={invalid('password')}
+          aria-describedby={invalid('password') ? 'signup-password-error' : 'signup-password-hint'}
           minLength={8}
         />
-        <p className="text-xs text-muted-foreground">{t('signupPasswordHint')}</p>
+        {/* The rule replaces the hint while it is broken, so the reason sits where the hint was. */}
+        {errorFor('password') ?? (
+          <p id="signup-password-hint" className="text-xs text-muted-foreground">{t('signupPasswordHint')}</p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -243,45 +263,68 @@ export function AuthFormSignup({
         <DatePicker
           id="signup-dob"
           value={dob}
-          onChange={setDob}
+          onChange={(value) => {
+            setDob(value);
+            clearFieldError('dob');
+          }}
           disabled={isLoading || blocked}
           min={minAllowedDobValue()}
           max={maxAllowedDobValue()}
           placeholder={t('signupDobPlaceholder')}
           className="h-11"
-          aria-describedby="signup-dob-hint"
-          aria-invalid={dobInvalid}
+          aria-describedby={invalid('dob') ? 'signup-dob-error signup-dob-hint' : 'signup-dob-hint'}
+          aria-invalid={invalid('dob')}
         />
         <p id="signup-dob-hint" className="text-xs text-muted-foreground">
           {t('signupDobHint', { minAge: MIN_SIGNUP_AGE_YEARS })}
         </p>
+        {errorFor('dob')}
       </div>
 
-      <div className="flex items-start gap-2.5">
-        <Checkbox
-          id="signup-accept"
-          checked={accepted}
-          onCheckedChange={(next) => setAccepted(next === true)}
-          disabled={isLoading || blocked}
-          className="mt-0.5"
-        />
-        <Label htmlFor="signup-accept" className="text-xs font-normal leading-relaxed text-muted-foreground">
-          <Trans
-            i18nKey="signupAcceptLabel"
-            ns="auth"
-            values={{ minAge: MIN_SIGNUP_AGE_YEARS }}
-            components={{
-              terms: <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-foreground" />,
-              privacy: <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-foreground" />,
+      <div className="space-y-2">
+        <div className="flex items-start gap-2.5">
+          <Checkbox
+            id="signup-accept"
+            checked={accepted}
+            onCheckedChange={(next) => {
+              setAccepted(next === true);
+              clearFieldError('accept');
             }}
+            disabled={isLoading || blocked}
+            className="mt-0.5"
+            aria-invalid={invalid('accept')}
+            aria-describedby={invalid('accept') ? 'signup-accept-error' : undefined}
           />
-        </Label>
+          <Label htmlFor="signup-accept" className="text-xs font-normal leading-relaxed text-muted-foreground">
+            <Trans
+              i18nKey="signupAcceptLabel"
+              ns="auth"
+              values={{ minAge: MIN_SIGNUP_AGE_YEARS }}
+              components={{
+                terms: <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-foreground" />,
+                privacy: <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-foreground" />,
+              }}
+            />
+          </Label>
+        </div>
+        {errorFor('accept')}
       </div>
+
+      {/* Server outcomes, and the age gate on a browser that already failed
+          it: the form is closed, so it says so rather than greying out. */}
+      {(error || (blocked && !fieldError)) && (
+        <div
+          className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          {error || t('signupDobBlocked')}
+        </div>
+      )}
 
       <Button
         type="submit"
         className={cn('h-11 w-full rounded-lg', submitClassName)}
-        disabled={isLoading || !isValid || blocked}
+        disabled={isLoading || blocked}
       >
         {isLoading ? (
           <>
