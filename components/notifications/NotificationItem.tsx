@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import type { Notification } from '@/lib/notifications/notifications-db';
 import { useQuery } from '@tanstack/react-query';
+import { useClock } from '@/hooks/use-clock';
 import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
 import { ECONOMIC_KINDS, fmtReleaseTimeWithZone, type EconomicEvent } from '@/lib/market-data/economic-kinds';
 
@@ -257,6 +258,7 @@ interface NotificationItemProps {
  * stored message (ET times) shows until the day's events load.
  */
 function EconomicNotification({ notification, date, onRead }: { notification: Notification; date: string; onRead: () => void }) {
+  useClock(); // re-render when the time zone or 12/24h clock changes
   // Same picks the cron used to decide this user gets notified.
   const { prefs } = useCalendarPrefs();
   const { data: events } = useQuery<EconomicEvent[]>({

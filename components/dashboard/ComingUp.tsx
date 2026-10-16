@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, CalendarClock, Landmark } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
+import { useClock } from '@/hooks/use-clock';
 import { useHomePortfolio } from '@/hooks/use-home-portfolio';
 import { useAuth } from '@/hooks/use-auth';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
@@ -47,6 +48,7 @@ async function getRows<T>(path: string): Promise<T[]> {
  */
 export function ComingUp() {
   const { t } = useTranslation('discover');
+  useClock(); // re-render when the time zone or 12/24h clock changes
   const { t: tTools } = useTranslation('tools');
   const locale = useIntlLocale();
   const { symbols, isLoading: homeLoading } = useHomePortfolio();

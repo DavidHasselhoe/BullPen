@@ -226,5 +226,9 @@
   "homeWidget_daily_brief": "Daily Brief",
   "homeWidget_coming_up": "Coming up for your stocks",
   "homeWidget_your_news": "News about your stocks",
-  "homeWidget_pick_up": "Pick up where you left off"
+  "homeWidget_pick_up": "Pick up where you left off",
+  "timeZone": "Time zone",
+  "timeZoneAuto": "Automatic: {{zone}}",
+  "timeZoneMarket": "US market time (New York)",
+  "timeZoneDescription": "Times of day in charts and the economic calendar show in this zone. Automatic follows your device."
 }

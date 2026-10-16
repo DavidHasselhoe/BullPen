@@ -9,6 +9,8 @@
  * bury them (DESIGN.md: terminal density is the anti-reference).
  */
 
+import { fmtClockTime, getClock } from '@/lib/dates/clock';
+
 export type EconomicKind = 'jobs' | 'cpi' | 'ppi' | 'jolts' | 'claims' | 'fomc' | 'gdp' | 'pce';
 
 export interface EconomicKindMeta {
@@ -66,27 +68,24 @@ export interface EconomicEvent {
   has_projections: boolean;
 }
 
-/** "8:30 AM" style time in `timeZone` (the viewer's own when omitted). */
+/** "8:30 AM" / "14:30" on the user's clock (lib/dates/clock), or in `timeZone` when given. */
 export function fmtReleaseTime(iso: string, timeZone?: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone,
-  });
+  const clock = getClock();
+  return fmtClockTime(new Date(iso), timeZone ? { ...clock, timeZone } : clock);
 }
 
-/** Chip-sized: "4 PM" on the hour, "2:30 PM" otherwise, in the viewer's zone. */
+/** Chip-sized: "4 PM" on the hour, "2:30 PM" otherwise (24-hour clocks keep "16:00"). */
 export function fmtReleaseTimeShort(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('en-US', d.getMinutes() === 0 ? { hour: 'numeric' } : { hour: 'numeric', minute: '2-digit' });
+  const time = fmtReleaseTime(iso);
+  return getClock().hour12 ? time.replace(':00 ', ' ') : time;
 }
 
-/** The same instant as the viewer sees it, with their zone name ("2:30 PM GMT+2"). */
+/** The same instant on the user's clock, with the zone's name ("2:30 PM GMT+2"). */
 export function fmtReleaseTimeWithZone(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+  return fmtClockTime(new Date(iso), getClock(), { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
 }
 
-/** True when the viewer is not on US Eastern time, so an "ET" reference helps. */
+/** True when the user's clock is not on US Eastern time, so an "ET" reference helps. */
 export function viewerIsOutsideET(iso: string): boolean {
   return fmtReleaseTime(iso) !== fmtReleaseTime(iso, 'America/New_York');
 }

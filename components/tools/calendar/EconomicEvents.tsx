@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Briefcase, ShoppingCart, Factory, ClipboardList, Users, Landmark, BarChart3, Wallet, ArrowUpRight, GraduationCap, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useClock } from '@/hooks/use-clock';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import {
@@ -39,6 +40,7 @@ const CHIP = 'border border-border/70 bg-foreground/[0.04] text-foreground';
 /** Grid-cell chip. Month cells get icon + short label, week cells add the viewer's local time. */
 export function EconomicChip({ event, compact }: { event: EconomicEvent; compact?: boolean }) {
   const { t } = useTranslation('tools');
+  useClock(); // re-render when the time zone or 12/24h clock changes
   const Icon = ECONOMIC_ICONS[event.kind];
   return (
     // Wraps instead of truncating: a week column is ~110px, and "JOLTS 4 PM" cut to "J…" says nothing.
@@ -57,6 +59,7 @@ export function EconomicChip({ event, compact }: { event: EconomicEvent; compact
 /** Full row for the day dialog and the list view: what it is, when, why it matters, where to read or watch it. */
 export function EconomicDetailRow({ event }: { event: EconomicEvent }) {
   const { t } = useTranslation('tools');
+  useClock(); // re-render when the time zone or 12/24h clock changes
   const meta = ECONOMIC_KINDS[event.kind];
   const Icon = ECONOMIC_ICONS[event.kind];
   const outsideET = viewerIsOutsideET(event.release_at);

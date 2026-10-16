@@ -12,6 +12,7 @@ import { LineChart, Line } from '@/components/charts/line-chart';
 import { Area } from '@/components/charts/area';
 import { SessionLine, SessionDividers, SessionLegend, SESSION_MUTED_STROKE, type SessionKind, type SessionRegion } from '@/components/charts/session-line';
 import { intradayAxis, lastTradingDays } from '@/lib/charts/intraday-axis';
+import { useClock } from '@/hooks/use-clock';
 import { BarChart } from '@/components/charts/bar-chart';
 import { Bar } from '@/components/charts/bar';
 import { ReferenceLine } from '@/components/charts/reference-line';
@@ -460,9 +461,10 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
     s === 'pre' ? t('chartSessionPre') : s === 'post' ? t('chartSessionPost') : t('chartSessionRegular');
 
   // 1D: a label and faint rule where each session starts. 5D: one per day.
+  const clock = useClock();
   const intraday = useMemo(
-    () => (range === '1D' || range === '1W' ? intradayAxis(chartDisplayData, range) : null),
-    [chartDisplayData, range],
+    () => (range === '1D' || range === '1W' ? intradayAxis(chartDisplayData, range, clock) : null),
+    [chartDisplayData, range, clock],
   );
 
   // Volume axis tops out at 3x a busy market-hours bar (75th percentile): the

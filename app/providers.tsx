@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { LanguageProvider } from '@/components/i18n/LanguageProvider';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { SignupGateProvider } from '@/components/auth/SignupGate';
+import { ClockSync } from '@/components/i18n/ClockSync';
 import type { CreateI18nOptions } from '@/lib/i18n/config';
 
 interface ProvidersProps {
@@ -32,6 +33,7 @@ export function Providers({ children, locale, resources }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LanguageProvider locale={locale} resources={resources}>
+          <ClockSync />
           <SignupGateProvider>{children}</SignupGateProvider>
         </LanguageProvider>
       </AuthProvider>

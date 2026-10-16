@@ -226,5 +226,9 @@
   "homeWidget_your_news": "News zu deinen Aktien",
   "homeWidget_pick_up": "Dort weitermachen, wo du aufgehört hast",
   "sectionPlanLabel": "Plan",
-  "notifGroupAcademy": "Akademie"
+  "notifGroupAcademy": "Akademie",
+  "timeZone": "Zeitzone",
+  "timeZoneAuto": "Automatisch: {{zone}}",
+  "timeZoneMarket": "US-Börsenzeit (New York)",
+  "timeZoneDescription": "Uhrzeiten in Charts und im Wirtschaftskalender werden in dieser Zeitzone angezeigt. Automatisch folgt deinem Gerät."
 }

@@ -226,5 +226,9 @@
   "homeWidget_daily_brief": "デイリーブリーフ",
   "homeWidget_coming_up": "あなたの保有銘柄の今後",
   "homeWidget_your_news": "あなたの保有銘柄に関するニュース",
-  "homeWidget_pick_up": "続きから始める"
+  "homeWidget_pick_up": "続きから始める",
+  "timeZone": "タイムゾーン",
+  "timeZoneAuto": "自動: {{zone}}",
+  "timeZoneMarket": "米国市場時間（ニューヨーク）",
+  "timeZoneDescription": "チャートと経済カレンダーの時刻はこのタイムゾーンで表示されます。自動ではお使いのデバイスに従います。"
 }

@@ -226,5 +226,9 @@
   "homeWidget_coming_up": "Próximos eventos de tus acciones",
   "homeWidget_your_news": "Noticias sobre tus acciones",
   "homeWidget_pick_up": "Continúa donde lo dejaste",
-  "sectionPlanLabel": "Plan"
+  "sectionPlanLabel": "Plan",
+  "timeZone": "Zona horaria",
+  "timeZoneAuto": "Automática: {{zone}}",
+  "timeZoneMarket": "Hora del mercado de EE. UU. (Nueva York)",
+  "timeZoneDescription": "Las horas de los gráficos y del calendario económico se muestran en esta zona. Automática sigue la de tu dispositivo."
 }

@@ -5,6 +5,8 @@
  * index fraction is also a pixel fraction, which is what the spacing check uses.
  */
 
+import { fmtClockTime, type Clock } from '@/lib/dates/clock';
+
 type Session = 'pre' | 'regular' | 'post';
 interface Pt { time: number; session?: Session }
 
@@ -13,10 +15,9 @@ export interface AxisTick { date: Date; label: string }
 const etDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
 const etWeekday = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short' });
 const etDayOfMonth = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', day: 'numeric' });
-// Times on the viewer's own clock, like the tooltip: the open reads 3:30 PM in
-// Oslo and 9:30 AM in New York. Days (5D) stay the US trading day, which is the
-// local date the session opens on everywhere east of Hawaii.
-const localTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+// Times are on the user's clock (lib/dates/clock), like the tooltip: the open
+// reads 15:30 in Oslo and 9:30 AM in New York. Days (5D) stay the US trading
+// day, which is the local date the session opens on everywhere east of Hawaii.
 
 /** ET calendar day, "2026-10-16". */
 export const etDayKey = (unixSeconds: number) => etDay.format(unixSeconds * 1000);
@@ -41,10 +42,11 @@ function spaced(indices: number[], n: number, minGap = 0.07): number[] {
   return out;
 }
 
-export function intradayAxis(points: Pt[], range: '1D' | '1W'): { ticks: AxisTick[]; dividers: Date[] } {
+export function intradayAxis(points: Pt[], range: '1D' | '1W', clock: Clock): { ticks: AxisTick[]; dividers: Date[] } {
   const n = points.length;
   if (n < 2) return { ticks: [], dividers: [] };
   const at = (i: number) => new Date(points[i].time * 1000);
+  const time = (i: number) => fmtClockTime(at(i), clock);
 
   if (range === '1W') {
     const starts: number[] = [];
@@ -65,11 +67,11 @@ export function intradayAxis(points: Pt[], range: '1D' | '1W'): { ticks: AxisTic
   const starts = points.flatMap((p, i) => (p.session && p.session !== points[i - 1]?.session ? [i] : []));
   if (starts.length >= 2) {
     return {
-      ticks: spaced(starts, n).map((i) => ({ date: at(i), label: localTime.format(at(i)) })),
+      ticks: spaced(starts, n).map((i) => ({ date: at(i), label: time(i) })),
       dividers: starts.slice(1).map(at),
     };
   }
   // One session (extended hours hidden) or no sessions (crypto): evenly spaced times.
   const even = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(f * (n - 1)));
-  return { ticks: even.map((i) => ({ date: at(i), label: localTime.format(at(i)) })), dividers: [] };
+  return { ticks: even.map((i) => ({ date: at(i), label: time(i) })), dividers: [] };
 }

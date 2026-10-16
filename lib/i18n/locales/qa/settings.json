@@ -226,5 +226,9 @@
   "homeWidget_daily_brief": "«Daaiily Briieef»",
   "homeWidget_coming_up": "«Coomiing uup foor yoouur stoocks»",
   "homeWidget_your_news": "«Neews aaboouut yoouur stoocks»",
-  "homeWidget_pick_up": "«Piick uup wheeree yoouu leeft ooff»"
+  "homeWidget_pick_up": "«Piick uup wheeree yoouu leeft ooff»",
+  "timeZone": "«Tiimee zoonee»",
+  "timeZoneAuto": "«AAuutoomaatiic»: {{zone}}",
+  "timeZoneMarket": "«UUS maarkeet tiimee (Neew Yoork)»",
+  "timeZoneDescription": "«Tiimees oof daay iin chaarts aand thee eecoonoomiic caaleendaar shoow iin thiis zoonee. AAuutoomaatiic foolloows yoouur deeviicee.»"
 }

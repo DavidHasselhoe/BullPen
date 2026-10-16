@@ -6,6 +6,10 @@
  */
 import assert from 'node:assert';
 import { etDayKey, intradayAxis, lastTradingDays } from '../lib/charts/intraday-axis';
+import { languageUsesHour12, resolveTimeZone, type Clock } from '../lib/dates/clock';
+
+const OSLO: Clock = { timeZone: 'Europe/Oslo', hour12: false };
+const NEW_YORK: Clock = { timeZone: 'America/New_York', hour12: true };
 
 type S = 'pre' | 'regular' | 'post';
 const et = (date: string, hhmm: string) => Math.floor(new Date(`${date}T${hhmm}:00-04:00`).getTime() / 1000);
@@ -27,29 +31,39 @@ const week = ['2026-10-09', '2026-10-12', '2026-10-13', '2026-10-14', '2026-10-1
 const five = lastTradingDays(week, 5);
 assert.deepEqual([...new Set(five.map((p) => etDayKey(p.time)))], ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16']);
 
-const w = intradayAxis(five, '1W');
+const w = intradayAxis(five, '1W', OSLO);
 assert.deepEqual(w.ticks.map((t) => t.label), ['Mon 12', 'Tue 13', 'Wed 14', 'Thu 15', 'Fri 16']);
 assert.equal(w.dividers.length, 4);
 
 // 1D: ticks at pre-market, the open, after hours; rules at the open and the close.
-const d = intradayAxis(day('2026-10-16'), '1D');
+const d = intradayAxis(day('2026-10-16'), '1D', OSLO);
 assert.equal(d.ticks.length, 3);
 assert.deepEqual(d.dividers.map((x) => x.getTime() / 1000), [et('2026-10-16', '09:30'), et('2026-10-16', '16:00')]);
-// On the viewer's clock: 3:30 PM in Oslo, 9:30 AM in New York.
-const openLocal = new Date(et('2026-10-16', '09:30') * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-assert.equal(d.ticks[1].label, openLocal);
-console.log(`  1D open labelled ${openLocal} (${Intl.DateTimeFormat().resolvedOptions().timeZone})`);
+// On the user's clock: the open is 15:30 in Oslo (24h), 9:30 AM in New York (12h).
+assert.equal(d.ticks[1].label, '15:30');
+assert.equal(intradayAxis(day('2026-10-16'), '1D', NEW_YORK).ticks[1].label, '9:30 AM');
 
 // Data that starts one bar before the open: the open's label would print on top of
 // pre-market's, so the rule stays but the second label goes.
 const late = day('2026-10-16').filter((p) => p.time >= et('2026-10-16', '09:25') && p.time < et('2026-10-16', '16:00'));
-const e = intradayAxis(late, '1D');
+const e = intradayAxis(late, '1D', OSLO);
 assert.equal(e.ticks.length, 1);
 assert.equal(e.dividers.length, 1);
 
 // Regular session only (extended hours hidden): five evenly spaced time labels, no rules.
-const reg = intradayAxis(day('2026-10-16').filter((p) => p.session === 'regular'), '1D');
+const reg = intradayAxis(day('2026-10-16').filter((p) => p.session === 'regular'), '1D', OSLO);
 assert.equal(reg.ticks.length, 5);
 assert.equal(reg.dividers.length, 0);
+
+// The clock the labels come from (lib/dates/clock): 12/24h by app language,
+// and the time zone setting.
+assert.equal(languageUsesHour12('en'), true);
+assert.equal(languageUsesHour12('qa'), true);
+for (const lang of ['no', 'de', 'fr', 'es', 'ja', 'zh']) assert.equal(languageUsesHour12(lang), false, lang);
+assert.equal(resolveTimeZone(undefined), undefined);
+assert.equal(resolveTimeZone('auto'), undefined);
+assert.equal(resolveTimeZone('market'), 'America/New_York');
+assert.equal(resolveTimeZone('Asia/Tokyo'), 'Asia/Tokyo');
+assert.equal(resolveTimeZone('Mars/Olympus'), undefined);
 
 console.log('intraday-axis: all checks passed');

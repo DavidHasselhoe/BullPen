@@ -226,5 +226,9 @@
   "homeWidget_daily_brief": "日报",
   "homeWidget_coming_up": "您的股票即将发生",
   "homeWidget_your_news": "您的股票新闻",
-  "homeWidget_pick_up": "从上次停下的地方继续"
+  "homeWidget_pick_up": "从上次停下的地方继续",
+  "timeZone": "时区",
+  "timeZoneAuto": "自动：{{zone}}",
+  "timeZoneMarket": "美国市场时间（纽约）",
+  "timeZoneDescription": "图表和经济日历中的时间将按此时区显示。自动将跟随你的设备。"
 }

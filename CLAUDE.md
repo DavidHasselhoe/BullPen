@@ -218,6 +218,10 @@ Two separate Anthropic-powered features (not using Vercel AI SDK):
 
 `hooks/use-experience-level.ts` reads `user.experience_level` from Supabase auth context. `isSimplified = level === 'beginner'`. Components use this to switch between plain-language labels and full financial terminology. `TermTooltip` in `components/ui/TermTooltip.tsx` renders the adaptive label + glossary tooltip on every metric.
 
+### Display clock (time zone + 12/24h)
+
+`lib/dates/clock.ts` decides how a time of day is shown: the zone from `users.settings.time_zone` (`'auto'` = the device, `'market'` = New York, or an IANA zone, set in Settings > Preferences) and 12- vs 24-hour from the app language. `ClockSync` (mounted in `app/providers.tsx`) keeps it current; `useClock()` subscribes. Format new time-of-day UI with `fmtClockTime` / `fmtClockDate` rather than a fresh `toLocaleTimeString`. Two things must never go through it: exchange logic (session and trading-day bucketing pins `America/New_York` itself) and date-only values (a daily bar, an earnings date), which a zone shift moves to another day. Charts, 1D/5D axes and economic release times use it; the rest of the app still formats on the device clock, which is identical under `'auto'`.
+
 ### Auth
 
 `components/auth/AuthProvider.tsx` owns auth state via `supabase.auth.onAuthStateChange()`. It provides `{ user: AuthUser | null, isLoading, isAuthenticated, refresh() }`. Use `useAuth()` (from `hooks/use-auth.ts`) in page components. Server-side auth uses `createServerClient()` (service role, no session refresh).

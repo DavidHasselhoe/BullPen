@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { SUPPORTED_LANGUAGES, isSupportedLanguage } from '@/lib/i18n/language-names';
@@ -19,6 +19,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -79,6 +80,14 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const VALID_THEMES: ThemeValue[] = ['dark', 'light'];
 
+/** "Europe/Oslo (GMT+2)": the zone's name with its current offset from UTC. */
+function zoneLabel(tz: string): string {
+  const offset = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' })
+    .formatToParts(new Date())
+    .find((p) => p.type === 'timeZoneName')?.value;
+  return `${tz.replace(/_/g, ' ')}${offset ? ` (${offset})` : ''}`;
+}
+
 function minimalStockPick(ticker: string): SearchResult {
   const t = ticker.toUpperCase();
   return { ticker: t, name: t, cik: '', has_data: false };
@@ -112,6 +121,13 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [defaultCurrency, setDefaultCurrency] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemeValue>('dark');
   const [language, setLanguage] = useState<string | null>(null);
+  // 'auto' (the device's zone), 'market' (New York) or an IANA zone. See lib/dates/clock.ts.
+  const [timeZonePref, setTimeZonePref] = useState<string>('auto');
+  const deviceTimeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
+  const timeZoneOptions = useMemo(
+    () => Intl.supportedValuesOf('timeZone').map((tz) => ({ tz, label: zoneLabel(tz) })),
+    [],
+  );
   const [defaultHomepage, setDefaultHomepage] = useState<string>('/dashboard');
   /** Selected company when default homepage is a stock detail page (search UI) */
   const [homepageStockPick, setHomepageStockPick] = useState<SearchResult | null>(null);
@@ -228,6 +244,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       const settings = user.settings as Record<string, unknown>;
       setDefaultCurrency(settings.default_currency || null);
       setLanguage(settings.language || null);
+      setTimeZonePref(typeof settings.time_zone === 'string' ? settings.time_zone : 'auto');
 
       // Sanitize theme — ignore any old animated themes (aurora, particles, etc.)
       const oldTheme = settings.theme || 'dark';
@@ -303,6 +320,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         default_currency: defaultCurrency,
         theme,
         language,
+        time_zone: timeZonePref,
         default_homepage: defaultHomepage,
         show_welcome_text: showWelcomeText,
         round_numbers: roundNumbers,
@@ -367,7 +385,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultCurrency, theme, language, defaultHomepage, showWelcomeText, roundNumbers, notifications, experienceLevel, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden]);
+  }, [defaultCurrency, theme, language, timeZonePref, defaultHomepage, showWelcomeText, roundNumbers, notifications, experienceLevel, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden]);
 
   const handleDeleteAccount = async (): Promise<string | null> => {
     if (!user) return t('errorDeleteAccount');
@@ -698,6 +716,24 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">{t('languageDescription')}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="time-zone">{t('timeZone')}</Label>
+                  <Select value={timeZonePref} onValueChange={setTimeZonePref}>
+                    <SelectTrigger id="time-zone" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-80">
+                      <SelectItem value="auto">{t('timeZoneAuto', { zone: zoneLabel(deviceTimeZone) })}</SelectItem>
+                      <SelectItem value="market">{t('timeZoneMarket')}</SelectItem>
+                      <SelectSeparator />
+                      {timeZoneOptions.map(({ tz, label }) => (
+                        <SelectItem key={tz} value={tz}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">{t('timeZoneDescription')}</p>
                 </div>
 
                 <div className="space-y-2">

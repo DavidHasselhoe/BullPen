@@ -226,5 +226,9 @@
   "homeWidget_coming_up": "Kommende hendelser for dine aksjer",
   "homeWidget_your_news": "Nyheter om dine aksjer",
   "homeWidget_pick_up": "Fortsett der du slapp",
-  "notifGroupAcademy": "Akademi"
+  "notifGroupAcademy": "Akademi",
+  "timeZone": "Tidssone",
+  "timeZoneAuto": "Automatisk: {{zone}}",
+  "timeZoneMarket": "Amerikansk børstid (New York)",
+  "timeZoneDescription": "Klokkeslett i diagrammer og den økonomiske kalenderen vises i denne tidssonen. Automatisk følger enheten din."
 }

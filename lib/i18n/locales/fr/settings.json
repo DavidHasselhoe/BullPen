@@ -226,5 +226,9 @@
   "homeWidget_daily_brief": "Résumé quotidien",
   "homeWidget_coming_up": "À venir pour vos actions",
   "homeWidget_your_news": "Actualités sur vos actions",
-  "homeWidget_pick_up": "Continuer où vous avez arrêté"
+  "homeWidget_pick_up": "Continuer où vous avez arrêté",
+  "timeZone": "Fuseau horaire",
+  "timeZoneAuto": "Automatique : {{zone}}",
+  "timeZoneMarket": "Heure du marché américain (New York)",
+  "timeZoneDescription": "Les heures des graphiques et du calendrier économique s’affichent dans ce fuseau. Automatique suit votre appareil."
 }

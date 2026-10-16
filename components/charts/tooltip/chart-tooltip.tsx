@@ -14,7 +14,9 @@ import {
   useChart,
   useChartStable,
 } from "../chart-context";
-import { shortTimeFmt, weekdayDateFmt, weekdayDateWithYearFmt } from "../chart-formatters";
+import { weekdayDateFmt, weekdayDateWithYearFmt } from "../chart-formatters";
+import { fmtClockDate, fmtClockTime } from "@/lib/dates/clock";
+import { useClock } from "@/hooks/use-clock";
 import type { IndicatorFadeEdges } from "../indicator-fade";
 import { DateTicker } from "./date-ticker";
 import { TooltipBox } from "./tooltip-box";
@@ -153,8 +155,20 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     barXAccessor,
     bandWidth,
     squareSnap,
+    data,
   } = useChart();
   const { tooltipSpring } = useChartConfig();
+  const clock = useClock();
+  // The pill under the crosshair names the same day as the title. dateLabels
+  // are the device's dates; with a chosen zone an evening bar can belong to
+  // another day there, so intraday pills are relabelled on the user's clock.
+  const pillLabels = useMemo(
+    () =>
+      showTime && clock.timeZone && !barXAccessor
+        ? data.map((d) => fmtClockDate(xAccessor(d), { month: "short", day: "numeric" }, clock))
+        : dateLabels,
+    [showTime, clock, barXAccessor, data, xAccessor, dateLabels],
+  );
 
   const isHorizontal = orientation === "horizontal";
   const discreteInteraction = dateLabels.length > 60;
@@ -267,9 +281,15 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     }
     // For line/area charts, use the date
     const date = xAccessor(tooltipData.point);
-    const dateStr = (showYear ? weekdayDateWithYearFmt : weekdayDateFmt).format(date);
-    return showTime ? `${dateStr} · ${shortTimeFmt.format(date)}` : dateStr;
-  }, [tooltipData, barXAccessor, xAccessor, showTime, showYear]);
+    if (showTime) {
+      // An intraday moment: date and time both on the user's clock (zone
+      // setting, 12/24h from the language). Date-only points below stay as
+      // they were, since a zone would move a daily bar to another day.
+      const dateStr = fmtClockDate(date, { weekday: "short", month: "short", day: "numeric", ...(showYear ? { year: "numeric" } : {}) }, clock);
+      return `${dateStr} · ${fmtClockTime(date, clock)}`;
+    }
+    return (showYear ? weekdayDateWithYearFmt : weekdayDateFmt).format(date);
+  }, [tooltipData, barXAccessor, xAccessor, showTime, showYear, clock]);
 
   const tooltipContent = (
     <>
@@ -364,7 +384,7 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
         currentIndex={tooltipData?.index ?? 0}
         discreteInteraction={discreteInteraction}
         enabled={showDatePill && !isHorizontal}
-        labels={dateLabels}
+        labels={pillLabels}
         springConfig={springConfig}
         visible={visible}
         xWithMargin={xWithMargin}
