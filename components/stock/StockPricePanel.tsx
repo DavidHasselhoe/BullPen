@@ -876,10 +876,6 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
             <ChartTooltip
               showTime={isIntradayRange}
               showYear={YEAR_DISAMBIGUATED_RANGES.has(range)}
-              // Session charts read New York time, like their axis; the date
-              // pill would show the viewer's own date, so the title carries it.
-              timeZone={sessionRegions.length > 0 ? 'America/New_York' : undefined}
-              showDatePill={sessionRegions.length === 0}
               rows={(point) => {
                 // 1D and 5D only: which session the hovered bar traded in, as on Home.
                 const session = sessionRegions.length > 0 ? (point.session as SessionKind | undefined) : undefined;

@@ -35,6 +35,10 @@ assert.equal(w.dividers.length, 4);
 const d = intradayAxis(day('2026-10-16'), '1D');
 assert.equal(d.ticks.length, 3);
 assert.deepEqual(d.dividers.map((x) => x.getTime() / 1000), [et('2026-10-16', '09:30'), et('2026-10-16', '16:00')]);
+// On the viewer's clock: 3:30 PM in Oslo, 9:30 AM in New York.
+const openLocal = new Date(et('2026-10-16', '09:30') * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+assert.equal(d.ticks[1].label, openLocal);
+console.log(`  1D open labelled ${openLocal} (${Intl.DateTimeFormat().resolvedOptions().timeZone})`);
 
 // Data that starts one bar before the open: the open's label would print on top of
 // pre-market's, so the rule stays but the second label goes.

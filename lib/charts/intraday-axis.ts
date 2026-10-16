@@ -13,9 +13,9 @@ export interface AxisTick { date: Date; label: string }
 const etDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
 const etWeekday = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short' });
 const etDayOfMonth = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', day: 'numeric' });
-// Session ticks read the exchange clock, as the 1D/5D tooltip does: the open is
-// 9:30 AM, not 3:30 PM, for a viewer in Oslo. Session-less series (crypto) stay local.
-const etTime = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true });
+// Times on the viewer's own clock, like the tooltip: the open reads 3:30 PM in
+// Oslo and 9:30 AM in New York. Days (5D) stay the US trading day, which is the
+// local date the session opens on everywhere east of Hawaii.
 const localTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
 /** ET calendar day, "2026-10-16". */
@@ -65,12 +65,11 @@ export function intradayAxis(points: Pt[], range: '1D' | '1W'): { ticks: AxisTic
   const starts = points.flatMap((p, i) => (p.session && p.session !== points[i - 1]?.session ? [i] : []));
   if (starts.length >= 2) {
     return {
-      ticks: spaced(starts, n).map((i) => ({ date: at(i), label: etTime.format(at(i)) })),
+      ticks: spaced(starts, n).map((i) => ({ date: at(i), label: localTime.format(at(i)) })),
       dividers: starts.slice(1).map(at),
     };
   }
   // One session (extended hours hidden) or no sessions (crypto): evenly spaced times.
-  const fmt = points.some((p) => p.session) ? etTime : localTime;
   const even = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(f * (n - 1)));
-  return { ticks: even.map((i) => ({ date: at(i), label: fmt.format(at(i)) })), dividers: [] };
+  return { ticks: even.map((i) => ({ date: at(i), label: localTime.format(at(i)) })), dividers: [] };
 }

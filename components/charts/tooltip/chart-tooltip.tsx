@@ -40,13 +40,6 @@ export interface ChartTooltipProps {
    * Default: false
    */
   showYear?: boolean;
-  /**
-   * Format the title in this IANA zone, with its abbreviation ("6:25 PM EDT"),
-   * instead of the viewer's. For a series split by exchange sessions: the
-   * sessions follow the exchange clock, and a local title put an evening
-   * after-hours bar under the next day for anyone east of New York.
-   */
-  timeZone?: string;
   /** Whether to show the vertical crosshair line. Default: true */
   showCrosshair?: boolean;
   /** Whether to show dots on the lines. Default: true */
@@ -121,7 +114,6 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
   showDatePill = true,
   showTime = false,
   showYear = false,
-  timeZone,
   showCrosshair = true,
   showDots = true,
   dotVariant = "dot",
@@ -275,18 +267,9 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     }
     // For line/area charts, use the date
     const date = xAccessor(tooltipData.point);
-    if (timeZone) {
-      const dateStr = new Intl.DateTimeFormat("en-US", {
-        weekday: "short", month: "short", day: "numeric", ...(showYear ? { year: "numeric" } : {}), timeZone,
-      }).format(date);
-      const timeStr = new Intl.DateTimeFormat("en-US", {
-        hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short", timeZone,
-      }).format(date);
-      return showTime ? `${dateStr} · ${timeStr}` : dateStr;
-    }
     const dateStr = (showYear ? weekdayDateWithYearFmt : weekdayDateFmt).format(date);
     return showTime ? `${dateStr} · ${shortTimeFmt.format(date)}` : dateStr;
-  }, [tooltipData, barXAccessor, xAccessor, showTime, showYear, timeZone]);
+  }, [tooltipData, barXAccessor, xAccessor, showTime, showYear]);
 
   const tooltipContent = (
     <>
