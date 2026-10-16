@@ -7,7 +7,7 @@ export const FAQ_ITEMS = [
     // hand — this answer previously claimed "20 AI chat messages a month"
     // against a real limit of 15 per day.
     q: 'Is BullPen actually free?',
-    a: `Yes. The Free plan stays free forever: live quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day. Pro unlocks the Daily Brief, "Why Today?" explanations, unlimited AI, and automatic brokerage sync.`,
+    a: `Yes. The Free plan stays free forever: quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day, plus an explanation for your biggest mover each day. Pro adds the Daily Brief, "Why Today?" for any stock, unlimited AI, and automatic brokerage sync.`,
   },
   {
     q: 'Do I have to connect a brokerage?',
@@ -15,7 +15,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'How fresh is the market data?',
-    a: "Real-time via TwelveData's WebSocket stream for stocks and ETFs. Crypto and commodity prices update every few seconds. We also surface extended-hours pricing for premarket and after-hours.",
+    a: 'S&P 500 stocks update in real time. Other stocks and ETFs can be up to 15 minutes behind. Crypto and commodity prices update every few seconds, and pre-market and after-hours prices are included.',
   },
   {
     // Deliberately no tool count: the previous "15-tool agent" was accurate when

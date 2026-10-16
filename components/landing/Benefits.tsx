@@ -92,7 +92,8 @@ export function Benefits() {
                   className="benefit-shot"
                   style={{ '--shot-width': b.shotWidth ? `${b.shotWidth}px` : undefined, '--shot-shift': b.shotShift ? `${b.shotShift}px` : undefined } as CSSProperties}
                 >
-                  <Image src={`/screenshots/${b.file}`} alt={b.alt} width={b.width} height={b.height} sizes="(max-width: 900px) 92vw, 1075px" />
+                  {/* Phones show the capture at 1.15x its desktop width (landing-styles.css), wider than the screen: "92vw" fetched a small file and stretched it. */}
+                  <Image src={`/screenshots/${b.file}`} alt={b.alt} width={b.width} height={b.height} sizes="(max-width: 900px) 1240px, 1075px" />
                 </div>
               </article>
             </Reveal>

@@ -46,18 +46,19 @@ const PLANS: Plan[] = [
     cta: 'Start for free',
     ctaStyle: 'ghost',
     features: [
-      'Live US quotes, charts & indicators',
+      'US stock quotes, charts & indicators',
       'Unlimited stock, ETF & crypto pages',
       'Full stock screener & company compare',
       `${QUOTAS.chat.count} AI chat messages a day`,
       `${QUOTAS.deep_dive.count} AI Deep Dive & ${QUOTAS.portfolio_builder.count} Portfolio Builder runs a month`,
       `Holdings tracking, ${FREE_WATCHLISTS} watchlists, alerts on ${FREE_ALERT_STOCKS} stocks`,
       'Academy beginner courses & daily challenge',
+      '“Why Today?” for your biggest mover each day',
     ],
   },
   {
     name: 'Pro',
-    tagline: 'For active investors who want the edge.',
+    tagline: 'For when BullPen becomes your daily check-in.',
     monthly: PRICING.proMonthly,
     annualMo: PRICING.proAnnualPerMonth,
     cta: `Start free ${PRICING.trialDays}-day trial`,
@@ -66,7 +67,7 @@ const PLANS: Plan[] = [
     features: [
       'Everything in Free',
       'Daily Brief: an AI market recap every morning',
-      '“Why Today?” move explanations',
+      '“Why Today?” for any stock, any day',
       'Unlimited AI chat, Portfolio Builder & Checkup',
       "Bull's Weekly Pick, with the full thesis",
       'Automatic brokerage sync (SnapTrade)',
@@ -206,7 +207,8 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                         boxShadow: '0 8px 20px -6px var(--accent-glow)',
                       }}
                     >
-                      Most popular
+                      {/* Was "Most popular": not true (almost every account is free). */}
+                      {PRICING.trialDays} days free
                     </div>
                   )}
 

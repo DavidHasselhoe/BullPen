@@ -1164,7 +1164,10 @@
 @media (max-width: 900px) {
   .bullpen-landing-root .benefits-grid { grid-template-columns: 1fr; }
   .bullpen-landing-root .benefit-shot { max-height: 240px; }
-  .bullpen-landing-root .benefit-shot img { width: calc(var(--shot-width, 860px) * 0.8); margin-left: calc(var(--shot-shift, 0px) * 0.8); }
+  /* Larger than desktop, not smaller: at 0.8 a 1x capture's 11px text came
+     out near 7px on a phone. At 1.15 the card crops to the capture's top
+     left corner at about the app's own size, one readable moment. */
+  .bullpen-landing-root .benefit-shot img { width: calc(var(--shot-width, 860px) * 1.15); margin-left: calc(var(--shot-shift, 0px) * 1.15); }
 }
 @media (prefers-reduced-motion: reduce) {
   .bullpen-landing-root .benefit-card,

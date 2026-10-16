@@ -148,8 +148,8 @@ export function Footer() {
         >
           <span>© 2026 Hasselø BullPen. All rights reserved.</span>
           <span style={{ maxWidth: 600, textAlign: 'right' }}>
-            BullPen is not a registered investment advisor. Content is informational only and not financial advice. Markets data delayed up
-            to 15s on Free plan.
+            BullPen is not a registered investment advisor. Content is informational only and not financial advice. Prices are
+            real-time for S&amp;P 500 stocks; others can be up to 15 minutes delayed.
           </span>
         </div>
       </div>

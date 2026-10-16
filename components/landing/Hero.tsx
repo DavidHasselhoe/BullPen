@@ -6,6 +6,7 @@ import { Reveal } from './Atoms';
 import { Icon } from './Icon';
 import { buildPath } from './buildPath';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { WHY_TODAY_MIN_MOVE } from '@/lib/ai/why-today-shared';
 
 interface Props {
   onSignUp: () => void;
@@ -18,6 +19,8 @@ interface LiveQuote {
   pct: string;
   up: boolean;
   raw: number;
+  /** Percent change as a number, for the Why Today threshold. */
+  dp: number;
 }
 
 function fmtPrice(c: number): string {
@@ -48,6 +51,7 @@ function useLiveQuotes() {
             pct: `${q.dp >= 0 ? '+' : ''}${q.dp.toFixed(2)}%`,
             up: q.dp >= 0,
             raw: q.c,
+            dp: q.dp,
           };
         }
         if (Object.keys(next).length > 0) setQuotes(next);
@@ -180,9 +184,18 @@ function HeroChartPanel({ liveQuotes }: { liveQuotes: Record<string, LiveQuote> 
   // by 2.3x", "Morgan Stanley raised price target"), which read as reporting
   // rather than illustration. Real data mixed with fabricated specifics is
   // worse than either alone, so the specifics are gone.
-  const whyHeadline = nvda
-    ? `NVDA is ${nvda.up ? 'up' : 'down'} ${nvda.pct.replace(/^[+-]/, '')} today.`
-    : 'NVDA moved today.';
+  // Below the app's own threshold this demoed explaining a non-move ("NVDA is
+  // down 0.01% today") that Why Today never explains. Calm days say so, and
+  // what it does instead.
+  const calm = nvda != null && Math.abs(nvda.dp) < WHY_TODAY_MIN_MOVE;
+  const whyHeadline = !nvda
+    ? 'NVDA moved today.'
+    : calm
+      ? 'NVDA is barely moving today.'
+      : `NVDA is ${nvda.up ? 'up' : 'down'} ${nvda.pct.replace(/^[+-]/, '')} today.`;
+  const whyBody = calm
+    ? `When a stock you follow moves ${WHY_TODAY_MIN_MOVE}% or more, BullPen reads the day's news and filings and explains why in plain English, with every source linked.`
+    : "Ask once and BullPen reads the day's news, filings and analyst moves, then explains the move in plain English with every source linked.";
 
   return (
     <div
@@ -285,8 +298,7 @@ function HeroChartPanel({ liveQuotes }: { liveQuotes: Record<string, LiveQuote> 
           {whyHeadline}
         </div>
         <div style={{ fontSize: 11, color: 'var(--fg-dim)', lineHeight: 1.6 }}>
-          Ask once and BullPen reads the day&apos;s news, filings and analyst moves, then explains the
-          move in plain English with every source linked.
+          {whyBody}
         </div>
       </div>
       <div className="hero-why-connector" />
