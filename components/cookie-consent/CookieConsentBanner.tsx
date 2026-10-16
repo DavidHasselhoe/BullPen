@@ -40,8 +40,10 @@ export function CookieConsentBanner() {
           // left-4/bottom-5, matching NotificationToast's positioning (see
           // components/notifications/NotificationToast.tsx) — keeps clear of
           // the bottom-right "Ask Bull" toggle, with the same mobile tab-bar
-          // clearance offset.
-          className="fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+1.25rem+env(safe-area-inset-bottom))] z-50 w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg"
+          // clearance offset. On phones it is full width, so it cannot keep
+          // clear: z-[51] puts it over the toggle (same z-50, later in the DOM,
+          // so it painted "Ask Bull" across Accept all) until a choice is made.
+          className="fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+1.25rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg"
         >
           <p className="text-sm text-foreground">
             {'🍪'} Cookies that keep you logged in, plus optional analytics if you accept.{' '}

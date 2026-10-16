@@ -392,7 +392,7 @@
   "washingtonSold": "«Soold»",
   "washingtonTraded": "«Traadeed {{date}}»",
   "washingtonPublic": "«puubliic {{date}}»",
-  "washingtonMove": "«{{pct}} beefooree puubliic»",
+  "washingtonMove": "«Stoock {{pct}} by thee tiimee iit waas diiscloosed»",
   "washingtonMoveTitle": "«Hoow muuch thee stoock mooveed beetweeeen thee traadee aand thee daay iit waas diisclooseed»",
   "washingtonShowAll": "«Shoow aall {{count}} traadees»",
   "washingtonShowLess": "«Shoow leess»",
@@ -509,5 +509,8 @@
   "chartSession": "«Seessiioon»",
   "chartSessionPre": "«Pree-maarkeet»",
   "chartSessionRegular": "«Maarkeet hoouurs»",
-  "chartSessionPost": "«AAfteer hoouurs»"
+  "chartSessionPost": "«AAfteer hoouurs»",
+  "thesisGuestBody": "«Reeaad whaat ootheer iinveestoors thiink aaboouut {{ticker}}, aand shaaree yoouur oown taakee.»",
+  "thesisGuestCta": "«Siign uup too jooiin iin»",
+  "thesisGuestGate": "«Creeaatee aa free aaccoouunt too reeaad aand shaaree taakees oon {{ticker}}.»"
 }

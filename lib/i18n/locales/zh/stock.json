@@ -392,7 +392,7 @@
   "washingtonSold": "卖出",
   "washingtonTraded": "于{{date}}交易",
   "washingtonPublic": "公开于{{date}}",
-  "washingtonMove": "公开前{{pct}}",
+  "washingtonMove": "至公开时股价{{pct}}",
   "washingtonMoveTitle": "交易和披露日期之间股票的涨跌幅",
   "washingtonShowAll": "显示全部 {{count}} 笔交易",
   "washingtonShowLess": "显示较少",
@@ -534,5 +534,8 @@
   "chartSession": "交易时段",
   "chartSessionPre": "盘前",
   "chartSessionRegular": "常规交易时段",
-  "chartSessionPost": "盘后"
+  "chartSessionPost": "盘后",
+  "thesisGuestBody": "看看其他投资者如何看待 {{ticker}}，也分享你自己的观点。",
+  "thesisGuestCta": "注册参与讨论",
+  "thesisGuestGate": "创建免费账户，即可阅读和分享关于 {{ticker}} 的观点。"
 }

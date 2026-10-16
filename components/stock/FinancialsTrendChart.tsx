@@ -4,8 +4,10 @@
  * FinancialsTrendChart — the chart-first lead for the Financials section.
  *
  * One paired-bar chart per statement tab, answering a single question
- * (captioned) with up to 5 periods, newest → oldest — matching the
- * period columns in the detailed table directly below it, left to right.
+ * (captioned) with up to 5 periods, plotted oldest to newest so time runs
+ * left to right. It used to follow the table's newest-first columns, which
+ * made growth read as decline (Micron tripling revenue drew bars shrinking
+ * left to right) and ran against the table's own Trend bars.
  */
 
 import { useEffect, useState } from 'react';
@@ -31,7 +33,7 @@ type ColorMode =
   | 'ownVsOwe';
 
 interface FinancialsTrendChartProps {
-  /** Newest → oldest, matching the table below. */
+  /** Newest to oldest, as the table lists them; drawn reversed. */
   points: TrendPoint[];
   primaryLabel: string;
   secondaryLabel?: string;
@@ -63,6 +65,8 @@ export function FinancialsTrendChart({
   }, []);
 
   if (!hasData) return null;
+
+  const chronological = [...points].reverse();
 
   const primaryColor = colorMode === 'ownVsOwe' ? EMERALD : 'var(--foreground)';
   const primaryOpacity = colorMode === 'ownVsOwe' ? 0.7 : 0.45;
@@ -96,7 +100,7 @@ export function FinancialsTrendChart({
       </div>
       <div className="h-[180px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={points} margin={{ top: 4, right: 0, bottom: 0, left: 0 }} barGap={2}>
+          <BarChart data={chronological} margin={{ top: 4, right: 0, bottom: 0, left: 0 }} barGap={2}>
             <XAxis
               dataKey="label"
               tickLine={false}
@@ -133,7 +137,7 @@ export function FinancialsTrendChart({
                 activeBar={{ fillOpacity: 1 }}
                 {...animation}
               >
-                {points.map((p, i) => {
+                {chronological.map((p, i) => {
                   const fill =
                     colorMode === 'signSecondary'
                       ? (p.secondary ?? 0) < 0 ? RED : EMERALD

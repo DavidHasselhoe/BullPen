@@ -182,16 +182,19 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
                   key={i}
                   className="flex items-center justify-between gap-4 py-2 px-3 rounded-md hover:bg-muted/40 transition-colors"
                 >
-                  <div className="min-w-0 shrink-0">
-                    <span className="text-sm font-medium">{formatDate(e.date)}</span>
+                  {/* Wraps on phones: it was shrink-0, so date + quarter +
+                      "Awaiting filing" pushed the result off the card. */}
+                  <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="whitespace-nowrap text-sm font-medium">{formatDate(e.date)}</span>
                     {e.quarter && e.year && (
-                      <span className="text-xs text-muted-foreground ml-2">{fiscalLabel(t, { quarter: e.quarter, year: e.year, offCalendar: e.offCalendar })}</span>
+                      <span className="text-xs text-muted-foreground">{fiscalLabel(t, { quarter: e.quarter, year: e.year, offCalendar: e.offCalendar })}</span>
                     )}
                     {e.unconfirmed && (
-                      <Badge variant="outline" className="text-xs ml-2">{t('earningsUnconfirmed')}</Badge>
+                      <Badge variant="outline" className="text-xs">{t('earningsUnconfirmed')}</Badge>
                     )}
                   </div>
                   <DeltaBar
+                    className="shrink-0"
                     estimate={e.epsEstimate}
                     actual={e.epsActual}
                     srLabel={

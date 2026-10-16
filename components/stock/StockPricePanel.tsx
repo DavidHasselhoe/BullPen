@@ -703,8 +703,10 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
               to its widest row and ran past the screen edge. */}
           <div className="flex w-full flex-col items-start gap-2 pt-1 sm:w-auto sm:shrink-0 sm:items-end">
 
-            {/* Period performance — shown above the tabs for any range */}
-            {hasChart && (
+            {/* Period performance, for every range but 1D: there the price
+                block on the left already says today's move, and this printed
+                the same figure again right under it on phones. */}
+            {hasChart && range !== '1D' && (
               <div className={cn('tabular-nums sm:text-right', perfIsPos ? 'text-emerald-400' : 'text-red-400')}>
                 <span className="text-sm font-semibold">
                   {perfIsPos ? '+' : ''}{fmtPrice(perfDiff)}

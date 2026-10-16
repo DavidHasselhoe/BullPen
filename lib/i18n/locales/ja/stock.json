@@ -392,7 +392,7 @@
   "washingtonSold": "売却",
   "washingtonTraded": "{{date}}に取引",
   "washingtonPublic": "{{date}}に公開",
-  "washingtonMove": "公開前に{{pct}}",
+  "washingtonMove": "公表までに株価{{pct}}",
   "washingtonMoveTitle": "取引と公開日の間に株価がどれだけ動いたか",
   "washingtonShowAll": "すべての {{count}} 件の取引を表示",
   "washingtonShowLess": "表示を減らす",
@@ -534,5 +534,8 @@
   "chartSession": "セッション",
   "chartSessionPre": "プリマーケット",
   "chartSessionRegular": "取引時間",
-  "chartSessionPost": "アフターアワーズ"
+  "chartSessionPost": "アフターアワーズ",
+  "thesisGuestBody": "{{ticker}}について他の投資家の考えを読み、自分の見解も共有できます。",
+  "thesisGuestCta": "登録して参加する",
+  "thesisGuestGate": "無料アカウントを作成すると、{{ticker}}についての見解を読んだり共有したりできます。"
 }

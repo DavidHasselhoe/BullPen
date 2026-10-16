@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
+import { useSignupGate } from '@/components/auth/SignupGate';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -354,6 +355,7 @@ const FILTER_LABEL_KEYS = {
 export function ThesisSection({ symbol }: { symbol: string }) {
   const { t } = useTranslation('stock');
   const { isAuthenticated } = useAuth();
+  const openGate = useSignupGate();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<'all' | 'bull' | 'bear' | 'neutral'>('all');
   const [formContent, setFormContent] = useState('');
@@ -414,7 +416,28 @@ export function ThesisSection({ symbol }: { symbol: string }) {
   };
 
   const hasOwnThesis = (theses ?? []).some((t) => t.is_own);
-  if (!isAuthenticated) return null;
+  // Guests got null here inside the stock page's card: an empty box, which the
+  // sidebar's Community link jumped to. Say what is here and how to join.
+  if (!isAuthenticated) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <MessageCircle className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-base font-semibold text-foreground">{t('thesisSectionTitle')}</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">{t('thesisGuestBody', { ticker: symbol.toUpperCase() })}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            openGate({ source: 'thesis', context: t('thesisGuestGate', { ticker: symbol.toUpperCase() }) })
+          }
+        >
+          {t('thesisGuestCta')}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

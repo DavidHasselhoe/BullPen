@@ -204,6 +204,21 @@ export function InsiderTransactionsCard({ ticker }: { ticker: string }) {
             </Link>
           )}
         </CardContent>
+        {/* What Pro adds, as shapes (components/billing/PreviewShapes.tsx's
+            rule: no made-up names or amounts). The card was one bare row. */}
+        {!isPro && (
+          <CardContent className="space-y-3 pb-5 pt-0" aria-hidden>
+            {[0.42, 0.34, 0.5].map((w, i) => (
+              <div key={i} className="flex items-center justify-between gap-4 border-t border-border/40 pt-3">
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="h-2.5 rounded-full bg-muted-foreground/20" style={{ width: `${w * 100}%` }} />
+                  <div className="h-2 w-24 rounded-full bg-muted-foreground/10" />
+                </div>
+                <div className="h-2.5 w-16 shrink-0 rounded-full bg-muted-foreground/20" />
+              </div>
+            ))}
+          </CardContent>
+        )}
       </Card>
     );
   }

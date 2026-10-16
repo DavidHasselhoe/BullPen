@@ -385,7 +385,7 @@
   "washingtonSold": "Solgt",
   "washingtonTraded": "Handlet {{date}}",
   "washingtonPublic": "offentliggjort {{date}}",
-  "washingtonMove": "{{pct}} før offentliggjøring",
+  "washingtonMove": "Aksjen {{pct}} før handelen ble offentlig",
   "washingtonMoveTitle": "Hvor mye aksjen beveget seg mellom handelen og dagen den ble offentliggjort",
   "washingtonShowAll": "Vis alle {{count}} handler",
   "washingtonShowLess": "Vis mindre",
@@ -534,5 +534,8 @@
   "chartSession": "Sesjon",
   "chartSessionPre": "Før markedsåpning",
   "chartSessionRegular": "Ordinær handel",
-  "chartSessionPost": "Etter markedsstengning"
+  "chartSessionPost": "Etter markedsstengning",
+  "thesisGuestBody": "Les hva andre investorer mener om {{ticker}}, og del ditt eget syn.",
+  "thesisGuestCta": "Registrer deg for å være med",
+  "thesisGuestGate": "Opprett en gratis konto for å lese og dele meninger om {{ticker}}."
 }

@@ -50,6 +50,8 @@ import type { SectorBenchmarks } from '@/lib/finance/sector-benchmarks';
 import { selectMetrics, type ValuationMetric } from '@/lib/finance/metric-selector';
 import { showCard, headlineMetric, foldsForwardPe, noteFor } from '@/components/stock/statistics-grid-metrics';
 import type { CompanyStatistics } from '@/lib/twelvedata/twelvedata-client';
+import { fmtClockDate, fmtClockTime, type Clock } from '@/lib/dates/clock';
+import { useClock } from '@/hooks/use-clock';
 import type { SignalValue } from '@/lib/finance/health-score';
 
 interface StatsResponse {
@@ -84,15 +86,15 @@ function fmt(value: number | null | undefined, type: 'currency' | 'ratio' | 'per
   }
 }
 
-function formatFetchedAt(iso: string | null | undefined, t: TFunction): string | null {
+/** On the display clock (lib/dates/clock): the user's zone, 12/24h and language. */
+function formatFetchedAt(iso: string | null | undefined, t: TFunction, clock: Clock): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  if (isToday) return t('statisticsGridUpdatedToday', { time });
-  return t('statisticsGridUpdatedOn', { date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), time });
+  const day = (x: Date) => fmtClockDate(x, { year: 'numeric', month: '2-digit', day: '2-digit' }, clock);
+  const time = fmtClockTime(d, clock);
+  if (day(d) === day(new Date())) return t('statisticsGridUpdatedToday', { time });
+  return t('statisticsGridUpdatedOn', { date: fmtClockDate(d, { month: 'short', day: 'numeric' }, clock), time });
 }
 
 /** "How big is this company?" — a 5-band log scale with a marker. */
@@ -160,6 +162,7 @@ export function StatisticsGrid({
   forceFull?: boolean;
 }) {
   const { t } = useTranslation('stock');
+  const clock = useClock();
   const { isSimplified: rawSimplified } = useExperienceLevel();
   // Local, non-destructive "show everything" toggle. Expanding the full stats
   // must NOT rewrite the user's saved experience level (it used to silently call
@@ -238,7 +241,7 @@ export function StatisticsGrid({
   if (!data.stats) return null;
 
   const s = data.stats;
-  const updatedLabel = formatFetchedAt(data.fetchedAt, t);
+  const updatedLabel = formatFetchedAt(data.fetchedAt, t, clock);
   const sig = (key: string): SignalValue | undefined => (signals ? signals[key] : undefined);
 
   const hasRange = s.week52High != null && s.week52Low != null && s.week52High > s.week52Low;

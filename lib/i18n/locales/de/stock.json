@@ -384,7 +384,7 @@
   "washingtonSold": "Verkauft",
   "washingtonTraded": "Gehandelt {{date}}",
   "washingtonPublic": "öffentlich {{date}}",
-  "washingtonMove": "{{pct}} vor Offenlegung",
+  "washingtonMove": "Aktie {{pct}} bis zur Offenlegung",
   "washingtonMoveTitle": "Wie stark sich die Aktie zwischen dem Handel und dem Tag der Offenlegung bewegte",
   "washingtonShowAll": "Alle {{count}} Trades anzeigen",
   "washingtonShowLess": "Weniger anzeigen",
@@ -534,5 +534,8 @@
   "chartSession": "Sitzung",
   "chartSessionPre": "Vorbörslich",
   "chartSessionRegular": "Handelszeiten",
-  "chartSessionPost": "Nachbörslich"
+  "chartSessionPost": "Nachbörslich",
+  "thesisGuestBody": "Lies, was andere Anleger über {{ticker}} denken, und teile deine eigene Einschätzung.",
+  "thesisGuestCta": "Registrieren und mitmachen",
+  "thesisGuestGate": "Erstelle ein kostenloses Konto, um Einschätzungen zu {{ticker}} zu lesen und zu teilen."
 }

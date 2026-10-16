@@ -392,7 +392,7 @@
   "washingtonSold": "Sold",
   "washingtonTraded": "Traded {{date}}",
   "washingtonPublic": "public {{date}}",
-  "washingtonMove": "{{pct}} before public",
+  "washingtonMove": "Stock {{pct}} by the time it was disclosed",
   "washingtonMoveTitle": "How much the stock moved between the trade and the day it was disclosed",
   "washingtonShowAll": "Show all {{count}} trades",
   "washingtonShowLess": "Show less",
@@ -534,5 +534,8 @@
   "chartSession": "Session",
   "chartSessionPre": "Pre-market",
   "chartSessionRegular": "Market hours",
-  "chartSessionPost": "After hours"
+  "chartSessionPost": "After hours",
+  "thesisGuestBody": "Read what other investors think about {{ticker}}, and share your own take.",
+  "thesisGuestCta": "Sign up to join in",
+  "thesisGuestGate": "Create a free account to read and share takes on {{ticker}}."
 }
