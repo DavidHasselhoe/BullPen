@@ -67,6 +67,7 @@ function RadioRow<T extends string>({
           <button
             key={opt.value}
             type="button"
+            aria-pressed={value === opt.value}
             onClick={() => onChange(opt.value)}
             className={cn(
               'flex-1 rounded-md py-1.5 text-[11px] font-medium transition-all border',
@@ -118,17 +119,20 @@ export function ChartPrefsControls({
         <div className="space-y-3">
           <div>
             <p className="text-xs font-medium text-foreground mb-1.5">{t('chartPrefsDefaultTimeframe')}</p>
-            <div className="flex flex-wrap gap-1">
+            {/* Same segmented control as the chart's own period picker. */}
+            <div className="grid grid-cols-4 gap-0.5 rounded-md bg-muted/50 p-0.5">
               {RANGE_OPTIONS.map(({ value, label }) => (
                 <button
                   key={value}
                   type="button"
+                  aria-pressed={prefs.defaultRange === value}
                   onClick={() => setDefaultRange(value)}
                   className={cn(
-                    'rounded-md px-2 py-0.5 text-[11px] font-medium transition-all border',
+                    'h-8 rounded font-mono text-xs font-medium transition-colors sm:h-7',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     prefs.defaultRange === value
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-transparent text-muted-foreground border-border hover:text-foreground'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
                   {label}
@@ -144,9 +148,10 @@ export function ChartPrefsControls({
                 <button
                   key={value}
                   type="button"
+                  aria-pressed={prefs.defaultIndicators.includes(value)}
                   onClick={() => toggleIndicator(value)}
                   className={cn(
-                    'rounded-full px-2 py-0.5 text-[11px] font-medium transition-all border',
+                    'rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors border',
                     prefs.defaultIndicators.includes(value)
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-transparent text-muted-foreground border-border hover:text-foreground'

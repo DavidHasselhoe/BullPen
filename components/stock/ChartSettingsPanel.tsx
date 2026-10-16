@@ -18,8 +18,9 @@ export function ChartSettingsPanel({ prefs, setPref, reset, onRangeChange, onInd
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-muted/60 data-[state=open]:text-foreground sm:h-7 sm:w-7"
           title={t('chartSettingsTitle')}
+          aria-label={t('chartSettingsTitle')}
         >
           <Settings2 className="h-3.5 w-3.5" />
         </button>
@@ -29,7 +30,9 @@ export function ChartSettingsPanel({ prefs, setPref, reset, onRangeChange, onInd
         align="end"
         sideOffset={6}
         className="w-72 p-4 max-h-[80vh] overflow-y-auto"
+        aria-label={t('chartSettingsTitle')}
       >
+        <h2 className="mb-4 text-sm font-semibold text-foreground">{t('chartSettingsTitle')}</h2>
         <ChartPrefsControls
           prefs={prefs}
           setPref={setPref}

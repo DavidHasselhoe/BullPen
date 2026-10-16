@@ -50,7 +50,7 @@
   "chartPrefsDisplaySection": "显示",
   "chartPrefsEarningsEventsDescription": "在图表上标记季度财报日期",
   "chartPrefsEarningsEventsLabel": "财报事件",
-  "chartPrefsExtendedHoursDescription": "1天图表上的盘前和盘后价格数据",
+  "chartPrefsExtendedHoursDescription": "1天和5天图表上的盘前和盘后价格数据",
   "chartPrefsExtendedHoursLabel": "延长交易时段",
   "chartPrefsOverlaysSection": "叠加层",
   "chartPrefsPeriodOpenLineDescription": "所选时间段开始时的水平虚线参考线",
@@ -529,5 +529,10 @@
   "congressRecent_other": "其中 {{count}} 笔交易是在过去 12 个月内进行的。",
   "congressRecentNone": "过去 12 个月内没有进行任何交易。",
   "fundsPopularity": "我们覆盖的 S&P 500 和纳斯达克 100 指数股票中，只有 {{pct}} 被这些基金持有的数量更多。",
-  "fundsPopularityTop": "我们覆盖的 S&P 500 或纳斯达克 100 指数中，没有任何股票被这些基金持有的数量更多。"
+  "fundsPopularityTop": "我们覆盖的 S&P 500 或纳斯达克 100 指数中，没有任何股票被这些基金持有的数量更多。",
+  "chartPeriod": "图表周期",
+  "chartSession": "交易时段",
+  "chartSessionPre": "盘前",
+  "chartSessionRegular": "常规交易时段",
+  "chartSessionPost": "盘后"
 }

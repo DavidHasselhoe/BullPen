@@ -2,8 +2,7 @@
 
 import { localPoint } from "@visx/event";
 import { ParentSize } from "@visx/responsive";
-import { scaleBand, scaleLinear, scaleTime } from "@visx/scale";
-import { extent } from "d3-array";
+import { scaleBand, scaleLinear } from "@visx/scale";
 import type { Transition } from "framer-motion";
 import {
   type CSSProperties,
@@ -91,15 +90,16 @@ export interface BarChartProps {
   /** Inline container styles (e.g. a fixed height for a thin sub-panel like a volume strip) — merged over `aspectRatio`. */
   style?: CSSProperties;
   /**
-   * Position bars by real elapsed time instead of evenly-spaced categories.
-   * Use when this bar chart must line up with a companion `<LineChart>` over
-   * the same date range (e.g. a volume strip under a session-aware price
-   * chart) — the default band scale spaces every data point evenly and
-   * ignores real time gaps (like an overnight market close), so it silently
-   * drifts out of alignment with a continuous time-scaled chart above it.
-   * Default: false.
+   * Center each bar on the same x as the matching point of a companion
+   * `<LineChart>` over the same data (e.g. a volume strip under the price
+   * line). The line chart puts point i at i / (n - 1) of the width; the
+   * default band scale centers it half a band in from each edge instead,
+   * so the two drift apart toward the edges. Default: false.
    */
   timeScale?: boolean;
+  /** Top of the value axis. Taller bars clip at the top instead of
+   *  flattening every other bar (e.g. an opening-auction volume spike). */
+  valueCap?: number;
   /** Child components (Bar, Grid, ChartTooltip, etc.). Optional — omit for a
    * pure `status="loading"` skeleton. */
   children?: ReactNode;
@@ -184,6 +184,7 @@ interface ChartInnerProps {
   stackGap: number;
   squareSnap?: { squareGap: number; groupGap?: number; fit?: boolean };
   timeScale?: boolean;
+  valueCap?: number;
   children: ReactNode;
   containerRef: React.RefObject<HTMLDivElement | null>;
   onPhaseChange?: (phase: ChartPhase) => void;
@@ -215,6 +216,7 @@ const ChartCore = memo(function ChartCore({
   stackGap,
   squareSnap,
   timeScale = false,
+  valueCap,
   children,
   containerRef,
   onPhaseChange,
@@ -281,15 +283,21 @@ const ChartCore = memo(function ChartCore({
   // it (including the blank gaps a session-aware price line leaves for a
   // closed market). Only supported for vertical bars; `isHorizontal` charts
   // (e.g. horizontal bar rankings) have no time axis to align against.
+  // Same index-based positions as `TimeSeriesChartShell` (point i at
+  // i / (n - 1) of the width): the companion line chart squeezes out
+  // overnight and weekend gaps, so a real time scale here drifted further
+  // from the price line with every closed market it crossed.
   const timeXScale = useMemo(() => {
     if (!timeScale || isHorizontal || data.length === 0) {
       return null;
     }
-    const [minTime, maxTime] = extent(data, (d) => xAccessorDate(d).getTime());
-    if (minTime == null || maxTime == null) {
-      return null;
-    }
-    return scaleTime({ range: [0, innerWidth], domain: [minTime, maxTime] });
+    const indexByTime = new Map<number, number>();
+    data.forEach((d, i) => {
+      const t = xAccessorDate(d).getTime();
+      if (!indexByTime.has(t)) indexByTime.set(t, i);
+    });
+    const denom = Math.max(data.length - 1, 1);
+    return (date: Date) => ((indexByTime.get(date.getTime()) ?? 0) / denom) * innerWidth;
   }, [timeScale, isHorizontal, data, xAccessorDate, innerWidth]);
 
   const timeBandWidth = useMemo(() => {
@@ -352,18 +360,24 @@ const ChartCore = memo(function ChartCore({
     return max || 100;
   }, [data, lines, stacked]);
 
+  const capped = valueCap != null && valueCap > 0 && valueCap < maxValue;
+
   // Value scale (linear) - for the value axis
   const valueScale = useMemo(() => {
     const range = isHorizontal ? [0, innerWidth] : [innerHeight, 0];
+    if (capped) {
+      return scaleLinear({ range, domain: [0, valueCap], clamp: true });
+    }
     return scaleLinear({
       range,
       domain: [0, maxValue * 1.1],
       nice: true,
     });
-  }, [innerWidth, innerHeight, maxValue, isHorizontal]);
+  }, [innerWidth, innerHeight, maxValue, isHorizontal, capped, valueCap]);
 
   const yScales = useMemo(() => {
-    if (isHorizontal) {
+    // A cap is one shared axis: per-series domains below would ignore it.
+    if (isHorizontal || capped) {
       return wrapSingleYScale(valueScale);
     }
     return buildYScalesForLines({
@@ -383,7 +397,7 @@ const ChartCore = memo(function ChartCore({
         return [0, (max || 100) * 1.1];
       },
     });
-  }, [data, innerHeight, isHorizontal, lines, valueScale]);
+  }, [data, innerHeight, isHorizontal, capped, lines, valueScale]);
 
   const primaryYScale = getPrimaryYScale(yScales, valueScale);
 
@@ -778,6 +792,7 @@ export function BarChart({
   stackGap = 0,
   squareSnap,
   timeScale = false,
+  valueCap,
   children,
   onPhaseChange,
   status = "ready",
@@ -812,6 +827,7 @@ export function BarChart({
             stackGap={stackGap}
             status={status}
             timeScale={timeScale}
+            valueCap={valueCap}
             width={width}
             xDataKey={xDataKey}
           >

@@ -3,10 +3,15 @@
 import { curveMonotoneX } from "@visx/curve";
 import { AreaClosed, LinePath } from "@visx/shape";
 import { useId, useMemo, useRef } from "react";
-import { useChartStable, useYScale } from "./chart-context";
+import { chartCssVars, useChartStable, useYScale } from "./chart-context";
 import { usePathStrokeMetrics } from "./path-stroke-utils";
 
 export type SessionKind = "pre" | "regular" | "post";
+
+/** Pre/after-hours stroke and dashes, shared by the line, the legend and tooltips. */
+export const SESSION_MUTED_STROKE = "#6b7280";
+export const SESSION_DASH: Record<SessionKind, string | undefined> = { pre: "4,3", regular: undefined, post: "1,3" };
+const SESSION_ORDER: SessionKind[] = ["pre", "regular", "post"];
 
 export interface SessionRegion {
   /** First data index in this region (inclusive). */
@@ -76,10 +81,10 @@ export function SessionLine({
   strokeWidth = 2,
   regions,
   regularStroke,
-  mutedStroke = "#6b7280",
+  mutedStroke = SESSION_MUTED_STROKE,
   mutedOpacity = 0.55,
-  preDashArray = "4,3",
-  postDashArray = "1,3",
+  preDashArray = SESSION_DASH.pre,
+  postDashArray = SESSION_DASH.post,
   showArea = false,
   fillOpacity = 0.25,
   yAxisId,
@@ -217,5 +222,60 @@ export function SessionLine({
 }
 
 SessionLine.displayName = "SessionLine";
+
+/**
+ * Faint vertical rules where a session or trading day starts, the intraday
+ * counterpart of the horizontal grid. Static chrome: excluded from the
+ * reveal clip and drawn under the series (chart-child-passthrough).
+ */
+export function SessionDividers({ dates }: { dates: Date[] }) {
+  const { xScale, innerHeight } = useChartStable();
+  return (
+    <g aria-hidden className="pointer-events-none">
+      {dates.map((date) => {
+        const x = xScale(date) ?? 0;
+        return <line key={date.getTime()} stroke={chartCssVars.grid} strokeDasharray="4,4" x1={x} x2={x} y1={0} y2={innerHeight} />;
+      })}
+    </g>
+  );
+}
+
+SessionDividers.displayName = "SessionDividers";
+
+/** Says what the dashed and dotted parts of a SessionLine are. Render only when more than one session shows. */
+export function SessionLegend({
+  sessions,
+  regularStroke,
+  label,
+  className,
+}: {
+  sessions: SessionKind[];
+  regularStroke: string;
+  label: (session: SessionKind) => string;
+  className?: string;
+}) {
+  return (
+    <ul className={className ?? "flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"} aria-hidden>
+      {SESSION_ORDER.filter((s) => sessions.includes(s)).map((s) => (
+        <li key={s} className="inline-flex items-center gap-1.5">
+          <svg width="16" height="6" className="shrink-0">
+            <line
+              x1="0"
+              y1="3"
+              x2="16"
+              y2="3"
+              stroke={s === "regular" ? regularStroke : SESSION_MUTED_STROKE}
+              strokeOpacity={s === "regular" ? 1 : 0.8}
+              strokeWidth="1.5"
+              strokeDasharray={SESSION_DASH[s]}
+              strokeLinecap="round"
+            />
+          </svg>
+          {label(s)}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default SessionLine;

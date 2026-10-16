@@ -1,0 +1,76 @@
+/**
+ * X-axis structure for the stock chart's intraday ranges: where each trading
+ * day (5D) or session (1D) starts, as axis labels and faint divider rules.
+ * The chart's x positions are index-based (see TimeSeriesChartShell), so an
+ * index fraction is also a pixel fraction, which is what the spacing check uses.
+ */
+
+type Session = 'pre' | 'regular' | 'post';
+interface Pt { time: number; session?: Session }
+
+export interface AxisTick { date: Date; label: string }
+
+const etDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+const etWeekday = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short' });
+const etDayOfMonth = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', day: 'numeric' });
+// Session ticks read the exchange clock, as the 1D/5D tooltip does: the open is
+// 9:30 AM, not 3:30 PM, for a viewer in Oslo. Session-less series (crypto) stay local.
+const etTime = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true });
+const localTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+/** ET calendar day, "2026-10-16". */
+export const etDayKey = (unixSeconds: number) => etDay.format(unixSeconds * 1000);
+
+/**
+ * The last `n` trading days. 5D is fetched as 7 calendar days, which starts
+ * partway through a sixth session at the left edge.
+ */
+export function lastTradingDays<T extends Pt>(points: T[], n: number): T[] {
+  const keys = points.map((p) => etDayKey(p.time));
+  const keep = new Set([...new Set(keys)].slice(-n));
+  return points.filter((_, i) => keep.has(keys[i]));
+}
+
+/** Drops a tick that would sit within `minGap` (fraction of the width) of the previous one. */
+function spaced(indices: number[], n: number, minGap = 0.07): number[] {
+  const out: number[] = [];
+  for (const i of indices) {
+    if (out.length && (i - out[out.length - 1]) / Math.max(n - 1, 1) < minGap) continue;
+    out.push(i);
+  }
+  return out;
+}
+
+export function intradayAxis(points: Pt[], range: '1D' | '1W'): { ticks: AxisTick[]; dividers: Date[] } {
+  const n = points.length;
+  if (n < 2) return { ticks: [], dividers: [] };
+  const at = (i: number) => new Date(points[i].time * 1000);
+
+  if (range === '1W') {
+    const starts: number[] = [];
+    let prev = '';
+    points.forEach((p, i) => {
+      const key = etDayKey(p.time);
+      if (key !== prev) starts.push(i);
+      prev = key;
+    });
+    const label = (i: number) => `${etWeekday.format(at(i))} ${etDayOfMonth.format(at(i))}`;
+    return {
+      ticks: spaced(starts, n).map((i) => ({ date: at(i), label: label(i) })),
+      dividers: starts.slice(1).map(at),
+    };
+  }
+
+  // 1D: a tick where each session starts (pre-market, the open, after hours).
+  const starts = points.flatMap((p, i) => (p.session && p.session !== points[i - 1]?.session ? [i] : []));
+  if (starts.length >= 2) {
+    return {
+      ticks: spaced(starts, n).map((i) => ({ date: at(i), label: etTime.format(at(i)) })),
+      dividers: starts.slice(1).map(at),
+    };
+  }
+  // One session (extended hours hidden) or no sessions (crypto): evenly spaced times.
+  const fmt = points.some((p) => p.session) ? etTime : localTime;
+  const even = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(f * (n - 1)));
+  return { ticks: even.map((i) => ({ date: at(i), label: fmt.format(at(i)) })), dividers: [] };
+}

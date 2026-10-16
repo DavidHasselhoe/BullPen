@@ -50,7 +50,7 @@
   "chartPrefsDisplaySection": "Display",
   "chartPrefsEarningsEventsDescription": "Mark quarterly earnings dates directly on the chart",
   "chartPrefsEarningsEventsLabel": "Earnings events",
-  "chartPrefsExtendedHoursDescription": "Pre and after-market price data on the 1D chart",
+  "chartPrefsExtendedHoursDescription": "Pre and after-market price data on the 1D and 5D charts",
   "chartPrefsExtendedHoursLabel": "Extended hours",
   "chartPrefsOverlaysSection": "Overlays",
   "chartPrefsPeriodOpenLineDescription": "Horizontal dashed reference at the start of the selected period",
@@ -529,5 +529,10 @@
   "fundsOfPortfolio": "{{pct}} of the fund",
   "fundsProTitle": "See how big each position in {{name}} is",
   "fundsProBody": "Pro shows the value of each position, its share of the fund and how it changed from last quarter.",
-  "fundsAllFunds": "See every fund we track"
+  "fundsAllFunds": "See every fund we track",
+  "chartPeriod": "Chart period",
+  "chartSession": "Session",
+  "chartSessionPre": "Pre-market",
+  "chartSessionRegular": "Market hours",
+  "chartSessionPost": "After hours"
 }

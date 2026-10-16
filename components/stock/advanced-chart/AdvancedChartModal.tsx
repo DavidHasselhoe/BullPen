@@ -46,7 +46,9 @@ const INTRADAY_RANGES = new Set<ChartRange>(['1D', '1W', '1M']);
 // the whole visible window instead of starting partway in.
 const RANGE_META: Record<ChartRange, { daysBack: number; barsPerDay: number }> = {
   '1D':  { daysBack: 1,        barsPerDay: 390 },
-  '1W':  { daysBack: 7,        barsPerDay: 26 },
+  // 5min bars with extended hours are 192 a session; 96 averages in weekends
+  // so the warm-up still covers a long SMA without nearing outputsize 5000.
+  '1W':  { daysBack: 7,        barsPerDay: 96 },
   '1M':  { daysBack: 31,       barsPerDay: 7 },
   '6M':  { daysBack: 183,      barsPerDay: 1 },
   '1Y':  { daysBack: 365,      barsPerDay: 1 },

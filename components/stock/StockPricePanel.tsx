@@ -10,7 +10,8 @@ import { Maximize2, Sparkles, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line } from '@/components/charts/line-chart';
 import { Area } from '@/components/charts/area';
-import { SessionLine, type SessionRegion } from '@/components/charts/session-line';
+import { SessionLine, SessionDividers, SessionLegend, SESSION_MUTED_STROKE, type SessionKind, type SessionRegion } from '@/components/charts/session-line';
+import { intradayAxis, lastTradingDays } from '@/lib/charts/intraday-axis';
 import { BarChart } from '@/components/charts/bar-chart';
 import { Bar } from '@/components/charts/bar';
 import { ReferenceLine } from '@/components/charts/reference-line';
@@ -361,7 +362,8 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!candleData?.candles) return [];
     const { t, c, v, session } = candleData.candles;
-    const pts: ChartPoint[] = t.map((ts, i) => ({ time: ts, price: c[i], volume: v[i], session: session?.[i] }));
+    const all: ChartPoint[] = t.map((ts, i) => ({ time: ts, price: c[i], volume: v[i], session: session?.[i] }));
+    const pts = range === '1W' ? lastTradingDays(all, 5) : all;
 
     function applyIndicator(values: IndicatorValue[], key: Indicator) {
       const map = new Map<string, IndicatorValue>();
@@ -386,7 +388,7 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
     if (macdData?.length)   applyIndicator(macdData,   'macd');
 
     return pts;
-  }, [candleData, sma50Data, sma200Data, ema20Data, bbandsData, rsiData, macdData]);
+  }, [candleData, range, sma50Data, sma200Data, ema20Data, bbandsData, rsiData, macdData]);
 
   // Append live tick so the chart always ends at current price — 1D, and also
   // 1W/1M (5D/1M use intraday bars too, so without this the line stops at the
@@ -412,9 +414,9 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
     return [...chartData, { time: nowSec, price: live.price, volume: 0, session: liveSession }];
   }, [chartData, isIntradayRange, isLive, live]);
 
-  // Strip pre/post candles when extended hours are hidden.
+  // Strip pre/post candles when extended hours are hidden (1D and 5D).
   const chartDisplayData = useMemo(() => {
-    if (range !== '1D' || prefs.showExtendedHours) return displayData;
+    if (!hasSessionSplit(range) || prefs.showExtendedHours) return displayData;
     return displayData.some((d) => d.session !== undefined)
       ? displayData.filter((d) => !d.session || d.session === 'regular')
       : displayData;
@@ -452,6 +454,29 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
       }
     });
     return regions;
+  }, [chartDisplayData, range]);
+  const sessionsShown = useMemo(() => [...new Set(sessionRegions.map((r) => r.session))], [sessionRegions]);
+  const sessionLabel = (s: SessionKind) =>
+    s === 'pre' ? t('chartSessionPre') : s === 'post' ? t('chartSessionPost') : t('chartSessionRegular');
+
+  // 1D: a label and faint rule where each session starts. 5D: one per day.
+  const intraday = useMemo(
+    () => (range === '1D' || range === '1W' ? intradayAxis(chartDisplayData, range) : null),
+    [chartDisplayData, range],
+  );
+
+  // Volume axis tops out at 3x a busy market-hours bar (75th percentile): the
+  // opening and closing auctions trade 10-20x a normal bar and flattened the
+  // rest of the day to a sliver. The spikes clip at the top instead. Market
+  // hours only, since thin pre/after-hours bars are most of a 5D chart and
+  // dragged any all-bars percentile down into the noise. 1D and 5D only: on
+  // hourly and daily bars a spike is news (earnings), not an auction.
+  const volumeCap = useMemo(() => {
+    if (!hasSessionSplit(range)) return undefined;
+    const regular = chartDisplayData.filter((d) => !d.session || d.session === 'regular');
+    const vols = regular.map((d) => d.volume).filter((v) => v > 0).sort((a, b) => a - b);
+    if (vols.length < 20) return undefined;
+    return vols[Math.floor(vols.length * 0.75)] * 3;
   }, [chartDisplayData, range]);
 
 
@@ -690,22 +715,28 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
             )}
 
             {/* Range tabs + settings gear */}
-            <div className="flex flex-wrap items-center gap-0.5">
-              {RANGES.map((r) => (
-                <button
-                  key={r}
-                  onClick={() => { setRange(r); if (r === '1D') setActiveIndicators(new Set()); }}
-                  className={cn(
-                    'rounded-md px-2.5 py-1 text-xs font-medium transition-all max-sm:py-2.5',
-                    range === r
-                      ? 'text-foreground font-semibold'
-                      : 'text-muted-foreground hover:text-muted-foreground'
-                  )}
-                >
-                  {RANGE_DISPLAY[r]}
-                </button>
-              ))}
-              <div className="ml-1 pl-1 border-l border-border/30 flex items-center gap-0.5">
+            <div className="flex flex-wrap items-center gap-1">
+              {/* Same segmented control as Home's chart periods. */}
+              <div role="group" aria-label={t('chartPeriod')} className="flex flex-wrap gap-0.5 rounded-md bg-muted/50 p-0.5">
+                {RANGES.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    aria-pressed={range === r}
+                    onClick={() => { setRange(r); if (r === '1D') setActiveIndicators(new Set()); }}
+                    className={cn(
+                      'h-9 min-w-9 rounded px-2 font-mono text-xs font-medium transition-colors sm:h-7',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      range === r
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {RANGE_DISPLAY[r]}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-0.5">
                 <ChartSettingsPanel
                   prefs={prefs}
                   setPref={setPref}
@@ -721,7 +752,7 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
                     onClick={() => setAdvancedOpen(true)}
                     title={t('stockPricePanelAdvancedChartTitle')}
                     aria-label={t('stockPricePanelAdvancedChartAriaLabel')}
-                    className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                    className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-7 sm:w-7"
                   >
                     <Maximize2 className="h-3.5 w-3.5" />
                   </button>
@@ -796,6 +827,7 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
         {hasChart && (
           <LineChart data={bklitData} margin={{ top: 16, right: 28, bottom: 32, left: 28 }} style={{ height: 300 }} zeroBaseline={false}>
             <Grid horizontal />
+            {intraday && intraday.dividers.length > 0 && <SessionDividers dates={intraday.dividers} />}
             {sessionRegions.length > 0 ? (
               <SessionLine
                 dataKey="price"
@@ -844,8 +876,16 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
             <ChartTooltip
               showTime={isIntradayRange}
               showYear={YEAR_DISAMBIGUATED_RANGES.has(range)}
+              // Session charts read New York time, like their axis; the date
+              // pill would show the viewer's own date, so the title carries it.
+              timeZone={sessionRegions.length > 0 ? 'America/New_York' : undefined}
+              showDatePill={sessionRegions.length === 0}
               rows={(point) => {
-                const rows = [{ label: t('advancedChartPriceLabel'), value: fmtPrice(point.price as number), color: lineColor }];
+                // 1D and 5D only: which session the hovered bar traded in, as on Home.
+                const session = sessionRegions.length > 0 ? (point.session as SessionKind | undefined) : undefined;
+                const extended = session === 'pre' || session === 'post';
+                const rows = [{ label: t('advancedChartPriceLabel'), value: fmtPrice(point.price as number), color: extended ? SESSION_MUTED_STROKE : lineColor }];
+                if (session) rows.push({ label: t('chartSession'), value: sessionLabel(session), color: SESSION_MUTED_STROKE });
                 if ((point.volume as number) > 0) rows.push({ label: t('stockPricePanelTooltipVol'), value: fmtVol(point.volume as number), color: 'var(--chart-grid)' });
                 if (activeIndicators.has('sma50') && point.sma50 != null) rows.push({ label: 'SMA 50', value: fmtPrice(point.sma50 as number), color: INDICATOR_COLORS.sma50 });
                 if (activeIndicators.has('sma200') && point.sma200 != null) rows.push({ label: 'SMA 200', value: fmtPrice(point.sma200 as number), color: INDICATOR_COLORS.sma200 });
@@ -858,10 +898,20 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
                 return rows;
               }}
             />
-            <XAxis />
+            <XAxis ticks={intraday?.ticks} />
           </LineChart>
         )}
       </div>
+
+      {/* Says what the dashed and dotted parts are; only when the line has them. */}
+      {hasChart && sessionsShown.length > 1 && (
+        <SessionLegend
+          sessions={sessionsShown}
+          regularStroke={lineColor}
+          label={sessionLabel}
+          className="flex flex-wrap gap-x-4 gap-y-1 px-5 pb-3 text-xs text-muted-foreground"
+        />
+      )}
 
       {/* ── Volume bars (Bklit UI) ───────────────────────────────────────── */}
       {prefs.showVolume && hasChart && (
@@ -871,12 +921,29 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
               {t('stockPricePanelVolumeLabel')}
             </span>
           </div>
-          <BarChart data={bklitData} xDataKey="date" timeScale margin={{ top: 2, right: 28, bottom: 0, left: 28 }} style={{ height: 58 }}>
+          {/* Index-aligned under the price line (timeScale). Quieter than the
+              line it sits under, and extended-hours bars take the session's
+              muted grey, so the volume reads by session the way the line does. */}
+          <BarChart
+            data={bklitData}
+            xDataKey="date"
+            timeScale
+            valueCap={volumeCap}
+            // A few hundred bars are a pixel or two wide: gaps would leave hairlines.
+            barGap={bklitData.length > 300 ? 0 : 0.2}
+            margin={{ top: 4, right: 28, bottom: 0, left: 28 }}
+            style={{ height: 64 }}
+          >
             <Bar
               dataKey="volume"
-              fadedOpacity={0.5}
-              fillAccessor={(d) => (d.isUp ? '#22c55e' : '#ef4444')}
-              minBarHeight={2}
+              lineCap="butt"
+              fadedOpacity={0.35}
+              fillAccessor={(d) =>
+                d.session === 'pre' || d.session === 'post'
+                  ? `${SESSION_MUTED_STROKE}80`
+                  : d.isUp ? '#22c55eb3' : '#ef4444b3'
+              }
+              minBarHeight={1}
             />
           </BarChart>
         </div>

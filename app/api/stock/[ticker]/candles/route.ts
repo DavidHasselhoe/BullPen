@@ -25,7 +25,9 @@ interface RangeConfig {
 
 const RANGE_CONFIG: Record<Exclude<Range, 'YTD'>, RangeConfig> = {
   '1D':  { interval: '1min',  daysBack: 1 },
-  '1W':  { interval: '15min', daysBack: 7 },
+  // 5min, not 15min: still one credit, and five sessions of 15min bars drew
+  // each day's open and close as a few coarse steps.
+  '1W':  { interval: '5min',  daysBack: 7 },
   '1M':  { interval: '1h',    daysBack: 31 },
   '6M':  { interval: '1day',  daysBack: 183 },
   '1Y':  { interval: '1day',  daysBack: 365 },
@@ -76,7 +78,7 @@ async function handler(
     ? new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) // "YYYY-MM-DD"
     : undefined;
   const from = is1D ? now - 24 * 60 * 60 : now - (config.daysBack + padDays) * 24 * 60 * 60;
-  // 1W uses 15min bars — include pre/post market candles so today's extended-hours
+  // 1W uses 5min bars — include pre/post market candles so today's extended-hours
   // move shows as part of the line instead of stopping at the prior regular close.
   // 1M (1h bars) is deliberately excluded: TwelveData rejects prepost for any
   // interval over 30min ("Pre/post data for this exchange is available only up

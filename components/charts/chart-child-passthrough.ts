@@ -61,12 +61,14 @@ const CLIP_EXCLUDED_COMPONENT_NAMES = new Set([
   "LiveXAxis",
   "LiveYAxis",
   "MarketClosedBands",
+  "SessionDividers",
 ]);
 
 const UNDERLAY_COMPONENT_NAMES = new Set([
   "ReferenceArea",
   "BarColumnTrack",
   "MarketClosedBands",
+  "SessionDividers",
 ]);
 
 /** Markers render after the interaction overlay so they stay clickable. */

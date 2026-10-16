@@ -16,7 +16,7 @@ import { AskBullChips } from '@/components/dashboard/AskBullChips';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { WHY_TODAY_MIN_MOVE, whyBullets, type InlineWhy } from '@/lib/ai/why-today-shared';
 import { SERIES_RANGES, buildPortfolioSeries, type MarketSession, type SeriesRange } from '@/lib/dashboard/portfolio-series';
-import { SessionLine, type SessionRegion } from '@/components/charts/session-line';
+import { SessionLine, SessionLegend, SESSION_MUTED_STROKE as MUTED_STROKE, type SessionRegion } from '@/components/charts/session-line';
 import { trackEvent } from '@/lib/analytics/track';
 import type { BatchQuote } from '@/lib/market-data/quote-batcher';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
@@ -31,10 +31,6 @@ import type { UserHolding } from '@/lib/types/database';
 
 type CandleData = { t: number[]; c: number[]; session?: MarketSession[] };
 
-const SESSIONS: MarketSession[] = ['pre', 'regular', 'post'];
-/** The stock chart's pre/after-hours look (SessionLine's defaults), repeated for the legend swatches. */
-const MUTED_STROKE = '#6b7280';
-const DASH: Record<MarketSession, string | undefined> = { pre: '4,3', regular: undefined, post: '1,3' };
 
 /**
  * The portfolio line over the chosen period, from each position's candles
@@ -263,7 +259,7 @@ export function PortfolioHero() {
     });
     return regions.some((r) => r.session !== 'regular') ? regions : [];
   }, [series.points]);
-  const sessionsShown = SESSIONS.filter((s) => sessionRegions.some((r) => r.session === s));
+  const sessionsShown = [...new Set(sessionRegions.map((r) => r.session))];
   const whyFor = useInlineWhy(home.movers);
   const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
   const canWhy = useEntitlements().can('why_today');
@@ -416,26 +412,12 @@ export function PortfolioHero() {
               </div>
               {/* Says what the dashed and dotted parts are; only when the line has them. */}
               {sessionsShown.length > 1 && (
-                <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-hidden>
-                  {sessionsShown.map((s) => (
-                    <li key={s} className="inline-flex items-center gap-1.5">
-                      <svg width="16" height="6" className="shrink-0">
-                        <line
-                          x1="0"
-                          y1="3"
-                          x2="16"
-                          y2="3"
-                          stroke={s === 'regular' ? chartColor : MUTED_STROKE}
-                          strokeOpacity={s === 'regular' ? 1 : 0.8}
-                          strokeWidth="1.5"
-                          strokeDasharray={DASH[s]}
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      {sessionLabel(s)}
-                    </li>
-                  ))}
-                </ul>
+                <SessionLegend
+                  sessions={sessionsShown}
+                  regularStroke={chartColor}
+                  label={sessionLabel}
+                  className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"
+                />
               )}
             </div>
           </div>

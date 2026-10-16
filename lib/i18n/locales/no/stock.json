@@ -49,7 +49,7 @@
   "chartPrefsDisplaySection": "Visning",
   "chartPrefsEarningsEventsDescription": "Marker resultatdatoer direkte på diagrammet",
   "chartPrefsEarningsEventsLabel": "Resultatdatoer",
-  "chartPrefsExtendedHoursDescription": "Pris før og etter markedstid på 1D-diagrammet",
+  "chartPrefsExtendedHoursDescription": "Pris før og etter markedstid på 1D- og 5D-diagrammene",
   "chartPrefsExtendedHoursLabel": "Utvidet åpningstid",
   "chartPrefsOverlaysSection": "Overlegg",
   "chartPrefsPeriodOpenLineDescription": "Horisontalt stiplet referansepunkt ved starten av den valgte perioden",
@@ -529,5 +529,10 @@
   "congressRecent_other": "{{count}} av disse handlene ble gjort de siste 12 månedene.",
   "congressRecentNone": "Ingen av dem ble gjort de siste 12 månedene.",
   "fundsPopularity": "Bare {{pct}} av S&P 500- og Nasdaq-100-aksjene vi dekker eies av flere av disse fondene.",
-  "fundsPopularityTop": "Ingen S&P 500- eller Nasdaq-100-aksje vi dekker eies av flere av disse fondene."
+  "fundsPopularityTop": "Ingen S&P 500- eller Nasdaq-100-aksje vi dekker eies av flere av disse fondene.",
+  "chartPeriod": "Diagramperiode",
+  "chartSession": "Sesjon",
+  "chartSessionPre": "Før markedsåpning",
+  "chartSessionRegular": "Ordinær handel",
+  "chartSessionPost": "Etter markedsstengning"
 }

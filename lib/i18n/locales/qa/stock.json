@@ -50,7 +50,7 @@
   "chartPrefsDisplaySection": "«Diisplaay»",
   "chartPrefsEarningsEventsDescription": "«Maark quuaarteerly eeaarniings daatees diireectly oon thee chaart»",
   "chartPrefsEarningsEventsLabel": "«EEaarniings eeveents»",
-  "chartPrefsExtendedHoursDescription": "«Pree aand aafteer-maarkeet priicee daataa oon thee 1D chaart»",
+  "chartPrefsExtendedHoursDescription": "«Pree aand aafteer-maarkeet priicee daataa oon thee 1D aand 5D chaarts»",
   "chartPrefsExtendedHoursLabel": "«EExteendeed hoouurs»",
   "chartPrefsOverlaysSection": "«OOveerlaays»",
   "chartPrefsPeriodOpenLineDescription": "«Hooriizoontaal daasheed reefeereencee aat thee staart oof thee seeleecteed peeriiood»",
@@ -504,5 +504,10 @@
   "fundsOfPortfolio": "«{{pct}} oof thee fuund»",
   "fundsProTitle": "«Seeee hoow biig eeaach poosiitiioon iin {{name}} iis»",
   "fundsProBody": "«Proo shoows thee vaaluuee oof eeaach poosiitiioon, iits shaaree oof thee fuund aand hoow iit chaangeed froom laast quuaarteer.»",
-  "fundsAllFunds": "«Seeee eeveery fuund wee traack»"
+  "fundsAllFunds": "«Seeee eeveery fuund wee traack»",
+  "chartPeriod": "«Chaart peeriiood»",
+  "chartSession": "«Seessiioon»",
+  "chartSessionPre": "«Pree-maarkeet»",
+  "chartSessionRegular": "«Maarkeet hoouurs»",
+  "chartSessionPost": "«AAfteer hoouurs»"
 }

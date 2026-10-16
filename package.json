@@ -36,6 +36,7 @@
     "test-og-fonts": "tsx scripts/test-og-fonts.ts",
     "test-peer-quotable": "tsx scripts/test-peer-quotable.ts",
     "test-search-ranking": "tsx scripts/test-search-ranking.ts",
+    "test-intraday-axis": "tsx scripts/test-intraday-axis.ts",
     "test-extended-quote": "tsx scripts/test-extended-quote.ts",
     "test-fiscal-calendar": "tsx scripts/test-fiscal-calendar.ts",
     "test-why-today-staleness": "tsx scripts/test-why-today-staleness.ts",

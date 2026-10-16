@@ -50,7 +50,7 @@
   "chartPrefsDisplaySection": "Visualización",
   "chartPrefsEarningsEventsDescription": "Marca las fechas de ganancias trimestrales directamente en el gráfico",
   "chartPrefsEarningsEventsLabel": "Eventos de ganancias",
-  "chartPrefsExtendedHoursDescription": "Datos de precio previos y posteriores al mercado en el gráfico de 1D",
+  "chartPrefsExtendedHoursDescription": "Datos de precio previos y posteriores al mercado en los gráficos de 1D y 5D",
   "chartPrefsExtendedHoursLabel": "Horario extendido",
   "chartPrefsOverlaysSection": "Superposiciones",
   "chartPrefsPeriodOpenLineDescription": "Referencia horizontal punteada al inicio del período seleccionado",
@@ -529,5 +529,10 @@
   "congressRecent_other": "{{count}} de estas operaciones se realizaron en los últimos 12 meses.",
   "congressRecentNone": "Ninguna se realizó en los últimos 12 meses.",
   "fundsPopularity": "Solo el {{pct}} de los valores del S&P 500 y Nasdaq-100 que cubrimos son mantenidos por más de estos fondos.",
-  "fundsPopularityTop": "Ningún valor del S&P 500 o Nasdaq-100 que cubrimos es mantenido por más de estos fondos."
+  "fundsPopularityTop": "Ningún valor del S&P 500 o Nasdaq-100 que cubrimos es mantenido por más de estos fondos.",
+  "chartPeriod": "Período del gráfico",
+  "chartSession": "Sesión",
+  "chartSessionPre": "Premarket",
+  "chartSessionRegular": "Horario de mercado",
+  "chartSessionPost": "Después de horas"
 }

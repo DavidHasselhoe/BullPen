@@ -50,7 +50,7 @@
   "chartPrefsDisplaySection": "表示",
   "chartPrefsEarningsEventsDescription": "四半期決算日をチャート上に直接表示します",
   "chartPrefsEarningsEventsLabel": "決算イベント",
-  "chartPrefsExtendedHoursDescription": "1日足チャートの市場前取引と市場後の価格データ",
+  "chartPrefsExtendedHoursDescription": "1日・5日チャートの市場前取引と市場後の価格データ",
   "chartPrefsExtendedHoursLabel": "拡張時間",
   "chartPrefsOverlaysSection": "オーバーレイ",
   "chartPrefsPeriodOpenLineDescription": "選択期間の開始位置の水平破線リファレンス",
@@ -529,5 +529,10 @@
   "congressRecent_other": "これらの取引のうち{{count}}件は過去12ヶ月間に行われました。",
   "congressRecentNone": "過去12ヶ月間に行われた取引はありません。",
   "fundsPopularity": "当社がカバーするS&P 500およびNasdaq-100銘柄のうち、これらのファンドにより多く保有されているのは{{pct}}のみです。",
-  "fundsPopularityTop": "当社がカバーするS&P 500またはNasdaq-100銘柄の中で、これらのファンドにより多く保有されている銘柄はありません。"
+  "fundsPopularityTop": "当社がカバーするS&P 500またはNasdaq-100銘柄の中で、これらのファンドにより多く保有されている銘柄はありません。",
+  "chartPeriod": "チャートの期間",
+  "chartSession": "セッション",
+  "chartSessionPre": "プリマーケット",
+  "chartSessionRegular": "取引時間",
+  "chartSessionPost": "アフターアワーズ"
 }

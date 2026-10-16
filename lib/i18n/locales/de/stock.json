@@ -50,7 +50,7 @@
   "chartPrefsDisplaySection": "Anzeige",
   "chartPrefsEarningsEventsDescription": "Quartalsweise Gewinnmitteilungen direkt im Diagramm markieren",
   "chartPrefsEarningsEventsLabel": "Gewinnmitteilungen",
-  "chartPrefsExtendedHoursDescription": "Vor- und Nachmarktpreise im 1T-Diagramm",
+  "chartPrefsExtendedHoursDescription": "Vor- und Nachmarktpreise in den 1T- und 5T-Diagrammen",
   "chartPrefsExtendedHoursLabel": "Erweiterte Handelszeiten",
   "chartPrefsOverlaysSection": "Indikatoren",
   "chartPrefsPeriodOpenLineDescription": "Horizontale gestrichelte Referenz am Anfang des ausgewählten Zeitraums",
@@ -529,5 +529,10 @@
   "congressRecent_other": "{{count}} dieser Trades fanden in den letzten 12 Monaten statt.",
   "congressRecentNone": "Keiner davon fand in den letzten 12 Monaten statt.",
   "fundsPopularity": "Nur {{pct}} der S&P 500- und Nasdaq-100-Aktien, die wir verfolgen, werden von mehr dieser Fonds gehalten.",
-  "fundsPopularityTop": "Keine S&P 500- oder Nasdaq-100-Aktie, die wir verfolgen, wird von mehr dieser Fonds gehalten."
+  "fundsPopularityTop": "Keine S&P 500- oder Nasdaq-100-Aktie, die wir verfolgen, wird von mehr dieser Fonds gehalten.",
+  "chartPeriod": "Diagrammzeitraum",
+  "chartSession": "Sitzung",
+  "chartSessionPre": "Vorbörslich",
+  "chartSessionRegular": "Handelszeiten",
+  "chartSessionPost": "Nachbörslich"
 }
