@@ -86,7 +86,8 @@ export default function DisclosuresPage() {
 
             <h2>Market data</h2>
             <p>
-              Market data is delayed up to 15 seconds on the Free plan. Data is provided by third-party
+              Prices are real-time for S&amp;P 500 stocks on every plan; other stocks and ETFs can be up to
+              15 minutes delayed. Data is provided by third-party
               vendors and, while we work with reputable providers, we cannot guarantee its accuracy or
               completeness.
             </p>
