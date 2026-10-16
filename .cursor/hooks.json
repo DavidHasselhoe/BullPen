@@ -3,7 +3,7 @@
   "hooks": {
     "preToolUse": [
       {
-        "command": "node -e \"const p=process.argv[1];const f=require('fs');if(f.existsSync(p)){const r=require('child_process').spawnSync(process.execPath,[p],{stdio:'inherit'});process.exit(r.status===null?1:r.status);}\" \".cursor/skills/impeccable/scripts/hook-before-edit.mjs\"",
+        "command": "[ ! -f \".cursor/skills/impeccable/scripts/impeccable\" ] || \".cursor/skills/impeccable/scripts/impeccable\" hook-before-edit",
         "timeout": 5
       }
     ]
