@@ -235,9 +235,13 @@ export function AdvancedChartModal({
         currentPrice,
         changePctToday: quote?.dp ?? null,
         candles,
+        displayFrom,
       }),
-    [ticker, range, chartType, indicators, showVolume, showEvents, currentPrice, quote?.dp, candles],
+    [ticker, range, chartType, indicators, showVolume, showEvents, currentPrice, quote?.dp, candles, displayFrom],
   );
+  // Header move: today's change on 1D, first → last visible bar otherwise
+  // (same convention as the inline stock chart's period banner).
+  const headerPct = range === '1D' ? quote?.dp : snapshot.window?.changePct;
 
   // Execute an AI-issued chart action against the real chart handlers.
   const dispatchChartAction = async (action: ChartAction) => {
@@ -310,7 +314,7 @@ export function AdvancedChartModal({
       <ChartToolbar
         symbol={ticker.toUpperCase()}
         price={quote?.c}
-        changePct={quote?.dp}
+        changePct={headerPct}
         chartType={chartType}
         onChartType={onChartType}
         range={range}

@@ -9,6 +9,10 @@ import type { TFunction } from 'i18next';
 import { Children, useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo, type ReactNode } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { PluggableList } from 'unified';
+
+// singleTilde off: "~$983" is "about $983", not the start of a strikethrough.
+const REMARK_PLUGINS: PluggableList = [[remarkGfm, { singleTilde: false }]];
 import Link from 'next/link';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -184,7 +188,7 @@ const AssistantMessageContent = memo(function AssistantMessageContent({
       // `[&>p:last-child]:inline` keeps the caret on the same line as the last
       // paragraph instead of dropping it onto a line of its own.
       <div className={cn(MARKDOWN_CLS, '[&>p:last-child]:inline')}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{visible}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>{visible}</ReactMarkdown>
         {/* CSS, not framer: the global reduced-motion rule stops it. */}
         <span
           className="ml-0.5 inline-block h-[1em] w-[2px] rounded-full bg-current align-middle [animation:blink_1.1s_steps(1)_infinite]"
@@ -196,7 +200,7 @@ const AssistantMessageContent = memo(function AssistantMessageContent({
 
   return (
     <div className={MARKDOWN_CLS}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
     </div>
   );
 });

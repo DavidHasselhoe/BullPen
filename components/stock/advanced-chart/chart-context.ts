@@ -107,25 +107,30 @@ export function buildChartSnapshot(args: {
   currentPrice: number | null;
   changePctToday: number | null;
   candles: OHLCV | null;
+  /** Start of the visible window (unix s). Bars before it are indicator
+   *  warm-up: they feed the SMAs/RSI but must not count as "the period". */
+  displayFrom?: number;
 }): ChartSnapshot {
   const { candles } = args;
   const closes = candles?.c ?? [];
   const n = closes.length;
   const current = args.currentPrice ?? (n ? closes[n - 1] : null);
+  const from = args.displayFrom != null && candles ? candles.t.findIndex((t) => t >= args.displayFrom!) : 0;
+  const start = from > 0 ? from : 0;
 
   let window: ChartSnapshot['window'] = null;
-  if (candles && n > 0) {
-    let hi = candles.h[0];
-    let lo = candles.l[0];
-    for (let i = 0; i < n; i++) {
+  if (candles && n > start) {
+    let hi = candles.h[start];
+    let lo = candles.l[start];
+    for (let i = start; i < n; i++) {
       if (candles.h[i] > hi) hi = candles.h[i];
       if (candles.l[i] < lo) lo = candles.l[i];
     }
-    const first = closes[0];
+    const first = closes[start];
     const last = closes[n - 1];
     window = {
-      bars: n,
-      open: round(candles.o[0]),
+      bars: n - start,
+      open: round(candles.o[start]),
       close: round(last),
       high: round(hi),
       low: round(lo),
@@ -159,6 +164,6 @@ export function buildChartSnapshot(args: {
     sma200: sma200 != null ? round(sma200) : null,
     rsi14: (() => { const r = rsiLast(closes); return r != null ? round(r) : null; })(),
     trendHint,
-    recentCloses: downsample(closes),
+    recentCloses: downsample(closes.slice(start)),
   };
 }

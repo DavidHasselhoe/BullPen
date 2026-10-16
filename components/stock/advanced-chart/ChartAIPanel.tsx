@@ -8,6 +8,10 @@ import { Fragment, useEffect, useMemo, useRef, useState, memo } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { PluggableList } from 'unified';
+
+// singleTilde off: "~$983" is "about $983", not the start of a strikethrough.
+const REMARK_PLUGINS: PluggableList = [[remarkGfm, { singleTilde: false }]];
 import { motion } from 'framer-motion';
 import { Send, Square, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -84,7 +88,7 @@ const AssistantContent = memo(function AssistantContent({ text, isStreaming }: {
   if (isStreaming) {
     return (
       <div className={cn(MARKDOWN_CLS, '[&>p:last-child]:inline')}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>{text}</ReactMarkdown>
         <motion.span
           className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] rounded-full bg-current"
           animate={{ opacity: [1, 0] }}
@@ -96,7 +100,7 @@ const AssistantContent = memo(function AssistantContent({ text, isStreaming }: {
   }
   return (
     <div className={MARKDOWN_CLS}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>{text}</ReactMarkdown>
     </div>
   );
 });
