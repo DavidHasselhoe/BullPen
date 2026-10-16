@@ -16,7 +16,7 @@ In the Instagram app: Settings → Account type and tools → switch to Professi
 2. Add the **Instagram** product to the app (App Dashboard → Add Product → Instagram → set up **Business Login for Instagram**, not the older Instagram Graph API product).
 3. Under the Instagram product's settings, add an **OAuth redirect URI**:
    ```
-   https://bullpen.no/api/instagram/oauth/callback
+   https://bullpeninvest.com/api/instagram/oauth/callback
    ```
 4. Note the app's **Instagram App ID** and **Instagram App Secret** from the same page — these become `INSTAGRAM_APP_ID` / `INSTAGRAM_APP_SECRET`.
 
@@ -38,7 +38,7 @@ Then visit this URL in a browser, signed into the target Instagram account (repl
 ```
 https://www.instagram.com/oauth/authorize
   ?client_id=INSTAGRAM_APP_ID
-  &redirect_uri=https://bullpen.no/api/instagram/oauth/callback
+  &redirect_uri=https://bullpeninvest.com/api/instagram/oauth/callback
   &response_type=code
   &scope=instagram_business_basic,instagram_business_content_publish
 ```
