@@ -1,5 +1,58 @@
 [
   {
+    "date": "2026-10-16",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Choose your time zone in Settings: automatic, US market time, or any zone you like. Chart times and economic release times follow it"
+      },
+      {
+        "type": "new",
+        "text": "1-day and 5-day stock charts now separate pre-market, market hours and after hours, with a label where each session or day starts and the session shown when you hover"
+      },
+      {
+        "type": "improved",
+        "text": "The 5-day chart shows the last five trading days in finer detail, and the volume bars now sit exactly under the price line"
+      },
+      {
+        "type": "improved",
+        "text": "Times use the 24-hour clock in Norwegian, German, French, Spanish, Japanese and Chinese, and chart dates are written in your language"
+      },
+      {
+        "type": "improved",
+        "text": "The sign-in page has a Forgot password link, and sign-up tells you what to fix next to the field instead of greying out the button. Sign-in errors are in your language"
+      },
+      {
+        "type": "improved",
+        "text": "The growth chart in a stock's Financials now runs from oldest to newest, so a growing company looks like one"
+      },
+      {
+        "type": "fixed",
+        "text": "Daily charts showed every day one day early for anyone west of New York"
+      },
+      {
+        "type": "fixed",
+        "text": "The fullscreen chart showed today's change on every time range and its times in UTC. It now shows the change for the range you pick, in your own time zone"
+      },
+      {
+        "type": "fixed",
+        "text": "Asking Bull about a chart with indicators turned on could quote the move over a much longer period than the one on screen"
+      },
+      {
+        "type": "fixed",
+        "text": "Changing two settings quickly one after the other could quietly undo the second one"
+      },
+      {
+        "type": "fixed",
+        "text": "On phones, the latest earnings result no longer runs off the edge of a stock page, and Ask Bull no longer covers the cookie banner's buttons"
+      },
+      {
+        "type": "fixed",
+        "text": "Prices written like ~$983 in Bull's answers no longer show as crossed-out text"
+      }
+    ]
+  },
+  {
     "date": "2026-10-15",
     "entries": [
       {
