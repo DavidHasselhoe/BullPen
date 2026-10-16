@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { trackEvent } from '@/lib/analytics/track';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { SUPPORTED_LANGUAGES, isSupportedLanguage } from '@/lib/i18n/language-names';
@@ -720,7 +721,17 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
                 <div className="space-y-2">
                   <Label htmlFor="time-zone">{t('timeZone')}</Label>
-                  <Select value={timeZonePref} onValueChange={setTimeZonePref}>
+                  <Select
+                    value={timeZonePref}
+                    onValueChange={(value) => {
+                      setTimeZonePref(value);
+                      // Which kind, not the zone itself: enough to see whether
+                      // anyone wants market time or a fixed zone over Automatic.
+                      trackEvent('settings_time_zone_changed', {
+                        choice: value === 'auto' || value === 'market' ? value : 'zone',
+                      });
+                    }}
+                  >
                     <SelectTrigger id="time-zone" className="w-full">
                       <SelectValue />
                     </SelectTrigger>

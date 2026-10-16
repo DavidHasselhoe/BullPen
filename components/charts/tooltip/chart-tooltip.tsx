@@ -15,7 +15,7 @@ import {
   useChartStable,
 } from "../chart-context";
 import { weekdayDateFmt, weekdayDateWithYearFmt } from "../chart-formatters";
-import { fmtClockDate, fmtClockTime } from "@/lib/dates/clock";
+import { fmtClockDate, fmtClockTime, fmtMonthDay } from "@/lib/dates/clock";
 import { useClock } from "@/hooks/use-clock";
 import type { IndicatorFadeEdges } from "../indicator-fade";
 import { DateTicker } from "./date-ticker";
@@ -160,12 +160,13 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
   const { tooltipSpring } = useChartConfig();
   const clock = useClock();
   // The pill under the crosshair names the same day as the title. dateLabels
-  // are the device's dates; with a chosen zone an evening bar can belong to
-  // another day there, so intraday pills are relabelled on the user's clock.
+  // are trading dates (New York); an intraday title is on the user's clock,
+  // where an evening bar can already be the next day, so intraday pills are
+  // relabelled on that clock too.
   const pillLabels = useMemo(
     () =>
-      showTime && clock.timeZone && !barXAccessor
-        ? data.map((d) => fmtClockDate(xAccessor(d), { month: "short", day: "numeric" }, clock))
+      showTime && !barXAccessor
+        ? data.map((d) => fmtMonthDay(xAccessor(d), clock.timeZone, clock))
         : dateLabels,
     [showTime, clock, barXAccessor, data, xAccessor, dateLabels],
   );
@@ -283,8 +284,8 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     const date = xAccessor(tooltipData.point);
     if (showTime) {
       // An intraday moment: date and time both on the user's clock (zone
-      // setting, 12/24h from the language). Date-only points below stay as
-      // they were, since a zone would move a daily bar to another day.
+      // setting, 12/24h from the language). Date-only points below are read
+      // as the trading date in New York (chart-formatters), never shifted.
       const dateStr = fmtClockDate(date, { weekday: "short", month: "short", day: "numeric", ...(showYear ? { year: "numeric" } : {}) }, clock);
       return `${dateStr} · ${fmtClockTime(date, clock)}`;
     }

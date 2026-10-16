@@ -33,6 +33,7 @@ import {
 import { ChartProvider, type LineConfig, type Margin } from "./chart-context";
 import { isGradientDefComponent, isPatternDefComponent } from "./chart-defs";
 import { shortDateFmt } from "./chart-formatters";
+import { useClock } from "@/hooks/use-clock";
 import {
   type ChartPhase,
   type ChartStatus,
@@ -463,9 +464,12 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     scaleLinear({ range: [innerHeight, 0], domain: [0, 100], nice: true })
   );
 
+  // Relabels when the user's language changes (shortDateFmt reads the clock).
+  const clock = useClock();
   const dateLabels = useMemo(
     () => visiblePlotData.map((d) => shortDateFmt.format(xAccessor(d))),
-    [visiblePlotData, xAccessor]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visiblePlotData, xAccessor, clock]
   );
 
   const canInteract = isLoaded && isChartInteractionPhase(chartPhase);

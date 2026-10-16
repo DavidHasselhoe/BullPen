@@ -6,10 +6,10 @@
  */
 import assert from 'node:assert';
 import { etDayKey, intradayAxis, lastTradingDays } from '../lib/charts/intraday-axis';
-import { languageUsesHour12, resolveTimeZone, type Clock } from '../lib/dates/clock';
+import { fmtMonthDay, fmtTradingDate, languageUsesHour12, resolveTimeZone, type Clock } from '../lib/dates/clock';
 
-const OSLO: Clock = { timeZone: 'Europe/Oslo', hour12: false };
-const NEW_YORK: Clock = { timeZone: 'America/New_York', hour12: true };
+const OSLO: Clock = { timeZone: 'Europe/Oslo', hour12: false, locale: 'en-US' };
+const NEW_YORK: Clock = { timeZone: 'America/New_York', hour12: true, locale: 'en-US' };
 
 type S = 'pre' | 'regular' | 'post';
 const et = (date: string, hhmm: string) => Math.floor(new Date(`${date}T${hhmm}:00-04:00`).getTime() / 1000);
@@ -65,5 +65,18 @@ assert.equal(resolveTimeZone('auto'), undefined);
 assert.equal(resolveTimeZone('market'), 'America/New_York');
 assert.equal(resolveTimeZone('Asia/Tokyo'), 'Asia/Tokyo');
 assert.equal(resolveTimeZone('Mars/Olympus'), undefined);
+
+// A daily bar is stamped at midnight New York; read on a Chicago clock that is
+// still Oct 14. Trading dates must not move with the viewer.
+const CHICAGO: Clock = { timeZone: 'America/Chicago', hour12: true, locale: 'en-US' };
+const oct15Bar = new Date(et('2026-10-15', '00:00') * 1000);
+assert.equal(fmtTradingDate(oct15Bar, { weekday: 'short', month: 'short', day: 'numeric' }, CHICAGO), 'Thu, Oct 15');
+
+// Norwegian: 24-hour times, translated day names ("12." is how Norwegian writes the day),
+// and the pill keeps month-then-day.
+const NORSK: Clock = { timeZone: 'Europe/Oslo', hour12: false, locale: 'nb' };
+assert.equal(intradayAxis(five, '1W', NORSK).ticks[0].label, 'man. 12.');
+assert.equal(intradayAxis(day('2026-10-16'), '1D', NORSK).ticks[1].label, '15:30');
+assert.equal(fmtMonthDay(oct15Bar, 'America/New_York', NORSK), 'okt. 15');
 
 console.log('intraday-axis: all checks passed');

@@ -24,6 +24,7 @@ import {
 } from "./chart-child-passthrough";
 import { ChartProvider, type LineConfig, type Margin } from "./chart-context";
 import { shortDateFmt } from "./chart-formatters";
+import { useClock } from "@/hooks/use-clock";
 import { DEFAULT_CHART_LIFECYCLE } from "./chart-phase";
 import {
   decimateOhlcData,
@@ -193,9 +194,12 @@ const ChartCore = memo(function ChartCore({
     [data, innerWidth]
   );
 
+  // Relabels when the user's language changes (shortDateFmt reads the clock).
+  const clock = useClock();
   const dateLabels = useMemo(
     () => data.map((d) => shortDateFmt.format(xAccessor(d))),
-    [data, xAccessor]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data, xAccessor, clock]
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: revealSignature

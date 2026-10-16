@@ -6,7 +6,7 @@ import {
   createChart, createSeriesMarkers, ColorType, CrosshairMode, LineStyle,
   CandlestickSeries, LineSeries, AreaSeries, HistogramSeries,
   type IChartApi, type ISeriesApi, type UTCTimestamp, type SeriesType,
-  type SeriesMarker, type Time,
+  type SeriesMarker, type Time, TickMarkType,
 } from 'lightweight-charts';
 import {
   getIndicatorDef,
@@ -15,6 +15,8 @@ import {
   type IndicatorInstance,
 } from '@/lib/finance/indicators';
 import type { AdvancedChartType } from '@/hooks/use-chart-prefs';
+import { useClock } from '@/hooks/use-clock';
+import { fmtClockDate, fmtClockTime, fmtTradingDate } from '@/lib/dates/clock';
 import { cn } from '@/lib/utils';
 
 export type ChartTool = 'none' | 'measure' | 'alert';
@@ -146,10 +148,36 @@ export function AdvancedChart({
     chartRef.current?.applyOptions(chartTheme(isDark));
   }, [isDark]);
 
-  // ── Axis time format per range ─────────────────────────────────────────────
+  // ── Axis + crosshair time format, on the user's clock ─────────────────────
+  // lightweight-charts labels times in UTC unless given formatters, so the
+  // open read 13:30 here. Intraday: the user's zone and 12/24h, like the
+  // stock page. Daily bars: the trading date in New York (lib/dates/clock).
+  const clock = useClock();
   useEffect(() => {
-    chartRef.current?.timeScale().applyOptions({ timeVisible: intraday, secondsVisible: false });
-  }, [intraday]);
+    const at = (time: Time) => new Date((time as number) * 1000);
+    const date = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+      intraday ? fmtClockDate(d, opts, clock) : fmtTradingDate(d, opts, clock);
+    chartRef.current?.applyOptions({
+      localization: {
+        locale: clock.locale,
+        timeFormatter: (time: Time) =>
+          intraday
+            ? `${date(at(time), { weekday: 'short', month: 'short', day: 'numeric' })} · ${fmtClockTime(at(time), clock)}`
+            : date(at(time), { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
+      },
+      timeScale: {
+        timeVisible: intraday,
+        secondsVisible: false,
+        tickMarkFormatter: (time: Time, type: TickMarkType) => {
+          const d = at(time);
+          if (type === TickMarkType.Time || type === TickMarkType.TimeWithSeconds) return fmtClockTime(d, clock);
+          if (type === TickMarkType.Year) return date(d, { year: 'numeric' });
+          if (type === TickMarkType.Month) return date(d, { month: 'short' });
+          return date(d, { day: 'numeric' });
+        },
+      },
+    });
+  }, [intraday, clock]);
 
   // Pre-compute candle-derived point sets (independent of chart type).
   // Indicators still compute over the full `candles` (incl. warm-up); only the

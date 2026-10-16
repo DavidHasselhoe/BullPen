@@ -5,7 +5,7 @@
  * index fraction is also a pixel fraction, which is what the spacing check uses.
  */
 
-import { fmtClockTime, type Clock } from '@/lib/dates/clock';
+import { fmtClockTime, fmtTradingDate, type Clock } from '@/lib/dates/clock';
 
 type Session = 'pre' | 'regular' | 'post';
 interface Pt { time: number; session?: Session }
@@ -13,8 +13,6 @@ interface Pt { time: number; session?: Session }
 export interface AxisTick { date: Date; label: string }
 
 const etDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
-const etWeekday = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short' });
-const etDayOfMonth = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', day: 'numeric' });
 // Times are on the user's clock (lib/dates/clock), like the tooltip: the open
 // reads 15:30 in Oslo and 9:30 AM in New York. Days (5D) stay the US trading
 // day, which is the local date the session opens on everywhere east of Hawaii.
@@ -56,7 +54,8 @@ export function intradayAxis(points: Pt[], range: '1D' | '1W', clock: Clock): { 
       if (key !== prev) starts.push(i);
       prev = key;
     });
-    const label = (i: number) => `${etWeekday.format(at(i))} ${etDayOfMonth.format(at(i))}`;
+    // The trading day, in the user's language: "Mon 12", "man. 12.".
+    const label = (i: number) => `${fmtTradingDate(at(i), { weekday: 'short' }, clock)} ${fmtTradingDate(at(i), { day: 'numeric' }, clock)}`;
     return {
       ticks: spaced(starts, n).map((i) => ({ date: at(i), label: label(i) })),
       dividers: starts.slice(1).map(at),
