@@ -43,15 +43,17 @@ export function CookieConsentBanner() {
           // clearance offset. On phones it is full width, so it cannot keep
           // clear: z-[51] puts it over the toggle (same z-50, later in the DOM,
           // so it painted "Ask Bull" across Accept all) until a choice is made.
-          className="fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+1.25rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg"
+          // Phones get a compact banner sitting just above the tab bar: the full
+          // one covered the first screen's main button (the trial CTA on /upgrade).
+          className="fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg max-sm:p-3"
         >
-          <p className="text-sm text-foreground">
+          <p className="text-sm text-foreground max-sm:text-xs">
             {'🍪'} Cookies that keep you logged in, plus optional analytics if you accept.{' '}
             <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
               Learn more
             </Link>
           </p>
-          <div className="mt-3 flex justify-end gap-2">
+          <div className="mt-3 flex justify-end gap-2 max-sm:mt-2">
             <Button variant="outline" size="sm" onClick={() => dismiss('rejected')}>
               Necessary only
             </Button>

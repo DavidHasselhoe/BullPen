@@ -63,10 +63,9 @@
   "upgradeFaqCancelQ": "Can I cancel anytime?",
   "upgradeFaqCancelA": "Anytime. You keep Pro until the end of the billing period, then drop back to the (still generous) free plan.",
   "upgradeFaqCompareQ": "What do I keep on the free plan?",
-  "upgradeFaqCompareA": "Everything you use to research and track stocks: stock pages, charts, the screener, holdings, alerts and the beginner Academy, with no monthly report caps. Pro adds the AI analyst on top.",
   "upgradeFaqLimitsQ": "What counts against the AI limits?",
-  "upgradeFaqLimitsA": "Only the AI features (chat, Deep Dive, Portfolio Builder, Portfolio Checkup). Everything else, charts, screener, alerts, holdings, Academy, is unlimited on free.",
-  "upgradeHeroDescription": "Free keeps the whole app. Pro adds an analyst that briefs you every morning, explains every big move and answers anything you ask.",
+  "upgradeFaqLimitsA": "Only the AI features: Ask Bull, Deep Dive, Portfolio Builder and Portfolio Checkup. Alerts and watchlists have their own caps on Free, {{alertStocks}} stocks with alerts and {{watchlists}} watchlists. Charts, the screener, holdings and the beginner Academy have no limits.",
+  "upgradeHeroDescription": "Free covers research and tracking. Pro adds an analyst that briefs you every morning, explains every big move and answers anything you ask.",
   "upgradeAlreadyProBanner": "You're on Pro, thanks for supporting BullPen.",
   "upgradeMonthly": "Monthly",
   "upgradeAnnual": "Annual",
@@ -110,7 +109,7 @@
   "plan_row_compare_companies_side_by_side": "Compare companies side-by-side",
   "plan_row_insider_transactions": "Insider transactions",
   "plan_group_ai_analyst": "AI analyst",
-  "plan_row_bullpen_ai_chat": "BullPen AI chat",
+  "plan_row_ask_bull": "Ask Bull",
   "plan_value_15_day": "15/day",
   "plan_row_ai_deep_dive_reports": "AI Deep Dive reports",
   "plan_value_1_month": "1/month",
@@ -183,5 +182,9 @@
   "manageBillingFailed": "We couldn't open your billing settings. Open the account menu and choose Manage subscription, or try this link again in a minute.",
   "manageBillingNoSubscription": "This account doesn't have a paid subscription, so there's nothing to cancel.",
   "manageBillingSeePlans": "See plans",
-  "manageBillingBackToApp": "Back to BullPen"
+  "manageBillingBackToApp": "Back to BullPen",
+  "upgradeFaqCompareUnlimited": "No limits",
+  "upgradeFaqCompareCapped": "With a cap on Free",
+  "upgradeManageSubscription": "Manage subscription",
+  "upgradeProUntil": "Pro until {{date}}"
 }

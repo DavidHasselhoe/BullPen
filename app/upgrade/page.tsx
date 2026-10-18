@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { useWatchlist } from '@/hooks/use-watchlist';
-import { PRICING, PLAN_COMPARISON, type ComparisonRow } from '@/lib/billing/entitlements';
+import { FREE_ALERT_STOCKS, FREE_WATCHLISTS, PRICING, PLAN_COMPARISON, type ComparisonRow } from '@/lib/billing/entitlements';
 import { planCopyKey } from '@/lib/billing/plan-copy';
 import { startCheckout } from '@/lib/billing/checkout';
 import { renewalTerms } from '@/lib/billing/trial-copy';
@@ -30,8 +30,14 @@ function planText(t: TFunction, kind: 'group' | 'row' | 'hint' | 'value', englis
 }
 
 const ALL_ROWS = PLAN_COMPARISON.flatMap((g) => g.rows.map((row) => ({ ...row, group: g.title })));
-const PRO_ROWS = ALL_ROWS.filter((r) => r.free !== r.pro);
+// The plan card's four benefits lead the table, in the card's order, so the
+// table reads as the proof of the pitch rather than a separate list.
+const PITCH = ['Why Today? move explanations', 'Daily Brief (AI market recap)', 'Ask Bull', 'AI Deep Dive reports'];
+const pitchRank = (label: string) => (PITCH.includes(label) ? PITCH.indexOf(label) : PITCH.length);
+const PRO_ROWS = ALL_ROWS.filter((r) => r.free !== r.pro).sort((a, b) => pitchRank(a.label) - pitchRank(b.label));
 const SHARED_ROWS = ALL_ROWS.filter((r) => r.free === r.pro);
+// What Free keeps, read off the same table so the FAQ can never claim more than it.
+const FREE_CAPPED_ROWS = PRO_ROWS.filter((r): r is typeof r & { free: string } => typeof r.free === 'string');
 
 function PlanCell({ value, pro, t }: { value: ComparisonRow['free']; pro?: boolean; t: TFunction }) {
   // Icons alone read as nothing to a screen reader; the words are there for it.
@@ -108,17 +114,26 @@ function Beat({ time, title, desc, children }: { time: string; title: string; de
  * they were shot on; edge to edge, the text sat against the rounded corner.
  */
 function Shot({ src, darkSrc, alt, width, height }: { src: string; darkSrc: string; alt: string; width: number; height: number }) {
+  // The captures are 1x and 568px wide. Shrunk to a phone's width their text
+  // was about 7px, so below sm they keep their real size and scroll sideways
+  // (focusable, so the keyboard can scroll it too).
+  const img = 'h-auto max-sm:w-[568px] max-sm:max-w-none sm:w-full';
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-background dark:ring-white/5">
-      <Image src={src} alt={alt} width={width} height={height} sizes="(max-width: 1024px) 92vw, 568px" className="h-auto w-full dark:hidden" />
-      <Image src={darkSrc} alt={alt} width={width} height={height} sizes="(max-width: 1024px) 92vw, 568px" className="hidden h-auto w-full dark:block" />
+    <div
+      role="region"
+      tabIndex={0}
+      aria-label={alt}
+      className="overflow-x-auto overscroll-x-contain rounded-xl border border-border bg-white p-4 ring-1 ring-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:p-3 sm:overflow-hidden sm:p-5 dark:bg-background dark:ring-white/5"
+    >
+      <Image src={src} alt={alt} width={width} height={height} sizes="568px" className={cn(img, 'dark:hidden')} />
+      <Image src={darkSrc} alt={alt} width={width} height={height} sizes="568px" className={cn(img, 'hidden dark:block')} />
     </div>
   );
 }
 
 function UpgradeContent() {
-  const { t } = useTranslation('billing');
-  const { isAuthenticated } = useAuth();
+  const { t, i18n } = useTranslation('billing');
+  const { isAuthenticated, user } = useAuth();
   const { isPro } = useEntitlements();
   const { data: watchlist } = useWatchlist();
   const searchParams = useSearchParams();
@@ -161,12 +176,35 @@ function UpgradeContent() {
     setStatus(result.error ? 'error' : 'done');
   }
 
-  const FAQ = [
+  // A paying subscriber can manage billing; Pro from a reward has an end date instead.
+  const hasSubscription = typeof user?.account_tier === 'number' && user.account_tier >= 3;
+  const bonusUntil = !hasSubscription && user?.pro_bonus_until ? new Date(user.pro_bonus_until) : null;
+
+  const freeKeeps = (
+    <div className="space-y-3">
+      <div>
+        <p className="font-medium text-foreground">{t('upgradeFaqCompareUnlimited')}</p>
+        <ul className="mt-1 list-disc space-y-0.5 pl-5">
+          {SHARED_ROWS.map((r) => <li key={r.label}>{planText(t, 'row', r.label)}</li>)}
+        </ul>
+      </div>
+      <div>
+        <p className="font-medium text-foreground">{t('upgradeFaqCompareCapped')}</p>
+        <ul className="mt-1 list-disc space-y-0.5 pl-5">
+          {FREE_CAPPED_ROWS.map((r) => (
+            <li key={r.label}>{planText(t, 'row', r.label)}: <span className="tabular-nums">{planText(t, 'value', r.free)}</span></li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+
+  const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     { q: t('upgradeFaqTrialQ'), a: t('upgradeFaqTrialA', { trialDays: PRICING.trialDays, moneyBackDays: PRICING.moneyBackDays }) },
     { q: t('upgradeFaqCardQ'), a: t('upgradeFaqCardA', { trialDays: PRICING.trialDays }) },
     { q: t('upgradeFaqCancelQ'), a: t('upgradeFaqCancelA') },
-    { q: t('upgradeFaqCompareQ'), a: t('upgradeFaqCompareA') },
-    { q: t('upgradeFaqLimitsQ'), a: t('upgradeFaqLimitsA') },
+    { q: t('upgradeFaqCompareQ'), a: freeKeeps },
+    { q: t('upgradeFaqLimitsQ'), a: t('upgradeFaqLimitsA', { alertStocks: FREE_ALERT_STOCKS, watchlists: FREE_WATCHLISTS }) },
   ];
 
   const benefits = [
@@ -221,7 +259,7 @@ function UpgradeContent() {
           </p>
         )}
 
-        <div className="grid items-start gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid grid-cols-1 items-start gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Hero. One serif word, the page's only display moment. */}
         <header className="max-w-3xl lg:col-start-1 lg:row-start-1">
           <h1 className="text-balance text-4xl font-bold tracking-[-0.03em] text-foreground sm:text-5xl">
@@ -274,7 +312,15 @@ function UpgradeContent() {
                 ))}
               </ul>
 
-              {isPro ? (
+              {isPro && hasSubscription ? (
+                <Button asChild variant="outline" className="mt-6 h-11 w-full">
+                  <Link href="/billing/manage">{t('upgradeManageSubscription')}</Link>
+                </Button>
+              ) : isPro && bonusUntil ? (
+                <p className="mt-6 text-center text-sm font-medium text-foreground">
+                  {t('upgradeProUntil', { date: bonusUntil.toLocaleDateString(i18n.language, { dateStyle: 'long' }) })}
+                </p>
+              ) : isPro ? (
                 <Button disabled className="mt-6 h-11 w-full">{t('upgradeYoureOnPro')}</Button>
               ) : status === 'done' ? (
                 <Button disabled className="mt-6 h-11 w-full">{t('upgradeOnTheList')}</Button>
@@ -318,8 +364,8 @@ function UpgradeContent() {
             )}
           </aside>
 
-          {/* A day with Pro, shown with real captures from the app. */}
-          <section aria-labelledby="day-heading" className="lg:col-start-1 lg:row-start-2">
+          {/* A day with Pro, shown with real captures from the app. Pro members already have it. */}
+          {!isPro && <section aria-labelledby="day-heading" className="lg:col-start-1 lg:row-start-2">
             <h2 id="day-heading" className="text-sm font-medium text-muted-foreground">{t('upgradeDayHeading')}</h2>
             <ol className="relative mt-6 space-y-14 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-px before:bg-border">
               <Beat time={t('upgradeBeatBriefTime')} title={t('upgradeBeatBriefTitle')} desc={t('upgradeBeatBriefDesc')}>
@@ -341,7 +387,7 @@ function UpgradeContent() {
                 </div>
               </Beat>
             </ol>
-          </section>
+          </section>}
         </div>
 
         {/* What Pro adds: only the rows that differ. The rest wait behind a toggle. */}

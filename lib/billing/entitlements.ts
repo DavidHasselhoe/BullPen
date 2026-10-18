@@ -90,7 +90,7 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
   {
     title: 'AI analyst',
     rows: [
-      { label: 'BullPen AI chat', free: `${QUOTAS.chat.count}/day`, pro: 'Unlimited' },
+      { label: 'Ask Bull', free: `${QUOTAS.chat.count}/day`, pro: 'Unlimited' },
       { label: 'AI Deep Dive reports', free: `${QUOTAS.deep_dive.count}/month`, pro: `${QUOTAS.deep_dive.proCap}/month` },
       { label: 'AI Portfolio Builder', free: `${QUOTAS.portfolio_builder.count}/month`, pro: 'Unlimited' },
       { label: 'AI Portfolio Checkup', free: `${QUOTAS.risk_analysis.count}/month`, pro: 'Unlimited' },
