@@ -1,5 +1,22 @@
 [
   {
+    "date": "2026-10-18",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "The upgrade page now shows exactly what the free plan includes and where its limits are, and its comparison starts with the four things Pro adds: Why Today, the Daily Brief, unlimited Ask Bull and Deep Dive reports"
+      },
+      {
+        "type": "improved",
+        "text": "Pro members who open the upgrade page get a Manage subscription button, or see the date their Pro ends if it came from a reward"
+      },
+      {
+        "type": "fixed",
+        "text": "The app screenshots on the upgrade page are readable on phones, and the cookie notice on phones is smaller so it no longer covers the main button"
+      }
+    ]
+  },
+  {
     "date": "2026-10-16",
     "entries": [
       {
