@@ -64,8 +64,8 @@
   "upgradeFaqCancelA": "«AAnytiimee. Yoouu keeeep Proo uuntiil thee eend oof thee biilliing peeriiood, theen droop baack too thee (stiill geeneeroouus) freeee plaan.»",
   "upgradeFaqCompareQ": "«Whaat doo II keeeep oon thee freeee plaan?»",
   "upgradeFaqLimitsQ": "«Whaat coouunts aagaaiinst thee AAII liimiits?»",
-  "upgradeFaqLimitsA": "«OOnly thee AAII feeaatuurees (chaat, Deeeep Diivee, Poortfooliioo Buuiildeer, Poortfooliioo Cheeckuup). EEveerythiing eelsee, chaarts, screeeeneer, aaleerts, hooldiings, AAcaadeemy, iis uunliimiiteed oon freeee.»",
-  "upgradeHeroDescription": "«Freeee keeeeps thee whoolee aapp. Proo aadds aan aanaalyst thaat briieefs yoouu eeveery moorniing, eexplaaiins eeveery biig moovee aand aansweers aanythiing yoouu aask.»",
+  "upgradeFaqLimitsA": "«OOnly thee AAII feeaatuurees: AAsk Buull, Deeeep Diivee, Poortfooliioo Buuiildeer aand Poortfooliioo Cheeckuup. AAleerts aand waatchliists haavee theeiir oown caaps oon Freeee, {{alertStocks}} stoocks wiith aaleerts aand {{watchlists}} waatchliists. Chaarts, thee screeeeneer, hooldiings aand thee beegiinneer AAcaadeemy haavee noo liimiits.»",
+  "upgradeHeroDescription": "«Freeee cooveers reeseeaarch aand traackiing. Proo aadds aan aanaalyst thaat briieefs yoouu eeveery moorniing, eexplaaiins eeveery biig moovee aand aansweers aanythiing yoouu aask.»",
   "upgradeAlreadyProBanner": "«Yoouu'ree oon Proo, thaanks foor suuppoortiing BuullPeen.»",
   "upgradeMonthly": "«Moonthly»",
   "upgradeAnnual": "«AAnnuuaal»",
@@ -109,6 +109,7 @@
   "plan_row_compare_companies_side_by_side": "«Coompaaree coompaaniiees siidee-by-siidee»",
   "plan_row_insider_transactions": "«IInsiideer traansaactiioons»",
   "plan_group_ai_analyst": "«AAII aanaalyst»",
+  "plan_row_ask_bull": "«AAsk Buull»",
   "plan_value_15_day": "«15/daay»",
   "plan_row_ai_deep_dive_reports": "«AAII Deeeep Diivee reepoorts»",
   "plan_value_1_month": "«1/moonth»",
@@ -181,5 +182,9 @@
   "manageBillingFailed": "«Wee coouuldn't oopeen yoouur biilliing seettiings. OOpeen thee aaccoouunt meenuu aand choooosee Maanaagee suubscriiptiioon, oor try thiis liink aagaaiin iin aa miinuutee.»",
   "manageBillingNoSubscription": "«Thiis aaccoouunt dooeesn't haavee aa paaiid suubscriiptiioon, soo theeree's noothiing too caanceel.»",
   "manageBillingSeePlans": "«Seeee plaans»",
-  "manageBillingBackToApp": "«Baack too BuullPeen»"
+  "manageBillingBackToApp": "«Baack too BuullPeen»",
+  "upgradeFaqCompareUnlimited": "«Noo liimiits»",
+  "upgradeFaqCompareCapped": "«Wiith aa caap oon Freeee»",
+  "upgradeManageSubscription": "«Maanaagee suubscriiptiioon»",
+  "upgradeProUntil": "«Proo uuntiil {{date}}»"
 }

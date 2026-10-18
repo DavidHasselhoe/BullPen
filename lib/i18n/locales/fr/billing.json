@@ -64,8 +64,6 @@
   "upgradeFaqCancelA": "À tout moment. Vous conservez Pro jusqu'à la fin de la période de facturation, puis vous revenez au forfait gratuit (toujours généreux).",
   "upgradeFaqCompareQ": "Que puis-je garder sur le plan gratuit ?",
   "upgradeFaqLimitsQ": "Qu'est-ce qui compte par rapport aux limites d'IA ?",
-  "upgradeFaqLimitsA": "Uniquement les fonctionnalités IA (chat, Deep Dive, Portfolio Builder, Portfolio Checkup). Tout le reste, graphiques, screener, alertes, portefeuille, Academy, est illimité en gratuit.",
-  "upgradeHeroDescription": "Free offre l'application complète. Pro ajoute un analyste qui vous fait un rapport chaque matin, explique chaque grand mouvement et répond à vos questions.",
   "upgradeAlreadyProBanner": "Vous êtes sur Pro, merci de soutenir BullPen.",
   "upgradeMonthly": "Mensuel",
   "upgradeAnnual": "Annuel",
@@ -180,6 +178,13 @@
   "manageBillingNoSubscription": "Ce compte n'a pas d'abonnement payant, il n'y a donc rien à annuler.",
   "manageBillingSeePlans": "Voir les offres",
   "manageBillingBackToApp": "Retour à BullPen",
+  "upgradeFaqLimitsA": "Uniquement les fonctionnalités IA : Ask Bull, Deep Dive, Portfolio Builder et Portfolio Checkup. Les alertes et listes de suivi ont leurs propres limites en version gratuite, {{alertStocks}} actions avec alertes et {{watchlists}} listes de suivi. Les graphiques, le screener, les positions et l'Academy pour débutants n'ont aucune limite.",
+  "upgradeHeroDescription": "La version gratuite couvre la recherche et le suivi. Pro ajoute un analyste qui vous fait un brief chaque matin, explique chaque grand mouvement et répond à toutes vos questions.",
   "upgradeQuestionsHeading": "Questions",
-  "upgradeBeatAskTitle": "Ask Bull anything"
+  "plan_row_ask_bull": "Ask Bull",
+  "upgradeBeatAskTitle": "Posez n'importe quelle question à Ask Bull",
+  "upgradeFaqCompareUnlimited": "Aucune limite",
+  "upgradeFaqCompareCapped": "Avec une limite en version gratuite",
+  "upgradeManageSubscription": "Gérer l'abonnement",
+  "upgradeProUntil": "Pro jusqu'au {{date}}"
 }

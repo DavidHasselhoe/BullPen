@@ -1843,7 +1843,7 @@
   "billing.upgradeFaqCancelQ": "94b21df12afb75076a42334f4a734d5acde8ecf8b528f01923bf520448367af5",
   "billing.upgradeFaqCancelA": "682ab2c66190274654613eaff0698eb4e746e194305cc1b400444fec6df9e2d6",
   "billing.upgradeFaqLimitsQ": "929ed30d1ef5dc7c40b36675344822ded6ad49d5b3aca79fa130f7e68ada64bc",
-  "billing.upgradeFaqLimitsA": "4ef3e1e140aa6a5a9417aba5871cdaa63ceb00dde2eb499cfc3f0b24e42ec28d",
+  "billing.upgradeFaqLimitsA": "d067d06201402ad262dc48f7148954b1906ec75344485c2b901c6badf75aeda9",
   "billing.upgradeAlreadyProBanner": "843712cb7bed4ace041f44b4e41dd76d987403d6934e490202e7a36cd610c769",
   "billing.upgradeMonthly": "9b11f6b707d2a03e0265465f32520bc1bc213de121de958539662d0ec1453fcb",
   "billing.upgradeAnnual": "2c5e81714652558fe11969ae6152aee6f95b48a2d4605740a628906f69bbf692",
@@ -3284,8 +3284,7 @@
   "billing.upgradeFaqCardA": "4fbd3a2676f5273c219d5040a377ddfe941ee1ff2d117d3d75e8f1e6c07ab8e9",
   "billing.upgradeFaqTrialA": "a1220a463bede51e5ba36364deebdca8679b44b37bbac1d5af1fcdb9ee41667e",
   "billing.upgradeFaqCompareQ": "ccc2e05ffd33670d34f2a5695a513b07c53a015697b79a5ccff08457f8df5fcf",
-  "billing.upgradeFaqCompareA": "bad53b398a46e98fe7c11014418f2e68b8887fd3426c4bc1ffcd8221360183e4",
-  "billing.upgradeHeroDescription": "9bfea5d2e1e3652d7a2386a6a2a7f95e9910a37eee0ea9429ed32f38b30ad2ba",
+  "billing.upgradeHeroDescription": "36c5c63ffc728b6e3e3f64b167a937b15b31e828d47012e4661f06e942ef49b6",
   "billing.upgradeAnnualSavePct": "e428d831199f543ba80ab24573b4310ad0d42eb3ff4a5b095b251fbd66a9359c",
   "billing.upgradeCheckoutSoon": "a12ed5fc5a1663fe3ac1ac82c6bc6ef6629096ff4bd22a3f6765d652523a9e5a",
   "billing.upgradeCheckoutError": "640cfb2825743c07a49e444ed9ab9fdcaa275d7dd70bc4eb2db7a71af209d7b8",
@@ -3297,7 +3296,6 @@
   "billing.plan_row_compare_companies_side_by_side": "31488a1600ae2e67f7535f911e137c15ef47290e89b4bf1468d692e6d8dcd324",
   "billing.plan_row_insider_transactions": "8f9a46c46edf40e57414712a9c7ad21eedafac9e5764df8a71aaa64e482b6085",
   "billing.plan_group_ai_analyst": "741102351c18483af549d35e7a01c19d508e9dd9508b8dd8168bafa6ccdefef1",
-  "billing.plan_row_bullpen_ai_chat": "caf8d3899f30b6b9b39cae30b8d358d475ddfde084d6e26fe2204d4d47c7d9a4",
   "billing.plan_value_15_day": "7eebadaac32e135799ea1fd21d81d2ed0ed5e9de2e5531c9daac37e1a21bffca",
   "billing.plan_row_ai_deep_dive_reports": "923a28cfe8a00fee637f1cdf4c7e9961e7df3f9e4883b6d6744fff37fab0cf15",
   "billing.plan_value_1_month": "bf13057933676dfa112115bed608d08dac3ef77b86f752fb39ebf6f712848acb",
@@ -3591,5 +3589,10 @@
   "auth.inviteOffer": "c43266d9626ed18ef575108a5d4ae16dd6ac77cae821fbd5a87d7fc6f0ddeaca",
   "auth.inviteCta": "627c03c23b0f0eeea428e11659bc18787369cda0875054395cb40127e381a1ee",
   "auth.inviteSignedIn": "cf84e874d1f7031554444136a1af74e2ae088914cc35dccc2a7739dff9e12694",
-  "auth.inviteSignedInCta": "e8469baeb0a729ce48123f62383a9b342408e973311d3f8ca23b856dcd35cee1"
+  "auth.inviteSignedInCta": "e8469baeb0a729ce48123f62383a9b342408e973311d3f8ca23b856dcd35cee1",
+  "billing.plan_row_ask_bull": "65f3ef18b704e658b5fb3d3a9f1593edd9c47cc700348e2f6d3993ca7519358b",
+  "billing.upgradeFaqCompareUnlimited": "9f425ca19a21500ea2d5f435a15b8a0443f85e26a6a3bae88150eff1d265c961",
+  "billing.upgradeFaqCompareCapped": "4e3a56ce3de6642b50925e77574a037f14a3532db041d63ea8c9b839d9b4e15d",
+  "billing.upgradeManageSubscription": "9041c6aa2c3d4670f671ee3d31b06106f961054e1cdbe7d302ff6dc115a7d14a",
+  "billing.upgradeProUntil": "f381b6808af341774a90e40ff3dfb0718448a92683ad2b2fe09d7b120d89f110"
 }

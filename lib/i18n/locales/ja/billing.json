@@ -63,8 +63,6 @@
   "upgradeFaqCancelA": "いつでもできます。請求期間が終わるまで Pro を利用でき、その後は（依然として充実した）無料プランに戻ります。",
   "upgradeFaqCompareQ": "無料プランで使い続けられるのは何ですか？",
   "upgradeFaqLimitsQ": "何が AI の利用枠にカウントされますか？",
-  "upgradeFaqLimitsA": "AI 機能のみ（チャット、Deep Dive、Portfolio Builder、Portfolio Checkup）です。その他のチャート、スクリーナー、アラート、保有銘柄、Academy は無料で無制限です。",
-  "upgradeHeroDescription": "無料で全機能が使えます。Pro では毎朝のブリーフ、大きな値動きの説明、何でも質問できる AI アナリストが追加されます。",
   "upgradeAlreadyProBanner": "あなたは Pro をご利用中です。BullPen をサポートいただきありがとうございます。",
   "upgradeMonthly": "月額",
   "upgradeAnnual": "年額",
@@ -181,5 +179,12 @@
   "manageBillingNoSubscription": "このアカウントには有料サブスクリプションがないため、キャンセルするものがありません。",
   "manageBillingSeePlans": "プランを見る",
   "manageBillingBackToApp": "BullPen に戻る",
-  "deepDivePreviewFor": "Deep Dive: {{ticker}}"
+  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
+  "upgradeFaqLimitsA": "AI機能のみが対象です：Ask Bull、ディープダイブ、ポートフォリオビルダー、ポートフォリオチェックアップ。アラートとウォッチリストはフリープランで独自の上限があります（{{alertStocks}}銘柄のアラート、{{watchlists}}個のウォッチリスト）。チャート、スクリーナー、保有銘柄、初心者向けアカデミーに制限はありません。",
+  "upgradeHeroDescription": "無料プランでリサーチとトラッキングができます。Pro では、毎朝のブリーフ、大きな値動きの解説、どんな質問にも答える AI アナリストが加わります。",
+  "plan_row_ask_bull": "Ask Bull",
+  "upgradeFaqCompareUnlimited": "制限なし",
+  "upgradeFaqCompareCapped": "フリープランには上限があります",
+  "upgradeManageSubscription": "サブスクリプションを管理",
+  "upgradeProUntil": "{{date}} まで Pro"
 }

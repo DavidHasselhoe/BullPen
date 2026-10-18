@@ -63,8 +63,6 @@
   "upgradeFaqCancelA": "Jederzeit. Du behältst Pro bis zum Ende des Abrechnungszeitraums, dann wechselst du zurück zum (immer noch großzügigen) kostenlosen Plan.",
   "upgradeFaqCompareQ": "Was behalte ich im kostenlosen Plan?",
   "upgradeFaqLimitsQ": "Was zählt gegen die KI-Limits?",
-  "upgradeFaqLimitsA": "Nur die KI-Features (Chat, Deep Dive, Portfolio Builder, Portfolio Checkup). Alles andere (Charts, Screener, Benachrichtigungen, Bestand, Academy) ist kostenlos und unbegrenzt.",
-  "upgradeHeroDescription": "Free behält die komplette App. Pro fügt einen Analysten hinzu, der dich jeden Morgen brieft, jeden großen Move erklärt und alles beantwortet, was du fragst.",
   "upgradeAlreadyProBanner": "Du bist bei Pro, danke dass du BullPen unterstützt.",
   "upgradeMonthly": "Monatlich",
   "upgradeAnnual": "Jährlich",
@@ -181,5 +179,12 @@
   "manageBillingNoSubscription": "Dieses Konto hat kein bezahltes Abonnement, daher gibt es nichts zu kündigen.",
   "manageBillingSeePlans": "Pläne ansehen",
   "manageBillingBackToApp": "Zurück zu BullPen",
-  "deepDivePreviewFor": "Deep Dive: {{ticker}}"
+  "deepDivePreviewFor": "Deep Dive: {{ticker}}",
+  "upgradeFaqLimitsA": "Nur die KI-Features: Ask Bull, Deep Dive, Portfolio Builder und Portfolio Checkup. Alerts und Watchlists haben eigene Limits in der kostenlosen Version, {{alertStocks}} Aktien mit Alerts und {{watchlists}} Watchlists. Charts, Screener, Holdings und die Anfänger-Academy haben keine Limits.",
+  "upgradeHeroDescription": "Free deckt Research und Tracking ab. Pro fügt einen Analysten hinzu, der dich jeden Morgen brieft, jede große Bewegung erklärt und alles beantwortet, was du fragst.",
+  "plan_row_ask_bull": "Ask Bull",
+  "upgradeFaqCompareUnlimited": "Keine Limits",
+  "upgradeFaqCompareCapped": "Mit Limit in der kostenlosen Version",
+  "upgradeManageSubscription": "Abonnement verwalten",
+  "upgradeProUntil": "Pro bis {{date}}"
 }
