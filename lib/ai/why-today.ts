@@ -88,15 +88,30 @@ const FILING_CHECK_AFTER_MS = 20 * 60_000;
 /** SEC asks for polite polling: one submissions read per ticker per 10 minutes, shared by everyone. */
 const FILING_CACHE_TTL_SECONDS = 10 * 60;
 
-/** Acceptance time of a ticker's newest 8-K, '' when it has none, no CIK, or SEC did not answer. */
+/**
+ * 8-K items that can explain a price move: results (2.02), announcements
+ * (7.01, 8.01), deals and their end (1.01, 1.02, 2.01, 5.01), debt raised
+ * (2.03, convertibles move stocks), restructuring and write-downs (2.05,
+ * 2.06), bankruptcy, a cyber incident, delisting, a restatement (1.03, 1.05,
+ * 3.01, 4.02), executives leaving (5.02). Shareholder votes (5.07), bylaws,
+ * auditor changes and an exhibits-only 9.01 do not: rewriting for them pays
+ * for the same answer twice.
+ */
+const MATERIAL_8K_ITEMS = new Set(['1.01', '1.02', '1.03', '1.05', '2.01', '2.02', '2.03', '2.05', '2.06', '3.01', '4.02', '5.01', '5.02', '7.01', '8.01']);
+
+export function isMaterial8K(items: string): boolean {
+  return items.split(',').some((i) => MATERIAL_8K_ITEMS.has(i.trim()));
+}
+
+/** Acceptance time of a ticker's newest material 8-K, '' when it has none, no CIK, or SEC did not answer. */
 async function latest8K(ticker: string): Promise<string> {
-  const key = `whytoday:8k:${ticker}`;
+  const key = `whytoday:8k:v2:${ticker}`;
   const hit = await rget<string>(key);
   if (hit !== null) return hit;
   let at = '';
   try {
     const cik = await resolveCik(ticker);
-    if (cik) at = (await fetchRecentFilings(cik)).find((f) => f.form === '8-K')?.acceptanceDateTime ?? '';
+    if (cik) at = (await fetchRecentFilings(cik)).find((f) => f.form === '8-K' && isMaterial8K(f.items))?.acceptanceDateTime ?? '';
   } catch (err) {
     // SEC down means no rewrite, never a failed answer.
     console.error(`[why-today] 8-K check failed for ${ticker}:`, err);
