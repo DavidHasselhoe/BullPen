@@ -57,7 +57,9 @@ export function namespacesForPath(pathname: string): Namespace[] {
   // /get-started/trial shows the TrialTimeline, whose copy lives in billing.
   if (pathname.startsWith('/upgrade') || pathname.startsWith('/pricing') || pathname.startsWith('/get-started/trial')) return ['billing'];
   if (pathname.startsWith('/watchlist')) return ['watchlist'];
-  // The invite landing renders its copy on the server, from 'auth'.
-  if (pathname.startsWith('/invite')) return ['auth'];
+  // The invite landing renders its copy on the server, from 'auth'. /login
+  // and /register (incl. the in-page forgot-password view) render 'auth' on
+  // first paint, so without it the server emits raw keys and hydration fails.
+  if (pathname.startsWith('/invite') || pathname.startsWith('/login') || pathname.startsWith('/register')) return ['auth'];
   return [];
 }
