@@ -585,5 +585,9 @@
   "memberPositions_other": "{{count}} positions",
   "pickColVsSp": "vs S&P 500",
   "pickColAngle": "Angle",
-  "pickVsSp500": "vs S&P 500"
+  "pickVsSp500": "vs S&P 500",
+  "homeFollowsTitle": "De ceux que vous suivez",
+  "homeFollowsSeeAll": "Voir tout",
+  "followSeeInFeed": "Voir dans le flux",
+  "followSignUpContext": "Créez un compte gratuit pour suivre {{name}}. Ses nouveaux dépôts et transactions apparaîtront dans votre flux."
 }

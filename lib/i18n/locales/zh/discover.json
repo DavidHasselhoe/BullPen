@@ -585,5 +585,9 @@
   "homeChartSession": "交易时段",
   "homeSessionPre": "盘前",
   "homeSessionRegular": "常规交易时段",
-  "homeSessionPost": "盘后"
+  "homeSessionPost": "盘后",
+  "homeFollowsTitle": "来自你的关注",
+  "homeFollowsSeeAll": "查看全部",
+  "followSeeInFeed": "在动态中查看",
+  "followSignUpContext": "创建免费账户以关注 {{name}}。新的申报和交易会显示在你的动态中。"
 }

@@ -585,5 +585,9 @@
   "fundAskHeading": "Pregunta a Bull sobre este fondo",
   "barPut": "Put",
   "barCall": "Call",
-  "pickVsSp500": "vs S&P 500"
+  "pickVsSp500": "vs S&P 500",
+  "homeFollowsTitle": "De quienes sigues",
+  "homeFollowsSeeAll": "Ver todo",
+  "followSeeInFeed": "Ver en Feed",
+  "followSignUpContext": "Crea una cuenta gratuita para seguir a {{name}}. Sus nuevos reportes y operaciones aparecerán en tu Feed."
 }

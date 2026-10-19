@@ -230,5 +230,6 @@
   "timeZone": "Zeitzone",
   "timeZoneAuto": "Automatisch: {{zone}}",
   "timeZoneMarket": "US-Börsenzeit (New York)",
-  "timeZoneDescription": "Uhrzeiten in Charts und im Wirtschaftskalender werden in dieser Zeitzone angezeigt. Automatisch folgt deinem Gerät."
+  "timeZoneDescription": "Uhrzeiten in Charts und im Wirtschaftskalender werden in dieser Zeitzone angezeigt. Automatisch folgt deinem Gerät.",
+  "homeWidget_from_follows": "Von denen, denen du folgst"
 }

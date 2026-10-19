@@ -585,5 +585,9 @@
   "homeChartSession": "セッション",
   "homeSessionPre": "プリマーケット",
   "homeSessionRegular": "取引時間",
-  "homeSessionPost": "アフターアワーズ"
+  "homeSessionPost": "アフターアワーズ",
+  "homeFollowsTitle": "フォローしている相手から",
+  "homeFollowsSeeAll": "すべて表示",
+  "followSeeInFeed": "フィードで表示",
+  "followSignUpContext": "無料アカウントを作成して{{name}}をフォローしましょう。新しい提出書類と取引がフィードに表示されます。"
 }

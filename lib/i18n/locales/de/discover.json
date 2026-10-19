@@ -585,5 +585,9 @@
   "pickColVsSp": "vs S&P",
   "pickChartPortfolio": "Portfolio",
   "pickCatalystTurnaround": "Turnaround",
-  "pickVsSp500": "vs S&P 500"
+  "pickVsSp500": "vs S&P 500",
+  "homeFollowsTitle": "Von denen, denen du folgst",
+  "homeFollowsSeeAll": "Alle anzeigen",
+  "followSeeInFeed": "Im Feed anzeigen",
+  "followSignUpContext": "Erstelle ein kostenloses Konto, um {{name}} zu folgen. Neue Meldungen und Trades erscheinen dann in deinem Feed."
 }

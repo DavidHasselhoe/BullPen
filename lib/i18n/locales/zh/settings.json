@@ -230,5 +230,6 @@
   "timeZone": "时区",
   "timeZoneAuto": "自动：{{zone}}",
   "timeZoneMarket": "美国市场时间（纽约）",
-  "timeZoneDescription": "图表和经济日历中的时间将按此时区显示。自动将跟随你的设备。"
+  "timeZoneDescription": "图表和经济日历中的时间将按此时区显示。自动将跟随你的设备。",
+  "homeWidget_from_follows": "来自你的关注"
 }

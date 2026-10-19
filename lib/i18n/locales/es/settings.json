@@ -230,5 +230,6 @@
   "timeZone": "Zona horaria",
   "timeZoneAuto": "Automática: {{zone}}",
   "timeZoneMarket": "Hora del mercado de EE. UU. (Nueva York)",
-  "timeZoneDescription": "Las horas de los gráficos y del calendario económico se muestran en esta zona. Automática sigue la de tu dispositivo."
+  "timeZoneDescription": "Las horas de los gráficos y del calendario económico se muestran en esta zona. Automática sigue la de tu dispositivo.",
+  "homeWidget_from_follows": "De quienes sigues"
 }

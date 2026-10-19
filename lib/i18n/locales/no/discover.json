@@ -585,5 +585,9 @@
   "barCall": "Call",
   "pickChartMedian": "Median",
   "pickOver": "over {{duration}}",
-  "pickVsSp500": "vs S&P 500"
+  "pickVsSp500": "vs S&P 500",
+  "homeFollowsTitle": "Fra hvem du følger",
+  "homeFollowsSeeAll": "Se alle",
+  "followSeeInFeed": "Se i Feed",
+  "followSignUpContext": "Opprett en gratis konto for å følge {{name}}. Nye registreringer og handler vises da i feeden din."
 }
