@@ -37,6 +37,6 @@ export function getNavItems(t: TFunction): NavItem[] {
 }
 
 export const COMMUNITY_LINKS: CommunityLink[] = [
-  { id: 'feed', name: 'Feed', href: '/social', icon: Rss, description: 'Activity from investors you follow' },
+  { id: 'feed', name: 'Feed', href: '/social', icon: Rss, description: 'Filings and trades from everyone you follow' },
   { id: 'members', name: 'Members', href: '/users', icon: Users, description: 'Browse investor profiles' },
 ];
