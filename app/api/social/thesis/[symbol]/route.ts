@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { loadAuthorLabels } from '@/lib/social/authors';
 
 export interface Thesis {
   id: string;
@@ -73,15 +74,10 @@ async function getHandler(
   const thesisIds = rows.map((r: { id: string }) => r.id);
   const userIds = [...new Set(rows.map((r: { user_id: string }) => r.user_id))];
 
-  const [{ data: profileRows }, { data: replyCounts }] = await Promise.all([
-    supabase.from('users').select('id, username, full_name, avatar_url').in('id', userIds),
+  const [profileMap, { data: replyCounts }] = await Promise.all([
+    loadAuthorLabels(userIds),
     supabase.from('stock_thesis_replies').select('thesis_id').in('thesis_id', thesisIds),
   ]);
-
-  const profileMap = new Map<string, { username: string | null; full_name: string | null; avatar_url: string | null }>();
-  (profileRows ?? []).forEach((p: { id: string; username: string | null; full_name: string | null; avatar_url: string | null }) => {
-    profileMap.set(p.id, { username: p.username, full_name: p.full_name, avatar_url: p.avatar_url });
-  });
 
   const replyCountMap = new Map<string, number>();
   (replyCounts ?? []).forEach((r: { thesis_id: string }) => {

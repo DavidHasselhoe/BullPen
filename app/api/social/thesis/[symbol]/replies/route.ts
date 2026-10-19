@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { loadAuthorLabels } from '@/lib/social/authors';
 
 export interface ThesisReply {
   id: string;
@@ -58,14 +59,7 @@ async function getHandler(
   }
 
   const userIds = [...new Set(rows.map((r) => r.user_id))];
-  const { data: profileRows } = await supabase
-    .from('users')
-    .select('id, username, full_name, avatar_url')
-    .in('id', userIds);
-
-  const profileMap = new Map(
-    (profileRows ?? []).map((p) => [p.id, p])
-  );
+  const profileMap = await loadAuthorLabels(userIds);
 
   const replies: ThesisReply[] = rows.map((r) => {
     const p = profileMap.get(r.user_id) ?? { username: null, full_name: null, avatar_url: null };
