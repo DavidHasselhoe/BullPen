@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { rget } from '@/lib/cache/redis-cache';
 import { WHY_TODAY_MIN_MOVE } from '@/lib/ai/why-today-shared';
-import { isStale, whyTodayKey, whyTodayLanguage, type CachedWhyToday } from '@/lib/ai/why-today';
+import { needsRewrite, whyTodayKey, whyTodayLanguage, type CachedWhyToday } from '@/lib/ai/why-today';
 
 const TICKER_RE = /^[A-Z0-9.\-/]{1,12}$/;
 
@@ -29,7 +29,7 @@ async function handler(request: NextRequest, context: unknown): Promise<NextResp
 
   const language = whyTodayLanguage(request.nextUrl.searchParams.get('lang'));
   const cached = await rget<CachedWhyToday>(whyTodayKey(ticker, language));
-  const why = cached && !isStale(cached, pct) ? { text: cached.text, changePct: cached.changePct } : null;
+  const why = cached && !(await needsRewrite(ticker, cached, pct)) ? { text: cached.text, changePct: cached.changePct } : null;
   return addSecurityHeaders(NextResponse.json({ why }));
 }
 

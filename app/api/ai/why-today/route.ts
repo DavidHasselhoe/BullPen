@@ -10,7 +10,7 @@ import { getStockQuotes, isOutsideRegularSessionET } from '@/lib/twelvedata/twel
 import {
   WHY_TODAY_CACHE_TTL,
   WHY_TODAY_MODEL,
-  isStale,
+  needsRewrite,
   whyTodayKey,
   whyTodayLanguage,
   whyTodayRequest,
@@ -94,7 +94,7 @@ async function handler(
     );
 
   // Someone already asked today and the move hasn't changed its story: no call.
-  if (cached && (!serverMove || !isStale(cached, serverMove.changePct))) {
+  if (cached && (!serverMove || !(await needsRewrite(ticker, cached, serverMove.changePct)))) {
     return sse(async (send) => {
       send({ type: 'text', delta: cached.text });
       send({ type: 'done' });

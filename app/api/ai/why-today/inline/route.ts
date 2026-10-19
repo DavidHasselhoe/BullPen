@@ -27,7 +27,7 @@ import {
   WHY_TODAY_MIN_MOVE,
   WHY_TODAY_MODEL,
   generateWhyToday,
-  isStale,
+  needsRewrite,
   whyTodayKey,
   whyTodayLanguage,
   whyTodayLockKey,
@@ -103,7 +103,7 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
       const key = whyTodayKey(ticker, language, mics.get(ticker));
       const cached = await rget<CachedWhyToday>(key);
       const ready = (c: CachedWhyToday): InlineWhy => ({ status: 'ready', text: c.text, changePct: c.changePct });
-      if (cached && !isStale(cached, q.dp)) {
+      if (cached && !(await needsRewrite(ticker, cached, q.dp, mics.get(ticker)))) {
         explanations[ticker] = ready(cached);
         return;
       }

@@ -44,6 +44,8 @@ export interface EdgarFiling {
   items: string; // comma-separated, e.g. "2.02,9.01"
   /** Period a 10-Q/10-K covers (its exact period end), "" for other forms. */
   reportDate: string;
+  /** When EDGAR accepted it, real UTC: "2026-08-27T00:21:19.000Z" is NVIDIA's 8:21 pm ET earnings 8-K of Aug 26. */
+  acceptanceDateTime?: string;
 }
 
 interface FilingColumns {
@@ -53,6 +55,7 @@ interface FilingColumns {
   primaryDocument?: string[];
   items?: string[];
   reportDate?: string[];
+  acceptanceDateTime?: string[];
 }
 
 interface SubmissionsResponse {
@@ -111,6 +114,7 @@ export async function fetchSubmissions(cik: string | number): Promise<{ fiscalYe
     primaryDocument: r?.primaryDocument?.[i] ?? '',
     items: r?.items?.[i] ?? '',
     reportDate: r?.reportDate?.[i] ?? '',
+    acceptanceDateTime: r?.acceptanceDateTime?.[i],
   }));
   return { fiscalYearEnd: body.fiscalYearEnd ?? null, filings };
 }

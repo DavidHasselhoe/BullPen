@@ -16,6 +16,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { languageName, isSupportedLanguage } from '@/lib/i18n/language-names';
 import { WHY_TODAY_MIN_MOVE } from '@/lib/ai/why-today-shared';
 import { sessionDateET } from '@/lib/market-data/trading-day';
+import { rget, rset } from '@/lib/cache/redis-cache';
+import { resolveCik } from '@/lib/segments/cik';
+import { fetchRecentFilings } from '@/lib/edgar/edgar-watch';
 
 export { WHY_TODAY_MIN_MOVE };
 export type { InlineWhy } from '@/lib/ai/why-today-shared';
@@ -78,6 +81,48 @@ export const WHY_TODAY_CACHE_TTL = CACHE_TTL_SECONDS;
 export function isStale(cached: CachedWhyToday, currentPct: number): boolean {
   const flipped = Math.sign(cached.changePct) !== Math.sign(currentPct) && Math.abs(currentPct) >= WHY_TODAY_MIN_MOVE;
   return flipped || Math.abs(currentPct - cached.changePct) > Math.max(3, Math.abs(cached.changePct) / 2);
+}
+
+/** An answer this young is left alone: the filing check is for news that broke later in the day. */
+const FILING_CHECK_AFTER_MS = 20 * 60_000;
+/** SEC asks for polite polling: one submissions read per ticker per 10 minutes, shared by everyone. */
+const FILING_CACHE_TTL_SECONDS = 10 * 60;
+
+/** Acceptance time of a ticker's newest 8-K, '' when it has none, no CIK, or SEC did not answer. */
+async function latest8K(ticker: string): Promise<string> {
+  const key = `whytoday:8k:${ticker}`;
+  const hit = await rget<string>(key);
+  if (hit !== null) return hit;
+  let at = '';
+  try {
+    const cik = await resolveCik(ticker);
+    if (cik) at = (await fetchRecentFilings(cik)).find((f) => f.form === '8-K')?.acceptanceDateTime ?? '';
+  } catch (err) {
+    // SEC down means no rewrite, never a failed answer.
+    console.error(`[why-today] 8-K check failed for ${ticker}:`, err);
+  }
+  void rset(key, at, FILING_CACHE_TTL_SECONDS);
+  return at;
+}
+
+/**
+ * isStale, or the company filed an 8-K after the answer was written. The move
+ * size can hold while its reason changes: a stock up 6% on an upgrade that then
+ * files a guidance cut at noon still reads +6%, and the morning's answer would
+ * keep explaining the wrong news. Crypto and listing-pinned holdings (KOG on
+ * XSTU, whose bare ticker is another company's CIK) are left to isStale alone.
+ */
+export async function needsRewrite(
+  ticker: string,
+  cached: CachedWhyToday,
+  currentPct: number,
+  mic?: string | null,
+): Promise<boolean> {
+  if (isStale(cached, currentPct)) return true;
+  const writtenAt = Date.parse(cached.generatedAt);
+  if (ticker.includes('/') || mic || !(Date.now() - writtenAt >= FILING_CHECK_AFTER_MS)) return false;
+  const filed = Date.parse(await latest8K(ticker));
+  return Number.isFinite(filed) && filed > writtenAt;
 }
 
 /** Request body shared by the streamed and the one-shot call, so both say the same thing. */
