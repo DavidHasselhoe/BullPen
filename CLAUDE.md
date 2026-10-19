@@ -52,7 +52,7 @@ So: **model-written prose is never truncated without an expand affordance.**
 Two branches only: `preview` and `main`.
 
 - **`preview`** — active development. All new work is committed and pushed here. Vercel auto-deploys it to the stable preview URL.
-- **`main`** — production. Updated at the end of each session by merging `preview` → `main` (see End Session Protocol below). Vercel auto-deploys `main` to production on every push.
+- **`main`** — production. Updated at the end of each session by merging `preview` → `main` (see End Session Protocol). Vercel auto-deploys `main` to production on every push.
 
 **Always push to `preview` during a session:**
 ```bash
@@ -65,55 +65,7 @@ Never create feature branches. Work directly on `preview`.
 
 ## End Session Protocol
 
-When the user says **"end session"**, run this sequence in order. Stop and report if any step fails.
-
-**1. Check for uncommitted changes from *any* session**
-```bash
-git status --short
-```
-This step exists because "always commit and push as you go" only holds within a session that reaches its own end — a session that's interrupted, crashes, or is closed early can leave real, finished work sitting uncommitted, and nothing about `git log origin/main..origin/preview` (step 3) ever looks at the working tree, so it stays invisible to every later "end session" run until someone thinks to check.
-
-If `git status --short` is empty, skip to step 2. Otherwise, inspect every changed/untracked file (`git diff` per file, not just the stat line) and sort into:
-- **Real, coherent, finished-looking work** (has a clear purpose, no `TODO`/debug leftovers, reads as complete) — stage and commit each distinct piece of work as its own commit with a real description, same as any other commit in this repo. Don't lump unrelated features into one commit just because they were discovered together.
-- **Ambiguous or partial work** — surface it to the user with a summary of what it looks like; don't guess at intent or silently commit something that might be mid-edit.
-- **Stray files** (unreferenced assets, tool-cache directories, anything that doesn't look like it belongs in the repo) — do not commit. Flag them and ask before doing anything else with them (never auto-delete).
-
-Never commit a whole pile of unrelated uncommitted files as a single sweep — the same care applied to work written in the current session applies here.
-
-**2. Lint check**
-```bash
-npm run lint
-```
-Fix any errors before proceeding. Warnings are acceptable.
-
-**3. Confirm preview is ahead of main**
-```bash
-git log origin/main..origin/preview --oneline
-```
-If there are no commits ahead, nothing to merge — tell the user and stop.
-
-**4. Generate changelog entry**
-Find the last commit that touched the changelog with `git log -1 --format=%H -- content/changelog.json`, then run `git log <that commit>..HEAD --date=iso-strict --pretty=format:'%ad %H %s'` on `preview` to see everything shipped since, **with each commit's timestamp**.
-
-Date every changelog entry by the **UTC calendar date of the commit(s) that shipped it** — never by "today" / the date the end-session protocol happens to run. Convert each commit's local timestamp to UTC before bucketing (e.g. a commit at `2026-07-21T00:15:00+02:00` is UTC `2026-07-20T22:15:00Z`, so it belongs to the **2026-07-20** entry, not 2026-07-21). This matters because the dashboard's commit activity heatmap (`lib/github/commit-activity.ts`) buckets commits by GitHub's `commit.author.date` UTC day — if the changelog uses a different day, the two views disagree for anyone working past midnight local time.
-
-If the commits since the last changelog entry span more than one UTC calendar day, **write one entry per day** (grouping each shipped item under the UTC date of the commit that introduced it), not one entry dated "today" for everything. Insert them newest-first, same as any other entries.
-
-If there's user-facing material in that range — new features, meaningful UX/behavior changes, user-noticeable bug fixes — write it to `content/changelog.json`. Use plain, non-technical language: no file paths, no commit/ticket references, no jargon. Each item's `type` is exactly one of `"new" | "improved" | "fixed"`. Exclude pure internal refactors, perf/RLS-only commits, dependency bumps, doc/CLAUDE.md-only changes, and **anything scoped entirely to the public marketing/landing site** (the logged-out homepage and its sections, About/Contact/Roadmap/Glossary/Help Center/Disclosures/Security/Privacy/Changelog pages, footer/nav changes on those pages) — visual redesigns, copy tweaks, and new informational pages there are not product changes. Users only care about what changed in the actual app (dashboard, stock pages, tools, alerts, AI features); the changelog is for that, not the brochure. If nothing in the range qualifies, skip this step silently — do not add an empty or filler entry. Commit the change to `preview` before continuing. If an entry was added, run `npm run post-changelog-discord` to announce it in Discord.
-
-**5. Merge preview → main and push**
-```bash
-git checkout main
-git pull origin main
-git merge origin/preview --no-edit
-git push origin main
-git checkout preview
-```
-
-**6. Confirm deployment triggered**
-Use `mcp__claude_ai_Vercel__list_deployments` to verify a new deployment appeared for `main`. Report the deployment URL to the user.
-
-**Why this matters:** Keeping `main` = what's in production means git history is the source of truth, the `sync-preview` GitHub Action stays a no-op, and there's no drift between the dashboard-promoted build and the actual branch state.
+When the user says **"end session"**, read `docs/agent/end-session.md` and follow it exactly, in order: uncommitted work from any session, lint, preview ahead of main, changelog (dated by each commit's UTC day), merge preview → main, confirm the Vercel deployment.
 
 ## Supabase Migrations
 
@@ -142,332 +94,51 @@ npm run trigger-cron # Manually fire the daily cron job
 
 TypeScript build errors are intentionally suppressed in `next.config.ts` (Supabase type mismatches); the `lint` command is the primary code-quality gate.
 
-## Architecture Overview
+## Reference docs (read when the task touches them)
 
-**BullPen** is a Next.js 16 App Router application targeting beginner-to-intermediate investors. React 19, TypeScript strict mode, Tailwind CSS 4, Radix UI/shadcn-ui, Framer Motion.
-
-### Data sources
-
-| Source | Used for |
+| Read | Before |
 |---|---|
-| **Supabase** (Postgres) | User auth, companies DB, holdings, watchlist, social, theses, daily briefs |
-| **Twelve Data API** | Primary market data — quotes, candles, stats, financials, earnings, logos, symbol search |
-| **Finnhub** | News feed, fallback prices |
-| **SnapTrade** | Brokerage sync (connected holdings) |
-| **Anthropic Claude** | "Why Today?" price explanations, Daily Brief generation |
-| **OpenAI** | BullPen AI research assistant chat |
-| **Resend** | Transactional email (price alerts, earnings, filing notifications) |
-| **Upstash Redis** | API rate limiting and market data caching |
-
-### Request flow for a stock page
-
-1. `app/stock/[ticker]/page.tsx` — client component, fires `useStockSnapshot(ticker)` on mount
-2. `useStockSnapshot` calls `/api/stock/[ticker]/snapshot` — a single batched TwelveData `/batch` request that seeds TanStack Query cache for quote, stats, and earnings in one round trip
-3. Dynamic-imported sub-components (`StatisticsGrid`, `FinancialsSection`, etc.) read from that pre-seeded cache and skip their own fetches
-
-### Request flow for a crypto/commodity page
-
-1. `app/asset/[slug]/page.tsx` — universal page for non-stock assets (e.g. `/asset/BTC-USD`)
-2. `slug` uses hyphen encoding: `BTC-USD` in URL → `BTC/USD` symbol via `slugToSymbol()` at every API boundary
-3. `useAssetProfile(slug)` calls `/api/asset/[slug]/profile` — returns `{ assetType, name, symbol, logoUrl }`
-4. All stock API routes (`/api/stock/[ticker]/...`) accept slugs via `slugToSymbol(ticker)` at entry; asset-type guards (`hasEarnings`, `has24hTrading`) skip irrelevant sub-requests
-
-### Symbol search
-
-Search does not call the server per keystroke. `/api/search/index` serves the whole catalogue (~18k US stocks, ETFs and index funds, ~810KB of tab-separated text, ~165KB over the wire, CDN-cached 6h) and the browser fetches it once during idle time, then answers every keystroke locally in well under a millisecond via `lib/search/local-index.ts`. `useInstantSearch()` (`hooks/use-symbol-index.ts`) is the single entry point every search surface uses — command palette, stock search, watchlist, screener, compare, add-holding, buy-here.
-
-`/api/search` (TwelveData `symbol_search`, 0.5-2.4s) still runs behind a 250ms debounce and its results are appended below the local ones, because the catalogue is US stocks and ETFs only: crypto pairs, foreign listings and very new symbols exist only there. Two slots are always reserved for it so a full local list can't crowd out BTC/USD.
-
-Index funds are in there too: TwelveData's `/funds` catalogue is 122k US mutual funds, of which the ~850 whose name says "index" are kept (five-letter ticker ending in X, USD). They route to `/etf/[ticker]` like any other fund and the page labels them via `fundLabel()`. Ranking is precomputed server-side into a 0-99 `rank` column (market-cap magnitude for stocks, a name/ticker heuristic for ETFs, flat for index funds — see `lib/search/index-rank.ts`) so the per-keystroke loop only adds integers. `npm run test-search-ranking` asserts the cases that were actually wrong before ranks existed; `--live` benchmarks against a running dev server.
-
-### Asset type system
-
-`lib/assets/asset-type.ts` is the single source of truth:
-- `slugToSymbol('BTC-USD')` → `'BTC/USD'`; `symbolToSlug('BTC/USD')` → `'BTC-USD'`
-- `inferAssetType(symbol, instrumentType?)` — infers from TwelveData `instrument_type` with symbol-pattern fallback
-- `slugToAssetPath(symbol)` — routes stocks/ETFs to `/stock/`, everything else to `/asset/`
-- `has24hTrading(type)` — true for crypto; skips ET timezone logic in candles and extended-hours fetch
-- `hasEarnings(type)` — true for stock/ETF; gates earnings sub-requests in snapshot
-- `hasFinancials(type)` — true for stock; gates financial section rendering
-
-### AI chat stack
-
-**"Bull" is the product name for this AI chat assistant** (the mascot — see `BullAiIcon.tsx`, the "Ask Bull" trigger button, and the `AISidePanel` header). When the user says "Bull" or "Ask Bull" in conversation (e.g. "allow Bull to..."), they mean this chat assistant — `BullpenChat.tsx` / `lib/ai/agent.ts` / `lib/ai/tools.ts` for the main chat, or `ChartAIPanel.tsx` / `lib/ai/chart-agent.ts` for the in-chart assistant.
-
-```
-BullpenChat.tsx (UI)
-  → DefaultChatTransport → POST /api/ai/chat/route.ts
-    → runAgent() in lib/ai/agent.ts
-      → streamText (Vercel AI SDK, OpenAI gpt-4o, maxSteps:5)
-        systemPrompt = experiencePrefix + contextPrefix + SYSTEM_PROMPT
-```
-
-- `lib/ai/systemPrompt.ts` — 3,224 tokens after the 2026-09-22 audit (was 9,022). **It must not document individual tools.** What a tool does, when to use it and what it costs belongs in its `description` in `lib/ai/tools.ts`, which ships in the same request: the prompt used to carry a second copy of all 23, the two wordings had drifted apart, and two conditionally-registered tools were described to users who did not have them. The prompt carries audience, how to answer, cross-tool routing, and the product and policy boundaries. `npm run test-bull-routing` probes the routing it is responsible for. `getPortfolioContext` (read-only holdings/watchlist access) is opt-in — only registered when the user enables it in Settings > Ask Bull, same conditional pattern as `createAlert` needing `userId`
-- `lib/ai/tools.ts` — Vercel AI SDK tools that call Supabase or TwelveData
-- Experience level (`beginner | intermediate | advanced`) is sent from the client via `body.experienceLevel` and prepended as a system instruction
-- Page context (`{tickers, label}`) is injected via `body.context` so the AI knows which stock the user is viewing
-
-### Anthropic Claude usage
-
-Two separate Anthropic-powered features (not using Vercel AI SDK):
-- **"Why Today?"** — `app/api/stock/[ticker]/why-today/route.ts` — Claude + Brave web search explains daily price movement (Pro feature)
-- **Daily Brief** — `app/api/cron/generate-daily-brief/route.ts` — Claude generates a personalized market summary at 06:30 UTC for Pro users; stored in `daily_briefs` Supabase table
-- **Bull's Weekly Pick** — `lib/ai/picks/pipeline.ts` (v2 since 2026-Q4, Opus 5.5): a deterministic factor screen (`lib/picks/factor-screen.ts`) picks the 25-name shortlist, Opus with web search does due diligence, then three independent commit runs vote. The model does not propose ideas: when it did, 9 of the first 10 picks were the same AI-capex trade. Don't backtest the LLM stages on past weeks, the model has memorised them. `npm run test-weekly-pick` (screen only, free) / `-- --full` (real Opus calls). The track record can be scoped by quarter (`?quarter=2026-Q3`); quarters group picks, they never close or reset them.
-
-### Experience level system
-
-`hooks/use-experience-level.ts` reads `user.experience_level` from Supabase auth context. `isSimplified = level === 'beginner'`. Components use this to switch between plain-language labels and full financial terminology. `TermTooltip` in `components/ui/TermTooltip.tsx` renders the adaptive label + glossary tooltip on every metric.
-
-### Display clock (time zone + 12/24h)
-
-`lib/dates/clock.ts` decides how a time of day is shown: the zone from `users.settings.time_zone` (`'auto'` = the device, `'market'` = New York, or an IANA zone, set in Settings > Preferences) and 12- vs 24-hour from the app language. `ClockSync` (mounted in `app/providers.tsx`) keeps it current; `useClock()` subscribes. Format new time-of-day UI with `fmtClockTime` / `fmtClockDate` rather than a fresh `toLocaleTimeString`. Two things must never go through it: exchange logic (session and trading-day bucketing pins `America/New_York` itself) and date-only values (a daily bar, an earnings date), which a zone shift moves to another day. Charts, 1D/5D axes and economic release times use it; the rest of the app still formats on the device clock, which is identical under `'auto'`.
-
-### Auth
-
-`components/auth/AuthProvider.tsx` owns auth state via `supabase.auth.onAuthStateChange()`. It provides `{ user: AuthUser | null, isLoading, isAuthenticated, refresh() }`. Use `useAuth()` (from `hooks/use-auth.ts`) in page components. Server-side auth uses `createServerClient()` (service role, no session refresh).
-
-`middleware.ts` runs on every route, refreshes the Supabase session cookie, and applies security headers (CSP, HSTS, etc.).
-
-### Data fetching conventions
-
-- All client-side fetching goes through **TanStack Query** (`useQuery` / `useMutation`).
-- `queryKey` conventions: `['company-info', ticker]`, `['stock-statistics', ticker]`, `['holdings-quotes', symbols]`, etc. — always include the dynamic param so cache is scoped correctly.
-- Live prices use SSE via `useLivePrices(symbols)` → `useThrottle(livePrices, 3000)` before passing to memos/components to avoid per-tick re-renders.
-
-### Supabase clients
-
-```ts
-createBrowserClient()  // lib/supabase/client.ts — cookie-based, use in Client Components and Server Actions
-createServerClient()   // lib/supabase/server.ts  — service role, use in API routes and Server Components
-```
-
-Never expose the service role key client-side.
-
-### Key lib directories
-
-| Path | Purpose |
-|---|---|
-| `lib/ai/` | Agent, system prompt, tool definitions |
-| `lib/assets/` | Asset type utilities (`slugToSymbol`, `inferAssetType`, `slugToAssetPath`, type guards) |
-| `lib/finance/` | Glossary, health-score algorithm, signal scoring |
-| `lib/twelvedata/` | Typed TwelveData API client (`TwelveDataRateLimitError` for 429s) |
-| `lib/supabase/` | Typed DB clients, shared `Database` type |
-| `lib/security/` | Rate limiting helpers (used in API routes) |
-| `lib/currency/` | FX conversion (`convertCurrency`, `getExchangeRates`) |
-| `lib/ingestion/` | SEC filing ingestion pipeline (10-K, 10-Q, 8-K) |
-| `lib/search/` | TwelveData symbol search ranking and deduplication logic |
-
-### API route conventions
-
-All API routes live under `app/api/`. They follow these patterns:
-- Auth check: `createServerClient()` → `supabase.auth.getUser()`
-- Rate limiting: `lib/security/rate-limit.ts` applied at the handler level
-- TwelveData errors: catch `TwelveDataRateLimitError` and return `{ error: 'plan_restricted' }` with status 200 so components render a plan-gated message rather than an error state
-- Streaming responses: `/api/market/prices` and `/api/ai/chat` use SSE / `streamText`
-
-### Path alias
-
-`@/*` maps to the repository root (configured in `tsconfig.json`). Use `@/components/...`, `@/lib/...`, `@/hooks/...` everywhere.
-
-### Scheduled work
-
-Split across three schedulers. All cron routes are protected by the `CRON_SECRET` bearer header regardless of who triggers them. Local manual trigger: `npm run trigger-cron` (or `trigger-alerts`). Run `npm run test-cron-coverage` after touching any cron route or scheduler — it fails if a route has no scheduler pointing at it, or a scheduler references a route that doesn't exist.
-
-**Historical note (2026-09-03):** this used to be split "Vercel = 2 time-critical crons, GitHub Actions = everything else," with the reasoning that Vercel's Hobby plan capped projects at 2 cron jobs. That cap was removed Vercel-side on 2026-01-20 (`vercel.json` cron entries now go up to 100/project on every plan, confirmed live against Vercel's own docs) — it had just never been revisited. GitHub Actions' own scheduler is measurably unreliable regardless: typical drift is 15-20 min, but multi-hour delays and occasional dropped runs are common industry-wide in 2026, this repo included. The jobs below were re-sorted onto **whichever scheduler's actual constraints fit each job**, not habit.
-
-**Vercel crons** (`vercel.json`) — anything that fits Hobby's "once per day" cadence limit (a job that never fires twice in the same calendar day, regardless of which days of week) gets Vercel's own scheduler: tighter timing than GitHub Actions, and no separate service to manage. Vercel's cron invoker sends `Authorization: Bearer $CRON_SECRET` automatically when that env var is set — same header these routes already checked for GitHub Actions, so migrating a job here is a `vercel.json` edit only, never a route change.
-
-| Endpoint | Schedule (UTC) | Purpose |
-|---|---|---|
-| `/api/cron/generate-daily-brief` | `30 6 * * *` | Generate AI daily brief for Pro users (Anthropic Claude) |
-| `/api/cron/generate-weekly-pick` | `30 6 * * 1` | Generate Bull's Weekly Pick, published before pre-market so it's actionable from that session's open |
-| `/api/cron/generate-academy-course` | `17 6 * * 1` | Draft the next course in the 10-week Academy roadmap (`lib/academy/academy-roadmap.ts`) via Claude and stage it unpublished for review at `/admin/academy-roadmap`. No auto-publish — requires explicit approval. |
-| `/api/cron/sync-institutional-holdings` | `0 7 * * 1` | Pull the newest 13F-HR filing for each curated fund in `institutional_investors` from SEC EDGAR, resolve CUSIPs to tickers, and upsert holdings (Discover page's institutional-holdings Pro feature). One fund's parse failure never blocks another's; supports `?slug=<fund-slug>` for a scoped rerun. |
-| `/api/cron/check-daily-challenge-reminder` | `0 1 * * *` | Evening (~9pm ET) nudge for users with an active Academy streak who haven't done anything in Academy yet today |
-| `/api/cron/check-dividends-upcoming` | `0 8 * * *` | Notify users about held/watched stocks going ex-dividend in 3 days |
-| `/api/cron/check-earnings-upcoming` | `0 8 * * *` | In-app notification about upcoming earnings in held/watched stocks (no email) |
-| `/api/cron/check-economic-events` | `0 8 * * 1-5` | In-app heads-up on days with a scheduled US economic release (jobs report, CPI, Fed decision...), opt-in via `settings.notifications.economic_events`. Reads `economic_events` only, no credits |
-| `/api/cron/sync-economic-calendar` | `15 5 * * 1` | Refresh `economic_events` from the BLS + BEA calendar feeds, the hand-seeded FOMC dates and the Thursday jobless-claims rule (`lib/market-data/economic-calendar.ts`). Each source fails soft; BLS 403s without a browser-like user agent. Manual rerun: `npm run sync-economic-calendar` |
-| `/api/cron/refresh-congress-trades` | `0 14 * * 2` | Washington Trading: `--refresh` sweep (20 newest trades per tracked member, ~665 Disclosed Capitol credits a run at 19 members) and notify followers (`user_politician_follows`) of newly stored trades. Weekly (was twice weekly until 2026-09-25; halved to ~2,850 credits/month because vendor credits are real money and PTRs lag 30-46 days anyway). Does not refresh positions (per-row, unbounded cost: `npm run ingest-congress -- --holdings-only --dry-run` first). Needs `DISCLOSED_CAPITOL_API_KEY` in Vercel |
-| `/api/cron/check-price-moves` | `30 21 * * 1-5` | In-app notification on 5%+ price moves for held/watched stocks (no email) |
-| `/api/cron/instagram-earnings-weekly` | `0 12 * * 0` | Generate, stage, and immediately publish next week's earnings-calendar Instagram carousel; notify Discord. Own `content_type` (`earnings_calendar`). Skips with a Discord notice naming the companies when fewer than 3 report (`lib/instagram/content/earnings-minimum.ts`), checked before the caption call. |
-| `/api/cron/instagram-earnings-results` | `0 14 * * 6` | Generate, stage, and immediately publish the past week's beat/missed earnings-results recap carousel; notify Discord. Own `content_type` (`earnings_results`), can share a `period_key` with an `earnings_calendar` row for the same week without colliding. Same fewer-than-3 skip and Discord notice, checked before the TwelveData fallback. |
-| `/api/cron/instagram-picks-scoreboard` | `0 15 * * 6` | Weekly Pick track record vs the S&P 500 carousel (`lib/instagram/content/picks-scoreboard.ts`): same numbers as /picks via `computePerformance()`, posted every week whichever way it went, skipped below `MIN_PICKS_FOR_HEADLINE`. One Claude web-search call (~$0.05-0.15) for the caption and the winner/loser "what moved it" lines. Hypothetical-returns disclaimer is on the cover image, not just the caption. `?dryRun=true` stages without publishing. |
-| `/api/cron/market-movers-daily` | `30 21 * * 1-5` | Generate, stage, and immediately publish that day's top-10-gainers/top-10-losers Instagram carousel (S&P 500 + Nasdaq 100 only); notify Discord. `?preMarket=true&contextNote=...` triggers an off-schedule special edition (e.g. ahead of a market-moving event). |
-| `/api/cron/market-movers-period` | `40 21 * * 1-5` | Weekly and monthly editions of the movers carousel, ranked close to close from daily bars. Exits early unless today is the last trading day of the week (Fri, or Thu before a Friday closure) and/or the month; one ~518-credit closes fetch serves both. Own `content_type`s (`market_movers_weekly`, `market_movers_monthly`). Ten minutes after the daily run so they don't share the cron credit budget. `?period=week\|month&date=YYYY-MM-DD&dryRun=true` for manual runs (`npm run trigger-market-movers -- --period=week --date=... --dryRun`). |
-
-All four Instagram crons above publish for real in the same run they stage in — see `lib/instagram/publish.ts` and `docs/instagram-setup.md` for Meta credential setup. There is no next-day publish step or manual approval gate; the Discord message posted alongside each is a confirmation, not a review window.
-
-**Upstash QStash** — for a job that's both sub-daily (violates Hobby's once/day cadence) and genuinely time-sensitive, so "runs sometime in the next hour" (Hobby's own timing guarantee even if the cadence fit) isn't good enough either:
-
-| Endpoint | Schedule (UTC) | Purpose |
-|---|---|---|
-| `/api/cron/check-user-alerts` | `30 14-21 * * 1-5` | Evaluate user-defined price/metric alerts hourly through market hours |
-
-Migrated 2026-09-05: QStash schedule created in the Upstash console (EU region), confirmed delivering `200` on both a manual trigger and the first real fire. Auth header is passed through via `Upstash-Forward-Authorization: Bearer $CRON_SECRET`, method pinned via `Upstash-Method: GET`. The old `cron-check-user-alerts.yml` GitHub Actions workflow has been deleted.
-
-**GitHub Actions crons** (`.github/workflows/cron-*.yml`) — reserved for jobs that need something GitHub Actions actually provides beyond scheduling: a runner that can stay alive for hours pacing batched TwelveData calls (a single serverless function invocation can't), or real git checkout+commit access. Each workflow `POST`s/`GET`s the same Vercel route with `Bearer $CRON_SECRET`; the route code is unchanged, only the scheduler differs.
-
-| Endpoint | Schedule (UTC) | Why this stays on GitHub Actions |
-|---|---|---|
-| `/api/cron/prefetch-market-data` | `0 5 * * *` | Loops ~121 batches (5 symbols each) with a 75s sleep between calls, up to ~2.5h total — needs a long-lived runner, not a single request/response |
-| `/api/cron/prefetch-market-data?phase=financials` | `30 7 * * *` | Own workflow (`cron-prefetch-financials.yml`) since it no longer fits in the same job as the stats phase. Loops up to 300 batches (one symbol each) with a 65s sleep, up to ~5.5h total |
-| `/api/cron/prefetch-calendar` | `0 4 * * *` | Loops up to 40 batches with a 65s sleep, up to ~45 min total |
-| `/api/cron/refresh-search-index` (`?part=`, `&from=`) | `45 6 * * 1` | `cron-refresh-search-index.yml` — three multi-megabyte TwelveData reference feeds with wildly unstable timings (the same `/stocks` call measured at 6s, 32s and 153s in one hour). The funds catalogue alone is ~270 paged requests, because `outputsize` is honoured up to 500 and silently ignored above it. Driven in windows, each its own invocation |
-| `/api/screener/refresh` (active mode) | `0 22 * * *` | `cron-refresh-screener-stats.yml` — loops ~122 batches with a 65s sleep, up to ~160 min total |
-| `/api/screener/refresh` (active + discovery mode) | `0 3 * * *` | `cron-refresh-screener-extended.yml` — two chained batch loops (up to 279 + 15 batches), up to ~180 min total. Both this and the 22:00 job skip any ticker whose `screener_stats` row is <12h old, so they don't re-fetch what `prefetch-market-data` just warmed |
-
-`cron-sync-index-constituents.yml` (`scripts/sync-index-constituents.ts`, `0 5 * * 1`) also stays on GitHub Actions, for a different reason than the batch-loop jobs above — it's not a `/api/cron/*` route call at all, it's a repo-native script that refreshes `lib/market-data/sp500.ts` / `nasdaq100.ts` against real index membership (SPY's daily holdings disclosure for the S&P 500, Nasdaq's own constituents API for the Nasdaq-100 — TwelveData has no index-constituents endpoint) and commits any diff straight to `preview`, which needs GitHub Actions' git checkout+commit access — no serverless cron can do that. No manual review gate: both sources are official/fund-mandated daily disclosures, not a scrape. Posts to Discord (`DISCORD_INDEX_SYNC_WEBHOOK_URL`) only when membership actually changed. See `lib/market-data/index-sync.ts` for the fetch/parse logic.
-
-`cron-generate-weekly-pick.yml` still exists but is `workflow_dispatch`-only (a manual re-run trigger from the Actions tab, not a second scheduler) — that route's real schedule lives in `vercel.json` above.
-
-`seed-screener-universe.yml` (`/api/screener/seed-universe`) is `workflow_dispatch`-only — a manual/occasional bootstrap for newly-listed tickers, not a recurring schedule.
-
-The GitHub Actions workflows require **`CRON_SECRET`** to be set in repo secrets (Settings → Secrets and variables → Actions). The production URL defaults to `https://bullpeninvest.com` (was bullpen.no until 2026-09-28; it now 308-redirects there) — override with an `APP_URL` repo variable if needed.
-
-## Market Data: TwelveData Performance & Cost Guidelines
-
-**Current plan: Venture (610 API credits/minute, no daily cap).** See `docs/twelve-data-venture-analysis.md` for full plan details. This is not the Basic plan (8/min) — if you see code comments referencing "Basic plan's 8/min cap", they predate the upgrade and are stale; a single page load's credit burst (even the ~71-credit stock snapshot) is not expected to trip rate limiting on its own at this tier. `withRateLimitRetry` (`lib/twelvedata/twelvedata-client.ts`) still exists as a guard against real bursts (many concurrent users, cron overlap) but 429s should be rare in practice — if a card is intermittently empty and reloading fixes it, suspect transient network errors (fetch/socket resets, malformed JSON bodies) over rate limiting first; check Vercel runtime errors for the actual exception before assuming credits.
-
-Every TwelveData call costs API credits. The rules below are binding — violating them either burns the credit budget or causes 429 errors that degrade the entire app.
-
-### Credit costs at a glance
-
-| Endpoint | Wrapper function | Credits | Default cache TTL |
-|---|---|---|---|
-| `/quote` (via `/batch`) | `getStockQuotes(symbols[])` | 1 per symbol | Redis 15 s (seed) · 30 s (movers) |
-| `/batch` | `batchFetch()` | Σ individual costs | — |
-| `/time_series` | `getStockCandles()` | 1 per request | Redis 10–300 s (1D) · Supabase 30 min–6 h |
-| `/earnings` | `getCompanyEarnings()` | 20 per symbol | Supabase 12 h |
-| `/earnings_calendar` | `getEarningsCalendarRange()` | 40 per request | per-day, see below |
-| `/statistics` | `getStatistics()` | high (plan-dependent) | Supabase 12 h |
-| `/income_statement` | `getIncomeStatement()` | **~101 per request** | Supabase 12 h |
-| `/balance_sheet` | `getBalanceSheet()` | **~101 per request** | Supabase 12 h |
-| `/cash_flow` | `getCashFlow()` | **~101 per request** | Supabase 12 h |
-| `/last_change/{type}` | `getFundamentalsLastChange()` | 1 per symbol per type (5 for the full check) | no-store (freshness check) |
-| `/profile` | `getCompanyProfile()` | **10 per request** | Supabase 90 d (`COMPANY_PROFILE_TTL_SECONDS`) |
-| `/logo` | `getLogoUrl()` | 1 per symbol | Next.js 24 h |
-| `/press_releases` | `getPressReleases()` | 1 per request | Next.js 1 h |
-| `/symbol_search` | `symbolSearch()` | 1 per request | no-store |
-| `/splits` | `getSplits()` | 20 per request | Next.js 24 h |
-| `/dividends` | `getDividends()` | 1 per request | Supabase 12 h |
-| `/dividends_calendar` | `getDividendsCalendar()` | 40 per request | Next.js 1 h |
-| `/splits_calendar` | `getSplitsCalendar()` | 40 per request | Next.js 1 h |
-| `/ipo_calendar` | `getIPOCalendar()` | 40 per request | Next.js 1 h |
-| `/insider_transactions` | `getInsiderTransactions()` | **200 per symbol** | Next.js 1 h |
-| `/indicator` (SMA/EMA/RSI…) | `getIndicator()` | 1 per request | Next.js 5 min |
-
-**`/income_statement`, `/balance_sheet`, `/cash_flow` are NOT 1-credit calls on this plan** — confirmed live against TwelveData's `/api_usage` endpoint on 2026-08-04 (each cost ~101 credits regardless of `outputsize` or `period`; this plan bills fundamentals at their full-history tier per `docs/twelve-data-venture-analysis.md`). Treat any caller of `getIncomeStatement`/`getBalanceSheet`/`getCashFlow` as expensive: always check cache first, and if it fans out over multiple symbols in one request (a cron batch, a company-compare page), it must reserve against `lib/twelvedata/credit-budget.ts`'s shared guard before firing — `~303 credits per symbol` (all three statements) is enough on its own to blow past the 610/min account cap with just 2 symbols.
-
-**`/profile` is 10 credits per call, not 1** — measured 2026-09-15 from the `api-credits-used` response header (rose by exactly 10 per call). A sector backfill that reserved 1 per call fired 61 calls into the 610/min cap in 9 seconds. Any fan-out over `getCompanyProfile` reserves 10 per symbol (see `lib/institutions/enrich-holding-sectors.ts`). Before a bulk job, measure an unfamiliar endpoint's real cost with one call and that header rather than trusting this table.
-
-### Golden rules
-
-**0. Never request a multi-day range from `/earnings_calendar` or `/dividends_calendar`.**
-Both silently truncate and drop whole days, with no error and a `status: "ok"` body. `/earnings_calendar` caps at 1200 rows and fills from the *latest* date backwards, so a range loses its **earliest** days — verified 2026-08-10: `2026-08-03..2026-08-07` returned 1200 rows covering only Aug 4-7, while Aug 3 alone returned 141 rows including PLTR, SNAP and VRTX. The Market Calendar was showing 2 rows for a week that really had hundreds. `/dividends_calendar` is worse: it is a *global* feed (no `country` param) with thousands of events a day, defaults to 100 rows, and collapsed the same range onto a single day.
-
-Go through **`lib/market-data/calendar-days.ts`**, which fetches those two one day at a time and caches per day. Per-endpoint quirks that do not generalise: `outputsize` is ignored by `/earnings_calendar`, required by `/dividends_calendar`, and makes `/splits_calendar` return **zero** rows. `/earnings_calendar` also reports a genuinely empty day as an **error** (`"No earning were found between..."`) rather than an empty payload — treat that as `[]`, or every weekend re-fetches at 40 credits forever.
-
-**1. Always batch quotes — never call `getStockQuote` in a loop.**
-`getStockQuotes(symbols[])` sends one `/batch` POST. N individual `/quote` GETs cost the same credits but use N round-trips and are far more likely to hit the per-minute rate limit. The batch cap is ~120 requests per POST; use `SEED_CHUNK = 100` as the safe limit.
-
-**2. Check both cache layers before calling TwelveData.**
-```
-Request → Redis (rget, ~2 ms) → Supabase market_data_cache (getCached, ~20 ms) → TwelveData (100–500 ms, costs credits)
-```
-- **Redis** (`lib/cache/redis-cache.ts`) — for hot paths: 1D candles, movers, seed quotes. Sub-5 ms reads, shared across serverless instances.
-- **Supabase market_data_cache** (`lib/cache/market-data-cache.ts`) — for warm paths: stats, financials, earnings, candles ≥ 1 W. Persisted across cold starts.
-
-Write to both caches fire-and-forget (`void rset(...)`, `void setCached(...)`) so they never block the response.
-
-**3. Use session-aware TTLs for 1D candle data.**
-`candleTtlSeconds()` in `lib/cache/redis-cache.ts` reads the ET clock and returns:
-- Regular hours (9:30–16:00 ET): **10 s** — prices move every few seconds
-- Extended hours (4:00–9:30, 16:00–20:00 ET): **30 s** — slower movement
-- Market closed (overnight/weekends): **300 s** — fully static
-
-Always call this function instead of hardcoding a TTL for 1D data.
-
-**4. Check WsManager before fetching seed prices.**
-`WsManager.hasPrevClose(symbol)` is a zero-cost in-process check. The SSE stream already seeds WsManager on first delivery and writes each symbol to Redis for 15 s. The three-level dedup in `seedInitialPrices()` is the model to follow for any new real-time data path:
-```
-WsManager (in-process, 0 ms) → Redis (shared, ~2 ms) → TwelveData (paid)
-```
-
-**5. Use `getFundamentalsLastChange()` before re-fetching fundamentals.**
-Costs 5 credits (one `/last_change/{type}` call per data type) and tells you whether financials have updated since last cache, vs. ~303 credits to re-fetch all three statements. Used by the stock page's freshness check (`/api/stock/[ticker]/freshness`, throttled to once an hour per company) and `/api/admin/refresh-fundamentals`. The endpoint used to be called as `/fundamentals/last_changes`, which does not exist (plain-text 404): every check failed until 2026-09-24.
-
-**6. Expensive endpoints need long cache TTLs.**
-| Endpoint | Why it's safe to cache long |
-|---|---|
-| `/insider_transactions` (200 credits) | Insider filings are delayed by days; data doesn't change intraday |
-| `/earnings_calendar` (40 credits) | Earnings dates are set weeks in advance |
-| `/dividends_calendar` (40 credits) | Ex-dividend dates are published weeks ahead |
-| `/statistics` (high) | Fundamental ratios update at most daily, often weekly |
-| `/profile` (10 credits) | Company metadata changes rarely |
-
-**7. Always catch `TwelveDataRateLimitError` at every API boundary.**
-```ts
-} catch (error) {
-  if (error instanceof TwelveDataRateLimitError) {
-    return NextResponse.json({ error: 'plan_restricted' }, { status: 200 });
-  }
-  // ...
-}
-```
-Return status 200 with `error: 'plan_restricted'` so components render a plan-gated UI instead of an error state. Never let it propagate to a 500 — a 500 triggers retries which amplify the rate limit hit.
-
-### Enabling usage logging
-
-Set `TWELVE_DATA_USAGE_LOG=true` in `.env.local` to log every TwelveData call:
-```json
-{ "ts": 1716900000000, "source": "twelvedata", "endpoint": "quote", "symbol": "AAPL" }
-```
-Run a real session with this enabled and `grep twelvedata` the output to identify hot endpoints before optimising.
-
-### TwelveData datetime parsing
-
-TwelveData returns US stock datetimes as ET strings (`"2024-04-29 09:35:00"`). **Never parse these with `new Date()` on a UTC server** — it will apply the server's local timezone and produce wrong timestamps. Use `etDatetimeToUnix()` from `lib/twelvedata/twelvedata-client.ts`, which resolves the EDT/EST offset via `Intl.DateTimeFormat` and caches the result per date.
-
-For market session detection, use `getMarketSession()` (`lib/cache/redis-cache.ts`) or `isExtendedHoursET()` (`lib/twelvedata/twelvedata-client.ts`). Both read the ET clock correctly via `Intl`.
-
-### TanStack Query cache hygiene
-
-Client-side cache settings to enforce for TwelveData-backed hooks:
-
-| Data type | `staleTime` | `gcTime` | `refetchOnWindowFocus` |
-|---|---|---|---|
-| Live prices (SSE) | N/A — use `useLivePrices` | N/A | N/A |
-| Quotes / snapshot | 3 min | 5 min | default (true) |
-| Sparklines (decorative) | 20 min | 60 min | `false` |
-| Statistics / financials | 30 min | 60 min | `false` |
-| Earnings / calendar | 60 min | 120 min | `false` |
-| Company profile / logo | 24 h | 48 h | `false` |
-
-Omitting `staleTime` defaults to 0 — the query refetches on every component mount. This is the single most common source of unnecessary TwelveData calls in the codebase.
+| `docs/agent/architecture.md` | Data sources, stock/asset page request flow, symbol search, asset types, AI chat stack, Anthropic features (Why Today, Daily Brief, Weekly Pick), experience level, display clock, auth, Supabase clients, API route conventions |
+| `docs/agent/twelvedata.md` | Any TwelveData call: per-endpoint credit costs, cache layers and TTLs, calendar truncation quirks, datetime parsing, TanStack cache settings |
+| `docs/agent/scheduled-work.md` | Touching any cron route or scheduler (Vercel, QStash, GitHub Actions); then run `npm run test-cron-coverage` |
+| `docs/agent/environment.md` | Adding or reading an env var |
+| `docs/agent/legal-compliance.md` | Signup or age checks, any email send, billing or trial copy, PostHog config |
+
+## Architecture essentials
+
+Next.js 16 App Router, React 19, TypeScript strict, Tailwind 4, Radix/shadcn, Framer Motion, for beginner-to-intermediate investors. Supabase (auth, data), TwelveData (market data, paid per credit), Finnhub (news; no display license, diagnostics only), SnapTrade (brokerage sync), Anthropic and OpenAI (AI), Resend (email), Upstash Redis (cache, rate limits).
+
+- **"Bull" is the AI chat assistant** (`BullpenChat.tsx` / `lib/ai/agent.ts` / `lib/ai/tools.ts`; in-chart: `ChartAIPanel.tsx` / `lib/ai/chart-agent.ts`). "Ask Bull" means that. `lib/ai/systemPrompt.ts` must not document individual tools: a tool's behaviour lives in its `description` in `tools.ts`.
+- **Supabase clients:** `createBrowserClient()` (`lib/supabase/client.ts`, cookie-based) in Client Components; `createServerClient()` (service role) in API routes and Server Components. Never expose the service role key. The service role bypasses RLS, so a broken policy stays invisible: check member visibility with `lib/social/visibility.ts`.
+- **Asset types:** `lib/assets/asset-type.ts` is the single source (`slugToSymbol`, `symbolToSlug`, `slugToAssetPath`, `inferAssetType`). URLs use hyphen slugs (`BTC-USD`), APIs use `BTC/USD`.
+- **Client data:** TanStack Query only, with the dynamic param in every `queryKey` and an explicit `staleTime`. Live prices via `useLivePrices` + `useThrottle`.
+- **Auth:** `useAuth()` in components; `middleware.ts` refreshes the session and sets security headers.
+- **Times of day:** `fmtClockTime` / `fmtClockDate` (`lib/dates/clock.ts`), never a fresh `toLocaleTimeString`. Exchange logic pins `America/New_York`; date-only values never go through the clock.
+- **Path alias:** `@/*` is the repo root.
+- **API routes:** auth via `createServerClient()` + `getUser()`, rate limit from `lib/security/rate-limit.ts`, and catch `TwelveDataRateLimitError` to return `{ error: 'plan_restricted' }` with status 200 (a 500 triggers retries that amplify the rate limit).
+
+## TwelveData: binding rules
+
+Plan: Venture, 610 credits/minute. Full costs and quirks in `docs/agent/twelvedata.md`; the rules that must never be broken:
+
+- **Fundamentals are expensive:** `/income_statement`, `/balance_sheet`, `/cash_flow` cost ~101 credits each (~303 per symbol for all three); `/profile` costs 10, `/insider_transactions` 200. Check cache first; any fan-out over symbols reserves against `lib/twelvedata/credit-budget.ts`. Measure an unfamiliar endpoint's real cost with one call and the `api-credits-used` header.
+- **Never request a multi-day range from `/earnings_calendar` or `/dividends_calendar`:** both silently drop days. Go through `lib/market-data/calendar-days.ts`.
+- **Batch quotes** with `getStockQuotes(symbols[])`, never `getStockQuote` in a loop.
+- **Cache before calling:** Redis (`lib/cache/redis-cache.ts`) then Supabase `market_data_cache`, written fire-and-forget. 1D candles use `candleTtlSeconds()`, never a hardcoded TTL.
+- **Use `getFundamentalsLastChange()`** (5 credits) before re-fetching fundamentals.
+- **Parse TwelveData datetimes with `etDatetimeToUnix()`**, never `new Date()` (they are New York time strings).
+
+## Scheduled work
+
+Three schedulers, every cron route protected by the `CRON_SECRET` bearer header: Vercel crons (`vercel.json`, once-a-day jobs), Upstash QStash (sub-daily and time-sensitive: user alerts), GitHub Actions (`.github/workflows/cron-*.yml`, long batch loops and jobs that commit to git). The full table is in `docs/agent/scheduled-work.md`. Run `npm run test-cron-coverage` after touching any cron route or scheduler.
 
 ## Environment variables
 
-Copy `.env.example` (or see `ENV_SETUP.md`) and create `.env.local`. Required:
+Copy `.env.example` (or see `ENV_SETUP.md`) to `.env.local`. Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `TWELVE_DATA_API_KEY`. The optional ones and what reads them: `docs/agent/environment.md`.
 
-```
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-OPENAI_API_KEY
-TWELVE_DATA_API_KEY
-```
+## Legal compliance (load-bearing, read `docs/agent/legal-compliance.md` before touching)
 
-Optional but used in production: `FINNHUB_API_KEY`, `RESEND_API_KEY`, `CRON_SECRET`, `LOGO_DEV_KEY`, `NEXT_PUBLIC_APP_URL`, `ANTHROPIC_API_KEY` (Why Today? + Daily Brief), `SNAPTRADE_CLIENT_ID`, `SNAPTRADE_CONSUMER_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `DISCORD_CHANGELOG_WEBHOOK_URL` (Discord changelog announcements — see `scripts/post-changelog-discord.ts`), `DISCORD_INSTAGRAM_WEBHOOK_URL`, `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_USER_ID` (automated Instagram content pipeline, Business Login for Instagram — see `docs/instagram-setup.md`), `DISCORD_INDEX_SYNC_WEBHOOK_URL` (index-constituent sync change notifications — see `scripts/sync-index-constituents.ts`), `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (product analytics, gated behind cookie consent — see `components/analytics/PostHogProvider.tsx`), `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (Google One Tap, off when unset; the same Web client ID must be in the Supabase Google provider's client IDs — see `components/auth/GoogleOneTap.tsx`), `BULLPEN_POSTAL_ADDRESS` (overrides the CAN-SPAM footer address, which defaults to the registered DMCA service provider address), `DMCA_AGENT_NAME` / `DMCA_AGENT_ADDRESS` / `DMCA_AGENT_PHONE` / `DMCA_AGENT_EMAIL` / `DMCA_AGENT_REGISTRATION_NUMBER` (override the registered agent details published on `/dmca`; the real ones are defaults in `lib/legal/dmca-agent.ts`).
-
-### Legal compliance surfaces
-
-Four things are load-bearing and easy to break without noticing:
-
-- **Age gate.** Signup collects a date of birth and refuses under-18s. The rule lives in `lib/auth/age-gate.ts` *and* in migration `147_age_gate_eighteen.sql` (a trigger, because signup runs client-side and form validation is not a boundary) — change both or neither. 18 was David's call on 2026-09-22, on the grounds that 18 is when someone can open a brokerage account; it also puts COPPA and GDPR Article 8 out of scope entirely rather than merely handled. `AgeCheckGate` in the root layout asks accounts that arrived without a date, which is every Google sign-in and everything created before 2026-09-22. The date field is the verification; the signup checkbox next to it is the terms acceptance and age representation, recorded as `users.terms_accepted_at`.
-- **Email footers.** Every send goes through `sendEmail`, which requires a `kind` of `transactional` or `marketing` and appends the matching footer. The postal address CAN-SPAM requires comes from the registered DMCA address, so the two can never disagree; a marketing send with no address anywhere throws rather than sends.
-- **Renewal terms.** `renewalTerms()` in `lib/billing/trial-copy.ts` is the single source for the auto-renewal disclosure, rendered next to all three purchase buttons (`/upgrade`, `/get-started/trial`, landing pricing). Deliberately not translated: see the comment there. `scripts/test-onboarding-trial.ts` asserts the four required facts are present.
-- **Session replay.** Off in both halves: `disable_session_recording` in `PostHogProvider.tsx` and `session_recording_opt_in: false` on the PostHog project. If it is ever switched on, the config there already masks all inputs and blocks `.ph-no-capture` subtrees, which is what the auth forms are marked with.
+Age gate (18+, enforced in `lib/auth/age-gate.ts` and migration 147's trigger: change both or neither); every email goes through `sendEmail` with a `kind` that picks the CAN-SPAM footer; `renewalTerms()` in `lib/billing/trial-copy.ts` is the single auto-renewal disclosure; PostHog session replay is off in both the code and the project.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
