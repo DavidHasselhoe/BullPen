@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import posthog from 'posthog-js';
 import { getStoredConsent, COOKIE_CONSENT_CHANGE_EVENT, type CookieConsentValue } from '@/lib/cookie-consent/storage';
+import { aiSource } from '@/lib/analytics/ai-referrer';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.posthog.com';
@@ -45,6 +46,15 @@ function initPostHog() {
     },
     disable_surveys: true,
   });
+
+  // Tag the session with the AI assistant that sent it, so funnels and
+  // pageviews can be filtered by it; first_ai_source stays on the person.
+  // document.referrer keeps the original referrer across App Router navigations.
+  const ai = aiSource(document.referrer, new URLSearchParams(window.location.search).get('utm_source'));
+  if (ai) {
+    posthog.register_for_session({ ai_source: ai });
+    posthog.setPersonProperties(undefined, { first_ai_source: ai });
+  }
 }
 
 /** Fires a $pageview on every App Router navigation, including the initial
