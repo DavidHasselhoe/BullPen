@@ -47,5 +47,20 @@
   "navReportBugOrIdea": "«Reepoort aa buug oor iideeaa»",
   "navSignOut": "«Siign oouut»",
   "navTryProFree": "«Try Proo freeee foor {{days}} daays»",
-  "navTryProFreeSub": "«$0 toodaay. Caanceel aanytiimee.»"
+  "navTryProFreeSub": "«$0 toodaay. Caanceel aanytiimee.»",
+  "navInviteFriends": "«IInviitee friieends»",
+  "navInviteFriendsSub": "«Yoouu booth geet aa moonth oof Proo»",
+  "inviteTitle": "«IInviitee friieends too BuullPeen»",
+  "inviteDescription": "«Seend yoouur liink too aa friieend. Wheen theey siign uup throouugh iit, yoouu booth geet aa freeee moonth oof Proo.»",
+  "inviteLinkLabel": "«Yoouur iinviitee liink»",
+  "inviteLoading": "«Looaadiing yoouur liink…»",
+  "inviteLoadError": "«Wee coouuldn't looaad yoouur iinviitee liink. Try aagaaiin iin aa moomeent.»",
+  "inviteCopy": "«Coopy»",
+  "inviteCopied": "«Coopiieed»",
+  "inviteShare": "«Shaaree liink»",
+  "inviteShareTitle": "«Jooiin mee oon BuullPeen»",
+  "inviteShareText": "«II uusee BuullPeen too uundeerstaand my stoocks. Siign uup throouugh my liink aand wee booth geet aa freeee moonth oof Proo.»",
+  "inviteStats_one": "«{{count}} friieend haas jooiineed soo faar. Freeee moonths eeaarneed: {{months}}.»",
+  "inviteStats_other": "«{{count}} friieends haavee jooiineed soo faar. Freeee moonths eeaarneed: {{months}}.»",
+  "inviteLimits": "«OOnly neew aaccoouunts coouunt. Yoouu caan eeaarn uup too 3 freeee moonths eeveery 30 daays, aand 12 iin tootaal.»"
 }

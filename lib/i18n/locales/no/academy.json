@@ -106,7 +106,7 @@
   "leaderboardSubtitle": "Topp-lærere etter Academy XP. Bare offentlige profiler vises.",
   "leaderboardEmpty": "Ingen Academy XP tjent ennå. Vær den første!",
   "leaderboardAnonymous": "Anonym",
-  "leaderboardLevel": "Lvl {{level}}",
+  "leaderboardLevel": "Nivå {{level}}",
   "leaderboardFooter": "Rangeringer er basert på totalt Academy XP tjent fra leksjoner og daglige utfordringer.",
   "courseOverviewTypeRead": "Les",
   "courseOverviewTypeChartTour": "Karttur",

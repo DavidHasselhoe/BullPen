@@ -339,7 +339,13 @@ async function translateNamespace(ns: string, lang: string) {
     const metaKey = `${ns}.${key}`;
     const currentHash = sha256(sourceText);
     const unchanged = !force && meta[metaKey] === currentHash && existingFlat[key];
-    if (unchanged) {
+    // No hash but a non-English value = a hand translation (or one an earlier
+    // failed retry kept). Retrying it only ever replaced good hand fixes: the
+    // 2026-10-19 run rewrote 70 of them, none for the better ("Insiders" ->
+    // "Accionistas"). Adopt it; the meta write below records its hash, so an
+    // English edit still marks it stale.
+    const handTranslated = !force && !meta[metaKey] && existingFlat[key] && existingFlat[key] !== sourceText;
+    if (unchanged || handTranslated) {
       resultFlat[key] = existingFlat[key];
     } else {
       toTranslate[key] = sourceText;

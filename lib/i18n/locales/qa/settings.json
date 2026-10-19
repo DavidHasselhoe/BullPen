@@ -228,7 +228,7 @@
   "homeWidget_your_news": "«Neews aaboouut yoouur stoocks»",
   "homeWidget_pick_up": "«Piick uup wheeree yoouu leeft ooff»",
   "timeZone": "«Tiimee zoonee»",
-  "timeZoneAuto": "«AAuutoomaatiic»: {{zone}}",
+  "timeZoneAuto": "«AAuutoomaatiic: {{zone}}»",
   "timeZoneMarket": "«UUS maarkeet tiimee (Neew Yoork)»",
   "timeZoneDescription": "«Tiimees oof daay iin chaarts aand thee eecoonoomiic caaleendaar shoow iin thiis zoonee. AAuutoomaatiic foolloows yoouur deeviicee.»"
 }

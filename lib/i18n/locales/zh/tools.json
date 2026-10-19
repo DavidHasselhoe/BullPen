@@ -828,15 +828,15 @@
   "toolGateSignIn": "登录",
   "screenerGuestWatchlistContext_one": "创建免费账户以将此股票保存到您的关注列表，并在其波动时收到提醒。",
   "screenerGuestWatchlistContext_other": "创建免费账户以将这 {{count}} 只股票保存到您的关注列表，并在它们波动时收到提醒。",
-  "portfolioBuilderBullCase": "Bull case",
-  "portfolioBuilderBullThesis": "Bull thesis",
+  "portfolioBuilderBullCase": "牛市情景",
+  "portfolioBuilderBullThesis": "看多论点",
   "economicShort_cpi": "CPI",
   "economicShort_ppi": "PPI",
   "economicShort_jolts": "JOLTS",
   "economicShort_gdp": "GDP",
   "economicShort_pce": "PCE",
   "economicEtTime": "{{time}} ET",
-  "deepDiveBlockBullBear": "Bull vs bear",
-  "deepDiveBullCase": "Bull case",
-  "deepDiveSectionBullBear": "Bull vs bear"
+  "deepDiveBlockBullBear": "看涨 vs 看跌",
+  "deepDiveBullCase": "看多情况",
+  "deepDiveSectionBullBear": "看涨 vs 看跌"
 }

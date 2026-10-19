@@ -363,8 +363,8 @@
   "portfolioBuilderAskBullQuery": "Bull acaba de construir un portafolio temático basado en mi tesis: {{thesis}} ({{tickers}}). Confianza: {{confidence}}/100. {{riskNote}}",
   "portfolioBuilderAskBullRiskNote": "Principal riesgo identificado: {{title}}. {{description}}",
   "portfolioBuilderBearCase": "Escenario bajista",
-  "portfolioBuilderBullCase": "Caso Bull",
-  "portfolioBuilderBullThesis": "Tesis Bull",
+  "portfolioBuilderBullCase": "Escenario alcista",
+  "portfolioBuilderBullThesis": "Tesis alcista",
   "portfolioBuilderCharCount": "{{count}} / 500",
   "portfolioBuilderConcentrationWarningFull": "{{pct}}% concentrado en {{sector}}, sin diversificación sectorial",
   "portfolioBuilderConcentrationWarningPartial": "{{pct}}% concentrado en {{sector}}, diversificación sectorial limitada",
@@ -835,8 +835,8 @@
   "economicShort_jolts": "JOLTS",
   "economicShort_pce": "PCE",
   "economicEtTime": "{{time}} ET",
-  "deepDiveBlockBullBear": "Bull vs bear",
-  "deepDiveBullCase": "Bull case",
-  "deepDiveSectionBullBear": "Bull vs bear",
+  "deepDiveBlockBullBear": "Alcista vs bajista",
+  "deepDiveBullCase": "Caso alcista",
+  "deepDiveSectionBullBear": "Alcista vs bajista",
   "deepDiveStanceNeutral": "Neutral"
 }

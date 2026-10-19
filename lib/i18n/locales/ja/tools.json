@@ -827,8 +827,8 @@
   "toolGateSignIn": "サインイン",
   "screenerGuestWatchlistContext_one": "無料アカウントを作成してこの銘柄をウォッチリストに保存し、値動きを受け取りましょう。",
   "screenerGuestWatchlistContext_other": "無料アカウントを作成してこれら{{count}}個の銘柄をウォッチリストに保存し、値動きを受け取りましょう。",
-  "portfolioBuilderBullCase": "Bull case",
-  "portfolioBuilderBullThesis": "Bull thesis",
+  "portfolioBuilderBullCase": "強気見通し",
+  "portfolioBuilderBullThesis": "強気の論拠",
   "economicName_gdp": "GDP",
   "economicShort_cpi": "CPI",
   "economicShort_ppi": "PPI",
@@ -836,7 +836,7 @@
   "economicShort_gdp": "GDP",
   "economicShort_pce": "PCE",
   "economicEtTime": "{{time}} ET",
-  "deepDiveBlockBullBear": "Bull vs bear",
-  "deepDiveBullCase": "Bull case",
-  "deepDiveSectionBullBear": "Bull vs bear"
+  "deepDiveBlockBullBear": "強気 vs 弱気",
+  "deepDiveBullCase": "強気シナリオ",
+  "deepDiveSectionBullBear": "強気 vs 弱気"
 }

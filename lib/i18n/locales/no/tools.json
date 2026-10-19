@@ -834,8 +834,8 @@
   "economicShort_fomc": "Fed",
   "economicShort_pce": "PCE",
   "economicEtTime": "{{time}} ET",
-  "deepDiveBlockBullBear": "Bull vs bear",
-  "deepDiveSectionBullBear": "Bull vs bear",
+  "deepDiveBlockBullBear": "Bullish vs bearish",
+  "deepDiveSectionBullBear": "Bullish vs bearish",
   "deepDiveStanceBearish": "Bearish",
   "deepDiveStanceBullish": "Bullish",
   "screenerColVs200dLabel": "vs 200D"

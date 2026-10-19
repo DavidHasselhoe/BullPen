@@ -822,8 +822,8 @@
   "calendarEstPrefix": "est.",
   "heatmapTooltipVolume": "Volume",
   "portfolioBuilderAllocationHeading": "Allocation",
-  "portfolioBuilderBullCase": "Bull case",
-  "portfolioBuilderBullThesis": "Bull thesis",
+  "portfolioBuilderBullCase": "Scénario haussier",
+  "portfolioBuilderBullThesis": "Thèse haussière",
   "portfolioBuilderDiversification": "Diversification",
   "portfolioBuilderNotesHeading": "Notes",
   "portfolioBuilderPositionCount_one": "{{count}} position",
@@ -836,7 +836,7 @@
   "economicShort_jolts": "JOLTS",
   "economicShort_fomc": "Fed",
   "economicShort_pce": "PCE",
-  "deepDiveBlockBullBear": "Bull vs bear",
-  "deepDiveBullCase": "Bull case",
-  "deepDiveSectionBullBear": "Bull vs bear"
+  "deepDiveBlockBullBear": "Haussier vs baissier",
+  "deepDiveBullCase": "Scénario haussier",
+  "deepDiveSectionBullBear": "Haussier vs baissier"
 }
