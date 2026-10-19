@@ -13,6 +13,8 @@ export interface Notification {
   entity_id: string | null;
   severity: 'info' | 'warning' | 'critical';
   is_read: boolean;
+  /** Shown in the bell or on /notifications; clears the badge without marking it read. */
+  is_seen?: boolean;
   created_at: string;
 }
 
@@ -66,6 +68,7 @@ export async function createNotification(
             message: input.message,
             severity: input.severity || 'info',
             is_read: false, // Reset read status on update
+            is_seen: false,
             created_at: new Date().toISOString(), // Update timestamp
           })
           .eq('id', existing.id)
@@ -201,7 +204,7 @@ export async function markNotificationRead(
   try {
     const { error } = await supabase
       .from('notifications')
-      .update({ is_read: true })
+      .update({ is_read: true, is_seen: true })
       .eq('id', notificationId)
       .eq('user_id', userId); // Ensure user owns the notification
 
@@ -229,7 +232,7 @@ export async function markAllNotificationsRead(
   try {
     const { error } = await supabase
       .from('notifications')
-      .update({ is_read: true })
+      .update({ is_read: true, is_seen: true })
       .eq('user_id', userId)
       .eq('is_read', false);
 

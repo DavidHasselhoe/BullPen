@@ -145,7 +145,7 @@ async function runDeepDive(params: {
         user_id: userId,
         type: 'ai_insight',
         title: `Your ${symbol} deep dive is ready`,
-        message: `The AI analysis of ${report.companyName} has finished — tap to read it.`,
+        message: `The AI analysis of ${report.companyName} is ready to read.`,
         entity_type: 'stock',
         entity_id: `${symbol}:deep_dive`,
         severity: 'info',

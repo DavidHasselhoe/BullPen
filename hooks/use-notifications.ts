@@ -57,7 +57,7 @@ export function useNotifications(limit: number = 50) {
       const supabase = createBrowserClient();
       const { data, error } = await supabase
         .from('notifications')
-        .select('id, type, title, message, created_at, is_read, severity, entity_type, entity_id')
+        .select('id, type, title, message, created_at, is_read, is_seen, severity, entity_type, entity_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -75,14 +75,16 @@ export function useNotifications(limit: number = 50) {
 }
 
 /**
- * Derives unread count from the already-cached notifications query.
- * Returns a query-like object so callers don't need to change.
+ * The bell badge: notifications that are neither read nor seen yet, derived
+ * from the already-cached notifications query. Opening the bell marks rows
+ * seen (useMarkAllNotificationsSeen), which clears this without making them
+ * read. Returns a query-like object so callers don't need to change.
  */
 export function useUnreadCount() {
   const { user, isAuthenticated } = useAuth();
   const { data: notifications, isLoading } = useNotifications();
 
-  const data = (notifications || []).filter((n) => !n.is_read).length;
+  const data = (notifications || []).filter((n) => !n.is_read && !n.is_seen).length;
 
   return { data, isLoading: isLoading && isAuthenticated && !!user };
 }
@@ -103,7 +105,7 @@ export function useMarkNotificationRead() {
       const supabase = createBrowserClient();
       const { error } = await supabase
         .from('notifications')
-        .update({ is_read: true })
+        .update({ is_read: true, is_seen: true })
         .eq('id', notificationId)
         .eq('user_id', user.id); // RLS ensures user can only update their own
 
@@ -137,7 +139,7 @@ export function useMarkEntityNotificationsRead() {
       const supabase = createBrowserClient();
       const { error } = await supabase
         .from('notifications')
-        .update({ is_read: true })
+        .update({ is_read: true, is_seen: true })
         .eq('user_id', user.id)
         .eq('entity_id', entityId)
         .eq('is_read', false);
@@ -166,7 +168,7 @@ export function useMarkAllNotificationsRead() {
       const supabase = createBrowserClient();
       const { error } = await supabase
         .from('notifications')
-        .update({ is_read: true })
+        .update({ is_read: true, is_seen: true })
         .eq('user_id', user.id)
         .eq('is_read', false);
 
@@ -178,6 +180,33 @@ export function useMarkAllNotificationsRead() {
       // Invalidate notifications queries
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count', user?.id] });
+    },
+  });
+}
+
+/**
+ * Mark every unseen notification seen: clears the bell badge but leaves rows
+ * unread, so the list still shows what is new. Fired when the bell opens or
+ * /notifications mounts. It used to mark everything read on open, which wiped
+ * the unread state before anything had been read.
+ */
+export function useMarkAllNotificationsSeen() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<void> => {
+      if (!user?.id) return;
+      const supabase = createBrowserClient();
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_seen: true })
+        .eq('user_id', user.id)
+        .eq('is_seen', false);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
     },
   });
 }

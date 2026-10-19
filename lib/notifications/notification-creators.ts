@@ -32,6 +32,11 @@ export interface EarningsItem {
   date: string; // YYYY-MM-DD
 }
 
+/** "Oct 21" from a YYYY-MM-DD market date, read in UTC so no zone moves it a day. */
+function shortDate(ymd: string): string {
+  return new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
 // ─── Dedup helpers ────────────────────────────────────────────────────────────
 
 /**
@@ -119,7 +124,7 @@ export async function createPriceMoveDigestNotification(
       const result = await createNotification({
         user_id: userId,
         type: 'price_move',
-        title: `${gainers.length} tracked stock${gainers.length === 1 ? '' : 's'} up today (${gainers[0].symbol} +${gainers[0].changePercent.toFixed(1)}%)`,
+        title: `${gainers.length} of your stocks ${gainers.length === 1 ? 'is' : 'are'} up today (${gainers[0].symbol} +${gainers[0].changePercent.toFixed(1)}%)`,
         message: topList + suffix,
         entity_type: 'portfolio',
         entity_id: dedupeId,
@@ -140,7 +145,7 @@ export async function createPriceMoveDigestNotification(
       const result = await createNotification({
         user_id: userId,
         type: 'price_move',
-        title: `${losers.length} tracked stock${losers.length === 1 ? '' : 's'} down today (${losers[0].symbol} ${losers[0].changePercent.toFixed(1)}%)`,
+        title: `${losers.length} of your stocks ${losers.length === 1 ? 'is' : 'are'} down today (${losers[0].symbol} ${losers[0].changePercent.toFixed(1)}%)`,
         message: topList + suffix,
         entity_type: 'portfolio',
         entity_id: dedupeId,
@@ -218,7 +223,7 @@ export async function createUserAlertNotification(
     user_id: userId,
     type: 'price_move',
     title: `${alert.symbol} hit ${priceStr}`,
-    message: `${name} — your alert "${describeAlert(alert)}" was triggered.`,
+    message: `Your "${describeAlert(alert)}" alert on ${name} was triggered.`,
     entity_type: 'user_alert',
     entity_id: dedupeId,
     severity: 'info',
@@ -404,8 +409,14 @@ export async function createDividendReminderNotification(
   const input: CreateNotificationInput = {
     user_id: userId,
     type: 'dividend',
-    title: `${count} tracked stock${count === 1 ? '' : 's'} go${count === 1 ? 'es' : ''} ex-dividend soon`,
-    message: tickerList + suffix,
+    // One stock: name it and the date, and say what the date means. The card's
+    // link reads the ticker from the start of the title.
+    title: count === 1
+      ? `${items[0].symbol} goes ex-dividend ${shortDate(items[0].exDate)}`
+      : `${count} of your stocks go ex-dividend soon`,
+    message: count === 1
+      ? `Shares bought before ${shortDate(items[0].exDate)} get the next payout.`
+      : tickerList + suffix,
     entity_type: 'portfolio',
     entity_id: dedupeId,
     severity: 'info',
@@ -441,7 +452,7 @@ export async function createDailyChallengeReminderNotification(
     user_id: userId,
     type: 'academy',
     title: 'Keep your streak alive',
-    message: "Today's Academy challenge is still waiting — takes about a minute.",
+    message: "Today's Academy challenge is still waiting. It takes about a minute.",
     entity_type: 'market',
     entity_id: dedupeId,
     severity: 'info',
@@ -474,8 +485,8 @@ export async function createEarningsUpcomingNotification(
   const input: CreateNotificationInput = {
     user_id: userId,
     type: 'earnings',
-    title: `${count} tracked stock${count === 1 ? '' : 's'} report${count === 1 ? 's' : ''} earnings today`,
-    message: tickerList + suffix,
+    title: count === 1 ? `${items[0].symbol} reports earnings today` : `${count} of your stocks report earnings today`,
+    message: count === 1 ? (items[0].companyName ?? items[0].symbol) : tickerList + suffix,
     entity_type: 'portfolio',
     entity_id: dedupeId,
     severity: 'info',

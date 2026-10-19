@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, CreditCard, GraduationCap, HeartPulse, Landmark, Star, Newspaper, Crown } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, CreditCard, GraduationCap, HeartPulse, Landmark, Star, Newspaper, Crown, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { ClampedText } from '@/components/ui/ClampedText';
 import type { Notification } from '@/lib/notifications/notifications-db';
 import { useQuery } from '@tanstack/react-query';
 import { useClock } from '@/hooks/use-clock';
+import { fmtClockDate } from '@/lib/dates/clock';
 import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
 import { ECONOMIC_KINDS, fmtReleaseTimeWithZone, type EconomicEvent } from '@/lib/market-data/economic-kinds';
 
@@ -15,13 +17,16 @@ function formatRelativeTime(dateString: string): string {
   const diffMs = Date.now() - date.getTime();
   const diffMin = Math.floor(diffMs / 60_000);
   const diffHr = Math.floor(diffMin / 60);
-  const diffDays = Math.floor(diffHr / 24);
+  // Calendar days, like groupByRecency, so a row under "Earlier" never says "6d ago".
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const day = new Date(date); day.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((today.getTime() - day.getTime()) / 86_400_000);
 
   if (diffMin < 1) return 'just now';
   if (diffMin < 60) return `${diffMin}m ago`;
   if (diffHr < 24) return `${diffHr}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return fmtClockDate(date, { month: 'short', day: 'numeric' });
 }
 
 /** Extract ticker symbols from a digest message like "AVGO +12.6%, MU -7.7%". */
@@ -70,7 +75,7 @@ function DirectionBadge({ direction }: { direction: Direction }) {
 function MoveLogo({ ticker, direction }: { ticker: string; direction: Direction }) {
   return (
     <div className="relative mt-0.5 shrink-0">
-      <CompanyLogo ticker={ticker} name={ticker} logoUrl={null} size={34} className="rounded-lg" />
+      <CompanyLogo ticker={ticker} name={ticker} logoUrl={null} size={36} className="rounded-lg" />
       <DirectionBadge direction={direction} />
     </div>
   );
@@ -98,69 +103,31 @@ function LogoStack({ tickers, direction }: { tickers: string[]; direction: Direc
   );
 }
 
-/** Icon for non-stock notifications (earnings, AI) or a neutral fallback. */
+/**
+ * Glyph for everything that isn't a single stock move. Neutral on purpose:
+ * emerald and red mean up and down (DESIGN.md One Signal Rule), and the old
+ * per-type tiles spent six more colours, including emerald on dividends and
+ * the same rose for a health score going up or down.
+ */
+const TYPE_ICONS: Partial<Record<Notification['type'], LucideIcon>> = {
+  earnings: BarChart2,
+  ai_insight: Sparkles,
+  dividend: Coins,
+  academy: GraduationCap,
+  health_score: HeartPulse,
+  weekly_pick: Star,
+  institution_filing: Landmark,
+  politician_trade: Landmark,
+  daily_brief: Newspaper,
+  referral: Crown,
+  billing: CreditCard,
+};
+
 function GenericIcon({ type }: { type: Notification['type'] }) {
-  const base = 'h-4 w-4 shrink-0';
-  if (type === 'earnings') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-      <BarChart2 className={cn(base, 'text-blue-400')} />
-    </div>
-  );
-  if (type === 'ai_insight') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
-      <Sparkles className={cn(base, 'text-violet-400')} />
-    </div>
-  );
-  if (type === 'dividend') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
-      <Coins className={cn(base, 'text-emerald-400')} />
-    </div>
-  );
-  if (type === 'academy') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-      <GraduationCap className={cn(base, 'text-amber-400')} />
-    </div>
-  );
-  if (type === 'health_score') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-500/10">
-      <HeartPulse className={cn(base, 'text-rose-400')} />
-    </div>
-  );
-  if (type === 'weekly_pick') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-      <Star className={cn(base, 'text-amber-400')} />
-    </div>
-  );
-  if (type === 'institution_filing') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10">
-      <Landmark className={cn(base, 'text-indigo-400')} />
-    </div>
-  );
-  if (type === 'politician_trade') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10">
-      <Landmark className={cn(base, 'text-indigo-400')} />
-    </div>
-  );
-  if (type === 'daily_brief') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-      <Newspaper className={cn(base, 'text-blue-400')} />
-    </div>
-  );
-  if (type === 'referral') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-      <Crown className={cn(base, 'text-amber-400')} />
-    </div>
-  );
-  // Neutral on purpose: a billing notice is not good or bad news, and emerald/red
-  // are reserved for financial direction (DESIGN.md One Signal Rule).
-  if (type === 'billing') return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-      <CreditCard className={cn(base, 'text-foreground/80')} />
-    </div>
-  );
+  const Icon = TYPE_ICONS[type] ?? Bell;
   return (
-    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-      <Bell className={cn(base, 'text-muted-foreground')} />
+    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+      <Icon className="h-4 w-4 shrink-0 text-foreground/75" aria-hidden />
     </div>
   );
 }
@@ -238,6 +205,14 @@ function notificationSource(n: Notification): { label: string; href: string } | 
 
   // entity_type is typed narrower than runtime — the alert cron writes 'user_alert'.
   const et = n.entity_type as string | null;
+  // Earnings and ex-dividend digests are stored as 'portfolio' and used to
+  // link to My holdings, even for a stock you only watch. One stock goes to
+  // its page (ticker at the start of the title, or the whole message on rows
+  // written before 2026-10-19); several go to the calendar.
+  if ((n.type === 'earnings' || n.type === 'dividend') && et === 'portfolio') {
+    const one = leadingTicker(n.title) ?? (/^[A-Z]{1,6}$/.test(n.message?.trim() ?? '') ? n.message.trim() : null);
+    return one ? { label: one, href: `/stock/${one}` } : { label: 'Market Calendar', href: '/tools/calendar' };
+  }
   const sym = et === 'stock' && n.entity_id ? n.entity_id.replace(/:.*$/, '') : null;
   if (et === 'portfolio') return { label: 'My holdings', href: '/holdings' };
   if (et === 'user_alert') return { label: 'Price alerts', href: '/tools/alerts' };
@@ -278,26 +253,26 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
       onClick={onRead}
       className={cn('flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40', !notification.is_read && 'bg-primary/[0.04]')}
     >
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-foreground/[0.04]">
-        <Landmark className="h-4 w-4 shrink-0 text-foreground/80" />
+      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+        <Landmark className="h-4 w-4 shrink-0 text-foreground/75" aria-hidden />
       </div>
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-start justify-between gap-2">
-          <p className={cn('text-xs font-semibold leading-snug', !notification.is_read ? 'text-foreground' : 'text-muted-foreground')}>
+          <p className={cn('text-sm leading-snug', !notification.is_read ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground')}>
             {notification.title}
             {!notification.is_read && <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary align-middle" />}
           </p>
-          <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums">{formatRelativeTime(notification.created_at)}</span>
+          <span className="shrink-0 pt-px text-xs tabular-nums text-muted-foreground">{formatRelativeTime(notification.created_at)}</span>
         </div>
         {events && events.some((e) => prefs.economicKinds.includes(e.kind)) ? (
           <ul className="space-y-0.5">
             {events.filter((e) => prefs.economicKinds.includes(e.kind)).map((e) => {
               const meta = ECONOMIC_KINDS[e.kind];
               return (
-                <li key={e.id} className="flex flex-wrap items-center gap-x-1.5 text-[11px] leading-snug text-muted-foreground">
+                <li key={e.id} className="flex flex-wrap items-center gap-x-1.5 text-sm leading-snug text-muted-foreground">
                   <a href={meta.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-medium text-foreground/85 hover:text-primary">
                     {meta.name}
-                    <ArrowUpRight className="h-2.5 w-2.5" aria-hidden />
+                    <ArrowUpRight className="h-3 w-3" aria-hidden />
                   </a>
                   <span className="tabular-nums">{fmtReleaseTimeWithZone(e.release_at)}</span>
                   {meta.watchUrl && (
@@ -310,14 +285,14 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
             })}
           </ul>
         ) : (
-          <p className="text-[11px] text-muted-foreground leading-snug">{notification.message}</p>
+          <p className="text-sm leading-snug text-muted-foreground">{notification.message}</p>
         )}
         <Link
           href={`/tools/calendar?view=week&date=${date}`}
-          className="inline-flex items-center gap-0.5 pt-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-0.5 pt-0.5 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
           Market Calendar
-          <ChevronRight className="h-2.5 w-2.5" />
+          <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
     </div>
@@ -340,52 +315,60 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
 
 function StandardNotificationItem({ notification, onMarkRead }: NotificationItemProps) {
   const source = notificationSource(notification);
+  const unread = !notification.is_read;
   const handleClick = () => {
-    if (!notification.is_read) onMarkRead(notification.id);
+    if (unread) onMarkRead(notification.id);
   };
 
-  const body = (
+  // The title is the one interactive element; its ::after stretches over the
+  // whole row so the card stays clickable. That leaves the message's Show more
+  // free to be a real button (a button inside a link is invalid and navigates).
+  const stretch = 'text-left after:absolute after:inset-0 after:content-[""] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring';
+  const title = (
+    <>
+      {unread && <span className="sr-only">Unread: </span>}
+      {notification.title}
+    </>
+  );
+
+  return (
     <div
       className={cn(
-        'flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40',
-        source && 'cursor-pointer',
-        !notification.is_read && 'bg-primary/[0.04]'
+        'relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40',
+        unread && 'bg-primary/[0.04]'
       )}
     >
       <NotificationIcon n={notification} />
 
-      <div className="flex-1 min-w-0 space-y-0.5">
-        <div className="flex items-start justify-between gap-2">
-          <p className={cn(
-            'text-xs font-semibold leading-snug',
-            !notification.is_read ? 'text-foreground' : 'text-muted-foreground'
-          )}>
-            {notification.title}
-            {!notification.is_read && (
-              <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary align-middle" />
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="flex items-start justify-between gap-3">
+          <p className={cn('text-sm leading-snug', unread ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground')}>
+            {source ? (
+              <Link href={source.href} onClick={handleClick} className={stretch}>{title}</Link>
+            ) : (
+              <button type="button" onClick={handleClick} className={stretch}>{title}</button>
             )}
+            {unread && <span aria-hidden className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-primary align-middle" />}
           </p>
-          <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums">
+          <span className="shrink-0 pt-px text-xs tabular-nums text-muted-foreground">
             {formatRelativeTime(notification.created_at)}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
-          {notification.message}
-        </p>
-        {/* Source label — where this notification came from / where the card leads. */}
+        {notification.message && (
+          <ClampedText
+            textClassName="text-sm leading-snug text-muted-foreground"
+            toggleClassName="relative z-10"
+          >
+            {notification.message}
+          </ClampedText>
+        )}
         {source && (
-          <span className="inline-flex items-center gap-0.5 pt-0.5 text-[11px] font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-0.5 pt-0.5 text-xs font-medium text-muted-foreground">
             {source.label}
-            <ChevronRight className="h-2.5 w-2.5" />
+            <ChevronRight className="h-3 w-3" />
           </span>
         )}
       </div>
     </div>
   );
-
-  // The whole card navigates to its source; clicking also marks it read.
-  if (source) {
-    return <Link href={source.href} onClick={handleClick} className="block">{body}</Link>;
-  }
-  return <div onClick={handleClick}>{body}</div>;
 }

@@ -342,8 +342,8 @@ async function runRiskAnalysis(params: {
         type: 'ai_insight',
         title: 'Your portfolio risk analysis is ready',
         message: score != null
-          ? `Overall risk: ${riskLevel} (${score}/100). Tap to view the full breakdown.`
-          : 'Your risk assessment has finished. Tap to view it.',
+          ? `Overall risk: ${riskLevel} (${score}/100). Open it for the full breakdown.`
+          : 'Your risk assessment has finished.',
         entity_type: 'portfolio',
         entity_id: `risk_analysis:${id}`,
         severity: 'info',
