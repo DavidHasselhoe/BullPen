@@ -1,5 +1,42 @@
 [
   {
+    "date": "2026-10-19",
+    "entries": [
+      {
+        "type": "new",
+        "text": "The Feed now shows everything from the funds, members of Congress and investors you follow in one timeline: new fund filings, disclosed trades with how the stock has moved since, and what members added"
+      },
+      {
+        "type": "new",
+        "text": "Home has a From who you follow section with the newest few items from your Feed. Hide it or move it with Customize Home"
+      },
+      {
+        "type": "improved",
+        "text": "The Follow button on fund and politician pages is easier to spot, and if you are not signed in it lets you create an account and finishes the follow for you"
+      },
+      {
+        "type": "improved",
+        "text": "Why Today rewrites its explanation when the company files important news with the SEC later in the day, so it no longer explains the morning's story after the reason has changed"
+      },
+      {
+        "type": "improved",
+        "text": "Opening notifications clears the badge but keeps each one marked unread until you open it. Filters now sort by Your stocks, From Bull, Funds & Congress and Academy"
+      },
+      {
+        "type": "improved",
+        "text": "Earnings and ex-dividend notifications for a single stock name the stock and open its page, and long notifications can be expanded instead of being cut off"
+      },
+      {
+        "type": "fixed",
+        "text": "Notifications show an error with a Try again button when they fail to load, instead of saying you have none"
+      },
+      {
+        "type": "fixed",
+        "text": "Labels like Bull case and Bull vs bear are now translated in every language, and the sign-in page no longer briefly shows placeholder text in languages other than English"
+      }
+    ]
+  },
+  {
     "date": "2026-10-18",
     "entries": [
       {
