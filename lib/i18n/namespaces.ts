@@ -51,8 +51,10 @@ export function namespacesForPath(pathname: string): Namespace[] {
   // 'tools' (screener-columns.tsx) — checked before the general /discover
   // match below so it gets both, not just 'discover'.
   if (pathname.startsWith('/discover/ideas')) return ['discover', 'tools'];
+  // Home's "From who you follow" renders Feed rows, whose copy lives in 'user'.
+  if (pathname.startsWith('/dashboard')) return ['discover', 'user'];
   // Bull's Weekly Pick lives in Discover's catalog: the same card renders there.
-  if (pathname.startsWith('/discover') || pathname.startsWith('/dashboard') || pathname.startsWith('/picks')) return ['discover'];
+  if (pathname.startsWith('/discover') || pathname.startsWith('/picks')) return ['discover'];
   if (pathname.startsWith('/academy')) return ['academy'];
   // /get-started/trial shows the TrialTimeline, whose copy lives in billing.
   if (pathname.startsWith('/upgrade') || pathname.startsWith('/pricing') || pathname.startsWith('/get-started/trial')) return ['billing'];

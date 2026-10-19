@@ -585,5 +585,9 @@
   "fundFiledOptionsNote": "Options are counted at the value of the shares they cover, not what they cost, so they are not part of the total.",
   "fundAskRiskFund": "Is {{pct}}% in one fund risky?",
   "instDisclaimerSummary": "13F filings are delayed and partial. Why?",
-  "starterGuestContext": "Create a free account to follow {{ticker}}. Home then shows how the stocks you follow are doing each day."
+  "starterGuestContext": "Create a free account to follow {{ticker}}. Home then shows how the stocks you follow are doing each day.",
+  "homeFollowsTitle": "From who you follow",
+  "homeFollowsSeeAll": "See all",
+  "followSeeInFeed": "See in Feed",
+  "followSignUpContext": "Create a free account to follow {{name}}. Their new filings and trades show up in your Feed."
 }

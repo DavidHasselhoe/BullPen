@@ -17,6 +17,7 @@ export const DASHBOARD_WIDGETS: DashboardWidget[] = [
   { id: 'daily_brief',     label: 'Daily Brief' },
   { id: 'coming_up',       label: 'Coming up for your stocks' },
   { id: 'your_news',       label: 'News about your stocks' },
+  { id: 'from_follows',    label: 'From who you follow' },
   { id: 'pick_up',         label: 'Pick up where you left off' },
 ];
 

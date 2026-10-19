@@ -16,6 +16,7 @@ import { PortfolioHero } from '@/components/dashboard/PortfolioHero';
 import { ComingUp } from '@/components/dashboard/ComingUp';
 import { YourNews } from '@/components/dashboard/YourNews';
 import { PickUp } from '@/components/dashboard/PickUp';
+import { FromFollows } from '@/components/dashboard/FromFollows';
 import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
 import { StarterPicker } from '@/components/dashboard/StarterPicker';
 import { TrialStartedModal } from '@/components/billing/TrialStartedModal';
@@ -29,6 +30,8 @@ function WidgetSlot({ id }: { id: string }) {
       return <ComingUp />;
     case 'your_news':
       return <YourNews />;
+    case 'from_follows':
+      return <FromFollows />;
     case 'pick_up':
       return <PickUp />;
     default:

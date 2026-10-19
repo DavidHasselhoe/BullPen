@@ -74,6 +74,8 @@ export function useToggleFollow(kind: FollowKind, slug: string) {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: key });
+      // The Feed (Home's section and /social) is built from these follows.
+      void queryClient.invalidateQueries({ queryKey: ['social-feed'] });
     },
   });
 }

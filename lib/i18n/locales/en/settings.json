@@ -230,5 +230,6 @@
   "timeZone": "Time zone",
   "timeZoneAuto": "Automatic: {{zone}}",
   "timeZoneMarket": "US market time (New York)",
-  "timeZoneDescription": "Times of day in charts and the economic calendar show in this zone. Automatic follows your device."
+  "timeZoneDescription": "Times of day in charts and the economic calendar show in this zone. Automatic follows your device.",
+  "homeWidget_from_follows": "From who you follow"
 }
