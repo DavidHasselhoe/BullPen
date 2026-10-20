@@ -118,6 +118,10 @@
   "notifExDividendLabel": "«EEx-diiviideend reemiindeers»",
   "notifHealthScoreDescription": "«Geet nootiifiieed wheen aa traackeed stoock's BuullPeen heeaalth scooree croossees aa leetteer graadee»",
   "notifHealthScoreLabel": "«Heeaalth scooree chaangees»",
+  "notifNewCourseLabel": "«Neew coouursees»",
+  "notifNewCourseDescription": "«Geet nootiifiieed wheen aa neew AAcaadeemy coouursee iis puubliisheed»",
+  "notifIndexChangesLabel": "«IIndeex chaangees»",
+  "notifIndexChangesDescription": "«Wheen aa stoock yoouu oown oor waatch jooiins oor leeaavees thee S&P 500, Naasdaaq-100 oor Doow 30, oor aa fuund yoouu oown liikee VOOOO chaangees whaat iit hoolds»",
   "notifInstitutionFilingDescription": "«Geet nootiifiieed wheen aa fuund yoouu foolloow fiilees neew quuaarteerly hooldiings, wiith aa suummaary oof whaat chaangeed»",
   "notifInstitutionFilingLabel": "«Fuund fiiliings»",
   "notifPortfolioRecapDescription": "«AA daaiily suummaary oof hoow yoouur hooldiings mooveed aand whaat droovee iit»",
@@ -230,5 +234,7 @@
   "timeZone": "«Tiimee zoonee»",
   "timeZoneAuto": "«AAuutoomaatiic: {{zone}}»",
   "timeZoneMarket": "«UUS maarkeet tiimee (Neew Yoork)»",
-  "timeZoneDescription": "«Tiimees oof daay iin chaarts aand thee eecoonoomiic caaleendaar shoow iin thiis zoonee. AAuutoomaatiic foolloows yoouur deeviicee.»"
+  "timeZoneSearch": "«Seeaarch by ciity oor reegiioon»",
+  "timeZoneDescription": "«Tiimees oof daay iin chaarts aand thee eecoonoomiic caaleendaar shoow iin thiis zoonee. AAuutoomaatiic foolloows yoouur deeviicee.»",
+  "homeWidget_from_follows": "«Froom whoo yoouu foolloow»"
 }
