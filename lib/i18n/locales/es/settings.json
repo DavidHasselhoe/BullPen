@@ -226,11 +226,15 @@
   "homeWidget_coming_up": "Próximos eventos de tus acciones",
   "homeWidget_your_news": "Noticias sobre tus acciones",
   "homeWidget_pick_up": "Continúa donde lo dejaste",
-  "sectionPlanLabel": "Plan",
   "timeZone": "Zona horaria",
   "timeZoneAuto": "Automática: {{zone}}",
   "timeZoneMarket": "Hora del mercado de EE. UU. (Nueva York)",
   "timeZoneSearch": "Buscar por ciudad o región",
   "timeZoneDescription": "Las horas de los gráficos y del calendario económico se muestran en esta zona. Automática sigue la de tu dispositivo.",
-  "homeWidget_from_follows": "De quienes sigues"
+  "homeWidget_from_follows": "De quienes sigues",
+  "notifNewCourseLabel": "Nuevos cursos",
+  "notifNewCourseDescription": "Recibe un aviso cuando se publique un nuevo curso de la Academia",
+  "notifIndexChangesLabel": "Cambios en índices",
+  "notifIndexChangesDescription": "Cuando una acción que tienes o sigues entra o sale del S&P 500, el Nasdaq-100 o el Dow 30, o cuando un fondo que tienes, como VOO, cambia lo que posee",
+  "sectionPlanLabel": "Plan"
 }

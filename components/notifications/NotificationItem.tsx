@@ -225,7 +225,10 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   const sym = et === 'stock' && n.entity_id ? n.entity_id.replace(/:.*$/, '') : null;
   if (et === 'portfolio') return { label: 'My holdings', href: '/holdings' };
   if (et === 'user_alert') return { label: 'Price alerts', href: '/tools/alerts' };
-  if (n.type === 'academy') return { label: 'Academy', href: '/academy' };
+  if (n.type === 'academy') {
+    const course = n.entity_id?.match(/^academy:new_course:(.+)$/)?.[1];
+    return { label: 'Academy', href: course ? `/academy/${course}` : '/academy' };
+  }
   if (sym) return { label: sym, href: `/stock/${sym}` };
   return null;
 }

@@ -118,6 +118,8 @@
   "notifExDividendLabel": "Ex-dividend reminders",
   "notifHealthScoreDescription": "Get notified when a tracked stock's BullPen health score crosses a letter grade",
   "notifHealthScoreLabel": "Health score changes",
+  "notifNewCourseLabel": "New courses",
+  "notifNewCourseDescription": "Get notified when a new Academy course is published",
   "notifIndexChangesLabel": "Index changes",
   "notifIndexChangesDescription": "When a stock you own or watch joins or leaves the S&P 500, Nasdaq-100 or Dow 30, or a fund you own like VOO changes what it holds",
   "notifInstitutionFilingDescription": "Get notified when a fund you follow files new quarterly holdings, with a summary of what changed",

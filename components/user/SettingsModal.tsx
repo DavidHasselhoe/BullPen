@@ -191,6 +191,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     daily_brief_ready: true,
     dividend_reminder: true,
     daily_challenge_reminder: true,
+    new_course: true,
     institution_filing: true,
     politician_trades: true,
     politician_trades_holdings: true,
@@ -283,6 +284,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         daily_brief_ready: settings.notifications?.daily_brief_ready !== false,
         dividend_reminder: settings.notifications?.dividend_reminder !== false,
         daily_challenge_reminder: settings.notifications?.daily_challenge_reminder !== false,
+        new_course: settings.notifications?.new_course !== false,
         institution_filing: settings.notifications?.institution_filing !== false,
         politician_trades: settings.notifications?.politician_trades !== false,
         politician_trades_holdings: settings.notifications?.politician_trades_holdings !== false,
@@ -939,6 +941,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                 <SettingsGroup title={t('notifGroupAcademy')}>
                   <SettingsCard>
                     <ToggleSetting label={t('notifDailyChallengeLabel')} description={t('notifDailyChallengeDescription')} {...notif('daily_challenge_reminder')} />
+                    <ToggleSetting label={t('notifNewCourseLabel')} description={t('notifNewCourseDescription')} {...notif('new_course')} />
                   </SettingsCard>
                 </SettingsGroup>
               </div>

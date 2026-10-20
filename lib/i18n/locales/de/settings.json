@@ -203,6 +203,7 @@
   "notifGroupStocks": "Deine Aktien",
   "notifGroupBullpen": "Von BullPen",
   "notifGroupFollowing": "Personen und Fonds, denen du folgst",
+  "notifGroupAcademy": "Akademie",
   "notifProBadge": "Pro",
   "planManageSubscription": "Abonnement verwalten",
   "planManageSubscriptionHint": "Ändere deine Zahlungsmethode, sehe Rechnungen ein oder kündige.",
@@ -225,12 +226,15 @@
   "homeWidget_coming_up": "Anstehend für deine Aktien",
   "homeWidget_your_news": "News zu deinen Aktien",
   "homeWidget_pick_up": "Dort weitermachen, wo du aufgehört hast",
-  "sectionPlanLabel": "Plan",
-  "notifGroupAcademy": "Akademie",
   "timeZone": "Zeitzone",
   "timeZoneAuto": "Automatisch: {{zone}}",
   "timeZoneMarket": "US-Börsenzeit (New York)",
   "timeZoneSearch": "Nach Stadt oder Region suchen",
   "timeZoneDescription": "Uhrzeiten in Charts und im Wirtschaftskalender werden in dieser Zeitzone angezeigt. Automatisch folgt deinem Gerät.",
-  "homeWidget_from_follows": "Von denen, denen du folgst"
+  "homeWidget_from_follows": "Von denen, denen du folgst",
+  "notifNewCourseLabel": "Neue Kurse",
+  "notifNewCourseDescription": "Benachrichtige mich, sobald ein neuer Academy-Kurs veröffentlicht wird",
+  "notifIndexChangesLabel": "Indexänderungen",
+  "notifIndexChangesDescription": "Wenn eine Aktie, die du besitzt oder beobachtest, in den S&P 500, Nasdaq-100 oder Dow 30 aufgenommen wird oder daraus entfernt wird, oder wenn sich die Bestände eines Fonds, den du besitzt, wie VOO, ändern",
+  "sectionPlanLabel": "Plan"
 }

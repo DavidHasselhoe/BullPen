@@ -463,6 +463,59 @@ export async function createDailyChallengeReminderNotification(
   return result.success;
 }
 
+/**
+ * Tells everyone who has started an Academy course that a new one is live.
+ * Called once when an admin approves a draft. Switched off by
+ * settings.notifications.new_course === false. Idempotent on entity_id
+ * "academy:new_course:<slug>", which the card turns into a link to the course.
+ */
+export async function notifyNewAcademyCourse(course: { slug: string; title: string; requiresPro: boolean }): Promise<number> {
+  const supabase = createServerClient();
+  const entityId = `academy:new_course:${course.slug}`;
+
+  // Paginated: PostgREST silently caps an unbounded select at 1000.
+  const learners = new Set<string>();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from('academy_user_course_progress')
+      .select('user_id')
+      .order('user_id')
+      .range(from, from + 999);
+    if (error) throw error;
+    for (const r of data ?? []) learners.add(r.user_id as string);
+    if (!data || data.length < 1000) break;
+  }
+  if (learners.size === 0) return 0;
+  const userIds = [...learners];
+
+  const [{ data: users, error: usersError }, { data: existing }] = await Promise.all([
+    supabase.from('users').select('id, settings').in('id', userIds),
+    supabase.from('notifications').select('user_id').eq('entity_id', entityId).in('user_id', userIds),
+  ]);
+  if (usersError) throw usersError;
+  const skip = new Set((existing ?? []).map((n) => n.user_id as string));
+  for (const u of (users ?? []) as Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }>) {
+    if (u.settings?.notifications?.new_course === false) skip.add(u.id);
+  }
+
+  const rows = userIds.filter((id) => !skip.has(id)).map((user_id) => ({
+    user_id,
+    type: 'academy',
+    title: `New course: ${course.title}`,
+    message: course.requiresPro
+      ? 'A new Pro course just opened in Academy.'
+      : 'A new course just opened in Academy. Start the first lesson whenever you like.',
+    entity_type: 'market',
+    entity_id: entityId,
+    severity: 'info',
+  }));
+  for (let i = 0; i < rows.length; i += 500) {
+    const { error } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
+    if (error) throw error;
+  }
+  return rows.length;
+}
+
 // ─── Earnings upcoming notifications ─────────────────────────────────────────
 
 /**

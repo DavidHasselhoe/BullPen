@@ -3596,5 +3596,9 @@
   "stock.indexJoinedTip": "dd9ac7f5ec024d18038cb68bcc161718b2ae2e1db363b30b177392da82339882",
   "stock.indexWeightTip": "6661b3b0b37c55faba9ed863fc055c6964068353a61236c3772e4b6c3921ce13",
   "tools.screenerDescriptionNasdaq100": "47ad23010d9b097168a51506468ac8b0bfed1bec424fd81d9f4d3d780427167f",
-  "tools.screenerDescriptionDow30": "16c7fa32a3d28b653ec1bfd2475a8ca147cf3b83c936939ab0ce2bde00e620f6"
+  "tools.screenerDescriptionDow30": "16c7fa32a3d28b653ec1bfd2475a8ca147cf3b83c936939ab0ce2bde00e620f6",
+  "settings.notifNewCourseLabel": "ba3b2cdc2b0c071a19b17e20b99216445cebd5c8c430e7cf44776baf5409742d",
+  "settings.notifNewCourseDescription": "89abfa9a38224ea878efd01906436958f8935b0385f8e758215cff765cf26b97",
+  "settings.notifIndexChangesLabel": "4cafd34792b79b1e2e15ef06773ee63476743248c39eb1c4ad71f09d478d42ed",
+  "settings.notifIndexChangesDescription": "52b9957be12f4c222656e71bc254c622488348172a9f7f6d4bcf31183eb7a184"
 }

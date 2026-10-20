@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { notifyNewAcademyCourse } from '@/lib/notifications/notification-creators';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isAdmin } from '@/lib/billing/tier';
@@ -17,14 +18,25 @@ async function approveHandler(
   const { courseId } = await context.params;
   const supabase = createServerClient();
 
-  const { error } = await supabase
+  const { data: published, error } = await supabase
     .from('academy_courses')
     .update({ is_published: true })
     .eq('id', courseId)
-    .eq('is_published', false); // only ever publish a draft — never re-touch an already-live course
+    .eq('is_published', false) // only ever publish a draft — never re-touch an already-live course
+    .select('slug, title, requires_pro');
 
   if (error) {
     return addSecurityHeaders(NextResponse.json({ error: error.message }, { status: 500 }));
+  }
+
+  // Only when this request is the one that flipped it, so a double click
+  // can't notify twice. after() keeps the admin's response fast.
+  const course = published?.[0];
+  if (course) {
+    after(() =>
+      notifyNewAcademyCourse({ slug: course.slug, title: course.title, requiresPro: !!course.requires_pro })
+        .catch((err) => console.error('[academy-roadmap] new-course notifications failed:', err))
+    );
   }
 
   return addSecurityHeaders(NextResponse.json({ success: true }));

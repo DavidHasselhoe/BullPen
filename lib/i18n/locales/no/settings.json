@@ -204,6 +204,7 @@
   "notifGroupStocks": "Dine aksjer",
   "notifGroupBullpen": "Fra BullPen",
   "notifGroupFollowing": "Personer og fond du følger",
+  "notifGroupAcademy": "Akademi",
   "notifProBadge": "Pro",
   "planManageSubscription": "Håndter abonnement",
   "planManageSubscriptionHint": "Endre betalingsmåte, se fakturaer eller avbryt.",
@@ -226,11 +227,14 @@
   "homeWidget_coming_up": "Kommende hendelser for dine aksjer",
   "homeWidget_your_news": "Nyheter om dine aksjer",
   "homeWidget_pick_up": "Fortsett der du slapp",
-  "notifGroupAcademy": "Akademi",
   "timeZone": "Tidssone",
   "timeZoneAuto": "Automatisk: {{zone}}",
   "timeZoneMarket": "Amerikansk børstid (New York)",
   "timeZoneSearch": "Søk etter by eller region",
   "timeZoneDescription": "Klokkeslett i diagrammer og den økonomiske kalenderen vises i denne tidssonen. Automatisk følger enheten din.",
-  "homeWidget_from_follows": "Fra de du følger"
+  "homeWidget_from_follows": "Fra de du følger",
+  "notifNewCourseLabel": "Nye kurs",
+  "notifNewCourseDescription": "Få beskjed når et nytt Academy-kurs publiseres",
+  "notifIndexChangesLabel": "Endringer i indekser",
+  "notifIndexChangesDescription": "Når en aksje du eier eller følger blir tatt inn i eller fjernet fra S&P 500, Nasdaq-100 eller Dow 30, eller når et fond du eier, som VOO, endrer hva det holder"
 }
