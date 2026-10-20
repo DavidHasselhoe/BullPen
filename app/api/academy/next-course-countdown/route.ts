@@ -12,17 +12,24 @@
  * would risk hitting zero with nothing actually visible yet. If a draft is
  * already staged and pending review, the countdown deliberately stops
  * (status: 'reviewing') rather than showing a stale or negative day count.
+ *
+ * Once that weekly plan is used up, the slot names the next ACADEMY_ROADMAP_V2
+ * course not yet published and its target month (status: 'planned'). The v2
+ * outlines are already in the repo, so this exposes nothing that isn't public.
  */
 
 import { NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
-import { ACADEMY_ROADMAP } from '@/lib/academy/academy-roadmap';
+import { ACADEMY_ROADMAP, ACADEMY_ROADMAP_V2 } from '@/lib/academy/academy-roadmap';
 
 export interface NextCourseCountdownResponse {
   show: boolean;
-  status: 'scheduled' | 'reviewing' | null;
+  status: 'scheduled' | 'reviewing' | 'planned' | null;
   daysUntil: number | null;
+  /** Only with status 'planned': the next v2 course and its "YYYY-MM". */
+  title?: string;
+  targetMonth?: string;
 }
 
 interface RoadmapCourseRow {
@@ -49,16 +56,26 @@ async function handler(
   const { data } = await supabase
     .from('academy_courses')
     .select('slug, is_published')
-    .in('slug', roadmapSlugs);
+    .in('slug', [...roadmapSlugs, ...ACADEMY_ROADMAP_V2.map((o) => o.slug)]);
 
-  const rows = (data ?? []) as RoadmapCourseRow[];
+  const allRows = (data ?? []) as RoadmapCourseRow[];
+  const rows = allRows.filter((r) => roadmapSlugs.includes(r.slug));
   const createdSlugs = new Set(rows.map((r) => r.slug));
   const remaining = roadmapSlugs.filter((s) => !createdSlugs.has(s)).length;
   const hasPendingDraft = rows.some((r) => !r.is_published);
 
-  // The whole 10-week plan is generated and published, nothing left to
-  // count down to — hide the teaser rather than show a stale promise.
+  // The weekly plan is generated and published: name the next v2 course, or
+  // hide the teaser once that is done too rather than show a stale promise.
   if (remaining === 0 && !hasPendingDraft) {
+    const published = new Set(allRows.filter((r) => r.is_published).map((r) => r.slug));
+    const next = ACADEMY_ROADMAP_V2.find((o) => !published.has(o.slug));
+    if (next) {
+      // A slipped month drops to "Launching soon" instead of promising a date already gone.
+      const targetMonth = next.targetMonth && next.targetMonth >= new Date().toISOString().slice(0, 7) ? next.targetMonth : undefined;
+      return addSecurityHeaders(NextResponse.json({
+        show: true, status: 'planned', daysUntil: null, title: next.title, targetMonth,
+      }));
+    }
     return addSecurityHeaders(NextResponse.json({ show: false, status: null, daysUntil: null }));
   }
 

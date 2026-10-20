@@ -8,6 +8,8 @@
   "comingSoonUnlocksIn_one": "Unlocks in {{count}} day",
   "comingSoonUnlocksIn_other": "Unlocks in {{count}} days",
   "comingSoonLaunchingSoon": "Launching soon",
+  "comingNextLabel": "Coming next",
+  "comingNextExpected": "Expected in {{month}}",
   "dividendDemoEyebrow": "Demo · Dividends & passive income",
   "dividendDemoTitle": "Dividend calculator",
   "dividendDemoDescription": "This is BullPen's real dividend calculator, preloaded with a few example dividend-paying stocks. Hit calculate to project the passive income they'd generate.",

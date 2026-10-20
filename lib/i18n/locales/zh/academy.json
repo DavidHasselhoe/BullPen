@@ -8,6 +8,8 @@
   "comingSoonUnlocksIn_one": "{{count}} 天后解锁",
   "comingSoonUnlocksIn_other": "{{count}} 天后解锁",
   "comingSoonLaunchingSoon": "即将推出",
+  "comingNextLabel": "下一门课程",
+  "comingNextExpected": "预计{{month}}上线",
   "dividendDemoEyebrow": "演示 · 股利与被动收入",
   "dividendDemoTitle": "股利计算器",
   "dividendDemoDescription": "这是 BullPen 真实的股利计算器，预装了几只示例分红股。点击计算可以估算它们产生的被动收入。",

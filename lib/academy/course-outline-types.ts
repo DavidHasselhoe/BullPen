@@ -37,5 +37,7 @@ export interface CourseOutline {
    * it's genuinely adjacent to an existing run of the same label.
    */
   unitLabel: string | null;
+  /** "YYYY-MM" the course is planned to go live (roadmap v2), shown in the /academy "Coming next" slot. */
+  targetMonth?: string;
   lessons: LessonSpec[];
 }

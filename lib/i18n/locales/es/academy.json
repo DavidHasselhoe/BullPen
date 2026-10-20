@@ -8,6 +8,8 @@
   "comingSoonUnlocksIn_one": "Se desbloquea en {{count}} día",
   "comingSoonUnlocksIn_other": "Se desbloquea en {{count}} días",
   "comingSoonLaunchingSoon": "Próximamente",
+  "comingNextLabel": "Próximamente",
+  "comingNextExpected": "Previsto para {{month}}",
   "dividendDemoEyebrow": "Demo · Dividendos e ingresos pasivos",
   "dividendDemoTitle": "Calculadora de dividendos",
   "dividendDemoDescription": "Esta es la calculadora de dividendos real de BullPen, precargada con algunos ejemplos de acciones que pagan dividendos. Haz clic en calcular para proyectar los ingresos pasivos que generarían.",

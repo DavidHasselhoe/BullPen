@@ -225,3 +225,126 @@ export const ACADEMY_ROADMAP: CourseOutline[] = [
     ],
   },
 ];
+
+// ─── Roadmap v2 (drafted 2026-10-20, AWAITING DAVID'S APPROVAL) ─────────────
+//
+// One course a month from November 2026. Deliberately a separate export: the
+// weekly generate-academy-course cron reads ACADEMY_ROADMAP only, so nothing
+// here gets drafted until it is approved and moved into the build flow
+// (content/academy-staging/ + scripts/academy-apply-staging.ts). The only
+// reader is /api/academy/next-course-countdown, which shows the first entry
+// not yet published as "Coming next" on /academy.
+//
+// Conventions, matching the live catalog as of 2026-10-20:
+//  - No two reads in a row: every read is followed by a 2-question "Check:"
+//    quiz on that read alone; the last read is followed by the 3-question
+//    "Quick Check" over the whole course. Then match, then the closing scenario.
+//  - Demo / chart-tour lessons can't be AI-drafted (GeneratableLessonType), so
+//    each course names its hand-written demo candidate in a comment. It goes
+//    right before the closing scenario, and must target a surface that exists.
+//  - orderIndex is the live slot it takes as of 2026-10-20 (the catalog was
+//    renumbered 0-23 since v1, so v1's 14-23 above are stale). Applying a
+//    course shifts every live course at or after that slot by +1.
+//  - Course titles render untranslated, like every live course title.
+//  - Historical figures are closing values, sourced in the topic. Anything a
+//    later report may revise (SPIVA) says which edition it comes from.
+export const ACADEMY_ROADMAP_V2: CourseOutline[] = [
+  // ─── Money & Mindset (free, beginner), after macro-basics ────────────────
+  {
+    slug: 'index-funds-and-fees',
+    title: 'Index Funds & Fees',
+    description: 'Why most stock pickers trail the index, how a fee that looks tiny compounds against you, and what to compare before you pick a fund.',
+    icon: 'Percent',
+    color: 'emerald',
+    orderIndex: 13,
+    difficulty: 'beginner',
+    unitLabel: 'Money & Mindset',
+    targetMonth: '2026-11',
+    lessons: [
+      // NOTE: etfs-and-crypto ("What is an ETF?") already defines an ETF,
+      // diversification inside a basket, and expense ratio ("0.10% is about
+      // 10 cents a year per $100"), and its fun fact is the 1993 SPDR launch.
+      // This course assumes all of that and goes to why costs decide outcomes.
+      { slug: 'active-vs-passive', title: 'Why Most Fund Managers Trail the Index', type: 'read', topic: 'An index fund owns everything in an index instead of trying to pick winners (passive vs active). The evidence, from S&P Dow Jones Indices\' SPIVA U.S. Scorecard, Year-End 2024 (spglobal.com/spdji/en/spiva/article/spiva-us-year-end-2024): 65% of actively managed US large-cap funds underperformed the S&P 500 in 2024, underperformance rates rose as the time horizon lengthened, and over the 15 years to December 2024 no US equity fund category had a majority of active managers beat its benchmark. Use those figures only (check for a newer SPIVA edition when generating and say which year you cite). The reason is arithmetic, not stupidity: before costs, active investors as a group ARE the market, so after their higher fees the average one must trail it. Fun fact: Vanguard launched the first index mutual fund for individual investors in 1976. Do not re-define ETF or expense ratio.', xpReward: 10 },
+      { slug: 'active-vs-passive-check', title: 'Check: Why Most Fund Managers Trail the Index', type: 'quiz', topic: 'Check understanding of the previous lesson only: what makes a fund passive, and why the average active fund trails its index after fees. 2 questions.', xpReward: 10 },
+      { slug: 'fees-compound-too', title: 'Fees Compound Too', type: 'read', topic: 'Build on the expense ratio definition the learner already has: the fee is taken every year from the whole balance, so it compounds against you exactly like returns compound for you. Worked example, clearly labeled hypothetical, using an assumed 7% yearly return before fees: $10,000 left for 30 years grows to about $75,500 in a fund charging 0.03% a year, and about $57,400 in one charging 1.00%. The 1% fund costs roughly $18,000, a quarter of the ending balance. Also: a fund\'s past return is not a promise, but its fee is the one number you know in advance. Mention one-off costs (trading spread, sales loads on some mutual funds) in one sentence each.', xpReward: 10 },
+      { slug: 'fees-compound-too-check', title: 'Check: Fees Compound Too', type: 'quiz', topic: 'Check understanding of the previous lesson only: why a yearly percentage fee compounds, and why the fee is more predictable than past returns. Use the lesson\'s hypothetical 0.03% vs 1.00% example, no new numbers. 2 questions.', xpReward: 10 },
+      { slug: 'choosing-an-index-fund', title: 'What to Compare Before You Pick a Fund', type: 'read', topic: 'Four things to compare between index funds: (1) which index it tracks, since an S&P 500 fund, a total-market fund and a Nasdaq-100 fund own different things and the Nasdaq-100 is far more concentrated in a few large tech companies; (2) expense ratio; (3) tracking difference, how far the fund\'s return lands from its index; (4) size and trading volume, which keep the spread tight. Then the overlap trap: owning two S&P 500 funds from different providers is the same holding twice, and a Nasdaq-100 fund on top of an S&P 500 fund mostly doubles up the same largest companies. Stay fund-family neutral, no product recommendations.', xpReward: 10 },
+      { slug: 'index-funds-quiz', title: 'Quick Check: Index Funds & Fees', type: 'quiz', topic: 'Test the whole course: passive vs active, why fees compound, and what to compare between two index funds (index tracked, cost, tracking difference, overlap). 3 questions.', xpReward: 20 },
+      { slug: 'index-fund-terms-match', title: 'Match the Fund Terms', type: 'match', topic: 'Match vocabulary (Index Fund, Active Management, Expense Ratio, Tracking Difference, Total-Market Fund, Fund Overlap) to plain-English definitions.', xpReward: 15 },
+      // DEMO CANDIDATE (hand-written): the stock page index badges with
+      // "You already own some through VOO" (components/stock/IndexBadges.tsx),
+      // showing overlap between a fund someone holds and a stock they're
+      // eyeing. Goes here, before the scenario.
+      { slug: 'the-star-fund', title: 'The Star Fund', type: 'scenario', topic: 'A friend recommends an actively managed fund that beat the market by 6 points last year and charges 1.2% a year. The investor already holds a low-cost S&P 500 index fund. Reward reasoning about the fee they know for certain vs a past result that is unlikely to repeat (the SPIVA persistence point), and checking how much the star fund overlaps what they already own. Do not frame active funds as always wrong.', xpReward: 25 },
+    ],
+  },
+
+  // ─── Strategies (Pro, intermediate), after technical-analysis-basics ─────
+  {
+    slug: 'surviving-a-crash',
+    title: 'Surviving a Crash',
+    description: 'Four real market crashes, how long each took to recover, and what actually helped the investors who came through them.',
+    icon: 'TrendingDown',
+    color: 'blue',
+    orderIndex: 19,
+    difficulty: 'intermediate',
+    requiresPro: true,
+    unitLabel: 'Strategies',
+    targetMonth: '2026-12',
+    lessons: [
+      // NOTE: portfolio-risk already teaches drawdown and "a 50% drop needs a
+      // 100% gain"; investing-psychology already teaches loss aversion and
+      // herding. This course is the history those lessons point at. Do not
+      // re-derive the recovery math or re-teach the biases.
+      //
+      // Every figure below is a CLOSING value (intraday highs and lows differ)
+      // for the price index, which excludes dividends, so recovery with
+      // dividends reinvested came somewhat sooner. Use only these numbers.
+      { slug: 'four-crashes', title: 'Four Crashes, Four Recoveries', type: 'read', topic: 'The S&P 500 through four crashes, with real closing values. (1) Dot-com: 1,527.46 on March 24, 2000 to 776.76 on October 9, 2002, down 49.1%; back above the old record on May 30, 2007 (1,530.23), about seven years after the peak. The tech-heavy Nasdaq Composite fell 78% from its March 10, 2000 close of 5,048.62 and only closed above it on April 23, 2015 (5,056.06), 15 years later. (2) Financial crisis: 1,565.15 on October 9, 2007 to 676.53 on March 9, 2009, down about 57%; new record March 28, 2013 (1,569.19), five and a half years after the peak. (3) COVID: 3,386.15 on February 19, 2020 to 2,237.40 on March 23, 2020, down about 34% in about five weeks, the fastest bear market on record; new record August 18, 2020 (3,389.78), six months after the peak. (4) 2022 rate hikes: 4,796.56 on January 3, 2022 to 3,577.03 on October 12, 2022, down 25.4%; new record January 19, 2024 (4,839.81), about two years after the peak. Sources: AP/NPR/UPI coverage of each record close (npr.org 2013-03-28, pbs.org 2020-08-18 "S&P 500 closes at a record, erasing last of pandemic losses", axios.com 2024-01-19, fortune.com 2015-04-23), Wikipedia "Closing milestones of the S&P 500". Takeaway: every one recovered, but on wildly different timelines, from six months to seven years for the S&P 500.', xpReward: 10 },
+      { slug: 'four-crashes-check', title: 'Check: Four Crashes, Four Recoveries', type: 'quiz', topic: 'Check understanding of the previous lesson only, using only its figures: which crash was fastest, which took longest for the S&P 500 to recover, and why the Nasdaq took far longer than the S&P 500 after 2000. 2 questions.', xpReward: 10 },
+      { slug: 'why-recoveries-differ', title: 'Why Some Recoveries Took Months and Others Years', type: 'read', topic: 'What separated the timelines in the previous lesson: how expensive stocks were going in (dot-com valuations were extreme, so prices had further to fall and longer to grow back), what broke (2008 was the banking system itself; 2020 was a sudden shock met by fast, very large support from the Federal Reserve and Congress), and what was concentrated (the Nasdaq was packed with the stocks that were most overvalued). The honest caveat: recovery is not guaranteed on any timeline. Japan\'s Nikkei 225 closed at a record 38,915.87 on December 29, 1989 and did not close above it until February 22, 2024 (39,098.68), 34 years later (sources: Japan Times 2024-02-22, Wikipedia "Nikkei 225"). And an index recovers partly because it replaces failures with new companies; an individual stock that collapses may never come back. Reference diversification as already taught, do not re-teach it.', xpReward: 10 },
+      { slug: 'why-recoveries-differ-check', title: 'Check: Why Some Recoveries Took Months and Others Years', type: 'quiz', topic: 'Check understanding of the previous lesson only: why starting valuation mattered, and why a broad index can recover when a single collapsed stock may not (with the Nikkei as the caveat that even an index can take decades). 2 questions.', xpReward: 10 },
+      { slug: 'what-helped', title: 'What Actually Helped Investors Through', type: 'read', topic: 'Four habits that helped, each tied to the history: (1) Staying invested. J.P. Morgan Asset Management\'s Guide to Retirement shows that missing just the 10 best days over a 20-year period roughly halves an S&P 500 investor\'s ending value, and that most of the best days came within about two weeks of the worst days, i.e. in the middle of crashes when selling feels safest. Present this as the guide\'s finding without quoting one edition\'s exact dollar figures. (2) Having cash set aside so you are never forced to sell at the bottom. (3) Rebalancing, which means buying what fell. (4) Investing on a schedule (dollar-cost averaging) so a crash buys more shares at lower prices. Then 2022\'s lesson: the Bloomberg US Aggregate bond index lost about 13% that year, its worst calendar year since the index began in 1976, while the S&P 500 fell 19.4%, so stocks and bonds fell together (sources: Axios 2022-12-31 "Stocks\' terrible year", LPL Research via Yahoo Finance). A diversifier can fail exactly when you need it, which is why cash and time horizon matter.', xpReward: 10 },
+      { slug: 'surviving-a-crash-quiz', title: 'Quick Check: Surviving a Crash', type: 'quiz', topic: 'Test the whole course using only its figures: the four crashes and their recovery times, what made recoveries differ, and which habits helped (staying invested, cash buffer, rebalancing, buying on a schedule). 3 questions.', xpReward: 20 },
+      { slug: 'crash-terms-match', title: 'Match the Crash Terms', type: 'match', topic: 'Match vocabulary (Bear Market, Correction, Peak, Trough, Recovery, Rebalancing) to plain-English definitions. Bear market = a fall of 20% or more from a high; correction = 10% or more.', xpReward: 15 },
+      // DEMO CANDIDATE (hand-written): a chart-tour on a long-range S&P 500
+      // ETF chart (SPY, max range) stepping through the four drawdowns from
+      // the first lesson. Needs a check that the chart's max range reaches
+      // back to 2000 before it is written. Goes here, before the scenario.
+      { slug: 'down-thirty-percent', title: 'Down 30% in Five Weeks', type: 'scenario', topic: 'The market has fallen 30% in five weeks, the investor\'s whole portfolio is red, and the news says it will get worse. They have a 15-year horizon, a job, and six months of expenses in cash. Reward holding to the plan and rebalancing, reasoning from the history in the course. The feedback must also say plainly that history does not promise how long a recovery takes (the Nikkei caveat), so the plan is what makes holding possible, not a guarantee of the outcome.', xpReward: 25 },
+    ],
+  },
+
+  // ─── Foundations (free, beginner), after reading-a-stock-quote ───────────
+  {
+    slug: 'placing-a-trade',
+    title: 'Placing a Trade',
+    description: 'Market, limit and stop orders, what happens when you trade outside market hours, and how a commission-free broker still gets paid.',
+    icon: 'ArrowLeftRight',
+    color: 'emerald',
+    orderIndex: 3,
+    difficulty: 'beginner',
+    unitLabel: 'Foundations',
+    targetMonth: '2027-01',
+    lessons: [
+      // NOTE: what-is-a-stock ("How Markets Work") already covers exchanges
+      // and that a broker routes your order; reading-a-stock-quote ("Bid, Ask
+      // & Spread") already defines bid, ask, spread and liquidity. Use those
+      // terms, do not re-define them. BullPen is not a broker and never
+      // places trades: keep every lesson broker-neutral, no app names.
+      { slug: 'market-vs-limit', title: 'Market Orders vs. Limit Orders', type: 'read', topic: 'A market order fills right away at the best available price, which for a buy means paying the ask (link to the spread they already know); fast, but you don\'t control the price, which matters in a thinly traded stock or a fast-moving moment. A limit order sets the most you will pay (or the least you will accept when selling); you control the price but it may never fill. Day orders expire at the close, good-til-canceled orders stay open until filled or canceled (brokers usually cap how long). Fractional shares: many brokers let you buy by dollar amount instead of whole shares, and these orders are often handled as market orders; not every stock or broker offers it, and fractional positions may not transfer to another broker.', xpReward: 10 },
+      { slug: 'market-vs-limit-check', title: 'Check: Market Orders vs. Limit Orders', type: 'quiz', topic: 'Check understanding of the previous lesson only: the tradeoff between a market order (certain fill, uncertain price) and a limit order (certain price, uncertain fill). 2 questions.', xpReward: 10 },
+      { slug: 'when-price-jumps', title: 'Stops, Gaps & After-Hours Trading', type: 'read', topic: 'A stop (stop-loss) order becomes a market order once the price touches the stop, so if a stock gaps down overnight, for example after an earnings report, it can fill well below the stop price. A stop-limit order avoids that but may not fill at all. Extended hours: in the US many brokers offer pre-market trading before the 9:30 a.m. ET open and after-hours trading after the 4:00 p.m. ET close (exact windows vary by broker). Fewer people trade then, so spreads are wider and prices jump more, and many brokers accept only limit orders outside regular hours. Note that BullPen\'s stock page shows the extended-hours price separately from the regular-session close. No claims about any specific broker\'s hours.', xpReward: 10 },
+      { slug: 'when-price-jumps-check', title: 'Check: Stops, Gaps & After-Hours Trading', type: 'quiz', topic: 'Check understanding of the previous lesson only: why a stop order can fill below its stop price, and why after-hours prices are less reliable. 2 questions.', xpReward: 10 },
+      { slug: 'how-free-brokers-get-paid', title: 'How "Commission-Free" Brokers Get Paid', type: 'read', topic: 'No commission does not mean no business model. Common revenue sources: payment for order flow (a market maker pays the broker to handle its customers\' orders), interest earned on customers\' uninvested cash, interest on margin loans, lending customers\' shares to short sellers, and paid subscription tiers. In the US, SEC Rule 606 requires brokers to publish quarterly reports on where they route customer orders and what they are paid for it, and Rule 607 requires disclosing payment-for-order-flow policies when an account is opened and every year after. The useful takeaway: check how your broker pays you on idle cash and read its order-routing disclosure. Neutral tone, no claim that any of these is a scam, and other countries have their own rules (several restrict payment for order flow).', xpReward: 10 },
+      { slug: 'placing-a-trade-quiz', title: 'Quick Check: Placing a Trade', type: 'quiz', topic: 'Test the whole course: market vs limit, how stops and gaps interact, why after-hours trading is riskier, and the ways a commission-free broker earns money. 3 questions.', xpReward: 20 },
+      { slug: 'order-terms-match', title: 'Match the Order Types', type: 'match', topic: 'Match vocabulary (Market Order, Limit Order, Stop Order, Good-Til-Canceled, Fractional Share, Payment for Order Flow) to plain-English definitions.', xpReward: 15 },
+      // DEMO CANDIDATE (hand-written): the stock page quote area showing the
+      // regular-session close next to the extended-hours price, used to show
+      // why an after-hours move is not yet a settled price. Goes here, before
+      // the scenario.
+      { slug: 'up-twelve-after-hours', title: 'Up 12% After Hours', type: 'scenario', topic: 'A company the investor has been researching reports earnings after the close and the stock is up 12% in after-hours trading. They want to buy right now with a market order. Reward recognizing the thin after-hours market (wide spread, jumpy price) and choosing a limit order at a price they decided in advance, or waiting for the regular session. Not "never trade after hours", just know what you are getting.', xpReward: 25 },
+    ],
+  },
+];

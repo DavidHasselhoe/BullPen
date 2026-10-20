@@ -186,7 +186,12 @@ export function AcademyPath({ courses }: Props) {
       </motion.ol>
 
       {countdown?.show && (
-        <ComingSoonNode status={countdown.status ?? 'scheduled'} daysUntil={countdown.daysUntil} />
+        <ComingSoonNode
+          status={countdown.status ?? 'scheduled'}
+          daysUntil={countdown.daysUntil}
+          title={countdown.title}
+          targetMonth={countdown.targetMonth}
+        />
       )}
     </div>
   );

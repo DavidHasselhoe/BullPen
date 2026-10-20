@@ -8,6 +8,8 @@
   "comingSoonUnlocksIn_one": "{{count}} 日後に利用可能",
   "comingSoonUnlocksIn_other": "{{count}} 日後に利用可能",
   "comingSoonLaunchingSoon": "近日公開予定",
+  "comingNextLabel": "次のコース",
+  "comingNextExpected": "{{month}}公開予定",
   "dividendDemoEyebrow": "デモ · 配当と不労所得",
   "dividendDemoTitle": "配当計算ツール",
   "dividendDemoDescription": "これは BullPen の実際の配当計算ツールで、配当を支払ういくつかの銘柄があらかじめ入力されています。計算をクリックして、それらが生み出す不労所得を予測してください。",

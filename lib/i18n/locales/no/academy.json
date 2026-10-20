@@ -8,6 +8,8 @@
   "comingSoonUnlocksIn_one": "Låses opp om {{count}} dag",
   "comingSoonUnlocksIn_other": "Låses opp om {{count}} dager",
   "comingSoonLaunchingSoon": "Kommer snart",
+  "comingNextLabel": "Neste kurs",
+  "comingNextExpected": "Kommer i {{month}}",
   "dividendDemoEyebrow": "Demo · Dividender og passiv inntekt",
   "dividendDemoTitle": "Dividend Calculator",
   "dividendDemoDescription": "Dette er BullPen sin virkelige Dividend Calculator, forhåndslastet med noen eksempeldividendeaksjer. Trykk beregn for å projisere den passive inntekten de ville generert.",

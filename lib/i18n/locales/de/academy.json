@@ -8,6 +8,8 @@
   "comingSoonUnlocksIn_one": "Entsperrt in {{count}} Tag",
   "comingSoonUnlocksIn_other": "Entsperrt in {{count}} Tagen",
   "comingSoonLaunchingSoon": "Wird bald verfügbar",
+  "comingNextLabel": "Als Nächstes",
+  "comingNextExpected": "Geplant für {{month}}",
   "dividendDemoEyebrow": "Demo · Dividenden & passives Einkommen",
   "dividendDemoTitle": "Dividend Calculator",
   "dividendDemoDescription": "Das ist BullPens echter Dividend Calculator, vorgeladen mit einigen beispielhaften Dividendentiteln. Klick auf Berechnen, um die passiven Einnahmen zu projizieren, die sie generieren würden.",
