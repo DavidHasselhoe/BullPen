@@ -80,8 +80,9 @@ function getTrend(
   const filtered = values.filter((v): v is number => v != null && !isNaN(v));
   if (filtered.length < 2) return null;
 
-  const newest = filtered[0];
-  const oldest = filtered[filtered.length - 1];
+  // Oldest to newest, the order the table reads.
+  const oldest = filtered[0];
+  const newest = filtered[filtered.length - 1];
   if (oldest === 0) return null;
 
   const pct = ((newest - oldest) / Math.abs(oldest)) * 100;
@@ -143,7 +144,9 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, columns
     );
   }
 
-  const cols = data.slice(0, 5);
+  // Data arrives newest first; the table reads oldest to newest, left to right, like the chart above it.
+  const cols = data.slice(0, 5).reverse();
+  const heads = columns.slice(0, 5).reverse();
 
   return (
     <div className="overflow-x-auto">
@@ -157,10 +160,10 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, columns
               {t('financialsColumnTrend')}
             </th>
             {cols.map((_, i) => (
-              <th key={i} title={columns[i]?.title} className="py-2.5 text-right font-medium text-muted-foreground tabular-nums px-3 min-w-[90px]">
-                <span className="block text-foreground">{columns[i]?.label}</span>
-                {columns[i]?.reported && (
-                  <span className="block text-[11px] font-normal">{t('financialsReportedOn', { date: fmtShortDate(columns[i].reported!) })}</span>
+              <th key={i} title={heads[i]?.title} className="py-2.5 text-right font-medium text-muted-foreground tabular-nums px-3 min-w-[90px]">
+                <span className="block text-foreground">{heads[i]?.label}</span>
+                {heads[i]?.reported && (
+                  <span className="block text-[11px] font-normal">{t('financialsReportedOn', { date: fmtShortDate(heads[i].reported!) })}</span>
                 )}
               </th>
             ))}
@@ -171,8 +174,6 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, columns
             const allValues = cols.map((col) => col[key] as number | null | undefined);
             const trend = getTrend(allValues, t, costMetric);
             const barValues = allValues
-              .slice()
-              .reverse()
               .map((v) => (v == null || isNaN(v as number) ? null : (v as number)));
             const hasBars = barValues.filter((v) => v != null).length >= 2;
 
