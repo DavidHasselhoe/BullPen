@@ -28,6 +28,7 @@ import { groupOverlap, isNewTrade, type OverlapPerson, type OverlapStock } from 
 import { displayCompanyName } from '@/lib/market-data/company-name';
 import type { ActivityTrade } from '@/lib/congress/insights';
 import { Skeleton } from '@/components/ui/skeleton';
+import { OwnershipFilter, byOwnership, type Ownership } from '@/components/discover/OwnershipFilter';
 import { cn } from '@/lib/utils';
 
 interface Person {
@@ -101,6 +102,7 @@ export function YourStocksInWashington() {
   const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [showAll, setShowAll] = useState(false);
+  const [ownership, setOwnership] = useState<Ownership>('all');
   // Null on the server and during hydration, so the first client render matches.
   const remembered = parseShape(useSyncExternalStore(noSubscribe, readShape, () => null));
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
@@ -168,6 +170,10 @@ export function YourStocksInWashington() {
   if (!data || data.symbolCount === 0) return null;
 
   const title = t('congOverlapTitle', { count: data.symbolCount, days: data.windowDays });
+  const heldSet = new Set(data.held ?? []);
+  // The filter only earns its place when the list has both owned and watched stocks.
+  const mixed = heldSet.size > 0 && heldSet.size < data.symbolCount;
+  const filter = mixed ? <OwnershipFilter value={ownership} onChange={(v) => { setOwnership(v); setShowAll(false); }} /> : null;
   const company = (symbol: string) => displayCompanyName(data.names?.[symbol] ?? symbol, symbol);
   const thisYear = new Date().getUTCFullYear();
   const fmtDate = (iso: string) => {
@@ -188,7 +194,7 @@ export function YourStocksInWashington() {
     : '';
 
   if (data.locked) {
-    const symbols = data.symbols ?? [];
+    const symbols = byOwnership(data.symbols ?? [], ownership, (s) => heldSet.has(s));
     const people = data.people ?? [];
     const newStocks = data.newStocks ?? 0;
     return (
@@ -214,6 +220,7 @@ export function YourStocksInWashington() {
             {t('congOverlapSeeWho')}
           </Link>
         </div>
+        {filter && <div className="mt-3">{filter}</div>}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <ul className="flex flex-wrap items-center" aria-label={t('congOverlapLockedStocks')}>
             {symbols.slice(0, LOCKED_LOGOS).map((s) => (
@@ -258,7 +265,8 @@ export function YourStocksInWashington() {
   const leadDir = tradeDirection(lead.tradeType);
   const leadVars = { name: lead.displayName, company: company(lead.symbol), date: fmtDate(lead.transactionDate) };
   const busiest = stocks.reduce((a, b) => (b.people.length > a.people.length ? b : a));
-  const shown = showAll ? stocks : stocks.slice(0, INITIAL_STOCKS);
+  const listed = byOwnership(stocks, ownership, (s) => s.held);
+  const shown = showAll ? listed : listed.slice(0, INITIAL_STOCKS);
 
   const toggle = (symbol: string) =>
     setOpen((prev) => {
@@ -288,6 +296,7 @@ export function YourStocksInWashington() {
             <> {t('congOverlapBusiest', { company: company(busiest.symbol), count: busiest.people.length })}</>
           )}
         </p>
+        {filter && <div className="mt-3">{filter}</div>}
       </div>
 
       <ul className="mt-3 divide-y divide-border/50 border-t border-border/50">
@@ -304,14 +313,14 @@ export function YourStocksInWashington() {
         ))}
       </ul>
 
-      {stocks.length > INITIAL_STOCKS && (
+      {listed.length > INITIAL_STOCKS && (
         <div className="border-t border-border/50 px-4 py-1 sm:px-5">
           <button
             type="button"
             onClick={() => setShowAll((v) => !v)}
             className="min-h-11 rounded-sm text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {showAll ? t('congOverlapShowFewer') : t('congOverlapShowAll', { count: stocks.length })}
+            {showAll ? t('congOverlapShowFewer') : t('congOverlapShowAll', { count: listed.length })}
           </button>
         </div>
       )}

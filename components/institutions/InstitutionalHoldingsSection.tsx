@@ -15,6 +15,7 @@ import { ALLOCATION_COLORS } from '@/lib/charts/allocation-colors';
 import { concentrationRead } from '@/lib/institutions/allocation';
 import { cn } from '@/lib/utils';
 import { FundAvatar } from './FundAvatar';
+import { YourStocksInFunds } from './YourStocksInFunds';
 import { FollowFundButton } from './FollowFundButton';
 import { Filing13FDisclaimer } from './Filing13FDisclaimer';
 import { NextFilingNote } from './NextFilingNote';
@@ -450,6 +451,8 @@ export function InstitutionalHoldingsSection({ preview = false }: { preview?: bo
         <Filing13FDisclaimer compact />
         {!preview && <NextFilingNote />}
       </div>
+
+      <YourStocksInFunds />
 
       {!preview && <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <ControlSelect
