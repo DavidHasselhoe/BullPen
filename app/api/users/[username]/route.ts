@@ -3,6 +3,7 @@ import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import type { PublicUser } from '../search/route';
 import { isProfilePublic, areHoldingsPublic } from '@/lib/social/visibility';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 
 // Public profile page — deliberately unauthenticated, same reasoning as
 // users/search/route.ts: the column whitelist below plus the profile_public/
@@ -89,6 +90,7 @@ async function handler(
         .from('user_holdings')
         .select('symbol, company_name')
         .eq('user_id', userRow.id)
+        .or(OPEN_POSITION_FILTER)
         .order('created_at', { ascending: true });
 
       holdings = (holdingRows ?? []).map((h: { symbol: string; company_name: string }) => ({

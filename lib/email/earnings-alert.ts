@@ -8,6 +8,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { sendEmail } from './resend';
 
 import { SITE_URL } from '@/lib/site';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 
 interface Holder {
@@ -26,7 +27,8 @@ async function getHoldersForTicker(ticker: string): Promise<Holder[]> {
   const { data: holders, error: holdersError } = await supabase
     .from('user_holdings')
     .select('user_id')
-    .eq('symbol', symbol);
+    .eq('symbol', symbol)
+    .or(OPEN_POSITION_FILTER);
 
   if (holdersError || !holders?.length) return [];
 

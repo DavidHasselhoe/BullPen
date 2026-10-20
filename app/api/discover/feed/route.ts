@@ -26,6 +26,7 @@ import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { getSectorPerformance } from '@/lib/discover/sector-performance';
 import { getMarketIndices } from '@/lib/discover/indices';
 import { getQualityAtDiscount, getFiftyTwoWeekExtremes } from '@/lib/discover/collections';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 import {
   SECTOR_DISPLAY_ORDER,
   TRENDING_FALLBACK,
@@ -83,7 +84,7 @@ async function buildTrending(userId: string | null): Promise<DiscoverFeed['colle
 
   if (userId) {
     const [holdingsRes, watchlistRes] = await Promise.all([
-      supabase.from('user_holdings').select('symbol').eq('user_id', userId).returns<Array<{ symbol: string }>>(),
+      supabase.from('user_holdings').select('symbol').eq('user_id', userId).or(OPEN_POSITION_FILTER).returns<Array<{ symbol: string }>>(),
       supabase.from('user_watchlist').select('symbol').eq('user_id', userId).returns<Array<{ symbol: string }>>(),
     ]);
 

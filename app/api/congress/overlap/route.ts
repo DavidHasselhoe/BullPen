@@ -19,6 +19,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isPro } from '@/lib/billing/tier';
 import { getTradesForSymbols } from '@/lib/congress/insights';
 import { isNewTrade, overlapVisit } from '@/lib/congress/overlap-groups';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 
 const WINDOW_DAYS = 90;
 /**
@@ -41,7 +42,7 @@ async function readVisit(userId: string): Promise<VisitRow> {
 async function get(_request: NextRequest, _context: unknown, session: { userId: string }): Promise<NextResponse> {
   const supabase = createServerClient();
   const [holdings, watchlist, tier, visit] = await Promise.all([
-    supabase.from('user_holdings').select('symbol').eq('user_id', session.userId),
+    supabase.from('user_holdings').select('symbol').eq('user_id', session.userId).or(OPEN_POSITION_FILTER),
     supabase.from('user_watchlist').select('symbol').eq('user_id', session.userId),
     getTier(session.userId),
     readVisit(session.userId),

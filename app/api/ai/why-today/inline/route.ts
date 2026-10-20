@@ -35,6 +35,7 @@ import {
   type InlineWhy,
 } from '@/lib/ai/why-today';
 import { listingMic } from '@/lib/assets/asset-type';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 
 // A generation with web search takes 10-25 s.
 export const maxDuration = 60;
@@ -67,7 +68,7 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
   const supabase = createServerClient();
   const [tier, { data: holdings }, { data: watchlist }] = await Promise.all([
     getTier(session.userId),
-    supabase.from('user_holdings').select('symbol, mic_code').eq('user_id', session.userId)
+    supabase.from('user_holdings').select('symbol, mic_code').eq('user_id', session.userId).or(OPEN_POSITION_FILTER)
       .returns<Array<{ symbol: string; mic_code: string | null }>>(),
     supabase.from('user_watchlist').select('symbol').eq('user_id', session.userId)
       .returns<Array<{ symbol: string }>>(),

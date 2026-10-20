@@ -201,6 +201,7 @@ export async function createPortfolioRecapNotification(
 // ─── User-defined alert notifications ────────────────────────────────────────
 
 import { describeAlert, type UserAlert } from '@/types/alerts';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 
 /**
  * Create a notification when a user-defined alert is triggered by the
@@ -290,7 +291,7 @@ export async function notifyHealthScoreChanges(changes: HealthScoreChange[]): Pr
   const [watchlistRes, holdingsRes] = await Promise.all([
     supabase.from('user_watchlist').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true) as unknown as
       Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string | null }> | null }>,
-    supabase.from('user_holdings').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true) as unknown as
+    supabase.from('user_holdings').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true).or(OPEN_POSITION_FILTER) as unknown as
       Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string | null }> | null }>,
   ]);
 
@@ -687,7 +688,7 @@ export async function notifyHoldersOfPoliticianTrades(
   const supabase = createServerClient();
 
   const [held, watched] = await Promise.all([
-    supabase.from('user_holdings').select('user_id, symbol').in('symbol', symbols),
+    supabase.from('user_holdings').select('user_id, symbol').in('symbol', symbols).or(OPEN_POSITION_FILTER),
     supabase.from('user_watchlist').select('user_id, symbol').in('symbol', symbols),
   ]);
   const userSymbols = new Map<string, Set<string>>();

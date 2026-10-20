@@ -27,6 +27,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import type { DividendsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 import { getCalendarDay } from '@/lib/market-data/calendar-days';
 import { todayET, addDays } from '@/lib/dates/calendar-format';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 import {
   createDividendReminderNotification,
   type DividendItem,
@@ -78,7 +79,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       supabase
         .from('user_holdings')
         .select('user_id, symbol, company_name')
-        .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
+        .eq('alerts_enabled', true)
+        .or(OPEN_POSITION_FILTER) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
     ]);
 
     const userSymbols = new Map<string, Map<string, string>>(); // userId → (symbol → companyName)
