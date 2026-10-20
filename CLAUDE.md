@@ -69,7 +69,7 @@ Never create feature branches. Work directly on `preview`.
 
 ## End Session Protocol
 
-When the user says **"end session"**, read `docs/agent/end-session.md` and follow it exactly, in order: uncommitted work from any session, lint, preview ahead of main, changelog (dated by each commit's UTC day), merge preview → main, confirm the Vercel deployment.
+When the user says **"end session"**, read `docs/agent/end-session.md` and follow it exactly, in order: uncommitted work from any session, lint, preview ahead of main, code review (plus security review on billing/auth/migration changes), changelog (dated by each commit's UTC day), merge preview → main, confirm the Vercel deployment.
 
 ## Supabase Migrations
 
