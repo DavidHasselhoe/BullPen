@@ -101,9 +101,10 @@ export function isPreMarketET(now = new Date()): boolean {
 /**
  * Seconds until the next regular-session open (9:30 New York on a trading
  * day). For data that cannot change while the market is shut, like the last
- * session's movers, so a cache can hold it until it can.
+ * session's movers, so a cache can hold it until it can. Pass `hh`/`mm` = 4, 0
+ * for the next pre-market open instead.
  */
-export function secondsUntilNextOpenET(now = new Date()): number {
+export function secondsUntilNextOpenET(now = new Date(), hh = 9, mm = 30): number {
   const nowSec = now.getTime() / 1000;
   const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
   for (let i = 0; i < 10; i++) {
@@ -112,7 +113,7 @@ export function secondsUntilNextOpenET(now = new Date()): number {
     const m = d.getMonth() + 1;
     const day = d.getDate();
     if (d.getDay() === 0 || d.getDay() === 6 || usMarketHolidays(y).has(iso(y, m, day))) continue;
-    const open = etWallToUnix(y, m, day, 9, 30);
+    const open = etWallToUnix(y, m, day, hh, mm);
     if (open > nowSec) return Math.round(open - nowSec);
   }
   return 30 * 60;

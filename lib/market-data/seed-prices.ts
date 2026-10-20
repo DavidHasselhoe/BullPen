@@ -2,7 +2,7 @@
  * Shared cold-start price seeding for real-time SSE price streams.
  *
  * Two-level dedup, cheapest first:
- *   1. Redis per-symbol cache (15s TTL, batched via a single MGET) — shared
+ *   1. Redis per-symbol cache (session-aware TTL, batched via a single MGET) — shared
  *      across serverless instances AND across routes (the heatmap stream and
  *      per-stock price streams read/write the same keys), so a symbol seeded
  *      by one surface moments ago is free for the next.
@@ -15,7 +15,7 @@
  * per symbol and never expires, so on a warm process it would report almost
  * every S&P 500 symbol as "already seeded" and skip fetching a price for it —
  * even though hasPrevClose only means the previous close is known, not that
- * this new listener has ever received a *current* price. Redis's 15s TTL is
+ * this new listener has ever received a *current* price. Redis's TTL is
  * the real dedup boundary; the WsManager map is only used to pre-populate
  * prevClose for tick math, which is idempotent and safe to set redundantly.
  */
@@ -23,6 +23,7 @@
 import { WsManager } from './ws-manager';
 import { getStockQuotes, isOutsideRegularSessionET, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { rmget, rset } from '@/lib/cache/redis-cache';
+import { secondsUntilNextOpenET } from '@/lib/market-data/trading-day';
 
 export interface SeededQuote {
   price: number;
@@ -35,7 +36,23 @@ export interface SeededQuote {
 
 interface SeedQuote { c: number; d: number; dp: number; pc: number }
 
-const SEED_TTL = 15;
+/**
+ * How long a seed stays shared. Every SSE connect (and each open tab
+ * reconnects every 4.5 min) re-quotes whatever has expired, about 503
+ * credits for the S&P 500 board, so a flat 15s meant ~110 credits/min per
+ * idle tab around the clock. 15s in the regular session, 60s in pre/post
+ * (plus 15 min after 20:00 ET for late prints to settle), and from then until
+ * the next 04:00 ET pre-market on a trading day: the prepost quote cannot
+ * move in that gap.
+ */
+export function seedTtlSeconds(now = new Date()): number {
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const mins = et.getHours() * 60 + et.getMinutes();
+  const weekday = et.getDay() >= 1 && et.getDay() <= 5;
+  if (weekday && mins >= 570 && mins < 960) return 15;
+  if (weekday && mins >= 240 && mins < 1215) return 60;
+  return Math.max(60, secondsUntilNextOpenET(now, 4, 0));
+}
 // TwelveData /batch caps at ~120 requests per call. Larger chunks mean fewer
 // concurrent outbound requests, which both reduces the odds of any one chunk
 // stalling and cuts total credit round-trips.
@@ -118,6 +135,7 @@ export async function seedPrices(
   // symbols for the life of the SSE connection, since seeding only runs once
   // at connect time and un-ticked symbols (e.g. pre-market) never get a
   // second chance.
+  const seedTtl = seedTtlSeconds();
   const chunks: string[][] = [];
   for (let i = 0; i < stillNeeded.length; i += SEED_CHUNK) {
     chunks.push(stillNeeded.slice(i, i + SEED_CHUNK));
@@ -138,8 +156,8 @@ export async function seedPrices(
             previousClose: prevClose,
             volume: quote.volume,
           });
-          // Write to Redis so sibling instances/routes skip this fetch for 15s.
-          void rset<SeedQuote>(seedKey(sym), { c: quote.c, d: quote.d, dp: quote.dp, pc: prevClose }, SEED_TTL);
+          // Write to Redis so sibling instances/routes skip this fetch (see seedTtlSeconds).
+          void rset<SeedQuote>(seedKey(sym), { c: quote.c, d: quote.d, dp: quote.dp, pc: prevClose }, seedTtl);
           void rset<number>(pcKey(sym), prevClose, secondsToEtMidnight());
         }
       } catch (err) {
