@@ -46,6 +46,13 @@ async function main() {
   const hdYear = periodForStatement(hd, '2026-01-31', true);
   assert.equal(hdYear?.fiscalYear, 2025, `Home Depot year ending ${hdYear?.periodEnd} read as FY${hdYear?.fiscalYear}`);
 
+  // H&R Block (year ends Jun 30) tagged its Sep 2025 10-Q fy 2025, the same as
+  // the Q1 before it. The quarter after the FY2025 10-K is Q1 FY26.
+  const hrb = await calendarFor('12659');
+  assert.equal(label(periodForStatement(hrb, '2025-09-30', false), true), 'Q1 FY26');
+  assert.equal(label(periodForStatement(hrb, '2024-09-30', false), true), 'Q1 FY25');
+  assert.equal(label(periodForStatement(hrb, '2025-12-31', false), true), 'Q2 FY26');
+
   // A calendar-year company keeps plain labels.
   const jpm = await calendarFor('19617');
   assert.equal(jpm.offCalendar, false);

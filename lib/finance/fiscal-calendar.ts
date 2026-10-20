@@ -79,6 +79,16 @@ export function buildFiscalCalendar(
   }
   periods.sort((a, b) => b.periodEnd!.localeCompare(a.periodEnd!));
 
+  // A cover-page tag can be wrong: H&R Block filed its Sep 2025 10-Q (Q1 FY26)
+  // tagged fy 2025, the same year as the Q1 before it. A quarter after the
+  // 10-K for year Y is in Y+1 under any naming convention, so the 10-K's own
+  // year settles it.
+  for (const p of periods) {
+    if (p.fiscalQuarter === 4) continue;
+    const prevYearEnd = periods.find((o) => o.fiscalQuarter === 4 && o.periodEnd! < p.periodEnd!);
+    if (prevYearEnd && days(p.periodEnd!, prevYearEnd.periodEnd!) < 366) p.fiscalYear = prevYearEnd.fiscalYear + 1;
+  }
+
   // Results released after the newest filing, for a quarter that has ended:
   // Micron released Q4 FY26 on Sep 30 2026 with the 10-K weeks away. 80 days
   // keeps a stray mid-quarter 2.02 (a guidance update) from passing as one.
