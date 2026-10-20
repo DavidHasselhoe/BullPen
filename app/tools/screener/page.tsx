@@ -211,7 +211,8 @@ function ScreenerContent() {
       if (symbolsFilter === '__none__') {
         return { success: true, results: [], sectors: [], industries: [], total: 0, universeSize: 0, financialsLoaded: 0, stale: false, view: viewParam };
       }
-      const url = `/api/screener${qs ? `?${qs}` : ''}`;
+      // live=1: this page streams S&P 500 prices itself, so the API skips quoting them.
+      const url = `/api/screener?${qs ? `${qs}&` : ''}live=1`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch screener data');
       return { ...(await res.json()), view: viewParam };
@@ -279,7 +280,7 @@ function ScreenerContent() {
   const { data: fetchedUniverse } = useQuery({
     queryKey: ['screener-universe'],
     queryFn: async () => {
-      const res = await fetch('/api/screener?scope=all');
+      const res = await fetch('/api/screener?scope=all&live=1');
       if (!res.ok) throw new Error();
       const d = await res.json();
       universeRef.current = d.results ?? [];

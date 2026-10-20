@@ -6,6 +6,8 @@ import { TwelveDataRateLimitError, getStockQuotes, withRateLimitRetry } from '@/
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 import { fetchAllPages, isIndexScope, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
 import { getLastPrices, cacheLastPrice, type LastPriceSeed } from '@/lib/market-data/last-price-cache';
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
+import { SP500_TICKERS } from '@/lib/market-data/sp500';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,18 +32,26 @@ const PRICE_QUOTE_CHUNK = 100;
 // most likely to actually be viewed.
 const PRICE_HYDRATION_CAP = 600;
 
-async function hydrateLastPrices(tickers: string[]): Promise<Map<string, LastPriceSeed>> {
+// The screener page (`live=1`) runs the heatmap SSE stream, which seeds a price
+// for every S&P 500 member on connect. Quoting them here as well paid twice: a
+// cold S&P 500 view measured 504 credits on 2026-10-20 for prices the stream
+// was already delivering. For a streamed request they come from cache only.
+const STREAMED_TICKERS = new Set(SP500_TICKERS.map((t) => t.toUpperCase()));
+
+async function hydrateLastPrices(tickers: string[], streamed: boolean): Promise<Map<string, LastPriceSeed>> {
   const upper = [...new Set(tickers.map((t) => t.toUpperCase()))].slice(0, PRICE_HYDRATION_CAP);
   if (upper.length === 0) return new Map();
 
   const seeds = await getLastPrices(upper);
-  const missing = upper.filter((t) => !seeds.has(t));
+  const missing = upper.filter((t) => !seeds.has(t) && !(streamed && STREAMED_TICKERS.has(t)));
 
   if (missing.length > 0) {
     const chunks: string[][] = [];
     for (let i = 0; i < missing.length; i += PRICE_QUOTE_CHUNK) chunks.push(missing.slice(i, i + PRICE_QUOTE_CHUNK));
 
     await Promise.all(chunks.map(async (chunk) => {
+      // Shared per-minute budget: a denied chunk renders "—", same as a failed fetch.
+      if (!(await tryReserveOrganicCredits(chunk.length))) return;
       try {
         const quotes = await withRateLimitRetry(() => getStockQuotes(chunk));
         for (const [sym, q] of quotes.entries()) {
@@ -235,7 +245,7 @@ async function handler(request: NextRequest) {
 
   const financialsLoaded = allRows.filter((r) => r.market_cap != null).length;
 
-  const priceSeeds = await hydrateLastPrices(results.map((r) => r.ticker));
+  const priceSeeds = await hydrateLastPrices(results.map((r) => r.ticker), sp.get('live') === '1');
   if (priceSeeds.size > 0) {
     results = results.map((r) => {
       const seed = priceSeeds.get(r.ticker.toUpperCase());
