@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { QuizLesson } from '@/components/academy/lessons/QuizLesson';
 import { ACADEMY_STATS_QUERY_KEY } from '@/hooks/use-academy-stats';
+import { trackEvent } from '@/lib/analytics/track';
 import type { AcademyStats, CourseFinalQuiz as CourseFinalQuizType, QuizContent } from '@/types/academy';
 
 function shuffle<T>(arr: T[]): T[] {
@@ -80,6 +81,9 @@ export function CourseFinalQuiz({ quiz, courseSlug, courseTitle }: Props) {
     },
     onSuccess: (data) => {
       setResult(data);
+      trackEvent('academy_final_quiz_submitted', { course_slug: courseSlug, passed: data.passed, score: data.score, attempt: attempt + 1 });
+      // The quiz is only offered until the course is complete, so a pass here finishes it.
+      if (data.passed) trackEvent('academy_course_completed', { course_slug: courseSlug, via: 'final_quiz' });
       queryClient.setQueryData<AcademyStats>(ACADEMY_STATS_QUERY_KEY, data.stats);
       queryClient.invalidateQueries({ queryKey: ['academy-courses'] });
       queryClient.invalidateQueries({ queryKey: ['academy-progress', courseSlug] });

@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +14,7 @@ import { ChartTourLesson } from '@/components/academy/lessons/ChartTourLesson';
 import { DemoLesson } from '@/components/academy/lessons/DemoLesson';
 import { LessonComplete, type LessonCompleteResult, type LockedAhead } from '@/components/academy/LessonComplete';
 import { ACADEMY_STATS_QUERY_KEY } from '@/hooks/use-academy-stats';
+import { trackEvent } from '@/lib/analytics/track';
 import {
   ReadContentSchema,
   QuizContentSchema,
@@ -35,6 +36,7 @@ import type {
 
 interface CompleteResponse extends LessonCompleteResult {
   success: boolean;
+  isFirstCompletion: boolean;
 }
 
 interface Props {
@@ -56,9 +58,11 @@ interface Props {
   carriedXp: number;
   /** For a finished free sample: what the rest of the course holds. */
   lockedAhead: LockedAhead | null;
+  /** No lesson in this course is completed yet: opening this one starts the course. */
+  courseUntouched: boolean;
 }
 
-export function LessonPlayer({ lesson, courseSlug, courseTitle, nextLesson, isSample, position, continueInto, carriedXp, lockedAhead }: Props) {
+export function LessonPlayer({ lesson, courseSlug, courseTitle, nextLesson, isSample, position, continueInto, carriedXp, lockedAhead, courseUntouched }: Props) {
   const { t } = useTranslation('academy');
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -81,6 +85,42 @@ export function LessonPlayer({ lesson, courseSlug, courseTitle, nextLesson, isSa
     }
   }, [lesson.type, lesson.content]);
 
+  // Analytics: started on mount, abandoned if the learner leaves (in-app
+  // navigation or closing the tab) before handleLessonComplete runs.
+  const { current, total } = position;
+  const eventProps = useMemo(
+    () => ({ course_slug: courseSlug, lesson_slug: lesson.slug, lesson_type: lesson.type, position: current, lesson_count: total, is_sample: isSample }),
+    [courseSlug, lesson.slug, lesson.type, current, total, isSample],
+  );
+  const finishedRef = useRef(false);
+  const startedAtRef = useRef(0);
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    if (!startedAtRef.current) {
+      startedAtRef.current = Date.now();
+      if (courseUntouched) trackEvent('academy_course_started', { course_slug: courseSlug, is_sample: isSample });
+      trackEvent('academy_lesson_started', eventProps);
+    }
+    const abandon = (beacon: boolean) => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      trackEvent(
+        'academy_lesson_abandoned',
+        { ...eventProps, seconds_in_lesson: Math.round((Date.now() - startedAtRef.current) / 1000) },
+        beacon ? { transport: 'sendBeacon' } : undefined,
+      );
+    };
+    const onPageHide = () => abandon(true);
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      mountedRef.current = false;
+      // Deferred so Strict Mode's dev-only unmount/remount doesn't count as leaving.
+      setTimeout(() => { if (!mountedRef.current) abandon(false); }, 0);
+    };
+  }, [eventProps, courseUntouched, courseSlug, isSample]);
+
   const completeMutation = useMutation<CompleteResponse, Error, { score?: number }>({
     mutationFn: async ({ score }) => {
       const res = await fetch(`/api/academy/lessons/${lesson.id}/complete`, {
@@ -92,6 +132,8 @@ export function LessonPlayer({ lesson, courseSlug, courseTitle, nextLesson, isSa
       return res.json();
     },
     onSuccess: (data) => {
+      // courseCompleted stays true on replays; only the first pass finishes the course.
+      if (data.courseCompleted && data.isFirstCompletion) trackEvent('academy_course_completed', { course_slug: courseSlug, via: 'last_lesson' });
       // Push the new stats into the cache immediately so XPBar animates without a refetch
       queryClient.setQueryData<AcademyStats>(ACADEMY_STATS_QUERY_KEY, data.stats);
       queryClient.invalidateQueries({ queryKey: ['academy-courses'] });
@@ -101,6 +143,12 @@ export function LessonPlayer({ lesson, courseSlug, courseTitle, nextLesson, isSa
 
   function handleLessonComplete(score?: number, questions?: number) {
     const before = queryClient.getQueryData<AcademyStats>(ACADEMY_STATS_QUERY_KEY) ?? null;
+    if (!finishedRef.current) {
+      finishedRef.current = true;
+      trackEvent('academy_lesson_completed', { ...eventProps, score: score ?? null, seconds_in_lesson: Math.round((Date.now() - startedAtRef.current) / 1000) });
+      // The sample's reward screen is where a free account meets the paywall.
+      if (isSample) trackEvent('academy_paywall_shown', { course_slug: courseSlug, source: 'sample_complete' });
+    }
     if (continueInto) {
       // Save, then go straight into the check; the reward comes after it.
       if (handingOff) return;

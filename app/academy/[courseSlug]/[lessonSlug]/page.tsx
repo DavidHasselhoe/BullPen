@@ -85,6 +85,7 @@ export default function LessonPage() {
       position={{ current: index + 1, total: data.lessons.length }}
       continueInto={pairedCheck ? { slug: pairedCheck.slug } : null}
       carriedXp={carriedXp}
+      courseUntouched={!data.lessons.some((l) => l.completed)}
       lockedAhead={
         isSample
           ? { remaining: rest.length, xp: rest.reduce((n, l) => n + l.xpReward, 0), lessons: rest.slice(0, 3).map((l) => ({ title: l.title })) }

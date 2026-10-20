@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ProGate } from '@/components/billing/ProGate';
 import { cn } from '@/lib/utils';
 import { useUserProgress } from '@/hooks/use-user-progress';
+import { trackEvent } from '@/lib/analytics/track';
 import type { LessonType, LessonWithCompletion } from '@/types/academy';
 
 function getTypeMeta(t: TFunction): Record<LessonType, { label: string; icon: React.ComponentType<{ className?: string }> }> {
@@ -34,6 +35,11 @@ export default function CourseOverviewPage() {
   const courseSlug = params?.courseSlug ?? null;
   const { data, isLoading } = useUserProgress(courseSlug);
   const [skipping, setSkipping] = useState(false);
+  const locked = data?.locked ?? false;
+  const sampleCompleted = !!data?.lessons.find((l) => l.isSample)?.completed;
+  useEffect(() => {
+    if (locked && courseSlug) trackEvent('academy_paywall_shown', { course_slug: courseSlug, source: 'course_page', sample_completed: sampleCompleted });
+  }, [locked, courseSlug, sampleCompleted]);
 
   if (isLoading || !data) {
     return (
@@ -49,7 +55,7 @@ export default function CourseOverviewPage() {
     );
   }
 
-  const { course, lessons, progress, locked, hasFinalQuiz } = data;
+  const { course, lessons, progress, hasFinalQuiz } = data;
   const completedCount = lessons.filter((l) => l.completed).length;
   const totalXp = lessons.reduce((s, l) => s + l.xpReward, 0);
   const nextLesson: LessonWithCompletion | undefined =

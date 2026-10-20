@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useDailyChallenge, type DailySubmitResult } from '@/hooks/use-daily-challenge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { optionOrder } from '@/lib/academy/option-order';
+import { trackEvent } from '@/lib/analytics/track';
 
 /** Hours:minutes until the next ET midnight, for the "resets in" copy. */
 function timeUntilEtMidnight(): string {
@@ -74,6 +75,7 @@ export function DailyChallengeCard() {
     try {
       const res = await submit.mutateAsync({ challengeId: challenge!.id, choiceIndex: i });
       setResult(res);
+      trackEvent('academy_daily_challenge_answered', { challenge_id: challenge!.id, correct: res.wasCorrect });
     } catch {
       setPicked(null);
     }

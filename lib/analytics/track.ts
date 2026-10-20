@@ -5,8 +5,8 @@
  * safe no-op whenever PostHog isn't configured or the user hasn't consented
  * to analytics — callers never need to check that themselves.
  */
-import posthog from 'posthog-js';
+import posthog, { type CaptureOptions } from 'posthog-js';
 
-export function trackEvent(name: string, properties?: Record<string, unknown>): void {
-  if (posthog.__loaded) posthog.capture(name, properties);
+export function trackEvent(name: string, properties?: Record<string, unknown>, options?: CaptureOptions): void {
+  if (posthog.__loaded) posthog.capture(name, properties, options);
 }
