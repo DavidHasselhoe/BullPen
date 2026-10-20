@@ -3586,5 +3586,10 @@
   "settings.timeZoneAuto": "f8cbab7b8d2113469b31f8fda27eb627475a89657540bdfd03674a3564ca73f4",
   "settings.timeZoneMarket": "fd50ccc348137bb55427f9b3db8459e12719157da36544751cdabcf18d2718ed",
   "settings.timeZoneDescription": "1252a89ff3bdaaa58a1a740ef4700e96bd29f2a726de549e0675e390ca71d1b8",
-  "settings.homeWidget_from_follows": "bf9992f9908fe93e59039591dd994fe465fafb6af070bcf895d06243327b3f2f"
+  "settings.homeWidget_from_follows": "bf9992f9908fe93e59039591dd994fe465fafb6af070bcf895d06243327b3f2f",
+  "stock.thesisMakePublicAndPost": "faa24cc399c7b067a2b1424b612826fa9459151c12c59ac9d1bc84f9e4169a72",
+  "stock.thesisPublicNotice": "9878d76ea890de02dd33256845d4d2e5e717e594be785f814ca995cb940da269",
+  "stock.thesisOwnHiddenNotice": "d5dfa45765581d776cd2b749a44cdbfc3068195889aa3dffc8e140f87707ab99",
+  "stock.thesisMakePublicButton": "508dde15c41cc51ca66125f2391c5b3a536f06e65cbf280ffd85f9e11bd1932c",
+  "stock.thesisPostFailed": "057c05e0305ab2cfcb3a8275431f6fbd1fb530807eae559fdc4bcb74dc393cce"
 }

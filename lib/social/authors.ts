@@ -5,13 +5,14 @@ export interface AuthorLabel {
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  is_public: boolean;
 }
 
 /**
- * Name and avatar to show beside something a member chose to post (a thesis,
- * a reply). Read with the service role because RLS hides private profiles from
- * other members: the handle is always shown, since posting is itself public,
- * but the real name and photo only when the profile is public.
+ * Name and avatar to show beside something a member posted (a thesis, a
+ * reply). Read with the service role because RLS hides private profiles from
+ * other members. Posting needs a public profile, so every author link leads
+ * somewhere; callers hide posts whose author has since gone private.
  */
 export async function loadAuthorLabels(userIds: string[]): Promise<Map<string, AuthorLabel>> {
   const map = new Map<string, AuthorLabel>();
@@ -30,7 +31,13 @@ export async function loadAuthorLabels(userIds: string[]): Promise<Map<string, A
       username: p.username,
       full_name: isPublic ? p.full_name : null,
       avatar_url: isPublic ? p.avatar_url : null,
+      is_public: isPublic,
     });
   }
   return map;
+}
+
+/** Only public profiles can post theses and replies. */
+export async function canPost(userId: string): Promise<boolean> {
+  return (await loadAuthorLabels([userId])).get(userId)?.is_public === true;
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { loadAuthorLabels } from '@/lib/social/authors';
+import { loadAuthorLabels, canPost } from '@/lib/social/authors';
 
 export interface ThesisReply {
   id: string;
@@ -61,7 +61,10 @@ async function getHandler(
   const userIds = [...new Set(rows.map((r) => r.user_id))];
   const profileMap = await loadAuthorLabels(userIds);
 
-  const replies: ThesisReply[] = rows.map((r) => {
+  // An author who went private drops out for everyone but themselves.
+  const visible = rows.filter((r) => r.user_id === session.userId || profileMap.get(r.user_id)?.is_public);
+
+  const replies: ThesisReply[] = visible.map((r) => {
     const p = profileMap.get(r.user_id) ?? { username: null, full_name: null, avatar_url: null };
     return { ...r, username: p.username ?? null, full_name: p.full_name ?? null, avatar_url: p.avatar_url ?? null, is_own: r.user_id === session.userId };
   });
@@ -83,6 +86,11 @@ async function postHandler(
   if (!content || content.length < 1 || content.length > 280) {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Content must be 1–280 characters' }, { status: 400 })
+    );
+  }
+  if (!(await canPost(session.userId))) {
+    return addSecurityHeaders(
+      NextResponse.json({ success: false, error: 'profile_private' }, { status: 403 })
     );
   }
 

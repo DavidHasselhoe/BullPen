@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { loadAuthorLabels } from '@/lib/social/authors';
+import { loadAuthorLabels, canPost } from '@/lib/social/authors';
 
 export interface Thesis {
   id: string;
@@ -84,9 +84,13 @@ async function getHandler(
     replyCountMap.set(r.thesis_id, (replyCountMap.get(r.thesis_id) ?? 0) + 1);
   });
 
-  const theses: Thesis[] = rows.map((r: { id: string; user_id: string; symbol: string; content: string; sentiment: 'bull' | 'bear' | 'neutral'; created_at: string; updated_at: string }) => {
-    const p = profileMap.get(r.user_id) ?? { username: null, full_name: null, avatar_url: null };
-    return { ...r, ...p, is_own: r.user_id === session.userId, reply_count: replyCountMap.get(r.id) ?? 0 };
+  // An author who went private drops out for everyone but themselves.
+  // ponytail: reply_count still counts private repliers' replies; filter here too if the mismatch shows up.
+  const visible = rows.filter((r: { user_id: string }) => r.user_id === session.userId || profileMap.get(r.user_id)?.is_public);
+
+  const theses: Thesis[] = visible.map((r: { id: string; user_id: string; symbol: string; content: string; sentiment: 'bull' | 'bear' | 'neutral'; created_at: string; updated_at: string }) => {
+    const { username = null, full_name = null, avatar_url = null } = profileMap.get(r.user_id) ?? {};
+    return { ...r, username, full_name, avatar_url, is_own: r.user_id === session.userId, reply_count: replyCountMap.get(r.id) ?? 0 };
   });
 
   return addSecurityHeaders(NextResponse.json({ success: true, theses }));
@@ -113,6 +117,11 @@ async function postHandler(
   if (!sentiment || !['bull', 'bear', 'neutral'].includes(sentiment)) {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Invalid sentiment' }, { status: 400 })
+    );
+  }
+  if (!(await canPost(session.userId))) {
+    return addSecurityHeaders(
+      NextResponse.json({ success: false, error: 'profile_private' }, { status: 403 })
     );
   }
 

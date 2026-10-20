@@ -120,7 +120,27 @@ export function useUserSettings() {
     [user]
   );
 
+  /** The one-tap shortcut from places that need a public profile (posting a thesis). Throws on failure. */
+  const makeProfilePublic = useCallback(async () => {
+    if (!user?.id) return;
+    const supabase = createBrowserClient();
+    const { data: row, error: fetchError } = await supabase
+      .from('users')
+      .select('settings')
+      .eq('id', user.id)
+      .single();
+    if (fetchError) throw fetchError;
+    const existing = (row?.settings as Record<string, unknown>) || {};
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ settings: { ...existing, profile_public: true } })
+      .eq('id', user.id);
+    if (updateError) throw updateError;
+    window.dispatchEvent(new Event('auth:refresh'));
+  }, [user]);
+
   return {
+    makeProfilePublic,
     showWelcomeText,
     roundNumbers,
     homepageWidgetOrder,

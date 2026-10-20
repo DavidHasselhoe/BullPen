@@ -6,6 +6,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
+import { useUserSettings } from '@/hooks/use-user-settings';
+import { isProfilePublic } from '@/lib/social/visibility';
 import { useSignupGate } from '@/components/auth/SignupGate';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -46,6 +48,17 @@ function useTimeAgo() {
   };
 }
 
+/**
+ * Posting needs a public profile, so every author name leads somewhere. A
+ * private member can still write: the post button turns into "Make public
+ * and post" and does both in one tap.
+ */
+function usePublicProfile() {
+  const { user } = useAuth();
+  const { makeProfilePublic } = useUserSettings();
+  return { isPublic: isProfilePublic(user?.settings as Record<string, unknown> | null), makeProfilePublic };
+}
+
 function UserAvatar({ avatarUrl, displayName, size = 28 }: { avatarUrl: string | null; displayName: string; size?: number }) {
   const initials = displayName.slice(0, 2).toUpperCase();
   if (avatarUrl) {
@@ -76,6 +89,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const queryClient = useQueryClient();
+  const { isPublic, makeProfilePublic } = usePublicProfile();
 
   const repliesKey = ['thesis-replies', thesisId];
 
@@ -93,6 +107,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
 
   const postReply = useMutation({
     mutationFn: async () => {
+      if (!isPublic) await makeProfilePublic();
       const res = await fetch(`/api/social/thesis/${thesisId}/replies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -260,6 +275,8 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                 maxLength={280}
                 autoFocus
               />
+              {!isPublic && <p className="text-xs text-muted-foreground">{t('thesisPublicNotice')}</p>}
+              {postReply.isError && <p role="alert" className="text-xs text-destructive">{t('thesisPostFailed')}</p>}
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-muted-foreground">{content.length}/280</span>
                 <div className="flex gap-1.5">
@@ -272,7 +289,7 @@ function ThesisReplies({ thesisId, replyCount, defaultOpen = false }: ThesisRepl
                     disabled={!content.trim() || postReply.isPending}
                     onClick={() => postReply.mutate()}
                   >
-                    {postReply.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : t('thesisPostButton')}
+                    {postReply.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : isPublic ? t('thesisPostButton') : t('thesisMakePublicAndPost')}
                   </Button>
                 </div>
               </div>
@@ -298,6 +315,8 @@ function ThesisCard({ thesis, onDelete, onEdit, isDeleting }: ThesisCardProps) {
   const timeAgo = useTimeAgo();
   const displayName = thesis.full_name || thesis.username || t('thesisAnonymousName');
   const profileHref = `/users/${encodeURIComponent(thesis.username ?? thesis.user_id)}`;
+  const { isPublic, makeProfilePublic } = usePublicProfile();
+  const goPublic = useMutation({ mutationFn: makeProfilePublic });
 
   return (
     <div className={cn('rounded-xl border border-border bg-card px-4 py-3 space-y-1', thesis.is_own && 'border-primary/20 bg-primary/5')}>
@@ -338,6 +357,23 @@ function ThesisCard({ thesis, onDelete, onEdit, isDeleting }: ThesisCardProps) {
 
       <p className="text-sm text-foreground leading-relaxed pl-[2.375rem]">{thesis.content}</p>
 
+      {/* A thesis posted before going private: only its author sees it now. */}
+      {thesis.is_own && !isPublic && (
+        <div className="pl-[2.375rem] flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+          <span>{t('thesisOwnHiddenNotice')}</span>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs"
+            disabled={goPublic.isPending}
+            onClick={() => goPublic.mutate()}
+          >
+            {goPublic.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : t('thesisMakePublicButton')}
+          </Button>
+          {goPublic.isError && <span role="alert" className="text-destructive">{t('thesisPostFailed')}</span>}
+        </div>
+      )}
+
       <ThesisReplies thesisId={thesis.id} replyCount={thesis.reply_count} />
     </div>
   );
@@ -363,6 +399,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
   const [editingThesis, setEditingThesis] = useState<Thesis | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { isPublic, makeProfilePublic } = usePublicProfile();
 
   const queryKey = ['theses', symbol, filter];
 
@@ -383,6 +420,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
+      if (!isPublic) await makeProfilePublic();
       const res = await fetch(`/api/social/thesis/${encodeURIComponent(symbol)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -506,6 +544,8 @@ export function ThesisSection({ symbol }: { symbol: string }) {
             className="resize-none text-sm min-h-[80px]"
             maxLength={500}
           />
+          {!isPublic && <p className="text-xs text-muted-foreground">{t('thesisPublicNotice')}</p>}
+          {submitMutation.isError && <p role="alert" className="text-xs text-destructive">{t('thesisPostFailed')}</p>}
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">{formContent.length}/500</span>
             <div className="flex gap-2">
@@ -517,7 +557,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
                 onClick={() => submitMutation.mutate()}
                 disabled={!formContent.trim() || submitMutation.isPending}
               >
-                {submitMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : editingThesis ? t('thesisUpdateButton') : t('thesisPostButton')}
+                {submitMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : !isPublic ? t('thesisMakePublicAndPost') : editingThesis ? t('thesisUpdateButton') : t('thesisPostButton')}
               </Button>
             </div>
           </div>
