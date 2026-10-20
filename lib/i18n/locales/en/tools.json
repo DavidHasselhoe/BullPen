@@ -467,6 +467,7 @@
   "screenerAddStockToView": "Add stock to this view",
   "screenerAllWatchlists": "All watchlists",
   "screenerAnyIndustry": "Any industry",
+  "screenerIndustrySearch": "Search industries",
   "screenerAnySector": "Any sector",
   "screenerBetaHint": "1.0 moves with the market. Above 1.5 swings more than the market; under 0.5 is comparatively calm.",
   "screenerBetaLabel": "Beta",

@@ -11,6 +11,7 @@
   "reset": "Réinitialiser",
   "save": "Enregistrer",
   "search": "Rechercher",
+  "noMatches": "Aucune correspondance",
   "success": "Succès",
   "tickerPreviewAdd": "Ajouter à la liste de suivi",
   "tickerPreviewNoProfile": "Aucun profil d'entreprise disponible pour celui-ci.",

@@ -456,6 +456,7 @@
   "screenerAddStockToView": "Ajouter une action à cette vue",
   "screenerAllWatchlists": "Toutes les listes de suivi",
   "screenerAnyIndustry": "N'importe quel secteur d'activité",
+  "screenerIndustrySearch": "Rechercher les secteurs d'activité",
   "screenerAnySector": "N'importe quel secteur",
   "screenerBetaHint": "1,0 évolue avec le marché. Au-dessus de 1,5, c'est plus volatil que le marché ; en dessous de 0,5, c'est relativement stable.",
   "screenerBetaLabel": "Bêta",

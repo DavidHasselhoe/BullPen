@@ -230,6 +230,7 @@
   "timeZone": "タイムゾーン",
   "timeZoneAuto": "自動: {{zone}}",
   "timeZoneMarket": "米国市場時間（ニューヨーク）",
+  "timeZoneSearch": "都市または地域で検索",
   "timeZoneDescription": "チャートと経済カレンダーの時刻はこのタイムゾーンで表示されます。自動ではお使いのデバイスに従います。",
   "homeWidget_from_follows": "フォローしている相手から"
 }

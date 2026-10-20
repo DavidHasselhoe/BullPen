@@ -462,6 +462,7 @@
   "screenerAddStockToView": "Aktie zu dieser Ansicht hinzufügen",
   "screenerAllWatchlists": "Alle Beobachtungslisten",
   "screenerAnyIndustry": "Beliebige Branche",
+  "screenerIndustrySearch": "Branchen durchsuchen",
   "screenerAnySector": "Beliebiger Sektor",
   "screenerBetaHint": "1,0 bewegt sich mit dem Markt. Über 1,5 schwankt stärker als der Markt; unter 0,5 ist vergleichsweise stabil.",
   "screenerClearAll": "Alle löschen",

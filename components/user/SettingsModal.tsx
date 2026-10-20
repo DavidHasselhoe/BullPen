@@ -20,10 +20,10 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import Link from 'next/link';
 import { Loader2, Globe, Bell, Shield, AlertCircle, Trash2, Download, Check, Settings2, Eye, EyeOff, Home, Search, Bot, LineChart, Wrench, ChevronDown, Sparkles, Crown, CreditCard, type LucideIcon } from 'lucide-react';
 import { useEntitlements } from '@/hooks/use-entitlements';
@@ -126,7 +126,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [timeZonePref, setTimeZonePref] = useState<string>('auto');
   const deviceTimeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
   const timeZoneOptions = useMemo(
-    () => Intl.supportedValuesOf('timeZone').map((tz) => ({ tz, label: zoneLabel(tz) })),
+    () => Intl.supportedValuesOf('timeZone').map((tz) => ({ value: tz, label: zoneLabel(tz) })),
     [],
   );
   const [defaultHomepage, setDefaultHomepage] = useState<string>('/dashboard');
@@ -732,7 +732,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
                 <div className="space-y-2">
                   <Label htmlFor="time-zone">{t('timeZone')}</Label>
-                  <Select
+                  <SearchableSelect
+                    id="time-zone"
                     value={timeZonePref}
                     onValueChange={(value) => {
                       setTimeZonePref(value);
@@ -742,19 +743,13 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                         choice: value === 'auto' || value === 'market' ? value : 'zone',
                       });
                     }}
-                  >
-                    <SelectTrigger id="time-zone" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-80">
-                      <SelectItem value="auto">{t('timeZoneAuto', { zone: zoneLabel(deviceTimeZone) })}</SelectItem>
-                      <SelectItem value="market">{t('timeZoneMarket')}</SelectItem>
-                      <SelectSeparator />
-                      {timeZoneOptions.map(({ tz, label }) => (
-                        <SelectItem key={tz} value={tz}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    pinned={[
+                      { value: 'auto', label: t('timeZoneAuto', { zone: zoneLabel(deviceTimeZone) }) },
+                      { value: 'market', label: t('timeZoneMarket') },
+                    ]}
+                    options={timeZoneOptions}
+                    searchPlaceholder={t('timeZoneSearch')}
+                  />
                   <p className="text-xs text-muted-foreground">{t('timeZoneDescription')}</p>
                 </div>
 

@@ -230,6 +230,7 @@
   "timeZone": "Fuseau horaire",
   "timeZoneAuto": "Automatique : {{zone}}",
   "timeZoneMarket": "Heure du marché américain (New York)",
+  "timeZoneSearch": "Rechercher par ville ou région",
   "timeZoneDescription": "Les heures des graphiques et du calendrier économique s’affichent dans ce fuseau. Automatique suit votre appareil.",
   "homeWidget_from_follows": "De ceux que vous suivez"
 }

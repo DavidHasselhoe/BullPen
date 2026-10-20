@@ -465,6 +465,7 @@
   "screenerAddStockToView": "このビューに銘柄を追加",
   "screenerAllWatchlists": "すべてのウォッチリスト",
   "screenerAnyIndustry": "すべての業界",
+  "screenerIndustrySearch": "業界を検索",
   "screenerAnySector": "すべてのセクター",
   "screenerBetaHint": "1.0は市場と連動します。1.5を超えると市場以上に変動し、0.5未満は比較的安定しています。",
   "screenerBetaLabel": "ベータ",

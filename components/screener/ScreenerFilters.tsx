@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { RotateCcw, HelpCircle, Plus, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -324,20 +325,16 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
         {industries.length > 0 && (
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">{t('screenerIndustryLabel')}</Label>
-            <Select
+            {/* 125 industries with no sector picked, so it searches. */}
+            <SearchableSelect
+              size="sm"
+              className="text-xs"
               value={filters.industry || 'all'}
               onValueChange={(v) => onChange({ ...filters, industry: v === 'all' ? '' : v })}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder={t('screenerAnyIndustry')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('screenerAnyIndustry')}</SelectItem>
-                {industries.map((ind) => (
-                  <SelectItem key={ind} value={ind}>{ind}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              pinned={[{ value: 'all', label: t('screenerAnyIndustry') }]}
+              options={industries.map((ind) => ({ value: ind, label: ind }))}
+              searchPlaceholder={t('screenerIndustrySearch')}
+            />
           </div>
         )}
       </div>

@@ -466,6 +466,7 @@
   "screenerAddStockToView": "Legg til aksje i denne visningen",
   "screenerAllWatchlists": "Alle favorittlister",
   "screenerAnyIndustry": "Hvilken som helst industri",
+  "screenerIndustrySearch": "Søk i næringer",
   "screenerAnySector": "Hvilken som helst sektor",
   "screenerBetaHint": "1,0 beveger seg med markedet. Over 1,5 svinger mer enn markedet; under 0,5 er relativt stabilt.",
   "screenerClearAll": "Fjern alt",

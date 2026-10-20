@@ -11,6 +11,7 @@
   "reset": "リセット",
   "save": "保存",
   "search": "検索",
+  "noMatches": "一致するものがありません",
   "success": "成功",
   "tickerPreviewAdd": "ウォッチリストに追加",
   "tickerPreviewNoProfile": "このティッカーの企業プロフィールはまだ登録されていません。",

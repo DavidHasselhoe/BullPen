@@ -465,6 +465,7 @@
   "screenerAddStockToView": "将股票添加到此视图",
   "screenerAllWatchlists": "所有自选股",
   "screenerAnyIndustry": "任何行业",
+  "screenerIndustrySearch": "搜索行业",
   "screenerAnySector": "任何板块",
   "screenerBetaHint": "1.0 表示随市场波动。超过 1.5 表示波动幅度大于市场；低于 0.5 则相对平稳。",
   "screenerBetaLabel": "贝塔系数",

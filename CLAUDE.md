@@ -26,6 +26,10 @@ It runs a methodical final pass — design-system alignment, spacing/alignment a
 
 `PRODUCT.md` and `DESIGN.md` at the repo root capture BullPen's strategic and visual design system (register: product, platform: web). Read them before non-trivial frontend work — `/impeccable` commands load them automatically, but if you're working outside that skill, check them directly. Key points: **Signal Emerald/Red** is the only meaningful color, reserved for gain/loss + the landing brand accent; Bloomberg-terminal density is the named anti-reference; Instrument Serif italic is a one-word marketing-headline accent only, never product UI.
 
+### Long pick lists get a search box
+
+A dropdown with more than ~20 options (time zones, industries, countries, currencies if the list grows) uses `<SearchableSelect>` (`components/ui/searchable-select.tsx`), not `<Select>`. A plain Select of 400 time zones ran past the Settings modal with no way to jump to Oslo. Count the real worst case, not the usual one: the screener's Industry list is ~20 inside a sector and 125 with none picked. Options like "Automatic" or "Any" go in `pinned`, which stays above the list.
+
 ### Writing UI Copy
 
 Never use an em dash or en dash to connect clauses in text a user reads: toasts, dialog copy, empty states, error messages, button labels, Academy lessons, marketing pages, the changelog, anything rendered in the app. It is one of the strongest tells that a sentence was written by an AI, and BullPen's whole positioning is a product that does not feel machine-generated. Split into two sentences, or use a comma or period instead.

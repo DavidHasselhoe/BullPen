@@ -10,6 +10,7 @@
   "reset": "Reiniciar",
   "save": "Guardar",
   "search": "Buscar",
+  "noMatches": "Sin coincidencias",
   "success": "Éxito",
   "tickerPreviewAdd": "Añadir a lista de observación",
   "tickerPreviewNoProfile": "Aún no hay perfil de empresa para este.",

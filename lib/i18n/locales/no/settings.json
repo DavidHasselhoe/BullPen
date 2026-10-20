@@ -230,6 +230,7 @@
   "timeZone": "Tidssone",
   "timeZoneAuto": "Automatisk: {{zone}}",
   "timeZoneMarket": "Amerikansk børstid (New York)",
+  "timeZoneSearch": "Søk etter by eller region",
   "timeZoneDescription": "Klokkeslett i diagrammer og den økonomiske kalenderen vises i denne tidssonen. Automatisk følger enheten din.",
   "homeWidget_from_follows": "Fra de du følger"
 }
