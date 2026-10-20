@@ -174,7 +174,10 @@ export function whyTodayRequest(move: WhyTodayMove, language: string) {
       'dollar sign: "Shares rose after Oracle ($ORCL) raised its cloud forecast." Readers can hover it. Only when you ' +
       'are certain of the ticker, and never for the stock being explained. Never after a possessive: "a forecast from ' +
       'Oracle ($ORCL)", not "Oracle\'s ($ORCL) forecast". ' +
-      'Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.',
+      'Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead. ' +
+      // "Monday's near-3% rebound" was read as a −3% move: a hyphen before a number is a minus sign to the eye.
+      'Never put a hyphen directly before a number: write "nearly 3%", "a 3% rebound" or "rose 3%", not "near-3%" ' +
+      'or "3%-plus". Give earlier moves a direction word (rose, fell, rebound, drop) so the sign is never in doubt.',
     messages: [{
       role: 'user' as const,
       content:
