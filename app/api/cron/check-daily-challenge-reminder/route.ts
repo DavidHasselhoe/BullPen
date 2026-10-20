@@ -27,7 +27,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
-import { yesterdayInET } from '@/lib/academy/streak';
+import { todayInET, yesterdayInET } from '@/lib/academy/streak';
 import { createDailyChallengeReminderNotification } from '@/lib/notifications/notification-creators';
 
 export const maxDuration = 60;
@@ -49,6 +49,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   };
 
   try {
+    // ── 0. No challenge today → nothing to send people to ─────────────────
+    const { data: todays } = await supabase
+      .from('academy_daily_challenges')
+      .select('id')
+      .eq('challenge_date', todayInET())
+      .maybeSingle();
+    if (!todays) {
+      return NextResponse.json({ ...summary, message: 'No daily challenge today, skipping reminders' });
+    }
+
     // ── 1. Users with a genuinely live streak they haven't saved yet today ──
     // Queried first (not from `users`) since academy_user_stats is far smaller
     // than the full user base — narrows the candidate set before checking

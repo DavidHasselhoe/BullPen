@@ -283,7 +283,6 @@ BullPen/
 | `npm run test-credit-budget` | Test the shared TwelveData credit-budget guard |
 | `npm run test-trends` | Test trend detection |
 | `npm run verify-picks-math` | Sanity-check Bull's Weekly Pick performance calculations |
-| `npm run generate-daily-challenges` | Draft a reviewable SQL seed of Academy quiz questions |
 | `npm run set-gold-tier` | Set a user's `account_tier` directly (admin utility) |
 | `npm run post-changelog-discord` | Announce a new changelog entry in Discord |
 

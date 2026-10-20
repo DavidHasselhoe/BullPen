@@ -14,6 +14,10 @@
       "schedule": "17 6 * * 1"
     },
     {
+      "path": "/api/cron/top-up-daily-challenges",
+      "schedule": "20 5 * * *"
+    },
+    {
       "path": "/api/cron/check-daily-challenge-reminder",
       "schedule": "0 1 * * *"
     },

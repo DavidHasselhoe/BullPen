@@ -28,6 +28,8 @@ export const MODEL_PRICING: Record<
   'claude-sonnet-4-5':           { input: 3.00,  output: 15.00 },
   'claude-opus-4-7':             { input: 15.00, output: 75.00 },
   'claude-haiku-4-5-20251001':   { input: 1.00,  output:  5.00, cacheRead: 0.10, cacheWrite: 1.25 },
+  // Academy daily challenge top-up (lib/academy/daily-challenges.ts). Prompts under 100K tokens.
+  'claude-haiku-5-5':            { input: 0.10,  output:  0.50 },
 
   // OpenAI — https://openai.com/api/pricing/
   'gpt-4o':                      { input: 2.50,  output: 10.00 },
