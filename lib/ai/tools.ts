@@ -656,7 +656,7 @@ export const screenStocks = tool({
     sortBy?: ScreenSortKey;
     order?: 'desc' | 'asc';
     limit?: number;
-    scope?: 'sp500' | 'all';
+    scope?: 'sp500' | 'nasdaq100' | 'dow30' | 'all';
     tickers?: string[];
   }>({
     type: 'object',
@@ -667,8 +667,8 @@ export const screenStocks = tool({
       limit: { type: 'number', minimum: 1, maximum: 20, description: 'How many to return. Default 5.' },
       scope: {
         type: 'string',
-        enum: ['sp500', 'all'],
-        description: 'sp500 = the S&P 500, the screener\'s default view (default). all = every stock BullPen tracks, about 3,000 including smaller companies. Ignored when tickers is set.',
+        enum: ['sp500', 'nasdaq100', 'dow30', 'all'],
+        description: 'sp500 = the S&P 500, the screener\'s default view (default). nasdaq100 = the Nasdaq-100. dow30 = the Dow Jones Industrial Average. all = every stock BullPen tracks, about 3,000 including smaller companies. Ignored when tickers is set.',
       },
       tickers: {
         type: 'array',
@@ -724,7 +724,7 @@ export const screenStocks = tool({
       : undefined;
 
     return {
-      universe: symbols ? `${symbols.length} given tickers` : scope === 'all' ? 'all tracked stocks' : 'S&P 500',
+      universe: symbols ? `${symbols.length} given tickers` : { all: 'all tracked stocks', sp500: 'S&P 500', nasdaq100: 'Nasdaq-100', dow30: 'Dow 30' }[scope],
       universeSize: rows.length,
       matchedFilters: matched.length,
       ...(filterImpact ? { filterImpact } : {}),

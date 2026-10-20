@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useState } from 'react';
 import { AISidePanel } from './AISidePanel';
+import type { IndexId } from '@/lib/market-data/index-membership';
 
 export interface AIContext {
   tickers: string[];
@@ -12,7 +13,7 @@ export interface AIContext {
 
 export interface ScreenerAIContext {
   /** The list view. Absent when the view is a ticker set (holdings, watchlist, custom, picked). */
-  scope?: 'sp500' | 'all';
+  scope?: IndexId | 'all';
   tickers?: string[];
   /** Active filters in the screener's own units (market cap in billions, percents 0-100). */
   filters: Record<string, string>;

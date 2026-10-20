@@ -33,6 +33,7 @@ import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvi
 import { isAdmin, tierFromUser } from '@/lib/billing/tier';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import { ToolPage, ToolBackLink } from '@/components/tools/ToolHeader';
+import { isIndexScope } from '@/lib/screener/screener-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,15 +67,14 @@ function buildQueryString(filters: ScreenerFilterValues, symbols: string | null,
 }
 
 function viewToParam(view: ActiveView): string {
-  if (view.type === 'all') return 'all';
-  if (view.type === 'sp500') return 'sp500';
-  if (view.type === 'holdings') return 'holdings';
   if (view.type === 'watchlist') return view.listId ? `watchlist:${view.listId}` : 'watchlist';
-  return view.view.id;
+  if (view.type === 'custom') return view.view.id;
+  return view.type;
 }
 
 function paramToView(param: string | null, customViews: ScreenerView[]): ActiveView {
-  if (!param || param === 'sp500') return { type: 'sp500' };
+  if (!param) return { type: 'sp500' };
+  if (isIndexScope(param)) return { type: param };
   if (param === 'all') return { type: 'all' };
   if (param === 'holdings') return { type: 'holdings' };
   if (param === 'watchlist') return { type: 'watchlist', listId: null };
@@ -163,7 +163,7 @@ function ScreenerContent() {
   // cherry-picking an explicit set, so show exactly those.
   const symbolsFilter = useMemo((): string | null => {
     if (pickedTickers.length > 0) return pickedTickers.join(',');
-    if (activeView.type === 'sp500') return null;
+    if (isIndexScope(activeView.type)) return null;
     if (activeView.type === 'holdings') {
       const symbols = [...new Set(heldHoldings.map((h) => h.symbol))];
       return symbols.length > 0 ? symbols.join(',') : '__none__';
@@ -187,11 +187,9 @@ function ScreenerContent() {
       // Scope only applies to the unfiltered list views, never when cherry-picking.
       pickedTickers.length > 0
         ? undefined
-        : activeView.type === 'all'
-          ? 'all'
-          : activeView.type === 'sp500'
-            ? 'sp500'
-            : undefined,
+        : activeView.type === 'all' || isIndexScope(activeView.type)
+          ? activeView.type
+          : undefined,
     ),
     [debouncedFilters, symbolsFilter, activeView.type, pickedTickers.length]
   );
@@ -240,7 +238,7 @@ function ScreenerContent() {
       tickers: [],
       label: t('screenerAiContextLabel', 'the stocks on your screen'),
       screener: {
-        scope: tickers ? undefined : activeView.type === 'all' ? 'all' : 'sp500',
+        scope: tickers ? undefined : activeView.type === 'all' || isIndexScope(activeView.type) ? activeView.type : 'sp500',
         tickers,
         filters: Object.fromEntries(Object.entries(debouncedFilters).filter(([, v]) => v)),
         resultCount,
@@ -472,7 +470,11 @@ function ScreenerContent() {
                 })
               : activeView.type === 'sp500'
                 ? t('screenerDescriptionSp500', 'Screen the full S&P 500 with live prices and fundamental data.')
-                : activeView.type === 'holdings'
+                : activeView.type === 'nasdaq100'
+                  ? t('screenerDescriptionNasdaq100')
+                  : activeView.type === 'dow30'
+                    ? t('screenerDescriptionDow30')
+                    : activeView.type === 'holdings'
                   ? t('screenerDescriptionHoldings', { count: heldHoldings.length })
                   : activeView.type === 'watchlist'
                     ? t('screenerDescriptionWatchlist', 'Screening your watchlist.')

@@ -13,6 +13,7 @@ import { SYSTEM_PROMPT } from './systemPrompt';
 import { BULLPEN_TOOLS, createAlertTool, getMyAlertsTool, getPortfolioContextTool, getInsiderActivityTool, appContentTools } from './tools';
 import { languageName } from '@/lib/i18n/language-names';
 import { assertNoMutatingToolsWithExternalContent } from './tool-boundary';
+import { isIndexScope } from '@/lib/screener/screener-query';
 
 interface AIContext {
   tickers: string[];
@@ -33,7 +34,7 @@ function screenerContextPrefix(s: NonNullable<AIContext['screener']>): string {
   if (Array.isArray(s.tickers) && s.tickers.length > 0) {
     args.tickers = s.tickers.filter((t) => typeof t === 'string').slice(0, 250).map((t) => t.slice(0, 20));
   } else {
-    args.scope = s.scope === 'all' ? 'all' : 'sp500';
+    args.scope = s.scope === 'all' || isIndexScope(s.scope) ? s.scope : 'sp500';
   }
   for (const [k, v] of Object.entries(s.filters ?? {}).slice(0, 25)) {
     if (!/^[a-zA-Z0-9]{2,30}$/.test(k) || (typeof v !== 'string' && typeof v !== 'number') || v === '') continue;

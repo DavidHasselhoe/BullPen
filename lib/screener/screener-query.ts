@@ -7,6 +7,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
+import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
+import { DOW30_TICKERS } from '@/lib/market-data/dow30';
+import type { IndexId } from '@/lib/market-data/index-membership';
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 
 /** Every bound is optional. marketCap is raw USD here (the UI and Bull both speak billions and convert before calling). */
@@ -61,18 +64,31 @@ export async function fetchAllPages<T>(
   }
 }
 
+const INDEX_TICKERS: Record<IndexId, string[]> = {
+  sp500: SP500_TICKERS,
+  nasdaq100: NASDAQ100_TICKERS,
+  dow30: DOW30_TICKERS,
+};
+
+export type ScreenerScope = IndexId | 'all' | 'active';
+
+export function isIndexScope(scope: string | null | undefined): scope is IndexId {
+  return scope != null && Object.hasOwn(INDEX_TICKERS, scope);
+}
+
 /**
  * Base rows for one screener view, ordered by market cap:
  *  - symbols: just those tickers (holdings / watchlist / custom views). Exempt
  *    from dual-class dedup, since a user may hold the non-canonical class.
- *  - 'sp500': the real index constituents.
+ *  - 'sp500' / 'nasdaq100' / 'dow30': the real index constituents, whatever
+ *    their tier, so a member outside the actively-tracked universe still shows.
  *  - 'all': every row in screener_stats.
  *  - 'active': the tier-1 actively-tracked universe via screener_active_rows(),
  *    so the on-demand/discovery long tail never bloats the default screen.
  */
 export async function loadScreenerUniverse(
   supabase: SupabaseClient,
-  opts: { symbols?: string[]; scope: 'sp500' | 'all' | 'active' },
+  opts: { symbols?: string[]; scope: ScreenerScope },
 ): Promise<{ rows: ScreenerRow[]; error: string | null }> {
   if (opts.symbols && opts.symbols.length > 0) {
     const { data, error } = await supabase
@@ -84,11 +100,11 @@ export async function loadScreenerUniverse(
   }
 
   let result: { rows: ScreenerRow[]; error: string | null };
-  if (opts.scope === 'sp500') {
+  if (isIndexScope(opts.scope)) {
     const { data, error } = await supabase
       .from('screener_stats')
       .select('*')
-      .in('ticker', SP500_TICKERS)
+      .in('ticker', INDEX_TICKERS[opts.scope])
       .order('market_cap', { ascending: false, nullsFirst: false });
     result = { rows: (data ?? []) as ScreenerRow[], error: error?.message ?? null };
   } else if (opts.scope === 'all') {

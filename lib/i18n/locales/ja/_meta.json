@@ -3639,5 +3639,12 @@
   "stock.indexBadgeSp500Tip": "765422a43d31d9d5501f3a164c843ca392d9a3ddcd2c2a9fa221e2aad8e7879c",
   "stock.indexBadgeNasdaq100Tip": "421f50ba1e3234489fde0f32ce584f6186ecbac8653ca38dce10d3f86387d5ef",
   "stock.indexBadgeDow30Tip": "a8e2a78087b0d06c0ed5499a42c0e1ca534049bc0591cee9975b6407f01d609a",
-  "stock.indexFundOverlap": "75bb6cd3967e478138bda7a60dec8cf86f884149fa9113a1fff4ca8745c6cb7b"
+  "stock.indexFundOverlap": "75bb6cd3967e478138bda7a60dec8cf86f884149fa9113a1fff4ca8745c6cb7b",
+  "tools.portfolioBuilderBullCase": "cdc02ea8eadebdd36bb10d00eaa20df462f9918a8678b77a0ad767f34f817655",
+  "tools.portfolioBuilderBullThesis": "55f12581bb8ac60a926b5023fb19f8fdcd3efbce0a0ed42270bbd350c965f527",
+  "tools.screenerDescriptionNasdaq100": "47ad23010d9b097168a51506468ac8b0bfed1bec424fd81d9f4d3d780427167f",
+  "tools.screenerDescriptionDow30": "16c7fa32a3d28b653ec1bfd2475a8ca147cf3b83c936939ab0ce2bde00e620f6",
+  "tools.deepDiveBlockBullBear": "2680bdcb6256ab69a9384764543e2ed923ffdeba24ca9626065ccdb7f0ad572a",
+  "tools.deepDiveBullCase": "cdc02ea8eadebdd36bb10d00eaa20df462f9918a8678b77a0ad767f34f817655",
+  "tools.deepDiveSectionBullBear": "2680bdcb6256ab69a9384764543e2ed923ffdeba24ca9626065ccdb7f0ad572a"
 }

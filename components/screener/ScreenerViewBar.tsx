@@ -22,10 +22,19 @@ import {
   type ScreenerView,
 } from '@/hooks/use-screener-views';
 import { useAuth } from '@/hooks/use-auth';
+import type { IndexId } from '@/lib/market-data/index-membership';
+
+const INDEX_PILLS: [IndexId, string][] = [
+  ['sp500', 'screenerSp500Label'],
+  ['nasdaq100', 'screenerNasdaq100Label'],
+  ['dow30', 'screenerDow30Label'],
+];
 
 export type ActiveView =
   | { type: 'all' }
   | { type: 'sp500' }
+  | { type: 'nasdaq100' }
+  | { type: 'dow30' }
   | { type: 'holdings' }
   | { type: 'watchlist'; listId: string | null }
   | { type: 'custom'; view: ScreenerView };
@@ -149,13 +158,16 @@ export function ScreenerViewBar({ activeView, onViewChange, totalCount }: Props)
         {t('screenerViewAll', { total: totalCount ?? '…' })}
       </button>
 
-      {/* S&P 500 */}
-      <button
-        onClick={() => onViewChange({ type: 'sp500' })}
-        className={cn(pillBase, isActive({ type: 'sp500' }) ? pillActive : pillInactive)}
-      >
-        {t('screenerSp500Label')}
-      </button>
+      {/* S&P 500, Nasdaq-100, Dow 30 */}
+      {INDEX_PILLS.map(([id, label]) => (
+        <button
+          key={id}
+          onClick={() => onViewChange({ type: id })}
+          className={cn(pillBase, isActive({ type: id }) ? pillActive : pillInactive)}
+        >
+          {t(label)}
+        </button>
+      ))}
 
       {/* My Holdings */}
       {isAuthenticated && holdings.length > 0 && (

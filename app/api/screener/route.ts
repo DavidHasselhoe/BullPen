@@ -4,7 +4,7 @@ import { withRateLimit } from '@/lib/security/api-security';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
 import { TwelveDataRateLimitError, getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
-import { fetchAllPages, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
+import { fetchAllPages, isIndexScope, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
 import { getLastPrices, cacheLastPrice, type LastPriceSeed } from '@/lib/market-data/last-price-cache';
 
 export const dynamic = 'force-dynamic';
@@ -128,11 +128,10 @@ async function handler(request: NextRequest) {
 
   // scope controls which slice of screener_stats the default (non-symbol) view returns:
   //   'all'    → every cached row (the full tracked universe)
-  //   'sp500'  → only the real S&P 500 constituents (SP500_TICKERS)
+  //   'sp500' | 'nasdaq100' | 'dow30' → only that index's real constituents
   //   (none)   → the tier-1 actively-tracked universe via screener_active_rows()
   const scope = sp.get('scope');
   const scopeAll = scope === 'all';
-  const scopeSp500 = scope === 'sp500';
 
   // Cheap path for the "View all (N)" pill — it needs the full database
   // ticker count regardless of whichever view/filters are currently active,
@@ -177,7 +176,7 @@ async function handler(request: NextRequest) {
 
   const universe = await loadScreenerUniverse(supabase, {
     symbols: symbolAllowlist ? [...symbolAllowlist] : undefined,
-    scope: scopeSp500 ? 'sp500' : scopeAll ? 'all' : 'active',
+    scope: isIndexScope(scope) ? scope : scopeAll ? 'all' : 'active',
   });
   if (universe.error) {
     return NextResponse.json({ success: false, error: universe.error }, { status: 500 });
