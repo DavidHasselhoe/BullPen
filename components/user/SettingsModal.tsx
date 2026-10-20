@@ -186,6 +186,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     portfolio_recap: true,
     ai_insights: true,
     health_score_change: true,
+    index_changes: true,
     weekly_pick: true,
     daily_brief_ready: true,
     dividend_reminder: true,
@@ -277,6 +278,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         portfolio_recap: settings.notifications?.portfolio_recap !== false,
         ai_insights: settings.notifications?.ai_insights !== false,
         health_score_change: settings.notifications?.health_score_change !== false,
+        index_changes: settings.notifications?.index_changes !== false,
         weekly_pick: settings.notifications?.weekly_pick !== false,
         daily_brief_ready: settings.notifications?.daily_brief_ready !== false,
         dividend_reminder: settings.notifications?.dividend_reminder !== false,
@@ -904,6 +906,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     <ToggleSetting label={t('notifPortfolioRecapLabel')} description={t('notifPortfolioRecapDescription')} {...notif('portfolio_recap')} />
                     <ToggleSetting label={t('notifExDividendLabel')} description={t('notifExDividendDescription')} {...notif('dividend_reminder')} />
                     <ToggleSetting label={t('notifHealthScoreLabel')} description={t('notifHealthScoreDescription')} {...notif('health_score_change')} />
+                    <ToggleSetting label={t('notifIndexChangesLabel')} description={t('notifIndexChangesDescription')} {...notif('index_changes')} />
                     {/* Pro-only: a Free user saw this "on" and could flip it,
                         for a notification they would never get. */}
                     <ToggleSetting

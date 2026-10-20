@@ -160,6 +160,8 @@ function NotificationIcon({ n }: { n: Notification }) {
  * origin (holdings vs a specific watchlist) in the DB, so those link to the
  * stock itself — unambiguously what the notification is about.
  */
+const INDEX_PAGE_LABELS: Record<string, string> = { sp500: 'S&P 500', nasdaq100: 'Nasdaq-100', dow30: 'Dow 30' };
+
 function notificationSource(n: Notification): { label: string; href: string } | null {
   // ai_insight entity_id carries a "kind:value" prefix so these route
   // before falling into the generic stock/portfolio checks below.
@@ -201,6 +203,13 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician:')) {
     const slug = n.entity_id.split(':')[1];
     if (slug) return { label: 'Washington Trading', href: `/discover/politicians/${slug}` };
+  }
+
+  // entity_id is "index-fund:<index>:<detected_on>": what a fund the user holds now owns.
+  if (n.type === 'market' && n.entity_id?.startsWith('index-fund:')) {
+    const id = n.entity_id.split(':')[1];
+    const label = INDEX_PAGE_LABELS[id];
+    if (label) return { label, href: `/discover/indexes/${id}` };
   }
 
   // entity_type is typed narrower than runtime — the alert cron writes 'user_alert'.

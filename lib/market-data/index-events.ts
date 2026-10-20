@@ -9,8 +9,11 @@
 
 import { createServerClient } from '@/lib/supabase/client';
 import type { IndexId } from './index-membership';
+import { DUAL_CLASS_CANONICAL } from './dual-class-shares';
 
 export const INDEX_IDS: IndexId[] = ['sp500', 'nasdaq100', 'dow30'];
+
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 
 export interface IndexChangesPayload {
   /** YYYY-MM-DD (UTC) the sync ran. */
@@ -77,7 +80,6 @@ export interface IndexBadgeFact {
 /** What a stock page's index badges can add to their tooltips. Empty on any failure. */
 export async function getIndexBadgeFacts(ticker: string): Promise<Partial<Record<IndexId, IndexBadgeFact>>> {
   const supabase = createServerClient();
-  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
   const [events, weights] = await Promise.all([
     supabase
       .from('index_membership_events')
@@ -98,4 +100,38 @@ export async function getIndexBadgeFacts(ticker: string): Promise<Partial<Record
     facts[id] = { ...facts[id], weightPct: Number(w.weight_pct), weightAsOf: w.as_of };
   }
   return facts;
+}
+
+
+/**
+ * One index's fund weights for its page, or null when there are none from the
+ * last 30 days. A dual-class pair (GOOG + GOOGL) is one row on the page, so the
+ * dropped class's weight is folded into the class that is listed.
+ */
+export async function getIndexWeights(indexId: IndexId): Promise<{ asOf: string; pct: Record<string, number> } | null> {
+  const { data } = await createServerClient()
+    .from('index_weights')
+    .select('ticker, weight_pct, as_of')
+    .eq('index_id', indexId)
+    .gte('as_of', daysAgo(30)); // ~503 rows: under PostgREST's 1000-row cap
+  if (!data || data.length === 0) return null;
+  const pct: Record<string, number> = {};
+  for (const r of data) pct[r.ticker] = Number(r.weight_pct);
+  for (const [dup, canonical] of Object.entries(DUAL_CLASS_CANONICAL)) {
+    if (pct[dup] != null && pct[canonical] != null) pct[canonical] += pct[dup];
+  }
+  return { asOf: data[0].as_of, pct };
+}
+
+/** The most recent joins and exits for one index (last `days`, at most 12), newest first. A quarterly rebalance alone is ~8. */
+export async function getRecentIndexEvents(indexId: IndexId, days: number): Promise<IndexChangeEvent[]> {
+  const { data } = await createServerClient()
+    .from('index_membership_events')
+    .select('ticker, change, detected_on')
+    .eq('index_id', indexId)
+    .gte('detected_on', daysAgo(days))
+    .order('detected_on', { ascending: false })
+    .order('ticker')
+    .limit(12);
+  return (data ?? []).map((r) => ({ ticker: r.ticker, indexId, change: r.change, detectedOn: r.detected_on }));
 }

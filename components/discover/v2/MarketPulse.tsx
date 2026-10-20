@@ -1,9 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { IndexStrip } from './IndexStrip';
 import { MoodCompact } from './MoodCompact';
 import type { IndexQuote } from '@/lib/discover/discover-config';
+
+const INDEX_PAGES = ['sp500', 'nasdaq100', 'dow30'] as const;
 
 /**
  * The ten-second read: what the major indices did today, and how the market
@@ -26,6 +29,21 @@ export function MarketPulse({ indices }: { indices: IndexQuote[] }) {
       <div className="flex flex-col gap-3 lg:flex-row">
         <div className="min-w-0 lg:flex-[3]">
           <IndexStrip indices={indices} />
+          {/* The tiles open the funds; these open what the funds hold. */}
+          <p className="mt-2 flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
+            <span>{t('marketPulseInsideLabel')}</span>
+            {INDEX_PAGES.map((id, i) => (
+              <span key={id}>
+                <Link
+                  href={`/discover/indexes/${id}`}
+                  className="inline-flex min-h-6 items-center font-medium text-foreground/80 underline decoration-border underline-offset-2 transition-colors hover:text-foreground hover:decoration-foreground"
+                >
+                  {t(`indexName_${id}`)}
+                </Link>
+                {i < INDEX_PAGES.length - 1 && <span aria-hidden>,</span>}
+              </span>
+            ))}
+          </p>
         </div>
         <MoodCompact />
       </div>

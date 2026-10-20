@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { IndexId } from '@/lib/market-data/index-membership';
@@ -14,7 +15,8 @@ const KEYS: Record<IndexId, { label: string; tip: string }> = {
 /**
  * "S&P 500", "Nasdaq-100", "Dow 30" beside the sector line, each explained in a
  * sentence, plus when it joined (last ~90 days, to the week) and its weight with
- * the date that weight is from (lib/market-data/index-events.ts).
+ * the date that weight is from (lib/market-data/index-events.ts). Each opens
+ * its index page (app/discover/indexes/[id]).
  */
 export function IndexBadges({ indices, facts = {} }: { indices: IndexId[]; facts?: Partial<Record<IndexId, IndexBadgeFact>> }) {
   const { t, i18n } = useTranslation('stock');
@@ -31,12 +33,12 @@ export function IndexBadges({ indices, facts = {} }: { indices: IndexId[]; facts
           <li key={id}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                <Link
+                  href={`/discover/indexes/${id}`}
+                  className="inline-flex min-h-6 items-center rounded-full border border-border px-2 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {index}
-                </button>
+                </Link>
               </TooltipTrigger>
               <TooltipContent className="max-w-64 space-y-1">
                 <p>{t(KEYS[id].tip)}</p>

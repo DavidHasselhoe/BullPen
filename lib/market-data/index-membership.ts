@@ -12,7 +12,7 @@ const MEMBERS: [IndexId, Set<string>][] = [
 ];
 
 /** The common funds that track each index, so a stock page can say "you already own some through VOO". */
-const TRACKERS: Record<IndexId, string[]> = {
+export const TRACKERS: Record<IndexId, string[]> = {
   sp500: ['SPY', 'VOO', 'IVV', 'SPLG'],
   nasdaq100: ['QQQ', 'QQQM'],
   dow30: ['DIA'],

@@ -50,7 +50,7 @@ export function namespacesForPath(pathname: string): Namespace[] {
   // Theme drill-down reuses the screener table, whose column labels live in
   // 'tools' (screener-columns.tsx) — checked before the general /discover
   // match below so it gets both, not just 'discover'.
-  if (pathname.startsWith('/discover/ideas')) return ['discover', 'tools'];
+  if (pathname.startsWith('/discover/ideas') || pathname.startsWith('/discover/indexes')) return ['discover', 'tools'];
   // Home's "From who you follow" renders Feed rows, whose copy lives in 'user'.
   if (pathname.startsWith('/dashboard')) return ['discover', 'user'];
   // Bull's Weekly Pick lives in Discover's catalog: the same card renders there.

@@ -589,5 +589,21 @@
   "homeFollowsTitle": "From who you follow",
   "homeFollowsSeeAll": "See all",
   "followSeeInFeed": "See in Feed",
-  "followSignUpContext": "Create a free account to follow {{name}}. Their new filings and trades show up in your Feed."
+  "followSignUpContext": "Create a free account to follow {{name}}. Their new filings and trades show up in your Feed.",
+  "marketPulseInsideLabel": "What’s inside:",
+  "indexPageNavLabel": "Stock market indexes",
+  "indexPageTitle": "{{index}} companies",
+  "indexPageIntro_sp500": "About 500 of the largest US companies. Each one counts in proportion to its size, so the biggest move the index the most. Funds like VOO and SPY own all of them.",
+  "indexPageIntro_nasdaq100": "The 100 largest companies listed on the Nasdaq exchange, banks excluded, so it leans heavily toward technology. Funds like QQQ own all of them.",
+  "indexPageIntro_dow30": "30 large, well-known US companies. Unlike the other two, the Dow counts each company by its share price, not its size. DIA owns all 30.",
+  "indexPageTopTen": "The 10 biggest are {{pct}} of the index, as of {{date}}",
+  "indexPageChangesHeading": "Recent changes",
+  "indexPageJoined": "joined in the week of {{date}}",
+  "indexPageLeft": "left in the week of {{date}}",
+  "indexColWeightLabel": "Weight",
+  "indexColWeightTip_sp500": "How much of SPY, a fund that tracks the S&P 500, is in this company, as of {{date}}. Bigger companies count for more.",
+  "indexColWeightTip_dow30": "How much of DIA, a fund that tracks the Dow, is in this company, as of {{date}}. The Dow counts companies by share price, not size, so a pricier stock counts for more.",
+  "indexName_sp500": "S&P 500",
+  "indexName_nasdaq100": "Nasdaq-100",
+  "indexName_dow30": "Dow 30"
 }
