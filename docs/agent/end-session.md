@@ -34,7 +34,7 @@ If there are no commits ahead, nothing to merge — tell the user and stop.
 
 Run `/code-review medium origin/main..origin/preview` on everything about to ship. Then check whether the range touches money, auth or the database:
 ```bash
-git diff --name-only origin/main..origin/preview -- supabase/migrations lib/billing app/api/billing lib/auth app/auth app/api/auth app/api/invite lib/security middleware.ts
+git diff --name-only origin/main..origin/preview -- supabase/migrations lib/billing app/api/billing lib/auth app/auth app/api/auth app/api/invite app/api/admin lib/security lib/supabase middleware.ts
 ```
 If that lists anything, also run `/security-review`. RLS policies, SECURITY DEFINER functions and reward or trial grants live in these paths, and the service role hides a broken policy from every normal test (the referral self-grant exploit and three dead RLS policy families both got through that way).
 
