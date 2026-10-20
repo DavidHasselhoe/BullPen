@@ -1,5 +1,70 @@
 [
   {
+    "date": "2026-10-20",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Stock pages show S&P 500, Nasdaq-100 and Dow 30 badges. Hover one to see what the index is, how much of it the company makes up and when it joined, or tap it to see every company in that index"
+      },
+      {
+        "type": "new",
+        "text": "If you own an index fund like VOO or QQQ, a stock page tells you when you already own some of that company through it"
+      },
+      {
+        "type": "new",
+        "text": "You get a notification when a stock you own or watch joins or leaves the S&P 500, Nasdaq-100 or Dow 30"
+      },
+      {
+        "type": "new",
+        "text": "Institutional Holdings shows which tracked funds opened, added to, trimmed or sold your stocks in their latest filing"
+      },
+      {
+        "type": "new",
+        "text": "The Academy shows which course is coming next, and you get a notification when a new course opens. You can turn this off in Settings"
+      },
+      {
+        "type": "improved",
+        "text": "Washington Trading and the new fund summary can be filtered to stocks you own or stocks you watch"
+      },
+      {
+        "type": "improved",
+        "text": "The screener can narrow to Nasdaq-100 or Dow 30 stocks, next to the existing S&P 500 option"
+      },
+      {
+        "type": "improved",
+        "text": "Community theses are posted from your public profile. If yours is private, you can make it public and post in one tap"
+      },
+      {
+        "type": "improved",
+        "text": "The time zone setting and the screener's Industry filter have a search box, so you no longer scroll through hundreds of options"
+      },
+      {
+        "type": "improved",
+        "text": "Financial statement tables read from oldest to newest, left to right, matching the chart above them"
+      },
+      {
+        "type": "improved",
+        "text": "Bull and the other AI features run on newer models"
+      },
+      {
+        "type": "fixed",
+        "text": "The daily Academy challenge is back. It had stopped appearing on October 10"
+      },
+      {
+        "type": "fixed",
+        "text": "Stocks you have fully sold no longer show as owned in Washington Trading, Why Today, your public profile, or earnings and dividend alerts"
+      },
+      {
+        "type": "fixed",
+        "text": "Quarter names in Financials are now right for companies like H&R Block whose filings label a quarter with the wrong year"
+      },
+      {
+        "type": "fixed",
+        "text": "Why Today no longer writes moves like near-3%, which could read as a drop"
+      }
+    ]
+  },
+  {
     "date": "2026-10-19",
     "entries": [
       {
