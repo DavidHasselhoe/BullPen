@@ -19,8 +19,7 @@ import { classifyAiError, parseFailure } from '@/lib/ai/provider-error';
 export const maxDuration = 300;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = 'claude-sonnet-4-6';
-const THINKING_BUDGET = 4000;
+const MODEL = 'claude-sonnet-5-5';
 
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
 type DivePhase = 'reading_data' | 'searching' | 'reasoning' | 'composing';
@@ -66,9 +65,11 @@ async function runDeepDive(params: {
 
     const stream = anthropic.beta.messages.stream({
       model: MODEL,
-      max_tokens: 10_000,
-      temperature: 1,
-      thinking: { type: 'enabled', budget_tokens: THINKING_BUDGET },
+      max_tokens: 16_000,
+      // Summarized, not the default 'omitted': the 'reasoning' phase below
+      // only fires on a thinking_delta that carries text.
+      thinking: { type: 'adaptive', display: 'summarized' },
+      output_config: { effort: 'medium' },
       betas: ['web-search-2025-03-05'],
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6 }],
       system: [{ type: 'text', text: DEEP_DIVE_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],

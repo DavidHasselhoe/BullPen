@@ -42,7 +42,7 @@ import { resolveLogoUrl, FIXED_HASHTAGS } from './shared';
 import type { EarningsDeepDiveData, EarningsDeepDiveSlides } from './schema';
 
 import { SITE_URL } from '@/lib/site';
-const MODEL = 'claude-sonnet-5';
+const MODEL = 'claude-sonnet-5-5';
 const CONTENT_TYPE = 'earnings_deep_dive';
 
 /** Within this band (percent), a result counts as "in line" rather than a
@@ -286,7 +286,10 @@ Output ONLY a JSON object with exactly two fields, nothing else, no markdown fen
 
   const message = await getAnthropic().messages.create({
     model: MODEL,
-    max_tokens: 400,
+    // Sonnet 5.5 can't turn thinking off; low effort keeps it short and it
+    // counts toward max_tokens.
+    max_tokens: 2000,
+    output_config: { effort: 'low' },
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],
   });

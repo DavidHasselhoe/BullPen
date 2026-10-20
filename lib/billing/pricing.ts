@@ -22,14 +22,17 @@ export const MODEL_PRICING: Record<
   // about; verified against the live pricing page 2026-09-22. Cache reads are
   // $0.20/MTok and writes $2.50/MTok, both priced by calcCost below.
   'claude-sonnet-5':             { input: 2.00,  output: 10.00, cacheRead: 0.20, cacheWrite: 2.50 },
+  'claude-sonnet-5-5':           { input: 2.00,  output: 10.00, cacheRead: 0.20, cacheWrite: 2.50 },
   // Weekly Pick (lib/ai/picks/pipeline.ts). Cache writes at the standard 1.25x.
   'claude-opus-5-5':             { input: 4.00,  output: 20.00, cacheRead: 0.20, cacheWrite: 5.00 },
   'claude-sonnet-4-6':           { input: 3.00,  output: 15.00 },
   'claude-sonnet-4-5':           { input: 3.00,  output: 15.00 },
-  'claude-opus-4-7':             { input: 15.00, output: 75.00 },
+  'claude-opus-4-8':             { input: 5.00,  output: 25.00, cacheRead: 0.50, cacheWrite: 6.25 },
+  'claude-opus-4-7':             { input: 5.00,  output: 25.00, cacheRead: 0.50, cacheWrite: 6.25 },
   'claude-haiku-4-5-20251001':   { input: 1.00,  output:  5.00, cacheRead: 0.10, cacheWrite: 1.25 },
-  // Academy daily challenge top-up (lib/academy/daily-challenges.ts). Prompts under 100K tokens.
-  'claude-haiku-5-5':            { input: 0.10,  output:  0.50 },
+  // Rates for prompts up to 100K tokens; longer prompts bill at $0.50/$2.50,
+  // which no BullPen Haiku call comes near.
+  'claude-haiku-5-5':            { input: 0.10,  output:  0.50, cacheRead: 0.01, cacheWrite: 0.125 },
 
   // OpenAI — https://openai.com/api/pricing/
   'gpt-4o':                      { input: 2.50,  output: 10.00 },

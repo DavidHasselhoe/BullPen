@@ -128,12 +128,14 @@ export async function runChartAgent(
   const system = languagePrefix + experiencePrefix + BASE_PROMPT + snapshotBlock;
 
   return streamText({
-    model: anthropic('claude-sonnet-5'),
+    model: anthropic('claude-sonnet-5-5'),
     system,
     messages: modelMessages,
     tools: ALL_TOOLS,
     // See lib/ai/agent.ts — no output cap existed here at all previously.
-    maxOutputTokens: 2048,
+    // Thinking counts toward it.
+    maxOutputTokens: 4096,
+    providerOptions: { anthropic: { effort: 'medium' } },
     stopWhen: stepCountIs(8),
     // See lib/ai/agent.ts — OpenAI 429s (tokens-per-minute) are retryable and
     // typically clear within a few seconds as the rolling window advances.

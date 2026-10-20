@@ -15,7 +15,6 @@
     "typecheck:update": "node scripts/typecheck-diff.mjs --update",
     "i18n:pseudo": "node scripts/generate-pseudo-locale.mjs",
     "i18n:translate": "tsx scripts/translate-locales.ts",
-    "test-ai": "tsx scripts/test-ai-analysis.ts",
     "test-health-score": "tsx scripts/test-health-score.ts",
     "rescore-health": "tsx scripts/rescore-health.ts",
     "test-calendar-market-cap": "tsx scripts/test-calendar-market-cap.ts",
@@ -99,7 +98,6 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.119",
-    "@ai-sdk/openai": "^3.0.33",
     "@ai-sdk/react": "^3.0.102",
     "@anthropic-ai/sdk": "^0.92.0",
     "@radix-ui/react-accordion": "^1.2.20",

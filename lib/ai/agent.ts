@@ -144,7 +144,7 @@ export async function runAgent(
     datePrefix + languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix;
 
   const result = streamText({
-    model: anthropic('claude-sonnet-5'),
+    model: anthropic('claude-sonnet-5-5'),
     /**
      * The system prompt is a system *message* rather than the `system` option
      * so it can carry a cache breakpoint.
@@ -199,11 +199,12 @@ export async function runAgent(
      * distribution is about +$0.0012 a conversation: not much, but it removes
      * a scaling cliff rather than shaving a constant.
      */
-    providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
+    // Medium: Sonnet 5.5's recalibrated starting point for multistep tool use.
+    providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' }, effort: 'medium' } },
     // Was `maxTokens` — not a real field on this SDK version (silently
     // dropped, so this cap was never actually enforced). The correct name is
-    // maxOutputTokens.
-    maxOutputTokens: 2048,
+    // maxOutputTokens. Thinking counts toward it.
+    maxOutputTokens: 4096,
     // Allow up to 5 steps so the model can call tools, receive results, and generate text.
     // Default stopWhen: stepCountIs(1) stops after the first turn (tool calls) before the model
     // gets a second turn to incorporate tool results into its response.

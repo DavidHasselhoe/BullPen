@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { createServerClient } from '@/lib/supabase/client';
 import { withRateLimit, addSecurityHeaders, getSessionForApiRoute } from '@/lib/security/api-security';
@@ -15,6 +15,7 @@ export interface CompetitorEntry {
   logoUrl: string | null;
 }
 
+const MODEL = 'claude-haiku-5-5';
 const TTL_SECONDS = 30 * 24 * 60 * 60;
 const TICKER_RE   = /^[A-Z0-9]{1,7}$/;
 
@@ -79,11 +80,12 @@ async function handler(
       : `Competitors for: ${sym}`;
 
     const result = await generateText({
-      model: openai('gpt-4o'),
+      model: anthropic(MODEL),
       system: SYSTEM_PROMPT,
       prompt,
-      maxTokens: 80,
-      temperature: 0,
+      // Thinking is on by default on Haiku 5.5 and counts toward this cap.
+      maxOutputTokens: 1024,
+      providerOptions: { anthropic: { effort: 'low' } },
     });
 
     // Log usage (no quota — this route is cached 30 days; cost is minimal)
@@ -91,7 +93,7 @@ async function handler(
     void logAiCall({
       userId: session?.userId ?? null,
       feature: 'competitors',
-      model: 'gpt-4o',
+      model: MODEL,
       inputTokens: result.usage.inputTokens,
       outputTokens: result.usage.outputTokens,
       metadata: { ticker: sym },

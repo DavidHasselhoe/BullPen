@@ -42,7 +42,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 
-const MODEL = 'claude-sonnet-5';
+const MODEL = 'claude-sonnet-5-5';
 // 10 (2026-08-17): briefly 16 while this module still searched the whole
 // week from scratch, but that's no longer its job — nasdaq-earnings-
 // calendar.ts covers the bulk of the week for free, so this only needs
@@ -151,8 +151,10 @@ export async function fetchConfirmedEarnings(
   const today = new Date().toISOString().slice(0, 10);
   const message = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 2000,
-    thinking: { type: 'disabled' },
+    // Sonnet 5.5 can't turn thinking off; low effort keeps it short and it
+    // counts toward max_tokens.
+    max_tokens: 4000,
+    output_config: { effort: 'low' },
     system: SYSTEM_PROMPT,
     tools: [{
       type: 'web_search_20260209',

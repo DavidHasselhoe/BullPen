@@ -24,10 +24,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-# OpenAI Configuration (required for AI chat)
-OPENAI_API_KEY=sk-...your-openai-api-key
-
-# Anthropic Configuration (required for "Why Today?" feature — Claude + web search)
+# Anthropic Configuration (required for every AI feature)
 # Get key at: https://console.anthropic.com → API keys
 ANTHROPIC_API_KEY=sk-ant-...your-anthropic-api-key
 
@@ -124,12 +121,12 @@ When set, Twelve Data is used for quotes, candles, movers, earnings, recommendat
 4. Add `FINNHUB_API_KEY=your-key` to `.env.local`  
 Used for: market news, company news. Also powers price data when `TWELVE_DATA_API_KEY` is not set.
 
-### Step 4: Get OpenAI API Key (for AI Analysis)
+### Step 4: Get Anthropic API Key (for every AI feature)
 
-1. Go to [OpenAI Platform](https://platform.openai.com)
+1. Go to [Claude Console](https://console.anthropic.com)
 2. Sign up or log in
-3. Go to **API keys** → **Create new secret key**
-4. Copy the key (starts with `sk-...`)
+3. Go to **API keys** → **Create key**
+4. Copy the key (starts with `sk-ant-...`)
 5. **Important**: Store it securely - you won't be able to see it again
 
 ### Step 5: Replace Placeholder Values
@@ -137,7 +134,7 @@ Used for: market news, company news. Also powers price data when `TWELVE_DATA_AP
 - Replace `https://your-project-ref.supabase.co` with your **Project URL**
 - Replace the first `eyJ...` with your **anon** key
 - Replace the second `eyJ...` with your **service_role** key
-- Replace `sk-...your-openai-api-key` with your **OpenAI API key**
+- Replace `sk-ant-...your-anthropic-api-key` with your **Anthropic API key**
 - Replace `your-finnhub-api-key` with your **Finnhub API key**
 - Replace `re_xxxxxxxxx` with your **Resend API key** (get it at [resend.com/api-keys](https://resend.com/api-keys))
 

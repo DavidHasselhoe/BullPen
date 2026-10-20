@@ -18,7 +18,7 @@ import {
 import { GLOSSARY, getGlossaryEntry } from '@/lib/finance/glossary';
 import type { CourseOutline, LessonSpec, GeneratableLessonType } from './course-outline-types';
 
-const MODEL = 'claude-opus-4-8';
+const MODEL = 'claude-opus-5-5';
 const MAX_RETRIES = 3;
 
 // Lazily constructed, not a module-level const: ESM import statements are
@@ -94,7 +94,9 @@ async function generateLessonContent(lesson: LessonSpec): Promise<unknown> {
 
     const msg = await getAnthropicClient().messages.create({
       model: MODEL,
-      max_tokens: 1500,
+      // Thinking can't be turned off on Opus 5.5 and counts toward max_tokens.
+      max_tokens: 6000,
+      output_config: { effort: 'low' },
       system: systemPromptFor(lesson.type),
       messages: [{ role: 'user', content: userPrompt }],
     });

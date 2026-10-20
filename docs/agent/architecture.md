@@ -57,7 +57,7 @@ Index funds are in there too: TwelveData's `/funds` catalogue is 122k US mutual 
 BullpenChat.tsx (UI)
   → DefaultChatTransport → POST /api/ai/chat/route.ts
     → runAgent() in lib/ai/agent.ts
-      → streamText (Vercel AI SDK, OpenAI gpt-4o, maxSteps:5)
+      → streamText (Vercel AI SDK, claude-sonnet-5-5)
         systemPrompt = experiencePrefix + contextPrefix + SYSTEM_PROMPT
 ```
 

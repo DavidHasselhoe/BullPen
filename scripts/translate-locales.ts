@@ -1,6 +1,6 @@
 /**
  * Translates lib/i18n/locales/en/<ns>.json into the app's other 6 locales
- * using Claude Haiku 4.5. Supersedes scripts/add-norwegian-locale.ts (see
+ * using Claude Haiku. Supersedes scripts/add-norwegian-locale.ts (see
  * that file's header for why) — two things that script couldn't do at scale:
  *
  *  1. Batches many keys per request instead of one string per API call. The
@@ -38,7 +38,7 @@ const GLOSSARIES_DIR = join(process.cwd(), 'lib', 'i18n', 'glossaries');
 const SOURCE_LANG = 'en';
 const TARGET_LANGS = ['es', 'fr', 'de', 'ja', 'zh', 'no'] as const;
 const CHUNK_SIZE = 40;
-const MODEL = 'claude-haiku-4-5';
+const MODEL = 'claude-haiku-5-5';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -240,7 +240,10 @@ async function translateChunk(
 ): Promise<ChunkResult> {
   const message = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 4000,
+    // Haiku 5.5 counts ~30% more tokens for the same text, and thinking
+    // (on by default) counts toward max_tokens too.
+    max_tokens: 8000,
+    output_config: { effort: 'low' },
     system: [
       {
         type: 'text',

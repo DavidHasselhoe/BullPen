@@ -50,7 +50,7 @@ import type { WebSearchEarningsHit } from './earnings-web-search';
 import { tooFewCompanies, type TooFewCompanies } from './earnings-minimum';
 
 import { SITE_URL } from '@/lib/site';
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-5-5';
 /** Same cap as earnings-calendar.ts, kept as an independent constant since
  *  the two generators are otherwise decoupled modules. */
 const MAX_COMPANIES = 24;
@@ -142,7 +142,9 @@ async function writeHookAndCaption(
 
   const message = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 400,
+    // Thinking is on by default on Sonnet 5.5 and counts toward max_tokens.
+    max_tokens: 2000,
+    output_config: { effort: 'low' },
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   });

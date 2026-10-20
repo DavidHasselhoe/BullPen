@@ -25,7 +25,7 @@ import { z } from 'zod';
 export const maxDuration = 300;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-5-5';
 const MAX_SAVED = 50;
 
 type BuilderPhase = 'streaming' | 'composing' | 'validating';
@@ -58,8 +58,8 @@ async function runPortfolioBuilder(params: {
     const stream = anthropic.messages.stream({
       model: MODEL,
       max_tokens: 16000,
-      temperature: 1,
-      thinking: { type: 'enabled', budget_tokens: 8000 },
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'medium' },
       system: [{ type: 'text', text: PORTFOLIO_BUILDER_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       // The holdings block rides in the user turn, never the system prompt:
       // the system prompt is cached across every user's builds and must stay
@@ -311,7 +311,9 @@ async function requestReplacements({
   try {
     const result = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 1500,
+      // Thinking is on by default and counts toward max_tokens.
+      max_tokens: 4000,
+      output_config: { effort: 'low' },
       system: [
         {
           type: 'text',

@@ -599,8 +599,10 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     // land under the ~194K uncapped baseline. Verify against ai_usage after
     // the first successful run rather than assuming.
     const requestParams = {
-      model: 'claude-sonnet-4-6' as const,
-      max_tokens: 1500,
+      model: 'claude-sonnet-5-5' as const,
+      // Thinking is on by default on Sonnet 5.5 and counts toward max_tokens.
+      max_tokens: 4000,
+      output_config: { effort: 'low' as const },
       betas: ['web-search-2025-03-05'],
       tools: [{ type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: 5 }],
       system: systemPrompt,
@@ -714,7 +716,7 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
       void logAiCall({
         userId: null,
         feature: 'daily_brief',
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-5-5',
         inputTokens: usage.inputTokens,
         outputTokens: usage.outputTokens,
         webSearches: usage.webSearches,
@@ -736,7 +738,7 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     await logAiCall({
       userId: null,
       feature: 'daily_brief',
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5-5',
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
       webSearches: usage.webSearches,

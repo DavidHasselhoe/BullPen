@@ -52,7 +52,7 @@ import type { WebSearchEarningsHit } from './earnings-web-search';
 import { tooFewCompanies, type TooFewCompanies } from './earnings-minimum';
 
 import { SITE_URL } from '@/lib/site';
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-5-5';
 /** Companies per carousel — caps the list slides at a sane carousel length
  *  (1 hook + up to this many list rows, paginated in the renderer, + 1 CTA). */
 const MAX_COMPANIES = 24;
@@ -93,7 +93,9 @@ async function writeHookAndCaption(
 
   const message = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 400,
+    // Thinking is on by default on Sonnet 5.5 and counts toward max_tokens.
+    max_tokens: 2000,
+    output_config: { effort: 'low' },
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   });

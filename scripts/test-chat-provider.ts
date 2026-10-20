@@ -23,7 +23,7 @@ import type { UIMessage } from 'ai';
 import { runAgent } from '../lib/ai/agent';
 import { calcCost } from '../lib/billing/pricing';
 
-const MODEL = 'claude-sonnet-5';
+const MODEL = 'claude-sonnet-5-5';
 
 function ask(text: string): UIMessage[] {
   return [{ id: '1', role: 'user', parts: [{ type: 'text', text }] }] as UIMessage[];

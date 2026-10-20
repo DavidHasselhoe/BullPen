@@ -38,7 +38,7 @@ import {
 export const maxDuration = 300;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-5-5';
 const MAX_SAVED = 10;
 
 // Real progress, not simulated: the output schema's key order is fixed by the
@@ -248,8 +248,10 @@ async function runRiskAnalysis(params: {
 
     const stream = anthropic.messages.stream({
       model: MODEL,
-      max_tokens: 4096,
-      temperature: 0,
+      // Thinking is on by default on Sonnet 5.5 and counts toward max_tokens;
+      // low effort keeps it short. temperature is rejected on this model.
+      max_tokens: 8000,
+      output_config: { effort: 'low' },
       system: RISK_ANALYST_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],
     });

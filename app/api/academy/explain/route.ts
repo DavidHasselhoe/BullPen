@@ -15,7 +15,7 @@ import { logAiCall } from '@/lib/billing/log-ai-call';
 import { createServerClient } from '@/lib/supabase/client';
 import { classifyAiError } from '@/lib/ai/provider-error';
 
-const MODEL = 'claude-haiku-4-5-20251001';
+const MODEL = 'claude-haiku-5-5';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -116,7 +116,9 @@ async function handler(
       try {
         const stream = anthropic.messages.stream({
           model: MODEL,
-          max_tokens: 180,
+          // Thinking is on by default on Haiku 5.5 and counts toward max_tokens.
+          max_tokens: 1024,
+          output_config: { effort: 'low' },
           system:
             'You are a friendly investing tutor for absolute beginners. ' +
             'Explain terms in plain, conversational English. No jargon. No bullets. ' +
@@ -137,17 +139,18 @@ async function handler(
 
         send({ type: 'done' });
 
-        // Persist to cache (fire-and-forget — never block the response)
+        // Awaited, not fire-and-forget: the stream closes right after this,
+        // and an unawaited write can lose the race with the function freezing.
+        // The client already has 'done', so this delays nothing it sees.
         if (fullText.trim().length > 0) {
-          void db
+          await db
             .from('academy_glossary_cache')
             .upsert({ term: termKey, explanation: fullText.trim() }, { onConflict: 'term' });
         }
 
-        // Log usage
         try {
           const final = await stream.finalMessage();
-          void logAiCall({
+          await logAiCall({
             userId: session.userId,
             feature: 'academy_explain',
             model: MODEL,

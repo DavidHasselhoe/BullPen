@@ -19,7 +19,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 
-const MODEL = 'claude-sonnet-5';
+const MODEL = 'claude-sonnet-5-5';
 const MAX_SEARCHES = 10;
 
 // Lazily constructed rather than at module scope: when this module is
@@ -111,8 +111,10 @@ export async function fetchDeepDiveEstimates(ticker: string, segmentLabel?: stri
 
   const message = await getAnthropic().messages.create({
     model: MODEL,
-    max_tokens: 1200,
-    thinking: { type: 'disabled' },
+    // Sonnet 5.5 can't turn thinking off; low effort keeps it short and it
+    // counts toward max_tokens.
+    max_tokens: 3000,
+    output_config: { effort: 'low' },
     system: SYSTEM_PROMPT,
     tools: [{
       type: 'web_search_20260209',

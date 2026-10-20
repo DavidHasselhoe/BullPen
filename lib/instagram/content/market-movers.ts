@@ -40,7 +40,7 @@ import { parseHookAndCaption } from './schema';
 import { MARKET_DATA_DISCLAIMER, MARKET_DATA_DISCLAIMER_PRE_MARKET, FIXED_HASHTAGS, formatDateLabel } from './shared';
 import type { MarketMoversSlides, MarketMoverEntry } from './schema';
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-5-5';
 /** TwelveData /batch-safe chunk size — matches SEED_CHUNK in
  *  lib/market-data/seed-prices.ts and BATCH_CHUNK in
  *  app/api/quotes/batch/route.ts. */
@@ -179,7 +179,9 @@ async function writeCaption(
 
   const message = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 400,
+    // Thinking is on by default on Sonnet 5.5 and counts toward max_tokens.
+    max_tokens: 2000,
+    output_config: { effort: 'low' },
     system,
     messages: [{ role: 'user', content: userPrompt }],
   });

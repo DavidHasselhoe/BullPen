@@ -90,7 +90,6 @@ npm run build        # Production build
 npm run lint         # ESLint check
 
 # One-off scripts (run with tsx via ts-node, no test framework)
-npm run test-ai      # Test AI analysis pipeline
 npm run test-signals # Test signal generation
 npm run test-score   # Test health score calculation
 npm run trigger-cron # Manually fire the daily cron job
@@ -138,7 +137,7 @@ Three schedulers, every cron route protected by the `CRON_SECRET` bearer header:
 
 ## Environment variables
 
-Copy `.env.example` (or see `ENV_SETUP.md`) to `.env.local`. Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `TWELVE_DATA_API_KEY`. The optional ones and what reads them: `docs/agent/environment.md`.
+Copy `.env.example` (or see `ENV_SETUP.md`) to `.env.local`. Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `TWELVE_DATA_API_KEY`. The optional ones and what reads them: `docs/agent/environment.md`.
 
 ## Legal compliance (load-bearing, read `docs/agent/legal-compliance.md` before touching)
 

@@ -5,8 +5,8 @@ import { MAPPING_SYSTEM_PROMPT, buildMappingUserPrompt } from './mapping-prompt'
 import { MappingSpecError, parseMappingSpec, type MappingSpec } from './mapping-schema';
 import { heuristicMapping } from './heuristic-mapping';
 
-const HAIKU_MODEL = 'claude-haiku-4-5-20251001';
-const SONNET_MODEL = 'claude-sonnet-4-6';
+const HAIKU_MODEL = 'claude-haiku-5-5';
+const SONNET_MODEL = 'claude-sonnet-5-5';
 const CONFIDENCE_ESCALATION_THRESHOLD = 0.6;
 
 let _anthropic: Anthropic | null = null;
@@ -38,7 +38,9 @@ async function callModel(model: string, userPrompt: string, priorError?: string)
 
   const result = await anthropic.messages.create({
     model,
-    max_tokens: 2000,
+    // Thinking is on by default on both models and counts toward max_tokens.
+    max_tokens: 4000,
+    output_config: { effort: 'low' },
     system: MAPPING_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: fullUserPrompt }],
   });

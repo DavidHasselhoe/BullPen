@@ -27,7 +27,7 @@ import { SITE_URL } from '@/lib/site';
 import type { PicksScoreboardSlides, ScoreboardCallout, ScoreboardPick } from './schema';
 import type { PickWithPerformance } from '@/lib/picks/types';
 
-const MODEL = 'claude-sonnet-5';
+const MODEL = 'claude-sonnet-5-5';
 
 /** On the slide as well as in the caption: a performance claim for a paid product is advertising. */
 export const SCOREBOARD_DISCLAIMER =
@@ -96,8 +96,10 @@ async function writeCopy(c: Omit<PicksScoreboardSlides, 'caption'>, why: { best:
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const res = await anthropic.beta.messages.create({
     model: MODEL,
-    max_tokens: 900,
-    thinking: { type: 'disabled' },
+    // Sonnet 5.5 can't turn thinking off; low effort keeps it short and it
+    // counts toward max_tokens.
+    max_tokens: 3000,
+    output_config: { effort: 'low' },
     betas: ['web-search-2025-03-05'],
     tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }],
     system:

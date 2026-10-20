@@ -164,8 +164,7 @@ Create `.env.local` in the project root. **[ENV_SETUP.md](./ENV_SETUP.md)** has 
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
-OPENAI_API_KEY          # BullPen AI chat
-ANTHROPIC_API_KEY       # Why Today? + Daily Brief
+ANTHROPIC_API_KEY       # Every AI feature (Claude)
 TWELVE_DATA_API_KEY     # Primary market data
 ```
 

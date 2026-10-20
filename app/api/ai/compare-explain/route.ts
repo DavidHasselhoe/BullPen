@@ -5,13 +5,15 @@
  */
 
 import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
 import { withAuth, withRateLimit, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { classifyAiError } from '@/lib/ai/provider-error';
+
+const MODEL = 'claude-haiku-5-5';
 
 const EXPLAIN_SYSTEM = `You are BullPen AI, a financial research analyst. The user has compared companies using SEC filing data. Your task is to provide a concise, interpretive summary of the key differences, focusing on what the numbers mean for business quality and competitive positioning. Do NOT simply repeat numbers. Offer insight: pricing power, margin structure, growth trajectory, capital efficiency, scale advantages. Write 2-4 short paragraphs. Be professional and specific. Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.`;
 
@@ -37,16 +39,18 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
     }
 
     const result = await generateText({
-      model: openai('gpt-4o'),
+      model: anthropic(MODEL),
       system: EXPLAIN_SYSTEM,
       prompt: `Based on the following company comparison data from SEC filings, provide an analytical explanation of the key differences. Focus on interpretation and insight, not number repetition.\n\n${context}`,
-      maxOutputTokens: 600,
+      // Thinking is on by default on Haiku 5.5 and counts toward this cap.
+      maxOutputTokens: 2000,
+      providerOptions: { anthropic: { effort: 'low' } },
     });
 
     void logAiCall({
       userId: session.userId,
       feature: 'compare_explain',
-      model: 'gpt-4o',
+      model: MODEL,
       inputTokens: result.usage.inputTokens,
       outputTokens: result.usage.outputTokens,
     });
@@ -62,5 +66,5 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
   }
 }
 
-/** Auth required; rate limited to 15/min to protect OpenAI usage */
+/** Auth required; rate limited to 15/min to protect AI usage */
 export const POST = withRateLimit(withAuth(handler), { windowMs: 60 * 1000, maxRequests: 15 });

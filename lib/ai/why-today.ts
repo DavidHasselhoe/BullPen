@@ -23,7 +23,7 @@ import { fetchRecentFilings } from '@/lib/edgar/edgar-watch';
 export { WHY_TODAY_MIN_MOVE };
 export type { InlineWhy } from '@/lib/ai/why-today-shared';
 
-export const WHY_TODAY_MODEL = 'claude-sonnet-5';
+export const WHY_TODAY_MODEL = 'claude-sonnet-5-5';
 
 /**
  * The key carries the session date, so a long life can't serve a stale day:
@@ -148,10 +148,10 @@ export function whyTodayRequest(move: WhyTodayMove, language: string) {
   const direction = move.changePct >= 0 ? 'up' : 'down';
   return {
     model: WHY_TODAY_MODEL,
-    // Thinking is off: max_tokens is sized for a two-sentence answer, and Sonnet 5's
-    // default adaptive thinking would spend the same budget and could cut them.
-    max_tokens: 600,
-    thinking: { type: 'disabled' as const },
+    // Sonnet 5.5 rejects thinking: disabled. Low effort skips thinking on most
+    // of these, and max_tokens leaves room for it when it doesn't.
+    max_tokens: 2000,
+    output_config: { effort: 'low' as const },
     betas: ['web-search-2025-03-05'],
     // Search results are ~80% of the cost (avg 34k input tokens uncapped).
     // Two leaves room for one follow-up, e.g. a sympathy move whose catalyst

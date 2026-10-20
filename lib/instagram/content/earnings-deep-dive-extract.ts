@@ -27,7 +27,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-5-5';
 
 // Lazy — see earnings-deep-dive-estimates.ts's getAnthropic() comment: a
 // module-scope client breaks when this is imported from a plain tsx script
@@ -97,7 +97,9 @@ export async function extractEarningsActuals(
 
   const message = await getAnthropic().messages.create({
     model: MODEL,
-    max_tokens: 1500,
+    // Thinking is on by default on Sonnet 5.5 and counts toward max_tokens.
+    max_tokens: 4000,
+    output_config: { effort: 'low' },
     system: buildSystemPrompt(segmentLabel),
     messages: [{ role: 'user', content: userContent }],
   });
