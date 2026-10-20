@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { withAuth, addSecurityHeaders, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
-import { logAiCall } from '@/lib/billing/log-ai-call';
+import { logAiCall, anthropicUsage } from '@/lib/billing/log-ai-call';
 import { createNotification, isNotificationEnabled } from '@/lib/notifications/notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
 import { PORTFOLIO_BUILDER_SYSTEM_PROMPT } from '@/lib/ai/portfolio-builder/system-prompt';
@@ -85,8 +85,7 @@ async function runPortfolioBuilder(params: {
         userId,
         feature: 'portfolio_builder',
         model: MODEL,
-        inputTokens: final.usage.input_tokens,
-        outputTokens: final.usage.output_tokens,
+        ...anthropicUsage(final.usage),
       });
     } catch { /* never block on logging */ }
 
@@ -109,7 +108,7 @@ async function runPortfolioBuilder(params: {
     const replacedTickers: string[] = [];
 
     if (invalidTickers.length > 0 && validHoldings.length > 0) {
-      const replacements = await requestReplacements({ previousAssistantTurn: buffered, invalidTickers, thesis });
+      const replacements = await requestReplacements({ previousAssistantTurn: buffered, invalidTickers, thesis, userId });
       if (replacements.length > 0) {
         const reCheck = await validateTickers(replacements);
         replacedTickers.push(...invalidTickers.filter((t) => !reCheck.invalidTickers.includes(t)));
@@ -303,10 +302,12 @@ async function requestReplacements({
   previousAssistantTurn,
   invalidTickers,
   thesis,
+  userId,
 }: {
   previousAssistantTurn: string;
   invalidTickers: string[];
   thesis: string;
+  userId: string;
 }): Promise<PortfolioHolding[]> {
   try {
     const result = await anthropic.messages.create({
@@ -332,6 +333,16 @@ Return ONLY a JSON array (no other fields, no fences) of replacement holdings, o
 [{ "ticker", "company", "exchange", "sector", "subsector_exposure", "allocation_pct", "role", "rationale", "thesis_exposure_score", "key_risk", "risk_level" }]`,
         },
       ],
+    });
+
+    // Its own feature name: checkQuota counts 'portfolio_builder' rows, and a
+    // repair pass must not cost the user a second build.
+    void logAiCall({
+      userId,
+      feature: 'portfolio_builder_replacements',
+      model: MODEL,
+      ...anthropicUsage(result.usage),
+      metadata: { invalidTickers },
     });
 
     const textBlock = result.content.find((b) => b.type === 'text');

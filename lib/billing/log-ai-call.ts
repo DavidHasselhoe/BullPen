@@ -26,6 +26,30 @@ export interface LogAiCallParams {
   webSearches?: number;
 }
 
+/**
+ * Token fields for logAiCall from a raw Anthropic SDK `usage`. Anthropic's
+ * `input_tokens` leaves out cache reads and writes, so a route that sets
+ * cache_control and logs `input_tokens` alone records almost none of its
+ * prompt (a portfolio build logged 23 input tokens). Use this on any call
+ * that caches.
+ */
+export function anthropicUsage(usage: {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_input_tokens?: number | null;
+  cache_creation_input_tokens?: number | null;
+  server_tool_use?: { web_search_requests?: number | null } | null;
+}): Pick<LogAiCallParams, 'inputTokens' | 'outputTokens' | 'cache' | 'webSearches'> {
+  const cacheReadTokens = usage.cache_read_input_tokens ?? 0;
+  const cacheWriteTokens = usage.cache_creation_input_tokens ?? 0;
+  return {
+    inputTokens: usage.input_tokens + cacheReadTokens + cacheWriteTokens,
+    outputTokens: usage.output_tokens,
+    cache: { noCacheTokens: usage.input_tokens, cacheReadTokens, cacheWriteTokens },
+    webSearches: usage.server_tool_use?.web_search_requests ?? 0,
+  };
+}
+
 /** Returns the inserted row's id (or null on failure) so a caller that logs
  *  before knowing real token counts (see logAiCallPending) can update it later. */
 export async function logAiCall(params: LogAiCallParams): Promise<string | null> {

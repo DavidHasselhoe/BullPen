@@ -3,8 +3,9 @@
  *
  * Drafts lesson content with Claude, validates EVERY lesson against the Zod
  * schemas in types/academy.ts, prefers canonical glossary definitions for
- * highlighted terms, and emits a reviewable .sql seed to stdout. Writes NOTHING
- * to the database — a human reviews the SQL before it is applied.
+ * highlighted terms, and emits a reviewable .sql seed to stdout. Writes no
+ * course content to the database (only an ai_usage cost row per model call) —
+ * a human reviews the SQL before it is applied.
  *
  * Usage:
  *   1. Edit the OUTLINE constant below (or pass an outline JSON path as argv[2]).

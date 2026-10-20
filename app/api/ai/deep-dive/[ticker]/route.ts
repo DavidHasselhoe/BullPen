@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { withAuth, addSecurityHeaders, rejectIfTooLarge } from '@/lib/security/api-security';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { checkQuota } from '@/lib/billing/quotas';
-import { logAiCall } from '@/lib/billing/log-ai-call';
+import { logAiCall, anthropicUsage } from '@/lib/billing/log-ai-call';
 import { createNotification, isNotificationEnabled } from '@/lib/notifications/notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
@@ -103,9 +103,7 @@ async function runDeepDive(params: {
         userId,
         feature: 'deep_dive',
         model: MODEL,
-        inputTokens: final.usage.input_tokens,
-        outputTokens: final.usage.output_tokens,
-        webSearches: final.usage.server_tool_use?.web_search_requests ?? 0,
+        ...anthropicUsage(final.usage),
         metadata: { symbol },
       });
     } catch { /* never block on logging */ }

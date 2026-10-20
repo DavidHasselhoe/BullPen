@@ -17,6 +17,7 @@ import {
 } from '@/types/academy';
 import { GLOSSARY, getGlossaryEntry } from '@/lib/finance/glossary';
 import type { CourseOutline, LessonSpec, GeneratableLessonType } from './course-outline-types';
+import { logAiCall, anthropicUsage } from '@/lib/billing/log-ai-call';
 
 const MODEL = 'claude-opus-5-5';
 const MAX_RETRIES = 3;
@@ -99,6 +100,13 @@ async function generateLessonContent(lesson: LessonSpec): Promise<unknown> {
       output_config: { effort: 'low' },
       system: systemPromptFor(lesson.type),
       messages: [{ role: 'user', content: userPrompt }],
+    });
+    await logAiCall({
+      userId: null,
+      feature: 'academy_course_generation',
+      model: MODEL,
+      ...anthropicUsage(msg.usage),
+      metadata: { lesson: lesson.slug, attempt },
     });
 
     const raw = msg.content.find((b) => b.type === 'text');
