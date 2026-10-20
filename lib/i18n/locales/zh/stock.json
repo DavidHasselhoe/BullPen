@@ -377,6 +377,7 @@
   "indexBadgeSp500Tip": "S&P 500 中约 500 家大型美国公司之一，这是大多数人所说的市场指数。VOO 和 SPY 等 S&P 500 基金持有它。",
   "indexBadgeNasdaq100Tip": "在纳斯达克交易所上市的 100 家最大公司之一，不包括银行。QQQ 等 Nasdaq-100 基金持有它。",
   "indexBadgeDow30Tip": "道琼斯工业平均指数中 30 家大型知名美国公司之一，是美国最古老的股票指数。DIA 等基金持有它。",
+  "indexFundOverlap": "您已通过 {{funds}} 间接持有这只股票的一部分。",
   "thesisSaveButton": "保存",
   "thesisEditAriaLabel": "编辑",
   "thesisDeleteAriaLabel": "删除",

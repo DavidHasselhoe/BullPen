@@ -370,6 +370,7 @@
   "indexBadgeSp500Tip": "Ett av rundt 500 store amerikanske selskaper i S&P 500, indeksen de fleste mener når de sier markedet. S&P 500-fond som VOO og SPY eier aksjer i selskapet.",
   "indexBadgeNasdaq100Tip": "Ett av de 100 største selskapene notert på Nasdaq-børsen, banker unntatt. Nasdaq-100-fond som QQQ eier aksjer i selskapet.",
   "indexBadgeDow30Tip": "Ett av 30 store, kjente amerikanske selskaper i Dow Jones Industrial Average, den eldste amerikanske aksjeindeksen. Fond som DIA eier aksjer i selskapet.",
+  "indexFundOverlap": "Du eier allerede litt av den gjennom {{funds}}.",
   "thesisSaveButton": "Lagre",
   "thesisEditAriaLabel": "Rediger",
   "thesisDeleteAriaLabel": "Slett",

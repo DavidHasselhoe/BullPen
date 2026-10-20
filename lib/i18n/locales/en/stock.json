@@ -377,6 +377,7 @@
   "indexBadgeSp500Tip": "One of about 500 large US companies in the S&P 500, the index most people mean by the market. S&P 500 funds like VOO and SPY own it.",
   "indexBadgeNasdaq100Tip": "One of the 100 largest companies listed on the Nasdaq exchange, banks excluded. Nasdaq-100 funds like QQQ own it.",
   "indexBadgeDow30Tip": "One of 30 large, well-known US companies in the Dow Jones Industrial Average, the oldest US stock index. Funds like DIA own it.",
+  "indexFundOverlap": "You already own some through {{funds}}.",
   "thesisSaveButton": "Save",
   "thesisEditAriaLabel": "Edit",
   "thesisDeleteAriaLabel": "Delete",

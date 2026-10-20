@@ -367,6 +367,7 @@
   "indexBadgeSp500Tip": "L'une des quelque 500 grandes entreprises américaines du S&P 500, l'indice que la plupart des gens appellent le marché. Les fonds S&P 500 comme VOO et SPY détiennent ses actions.",
   "indexBadgeNasdaq100Tip": "L'une des 100 plus grandes entreprises cotées au Nasdaq, banques exclues. Les fonds Nasdaq-100 comme QQQ détiennent ses actions.",
   "indexBadgeDow30Tip": "L'une des 30 grandes entreprises américaines bien connues du Dow Jones Industrial Average, le plus ancien indice boursier américain. Les fonds comme DIA détiennent ses actions.",
+  "indexFundOverlap": "Vous en détenez déjà une petite part via {{funds}}.",
   "thesisSaveButton": "Enregistrer",
   "thesisEditAriaLabel": "Modifier",
   "thesisDeleteAriaLabel": "Supprimer",

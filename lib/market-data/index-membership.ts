@@ -11,7 +11,20 @@ const MEMBERS: [IndexId, Set<string>][] = [
   ['dow30', new Set(DOW30_TICKERS)],
 ];
 
+/** The common funds that track each index, so a stock page can say "you already own some through VOO". */
+const TRACKERS: Record<IndexId, string[]> = {
+  sp500: ['SPY', 'VOO', 'IVV', 'SPLG'],
+  nasdaq100: ['QQQ', 'QQQM'],
+  dow30: ['DIA'],
+};
+
 export function indexMemberships(ticker: string): IndexId[] {
   const t = ticker.toUpperCase();
   return MEMBERS.filter(([, set]) => set.has(t)).map(([id]) => id);
+}
+
+/** The index funds among `heldSymbols` that own a stock in `indices`, in tracker order. */
+export function heldIndexFunds(indices: IndexId[], heldSymbols: Iterable<string>): string[] {
+  const held = new Set([...heldSymbols].map((s) => s.toUpperCase()));
+  return indices.flatMap((id) => TRACKERS[id]).filter((etf) => held.has(etf));
 }

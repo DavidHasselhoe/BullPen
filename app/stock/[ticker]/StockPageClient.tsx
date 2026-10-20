@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { IndexBadges } from '@/components/stock/IndexBadges';
-import type { IndexId } from '@/lib/market-data/index-membership';
+import { heldIndexFunds, type IndexId } from '@/lib/market-data/index-membership';
+import { isOpenPosition } from '@/lib/holdings/open-position';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, MoreHorizontal, Telescope } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -114,6 +115,8 @@ export default function StockPageClient({ initialName, indices = [] }: { initial
   // zero quantity for history, so they don't count.
   const { data: holdings } = useHoldings();
   const isHeld = !!holdings?.some((h) => h.symbol.toUpperCase() === ticker && (h.quantity ?? 0) > 1e-9);
+  // Index funds the user holds that already own this stock ("through VOO").
+  const heldFunds = heldIndexFunds(indices, (holdings ?? []).filter(isOpenPosition).map((h) => h.symbol));
 
   // Signals flow: HealthScoreCard → signals state → StatisticsGrid (no extra fetch needed)
   const [metricSignals, setMetricSignals] = useState<Record<string, SignalValue> | undefined>(undefined);
@@ -382,6 +385,11 @@ export default function StockPageClient({ initialName, indices = [] }: { initial
                               )}
                               <IndexBadges indices={indices} />
                             </div>
+                            {heldFunds.length > 0 && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {t('indexFundOverlap', { funds: new Intl.ListFormat(i18n.language, { type: 'conjunction' }).format(heldFunds) })}
+                              </p>
+                            )}
                             <CompetitorPills ticker={ticker} />
                           </div>
                         </div>
