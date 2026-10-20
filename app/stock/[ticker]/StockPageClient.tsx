@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { IndexBadges } from '@/components/stock/IndexBadges';
+import type { IndexBadgeFact } from '@/lib/market-data/index-events';
 import { heldIndexFunds, type IndexId } from '@/lib/market-data/index-membership';
 import { isOpenPosition } from '@/lib/holdings/open-position';
 import { Separator } from '@/components/ui/separator';
@@ -90,7 +91,7 @@ interface CompanyResponse {
   error?: string;
 }
 
-export default function StockPageClient({ initialName, indices = [] }: { initialName?: string; indices?: IndexId[] } = {}) {
+export default function StockPageClient({ initialName, indices = [], indexFacts }: { initialName?: string; indices?: IndexId[]; indexFacts?: Partial<Record<IndexId, IndexBadgeFact>> } = {}) {
   const params = useParams();
   const router = useRouter();
   const { t, i18n } = useTranslation('stock');
@@ -383,7 +384,7 @@ export default function StockPageClient({ initialName, indices = [] }: { initial
                                   {resolvedIndustry && ` • ${resolvedIndustry}`}
                                 </span>
                               )}
-                              <IndexBadges indices={indices} />
+                              <IndexBadges indices={indices} facts={indexFacts} />
                             </div>
                             {heldFunds.length > 0 && (
                               <p className="mt-1 text-xs text-muted-foreground">

@@ -28,11 +28,20 @@ const NASDAQ100_API_URL = 'https://api.nasdaq.com/api/quote/list-type/nasdaq100'
 // excludes them without needing to special-case by name.
 const VALID_TICKER = /^[A-Z]{1,5}(\.[A-Z]{1,2})?$/;
 
+/** A fresh constituent list, plus each holding's fund weight when the source has one. */
+export interface IndexHoldings {
+  tickers: string[];
+  /** Percent of the fund (1.54 for MU in SPY), as of the holdings file's own date (YYYY-MM-DD). */
+  weights?: { asOf: string; pct: Record<string, number> };
+}
+
 export const fetchSP500Tickers = () => fetchSsgaTickers('spy', 'S&P 500', 450, 520);
 /** The Dow is exactly 30 names; DIA holds all of them. */
 export const fetchDow30Tickers = () => fetchSsgaTickers('dia', 'Dow 30', 30, 30);
 
-async function fetchSsgaTickers(fund: string, label: string, min: number, max: number): Promise<string[]> {
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+async function fetchSsgaTickers(fund: string, label: string, min: number, max: number): Promise<IndexHoldings> {
   const res = await fetch(ssgaHoldingsUrl(fund), {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BullPenIndexSync/1.0)' },
   });
@@ -47,15 +56,23 @@ async function fetchSsgaTickers(fund: string, label: string, min: number, max: n
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false }) as string[][];
 
-  // Row 4 (0-indexed) is the header ("Name","Ticker","Identifier",...); data
-  // starts at row 5 and runs until the trailing blank rows / legal footer.
+  // Row 4 (0-indexed) is the header ("Name","Ticker","Identifier","SEDOL","Weight",...);
+  // data starts at row 5 and runs until the trailing blank rows / legal footer.
   const tickers = new Set<string>();
+  const pct: Record<string, number> = {};
   for (let i = 5; i < rows.length; i++) {
     const ticker = rows[i]?.[1];
     if (ticker && VALID_TICKER.test(ticker)) {
       tickers.add(ticker);
+      const weight = Number(rows[i][4]);
+      if (Number.isFinite(weight) && weight > 0) pct[ticker] = weight;
     }
   }
+  // Row 2 reads ["Holdings:", "As of 19-Oct-2026"]. No date means no weights:
+  // a weight is only worth showing next to the day it was true.
+  const m = rows[2]?.[1]?.match(/(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+  const month = m ? MONTHS.indexOf(m[2]) : -1;
+  const asOf = m && month >= 0 ? `${m[3]}-${String(month + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}` : null;
 
   if (tickers.size < min || tickers.size > max) {
     throw new Error(
@@ -63,10 +80,10 @@ async function fetchSsgaTickers(fund: string, label: string, min: number, max: n
     );
   }
 
-  return [...tickers].sort();
+  return { tickers: [...tickers].sort(), weights: asOf ? { asOf, pct } : undefined };
 }
 
-export async function fetchNasdaq100Tickers(): Promise<string[]> {
+export async function fetchNasdaq100Tickers(): Promise<IndexHoldings> {
   const res = await fetch(NASDAQ100_API_URL, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; BullPenIndexSync/1.0)',
@@ -95,7 +112,7 @@ export async function fetchNasdaq100Tickers(): Promise<string[]> {
     );
   }
 
-  return [...tickers].sort();
+  return { tickers: [...tickers].sort() };
 }
 
 export function diffTickers(current: string[], fresh: string[]): { added: string[]; removed: string[] } {

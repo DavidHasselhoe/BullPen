@@ -10,6 +10,11 @@
  *
  * Ensure DISCORD_INDEX_SYNC_WEBHOOK_URL is set in .env.local (optional —
  * skipped with a log line if unset; only used to announce real changes).
+ *
+ * With INDEX_CHANGES_FILE set, it also writes every membership change and the
+ * fresh fund weights to that file as JSON. The workflow POSTs it to
+ * /api/cron/record-index-changes, which stores them and notifies watchers and
+ * holders. This script never touches the database itself.
  */
 
 import { config } from 'dotenv';
@@ -17,19 +22,23 @@ config({ path: '.env.local' });
 
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { fetchSP500Tickers, fetchNasdaq100Tickers, fetchDow30Tickers, diffTickers } from '../lib/market-data/index-sync';
+import { fetchSP500Tickers, fetchNasdaq100Tickers, fetchDow30Tickers, diffTickers, type IndexHoldings } from '../lib/market-data/index-sync';
+import type { IndexChangesPayload } from '../lib/market-data/index-events';
+import type { IndexId } from '../lib/market-data/index-membership';
 import { postToDiscord, type DiscordEmbed } from '../lib/discord/post-message';
 
 interface IndexTarget {
+  id: IndexId;
   label: string;
   file: string;
   exportName: string;
   sourceNote: string;
-  fetch: () => Promise<string[]>;
+  fetch: () => Promise<IndexHoldings>;
 }
 
 const TARGETS: IndexTarget[] = [
   {
+    id: 'sp500',
     label: 'S&P 500',
     file: join(process.cwd(), 'lib', 'market-data', 'sp500.ts'),
     exportName: 'SP500_TICKERS',
@@ -37,6 +46,7 @@ const TARGETS: IndexTarget[] = [
     fetch: fetchSP500Tickers,
   },
   {
+    id: 'nasdaq100',
     label: 'Nasdaq 100',
     file: join(process.cwd(), 'lib', 'market-data', 'nasdaq100.ts'),
     exportName: 'NASDAQ100_TICKERS',
@@ -44,6 +54,7 @@ const TARGETS: IndexTarget[] = [
     fetch: fetchNasdaq100Tickers,
   },
   {
+    id: 'dow30',
     label: 'Dow 30',
     file: join(process.cwd(), 'lib', 'market-data', 'dow30.ts'),
     exportName: 'DOW30_TICKERS',
@@ -80,14 +91,20 @@ ${rows.join('\n')}
 async function main() {
   const webhookUrl = process.env.DISCORD_INDEX_SYNC_WEBHOOK_URL;
   const changeSummaries: string[] = [];
+  const payload: IndexChangesPayload = { detectedOn: new Date().toISOString().slice(0, 10), events: [], weights: [] };
 
   for (const target of TARGETS) {
     console.log(`\nSyncing ${target.label}...`);
     const source = readFileSync(target.file, 'utf-8');
     const current = extractCurrentTickers(source, target.exportName);
-    const fresh = await target.fetch();
+    const { tickers: fresh, weights } = await target.fetch();
+    if (weights) payload.weights.push({ indexId: target.id, asOf: weights.asOf, pct: weights.pct });
 
     const { added, removed } = diffTickers(current, fresh);
+    payload.events.push(
+      ...added.map((ticker) => ({ ticker, indexId: target.id, change: 'added' as const })),
+      ...removed.map((ticker) => ({ ticker, indexId: target.id, change: 'removed' as const })),
+    );
     if (added.length === 0 && removed.length === 0) {
       console.log(`  Up to date (${current.length} tickers).`);
       continue;
@@ -103,6 +120,13 @@ async function main() {
     if (added.length > 0) parts.push(`**Added:** ${added.join(', ')}`);
     if (removed.length > 0) parts.push(`**Removed:** ${removed.join(', ')}`);
     changeSummaries.push(`**${target.label}** (${current.length} → ${fresh.length})\n${parts.join('\n')}`);
+  }
+
+  // Written every run, not only on a change: the weights are refreshed weekly too.
+  const outFile = process.env.INDEX_CHANGES_FILE;
+  if (outFile) {
+    writeFileSync(outFile, JSON.stringify(payload));
+    console.log(`\nWrote ${payload.events.length} change(s) and ${payload.weights.length} weight set(s) to ${outFile}.`);
   }
 
   if (changeSummaries.length === 0) {

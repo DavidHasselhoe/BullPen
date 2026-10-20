@@ -26,6 +26,7 @@ import { getDisplayNames } from '@/lib/market-data/display-names';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 import { getSubpageCoverage } from '@/lib/stock/subpage-data';
 import { indexMemberships } from '@/lib/market-data/index-membership';
+import { getIndexBadgeFacts } from '@/lib/market-data/index-events';
 import Link from 'next/link';
 import StockPageClient from './StockPageClient';
 
@@ -48,6 +49,9 @@ export default async function StockPage({
   const localePromise = getRequestLocale();
   // Which subpages have something to show for this ticker; only those are linked.
   const coveragePromise = getSubpageCoverage([ticker]).catch(() => null);
+  const indices = indexMemberships(ticker);
+  // "Joined in the week of" and fund weight for the index badges' tooltips.
+  const indexFactsPromise = indices.length > 0 ? getIndexBadgeFacts(ticker).catch(() => ({})) : Promise.resolve({});
   try {
     await queryClient.prefetchQuery({
       queryKey: ['stock-snapshot', ticker],
@@ -58,7 +62,7 @@ export default async function StockPage({
     // itself, exactly as it did before this existed.
   }
 
-  const [peers, name, locale, coverage] = await Promise.all([peersPromise, namePromise, localePromise, coveragePromise]);
+  const [peers, name, locale, coverage, indexFacts] = await Promise.all([peersPromise, namePromise, localePromise, coveragePromise, indexFactsPromise]);
   const snapshot = queryClient.getQueryData<StockSnapshot>(['stock-snapshot', ticker]);
   const t = snapshot || coverage ? await getServerT(locale, `/stock/${ticker}`) : null;
 
@@ -66,7 +70,7 @@ export default async function StockPage({
     <HydrationBoundary state={dehydrate(queryClient)}>
       {/* The name comes from the server so the heading is in the first HTML
           too: the header used to wait for a browser-side company fetch. */}
-      <StockPageClient initialName={name} indices={indexMemberships(ticker)} />
+      <StockPageClient initialName={name} indices={indices} indexFacts={indexFacts} />
       {(peers || t) && (
         // Lines up with the main column: lg:px-8 plus the 160px nav and 32px gap at xl.
         <div className="mx-auto max-w-[1520px] px-4 pb-12 sm:px-6 lg:px-8 xl:pl-[224px]">

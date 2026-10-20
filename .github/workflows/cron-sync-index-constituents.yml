@@ -36,6 +36,7 @@ jobs:
       - name: Sync index constituents
         env:
           DISCORD_INDEX_SYNC_WEBHOOK_URL: ${{ secrets.DISCORD_INDEX_SYNC_WEBHOOK_URL }}
+          INDEX_CHANGES_FILE: ${{ runner.temp }}/index-changes.json
         run: npm run sync-index-constituents
 
       - name: Commit and push if changed
@@ -50,3 +51,22 @@ jobs:
           git commit -m "chore: sync S&P 500 / Nasdaq 100 constituents" \
             -m "Automated weekly sync against SPY holdings + Nasdaq's official API. See scripts/sync-index-constituents.ts."
           git push origin HEAD:preview
+
+      # After the commit, so a failed push records nothing it will re-detect next
+      # week. Fail-soft: a failed POST loses that week's events and notifications,
+      # but never blocks the constituent files from syncing.
+      - name: Record changes and weights in the app
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpeninvest.com' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::CRON_SECRET not configured, index changes not recorded"
+            exit 0
+          fi
+          curl -fsS --max-time 120 -X POST \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            --data @"${RUNNER_TEMP}/index-changes.json" \
+            "${APP_URL}/api/cron/record-index-changes" \
+            || echo "::warning::recording index changes failed; this week's events and notifications are lost"

@@ -15,6 +15,8 @@ import { formatAmountRange, tradeDirection } from '@/lib/congress/types';
 import { isPro, tierFromUser } from '@/lib/billing/tier';
 import { ECONOMIC_KINDS, type EconomicKind } from '@/lib/market-data/economic-kinds';
 import { CALENDAR_PREFS_KEY, parseCalendarPrefs } from '@/lib/market-data/calendar-prefs';
+import { indexChangeWeekOf, type IndexChangeEvent } from '@/lib/market-data/index-events';
+import type { IndexId } from '@/lib/market-data/index-membership';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -801,6 +803,72 @@ export async function notifyEconomicEventsToday(date: string, events: EconomicRe
   for (let i = 0; i < rows.length; i += 500) {
     const { error } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
     if (error) throw error;
+  }
+  return rows.length;
+}
+
+// ─── Index membership ────────────────────────────────────────────────────────
+
+const INDEX_NAMES: Record<IndexId, string> = { sp500: 'S&P 500', nasdaq100: 'Nasdaq-100', dow30: 'Dow 30' };
+
+/**
+ * Tells everyone who watches or holds (open positions, alerts on) a stock that
+ * joined or left an index. One notification per user per change, idempotent
+ * on entity_id "<TICKER>:index-<change>:<index>:<detected_on>", which also
+ * makes the card link to the stock page.
+ */
+export async function notifyIndexMembershipChanges(events: IndexChangeEvent[]): Promise<number> {
+  if (events.length === 0) return 0;
+  const supabase = createServerClient();
+  const symbols = [...new Set(events.map((e) => e.ticker))];
+
+  // Paginated: a popular stock can have more than PostgREST's silent 1000-row cap.
+  const userSymbols = new Map<string, Set<string>>();
+  for (const table of ['user_holdings', 'user_watchlist'] as const) {
+    for (let from = 0; ; from += 1000) {
+      let q = supabase.from(table).select('user_id, symbol').in('symbol', symbols).eq('alerts_enabled', true);
+      if (table === 'user_holdings') q = q.or(OPEN_POSITION_FILTER);
+      const { data, error } = await q.order('user_id').range(from, from + 999);
+      if (error) throw error;
+      for (const r of (data ?? []) as { user_id: string; symbol: string }[]) {
+        userSymbols.set(r.user_id, (userSymbols.get(r.user_id) ?? new Set()).add(r.symbol.toUpperCase()));
+      }
+      if (!data || data.length < 1000) break;
+    }
+  }
+  if (userSymbols.size === 0) return 0;
+
+  const entityId = (e: IndexChangeEvent) => `${e.ticker}:index-${e.change}:${e.indexId}:${e.detectedOn}`;
+  const { data: existing, error } = await supabase
+    .from('notifications')
+    .select('user_id, entity_id')
+    .in('entity_id', events.map(entityId))
+    .in('user_id', [...userSymbols.keys()]);
+  if (error) throw error;
+  const done = new Set((existing ?? []).map((n) => `${n.user_id}|${n.entity_id}`));
+
+  const rows = [...userSymbols].flatMap(([user_id, mine]) =>
+    events
+      .filter((e) => mine.has(e.ticker) && !done.has(`${user_id}|${entityId(e)}`))
+      .map((e) => {
+        const name = INDEX_NAMES[e.indexId];
+        const week = shortDate(indexChangeWeekOf(e.detectedOn));
+        return {
+          user_id,
+          type: 'market',
+          title: e.change === 'added' ? `${e.ticker} joined the ${name}` : `${e.ticker} left the ${name}`,
+          message: e.change === 'added'
+            ? `It was added in the week of ${week}. Funds that track the ${name} now own it.`
+            : `It was removed in the week of ${week}. Funds that track the ${name} no longer own it.`,
+          entity_type: 'stock',
+          entity_id: entityId(e),
+          severity: 'info',
+        };
+      }),
+  );
+  for (let i = 0; i < rows.length; i += 500) {
+    const { error: insertError } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
+    if (insertError) throw insertError;
   }
   return rows.length;
 }

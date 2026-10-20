@@ -31,6 +31,9 @@ export function categoryOf(n: Notification): NotificationCategory | null {
       return 'following';
     case 'academy':
       return 'academy';
+    // Market-wide (economic calendar) unless it is about one stock (an index change).
+    case 'market':
+      return n.entity_type === 'stock' ? 'stocks' : null;
     default:
       return null;
   }
