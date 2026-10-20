@@ -370,6 +370,8 @@
   "indexBadgeNasdaq100Tip": "Una de las 100 mayores empresas que cotizan en el Nasdaq, sin contar los bancos. Fondos del Nasdaq-100 como QQQ tienen acciones de la empresa.",
   "indexBadgeDow30Tip": "Una de las 30 grandes y conocidas empresas estadounidenses del Dow Jones Industrial Average, el índice bursátil más antiguo de EE. UU. Fondos como DIA tienen acciones de la empresa.",
   "indexFundOverlap": "Ya tienes una pequeña parte a través de {{funds}}.",
+  "indexJoinedTip": "Se unió al {{index}} en la semana del {{date}}.",
+  "indexWeightTip": "Aproximadamente {{pct}} del {{index}} a fecha de {{date}}.",
   "thesisSaveButton": "Guardar",
   "thesisEditAriaLabel": "Editar",
   "thesisDeleteAriaLabel": "Eliminar",

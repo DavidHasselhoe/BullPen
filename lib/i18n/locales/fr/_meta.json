@@ -3578,6 +3578,8 @@
   "stock.indexBadgeNasdaq100Tip": "421f50ba1e3234489fde0f32ce584f6186ecbac8653ca38dce10d3f86387d5ef",
   "stock.indexBadgeDow30Tip": "a8e2a78087b0d06c0ed5499a42c0e1ca534049bc0591cee9975b6407f01d609a",
   "stock.indexFundOverlap": "75bb6cd3967e478138bda7a60dec8cf86f884149fa9113a1fff4ca8745c6cb7b",
+  "stock.indexJoinedTip": "dd9ac7f5ec024d18038cb68bcc161718b2ae2e1db363b30b177392da82339882",
+  "stock.indexWeightTip": "6661b3b0b37c55faba9ed863fc055c6964068353a61236c3772e4b6c3921ce13",
   "tools.portfolioBuilderBullCase": "cdc02ea8eadebdd36bb10d00eaa20df462f9918a8678b77a0ad767f34f817655",
   "tools.portfolioBuilderBullThesis": "55f12581bb8ac60a926b5023fb19f8fdcd3efbce0a0ed42270bbd350c965f527",
   "tools.screenerDescriptionNasdaq100": "47ad23010d9b097168a51506468ac8b0bfed1bec424fd81d9f4d3d780427167f",

@@ -378,6 +378,8 @@
   "indexBadgeNasdaq100Tip": "Nasdaq取引所に上場する最大100社の大企業の1つで、銀行は除外されます。QQQなどのNasdaq-100ファンドがこれを保有しています。",
   "indexBadgeDow30Tip": "米国で最も古い株式インデックスであるダウ・ジョーンズ工業株平均に属する30社の大型で知名度の高い米国企業の1つです。DIAなどのファンドがこれを保有しています。",
   "indexFundOverlap": "{{funds}}を通じて、すでにこの株を一部保有しています。",
+  "indexJoinedTip": "{{date}} の週に {{index}} に採用されました。",
+  "indexWeightTip": "{{date}} 時点で {{index}} の約 {{pct}} を占めています。",
   "thesisSaveButton": "保存",
   "thesisEditAriaLabel": "編集",
   "thesisDeleteAriaLabel": "削除",

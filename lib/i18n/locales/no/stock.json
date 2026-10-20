@@ -371,6 +371,8 @@
   "indexBadgeNasdaq100Tip": "Ett av de 100 største selskapene notert på Nasdaq-børsen, banker unntatt. Nasdaq-100-fond som QQQ eier aksjer i selskapet.",
   "indexBadgeDow30Tip": "Ett av 30 store, kjente amerikanske selskaper i Dow Jones Industrial Average, den eldste amerikanske aksjeindeksen. Fond som DIA eier aksjer i selskapet.",
   "indexFundOverlap": "Du eier allerede litt av den gjennom {{funds}}.",
+  "indexJoinedTip": "Ble tatt inn i {{index}} i uken som begynte {{date}}.",
+  "indexWeightTip": "Omtrent {{pct}} av {{index}} per {{date}}.",
   "thesisSaveButton": "Lagre",
   "thesisEditAriaLabel": "Rediger",
   "thesisDeleteAriaLabel": "Slett",
