@@ -3571,5 +3571,10 @@
   "stock.thesisPostFailed": "057c05e0305ab2cfcb3a8275431f6fbd1fb530807eae559fdc4bcb74dc393cce",
   "common.noMatches": "2df01a03ff43400b2c833c81b6240c1878abdfc99b258c624bc1605329255f6f",
   "settings.timeZoneSearch": "113432939ac2ffb69442e8d5a1200ced6785ea31b201bc3f08c5ad6898008bf7",
-  "tools.screenerIndustrySearch": "dbbafda99e405eb4769c8bf6b07c48fc302ce71b650ee0b2172029d41d4f778f"
+  "tools.screenerIndustrySearch": "dbbafda99e405eb4769c8bf6b07c48fc302ce71b650ee0b2172029d41d4f778f",
+  "stock.indexBadgesLabel": "37f5415b2c0b0cb530f2ebd827bda04beb0cc4d1a192a308cf2af1c13bd45704",
+  "stock.indexBadgeSp500": "be47fc91200109dea682f95cb303fa2d0fe75e7ee5369ab73860b670a96f8c9f",
+  "stock.indexBadgeSp500Tip": "765422a43d31d9d5501f3a164c843ca392d9a3ddcd2c2a9fa221e2aad8e7879c",
+  "stock.indexBadgeNasdaq100Tip": "421f50ba1e3234489fde0f32ce584f6186ecbac8653ca38dce10d3f86387d5ef",
+  "stock.indexBadgeDow30Tip": "a8e2a78087b0d06c0ed5499a42c0e1ca534049bc0591cee9975b6407f01d609a"
 }

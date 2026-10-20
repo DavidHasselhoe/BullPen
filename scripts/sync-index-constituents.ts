@@ -1,5 +1,5 @@
 /**
- * Refreshes lib/market-data/sp500.ts and nasdaq100.ts against real, current
+ * Refreshes lib/market-data/sp500.ts, nasdaq100.ts and dow30.ts against real, current
  * index membership (see lib/market-data/index-sync.ts for the sources).
  *
  * Usage: npm run sync-index-constituents
@@ -17,13 +17,14 @@ config({ path: '.env.local' });
 
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { fetchSP500Tickers, fetchNasdaq100Tickers, diffTickers } from '../lib/market-data/index-sync';
+import { fetchSP500Tickers, fetchNasdaq100Tickers, fetchDow30Tickers, diffTickers } from '../lib/market-data/index-sync';
 import { postToDiscord, type DiscordEmbed } from '../lib/discord/post-message';
 
 interface IndexTarget {
   label: string;
   file: string;
   exportName: string;
+  sourceNote: string;
   fetch: () => Promise<string[]>;
 }
 
@@ -32,13 +33,22 @@ const TARGETS: IndexTarget[] = [
     label: 'S&P 500',
     file: join(process.cwd(), 'lib', 'market-data', 'sp500.ts'),
     exportName: 'SP500_TICKERS',
+    sourceNote: "State Street's SPY ETF daily holdings disclosure (full-replication S&P 500 tracker).",
     fetch: fetchSP500Tickers,
   },
   {
     label: 'Nasdaq 100',
     file: join(process.cwd(), 'lib', 'market-data', 'nasdaq100.ts'),
     exportName: 'NASDAQ100_TICKERS',
+    sourceNote: "Nasdaq's own official Nasdaq-100 constituents API.",
     fetch: fetchNasdaq100Tickers,
+  },
+  {
+    label: 'Dow 30',
+    file: join(process.cwd(), 'lib', 'market-data', 'dow30.ts'),
+    exportName: 'DOW30_TICKERS',
+    sourceNote: "State Street's DIA ETF daily holdings disclosure (it holds all 30 Dow Jones Industrial Average stocks).",
+    fetch: fetchDow30Tickers,
   },
 ];
 
@@ -87,11 +97,7 @@ async function main() {
     if (added.length > 0) console.log(`  Added: ${added.join(', ')}`);
     if (removed.length > 0) console.log(`  Removed: ${removed.join(', ')}`);
 
-    const sourceNote =
-      target.exportName === 'SP500_TICKERS'
-        ? "State Street's SPY ETF daily holdings disclosure (full-replication S&P 500 tracker)."
-        : "Nasdaq's own official Nasdaq-100 constituents API.";
-    writeFileSync(target.file, formatFile(target.exportName, target.label, sourceNote, fresh));
+    writeFileSync(target.file, formatFile(target.exportName, target.label, target.sourceNote, fresh));
 
     const parts: string[] = [];
     if (added.length > 0) parts.push(`**Added:** ${added.join(', ')}`);

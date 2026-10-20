@@ -8,6 +8,8 @@ import { EarningsCalendar } from '@/components/stock/EarningsCalendar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { IndexBadges } from '@/components/stock/IndexBadges';
+import type { IndexId } from '@/lib/market-data/index-membership';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, MoreHorizontal, Telescope } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -87,7 +89,7 @@ interface CompanyResponse {
   error?: string;
 }
 
-export default function StockPageClient({ initialName }: { initialName?: string } = {}) {
+export default function StockPageClient({ initialName, indices = [] }: { initialName?: string; indices?: IndexId[] } = {}) {
   const params = useParams();
   const router = useRouter();
   const { t, i18n } = useTranslation('stock');
@@ -368,7 +370,7 @@ export default function StockPageClient({ initialName }: { initialName?: string 
                           />
                           <div>
                             <h1 className="text-3xl font-semibold text-foreground" title={legalName !== displayName ? legalName : undefined}>{displayName}</h1>
-                            <div className="mt-1 flex items-center gap-2">
+                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                               <Badge variant="outline" className="font-mono text-sm">
                                 {ticker}
                               </Badge>
@@ -378,6 +380,7 @@ export default function StockPageClient({ initialName }: { initialName?: string 
                                   {resolvedIndustry && ` • ${resolvedIndustry}`}
                                 </span>
                               )}
+                              <IndexBadges indices={indices} />
                             </div>
                             <CompetitorPills ticker={ticker} />
                           </div>

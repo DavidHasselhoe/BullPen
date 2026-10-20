@@ -25,6 +25,7 @@ import { StockGlance } from '@/components/stock/StockGlance';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 import { getSubpageCoverage } from '@/lib/stock/subpage-data';
+import { indexMemberships } from '@/lib/market-data/index-membership';
 import Link from 'next/link';
 import StockPageClient from './StockPageClient';
 
@@ -65,7 +66,7 @@ export default async function StockPage({
     <HydrationBoundary state={dehydrate(queryClient)}>
       {/* The name comes from the server so the heading is in the first HTML
           too: the header used to wait for a browser-side company fetch. */}
-      <StockPageClient initialName={name} />
+      <StockPageClient initialName={name} indices={indexMemberships(ticker)} />
       {(peers || t) && (
         // Lines up with the main column: lg:px-8 plus the 160px nav and 32px gap at xl.
         <div className="mx-auto max-w-[1520px] px-4 pb-12 sm:px-6 lg:px-8 xl:pl-[224px]">

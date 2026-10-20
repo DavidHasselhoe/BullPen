@@ -15,8 +15,9 @@
  *   administers directly — the most authoritative source available.
  */
 
-const SPY_HOLDINGS_URL =
-  'https://www.ssga.com/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx';
+// Any State Street fund's daily holdings: SPY tracks the S&P 500, DIA the Dow 30.
+const ssgaHoldingsUrl = (fund: string) =>
+  `https://www.ssga.com/library-content/products/fund-data/etfs/us/holdings-daily-us-en-${fund}.xlsx`;
 const NASDAQ100_API_URL = 'https://api.nasdaq.com/api/quote/list-type/nasdaq100';
 
 // SPY's holdings file includes a couple of non-equity rows alongside the 500
@@ -27,12 +28,16 @@ const NASDAQ100_API_URL = 'https://api.nasdaq.com/api/quote/list-type/nasdaq100'
 // excludes them without needing to special-case by name.
 const VALID_TICKER = /^[A-Z]{1,5}(\.[A-Z]{1,2})?$/;
 
-export async function fetchSP500Tickers(): Promise<string[]> {
-  const res = await fetch(SPY_HOLDINGS_URL, {
+export const fetchSP500Tickers = () => fetchSsgaTickers('spy', 'S&P 500', 450, 520);
+/** The Dow is exactly 30 names; DIA holds all of them. */
+export const fetchDow30Tickers = () => fetchSsgaTickers('dia', 'Dow 30', 30, 30);
+
+async function fetchSsgaTickers(fund: string, label: string, min: number, max: number): Promise<string[]> {
+  const res = await fetch(ssgaHoldingsUrl(fund), {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BullPenIndexSync/1.0)' },
   });
   if (!res.ok) {
-    throw new Error(`SPY holdings fetch failed: ${res.status} ${res.statusText}`);
+    throw new Error(`${fund.toUpperCase()} holdings fetch failed: ${res.status} ${res.statusText}`);
   }
   const buf = Buffer.from(await res.arrayBuffer());
 
@@ -52,9 +57,9 @@ export async function fetchSP500Tickers(): Promise<string[]> {
     }
   }
 
-  if (tickers.size < 450 || tickers.size > 520) {
+  if (tickers.size < min || tickers.size > max) {
     throw new Error(
-      `SPY holdings parse produced an implausible S&P 500 count (${tickers.size}) — source format may have changed.`
+      `${fund.toUpperCase()} holdings parse produced an implausible ${label} count (${tickers.size}) — source format may have changed.`
     );
   }
 

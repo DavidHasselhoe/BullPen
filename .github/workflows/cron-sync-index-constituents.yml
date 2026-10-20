@@ -1,7 +1,7 @@
 name: Cron — Sync Index Constituents
 
 # Monday 05:00 UTC, ahead of market open and the other Monday-morning crons.
-# Refreshes lib/market-data/sp500.ts and nasdaq100.ts against real index
+# Refreshes lib/market-data/sp500.ts, nasdaq100.ts and dow30.ts against real index
 # membership (SPY's daily holdings disclosure for the S&P 500, Nasdaq's own
 # API for the Nasdaq-100 — see lib/market-data/index-sync.ts). Both sources
 # are official/fund-mandated, so a genuine diff is committed straight to
@@ -40,13 +40,13 @@ jobs:
 
       - name: Commit and push if changed
         run: |
-          if git diff --quiet -- lib/market-data/sp500.ts lib/market-data/nasdaq100.ts; then
+          if git diff --quiet -- lib/market-data/sp500.ts lib/market-data/nasdaq100.ts lib/market-data/dow30.ts; then
             echo "No index membership changes this week."
             exit 0
           fi
           git config user.name "bullpen-bot"
           git config user.email "actions@github.com"
-          git add lib/market-data/sp500.ts lib/market-data/nasdaq100.ts
+          git add lib/market-data/sp500.ts lib/market-data/nasdaq100.ts lib/market-data/dow30.ts
           git commit -m "chore: sync S&P 500 / Nasdaq 100 constituents" \
             -m "Automated weekly sync against SPY holdings + Nasdaq's official API. See scripts/sync-index-constituents.ts."
           git push origin HEAD:preview
