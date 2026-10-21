@@ -47,7 +47,18 @@ interface Channel {
   prices: LivePriceMap;
   listeners: Set<() => void>;
   closeTimer: ReturnType<typeof setTimeout> | null;
+  /** Pending publish of `prices` to listeners; see FLUSH_MS. */
+  flushTimer: ReturnType<typeof setTimeout> | null;
 }
+
+/**
+ * Ticks are published to React at most this often. The stream opens with one
+ * message per symbol (25 on Discover), and each used to publish a new Map and
+ * notify synchronously; useSyncExternalStore can't batch those, so the page
+ * re-rendered 25 times back to back: a ~2s long task on a mid-range phone,
+ * two thirds of Discover's Total Blocking Time (Lighthouse, 2026-10-21).
+ */
+const FLUSH_MS = 100;
 
 const channels = new Map<string, Channel>();
 
@@ -67,16 +78,23 @@ function acquire(key: string, listener: () => void): Channel {
   }
 
   const es = new EventSource(`/api/market/prices/stream?symbols=${encodeURIComponent(key)}`);
-  const channel: Channel = { es, prices: new Map(), listeners: new Set([listener]), closeTimer: null };
+  const channel: Channel = { es, prices: new Map(), listeners: new Set([listener]), closeTimer: null, flushTimer: null };
+  // Ticks land here first; `prices` (the published snapshot) is replaced from
+  // it once per flush.
+  const latest: LivePriceMap = new Map();
 
   es.onmessage = (e) => {
     try {
       const tick = JSON.parse(e.data) as LivePrice;
       if (!tick?.symbol) return;
-      // New Map per tick. useSyncExternalStore compares snapshots by identity,
-      // so mutating in place would never re-render.
-      channel.prices = new Map(channel.prices).set(tick.symbol, tick);
-      for (const l of channel.listeners) l();
+      latest.set(tick.symbol, tick);
+      channel.flushTimer ??= setTimeout(() => {
+        channel.flushTimer = null;
+        // New Map per publish. useSyncExternalStore compares snapshots by
+        // identity, so mutating in place would never re-render.
+        channel.prices = new Map(latest);
+        for (const l of channel.listeners) l();
+      }, FLUSH_MS);
     } catch {
       // ignore malformed frames
     }
@@ -100,6 +118,7 @@ function release(key: string, listener: () => void): void {
     // Re-check: a new subscriber may have arrived during the grace window.
     if (channel.listeners.size === 0) {
       channel.es.close();
+      if (channel.flushTimer) clearTimeout(channel.flushTimer);
       channels.delete(key);
     }
   }, RELEASE_GRACE_MS);
