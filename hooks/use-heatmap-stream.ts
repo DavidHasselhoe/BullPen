@@ -27,7 +27,10 @@ export function useHeatmapStream(): HeatmapStreamState {
   const away = useTabAway();
 
   useEffect(() => {
-    if (away) return;
+    if (away) {
+      setConnected(false);
+      return;
+    }
     let cancelled = false;
 
     function connect() {

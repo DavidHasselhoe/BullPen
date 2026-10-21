@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { PostHog } from 'posthog-js';
-import { loadPostHog, loadedPostHog } from '@/lib/analytics/track';
+import { flushPendingEvents, loadPostHog, loadedPostHog } from '@/lib/analytics/track';
 import { getStoredConsent, COOKIE_CONSENT_CHANGE_EVENT, type CookieConsentValue } from '@/lib/cookie-consent/storage';
 import { aiSource } from '@/lib/analytics/ai-referrer';
 
@@ -90,6 +90,7 @@ function PostHogInner() {
         const wasLoaded = posthog.__loaded;
         initPostHog(posthog);
         if (!wasLoaded) posthog.capture('$pageview', { $current_url: urlRef.current });
+        flushPendingEvents(posthog);
       });
 
     if (getStoredConsent() === 'accepted') void start();

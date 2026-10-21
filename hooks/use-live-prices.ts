@@ -162,7 +162,14 @@ function subscribeTabAway(listener: () => void): () => void {
   visibilityListeners.add(listener);
   return () => {
     visibilityListeners.delete(listener);
-    if (visibilityListeners.size === 0) document.removeEventListener('visibilitychange', onVisibilityChange);
+    if (visibilityListeners.size === 0) {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      // With nobody listening, nothing would reset these when the tab is
+      // shown again, and the next mount would read a stale "away".
+      if (awayTimer) clearTimeout(awayTimer);
+      awayTimer = null;
+      tabAway = false;
+    }
   };
 }
 
