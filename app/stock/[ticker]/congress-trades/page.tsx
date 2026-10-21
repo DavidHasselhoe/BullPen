@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cache } from 'react';
 import { getDisplayNames } from '@/lib/market-data/display-names';
-import { getCongressTrades } from '@/lib/stock/subpage-data';
+import { getAvailableSubpages, getCongressTrades } from '@/lib/stock/subpage-data';
+import { positionLine } from '@/lib/congress/member-list';
+import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
-import { StockSubpageShell, subpageFormat } from '@/components/stock/StockSubpageShell';
+import { NotReported, StockSubpageShell, SubpageLoadError, subpageFormat } from '@/components/stock/StockSubpageShell';
 
 /**
  * /stock/[ticker]/congress-trades: every trade in this stock that a member of
@@ -13,12 +15,13 @@ import { StockSubpageShell, subpageFormat } from '@/components/stock/StockSubpag
  * all shown here too.
  */
 const load = cache(async (ticker: string) => {
-  const [names, trades] = await Promise.all([
+  const [names, trades, available] = await Promise.all([
     getDisplayNames([ticker]).catch(() => new Map<string, string>()),
-    getCongressTrades(ticker).catch(() => []),
+    getCongressTrades(ticker).catch(() => null),
+    getAvailableSubpages(ticker),
   ]);
   const yearAgo = new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10);
-  return { name: names.get(ticker) ?? ticker, trades, yearAgo };
+  return { name: names.get(ticker) ?? ticker, trades: trades ?? [], failed: !trades, available, yearAgo };
 });
 
 const isBuy = (type: string) => /purchase|buy/i.test(type);
@@ -26,20 +29,30 @@ const isSell = (type: string) => /sale|sell/i.test(type);
 
 export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }): Promise<Metadata> {
   const ticker = (await params).ticker.toUpperCase();
-  const [{ name, trades }, t] = await Promise.all([load(ticker), getRequestLocale().then((l) => getServerT(l, `/stock/${ticker}`))]);
+  const [{ name, trades, failed }, t] = await Promise.all([load(ticker), getRequestLocale().then((l) => getServerT(l, `/stock/${ticker}`))]);
   return {
     title: t('stock:congressMetaTitle', { name, ticker }),
     description: t('stock:congressMetaDescription', { name, ticker }),
     alternates: { canonical: `/stock/${ticker}/congress-trades` },
-    ...(trades.length === 0 ? { robots: { index: false, follow: true } } : {}),
+    ...(trades.length === 0 && !failed ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
 export default async function StockCongressTradesPage({ params }: { params: Promise<{ ticker: string }> }) {
   const ticker = (await params).ticker.toUpperCase();
   const locale = await getRequestLocale();
-  const [{ name, trades, yearAgo }, t] = await Promise.all([load(ticker), getServerT(locale, `/stock/${ticker}`)]);
+  // Party and chamber names live in Discover's namespace, beside the member pages.
+  const [{ name, trades, failed, available, yearAgo }, t, td, userId] = await Promise.all([
+    load(ticker),
+    getServerT(locale, `/stock/${ticker}`),
+    getServerT(locale, '/discover'),
+    getCurrentUserId().catch(() => null),
+  ]);
   const f = subpageFormat(locale);
+  const position = (p: { party: string | null; chamber: string | null; state: string | null }) =>
+    positionLine(p, (key, opts) => td(`discover:${key}`, opts));
+  const typeLabel = (type: string) =>
+    isBuy(type) ? t('stock:congressBuy') : isSell(type) ? t('stock:congressSell') : /exchange/i.test(type) ? t('stock:congressExchange') : t('stock:congressOther');
 
   const members = new Set(trades.map((tr) => tr.politician.slug));
   const buys = trades.filter((tr) => isBuy(tr.tradeType)).length;
@@ -47,7 +60,9 @@ export default async function StockCongressTradesPage({ params }: { params: Prom
   const earliest = trades.reduce<string | null>((min, tr) => (tr.transactionDate && (!min || tr.transactionDate < min) ? tr.transactionDate : min), null);
 
   // Facts only this stock's trades give, so ~500 of these pages don't read as
-  // one template with the rows swapped (Search Console 2026-10-15).
+  // one template with the rows swapped (Search Console 2026-10-15). Buys and
+  // sells are counted, not weighed: amounts are filed as ranges, so the copy
+  // says "by number of trades".
   const facts: string[] = [];
   if (buys > sells) facts.push(t('stock:congressMoreBuys', { buys, sells }));
   else if (sells > buys) facts.push(t('stock:congressMoreSells', { buys, sells }));
@@ -72,33 +87,46 @@ export default async function StockCongressTradesPage({ params }: { params: Prom
   const recent = trades.filter((tr) => tr.transactionDate && tr.transactionDate >= yearAgo).length;
   facts.push(recent === 0 ? t('stock:congressRecentNone') : t('stock:congressRecent', { count: recent }));
 
-  return (
-    <StockSubpageShell ticker={ticker} name={name} active="congress" t={t}>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{t('stock:congressH1', { name })}</h1>
-      <p className="mt-3 max-w-3xl text-pretty text-sm leading-relaxed text-muted-foreground">{t('stock:congressIntro', { name })}</p>
+  const nextMember = latest?.politician ?? trades[0]?.politician;
+  const next = nextMember
+    ? { href: `/discover/politicians/${nextMember.slug}`, label: t('stock:congressNext', { member: nextMember.name }) }
+    : null;
 
-      {trades.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">{t('stock:congressNone', { name })}</p>
+  return (
+    <StockSubpageShell ticker={ticker} name={name} active="congress" available={available} next={next} signedIn={!!userId} t={t}>
+      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{t('stock:congressH1', { name })}</h1>
+
+      {failed ? (
+        <SubpageLoadError name={name} href={`/stock/${ticker}/congress-trades`} t={t} />
+      ) : trades.length === 0 ? (
+        <p className="mt-3 text-base text-foreground">{t('stock:congressNone', { name })}</p>
       ) : (
         <>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-foreground">
+          <p className="mt-3 max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
             {t('stock:congressSummaryCounts', {
               trades: t('stock:congressTradeCount', { count: trades.length }),
               members: t('stock:congressMemberCount', { count: members.size }),
               since: earliest ? f.longDate(earliest) : '',
-            })}{' '}
-            {facts.join(' ')}
+            })}
           </p>
+          <ul className="mt-4 max-w-[65ch] space-y-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+            {facts.map((fact) => <li key={fact}>{fact}</li>)}
+          </ul>
 
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
+          <h2 id="congress-trades" className="mt-10 text-lg font-semibold text-foreground">{t('stock:congressTradesHeading')}</h2>
+          <p className="mt-1 max-w-[65ch] text-pretty text-xs leading-relaxed text-muted-foreground">{t('stock:congressIntro', { name })}</p>
+
+          {/* Below sm the dates fold under the member's name: a five-column
+              table at 375px clipped the amounts mid-number. */}
+          <div className="mt-3 overflow-x-auto">
+            <table aria-labelledby="congress-trades" className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b text-xs text-muted-foreground">
                   <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColMember')}</th>
                   <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColType')}</th>
                   <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColAmount')}</th>
-                  <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColTraded')}</th>
-                  <th scope="col" className="py-2 font-medium">{t('stock:congressColReported')}</th>
+                  <th scope="col" className="hidden py-2 pr-3 font-medium sm:table-cell">{t('stock:congressColTraded')}</th>
+                  <th scope="col" className="hidden py-2 font-medium sm:table-cell">{t('stock:congressColReported')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,15 +136,18 @@ export default async function StockCongressTradesPage({ params }: { params: Prom
                       <Link href={`/discover/politicians/${tr.politician.slug}`} className="font-medium text-foreground hover:underline">
                         {tr.politician.name}
                       </Link>
-                      <span className="block text-xs text-muted-foreground">
-                        {[tr.politician.party, tr.politician.state, tr.politician.chamber].filter(Boolean).join(' · ')}
-                      </span>
+                      <span className="block text-xs text-muted-foreground">{position(tr.politician)}</span>
+                      {tr.transactionDate && (
+                        <span className="block text-xs text-muted-foreground sm:hidden">
+                          {t('stock:congressTradedOn', { date: f.date(tr.transactionDate) })}
+                        </span>
+                      )}
                     </th>
                     {/* Words, not colour alone: buy and sell read the same to a colour-blind reader otherwise. */}
-                    <td className="py-2.5 pr-3 text-foreground">{isBuy(tr.tradeType) ? t('stock:congressBuy') : isSell(tr.tradeType) ? t('stock:congressSell') : tr.tradeType}</td>
-                    <td className="py-2.5 pr-3 font-mono text-xs tabular-nums text-muted-foreground">{tr.amountRange ?? '–'}</td>
-                    <td className="py-2.5 pr-3 text-muted-foreground">{tr.transactionDate ? f.date(tr.transactionDate) : '–'}</td>
-                    <td className="py-2.5 text-muted-foreground">{tr.disclosureDate ? f.date(tr.disclosureDate) : '–'}</td>
+                    <td className="py-2.5 pr-3 text-foreground">{typeLabel(tr.tradeType)}</td>
+                    <td className="py-2.5 pr-3 font-mono text-xs tabular-nums text-muted-foreground">{tr.amountRange ?? <NotReported t={t} />}</td>
+                    <td className="hidden whitespace-nowrap py-2.5 pr-3 text-muted-foreground sm:table-cell">{tr.transactionDate ? f.date(tr.transactionDate) : <NotReported t={t} />}</td>
+                    <td className="hidden whitespace-nowrap py-2.5 text-muted-foreground sm:table-cell">{tr.disclosureDate ? f.date(tr.disclosureDate) : <NotReported t={t} />}</td>
                   </tr>
                 ))}
               </tbody>
@@ -126,7 +157,7 @@ export default async function StockCongressTradesPage({ params }: { params: Prom
       )}
 
       <p className="mt-6 text-sm">
-        <Link href="/discover/politicians" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">
+        <Link href="/discover/politicians" className="inline-flex min-h-11 items-center text-muted-foreground underline underline-offset-4 hover:text-foreground">
           {t('stock:congressAllMembers')}
         </Link>
       </p>

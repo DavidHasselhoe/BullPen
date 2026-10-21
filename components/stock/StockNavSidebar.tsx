@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
@@ -9,7 +11,12 @@ export interface StockNavSection {
   label: string;
 }
 
-export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
+/**
+ * In-page sections (scroll-spy buttons), then links out to the stock's own
+ * pages (dividends, congress trades, fund holders), which used to be
+ * reachable only from a "More on" block ~4 screens down.
+ */
+export function StockNavSidebar({ sections, links = [] }: { sections: StockNavSection[]; links?: Array<{ href: string; label: string }> }) {
   const { t } = useTranslation('stock');
   const [activeId, setActiveId] = useState<string | null>(sections[0]?.id ?? null);
 
@@ -97,6 +104,20 @@ export function StockNavSidebar({ sections }: { sections: StockNavSection[] }) {
           </button>
         );
       })}
+      {links.length > 0 && (
+        <div className="mt-3 border-t border-border/60 pt-3">
+          {links.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group flex items-center gap-1 py-1.5 pl-4 pr-2 text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground"
+            >
+              {label}
+              <ArrowRight className="h-3 w-3 opacity-60 transition-opacity group-hover:opacity-100" aria-hidden />
+            </Link>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }

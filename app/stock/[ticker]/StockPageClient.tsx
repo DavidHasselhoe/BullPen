@@ -91,7 +91,13 @@ interface CompanyResponse {
   error?: string;
 }
 
-export default function StockPageClient({ initialName, indices = [], indexFacts }: { initialName?: string; indices?: IndexId[]; indexFacts?: Partial<Record<IndexId, IndexBadgeFact>> } = {}) {
+export default function StockPageClient({ initialName, indices = [], indexFacts, subpages }: {
+  initialName?: string;
+  indices?: IndexId[];
+  indexFacts?: Partial<Record<IndexId, IndexBadgeFact>>;
+  /** Which of /stock/[ticker]/dividends, /congress-trades, /fund-holders have data, for the side nav. */
+  subpages?: { dividends: boolean; congress: boolean; funds: boolean };
+} = {}) {
   const params = useParams();
   const router = useRouter();
   const { t, i18n } = useTranslation('stock');
@@ -282,6 +288,12 @@ export default function StockPageClient({ initialName, indices = [], indexFacts 
     { id: 'nav-profile',    label: t('stockNavProfile') },
     { id: 'nav-community', label: t('stockNavCommunity') },
   ], [showFundamentals, t]);
+  // Not memoized: the sidebar's scroll-spy effect keys on `sections` only.
+  const subpageLinks = [
+    ...(subpages?.dividends ? [{ href: `/stock/${ticker}/dividends`, label: t('subnavDividends') }] : []),
+    ...(subpages?.congress ? [{ href: `/stock/${ticker}/congress-trades`, label: t('subnavCongress') }] : []),
+    ...(subpages?.funds ? [{ href: `/stock/${ticker}/fund-holders`, label: t('subnavFunds') }] : []),
+  ];
 
   if (isNotFound) {
     return (
@@ -329,7 +341,7 @@ export default function StockPageClient({ initialName, indices = [], indexFacts 
 
           {/* Left nav — sticky, hidden below xl */}
           <aside className="hidden xl:block sticky top-20 self-start pt-1">
-            <StockNavSidebar sections={navSections} />
+            <StockNavSidebar sections={navSections} links={subpageLinks} />
           </aside>
 
           {/* Main content */}

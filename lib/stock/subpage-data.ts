@@ -112,7 +112,10 @@ export async function getFundHolders(symbol: string): Promise<FundHolderRow[]> {
 export async function getDividendHistory(symbol: string): Promise<{ items: DividendItem[]; yieldPct: number | null }> {
   const sym = symbol.toUpperCase();
   const db = createServerClient();
-  const { data: stats } = await db.from('screener_stats').select('dividend_yield').eq('ticker', sym).maybeSingle();
+  // Errors throw, here and below: the page tells "couldn't load" apart from
+  // "pays none", which says a false thing and noindexes the page.
+  const { data: stats, error } = await db.from('screener_stats').select('dividend_yield').eq('ticker', sym).maybeSingle();
+  if (error) throw error;
   const raw = (stats as { dividend_yield: number | null } | null)?.dividend_yield ?? null;
   const yieldPct = raw != null && Number.isFinite(Number(raw)) ? Number(raw) : null;
   // No yield on record (null or 0) means no fetch: an empty answer isn't
@@ -122,11 +125,22 @@ export async function getDividendHistory(symbol: string): Promise<{ items: Divid
   const cacheKey = `financials:${sym}:dividends:quarterly`;
   const cached = await getCached<DividendItem[]>(cacheKey);
   if (cached) return { items: cached, yieldPct };
-  const items = await withRateLimitRetry(() => getDividends(sym)).catch(() => [] as DividendItem[]);
+  const items = await withRateLimitRetry(() => getDividends(sym));
   // Only non-empty results are cached, as in the financials route: an empty
   // array can be a transient partial response.
   if (items.length > 0) void setCached(cacheKey, sym, 'financials', items, 24 * 60 * 60);
   return { items, yieldPct };
+}
+
+/** Which subpages have anything on them for this ticker, for the subpage tabs; null when unknown. */
+export async function getAvailableSubpages(ticker: string): Promise<Array<'dividends' | 'congress' | 'funds'> | null> {
+  const c = await getSubpageCoverage([ticker]).catch(() => null);
+  if (!c) return null;
+  return [
+    ...(c.dividends.has(ticker) ? ['dividends' as const] : []),
+    ...(c.congress.has(ticker) ? ['congress' as const] : []),
+    ...(c.funds.has(ticker) ? ['funds' as const] : []),
+  ];
 }
 
 /**

@@ -70,7 +70,12 @@ export default async function StockPage({
     <HydrationBoundary state={dehydrate(queryClient)}>
       {/* The name comes from the server so the heading is in the first HTML
           too: the header used to wait for a browser-side company fetch. */}
-      <StockPageClient initialName={name} indices={indices} indexFacts={indexFacts} />
+      <StockPageClient
+        initialName={name}
+        indices={indices}
+        indexFacts={indexFacts}
+        subpages={coverage ? { dividends: coverage.dividends.has(ticker), congress: coverage.congress.has(ticker), funds: coverage.funds.has(ticker) } : undefined}
+      />
       {(peers || t) && (
         // Lines up with the main column: lg:px-8 plus the 160px nav and 32px gap at xl.
         <div className="mx-auto max-w-[1520px] px-4 pb-12 sm:px-6 lg:px-8 xl:pl-[224px]">

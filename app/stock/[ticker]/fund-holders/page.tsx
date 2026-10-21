@@ -3,42 +3,53 @@ import Link from 'next/link';
 import { cache } from 'react';
 import { Lock } from 'lucide-react';
 import { getDisplayNames } from '@/lib/market-data/display-names';
-import { getFundHolders, getSubpageCoverage } from '@/lib/stock/subpage-data';
+import { getAvailableSubpages, getFundHolders, getSubpageCoverage } from '@/lib/stock/subpage-data';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getTier, isPro } from '@/lib/billing/tier';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
-import { StockSubpageShell, subpageFormat } from '@/components/stock/StockSubpageShell';
+import { NotReported, StockSubpageShell, SubpageLoadError, subpageFormat } from '@/components/stock/StockSubpageShell';
 
 /**
  * /stock/[ticker]/fund-holders: which of the famous funds BullPen tracks held
  * this stock in their latest 13F. Who holds it is public (the fund list is on
- * Discover already); how big each position is, and its share of the fund, is
- * the Pro feature, so it is only rendered for a Pro reader, never sent to
- * anyone else and hidden with CSS.
+ * Discover already), and so is the size of the biggest position: that is the
+ * answer "how much Apple does Buffett own" searches come for. Every other
+ * position's size and share of the fund is the Pro feature, so it is only
+ * rendered for a Pro reader, never sent to anyone else and hidden with CSS.
  */
 const load = cache(async (ticker: string) => {
   const db = createServerClient();
-  const [names, holders, fundCount, peerCounts] = await Promise.all([
+  const [names, holders, fundCount, peerCounts, available] = await Promise.all([
     getDisplayNames([ticker]).catch(() => new Map<string, string>()),
-    getFundHolders(ticker).catch(() => []),
-    db.from('institutional_investors').select('id', { count: 'exact', head: true }).eq('is_active', true).then((r) => r.count ?? 0),
+    getFundHolders(ticker).catch(() => null),
+    db.from('institutional_investors').select('id', { count: 'exact', head: true }).eq('is_active', true)
+      .then((r) => (r.error ? null : r.count ?? 0)),
     // How many tracked funds hold each S&P 500 / Nasdaq-100 stock, for the one
     // fact on this page that is about this stock and not the template.
     getSubpageCoverage([...SIGNIFICANT_TICKERS]).then((c) => c.funds).catch(() => null),
+    getAvailableSubpages(ticker),
   ]);
-  return { name: names.get(ticker) ?? ticker, holders, fundCount, peerCounts };
+  return {
+    name: names.get(ticker) ?? ticker,
+    holders: holders ?? [],
+    fundCount: fundCount ?? 0,
+    // "None of the 0 funds we track" is the failure the empty state can't tell apart.
+    failed: !holders || (holders.length === 0 && fundCount == null),
+    peerCounts,
+    available,
+  };
 });
 
 export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }): Promise<Metadata> {
   const ticker = (await params).ticker.toUpperCase();
-  const [{ name, holders }, t] = await Promise.all([load(ticker), getRequestLocale().then((l) => getServerT(l, `/stock/${ticker}`))]);
+  const [{ name, holders, failed }, t] = await Promise.all([load(ticker), getRequestLocale().then((l) => getServerT(l, `/stock/${ticker}`))]);
   return {
     title: t('stock:fundsMetaTitle', { name, ticker }),
     description: t('stock:fundsMetaDescription', { name, ticker }),
     alternates: { canonical: `/stock/${ticker}/fund-holders` },
-    ...(holders.length === 0 ? { robots: { index: false, follow: true } } : {}),
+    ...(holders.length === 0 && !failed ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
@@ -46,69 +57,82 @@ export default async function StockFundHoldersPage({ params }: { params: Promise
   const ticker = (await params).ticker.toUpperCase();
   const locale = await getRequestLocale();
   const userId = await getCurrentUserId().catch(() => null);
-  const [{ name, holders, fundCount, peerCounts }, t, pro] = await Promise.all([
+  const [{ name, holders, fundCount, failed, peerCounts, available }, t, pro] = await Promise.all([
     load(ticker),
     getServerT(locale, `/stock/${ticker}`),
     userId ? getTier(userId).then(isPro).catch(() => false) : Promise.resolve(false),
   ]);
   const f = subpageFormat(locale);
   const latestQuarter = holders.reduce<string | null>((max, h) => (!max || h.periodOfReport > max ? h.periodOfReport : max), null);
-  // Share of the covered stocks held by MORE of these funds. Said only when
-  // it is notable (top quarter); "41% are held by more" is not worth a line.
-  // Stocks no fund holds are absent from the map but still count as peers.
+  // Where this stock ranks among the covered stocks by how many of these funds
+  // hold it. Said only when notable (top quarter). Stocks no fund holds are
+  // absent from the map but still count as peers.
   let popularity: string | null = null;
   if (peerCounts && holders.length > 0 && SIGNIFICANT_TICKERS.has(ticker)) {
     const more = [...peerCounts.values()].filter((n) => n > holders.length).length;
     const share = more / SIGNIFICANT_TICKERS.size;
     if (more === 0) popularity = t('stock:fundsPopularityTop');
-    else if (share <= 0.25) popularity = t('stock:fundsPopularity', { pct: f.pct(Math.max(share, 0.01), 0) });
+    else if (share <= 0.25) popularity = t('stock:fundsPopularity', { name, pct: f.pct(Math.max(share, 0.01), 0) });
   }
 
-  return (
-    <StockSubpageShell ticker={ticker} name={name} active="funds" t={t}>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{t('stock:fundsH1', { name })}</h1>
-      <p className="mt-3 max-w-3xl text-pretty text-sm leading-relaxed text-muted-foreground">{t('stock:fundsIntro')}</p>
+  const top = holders[0];
+  const next = top ? { href: `/discover/institutions/${top.fund.slug}`, label: t('stock:fundsNext', { fund: top.fund.name }) } : null;
+  // Guests sign up first (a trial starts there); a free account goes to the plans.
+  const proHref = userId ? '/upgrade?from=fund-holders' : `/register?redirect=${encodeURIComponent(`/stock/${ticker}/fund-holders`)}`;
 
-      {holders.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">{t('stock:fundsNone', { name, count: fundCount })}</p>
+  return (
+    <StockSubpageShell ticker={ticker} name={name} active="funds" available={available} next={next} signedIn={!!userId} t={t}>
+      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{t('stock:fundsH1', { name })}</h1>
+
+      {failed ? (
+        <SubpageLoadError name={name} href={`/stock/${ticker}/fund-holders`} t={t} />
+      ) : holders.length === 0 ? (
+        <p className="mt-3 text-base text-foreground">{t('stock:fundsNone', { name, count: fundCount })}</p>
       ) : (
         <>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-foreground">
+          <p className="mt-3 max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
             {t('stock:fundsSummary', { held: holders.length, count: fundCount, name, quarter: latestQuarter ? f.longDate(latestQuarter) : '' })}
-            {popularity && <> {popularity}</>}
           </p>
+          {popularity && <p className="mt-2 max-w-[65ch] text-pretty text-sm leading-relaxed text-muted-foreground">{popularity}</p>}
 
-          <ul className="mt-6 divide-y divide-border/50 rounded-xl border">
-            {holders.map((h) => (
-              <li key={h.fund.slug} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-3">
+          <h2 id="fund-list" className="mt-10 text-lg font-semibold text-foreground">{t('stock:fundsListHeading', { name })}</h2>
+          <p className="mt-1 max-w-[65ch] text-pretty text-xs leading-relaxed text-muted-foreground">{t('stock:fundsIntro')}</p>
+
+          <ul aria-labelledby="fund-list" className="mt-3 divide-y divide-border/50 rounded-xl border">
+            {holders.map((h, i) => (
+              // The whole row is the link's tap target (the name alone was 21px tall).
+              <li key={h.fund.slug} className="relative flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-3 transition-colors hover:bg-card/60">
                 <div className="min-w-0">
-                  <Link href={`/discover/institutions/${h.fund.slug}`} className="font-medium text-foreground hover:underline">
+                  <Link href={`/discover/institutions/${h.fund.slug}`} className="font-medium text-foreground after:absolute after:inset-0">
                     {h.fund.name}
                   </Link>
-                  <p className="text-xs text-muted-foreground">
-                    {[h.fund.manager, t('stock:fundsAsOf', { date: f.date(h.periodOfReport) })].filter(Boolean).join(' · ')}
-                  </p>
-                </div>
-                {pro && (
-                  <div className="text-right">
-                    <p className="font-mono text-sm tabular-nums text-foreground">{h.valueUsd ? f.usdCompact(h.valueUsd) : '–'}</p>
+                  {/* The quarter is in the summary; a fund still on an older filing says so. */}
+                  {(h.fund.manager || h.periodOfReport !== latestQuarter) && (
                     <p className="text-xs text-muted-foreground">
-                      {h.portfolioPct != null ? t('stock:fundsOfPortfolio', { pct: f.pct(h.portfolioPct / 100, 1) }) : ''}
+                      {[h.fund.manager, h.periodOfReport !== latestQuarter ? t('stock:fundsAsOf', { date: f.date(h.periodOfReport) }) : null].filter(Boolean).join(' · ')}
                     </p>
+                  )}
+                </div>
+                {(pro || i === 0) && (
+                  <div className="text-right">
+                    <p className="font-mono text-sm tabular-nums text-foreground">{h.valueUsd ? f.usdCompact(h.valueUsd) : <NotReported t={t} />}</p>
+                    {h.portfolioPct != null && (
+                      <p className="text-xs text-muted-foreground">{t('stock:fundsOfPortfolio', { pct: f.pct(h.portfolioPct / 100, 1) })}</p>
+                    )}
                   </div>
                 )}
               </li>
             ))}
           </ul>
 
-          {!pro && (
+          {!pro && holders.length > 1 && (
             <Link
-              href={`/upgrade?from=fund-holders`}
+              href={proHref}
               className="mt-4 flex items-start gap-3 rounded-xl border bg-card/50 p-4 transition-colors hover:bg-card"
             >
               <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
               <span>
-                <span className="block text-sm font-medium text-foreground">{t('stock:fundsProTitle', { name })}</span>
+                <span className="block text-sm font-medium text-foreground">{t('stock:fundsProTitle', { name })}</span>{' '}
                 <span className="block text-xs text-muted-foreground">{t('stock:fundsProBody')}</span>
               </span>
             </Link>
@@ -117,7 +141,7 @@ export default async function StockFundHoldersPage({ params }: { params: Promise
       )}
 
       <p className="mt-6 text-sm">
-        <Link href="/discover/institutions" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">
+        <Link href="/discover/institutions" className="inline-flex min-h-11 items-center text-muted-foreground underline underline-offset-4 hover:text-foreground">
           {t('stock:fundsAllFunds')}
         </Link>
       </p>
