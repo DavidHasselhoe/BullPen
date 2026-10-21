@@ -17,8 +17,7 @@ import { WeeklyPickHero, CURRENT_PICK_QUERY } from '@/components/picks/WeeklyPic
 import { InstitutionalHoldingsSection } from '@/components/institutions/InstitutionalHoldingsSection';
 import { CongressSection } from '@/components/congress/CongressSection';
 import type { DiscoverFeed } from '@/lib/discover/discover-config';
-
-const FEED_QUERY_KEY = ['discover-feed'];
+import { DISCOVER_FEED_KEY } from '@/lib/discover/query-keys';
 
 /**
  * Discover: read the market in ten seconds, then find one thing worth researching.
@@ -36,7 +35,7 @@ export function DiscoverClient() {
   const { data: pickData } = useQuery(CURRENT_PICK_QUERY);
 
   const { data, isLoading, error, refetch } = useQuery<{ success: boolean; feed?: DiscoverFeed }>({
-    queryKey: FEED_QUERY_KEY,
+    queryKey: DISCOVER_FEED_KEY,
     queryFn: async () => {
       const res = await fetch('/api/discover/feed');
       if (!res.ok) throw new Error(`Feed failed: ${res.status}`);
@@ -68,13 +67,21 @@ export function DiscoverClient() {
 
   const livePrices = useLivePrices(allSymbols);
 
-  if (isLoading) return <DiscoverSkeleton />;
+  const feed = data?.feed;
+  // Only these three sections are built from the feed. Everything else on the
+  // page fetches its own data, so nothing waits on the feed any more: before,
+  // the whole page sat on a skeleton until it landed and only then mounted the
+  // sections, whose requests started a full round trip late. The server
+  // prefetch (app/discover/(home)/page.tsx) normally means the feed is already here.
+  const feedError = !isLoading && (error || !feed);
 
-  if (error || !data?.feed) {
-    return (
-      <>
-        <DiscoverHeader />
-        <div className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/5 p-6">
+  return (
+    <LivePriceContext.Provider value={livePrices}>
+      <DiscoverHeader />
+      <WeeklyPickHero />
+      {feed ? <MarketPulse indices={feed.indices} /> : isLoading && <PulseSkeleton />}
+      {feedError && (
+        <div className="mb-10 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/5 p-6">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden />
           <div>
             <h2 className="text-sm font-semibold text-foreground">{t('discoverClientLoadError')}</h2>
@@ -88,21 +95,11 @@ export function DiscoverClient() {
             </button>
           </div>
         </div>
-      </>
-    );
-  }
-
-  const { feed } = data;
-
-  return (
-    <LivePriceContext.Provider value={livePrices}>
-      <DiscoverHeader />
-      <WeeklyPickHero />
-      <MarketPulse indices={feed.indices} />
+      )}
       <MarketMovers />
-      <SectorPerformance sectors={feed.sectors} />
+      {feed ? <SectorPerformance sectors={feed.sectors} /> : isLoading && <SectorSkeleton />}
       <ThemeGrid />
-      <IdeaCollections collections={feed.collections} />
+      {feed ? <IdeaCollections collections={feed.collections} /> : isLoading && <CollectionsSkeleton />}
       <InstitutionalHoldingsSection preview />
       <CongressSection preview />
     </LivePriceContext.Provider>
@@ -110,37 +107,38 @@ export function DiscoverClient() {
 }
 
 /**
- * Reserves the height of each band so the page doesn't shift as data lands
- * (Core Web Vitals: CLS).
+ * Placeholders that reserve each feed band's height so the page doesn't
+ * shift as data lands (Core Web Vitals: CLS). DiscoverSkeleton is the whole
+ * first screen, for app/discover/loading.tsx.
  */
-function DiscoverSkeleton() {
+function PulseSkeleton() {
   return (
-    <div aria-hidden>
-      <div className="mb-8">
-        <div className="mb-2 h-7 w-40 rounded animate-shimmer" />
-        <div className="h-3.5 w-96 max-w-full rounded animate-shimmer" />
-      </div>
-
-      {/* Market pulse */}
-      <div className="mb-10">
-        <div className="mb-3 h-3.5 w-28 rounded animate-shimmer" />
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {Array.from({ length: 4 }, (_, i) => (
-              <div key={i} className="h-[92px] rounded-xl border border-border/20 animate-shimmer" />
-            ))}
-          </div>
-          <div className="h-[104px] rounded-xl border border-border/20 animate-shimmer" />
+    <div aria-hidden className="mb-10">
+      <div className="mb-3 h-3.5 w-28 rounded animate-shimmer" />
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="h-[92px] rounded-xl border border-border/20 animate-shimmer" />
+          ))}
         </div>
+        <div className="h-[104px] rounded-xl border border-border/20 animate-shimmer" />
       </div>
+    </div>
+  );
+}
 
-      {/* Sector chart */}
-      <div className="mb-10">
-        <div className="mb-3 h-3.5 w-40 rounded animate-shimmer" />
-        <div className="h-[452px] rounded-xl border border-border/20 animate-shimmer" />
-      </div>
+function SectorSkeleton() {
+  return (
+    <div aria-hidden className="mb-10">
+      <div className="mb-3 h-3.5 w-40 rounded animate-shimmer" />
+      <div className="h-[452px] rounded-xl border border-border/20 animate-shimmer" />
+    </div>
+  );
+}
 
-      {/* Collections */}
+function CollectionsSkeleton() {
+  return (
+    <div aria-hidden className="mb-10">
       <div className="mb-4 h-3.5 w-28 rounded animate-shimmer" />
       <div className="space-y-8">
         {Array.from({ length: 2 }, (_, i) => (
@@ -154,6 +152,20 @@ function DiscoverSkeleton() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function DiscoverSkeleton() {
+  return (
+    <div aria-hidden>
+      <div className="mb-8">
+        <div className="mb-2 h-7 w-40 rounded animate-shimmer" />
+        <div className="h-3.5 w-96 max-w-full rounded animate-shimmer" />
+      </div>
+      <PulseSkeleton />
+      <SectorSkeleton />
+      <CollectionsSkeleton />
     </div>
   );
 }

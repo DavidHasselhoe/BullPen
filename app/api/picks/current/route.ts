@@ -1,19 +1,15 @@
 /**
  * GET /api/picks/current
  *
- * The latest published pick — public, no auth required. The ticker, headline,
- * one-liner, entry price, and live return are always free; the thesis and
- * risks are gated by resolveThesisAccess() (Pro, or a free account's one
- * thesis a month) and stripped server-side by `toDetail`, never sent to a
- * caller who isn't unlocked.
+ * The latest published pick, public, no auth required. Built by
+ * getCurrentPick() (lib/picks/current.ts), which also states what is free
+ * and what is gated.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withOptionalAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { resolveThesisAccess } from '@/lib/picks/thesis-access';
-import { getLatestPickRow, toDetail } from '@/lib/picks/picks-db';
-import { livePerformanceFor } from '@/lib/picks/performance';
+import { getCurrentPick } from '@/lib/picks/current';
 
 async function handler(
   _request: NextRequest,
@@ -21,19 +17,7 @@ async function handler(
   session: { userId: string } | null
 ): Promise<NextResponse> {
   try {
-    const row = await getLatestPickRow();
-    if (!row) {
-      return addSecurityHeaders(NextResponse.json({ success: true, pick: null }));
-    }
-
-    const [access, perf] = await Promise.all([
-      resolveThesisAccess(session, row.pick_date, row.model),
-      livePerformanceFor(row),
-    ]);
-
-    return addSecurityHeaders(
-      NextResponse.json({ success: true, pick: toDetail(row, perf, access) })
-    );
+    return addSecurityHeaders(NextResponse.json(await getCurrentPick(session)));
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
       return addSecurityHeaders(NextResponse.json({ success: false, error: 'plan_restricted' }, { status: 200 }));

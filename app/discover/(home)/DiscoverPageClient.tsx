@@ -4,7 +4,7 @@ import { DiscoverClient } from '@/components/discover/v2/DiscoverClient';
 import { useBackground } from '@/hooks/use-background';
 import { cn } from '@/lib/utils';
 
-export default function DiscoverPage() {
+export default function DiscoverPageClient() {
   const { hasAnimatedBackground } = useBackground();
 
   return (

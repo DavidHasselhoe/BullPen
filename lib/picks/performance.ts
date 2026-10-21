@@ -36,6 +36,7 @@ import {
   type StockCandles,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { cacheLastPrice, getLastPrices, type LastPriceSeed } from '@/lib/market-data/last-price-cache';
 import { getMarketSession, rget, rset } from '@/lib/cache/redis-cache';
 import {
   MIN_PICKS_FOR_HEADLINE,
@@ -458,11 +459,25 @@ export async function livePerformanceFor(row: {
     };
   }
 
-  let quotes: Map<string, { c: number }>;
-  try {
-    quotes = await withRateLimitRetry(() => getStockQuotes([row.symbol, BENCHMARK_SYMBOL]));
-  } catch {
-    return empty;
+  // The shared last-price cache first (3 min in session, until the open
+  // outside it). The Discover hero used to buy two live quotes on every view:
+  // ~650ms, and since 2026-10-21 that wait sits in front of the page's first
+  // render, which the server now prefetches.
+  const symbols = [row.symbol, BENCHMARK_SYMBOL];
+  let quotes: Map<string, { c: number }> = new Map();
+  const cached = await getLastPrices(symbols).catch(() => new Map<string, LastPriceSeed>());
+  if (symbols.every((s) => cached.has(s))) {
+    for (const s of symbols) quotes.set(s, { c: cached.get(s)!.price });
+  } else {
+    try {
+      const fresh = await withRateLimitRetry(() => getStockQuotes(symbols));
+      for (const [s, q] of fresh) {
+        if (Number.isFinite(q.c) && q.c > 0) cacheLastPrice(s, { price: q.c, changePercent: Number.isFinite(q.dp) ? q.dp : null });
+      }
+      quotes = fresh;
+    } catch {
+      return empty;
+    }
   }
 
   const quote = quotes.get(row.symbol);

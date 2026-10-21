@@ -1,5 +1,6 @@
 'use client';
 
+import { CURRENT_PICK_KEY } from '@/lib/discover/query-keys';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +21,7 @@ import { displayCompanyName } from '@/lib/market-data/company-name';
  * Same key means one request, not two.
  */
 export const CURRENT_PICK_QUERY = {
-  queryKey: ['weekly-pick-current'] as const,
+  queryKey: CURRENT_PICK_KEY,
   queryFn: async (): Promise<{ success: boolean; pick: PickDetail | null }> => {
     const res = await fetch('/api/picks/current');
     if (!res.ok) throw new Error(`Failed: ${res.status}`);
