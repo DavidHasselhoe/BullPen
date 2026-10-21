@@ -1,5 +1,7 @@
 // Next.js Middleware
-// Runs on every request - add security headers, rate limiting, Supabase session refresh.
+// Runs on page requests (locale, Supabase session refresh, attribution cookies)
+// and on API requests that carry an Origin header (the CSRF check). Security
+// headers are in next.config.ts.
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -101,7 +103,9 @@ export async function middleware(request: NextRequest) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!isApiRoute && supabaseUrl && supabaseAnonKey) {
+  // No Supabase auth cookie (logged-out visitors, crawlers): nothing to refresh.
+  const hasSession = request.cookies.getAll().some((c) => c.name.startsWith('sb-'));
+  if (!isApiRoute && hasSession && supabaseUrl && supabaseAnonKey) {
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
@@ -142,79 +146,17 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // Security Headers (OWASP recommended)
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set(
-    'Permissions-Policy',
-    'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()'
-  );
-  // Isolates the browsing context from cross-origin popups/openers — required
-  // for window.crossOriginIsolated and blocks a class of cross-window attacks.
-  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-
-  // Content Security Policy (adjust as needed for your app)
-  // 'unsafe-eval' is dev-only (Turbopack/webpack HMR relies on eval() for
-  // fast refresh) — production builds don't need it, and it fully defeats
-  // CSP's main XSS mitigation, so it must never ship to real users.
-  // PostHog's array.js loader lazy-loads its config plus recorder/surveys/
-  // web-vitals sub-bundles from this asset host at init time regardless of
-  // which features are actually enabled — same-origin script-src alone
-  // blocks that fetch outright (not just the unused extras), so it needs an
-  // explicit allowance rather than a client-side config flag.
-  const scriptSrc = process.env.NODE_ENV === 'production'
-    ? "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://accounts.google.com/gsi/client"
-    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://us-assets.i.posthog.com https://accounts.google.com/gsi/client";
-  const csp = [
-    "default-src 'self'",
-    scriptSrc,
-    // app.termly.io: legal policy pages (/privacy, /terms, /accessibility —
-    // see components/legal/TermlyEmbed.tsx) render Termly's hosted policy
-    // viewer directly in an iframe, not their JS embed script — deliberately,
-    // since that script calls eval() internally and 'unsafe-eval' can't be
-    // scoped to one script's origin in CSP, so allowing it here would open
-    // eval-based XSS for every script on the page, not just Termly's. Only
-    // frame-src is needed for this approach; nothing loads from Termly via
-    // script-src. frame-src falls back to default-src ('self') when unset,
-    // which would otherwise block the iframe.
-    // accounts.google.com/gsi: Google One Tap (components/auth/GoogleOneTap.tsx)
-    // falls back to an iframe prompt and its own stylesheet where the browser
-    // has no FedCM (Safari, Firefox).
-    "frame-src https://app.termly.io https://accounts.google.com/gsi/",
-    "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style", // Tailwind requires unsafe-inline
-    "img-src 'self' data: https:",
-    "font-src 'self' data:",
-    "connect-src 'self' https: wss:",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join('; ');
-
-  response.headers.set('Content-Security-Policy', csp);
-
-  // HSTS (HTTP Strict Transport Security) - only on HTTPS
-  if (request.nextUrl.protocol === 'https:') {
-    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  }
-
-  // Remove server information
-  response.headers.delete('X-Powered-By');
-
   return response;
 }
 
-// Only run middleware on API routes and pages (not static assets)
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc.)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)).*)',
+    // Pages: everything except API routes and static files.
+    '/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)).*)',
+    // API: only requests with an Origin header, which is all the CSRF check
+    // needs. Browsers send Origin on every POST/PUT/PATCH/DELETE but not on
+    // the app's own same-origin GETs, so the GET calls behind each page view
+    // (quotes, sparklines, the notification count) skip middleware.
+    { source: '/api/:path*', has: [{ type: 'header', key: 'origin' }] },
   ],
 };

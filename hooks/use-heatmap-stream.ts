@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { HeatmapPriceEntry, Session } from '@/app/api/market/heatmap/stream/route';
+import { useTabAway } from '@/hooks/use-live-prices';
 
 export type { HeatmapPriceEntry, Session };
 
@@ -14,7 +15,8 @@ interface HeatmapStreamState {
 /**
  * Subscribe to the real-time heatmap price stream via SSE.
  * Merges incoming price maps into a stable Map reference.
- * Reconnects with a 3s delay on error.
+ * Reconnects with a 3s delay on error. Closes while the tab is away (see
+ * useTabAway): this stream carries ~500 symbols, the heaviest one we run.
  */
 export function useHeatmapStream(): HeatmapStreamState {
   const [prices, setPrices] = useState<Map<string, HeatmapPriceEntry>>(new Map());
@@ -22,8 +24,10 @@ export function useHeatmapStream(): HeatmapStreamState {
   const [connected, setConnected] = useState(false);
   const esRef = useRef<EventSource | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const away = useTabAway();
 
   useEffect(() => {
+    if (away) return;
     let cancelled = false;
 
     function connect() {
@@ -85,7 +89,7 @@ export function useHeatmapStream(): HeatmapStreamState {
       esRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [away]);
 
   return { prices, session, connected };
 }

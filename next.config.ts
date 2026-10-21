@@ -80,6 +80,65 @@ const nextConfig: NextConfig = {
       { source: '/leaderboard', destination: '/academy/leaderboard', permanent: true },
     ];
   },
+  // Security headers (OWASP recommended). Here rather than in middleware:
+  // they never vary per request, and Vercel applies config headers in its
+  // routing layer at no compute cost. Setting them in middleware ran an edge
+  // invocation on every API call just for this, 27% of the project's Fluid
+  // Active CPU (Sep 21 - Oct 21, 2026).
+  async headers() {
+    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+  },
 };
+
+// 'unsafe-eval' is dev-only (Turbopack/webpack HMR relies on eval() for
+// fast refresh) — production builds don't need it, and it fully defeats
+// CSP's main XSS mitigation, so it must never ship to real users.
+// PostHog's array.js loader lazy-loads its config plus recorder/surveys/
+// web-vitals sub-bundles from this asset host at init time regardless of
+// which features are actually enabled — same-origin script-src alone
+// blocks that fetch outright (not just the unused extras), so it needs an
+// explicit allowance rather than a client-side config flag.
+const scriptSrc = process.env.NODE_ENV === 'production'
+  ? "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://accounts.google.com/gsi/client"
+  : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://us-assets.i.posthog.com https://accounts.google.com/gsi/client";
+
+const csp = [
+  "default-src 'self'",
+  scriptSrc,
+  // app.termly.io: legal policy pages (/privacy, /terms, /accessibility —
+  // see components/legal/TermlyEmbed.tsx) render Termly's hosted policy
+  // viewer directly in an iframe, not their JS embed script — deliberately,
+  // since that script calls eval() internally and 'unsafe-eval' can't be
+  // scoped to one script's origin in CSP, so allowing it here would open
+  // eval-based XSS for every script on the page, not just Termly's. Only
+  // frame-src is needed for this approach; nothing loads from Termly via
+  // script-src. frame-src falls back to default-src ('self') when unset,
+  // which would otherwise block the iframe.
+  // accounts.google.com/gsi: Google One Tap (components/auth/GoogleOneTap.tsx)
+  // falls back to an iframe prompt and its own stylesheet where the browser
+  // has no FedCM (Safari, Firefox).
+  "frame-src https://app.termly.io https://accounts.google.com/gsi/",
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style", // Tailwind requires unsafe-inline
+  "img-src 'self' data: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https: wss:",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
+
+const SECURITY_HEADERS = [
+  { key: 'X-XSS-Protection', value: '1; mode=block' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()' },
+  // Isolates the browsing context from cross-origin popups/openers — required
+  // for window.crossOriginIsolated and blocks a class of cross-window attacks.
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+  { key: 'Content-Security-Policy', value: csp },
+  // Browsers ignore HSTS over plain http, so local dev is unaffected.
+  { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
+];
 
 export default nextConfig;

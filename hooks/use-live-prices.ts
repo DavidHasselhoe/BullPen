@@ -125,6 +125,53 @@ function release(key: string, listener: () => void): void {
 }
 
 /**
+ * A tab hidden for this long lets its streams go. Every open stream is a
+ * server function handling ticks and reconnecting every 290s, so a BullPen
+ * tab left in the background all day cost CPU and memory-hours for nobody
+ * (Vercel Hobby Fluid CPU over quota, 2026-10-21). Short enough to matter,
+ * long enough that a quick tab switch keeps the warm stream. Coming back
+ * reopens immediately, and the stream's first message per symbol refills
+ * the prices.
+ */
+const HIDDEN_RELEASE_MS = 30_000;
+
+let tabAway = false;
+let awayTimer: ReturnType<typeof setTimeout> | null = null;
+const visibilityListeners = new Set<() => void>();
+
+function onVisibilityChange(): void {
+  if (awayTimer) clearTimeout(awayTimer);
+  awayTimer = null;
+  if (document.visibilityState === 'hidden') {
+    awayTimer = setTimeout(() => {
+      tabAway = true;
+      for (const l of visibilityListeners) l();
+    }, HIDDEN_RELEASE_MS);
+  } else if (tabAway) {
+    tabAway = false;
+    for (const l of visibilityListeners) l();
+  }
+}
+
+function subscribeTabAway(listener: () => void): () => void {
+  if (visibilityListeners.size === 0) {
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    // A tab opened in the background never fires the event until shown.
+    if (document.visibilityState === 'hidden' && !awayTimer && !tabAway) onVisibilityChange();
+  }
+  visibilityListeners.add(listener);
+  return () => {
+    visibilityListeners.delete(listener);
+    if (visibilityListeners.size === 0) document.removeEventListener('visibilitychange', onVisibilityChange);
+  };
+}
+
+/** True once the tab has been hidden for HIDDEN_RELEASE_MS; streams close while it is. */
+export function useTabAway(): boolean {
+  return useSyncExternalStore(subscribeTabAway, () => tabAway, () => false);
+}
+
+/**
  * useSyncExternalStore rather than useState plus an effect: the channel map IS
  * an external store, and this is the primitive built for reading one. It also
  * avoids the cascading render that calling setState in an effect body causes,
@@ -132,8 +179,10 @@ function release(key: string, listener: () => void): void {
  * render instead of leaving it blank until the next tick.
  */
 export function useLivePrices(symbols: string[]): LivePriceMap {
-  // Stable key — avoids resubscribing on every render.
-  const symbolsKey = [...symbols].sort().join(',');
+  const away = useTabAway();
+  // Stable key — avoids resubscribing on every render. Empty while the tab is
+  // away, which releases the stream.
+  const symbolsKey = away ? '' : [...symbols].sort().join(',');
 
   const subscribe = useCallback(
     (onStoreChange: () => void) => {
