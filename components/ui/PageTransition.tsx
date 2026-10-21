@@ -18,10 +18,19 @@ import { useLayoutEffect, useRef, type ReactNode } from 'react';
 export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const ref = useRef<HTMLDivElement>(null);
+  const mounted = useRef(false);
 
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Not on the first mount: the server HTML already played the entrance.
+    // Replaying it at hydration faded the whole page back from opacity 0, and
+    // Chrome counts the largest paint at the second fade, ~5s on a mid-range
+    // phone (Lighthouse LCP render delay on /discover, 2026-10-21).
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
     el.classList.remove('page-enter');
     void el.offsetWidth; // reflow — without it the re-added class is a no-op
     el.classList.add('page-enter');
