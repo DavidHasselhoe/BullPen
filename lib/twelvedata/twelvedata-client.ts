@@ -8,6 +8,7 @@ import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 import { fetchNasdaqEarningsDay } from '@/lib/market-data/nasdaq-earnings-calendar';
 import { sessionDateET } from '@/lib/market-data/trading-day';
+import { strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
@@ -599,8 +600,12 @@ export async function getStockCandles(
   const c: number[] = [];
   const v: number[] = [];
   const session: Array<'pre' | 'regular' | 'post'> = [];
+  const stray = options?.extendedHours
+    ? strayExtendedPrints(values.map((vv) => vv.datetime), values.map((vv) => parseFloat(vv.close)))
+    : null;
 
-  for (const vv of values) {
+  for (const [i, vv] of values.entries()) {
+    if (stray?.has(i)) continue;
     t.push(etDatetimeToUnix(vv.datetime));
     o.push(parseFloat(vv.open));
     h.push(parseFloat(vv.high));

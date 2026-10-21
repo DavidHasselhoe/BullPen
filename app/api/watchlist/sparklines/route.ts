@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { batchFetch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { inferAssetType, has24hTrading } from '@/lib/assets/asset-type';
+import { strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
 
 /** 24h of 5-min bars: a full extended US session, or a day of crypto. Same 1 credit as a smaller request. */
 const BARS = 288;
@@ -54,6 +55,9 @@ async function handler(
       // TwelveData returns values in descending order; reverse to chronological.
       let bars = [...data.values].reverse();
       if (!has24hTrading(inferAssetType(sym))) {
+        // Stray after-hours prints read as a crash at the close of a "last session" line.
+        const stray = strayExtendedPrints(bars.map((v) => v.datetime), bars.map((v) => parseFloat(v.close)));
+        bars = bars.filter((_, i) => !stray.has(i));
         // Stocks. Datetimes are exchange-local, so the date prefix is the session
         // and the time suffix compares as a string ("09:30" is the open).
         // Pre-market trades are sparse (a 5-min bar only exists when something

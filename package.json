@@ -95,7 +95,8 @@
     "check-weekly-pick": "tsx scripts/check-weekly-pick.ts",
     "test-academy-option-order": "tsx scripts/test-academy-option-order.ts",
     "test-ai-referrer": "tsx scripts/test-ai-referrer.ts",
-    "test-fund-overlap": "tsx scripts/test-fund-overlap.ts"
+    "test-fund-overlap": "tsx scripts/test-fund-overlap.ts",
+    "test-extended-hours-spikes": "tsx scripts/test-extended-hours-spikes.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.135",
