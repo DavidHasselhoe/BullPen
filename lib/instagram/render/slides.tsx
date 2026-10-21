@@ -1212,18 +1212,21 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
    * secondaryMetricValue (free cash flow, or operating margin) is computed in
    * earnings-deep-dive.ts and was never rendered anywhere. It stands in when
    * gross margin is missing, so a company that reports one but not the other
-   * still fills the row.
+   * still fills the row. It also takes guidance's slot when the company gives
+   * no revenue range (Tesla), so its free cash flow isn't dropped.
    */
+  const hasMargin = data.grossMarginActualPercent != null;
   const secondRow = [
-    data.grossMarginActualPercent != null ? (
+    hasMargin ? (
       <MetricCell
         key="margin"
         label="Gross Margin"
         fromValue={data.grossMarginPriorQuarterPercent != null ? `Prior ${data.grossMarginPriorQuarterPercent.toFixed(1)}%` : null}
-        toValue={`${data.grossMarginActualPercent.toFixed(1)}%`}
+        toValue={`${(data.grossMarginActualPercent as number).toFixed(1)}%`}
         footnote={marginFootnote}
       />
-    ) : data.secondaryMetricValue != null && data.secondaryMetricLabel ? (
+    ) : null,
+    (!hasMargin || !hasGuidanceRange) && data.secondaryMetricValue != null && data.secondaryMetricLabel ? (
       <MetricCell
         key="secondary"
         label={data.secondaryMetricLabel}
