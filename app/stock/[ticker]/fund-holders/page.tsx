@@ -8,6 +8,8 @@ import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getTier, isPro } from '@/lib/billing/tier';
+import { PRICING } from '@/lib/billing/entitlements';
+import { shortFundName } from '@/lib/institutions/format';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 import { NotReported, StockSubpageShell, SubpageLoadError, subpageFormat } from '@/components/stock/StockSubpageShell';
 
@@ -76,35 +78,44 @@ export default async function StockFundHoldersPage({ params }: { params: Promise
   }
 
   const top = holders[0];
-  const next = top ? { href: `/discover/institutions/${top.fund.slug}`, label: t('stock:fundsNext', { fund: top.fund.name }) } : null;
+  const next = top ? { href: `/discover/institutions/${top.fund.slug}`, label: t('stock:fundsNext', { fund: shortFundName(top.fund.name) }) } : null;
   // Guests sign up first (a trial starts there); a free account goes to the plans.
   const proHref = userId ? '/upgrade?from=fund-holders' : `/register?redirect=${encodeURIComponent(`/stock/${ticker}/fund-holders`)}`;
 
   return (
-    <StockSubpageShell ticker={ticker} name={name} active="funds" available={available} next={next} signedIn={!!userId} t={t}>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{t('stock:fundsH1', { name })}</h1>
-
+    <StockSubpageShell
+      ticker={ticker}
+      name={name}
+      title={t('stock:fundsH1', { name })}
+      promise={t('stock:subpagePromiseFunds', { name })}
+      active="funds"
+      available={available}
+      next={next}
+      signedIn={!!userId}
+      t={t}
+    >
       {failed ? (
         <SubpageLoadError name={name} href={`/stock/${ticker}/fund-holders`} t={t} />
       ) : holders.length === 0 ? (
-        <p className="mt-3 text-base text-foreground">{t('stock:fundsNone', { name, count: fundCount })}</p>
+        <p className="text-base text-foreground">{t('stock:fundsNone', { name, count: fundCount })}</p>
       ) : (
         <>
-          <p className="mt-3 max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
+          <p className="max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
             {t('stock:fundsSummary', { held: holders.length, count: fundCount, name, quarter: latestQuarter ? f.longDate(latestQuarter) : '' })}
           </p>
           {popularity && <p className="mt-2 max-w-[65ch] text-pretty text-sm leading-relaxed text-muted-foreground">{popularity}</p>}
 
-          <h2 id="fund-list" className="mt-10 text-lg font-semibold text-foreground">{t('stock:fundsListHeading', { name })}</h2>
+          <h2 id="fund-list" className="mt-10 text-lg font-semibold text-foreground">{t('stock:fundsListHeading')}</h2>
           <p className="mt-1 max-w-[65ch] text-pretty text-xs leading-relaxed text-muted-foreground">{t('stock:fundsIntro')}</p>
 
           <ul aria-labelledby="fund-list" className="mt-3 divide-y divide-border/50 rounded-xl border">
             {holders.map((h, i) => (
-              // The whole row is the link's tap target (the name alone was 21px tall).
-              <li key={h.fund.slug} className="relative flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-3 transition-colors hover:bg-card/60">
+              // The whole row is the link's tap target (the name alone was 21px
+              // tall), so the focus ring goes round the row too.
+              <li key={h.fund.slug} className="relative flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-3 transition-colors hover:bg-card/60 has-[a:focus-visible]:outline-2 has-[a:focus-visible]:-outline-offset-2 has-[a:focus-visible]:outline-ring">
                 <div className="min-w-0">
-                  <Link href={`/discover/institutions/${h.fund.slug}`} className="font-medium text-foreground after:absolute after:inset-0">
-                    {h.fund.name}
+                  <Link href={`/discover/institutions/${h.fund.slug}`} className="font-medium text-foreground outline-none after:absolute after:inset-0">
+                    {shortFundName(h.fund.name)}
                   </Link>
                   {/* The quarter is in the summary; a fund still on an older filing says so. */}
                   {(h.fund.manager || h.periodOfReport !== latestQuarter) && (
@@ -113,7 +124,13 @@ export default async function StockFundHoldersPage({ params }: { params: Promise
                     </p>
                   )}
                 </div>
-                {(pro || i === 0) && (
+                {/* A locked row says so; a blank right side read as missing data. */}
+                {!pro && i > 0 ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Lock className="h-3 w-3" aria-hidden />
+                    {t('stock:fundsLockedValue')}
+                  </span>
+                ) : (
                   <div className="text-right">
                     <p className="font-mono text-sm tabular-nums text-foreground">{h.valueUsd ? f.usdCompact(h.valueUsd) : <NotReported t={t} />}</p>
                     {h.portfolioPct != null && (
@@ -133,7 +150,11 @@ export default async function StockFundHoldersPage({ params }: { params: Promise
               <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
               <span>
                 <span className="block text-sm font-medium text-foreground">{t('stock:fundsProTitle', { name })}</span>{' '}
-                <span className="block text-xs text-muted-foreground">{t('stock:fundsProBody')}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {t('stock:fundsProBody')}
+                  {/* Guests only: a signed-in free account may have used its trial already. */}
+                  {!userId && <> {t('stock:fundsProTrial', { days: PRICING.trialDays })}</>}
+                </span>
               </span>
             </Link>
           )}

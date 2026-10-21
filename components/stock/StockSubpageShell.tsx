@@ -2,8 +2,9 @@ import Link from 'next/link';
 import type { TFunction } from 'i18next';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
+import { getLastPrices } from '@/lib/market-data/last-price-cache';
 import { cn } from '@/lib/utils';
-import { SubpageTabs } from './SubpageTabs';
+import { SubpagePriceStrip, SubpageTabs } from './SubpageIslands';
 
 export type StockSubpage = 'dividends' | 'congress' | 'funds';
 
@@ -15,17 +16,21 @@ export interface SubpageNext {
 
 /**
  * Frame for the server-rendered stock subpages: back to the stock, tabs
- * between the subpages, and a closing next step. The tabs are plain links on
- * purpose: they are how a crawler (and a reader) gets from one ticker's page
- * to the next view of it. Only subpages with something on them get a tab
- * (`available`, from getSubpageCoverage), as on the stock page; unknown
- * coverage shows them all.
+ * between the subpages, the heading with the stock's price and Watch, and a
+ * closing next step. The tabs are plain links on purpose: they are how a
+ * crawler (and a reader) gets from one ticker's page to the next view of it.
+ * Only subpages with something on them get a tab (`available`, from
+ * getSubpageCoverage), as on the stock page; unknown coverage shows them all.
+ * `promise` is what watching this stock gets the reader, said in this page's
+ * terms; it must name a notification that really exists.
  */
-export function StockSubpageShell({
-  ticker, name, active, available, next, signedIn, t, children,
+export async function StockSubpageShell({
+  ticker, name, title, promise, active, available, next, signedIn, t, children,
 }: {
   ticker: string;
   name: string;
+  title: string;
+  promise: string;
   active: StockSubpage;
   available?: StockSubpage[] | null;
   next?: SubpageNext | null;
@@ -33,6 +38,7 @@ export function StockSubpageShell({
   t: TFunction;
   children: React.ReactNode;
 }) {
+  const seed = (await getLastPrices([ticker]).catch(() => null))?.get(ticker) ?? null;
   const tabs: Array<{ key: StockSubpage | 'overview'; href: string; label: string }> = [
     { key: 'overview', href: `/stock/${ticker}`, label: t('stock:subnavOverview') },
     { key: 'dividends', href: `/stock/${ticker}/dividends`, label: t('stock:subnavDividends') },
@@ -44,13 +50,15 @@ export function StockSubpageShell({
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* pb-32: room for the cookie banner, which sat over the closing card. */}
+      <main className="mx-auto max-w-3xl px-4 pb-32 pt-8 sm:px-6 lg:px-8">
         <Link
           href={`/stock/${ticker}`}
-          aria-label={t('stock:subpageBack', { name, ticker })}
           className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          {/* The visible text stays inside the accessible name, for voice control. */}
+          <span className="sr-only">{t('stock:subpageBackTo')} </span>
           {name} <span className="font-mono">{ticker}</span>
         </Link>
 
@@ -59,6 +67,9 @@ export function StockSubpageShell({
           tabs={shown.map((tab) => ({ href: tab.href, label: tab.label, current: tab.key === active }))}
         />
 
+        <h1 className="mt-8 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{title}</h1>
+        <SubpagePriceStrip ticker={ticker} name={name} seed={seed} promise={promise} />
+
         <div className="pt-8">{children}</div>
 
         {(next || !signedIn) && (
@@ -66,7 +77,8 @@ export function StockSubpageShell({
             {!signedIn && <p className="max-w-[65ch] text-pretty text-sm leading-relaxed text-muted-foreground">{t('stock:subpageAbout')}</p>}
             <div className={cn('flex flex-wrap items-center gap-x-5 gap-y-3', !signedIn && 'mt-4')}>
               {next && (
-                <Link href={next.href} className={cn(buttonVariants({ size: 'lg' }), 'min-h-11')}>
+                // Wraps: nowrap ran "See what 10 shares of Coca-Cola…" 48px past a phone's card.
+                <Link href={next.href} className={cn(buttonVariants({ size: 'lg' }), 'h-auto min-h-11 max-w-full whitespace-normal py-2.5 text-left')}>
                   {next.label}
                   <ArrowRight aria-hidden />
                 </Link>
@@ -77,7 +89,7 @@ export function StockSubpageShell({
                   // The secondary action beside a next step; the only one otherwise.
                   className={next
                     ? 'inline-flex min-h-11 items-center text-sm font-medium text-foreground underline underline-offset-4 hover:text-foreground/80'
-                    : cn(buttonVariants({ size: 'lg' }), 'min-h-11')}
+                    : cn(buttonVariants({ size: 'lg' }), 'h-auto min-h-11 max-w-full whitespace-normal py-2.5 text-left')}
                 >
                   {t('stock:subpageSignup')}
                 </Link>

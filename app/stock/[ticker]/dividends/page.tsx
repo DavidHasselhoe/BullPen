@@ -7,6 +7,7 @@ import type { DividendItem } from '@/lib/twelvedata/twelvedata-client';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 import { NotReported, StockSubpageShell, SubpageLoadError, subpageFormat } from '@/components/stock/StockSubpageShell';
+import { ExpandableTable } from '@/components/stock/SubpageIslands';
 
 /**
  * /stock/[ticker]/dividends: every dividend in the last ~6 years, totals by
@@ -119,26 +120,39 @@ export default async function StockDividendsPage({ params }: { params: Promise<{
   // column of dashes is dropped rather than shown.
   const hasPaid = sorted.some((d) => d.payment_date);
 
-  // The beginner's real question is "what would I get": the calculator,
-  // seeded with this stock (seeding never touches a saved portfolio).
+  // The page answers last year's "what would I get"; the calculator projects
+  // it forward, seeded with this stock (seeding never touches a saved portfolio).
   const seed = JSON.stringify([{ ticker, name, mode: 'shares', value: '10' }]);
   const next = latest ? { href: `/tools/dividend?seed=${encodeURIComponent(seed)}`, label: t('stock:dividendsNext', { name }) } : null;
 
   return (
-    <StockSubpageShell ticker={ticker} name={name} active="dividends" available={available} next={next} signedIn={!!userId} t={t}>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{t('stock:dividendsH1', { name })}</h1>
-
+    <StockSubpageShell
+      ticker={ticker}
+      name={name}
+      title={t('stock:dividendsH1', { name })}
+      promise={t('stock:subpagePromiseDividends', { name })}
+      active="dividends"
+      available={available}
+      next={next}
+      signedIn={!!userId}
+      t={t}
+    >
       {failed ? (
         <SubpageLoadError name={name} href={`/stock/${ticker}/dividends`} t={t} />
       ) : !latest ? (
-        <p className="mt-3 text-base text-foreground">{t('stock:dividendsNone', { name })}</p>
+        <p className="text-base text-foreground">
+          {t('stock:dividendsNone', { name })}{' '}
+          <Link href="/tools/screener?divYieldMin=2.5" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">{t('stock:dividendsFindPayers')}</Link>
+        </p>
       ) : (
         <>
-          <p className="mt-3 max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
+          <p className="max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
             {yieldPct
               ? t('stock:dividendsSummaryYield', { name, yield: f.pct(yieldPct) })
               : null}{' '}
             {t('stock:dividendsSummaryLatest', { amount: f.perShare(latest.amount), date: f.longDate(latest.ex_dividend_date) })}{' '}
+            {/* The beginner's question, answered on the page instead of in the calculator. */}
+            {last && lastYear !== partialOldest && <>{t('stock:dividendsTenShares', { amount: f.usd(last.total * 10), year: lastYear })}{' '}</>}
             <Link href="/glossary/dividend-yield" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">{t('stock:dividendsWhatIsYield')}</Link>
           </p>
           {facts.length > 0 && (
@@ -173,24 +187,27 @@ export default async function StockDividendsPage({ params }: { params: Promise<{
             <section>
               <h2 id="div-all" className="text-lg font-semibold text-foreground">{t('stock:dividendsAllHeading')}</h2>
               <p className="mt-1 text-xs text-muted-foreground">{t('stock:dividendsExDateHint')}</p>
-              <table aria-labelledby="div-all" className="mt-3 w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b text-xs text-muted-foreground">
-                    <th scope="col" className="py-2 font-medium">{t('stock:dividendsColExDate')}</th>
-                    <th scope="col" className="py-2 text-right font-medium">{t('stock:dividendsColAmount')}</th>
-                    {hasPaid && <th scope="col" className="py-2 text-right font-medium">{t('stock:dividendsColPaid')}</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sorted.map((d) => (
-                    <tr key={d.ex_dividend_date} className="border-b border-border/50">
-                      <th scope="row" className="py-2 font-normal text-foreground">{f.date(d.ex_dividend_date)}</th>
-                      <td className="py-2 text-right font-mono tabular-nums">{f.perShare(d.amount)}</td>
-                      {hasPaid && <td className="py-2 text-right text-muted-foreground">{d.payment_date ? f.date(d.payment_date) : <NotReported t={t} />}</td>}
+              <ExpandableTable
+                labelledBy="div-all"
+                className="mt-3 w-full text-left text-sm"
+                showAllLabel={t('stock:subpageShowAll', { count: sorted.length })}
+                head={
+                  <thead>
+                    <tr className="border-b text-xs text-muted-foreground">
+                      <th scope="col" className="py-2 font-medium">{t('stock:dividendsColExDate')}</th>
+                      <th scope="col" className="py-2 text-right font-medium">{t('stock:dividendsColAmount')}</th>
+                      {hasPaid && <th scope="col" className="py-2 text-right font-medium">{t('stock:dividendsColPaid')}</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                }
+                rows={sorted.map((d) => (
+                  <tr key={d.ex_dividend_date} className="border-b border-border/50">
+                    <th scope="row" className="py-2 font-normal text-foreground">{f.date(d.ex_dividend_date)}</th>
+                    <td className="py-2 text-right font-mono tabular-nums">{f.perShare(d.amount)}</td>
+                    {hasPaid && <td className="py-2 text-right text-muted-foreground">{d.payment_date ? f.date(d.payment_date) : <NotReported t={t} />}</td>}
+                  </tr>
+                ))}
+              />
             </section>
           </div>
         </>

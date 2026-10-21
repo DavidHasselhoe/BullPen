@@ -27,7 +27,10 @@ export async function generateMetadata({
     ? `Real-time price, financials, and AI-powered analysis for ${name} (${ticker}) on BullPen.`
     : `Real-time price, financials, and AI-powered analysis for ${ticker} on BullPen.`;
 
-  return { title, description, alternates: { canonical: `/stock/${ticker}` } };
+  // A plain string title here would stop the root "%s | BullPen" template at
+  // this segment, so the subpages (dividends, congress-trades, fund-holders)
+  // shipped without the brand; the template is restated for them.
+  return { title: { default: title, template: '%s | BullPen' }, description, alternates: { canonical: `/stock/${ticker}` } };
 }
 
 export default function StockLayout({ children }: { children: React.ReactNode }) {

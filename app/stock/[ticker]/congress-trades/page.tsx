@@ -6,7 +6,9 @@ import { getAvailableSubpages, getCongressTrades } from '@/lib/stock/subpage-dat
 import { positionLine } from '@/lib/congress/member-list';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { NotReported, StockSubpageShell, SubpageLoadError, subpageFormat } from '@/components/stock/StockSubpageShell';
+import { ExpandableTable } from '@/components/stock/SubpageIslands';
 
 /**
  * /stock/[ticker]/congress-trades: every trade in this stock that a member of
@@ -77,9 +79,9 @@ export default async function StockCongressTradesPage({ params }: { params: Prom
       date: f.longDate(latest.transactionDate!),
     }));
   }
-  const perMember = new Map<string, { name: string; n: number }>();
+  const perMember = new Map<string, { slug: string; name: string; n: number }>();
   for (const tr of trades) {
-    const m = perMember.get(tr.politician.slug) ?? { name: tr.politician.name, n: 0 };
+    const m = perMember.get(tr.politician.slug) ?? { slug: tr.politician.slug, name: tr.politician.name, n: 0 };
     perMember.set(tr.politician.slug, { ...m, n: m.n + 1 });
   }
   const [top, second] = [...perMember.values()].sort((a, b) => b.n - a.n);
@@ -87,22 +89,33 @@ export default async function StockCongressTradesPage({ params }: { params: Prom
   const recent = trades.filter((tr) => tr.transactionDate && tr.transactionDate >= yearAgo).length;
   facts.push(recent === 0 ? t('stock:congressRecentNone') : t('stock:congressRecent', { count: recent }));
 
-  const nextMember = latest?.politician ?? trades[0]?.politician;
-  const next = nextMember
-    ? { href: `/discover/politicians/${nextMember.slug}`, label: t('stock:congressNext', { member: nextMember.name }) }
+  // The member who traded it most (Pelosi on NVDA, 17 trades) is the one
+  // people look for, not whoever happened to trade last.
+  const next = top
+    ? { href: `/discover/politicians/${top.slug}`, label: t('stock:congressNext', { member: top.name }) }
     : null;
+  const daysToReport = (traded: string | null, reported: string | null) =>
+    traded && reported ? Math.round((Date.parse(reported) - Date.parse(traded)) / 86400_000) : null;
 
   return (
-    <StockSubpageShell ticker={ticker} name={name} active="congress" available={available} next={next} signedIn={!!userId} t={t}>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{t('stock:congressH1', { name })}</h1>
-
+    <StockSubpageShell
+      ticker={ticker}
+      name={name}
+      title={t('stock:congressH1', { name })}
+      promise={t('stock:subpagePromiseCongress', { name })}
+      active="congress"
+      available={available}
+      next={next}
+      signedIn={!!userId}
+      t={t}
+    >
       {failed ? (
         <SubpageLoadError name={name} href={`/stock/${ticker}/congress-trades`} t={t} />
       ) : trades.length === 0 ? (
-        <p className="mt-3 text-base text-foreground">{t('stock:congressNone', { name })}</p>
+        <p className="text-base text-foreground">{t('stock:congressNone', { name })}</p>
       ) : (
         <>
-          <p className="mt-3 max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
+          <p className="max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
             {t('stock:congressSummaryCounts', {
               trades: t('stock:congressTradeCount', { count: trades.length }),
               members: t('stock:congressMemberCount', { count: members.size }),
@@ -119,39 +132,54 @@ export default async function StockCongressTradesPage({ params }: { params: Prom
           {/* Below sm the dates fold under the member's name: a five-column
               table at 375px clipped the amounts mid-number. */}
           <div className="mt-3 overflow-x-auto">
-            <table aria-labelledby="congress-trades" className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b text-xs text-muted-foreground">
-                  <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColMember')}</th>
-                  <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColType')}</th>
-                  <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColAmount')}</th>
-                  <th scope="col" className="hidden py-2 pr-3 font-medium sm:table-cell">{t('stock:congressColTraded')}</th>
-                  <th scope="col" className="hidden py-2 font-medium sm:table-cell">{t('stock:congressColReported')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {trades.map((tr, i) => (
+            <ExpandableTable
+              labelledBy="congress-trades"
+              className="w-full text-left text-sm"
+              showAllLabel={t('stock:subpageShowAll', { count: trades.length })}
+              head={
+                <thead>
+                  <tr className="border-b text-xs text-muted-foreground">
+                    <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColMember')}</th>
+                    <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColType')}</th>
+                    <th scope="col" className="py-2 pr-3 font-medium">{t('stock:congressColAmount')}</th>
+                    <th scope="col" className="hidden py-2 pr-3 font-medium sm:table-cell">{t('stock:congressColTraded')}</th>
+                    <th scope="col" className="hidden py-2 font-medium sm:table-cell">{t('stock:congressColReported')}</th>
+                  </tr>
+                </thead>
+              }
+              rows={trades.map((tr, i) => {
+                const lag = daysToReport(tr.transactionDate, tr.disclosureDate);
+                return (
                   <tr key={`${tr.politician.slug}-${tr.transactionDate}-${i}`} className="border-b border-border/50 align-top">
                     <th scope="row" className="py-2.5 pr-3 font-normal">
                       <Link href={`/discover/politicians/${tr.politician.slug}`} className="font-medium text-foreground hover:underline">
                         {tr.politician.name}
                       </Link>
                       <span className="block text-xs text-muted-foreground">{position(tr.politician)}</span>
+                      {/* The reporting delay is the point of the Reported column; phones keep it. */}
                       {tr.transactionDate && (
                         <span className="block text-xs text-muted-foreground sm:hidden">
-                          {t('stock:congressTradedOn', { date: f.date(tr.transactionDate) })}
+                          {lag != null && lag > 0
+                            ? t('stock:congressTradedReported', { date: f.date(tr.transactionDate), count: lag })
+                            : t('stock:congressTradedOn', { date: f.date(tr.transactionDate) })}
                         </span>
                       )}
                     </th>
-                    {/* Words, not colour alone: buy and sell read the same to a colour-blind reader otherwise. */}
-                    <td className="py-2.5 pr-3 text-foreground">{typeLabel(tr.tradeType)}</td>
-                    <td className="py-2.5 pr-3 font-mono text-xs tabular-nums text-muted-foreground">{tr.amountRange ?? <NotReported t={t} />}</td>
+                    {/* Words plus a neutral arrow, not colour: a trade is not a gain or a loss. */}
+                    <td className="py-2.5 pr-3 text-foreground">
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                        {isBuy(tr.tradeType) && <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />}
+                        {isSell(tr.tradeType) && <ArrowDownRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />}
+                        {typeLabel(tr.tradeType)}
+                      </span>
+                    </td>
+                    <td className="py-2.5 pr-3 font-mono text-sm tabular-nums text-foreground">{tr.amountRange ?? <NotReported t={t} />}</td>
                     <td className="hidden whitespace-nowrap py-2.5 pr-3 text-muted-foreground sm:table-cell">{tr.transactionDate ? f.date(tr.transactionDate) : <NotReported t={t} />}</td>
                     <td className="hidden whitespace-nowrap py-2.5 text-muted-foreground sm:table-cell">{tr.disclosureDate ? f.date(tr.disclosureDate) : <NotReported t={t} />}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                );
+              })}
+            />
           </div>
         </>
       )}

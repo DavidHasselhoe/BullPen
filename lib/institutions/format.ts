@@ -17,3 +17,9 @@ export function fmtShares(n: number): string {
   if (abs >= 1e3) return `${(n / 1e3).toFixed(0)}K shares`;
   return `${n.toLocaleString('en-US', { maximumFractionDigits: 0 })} shares`;
 }
+
+/** "Berkshire Hathaway Inc" -> "Berkshire Hathaway": the SEC filer name
+ *  without its legal-form suffix, for prose and lists aimed at beginners. */
+export function shortFundName(name: string): string {
+  return name.replace(/,?\s+(Inc|LLC|L\.?P|Ltd|Corp)\.?$/i, '');
+}
