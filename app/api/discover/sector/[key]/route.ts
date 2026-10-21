@@ -19,6 +19,7 @@ import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getStockQuotes, withRateLimitRetry, TwelveDataRateLimitError, type StockQuote } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { getDisplayNames } from '@/lib/market-data/display-names';
+import { getLogoManifest, logoUrlFromManifest } from '@/lib/logos/logo-manifest';
 import { SECTOR_BY_KEY, STOCKS_PER_SECTOR, type TickerItem } from '@/lib/discover/discover-config';
 
 const CACHE_TTL_SECONDS = 5 * 60;
@@ -47,7 +48,7 @@ async function handler(_request: NextRequest, context: unknown): Promise<NextRes
     );
   }
 
-  const cacheKey = `discover:sector:${key}:v2`;
+  const cacheKey = `discover:sector:${key}:v3`;
   const cached = await rget<TickerItem[]>(cacheKey);
   if (cached) {
     return addSecurityHeaders(NextResponse.json({ success: true, key, items: cached, cached: true }));
@@ -57,7 +58,7 @@ async function handler(_request: NextRequest, context: unknown): Promise<NextRes
 
   try {
     const supabase = createServerClient();
-    const [logoRes, names, quotes] = await Promise.all([
+    const [logoRes, names, quotes, manifest] = await Promise.all([
       // `.returns<>()`: the generated Database type here is degraded, so an
       // untyped select infers its rows as `never`.
       supabase
@@ -69,6 +70,7 @@ async function handler(_request: NextRequest, context: unknown): Promise<NextRes
       // their name) and shouts the rest ("ELI LILLY & Co").
       getDisplayNames(tickers).catch(() => new Map<string, string>()),
       fetchQuotes(tickers),
+      getLogoManifest(),
     ]);
 
     const logos = new Map((logoRes.data ?? []).map((c) => [c.ticker, c.logo_url]));
@@ -80,7 +82,7 @@ async function handler(_request: NextRequest, context: unknown): Promise<NextRes
           symbol: ticker,
           ticker,
           name: names.get(ticker) ?? ticker,
-          logoUrl: logos.get(ticker) ?? null,
+          logoUrl: logos.get(ticker) || logoUrlFromManifest(manifest, ticker),
           sector: sector.label,
           previousClose: q && Number.isFinite(q.c) && q.c > 0 ? q.c : null,
           changePercent: q && Number.isFinite(q.dp) ? q.dp : null,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -104,9 +104,6 @@ interface Props {
  * ticker follows the link as usual.
  */
 export function TickerPreview({ ticker, className, children, card = false, 'aria-label': ariaLabel, onPointerEnter }: Props) {
-  const { t, i18n } = useTranslation('common');
-  const { t: tw } = useTranslation('watchlist');
-  const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   // Latches on first open so reopening the same card is instant, and so a
   // brief full of tickers fetches nothing until one is actually hovered.
@@ -134,57 +131,13 @@ export function TickerPreview({ ticker, className, children, card = false, 'aria
     timer.current = setTimeout(() => setOpen(false), CLOSE_DELAY_MS);
   }, [cancelTimer]);
 
-  const lang = i18n.language ?? 'en';
-
-  // 24h/48h per the profile row of CLAUDE.md's TanStack table — company
-  // metadata barely changes, and the route behind this is 10 TwelveData
-  // credits on a cache miss, so it must not refetch per mount or per focus.
-  const profileQuery = useQuery<PreviewProfile | null>({
-    queryKey: ['ticker-preview', ticker, lang],
-    queryFn: async () => {
-      const res = await fetch(`/api/stock/${encodeURIComponent(ticker)}/company-profile?lang=${lang}`);
-      if (!res.ok) return null;
-      const json = await res.json();
-      return json.success ? (json.profile as PreviewProfile) : null;
-    },
-    enabled: everOpened,
-    staleTime: 24 * 60 * 60 * 1000,
-    gcTime: 48 * 60 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
-
-  const quoteQuery = useQuery<PreviewQuote | null>({
-    queryKey: ['ticker-preview-quote', ticker],
-    queryFn: async () => {
-      const res = await fetch(`/api/stock/${encodeURIComponent(ticker)}/quote`);
-      if (!res.ok) return null;
-      const json = await res.json();
-      return json.success ? (json.quote as PreviewQuote) : null;
-    },
-    enabled: everOpened,
-    staleTime: 3 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
-
-  const profile = profileQuery.data;
-  const quote = quoteQuery.data;
-  // "Microsoft", not "Microsoft Corporation Common Stock"; the full name is on hover.
-  const name = displayCompanyName(profile?.name ?? ticker, ticker);
   const href = slugToAssetPath(ticker);
-
-  const membership = useListMembership(ticker, name);
-  const { lists, inLists, isWatched } = membership;
-  const { canCreateList } = useWatchlistLimits();
   // The lists open inside the card rather than as a dropdown: a dropdown
   // renders outside the card, and moving the pointer onto it would count as
-  // leaving the card and close it.
+  // leaving the card and close it. Held here so closing the card collapses them.
   const [listsOpen, setListsOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [paywallOpen, setPaywallOpen] = useState(false);
-  const hasLists = (lists?.length ?? 0) > 0;
 
   return (
-    <>
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setListsOpen(false); }}>
       <PopoverTrigger asChild>
         <Link
@@ -219,6 +172,80 @@ export function TickerPreview({ ticker, className, children, card = false, 'aria
         </Link>
       </PopoverTrigger>
 
+      {/* Everything behind the hover (two queries, the watchlist hooks, two
+          dialogs) mounts on first open. Rendered for every card, it was the
+          biggest part of Discover's hydration on a phone (2026-10-21). */}
+      {everOpened && (
+        <PreviewCard
+          ticker={ticker}
+          listsOpen={listsOpen}
+          setListsOpen={setListsOpen}
+          cancelTimer={cancelTimer}
+          closeSoon={closeSoon}
+        />
+      )}
+    </Popover>
+  );
+}
+
+interface PreviewCardProps {
+  ticker: string;
+  listsOpen: boolean;
+  setListsOpen: Dispatch<SetStateAction<boolean>>;
+  cancelTimer: () => void;
+  closeSoon: () => void;
+}
+
+function PreviewCard({ ticker, listsOpen, setListsOpen, cancelTimer, closeSoon }: PreviewCardProps) {
+  const { t, i18n } = useTranslation('common');
+  const { t: tw } = useTranslation('watchlist');
+  const { isAuthenticated } = useAuth();
+  const href = slugToAssetPath(ticker);
+
+  const lang = i18n.language ?? 'en';
+
+  // 24h/48h per the profile row of CLAUDE.md's TanStack table — company
+  // metadata barely changes, and the route behind this is 10 TwelveData
+  // credits on a cache miss, so it must not refetch per mount or per focus.
+  const profileQuery = useQuery<PreviewProfile | null>({
+    queryKey: ['ticker-preview', ticker, lang],
+    queryFn: async () => {
+      const res = await fetch(`/api/stock/${encodeURIComponent(ticker)}/company-profile?lang=${lang}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.success ? (json.profile as PreviewProfile) : null;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+    gcTime: 48 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const quoteQuery = useQuery<PreviewQuote | null>({
+    queryKey: ['ticker-preview-quote', ticker],
+    queryFn: async () => {
+      const res = await fetch(`/api/stock/${encodeURIComponent(ticker)}/quote`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.success ? (json.quote as PreviewQuote) : null;
+    },
+    staleTime: 3 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  const profile = profileQuery.data;
+  const quote = quoteQuery.data;
+  // "Microsoft", not "Microsoft Corporation Common Stock"; the full name is on hover.
+  const name = displayCompanyName(profile?.name ?? ticker, ticker);
+
+  const membership = useListMembership(ticker, name);
+  const { lists, inLists, isWatched } = membership;
+  const { canCreateList } = useWatchlistLimits();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const hasLists = (lists?.length ?? 0) > 0;
+
+  return (
+    <>
       <PopoverContent
         align="start"
         side="top"
@@ -347,7 +374,6 @@ export function TickerPreview({ ticker, className, children, card = false, 'aria
           </div>
         )}
       </PopoverContent>
-    </Popover>
 
     {/* Outside the card so they survive it closing when focus moves into the dialog. */}
     <CreateListDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={(id) => membership.addTo(id)} />

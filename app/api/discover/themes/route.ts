@@ -14,6 +14,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { addSecurityHeaders } from '@/lib/security/api-security';
 import { THEME_DISPLAY_ORDER } from '@/lib/discover/theme-config';
 import { scoreToGrade, type HealthGrade } from '@/lib/finance/health-score';
+import { getLogoManifest, logoUrlFromManifest } from '@/lib/logos/logo-manifest';
 
 /** Logos shown per card before the row starts truncating with a "+N companies" tail. */
 const LOGOS_PER_CARD = 5;
@@ -38,7 +39,7 @@ export async function GET(): Promise<NextResponse> {
   const allTickers = [...new Set(THEME_DISPLAY_ORDER.flatMap((t) => t.tickers))];
 
   const supabase = createServerClient();
-  const [{ data }, { data: healthRows }] = await Promise.all([
+  const [{ data }, { data: healthRows }, logos] = await Promise.all([
     supabase
       .from('companies')
       .select('ticker, name, logo_url')
@@ -49,6 +50,7 @@ export async function GET(): Promise<NextResponse> {
       .select('ticker, health_score')
       .in('ticker', allTickers)
       .returns<Array<{ ticker: string; health_score: number | null }>>(),
+    getLogoManifest(),
   ]);
 
   const meta = new Map<string, CompanyMeta>((data ?? []).map((c) => [c.ticker, { name: c.name, logo_url: c.logo_url }]));
@@ -68,7 +70,7 @@ export async function GET(): Promise<NextResponse> {
       logos: theme.tickers.slice(0, LOGOS_PER_CARD).map((ticker) => ({
         ticker,
         name: meta.get(ticker)?.name ?? ticker,
-        logoUrl: meta.get(ticker)?.logo_url ?? null,
+        logoUrl: meta.get(ticker)?.logo_url || logoUrlFromManifest(logos, ticker),
       })),
       avgHealth,
       avgHealthGrade: avgHealth != null ? scoreToGrade(avgHealth) : null,

@@ -23,6 +23,7 @@ import { getSectorPerformance } from '@/lib/discover/sector-performance';
 import { getMarketIndices } from '@/lib/discover/indices';
 import { getQualityAtDiscount, getFiftyTwoWeekExtremes } from '@/lib/discover/collections';
 import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
+import { getLogoManifest, logoUrlFromManifest } from '@/lib/logos/logo-manifest';
 import {
   SECTOR_DISPLAY_ORDER,
   TRENDING_FALLBACK,
@@ -46,7 +47,9 @@ async function fetchCompanyMeta(tickers: string[]): Promise<Map<string, CompanyM
   const supabase = createServerClient();
   // `companies` only holds a few dozen enriched tickers; the search catalogue
   // names every listed US stock and ETF, so it fills the rest.
-  const [{ data }, { data: indexRows }] = await Promise.all([
+  // The manifest gives a direct storage URL for tickers `companies` doesn't
+  // hold, so their logos skip the /api/logo redirect (~50 on Discover).
+  const [{ data }, { data: indexRows }, logos] = await Promise.all([
     supabase
       .from('companies')
       .select('ticker, name, logo_url')
@@ -57,16 +60,17 @@ async function fetchCompanyMeta(tickers: string[]): Promise<Map<string, CompanyM
       .select('ticker, name')
       .in('ticker', upper)
       .returns<Array<{ ticker: string; name: string }>>(),
+    getLogoManifest(),
   ]);
   // Some catalogue names carry the share class ("Microsoft Corporation Common Stock").
   const catalogueName = (n: string) => n.replace(/ Common Stock$/, '');
-  const meta = new Map<string, CompanyMeta>((indexRows ?? []).map((r) => [r.ticker, { name: catalogueName(r.name), logo_url: null }]));
+  const meta = new Map<string, CompanyMeta>((indexRows ?? []).map((r) => [r.ticker, { name: catalogueName(r.name), logo_url: logoUrlFromManifest(logos, r.ticker) }]));
   for (const c of data ?? []) {
     // 20 of the 39 `companies` names are SEC filing caps ("ORACLE CORP"), which
     // sat beside "Broadcom Inc." on the same row; the catalogue has them cased.
     const shouting = !!c.name && c.name === c.name.toUpperCase();
     const name = (shouting && meta.get(c.ticker)?.name) || c.name || meta.get(c.ticker)?.name || c.ticker;
-    meta.set(c.ticker, { name, logo_url: c.logo_url });
+    meta.set(c.ticker, { name, logo_url: c.logo_url || logoUrlFromManifest(logos, c.ticker) });
   }
   return meta;
 }
