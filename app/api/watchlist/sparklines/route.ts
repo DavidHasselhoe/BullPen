@@ -10,7 +10,7 @@ const BARS = 288;
 const MIN_TODAY_BARS = 12;
 
 interface TsValue { datetime: string; close: string }
-interface TsResponse { values?: TsValue[]; status?: string }
+interface TsResponse { meta?: { exchange_timezone?: string }; values?: TsValue[]; status?: string }
 
 async function handler(
   request: NextRequest,
@@ -56,7 +56,7 @@ async function handler(
       let bars = [...data.values].reverse();
       if (!has24hTrading(inferAssetType(sym))) {
         // Stray after-hours prints read as a crash at the close of a "last session" line.
-        const stray = strayExtendedPrints(bars.map((v) => v.datetime), bars.map((v) => parseFloat(v.close)));
+        const stray = strayExtendedPrints(bars.map((v) => v.datetime), bars.map((v) => parseFloat(v.close)), data.meta?.exchange_timezone);
         bars = bars.filter((_, i) => !stray.has(i));
         // Stocks. Datetimes are exchange-local, so the date prefix is the session
         // and the time suffix compares as a string ("09:30" is the open).

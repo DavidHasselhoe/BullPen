@@ -8,7 +8,7 @@ import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 import { fetchNasdaqEarningsDay } from '@/lib/market-data/nasdaq-earnings-calendar';
 import { sessionDateET } from '@/lib/market-data/trading-day';
-import { strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
+import { classifyTradingSession, strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
@@ -470,7 +470,7 @@ interface TwelveDataTimeSeriesValue {
 }
 
 interface TwelveDataTimeSeriesResponse {
-  meta?: { symbol: string };
+  meta?: { symbol: string; exchange_timezone?: string };
   values?: TwelveDataTimeSeriesValue[];
   status?: string;
   code?: number;
@@ -487,14 +487,6 @@ const RESOLUTION_MAP = {
   '30': '30min',
   '60': '1h',
 } as const;
-
-// TwelveData datetimes for US stocks are in ET ("2024-04-29 09:35:00")
-function classifyTradingSession(datetime: string): 'pre' | 'regular' | 'post' {
-  const hhmm = datetime.length >= 16 ? datetime.slice(11, 16) : '09:30';
-  if (hhmm < '09:30') return 'pre';
-  if (hhmm >= '16:00') return 'post';
-  return 'regular';
-}
 
 // Cache per date-string so we only call Intl once per trading day.
 const _etOffsetCache = new Map<string, number>();
@@ -601,7 +593,7 @@ export async function getStockCandles(
   const v: number[] = [];
   const session: Array<'pre' | 'regular' | 'post'> = [];
   const stray = options?.extendedHours
-    ? strayExtendedPrints(values.map((vv) => vv.datetime), values.map((vv) => parseFloat(vv.close)))
+    ? strayExtendedPrints(values.map((vv) => vv.datetime), values.map((vv) => parseFloat(vv.close)), data.meta?.exchange_timezone)
     : null;
 
   for (const [i, vv] of values.entries()) {

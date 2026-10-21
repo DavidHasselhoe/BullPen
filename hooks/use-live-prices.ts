@@ -62,6 +62,14 @@ const FLUSH_MS = 100;
 
 const channels = new Map<string, Channel>();
 
+/**
+ * Last prices of channels closed because the tab went away, so the stream that
+ * reopens on return starts from them instead of blank until its first flush.
+ * Only away-closes are kept, so this holds at most the streams that were open
+ * when the tab was hidden.
+ */
+const awaySnapshots = new Map<string, LivePriceMap>();
+
 /** Stable identity so an unsubscribed caller doesn't re-render on every pass. */
 const EMPTY: LivePriceMap = new Map();
 
@@ -78,10 +86,12 @@ function acquire(key: string, listener: () => void): Channel {
   }
 
   const es = new EventSource(`/api/market/prices/stream?symbols=${encodeURIComponent(key)}`);
-  const channel: Channel = { es, prices: new Map(), listeners: new Set([listener]), closeTimer: null, flushTimer: null };
+  const seed = awaySnapshots.get(key);
+  awaySnapshots.delete(key);
+  const channel: Channel = { es, prices: seed ?? new Map(), listeners: new Set([listener]), closeTimer: null, flushTimer: null };
   // Ticks land here first; `prices` (the published snapshot) is replaced from
   // it once per flush.
-  const latest: LivePriceMap = new Map();
+  const latest: LivePriceMap = new Map(seed);
 
   es.onmessage = (e) => {
     try {
@@ -117,6 +127,7 @@ function release(key: string, listener: () => void): void {
   channel.closeTimer = setTimeout(() => {
     // Re-check: a new subscriber may have arrived during the grace window.
     if (channel.listeners.size === 0) {
+      if (tabAway) awaySnapshots.set(key, channel.prices);
       channel.es.close();
       if (channel.flushTimer) clearTimeout(channel.flushTimer);
       channels.delete(key);
