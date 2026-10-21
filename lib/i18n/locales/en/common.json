@@ -30,5 +30,10 @@
   "experienceToggleFull": "Full",
   "experienceToggleSimpleTitle": "Plain-English labels and the key numbers",
   "experienceToggleFullTitle": "Full financial terms and every metric",
-  "experienceToggleAria": "Terminology"
+  "experienceToggleAria": "Terminology",
+  "cookieBannerLabel": "Cookie consent",
+  "cookieBannerText": "Cookies that keep you logged in, plus optional analytics if you accept.",
+  "cookieBannerLearnMore": "Learn more",
+  "cookieBannerNecessaryOnly": "Necessary only",
+  "cookieBannerAcceptAll": "Accept all"
 }

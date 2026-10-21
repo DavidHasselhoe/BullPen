@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ interface NotificationBellProps {
  * Bell icon with unread count badge, opens NotificationCenter on click
  */
 export function NotificationBell({ open, onOpenChange }: NotificationBellProps) {
+  const { t } = useTranslation('navigation');
   const { data: unreadCount = 0, isLoading } = useUnreadCount();
 
   return (
@@ -30,7 +32,7 @@ export function NotificationBell({ open, onOpenChange }: NotificationBellProps) 
             'relative transition-all hover:scale-105',
             open && 'bg-accent'
           )}
-          aria-label={unreadCount > 0 ? `Notifications (${unreadCount} new)` : 'Notifications'}
+          aria-label={unreadCount > 0 ? t('notifBellAriaLabelNew', { count: unreadCount }) : t('notifBellAriaLabel')}
         >
           <Bell className="h-5 w-5" />
           {!isLoading && unreadCount > 0 && (

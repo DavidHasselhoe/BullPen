@@ -30,5 +30,10 @@
   "experienceToggleFull": "フル",
   "experienceToggleSimpleTitle": "わかりやすい表示と重要な数字",
   "experienceToggleFullTitle": "すべての財務用語とメトリクス",
-  "experienceToggleAria": "用語"
+  "experienceToggleAria": "用語",
+  "cookieBannerLabel": "Cookieの同意",
+  "cookieBannerText": "ログイン状態を保つためのCookieと、同意いただいた場合のみ利用する任意の分析用Cookieを使用します。",
+  "cookieBannerLearnMore": "詳しく見る",
+  "cookieBannerNecessaryOnly": "必要なものだけ許可",
+  "cookieBannerAcceptAll": "すべて許可"
 }

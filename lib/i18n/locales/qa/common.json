@@ -30,5 +30,10 @@
   "experienceToggleFull": "«Fuull»",
   "experienceToggleSimpleTitle": "«Plaaiin-EEngliish laabeels aand thee keey nuumbeers»",
   "experienceToggleFullTitle": "«Fuull fiinaanciiaal teerms aand eeveery meetriic»",
-  "experienceToggleAria": "«Teermiinooloogy»"
+  "experienceToggleAria": "«Teermiinooloogy»",
+  "cookieBannerLabel": "«Cooookiiee coonseent»",
+  "cookieBannerText": "«Cooookiiees thaat keeeep yoouu looggeed iin, pluus ooptiioonaal aanaalytiics iif yoouu aacceept.»",
+  "cookieBannerLearnMore": "«Leeaarn mooree»",
+  "cookieBannerNecessaryOnly": "«Neeceessaary oonly»",
+  "cookieBannerAcceptAll": "«AAcceept aall»"
 }

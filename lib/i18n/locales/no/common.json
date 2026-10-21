@@ -26,9 +26,14 @@
   "authGateCreateAccount": "Opprett gratis konto",
   "exportGuestContext": "Eksport til CSV og PDF er en del av Pro: opprett en gratis konto, og prøv Pro gratis i {{trialDays}} dager.",
   "experienceToggleSimple": "Enkel",
+  "experienceToggleFull": "Fullstendig",
   "experienceToggleSimpleTitle": "Norsk-språklige etiketter og nøkkeltall",
   "experienceToggleFullTitle": "Fullstendige finansielle termer og alle metrikker",
   "experienceToggleAria": "Terminologi",
   "filter": "Filter",
-  "experienceToggleFull": "Fullstendig"
+  "cookieBannerLabel": "Informasjonskapsler",
+  "cookieBannerText": "Informasjonskapsler som holder deg innlogget, samt valgfrie analyseverktøy hvis du godtar.",
+  "cookieBannerLearnMore": "Les mer",
+  "cookieBannerNecessaryOnly": "Bare nødvendige",
+  "cookieBannerAcceptAll": "Godta alle"
 }

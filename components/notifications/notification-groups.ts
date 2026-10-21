@@ -8,11 +8,11 @@ export type NotificationCategory = 'stocks' | 'bull' | 'following' | 'academy';
  * from type names and sent Weekly Pick, Health Score, 13F and Washington
  * Trading, the most common notifications, to "Other".
  */
-export const NOTIFICATION_CATEGORIES: { id: NotificationCategory; label: string }[] = [
-  { id: 'stocks', label: 'Your stocks' },
-  { id: 'bull', label: 'From Bull' },
-  { id: 'following', label: 'Funds & Congress' },
-  { id: 'academy', label: 'Academy' },
+export const NOTIFICATION_CATEGORIES: { id: NotificationCategory; labelKey: string }[] = [
+  { id: 'stocks', labelKey: 'notifCategoryStocks' },
+  { id: 'bull', labelKey: 'notifCategoryBull' },
+  { id: 'following', labelKey: 'notifCategoryFollowing' },
+  { id: 'academy', labelKey: 'notifCategoryAcademy' },
 ];
 
 export function categoryOf(n: Notification): NotificationCategory | null {
@@ -42,7 +42,7 @@ export function categoryOf(n: Notification): NotificationCategory | null {
 /**
  * Today / Yesterday / This week / Earlier, on the device clock. A header per
  * calendar day put one above nearly every row, repeating the date each row
- * already shows.
+ * already shows. Returns `navigation` keys for the headers.
  */
 export function groupByRecency(notifications: Notification[]): [string, Notification[]][] {
   const today = new Date();
@@ -52,7 +52,7 @@ export function groupByRecency(notifications: Notification[]): [string, Notifica
     const day = new Date(n.created_at);
     day.setHours(0, 0, 0, 0);
     const daysAgo = Math.round((today.getTime() - day.getTime()) / 86_400_000);
-    const key = daysAgo <= 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : daysAgo < 7 ? 'This week' : 'Earlier';
+    const key = daysAgo <= 0 ? 'notifGroupToday' : daysAgo === 1 ? 'notifGroupYesterday' : daysAgo < 7 ? 'notifGroupThisWeek' : 'notifGroupEarlier';
     const group = groups.get(key);
     if (group) group.push(n);
     else groups.set(key, [n]);

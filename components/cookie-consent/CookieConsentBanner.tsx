@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { getStoredConsent, setStoredConsent, type CookieConsentValue } from '@/lib/cookie-consent/storage';
 
 const SHOW_DELAY_MS = 500;
 
 export function CookieConsentBanner() {
+  const { t } = useTranslation('common');
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export function CookieConsentBanner() {
     visible && (
         <div
           role="region"
-          aria-label="Cookie consent"
+          aria-label={t('cookieBannerLabel')}
           // CSS entrance, not framer-motion: this banner was the only thing on
           // every page that pulled in framer (~44KB gzipped) for one slide-in.
           // It leaves without an exit animation.
@@ -40,21 +42,21 @@ export function CookieConsentBanner() {
           className="animate-in fade-in zoom-in-95 slide-in-from-bottom-5 duration-300 ease-out motion-reduce:zoom-in-100 motion-reduce:slide-in-from-bottom-0 fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg max-sm:p-3"
         >
           <p className="text-sm text-foreground max-sm:text-xs">
-            {'🍪'} Cookies that keep you logged in, plus optional analytics if you accept.{' '}
+            {'🍪'} {t('cookieBannerText')}{' '}
             <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
-              Learn more
+              {t('cookieBannerLearnMore')}
             </Link>
           </p>
           <div className="mt-3 flex justify-end gap-2 max-sm:mt-2">
             <Button variant="outline" size="sm" onClick={() => dismiss('rejected')}>
-              Necessary only
+              {t('cookieBannerNecessaryOnly')}
             </Button>
             <Button
               size="sm"
               className="bg-emerald-500 text-white font-semibold hover:bg-emerald-600"
               onClick={() => dismiss('accepted')}
             >
-              Accept all
+              {t('cookieBannerAcceptAll')}
             </Button>
           </div>
         </div>

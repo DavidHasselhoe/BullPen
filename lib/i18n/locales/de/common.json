@@ -30,5 +30,10 @@
   "experienceToggleFull": "Vollständig",
   "experienceToggleSimpleTitle": "Einfache Beschriftungen und die wichtigsten Kennzahlen",
   "experienceToggleFullTitle": "Vollständige Finanzbegriffe und alle Metriken",
-  "experienceToggleAria": "Terminologie"
+  "experienceToggleAria": "Terminologie",
+  "cookieBannerLabel": "Cookie-Einwilligung",
+  "cookieBannerText": "Cookies, die dich eingeloggt halten, plus optionale Analyse-Cookies, wenn du zustimmst.",
+  "cookieBannerLearnMore": "Mehr erfahren",
+  "cookieBannerNecessaryOnly": "Nur notwendige",
+  "cookieBannerAcceptAll": "Alle akzeptieren"
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bell, Check, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,6 +16,7 @@ import { NOTIFICATION_CATEGORIES, categoryOf, groupByRecency, type NotificationC
 import { AuthGate } from '@/components/ui/AuthGate';
 
 export default function NotificationsPage() {
+  const { t } = useTranslation('navigation');
   const { hasAnimatedBackground } = useBackground();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { data: notifications, isLoading, isError, refetch, isRefetching } = useNotifications(200);
@@ -50,14 +52,14 @@ export default function NotificationsPage() {
 
   const openSettings = () => window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab: 'notifications' } }));
 
-  // The shared gate, like Holdings and Watchlist. (This page is untranslated.)
+  // The shared gate, like Holdings and Watchlist.
   if (!authLoading && !isAuthenticated) {
     return (
       <AuthGate
         source="notifications"
         icon={<Bell className="h-7 w-7" />}
-        title="Your alerts and updates, in one place"
-        description="Price alerts, earnings dates and big moves in the stocks you follow."
+        title={t('notifGateTitle')}
+        description={t('notifGateDescription')}
       />
     );
   }
@@ -70,14 +72,14 @@ export default function NotificationsPage() {
           className="group mb-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-0.5" />
-          Home
+          {t('navHome')}
         </Link>
 
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t('notifTitle')}</h1>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {isError ? ' ' : unreadCount > 0 ? `${unreadCount} unread` : 'You’re all caught up'}
+              {isError ? ' ' : unreadCount > 0 ? t('notifUnreadCount', { count: unreadCount }) : t('notifAllCaughtUp')}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
@@ -87,14 +89,14 @@ export default function NotificationsPage() {
                 size="sm"
                 onClick={() => markAllRead.mutate()}
                 disabled={markAllRead.isPending}
-                aria-label="Mark all read"
+                aria-label={t('notifMarkAllRead')}
                 className="h-9 gap-1.5"
               >
                 <Check className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Mark all read</span>
+                <span className="hidden sm:inline">{t('notifMarkAllRead')}</span>
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={openSettings} aria-label="Notification settings" title="Notification settings">
+            <Button variant="ghost" size="icon" onClick={openSettings} aria-label={t('notifSettingsLabel')} title={t('notifSettingsLabel')}>
               <Settings className="h-4 w-4" />
             </Button>
           </div>
@@ -102,12 +104,12 @@ export default function NotificationsPage() {
 
         {all.length > 0 && (
           <div className="scrollbar-hide -mx-1 mb-4 flex items-center gap-1.5 overflow-x-auto px-1 py-1.5">
-            <FilterChip label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
+            <FilterChip label={t('notifFilterAll')} active={filter === 'all'} onClick={() => setFilter('all')} />
             {categories.map((c) => (
-              <FilterChip key={c.id} label={c.label} active={filter === c.id} onClick={() => setFilter(c.id)} />
+              <FilterChip key={c.id} label={t(c.labelKey)} active={filter === c.id} onClick={() => setFilter(c.id)} />
             ))}
             <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-border" />
-            <FilterChip label="Unread" active={unreadOnly} onClick={() => setUnreadOnly((v) => !v)} />
+            <FilterChip label={t('notifFilterUnread')} active={unreadOnly} onClick={() => setUnreadOnly((v) => !v)} />
           </div>
         )}
 
@@ -131,10 +133,10 @@ export default function NotificationsPage() {
           <EmptyState
             text={
               all.length === 0
-                ? 'No notifications yet. Price alerts, earnings dates and big moves in your stocks will show up here.'
+                ? t('notifEmptyNone')
                 : unreadOnly && filter === 'all'
-                  ? 'Nothing unread. You’re all caught up.'
-                  : 'Nothing here with this filter.'
+                  ? t('notifEmptyUnread')
+                  : t('notifEmptyFilter')
             }
             illustration={all.length === 0 ? '/illustrations/bull-sleeping.webp' : '/illustrations/bull-shrug.webp'}
           />
@@ -143,7 +145,7 @@ export default function NotificationsPage() {
             {grouped.map(([label, items], gi) => (
               <section key={label} aria-labelledby={`notif-group-${gi}`} className={cn(gi > 0 && 'border-t')}>
                 <h2 id={`notif-group-${gi}`} className="px-4 pb-1 pt-4 text-xs font-medium text-muted-foreground">
-                  {label}
+                  {t(label)}
                 </h2>
                 <div className="divide-y divide-border/60">
                   {items.map((n) => (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { X, AlertTriangle, AlertCircle, Sparkles, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ interface NotificationToastProps {
  * Auto-dismisses after 6 seconds
  */
 export function NotificationToast({ notification, onDismiss }: NotificationToastProps) {
+  const { t } = useTranslation('navigation');
   const [isVisible, setIsVisible] = useState(true);
   const markRead = useMarkNotificationRead();
 
@@ -99,7 +101,7 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
           {linkUrl !== '/' && (
             <Link href={linkUrl} onClick={() => markRead.mutate(notification.id)}>
               <Button variant="ghost" size="sm" className="h-7 text-xs">
-                View
+                {t('notifView')}
               </Button>
             </Link>
           )}
@@ -107,6 +109,7 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            aria-label={t('notifDismiss')}
             onClick={() => {
               setIsVisible(false);
               setTimeout(() => onDismiss(notification.id), 300);

@@ -30,5 +30,10 @@
   "experienceToggleSimpleTitle": "Etiquetas en inglés simple y los números clave",
   "experienceToggleFullTitle": "Términos financieros completos y todas las métricas",
   "experienceToggleAria": "Terminología",
-  "error": "Error"
+  "error": "Error",
+  "cookieBannerLabel": "Consentimiento de cookies",
+  "cookieBannerText": "Cookies que te mantienen con la sesión iniciada, además de analítica opcional si la aceptas.",
+  "cookieBannerLearnMore": "Más información",
+  "cookieBannerNecessaryOnly": "Solo las necesarias",
+  "cookieBannerAcceptAll": "Aceptar todas"
 }

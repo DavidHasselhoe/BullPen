@@ -30,5 +30,10 @@
   "experienceToggleFull": "完整",
   "experienceToggleSimpleTitle": "通俗标签和关键数字",
   "experienceToggleFullTitle": "完整财务术语和所有指标",
-  "experienceToggleAria": "术语"
+  "experienceToggleAria": "术语",
+  "cookieBannerLabel": "Cookie 同意",
+  "cookieBannerText": "用于保持您登录状态的 Cookie，以及您同意后启用的可选分析 Cookie。",
+  "cookieBannerLearnMore": "了解更多",
+  "cookieBannerNecessaryOnly": "仅必要 Cookie",
+  "cookieBannerAcceptAll": "全部接受"
 }

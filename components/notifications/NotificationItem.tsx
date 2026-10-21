@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, CreditCard, GraduationCap, HeartPulse, Landmark, Star, Newspaper, Crown, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -9,10 +11,11 @@ import type { Notification } from '@/lib/notifications/notifications-db';
 import { useQuery } from '@tanstack/react-query';
 import { useClock } from '@/hooks/use-clock';
 import { fmtClockDate } from '@/lib/dates/clock';
+import { intlLocale } from '@/lib/i18n/intl-locale';
 import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
 import { ECONOMIC_KINDS, fmtReleaseTimeWithZone, type EconomicEvent } from '@/lib/market-data/economic-kinds';
 
-function formatRelativeTime(dateString: string): string {
+function formatRelativeTime(dateString: string, language: string): string {
   const date = new Date(dateString);
   const diffMs = Date.now() - date.getTime();
   const diffMin = Math.floor(diffMs / 60_000);
@@ -22,10 +25,14 @@ function formatRelativeTime(dateString: string): string {
   const day = new Date(date); day.setHours(0, 0, 0, 0);
   const diffDays = Math.round((today.getTime() - day.getTime()) / 86_400_000);
 
-  if (diffMin < 1) return 'just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  // Intl words it per language ("5h ago", "vor 5 Std.", "5 時間前"). Narrow only
+  // for English: Norwegian's narrow form is a bare "-5 t".
+  const locale = intlLocale(language);
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: locale === 'en-US' ? 'narrow' : 'short' });
+  if (diffMin < 1) return rtf.format(0, 'second');
+  if (diffMin < 60) return rtf.format(-diffMin, 'minute');
+  if (diffHr < 24) return rtf.format(-diffHr, 'hour');
+  if (diffDays < 7) return rtf.format(-diffDays, 'day');
   return fmtClockDate(date, { month: 'short', day: 'numeric' });
 }
 
@@ -162,47 +169,47 @@ function NotificationIcon({ n }: { n: Notification }) {
  */
 const INDEX_PAGE_LABELS: Record<string, string> = { sp500: 'S&P 500', nasdaq100: 'Nasdaq-100', dow30: 'Dow 30' };
 
-function notificationSource(n: Notification): { label: string; href: string } | null {
+function notificationSource(n: Notification, t: TFunction<'navigation'>): { label: string; href: string } | null {
   // ai_insight entity_id carries a "kind:value" prefix so these route
   // before falling into the generic stock/portfolio checks below.
   if (n.type === 'ai_insight' && n.entity_id?.endsWith(':deep_dive')) {
     const sym = n.entity_id.replace(/:deep_dive$/, '');
-    return { label: 'Deep Dive', href: `/tools/deep-dive/${sym}` };
+    return { label: t('notifSourceDeepDive'), href: `/tools/deep-dive/${sym}` };
   }
   if (n.type === 'ai_insight' && n.entity_id?.startsWith('portfolio_builder:')) {
     const id = n.entity_id.replace(/^portfolio_builder:/, '');
-    return { label: 'Portfolio Builder', href: `/tools/portfolio-builder?id=${id}` };
+    return { label: t('notifSourcePortfolioBuilder'), href: `/tools/portfolio-builder?id=${id}` };
   }
   if (n.type === 'ai_insight' && n.entity_id?.startsWith('risk_analysis:')) {
     const id = n.entity_id.replace(/^risk_analysis:/, '');
-    return { label: 'Risk Analysis', href: `/holdings?riskAnalysisId=${id}` };
+    return { label: t('notifSourceRiskAnalysis'), href: `/holdings?riskAnalysisId=${id}` };
   }
   if (n.type === 'weekly_pick' && n.entity_id?.startsWith('weekly_pick:')) {
     const date = n.entity_id.replace(/^weekly_pick:/, '');
-    return { label: "Bull's Pick", href: `/picks/${date}` };
+    return { label: t('notifSourceWeeklyPick'), href: `/picks/${date}` };
   }
   if (n.type === 'daily_brief') {
-    return { label: 'Daily Brief', href: '/dashboard' };
+    return { label: t('notifSourceDailyBrief'), href: '/dashboard' };
   }
   if (n.type === 'referral') {
-    return { label: 'Your Pro perks', href: '/upgrade' };
+    return { label: t('notifSourceProPerks'), href: '/upgrade' };
   }
   if (n.type === 'billing') {
-    return { label: 'Billing', href: '/upgrade' };
+    return { label: t('notifSourceBilling'), href: '/upgrade' };
   }
   // entity_id is "institution:<slug>:<accession>" — the slug is the route.
   if (n.type === 'institution_filing' && n.entity_id?.startsWith('institution:')) {
     const slug = n.entity_id.split(':')[1];
-    if (slug) return { label: '13F holdings', href: `/discover/institutions/${slug}` };
+    if (slug) return { label: t('notifSource13f'), href: `/discover/institutions/${slug}` };
   }
   // Pro holdings/watchlist summary, not tied to one member.
   if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician-holdings:')) {
-    return { label: 'Washington Trading', href: '/discover/politicians' };
+    return { label: t('notifSourceWashington'), href: '/discover/politicians' };
   }
   // entity_id is "politician:<slug>:<newest dc_trade_id>".
   if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician:')) {
     const slug = n.entity_id.split(':')[1];
-    if (slug) return { label: 'Washington Trading', href: `/discover/politicians/${slug}` };
+    if (slug) return { label: t('notifSourceWashington'), href: `/discover/politicians/${slug}` };
   }
 
   // entity_id is "index-fund:<index>:<detected_on>": what a fund the user holds now owns.
@@ -220,14 +227,14 @@ function notificationSource(n: Notification): { label: string; href: string } | 
   // written before 2026-10-19); several go to the calendar.
   if ((n.type === 'earnings' || n.type === 'dividend') && et === 'portfolio') {
     const one = leadingTicker(n.title) ?? (/^[A-Z]{1,6}$/.test(n.message?.trim() ?? '') ? n.message.trim() : null);
-    return one ? { label: one, href: `/stock/${one}` } : { label: 'Market Calendar', href: '/tools/calendar' };
+    return one ? { label: one, href: `/stock/${one}` } : { label: t('notifSourceCalendar'), href: '/tools/calendar' };
   }
   const sym = et === 'stock' && n.entity_id ? n.entity_id.replace(/:.*$/, '') : null;
-  if (et === 'portfolio') return { label: 'My holdings', href: '/holdings' };
-  if (et === 'user_alert') return { label: 'Price alerts', href: '/tools/alerts' };
+  if (et === 'portfolio') return { label: t('notifSourceHoldings'), href: '/holdings' };
+  if (et === 'user_alert') return { label: t('notifSourcePriceAlerts'), href: '/tools/alerts' };
   if (n.type === 'academy') {
     const course = n.entity_id?.match(/^academy:new_course:(.+)$/)?.[1];
-    return { label: 'Academy', href: course ? `/academy/${course}` : '/academy' };
+    return { label: t('notifSourceAcademy'), href: course ? `/academy/${course}` : '/academy' };
   }
   if (sym) return { label: sym, href: `/stock/${sym}` };
   return null;
@@ -246,6 +253,7 @@ interface NotificationItemProps {
  */
 function EconomicNotification({ notification, date, onRead }: { notification: Notification; date: string; onRead: () => void }) {
   useClock(); // re-render when the time zone or 12/24h clock changes
+  const { t, i18n } = useTranslation('navigation');
   // Same picks the cron used to decide this user gets notified.
   const { prefs } = useCalendarPrefs();
   const { data: events } = useQuery<EconomicEvent[]>({
@@ -274,7 +282,7 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
             {notification.title}
             {!notification.is_read && <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary align-middle" />}
           </p>
-          <span className="shrink-0 pt-px text-xs tabular-nums text-muted-foreground">{formatRelativeTime(notification.created_at)}</span>
+          <span className="shrink-0 pt-px text-xs tabular-nums text-muted-foreground">{formatRelativeTime(notification.created_at, i18n.language)}</span>
         </div>
         {events && events.some((e) => prefs.economicKinds.includes(e.kind)) ? (
           <ul className="space-y-0.5">
@@ -289,7 +297,7 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
                   <span className="tabular-nums">{fmtReleaseTimeWithZone(e.release_at)}</span>
                   {meta.watchUrl && (
                     <a href={meta.watchUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground/85 hover:text-primary">
-                      · Watch live
+                      · {t('notifWatchLive')}
                     </a>
                   )}
                 </li>
@@ -303,7 +311,7 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
           href={`/tools/calendar?view=week&date=${date}`}
           className="inline-flex items-center gap-0.5 pt-0.5 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
-          Market Calendar
+          {t('notifSourceCalendar')}
           <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
@@ -326,7 +334,8 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
 }
 
 function StandardNotificationItem({ notification, onMarkRead }: NotificationItemProps) {
-  const source = notificationSource(notification);
+  const { t, i18n } = useTranslation('navigation');
+  const source = notificationSource(notification, t);
   const unread = !notification.is_read;
   const handleClick = () => {
     if (unread) onMarkRead(notification.id);
@@ -338,7 +347,7 @@ function StandardNotificationItem({ notification, onMarkRead }: NotificationItem
   const stretch = 'text-left after:absolute after:inset-0 after:content-[""] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring';
   const title = (
     <>
-      {unread && <span className="sr-only">Unread: </span>}
+      {unread && <span className="sr-only">{t('notifUnreadPrefix')} </span>}
       {notification.title}
     </>
   );
@@ -363,7 +372,7 @@ function StandardNotificationItem({ notification, onMarkRead }: NotificationItem
             {unread && <span aria-hidden className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-primary align-middle" />}
           </p>
           <span className="shrink-0 pt-px text-xs tabular-nums text-muted-foreground">
-            {formatRelativeTime(notification.created_at)}
+            {formatRelativeTime(notification.created_at, i18n.language)}
           </span>
         </div>
         {notification.message && (

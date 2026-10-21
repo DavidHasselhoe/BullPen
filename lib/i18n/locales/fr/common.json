@@ -26,9 +26,14 @@
   "authGateSignIn": "Se connecter",
   "authGateCreateAccount": "Créer un compte gratuit",
   "exportGuestContext": "L'export en CSV et PDF fait partie de Pro : créez un compte gratuit, puis essayez Pro gratuitement pendant {{trialDays}} jours.",
+  "experienceToggleSimple": "Simplifié",
   "experienceToggleFull": "Complet",
   "experienceToggleSimpleTitle": "Étiquettes en langage clair et les chiffres clés",
   "experienceToggleFullTitle": "Termes financiers complets et chaque métrique",
   "experienceToggleAria": "Terminologie",
-  "experienceToggleSimple": "Simplifié"
+  "cookieBannerLabel": "Consentement aux cookies",
+  "cookieBannerText": "Des cookies qui vous maintiennent connecté, ainsi que des statistiques facultatives si vous les acceptez.",
+  "cookieBannerLearnMore": "En savoir plus",
+  "cookieBannerNecessaryOnly": "Nécessaires uniquement",
+  "cookieBannerAcceptAll": "Tout accepter"
 }
