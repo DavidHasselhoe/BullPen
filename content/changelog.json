@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-10-21",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Discover opens much faster, especially on phones. Market moves, sectors and investing ideas are on screen right away instead of after a loading wait"
+      },
+      {
+        "type": "improved",
+        "text": "The whole app loads less up front, so pages respond sooner on slower phones"
+      },
+      {
+        "type": "improved",
+        "text": "Each stock's Dividends, Congress trades and Fund holders pages lead with the answer, show the price with a Watch button, and keep long tables short with a Show all option"
+      },
+      {
+        "type": "new",
+        "text": "The largest fund that owns a stock is now free to see on its Fund holders page"
+      },
+      {
+        "type": "improved",
+        "text": "Notifications and the cookie banner now appear in your language"
+      },
+      {
+        "type": "fixed",
+        "text": "If a stock's dividend, Congress or fund data can't load, the page now says so and lets you try again, instead of saying there is none"
+      },
+      {
+        "type": "fixed",
+        "text": "Price charts no longer show sudden after-hours drops or spikes caused by bad trades in the price feed"
+      }
+    ]
+  },
+  {
     "date": "2026-10-20",
     "entries": [
       {
