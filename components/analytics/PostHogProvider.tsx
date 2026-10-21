@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import posthog from 'posthog-js';
+import type { PostHog } from 'posthog-js';
+import { loadPostHog, loadedPostHog } from '@/lib/analytics/track';
 import { getStoredConsent, COOKIE_CONSENT_CHANGE_EVENT, type CookieConsentValue } from '@/lib/cookie-consent/storage';
 import { aiSource } from '@/lib/analytics/ai-referrer';
 
@@ -13,7 +14,7 @@ function currentUrl(pathname: string, search: string): string {
   return search ? `${pathname}?${search}` : pathname;
 }
 
-function initPostHog() {
+function initPostHog(posthog: PostHog) {
   if (!POSTHOG_KEY || posthog.__loaded) return;
   posthog.init(POSTHOG_KEY, {
     api_host: POSTHOG_HOST,
@@ -73,7 +74,7 @@ function PostHogInner() {
   // so this only fires for real navigations once already loaded.
   useEffect(() => {
     urlRef.current = currentUrl(pathname ?? '/', searchParams.toString());
-    if (posthog.__loaded) posthog.capture('$pageview', { $current_url: urlRef.current });
+    loadedPostHog()?.capture('$pageview', { $current_url: urlRef.current });
   }, [pathname, searchParams]);
 
   // Consent gating. Mount-once: checks existing consent and listens for the
@@ -82,22 +83,21 @@ function PostHogInner() {
   useEffect(() => {
     if (!POSTHOG_KEY) return;
 
-    const captureCurrent = () => posthog.capture('$pageview', { $current_url: urlRef.current });
+    // posthog-js is only downloaded here, once consent is on file (see
+    // lib/analytics/track.ts): before 2026-10-21 every visitor paid for it.
+    const start = () =>
+      loadPostHog().then((posthog) => {
+        const wasLoaded = posthog.__loaded;
+        initPostHog(posthog);
+        if (!wasLoaded) posthog.capture('$pageview', { $current_url: urlRef.current });
+      });
 
-    if (getStoredConsent() === 'accepted') {
-      initPostHog();
-      captureCurrent();
-    }
+    if (getStoredConsent() === 'accepted') void start();
 
     const onConsentChange = (e: Event) => {
       const value = (e as CustomEvent<CookieConsentValue>).detail;
-      if (value === 'accepted') {
-        const wasLoaded = posthog.__loaded;
-        initPostHog();
-        if (!wasLoaded) captureCurrent();
-      } else if (value === 'rejected' && posthog.__loaded) {
-        posthog.opt_out_capturing();
-      }
+      if (value === 'accepted') void start();
+      else if (value === 'rejected') loadedPostHog()?.opt_out_capturing();
     };
 
     window.addEventListener(COOKIE_CONSENT_CHANGE_EVENT, onConsentChange);

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { getStoredConsent, setStoredConsent, type CookieConsentValue } from '@/lib/cookie-consent/storage';
 
@@ -10,7 +9,6 @@ const SHOW_DELAY_MS = 500;
 
 export function CookieConsentBanner() {
   const [visible, setVisible] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (getStoredConsent()) return;
@@ -24,19 +22,13 @@ export function CookieConsentBanner() {
   };
 
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
+    visible && (
+        <div
           role="region"
           aria-label="Cookie consent"
-          initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 20 }}
-          animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-          exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 20 }}
-          transition={
-            prefersReducedMotion
-              ? { duration: 0.2 }
-              : { type: 'spring', stiffness: 300, damping: 20 }
-          }
+          // CSS entrance, not framer-motion: this banner was the only thing on
+          // every page that pulled in framer (~44KB gzipped) for one slide-in.
+          // It leaves without an exit animation.
           // left-4/bottom-5, matching NotificationToast's positioning (see
           // components/notifications/NotificationToast.tsx) — keeps clear of
           // the bottom-right "Ask Bull" toggle, with the same mobile tab-bar
@@ -45,7 +37,7 @@ export function CookieConsentBanner() {
           // so it painted "Ask Bull" across Accept all) until a choice is made.
           // Phones get a compact banner sitting just above the tab bar: the full
           // one covered the first screen's main button (the trial CTA on /upgrade).
-          className="fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg max-sm:p-3"
+          className="animate-in fade-in zoom-in-95 slide-in-from-bottom-5 duration-300 ease-out motion-reduce:zoom-in-100 motion-reduce:slide-in-from-bottom-0 fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg max-sm:p-3"
         >
           <p className="text-sm text-foreground max-sm:text-xs">
             {'🍪'} Cookies that keep you logged in, plus optional analytics if you accept.{' '}
@@ -65,8 +57,7 @@ export function CookieConsentBanner() {
               Accept all
             </Button>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
+    )
   );
 }

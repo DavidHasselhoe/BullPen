@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { lazy, Suspense, useState, useCallback, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Settings, Wrench, ChevronDown, Users, Pin } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { SettingsModal } from '@/components/user/SettingsModal';
+import type { SettingsModal as SettingsModalType } from '@/components/user/SettingsModal';
 import { useCommandPalette } from '@/components/command-palette/CommandPaletteProvider';
 import { useSearchShortcut } from '@/hooks/use-search-shortcut';
 import {
@@ -26,6 +26,8 @@ import { PinnedTickersPanel } from './PinnedTickersPanel';
 import { TOOLS } from '@/lib/tools/tools-config';
 import { getNavItems, COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
 
+const SettingsModal = lazy(() => import('@/components/user/SettingsModal').then((m) => ({ default: m.SettingsModal })));
+
 export function Navigation() {
   const { t } = useTranslation('navigation');
   // Optimistic-guest default (matches UserMenu's own isAuthenticated branch):
@@ -38,14 +40,23 @@ export function Navigation() {
   const searchShortcut = useSearchShortcut();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<string | undefined>(undefined);
+  // The settings modal (1,200 lines plus the layout editor, chart prefs and a
+  // ticker search) loads on first open, not on every page. Kept mounted after
+  // that so it still animates closed.
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const openSettings = (tab?: string) => {
+    setActiveSettingsTab(tab);
+    setSettingsLoaded(true);
+    setSettingsOpen(true);
+  };
   // Mutually exclusive with the notification and user-account popovers below —
   // opening one closes the others instead of letting them overlap in the corner.
   const [activeMenu, setActiveMenu] = useState<'pinned' | 'notifications' | 'user' | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
-      const tab = (e as CustomEvent).detail?.tab as string | undefined;
-      setActiveSettingsTab(tab);
+      setActiveSettingsTab((e as CustomEvent).detail?.tab as string | undefined);
+      setSettingsLoaded(true);
       setSettingsOpen(true);
     };
     window.addEventListener('settings:open', handler);
@@ -308,7 +319,7 @@ export function Navigation() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setSettingsOpen(true)}
+                  onClick={() => openSettings()}
                   className="transition-all hover:scale-105"
                   aria-label={t('navOpenSettingsAriaLabel')}
                 >
@@ -327,14 +338,18 @@ export function Navigation() {
           </div>
         </div>
       </header>
-      <SettingsModal
-        open={settingsOpen}
-        onOpenChange={(val) => {
-          setSettingsOpen(val);
-          if (!val) setActiveSettingsTab(undefined);
-        }}
-        initialTab={activeSettingsTab as Parameters<typeof SettingsModal>[0]['initialTab']}
-      />
+      {settingsLoaded && (
+        <Suspense fallback={null}>
+          <SettingsModal
+            open={settingsOpen}
+            onOpenChange={(val) => {
+              setSettingsOpen(val);
+              if (!val) setActiveSettingsTab(undefined);
+            }}
+            initialTab={activeSettingsTab as Parameters<typeof SettingsModalType>[0]['initialTab']}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

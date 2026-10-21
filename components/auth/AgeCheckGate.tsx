@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -17,6 +16,11 @@ import {
   minAllowedDobValue,
   rememberAgeGateFailure,
 } from '@/lib/auth/age-gate';
+
+// Loaded only when the dialog shows (an account with no date of birth): the
+// picker brings react-day-picker and date-fns, and this gate is mounted on
+// every page for every visitor. Nothing else about the gate changes.
+const DatePicker = lazy(() => import('@/components/ui/date-picker').then((m) => ({ default: m.DatePicker })));
 
 /**
  * The half of the age gate that the signup form can't cover.
@@ -106,6 +110,7 @@ export function AgeCheckGate() {
           <Label htmlFor="age-check-dob" className="text-sm font-medium">
             {t('signupDobLabel')}
           </Label>
+          <Suspense fallback={<div className="h-11 rounded-md border border-input" aria-hidden />}>
           <DatePicker
             id="age-check-dob"
             value={dob}
@@ -118,6 +123,7 @@ export function AgeCheckGate() {
             aria-invalid={!!error}
             aria-describedby={error ? 'age-check-error' : undefined}
           />
+          </Suspense>
           {error && (
             <p id="age-check-error" role="alert" className="text-xs text-destructive">
               {error}
