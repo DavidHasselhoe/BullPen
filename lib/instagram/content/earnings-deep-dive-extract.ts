@@ -43,6 +43,7 @@ const ExtractedSchema = z.object({
   fiscalPeriodLabel: z.string().nullable(),
   epsActualGaap: z.number().nullable(),
   epsActualNonGaap: z.number().nullable(),
+  epsAdjustmentNote: z.string().nullable(),
   revenueActual: z.number().nullable(), // dollars
   revenueYoyGrowthPercent: z.number().nullable(),
   segmentRevenueActual: z.number().nullable(), // dollars, only if a segment label was given
@@ -65,6 +66,7 @@ Rules:
 - Dollar figures are plain numbers in dollars, not abbreviated strings (e.g. 46743000000 for "$46.7 billion" or "$46,743 million").
 - EPS and percentages are plain numbers (e.g. 1.05, 72.4). A negative EPS (loss) is a negative number.
 - "GAAP" and "non-GAAP" (sometimes called "adjusted") are usually both reported side by side for EPS and gross margin — extract both. If the release reports only one basis, put that number in the GAAP field and leave the non-GAAP field null.
+- Exception: when the release itself states what EPS would have been excluding a one-time item (e.g. "excluding this charge, diluted EPS would have been $7.40"), put that stated figure in epsActualNonGaap, even if the release calls nothing "non-GAAP". Only use a figure the release states; never subtract a charge yourself. Then set epsAdjustmentNote to a short plain phrase naming what it excludes and its GAAP EPS, e.g. "excludes a $9.89 billion one-time legal charge; GAAP EPS was $3.83". Otherwise epsAdjustmentNote is null.
 - ${segmentLabel ? `Extract revenue specifically for the "${segmentLabel}" segment/business line if the release breaks it out by that name (or an obvious equivalent).` : 'No specific segment was requested — leave segmentRevenueActual and segmentYoyGrowthPercent null.'}
 - "freeCashFlow" is operating cash flow minus capital expenditures, only if the release states a free cash flow figure directly (or explicitly labels one line "free cash flow") — do not compute it yourself from separate operating cash flow and capex lines unless the release places them adjacent specifically to state free cash flow.
 - Guidance figures are for the NEXT quarter (the quarter after the one just reported), not the quarter just reported.
@@ -72,7 +74,7 @@ Rules:
 - fiscalPeriodLabel: which fiscal period this release reports, exactly as the company itself states it (nearly always right in the headline/title, e.g. "NVIDIA Announces Financial Results for Second Quarter Fiscal 2026" or "Reports Q2 FY26 Results"). Normalize to a short "Q<n> FY<yyyy>" form (e.g. "Q2 FY2026") when the release names a specific quarter; use "FY<yyyy>" alone (e.g. "FY2026") when it's a full fiscal-year report with no quarter named (e.g. "IREN Reports FY26 Results"). Expand a 2-digit fiscal year to 4 digits. This is the company's OWN fiscal calendar, which for many companies does not match the calendar year — never compute or guess it from the filing date, only from what the release itself states.
 
 Output ONLY a JSON object with exactly these fields, no markdown fences, no commentary:
-{"companyName": string|null, "fiscalPeriodLabel": string|null, "epsActualGaap": number|null, "epsActualNonGaap": number|null, "revenueActual": number|null, "revenueYoyGrowthPercent": number|null, "segmentRevenueActual": number|null, "segmentYoyGrowthPercent": number|null, "grossMarginActualGaapPercent": number|null, "grossMarginActualNonGaapPercent": number|null, "operatingMarginNonGaapPercent": number|null, "freeCashFlow": number|null, "guidanceRevenueLow": number|null, "guidanceRevenueHigh": number|null, "reportTiming": "BMO"|"AMC"|null}`;
+{"companyName": string|null, "fiscalPeriodLabel": string|null, "epsActualGaap": number|null, "epsActualNonGaap": number|null, "epsAdjustmentNote": string|null, "revenueActual": number|null, "revenueYoyGrowthPercent": number|null, "segmentRevenueActual": number|null, "segmentYoyGrowthPercent": number|null, "grossMarginActualGaapPercent": number|null, "grossMarginActualNonGaapPercent": number|null, "operatingMarginNonGaapPercent": number|null, "freeCashFlow": number|null, "guidanceRevenueLow": number|null, "guidanceRevenueHigh": number|null, "reportTiming": "BMO"|"AMC"|null}`;
 }
 
 /**

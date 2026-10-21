@@ -186,6 +186,10 @@ export interface EarningsDeepDiveData {
   epsActual: number | null;
   epsStatus: 'beat' | 'missed' | 'inline' | null;
   epsSurprisePercent: number | null;
+  /** Set when epsActual excludes a one-time item the release itself names
+   *  (META Q3 2026: a $9.89B legal charge). Feeds the caption, so the post
+   *  says why its EPS differs from the GAAP headline figure. */
+  epsAdjustmentNote?: string | null;
 
   // Revenue
   revenueEstimate: number | null; // dollars

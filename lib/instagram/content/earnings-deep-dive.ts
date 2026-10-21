@@ -265,6 +265,7 @@ async function writeHeadlineAndCaption(data: EarningsDeepDiveData): Promise<{ he
   const facts = [
     data.fiscalPeriodLabel ? `Fiscal period: ${data.fiscalPeriodLabel}` : null,
     `EPS: ${data.epsActual ?? 'N/A'} actual vs ${data.epsEstimate ?? 'N/A'} estimate (${data.epsStatus ?? 'unconfirmed'})`,
+    data.epsAdjustmentNote ? `EPS note (mention this in the caption): the EPS actual ${data.epsAdjustmentNote}` : null,
     `Revenue: ${data.revenueActual ?? 'N/A'} actual vs ${data.revenueEstimate ?? 'N/A'} estimate (${data.revenueStatus ?? 'unconfirmed'}), YoY growth ${data.revenueYoyGrowthPercent ?? 'N/A'}%`,
     data.segmentLabel ? `${data.segmentLabel} revenue: ${data.segmentRevenueActual ?? 'N/A'}` : null,
     `Gross margin: ${data.grossMarginActualPercent ?? 'N/A'}% vs prior quarter ${data.grossMarginPriorQuarterPercent ?? 'N/A'}%`,
@@ -367,6 +368,7 @@ export async function completeEarningsDeepDiveFromFiling(
     epsActual,
     epsStatus: statusFor(draft.epsEstimate, epsActual),
     epsSurprisePercent: surprisePercent(draft.epsEstimate, epsActual),
+    epsAdjustmentNote: extracted.epsActualNonGaap != null ? extracted.epsAdjustmentNote : null,
     revenueActual: extracted.revenueActual,
     revenueStatus: statusFor(draft.revenueEstimate, extracted.revenueActual),
     revenueYoyGrowthPercent: extracted.revenueYoyGrowthPercent,
