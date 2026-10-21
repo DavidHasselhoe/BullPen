@@ -67,7 +67,9 @@ export async function runAgent(
   allowHoldingsContext?: boolean | null,
   abortSignal?: AbortSignal,
 ) {
-  const modelMessages = await convertToModelMessages(messages);
+  // The history comes from the client. Only user and assistant turns: a
+  // client-sent 'system' message would reach the model with system authority.
+  const modelMessages = await convertToModelMessages(messages.filter((m) => m.role === 'user' || m.role === 'assistant'));
 
   const languagePrefix = language && language !== 'en'
     ? `[Language: You MUST respond entirely in ${languageName(language)}. Do not switch to English under any circumstance.]\n\n`
@@ -178,6 +180,8 @@ export async function runAgent(
         : []),
       ...modelMessages,
     ],
+    // Ours, above, for the cache breakpoint; the client's are filtered out.
+    allowSystemInMessages: true,
     tools,
     /**
      * Automatic caching for the growing tail, alongside the explicit

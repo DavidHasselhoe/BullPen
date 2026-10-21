@@ -109,7 +109,8 @@ export async function runChartAgent(
   language?: string | null,
   abortSignal?: AbortSignal,
 ) {
-  const modelMessages = await convertToModelMessages(messages);
+  // Client-sent history: only user and assistant turns, never a 'system' one.
+  const modelMessages = await convertToModelMessages(messages.filter((m) => m.role === 'user' || m.role === 'assistant'));
 
   const languagePrefix = language && language !== 'en'
     ? `[Language: You MUST respond entirely in ${language}. Do not switch to English.]\n\n`
