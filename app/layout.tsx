@@ -33,11 +33,15 @@ const geistMono = Geist_Mono({
 });
 
 // Display serif used on the marketing landing page (/welcome) for the accented words.
+// Not preloaded: only /welcome and /upgrade use it, and preloading put its two
+// files on every page, competing with the stylesheet that gates first paint
+// (Discover on a throttled phone, 2026-10-21). Those pages fetch it on use.
 const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument-serif",
   subsets: ["latin"],
   weight: "400",
   style: ["normal", "italic"],
+  preload: false,
 });
 
 export const metadata: Metadata = {
