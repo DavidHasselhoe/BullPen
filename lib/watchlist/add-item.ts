@@ -3,6 +3,15 @@ import type { createServerClient } from '@/lib/supabase/client';
 type Db = ReturnType<typeof createServerClient>;
 
 /**
+ * A ticker (AAPL, BRK.B, ^GSPC) or a pair (BTC/USD, EUR/NOK), as the asset
+ * pages pass them. Pairs used to fail this check, so crypto, forex and
+ * commodities could not be watched at all.
+ */
+export function isValidWatchSymbol(symbol: string | undefined): symbol is string {
+  return !!symbol && symbol.length <= 20 && /^[A-Z0-9.^-]+(\/[A-Z0-9]+)?$/.test(symbol);
+}
+
+/**
  * Put a stock in one of the user's lists. A stock can be in several lists
  * (unique on user + list + symbol since migration 165), so adding never moves
  * it out of another list, and adding it to a list it is already in is a no-op

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { addWatchlistItem } from '@/lib/watchlist/add-item';
+import { addWatchlistItem, isValidWatchSymbol } from '@/lib/watchlist/add-item';
 import { removeWatchlistItems } from '@/lib/watchlist/remove-item';
 import { createServerClient } from '@/lib/supabase/client';
 
@@ -37,7 +37,7 @@ async function postHandler(
   const symbol = (body?.symbol as string | undefined)?.toUpperCase().trim();
   const company_name = (body?.company_name as string | undefined)?.trim() || symbol;
 
-  if (!symbol || symbol.length > 12 || !/^[A-Z0-9.^-]+$/.test(symbol)) {
+  if (!isValidWatchSymbol(symbol)) {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Invalid symbol' }, { status: 400 })
     );

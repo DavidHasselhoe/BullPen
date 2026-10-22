@@ -43,8 +43,21 @@ interface WatchlistCardProps {
   sparklineIsPreviousSession?: boolean;
 }
 
-function formatPrice(p: number, locale: string) {
-  return p.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/**
+ * In the currency the price is quoted in. A ticker's watchlist quote is always
+ * USD (the quote path rejects non-USD listings), but a pair is priced in its
+ * second half: EUR/NOK in krone. Sub-dollar coins keep enough digits to move.
+ */
+function formatPrice(p: number, symbol: string, locale: string) {
+  const currency = symbol.includes('/') ? symbol.split('/')[1] : 'USD';
+  const digits = { minimumFractionDigits: 2, maximumFractionDigits: p < 1 ? 6 : 2 };
+  try {
+    // narrowSymbol: "$", not "US$" in some locales; "kr" for NOK.
+    return p.toLocaleString(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', ...digits });
+  } catch {
+    // Not an ISO currency code (a coin quoted in another coin, ETH/BTC).
+    return `${p.toLocaleString(locale, digits)} ${currency}`;
+  }
 }
 
 function gradeColor(grade: string) {
@@ -146,7 +159,7 @@ export function WatchlistCard({
               className={cn('text-lg font-bold tabular-nums', quote.stale ? 'text-muted-foreground' : 'text-foreground')}
               title={quote.stale ? t('watchlistStaleTitle') : undefined}
             >
-              ${formatPrice(quote.price, locale)}
+              {formatPrice(quote.price, symbol, locale)}
             </span>
             <div
               className={cn(

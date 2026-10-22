@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
-import { addWatchlistItem } from '@/lib/watchlist/add-item';
+import { addWatchlistItem, isValidWatchSymbol } from '@/lib/watchlist/add-item';
 import { removeWatchlistItems } from '@/lib/watchlist/remove-item';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 
@@ -49,7 +49,7 @@ async function postHandler(
   const company_name = (body?.company_name as string | undefined)?.trim() || symbol;
   let list_id = (body?.list_id as string | undefined) ?? null;
 
-  if (!symbol || symbol.length > 12 || !/^[A-Z0-9.^-]+$/.test(symbol)) {
+  if (!isValidWatchSymbol(symbol)) {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Invalid symbol' }, { status: 400 })
     );
