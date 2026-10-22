@@ -6,10 +6,12 @@ import { logger } from '@/lib/utils/logger';
 /**
  * Currency codes supported by the system
  */
-export type CurrencyCode = 
-  | 'USD' | 'EUR' | 'GBP' | 'NOK' | 'SEK' | 'DKK' 
-  | 'JPY' | 'CHF' | 'CAD' | 'AUD' | 'NZD' | 'CNY'
-  | 'BRL' | 'HKD' | 'SGD' | 'KRW' | 'MXN' | 'INR';
+export const CURRENCY_CODES = [
+  'USD', 'EUR', 'GBP', 'NOK', 'SEK', 'DKK',
+  'JPY', 'CHF', 'CAD', 'AUD', 'NZD', 'CNY',
+  'BRL', 'HKD', 'SGD', 'KRW', 'MXN', 'INR',
+] as const;
+export type CurrencyCode = (typeof CURRENCY_CODES)[number];
 
 /**
  * Exchange rate data from API

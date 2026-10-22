@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
 import { getLatestRates } from '@/lib/currency/latest-rates';
+import { CURRENCY_CODES } from '@/lib/currency/currency-conversion';
 
 /**
  * GET /api/currency/rates?base=NOK
@@ -9,8 +10,10 @@ import { getLatestRates } from '@/lib/currency/latest-rates';
 export async function GET(request: NextRequest) {
   try {
     const base = (request.nextUrl.searchParams.get('base') || 'USD').toUpperCase();
-    // It ends up in a Redis key, a TwelveData symbol and the Frankfurter URL.
-    if (!/^[A-Z]{3}$/.test(base)) {
+    // Only the currencies the app offers: this route is public, and each new
+    // base costs live TwelveData credits, so any 3 letters let a script spend
+    // the shared budget base by base. It also reaches a Redis key and a URL.
+    if (!(CURRENCY_CODES as readonly string[]).includes(base)) {
       return NextResponse.json({ success: false, error: 'Invalid base currency' }, { status: 400 });
     }
     return NextResponse.json({ success: true, ...(await getLatestRates(base)) });

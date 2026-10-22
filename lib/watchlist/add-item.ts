@@ -2,6 +2,9 @@ import type { createServerClient } from '@/lib/supabase/client';
 
 type Db = ReturnType<typeof createServerClient>;
 
+/** How long after a remove `restore` (Undo) may bring back the original added_at. */
+const RESTORE_WINDOW_MS = 10 * 60 * 1000;
+
 /**
  * A ticker (AAPL, BRK.B, ^GSPC) or a pair (BTC/USD, EUR/NOK), as the asset
  * pages pass them. Pairs used to fail this check, so crypto, forex and
@@ -36,6 +39,9 @@ export async function addWatchlistItem(
         .eq('user_id', row.user_id)
         .eq('list_id', row.list_id)
         .eq('symbol', row.symbol)
+        // Undo only: a re-add months later must not resurrect the old date
+        // and count the months it was off the list.
+        .gte('removed_at', new Date(Date.now() - RESTORE_WINDOW_MS).toISOString())
         .order('removed_at', { ascending: false })
         .limit(1)
         .maybeSingle()
