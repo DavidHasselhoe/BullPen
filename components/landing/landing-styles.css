@@ -501,6 +501,24 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* Keyboard focus for every landing button: the pill had no focus style of its own. */
+.bullpen-landing-root .btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Invite page (app/invite/[code]) */
+.bullpen-landing-root .invite-text-link:hover span { text-decoration: underline; text-underline-offset: 3px; }
+.bullpen-landing-root .invite-text-link:focus-visible,
+.bullpen-landing-root .invite-link-field:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (max-width: 520px) {
+  /* Thumb-reach, full width: the one action on the page. */
+  .bullpen-landing-root .invite-cta { width: 100%; justify-content: center; }
+}
+
 .bullpen-landing-root .btn-ghost {
   background: transparent;
   color: var(--fg);

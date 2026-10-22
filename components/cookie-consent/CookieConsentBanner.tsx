@@ -39,7 +39,12 @@ export function CookieConsentBanner() {
           // so it painted "Ask Bull" across Accept all) until a choice is made.
           // Phones get a compact banner sitting just above the tab bar: the full
           // one covered the first screen's main button (the trial CTA on /upgrade).
-          className="animate-in fade-in zoom-in-95 slide-in-from-bottom-5 duration-300 ease-out motion-reduce:zoom-in-100 motion-reduce:slide-in-from-bottom-0 fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg max-sm:p-3"
+          // Hidden while a modal dialog is open: Radix sets pointer-events:none
+          // on <body> then, so z-[51] left the banner painted over the dialog
+          // but untappable, and on a phone it sat on the signup form's submit
+          // (a tap on "Accept all" pressed "Create account"). It comes back
+          // when the dialog closes.
+          className="animate-in fade-in zoom-in-95 slide-in-from-bottom-5 duration-300 ease-out motion-reduce:zoom-in-100 motion-reduce:slide-in-from-bottom-0 fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg max-sm:p-3 [body[style*='pointer-events:_none']_&]:hidden"
         >
           <p className="text-sm text-foreground max-sm:text-xs">
             {'🍪'} {t('cookieBannerText')}{' '}
@@ -53,7 +58,8 @@ export function CookieConsentBanner() {
             </Button>
             <Button
               size="sm"
-              className="bg-emerald-500 text-white font-semibold hover:bg-emerald-600"
+              // Dark ink on emerald, like the landing CTA: white on emerald-500 was 2.5:1.
+              className="bg-emerald-500 text-emerald-950 font-semibold hover:bg-emerald-400"
               onClick={() => dismiss('accepted')}
             >
               {t('cookieBannerAcceptAll')}

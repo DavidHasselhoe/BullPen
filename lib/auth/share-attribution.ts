@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@/lib/supabase/client';
+import { INVITE_COOKIE_NAME } from '@/lib/auth/invite-cookie';
 
 const REF_COOKIE_NAME = 'bp_ref';
 
@@ -33,9 +34,6 @@ export async function maybeClaimShareAttribution(): Promise<void> {
     await supabase.rpc('grant_invite_referral_reward' as never, { invite_code_param: inviteCode } as never);
   }
 }
-
-/** Set by middleware on /invite/[code], first touch only. */
-const INVITE_COOKIE_NAME = 'bp_inv';
 
 function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
