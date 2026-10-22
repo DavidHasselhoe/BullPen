@@ -138,5 +138,8 @@
   "planRangeCaption": "Jetzt bei {{pct}} % des Wegs vom 52-Wochen-Tief zum Hoch.",
   "planCardDistance": "Kaufen unter {{price}} · noch {{pct}} %",
   "planCardReached": "Auf oder unter deinem Kaufpreis von {{price}}",
-  "watchlistCol52w": "52-W-Spanne"
+  "watchlistCol52w": "52-W-Spanne",
+  "moversAriaLabel": "Heutige Bewegungen und Fragen an Bull",
+  "moversAskList": "Bull zu dieser Liste fragen",
+  "moversAskListQuery": "Gib mir einen kurzen Überblick über meine Watchlist {{name}}: {{tickers}}. Was fällt gerade auf, und worauf sollte ich achten?"
 }

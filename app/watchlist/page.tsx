@@ -9,6 +9,7 @@ import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
 import { ListScorecard } from '@/components/watchlist/ListScorecard';
 import { ListEvents } from '@/components/watchlist/ListEvents';
+import { ListMovers } from '@/components/watchlist/ListMovers';
 import { buyBelowAlert } from '@/components/watchlist/StockPlan';
 import { useAlerts } from '@/hooks/use-alerts';
 import { listScore, pickReturn, todaySummary } from '@/lib/watchlist/scorecard';
@@ -118,15 +119,19 @@ export default function WatchlistPage() {
     refetchInterval: 5 * 60_000,
   });
 
-  // Fallback batch fetch for all symbols (runs once on load, populates prices before WS ticks arrive)
+  // Fallback batch fetch for all symbols (runs once on load, populates prices before WS ticks arrive).
+  // Extended hours outside the regular session, as Home asks for: without it
+  // the first numbers were yesterday's regular move until live ticks replaced
+  // them, and the list movers were picked from the wrong session.
+  const prepost = session !== 'regular';
   const { data: seedQuotes } = useQuery({
-    queryKey: ['watchlist-seed-quotes', priceSymbols.join(',')],
+    queryKey: ['watchlist-seed-quotes', priceSymbols.join(','), prepost],
     queryFn: async (): Promise<QuoteMap> => {
       if (allSymbols.length === 0) return {};
       const res = await fetch('/api/quotes/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: priceSymbols }),
+        body: JSON.stringify({ symbols: priceSymbols, prepost }),
       });
       if (!res.ok) return {};
       const data = await res.json();
@@ -384,6 +389,16 @@ export default function WatchlistPage() {
 
         {!displayLoading && activeListId && displayItems.length > 0 && (
           <ListEvents key={`events-${activeListId}`} listId={activeListId} symbols={displayItems.map((i) => i.symbol)} />
+        )}
+
+        {!displayLoading && activeListId && displayItems.length > 0 && (
+          <ListMovers
+            key={`movers-${activeListId}`}
+            listName={lists?.find((l) => l.id === activeListId)?.name ?? ''}
+            items={displayItems}
+            quotes={quotes}
+            seed={seedQuotes}
+          />
         )}
 
         {/* Content */}

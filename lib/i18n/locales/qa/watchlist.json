@@ -138,5 +138,8 @@
   "planRangeCaption": "«Noow {{pct}}% oof thee waay froom thee 52-weeeek loow too thee hiigh.»",
   "planCardDistance": "«Buuy beeloow {{price}} · {{pct}}% too goo»",
   "planCardReached": "«AAt oor beeloow yoouur buuy priicee oof {{price}}»",
-  "watchlistCol52w": "«52-wk raangee»"
+  "watchlistCol52w": "«52-wk raangee»",
+  "moversAriaLabel": "«Toodaay's moovees aand quueestiioons foor Buull»",
+  "moversAskList": "«AAsk Buull aaboouut thiis liist»",
+  "moversAskListQuery": "«Giivee mee aa quuiick reeaad oon my {{name}} waatchliist: {{tickers}}. Whaat staands oouut riight noow, aand whaat shoouuld II keeeep aan eeyee oon?»"
 }

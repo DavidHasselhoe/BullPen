@@ -138,5 +138,8 @@
   "planRangeCaption": "Now {{pct}}% of the way from the 52-week low to the high.",
   "planCardDistance": "Buy below {{price}} · {{pct}}% to go",
   "planCardReached": "At or below your buy price of {{price}}",
-  "watchlistCol52w": "52-wk range"
+  "watchlistCol52w": "52-wk range",
+  "moversAriaLabel": "Today's moves and questions for Bull",
+  "moversAskList": "Ask Bull about this list",
+  "moversAskListQuery": "Give me a quick read on my {{name}} watchlist: {{tickers}}. What stands out right now, and what should I keep an eye on?"
 }

@@ -138,5 +138,8 @@
   "planRangeCaption": "Nå {{pct}} % av veien fra 52-ukers bunn til topp.",
   "planCardDistance": "Kjøp under {{price}} · {{pct}} % igjen",
   "planCardReached": "På eller under kjøpsprisen din på {{price}}",
-  "watchlistCol52w": "52-ukers spenn"
+  "watchlistCol52w": "52-ukers spenn",
+  "moversAriaLabel": "Dagens bevegelser og spørsmål til Bull",
+  "moversAskList": "Spør Bull om denne listen",
+  "moversAskListQuery": "Gi meg en rask gjennomgang av watchlisten min {{name}}: {{tickers}}. Hva skiller seg ut nå, og hva bør jeg følge med på?"
 }

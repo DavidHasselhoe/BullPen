@@ -138,5 +138,8 @@
   "planRangeCaption": "Ahora al {{pct}} % del camino entre el mínimo y el máximo de 52 semanas.",
   "planCardDistance": "Comprar por debajo de {{price}} · falta un {{pct}} %",
   "planCardReached": "En o por debajo de tu precio de compra de {{price}}",
-  "watchlistCol52w": "Rango 52 sem."
+  "watchlistCol52w": "Rango 52 sem.",
+  "moversAriaLabel": "Movimientos de hoy y preguntas para Bull",
+  "moversAskList": "Preguntar a Bull por esta lista",
+  "moversAskListQuery": "Dame un resumen rápido de mi lista {{name}}: {{tickers}}. ¿Qué destaca ahora mismo y a qué debería prestar atención?"
 }

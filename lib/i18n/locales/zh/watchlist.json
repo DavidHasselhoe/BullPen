@@ -138,5 +138,8 @@
   "planRangeCaption": "当前处于 52 周低点到高点之间的 {{pct}}% 位置。",
   "planCardDistance": "低于 {{price}} 买入 · 还差 {{pct}}%",
   "planCardReached": "已达到或低于你的买入价 {{price}}",
-  "watchlistCol52w": "52 周区间"
+  "watchlistCol52w": "52 周区间",
+  "moversAriaLabel": "今日涨跌与向 Bull 提问",
+  "moversAskList": "向 Bull 询问这个列表",
+  "moversAskListQuery": "请快速解读我的「{{name}}」自选列表：{{tickers}}。现在有什么值得注意的，我应该关注什么？"
 }

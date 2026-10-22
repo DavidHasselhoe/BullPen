@@ -138,5 +138,8 @@
   "planRangeCaption": "52週安値から高値までの{{pct}}%の位置にあります。",
   "planCardDistance": "{{price}}以下で購入 · あと{{pct}}%",
   "planCardReached": "買い目安価格 {{price}} 以下です",
-  "watchlistCol52w": "52週レンジ"
+  "watchlistCol52w": "52週レンジ",
+  "moversAriaLabel": "今日の値動きとBullへの質問",
+  "moversAskList": "このリストについてBullに聞く",
+  "moversAskListQuery": "私のウォッチリスト「{{name}}」（{{tickers}}）を簡単に解説してください。今目立っている点と、注意しておくべき点は何ですか？"
 }
