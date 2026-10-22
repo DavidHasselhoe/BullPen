@@ -8,6 +8,7 @@ import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, 
 import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
 import { ListScorecard } from '@/components/watchlist/ListScorecard';
+import { ListEvents } from '@/components/watchlist/ListEvents';
 import { listScore, pickReturn, todaySummary } from '@/lib/watchlist/scorecard';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -75,7 +76,10 @@ export default function WatchlistPage() {
 
   // Items to display: per-list when a list is active, otherwise all
   const displayItems = activeListId ? (listItems ?? []) : (watchlist ?? []);
-  const displayLoading = activeListId ? listItemsLoading : watchlistLoading;
+  // Wait for the lists: before they arrive activeListId is null and the flat
+  // watchlist would render, where a stock in two lists is two rows with one
+  // key, and React left the duplicate card behind once the list loaded.
+  const displayLoading = listsLoading || (activeListId ? listItemsLoading : watchlistLoading);
 
   // Company search for adding stocks — local catalogue first, server behind it.
   const { results: searchResults, isSettled: searchSettled } = useInstantSearch(searchQuery, 6);
@@ -363,7 +367,7 @@ export default function WatchlistPage() {
         {/* List scorecard: one stock is its own card already */}
         {!displayLoading && activeListId && displayItems.length >= 2 && (
           <ListScorecard
-            key={activeListId}
+            key={`scorecard-${activeListId}`}
             listId={activeListId}
             today={today}
             score={score}
@@ -371,6 +375,10 @@ export default function WatchlistPage() {
             allNew={(sinceAddedEntries ?? []).every((e) => e.startClose == null && !e.removedAt)}
             grades={displayItems.flatMap((i) => enhancedData?.[i.symbol]?.healthScore?.grade ?? [])}
           />
+        )}
+
+        {!displayLoading && activeListId && displayItems.length > 0 && (
+          <ListEvents key={`events-${activeListId}`} listId={activeListId} symbols={displayItems.map((i) => i.symbol)} />
         )}
 
         {/* Content */}

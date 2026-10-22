@@ -108,5 +108,17 @@
   "scorecardChartEmpty": "Ikke nok historikk ennå. Sjekk igjen etter neste sluttkurs.",
   "scorecardChartError": "Kunne ikke laste grafen. Prøv igjen om et minutt.",
   "scorecardChartProTitle": "Se hvordan denne listen har gjort det over tid",
-  "scorecardChartProBody": "Pro viser valgene dine mot S&P 500, sluttkurs for sluttkurs, siden den første du la til."
+  "scorecardChartProBody": "Pro viser valgene dine mot S&P 500, sluttkurs for sluttkurs, siden den første du la til.",
+  "eventsTitle": "Denne uken i listen din",
+  "eventsYesterday": "I går",
+  "eventsThisWeek": "Denne uken",
+  "eventsIndexJoined": "{{ticker}} kom inn i {{index}}",
+  "eventsIndexLeft": "{{ticker}} gikk ut av {{index}}",
+  "eventsCongressBought": "{{name}} kjøpte {{ticker}}, nylig offentliggjort",
+  "eventsCongressSold": "{{name}} solgte {{ticker}}, nylig offentliggjort",
+  "eventsCongressTraded": "{{name}} handlet {{ticker}}, nylig offentliggjort",
+  "eventsCongressLocked_one": "{{count}} kongresshandel i disse aksjene ble offentlig. Se hvem med Pro.",
+  "eventsCongressLocked_other": "{{count}} kongresshandler i disse aksjene ble offentlige. Se hvem med Pro.",
+  "eventsMore_one": "Vis {{count}} til",
+  "eventsMore_other": "Vis {{count}} til"
 }

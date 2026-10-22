@@ -28,11 +28,11 @@ type Row =
   | { kind: 'economic'; date: string; event: EconomicEvent };
 
 /** Earnings session order within a day: before the open, unknown, after the close. */
-const sessionRank = (time?: string) =>
+export const sessionRank = (time?: string) =>
   time === 'BMO' || time === 'pre_market' ? 0 : time === 'AMC' || time === 'after_close' ? 2 : 1;
 
 /** Throws on failure, so a broken feed reads as an error, never as "nothing scheduled". */
-async function getRows<T>(path: string): Promise<T[]> {
+export async function getRows<T>(path: string): Promise<T[]> {
   const res = await fetch(path);
   const json = await res.json().catch(() => null);
   if (!res.ok || !json?.success) throw new Error(`calendar ${res.status}`);

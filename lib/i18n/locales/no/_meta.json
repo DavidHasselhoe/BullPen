@@ -3760,5 +3760,17 @@
   "watchlist.scorecardChartEmpty": "79dffe123a58f395cd0698cb009157fe4e3926751c00da1dec2c8548b1b4b215",
   "watchlist.scorecardChartError": "edcd7af4100855bd19215425d5114d7a5bfb9c6a322e80f20f22dc4fe066f25f",
   "watchlist.scorecardChartProTitle": "ce802d2c6ed9c70bc00bc247be5b266f165c1e6967ddf4607a307c2dd5f9faed",
-  "watchlist.scorecardChartProBody": "70ae657b75fe4922e9045d817c150f887ad026a04f5cc7cce725095c48fddbcf"
+  "watchlist.scorecardChartProBody": "70ae657b75fe4922e9045d817c150f887ad026a04f5cc7cce725095c48fddbcf",
+  "watchlist.eventsTitle": "4c74a4de89b7be12e9330b913700576b4728344c1f80844bf9fcfbdfcb46b33d",
+  "watchlist.eventsYesterday": "566181254b293aa66653e43313be9e39c12d44f9ac4fcd3236ef1e9c50a2903f",
+  "watchlist.eventsThisWeek": "8c4eef5ab2532515ef24a662db70f6e5b8063c7f924342b2a463f763f1091634",
+  "watchlist.eventsIndexJoined": "f77b44b984303da498d0ce2bc12b3208704d384d1c59ad6e5a28ef505cd6ed41",
+  "watchlist.eventsIndexLeft": "20e91e8f6aa4b8beeb1433d4ab4b19eb75b861349001bb291fc6e607cec25e92",
+  "watchlist.eventsCongressBought": "1cfa59d6e6a6a0b35e2f64de3f49224e712a0c018ea633e67aa535380ff6bb5b",
+  "watchlist.eventsCongressSold": "6ac797bdba287599b43424d025043c90d2542ef0346aad52f72ca1f1e3e481b4",
+  "watchlist.eventsCongressTraded": "5b1f198b9c4bef81ed466264ceabba94a3e164936ddb41f728f1b55dcbbdffa2",
+  "watchlist.eventsCongressLocked_one": "ecaaeb198b6adee9cfc9c7eb4ac2b3686bcb18cb4560a83fcb022329ae9a6b21",
+  "watchlist.eventsCongressLocked_other": "0d108b40cb45a60e7ac62bcd5191a66a2bd1c421cd3aa0d5d8957f530404988c",
+  "watchlist.eventsMore_one": "d94a0e3b18cc208ec8b9217a2ecc28facd39ab3f54aa3a9092b5418209124314",
+  "watchlist.eventsMore_other": "d94a0e3b18cc208ec8b9217a2ecc28facd39ab3f54aa3a9092b5418209124314"
 }

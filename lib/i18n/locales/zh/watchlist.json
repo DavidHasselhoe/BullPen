@@ -108,5 +108,17 @@
   "scorecardChartEmpty": "历史数据还不够。下次收盘后再来看看。",
   "scorecardChartError": "无法加载图表。请一分钟后再试。",
   "scorecardChartProTitle": "查看这个列表的长期表现",
-  "scorecardChartProBody": "Pro 会从你添加第一只股票起，逐个收盘对比你的选股与标普500。"
+  "scorecardChartProBody": "Pro 会从你添加第一只股票起，逐个收盘对比你的选股与标普500。",
+  "eventsTitle": "本周列表动态",
+  "eventsYesterday": "昨天",
+  "eventsThisWeek": "本周",
+  "eventsIndexJoined": "{{ticker}} 被纳入{{index}}",
+  "eventsIndexLeft": "{{ticker}} 被移出{{index}}",
+  "eventsCongressBought": "{{name}} 买入了 {{ticker}}（新披露）",
+  "eventsCongressSold": "{{name}} 卖出了 {{ticker}}（新披露）",
+  "eventsCongressTraded": "{{name}} 交易了 {{ticker}}（新披露）",
+  "eventsCongressLocked_one": "这些股票有 {{count}} 笔国会议员交易被公开。升级 Pro 查看是谁。",
+  "eventsCongressLocked_other": "这些股票有 {{count}} 笔国会议员交易被公开。升级 Pro 查看是谁。",
+  "eventsMore_one": "再显示 {{count}} 条",
+  "eventsMore_other": "再显示 {{count}} 条"
 }

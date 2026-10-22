@@ -108,5 +108,17 @@
   "scorecardChartEmpty": "まだ十分な履歴がありません。次の終値の後にもう一度ご確認ください。",
   "scorecardChartError": "チャートを読み込めませんでした。1分後にもう一度お試しください。",
   "scorecardChartProTitle": "このリストの推移を見る",
-  "scorecardChartProBody": "Proでは、最初の銘柄を追加した日から、終値ごとにS&P 500と比較したチャートを表示します。"
+  "scorecardChartProBody": "Proでは、最初の銘柄を追加した日から、終値ごとにS&P 500と比較したチャートを表示します。",
+  "eventsTitle": "今週のリストの動き",
+  "eventsYesterday": "昨日",
+  "eventsThisWeek": "今週",
+  "eventsIndexJoined": "{{ticker}}が{{index}}に採用されました",
+  "eventsIndexLeft": "{{ticker}}が{{index}}から除外されました",
+  "eventsCongressBought": "{{name}}が{{ticker}}を購入（新たに開示）",
+  "eventsCongressSold": "{{name}}が{{ticker}}を売却（新たに開示）",
+  "eventsCongressTraded": "{{name}}が{{ticker}}を取引（新たに開示）",
+  "eventsCongressLocked_one": "これらの銘柄で議員の取引が{{count}}件公開されました。Proで誰の取引か確認できます。",
+  "eventsCongressLocked_other": "これらの銘柄で議員の取引が{{count}}件公開されました。Proで誰の取引か確認できます。",
+  "eventsMore_one": "さらに{{count}}件表示",
+  "eventsMore_other": "さらに{{count}}件表示"
 }

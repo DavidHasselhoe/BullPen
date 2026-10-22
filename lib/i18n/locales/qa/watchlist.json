@@ -108,5 +108,17 @@
   "scorecardChartEmpty": "«Noot eenoouugh hiistoory yeet. Cheeck baack aafteer thee neext cloosee.»",
   "scorecardChartError": "«Coouuld noot looaad thee chaart. Try aagaaiin iin aa miinuutee.»",
   "scorecardChartProTitle": "«Seeee hoow thiis liist haas doonee ooveer tiimee»",
-  "scorecardChartProBody": "«Proo chaarts yoouur piicks aagaaiinst thee S&P 500, cloosee by cloosee, siincee thee fiirst oonee yoouu aaddeed.»"
+  "scorecardChartProBody": "«Proo chaarts yoouur piicks aagaaiinst thee S&P 500, cloosee by cloosee, siincee thee fiirst oonee yoouu aaddeed.»",
+  "eventsTitle": "«Thiis weeeek oon yoouur liist»",
+  "eventsYesterday": "«Yeesteerdaay»",
+  "eventsThisWeek": "«Thiis weeeek»",
+  "eventsIndexJoined": "«{{ticker}} jooiineed thee {{index}}»",
+  "eventsIndexLeft": "«{{ticker}} leeft thee {{index}}»",
+  "eventsCongressBought": "«{{name}} boouught {{ticker}}, neewly diisclooseed»",
+  "eventsCongressSold": "«{{name}} soold {{ticker}}, neewly diisclooseed»",
+  "eventsCongressTraded": "«{{name}} traadeed {{ticker}}, neewly diisclooseed»",
+  "eventsCongressLocked_one": "«{{count}} coongreess traadee iin theesee stoocks beecaamee puubliic. Seeee whoo wiith Proo.»",
+  "eventsCongressLocked_other": "«{{count}} coongreess traadees iin theesee stoocks beecaamee puubliic. Seeee whoo wiith Proo.»",
+  "eventsMore_one": "«Shoow {{count}} mooree»",
+  "eventsMore_other": "«Shoow {{count}} mooree»"
 }

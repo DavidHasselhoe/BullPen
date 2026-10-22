@@ -108,5 +108,17 @@
   "scorecardChartEmpty": "Aún no hay suficiente historial. Vuelve después del próximo cierre.",
   "scorecardChartError": "No se pudo cargar el gráfico. Inténtalo de nuevo en un minuto.",
   "scorecardChartProTitle": "Mira cómo le ha ido a esta lista con el tiempo",
-  "scorecardChartProBody": "Pro compara tus selecciones con el S&P 500, cierre a cierre, desde la primera que añadiste."
+  "scorecardChartProBody": "Pro compara tus selecciones con el S&P 500, cierre a cierre, desde la primera que añadiste.",
+  "eventsTitle": "Esta semana en tu lista",
+  "eventsYesterday": "Ayer",
+  "eventsThisWeek": "Esta semana",
+  "eventsIndexJoined": "{{ticker}} entró en el {{index}}",
+  "eventsIndexLeft": "{{ticker}} salió del {{index}}",
+  "eventsCongressBought": "{{name}} compró {{ticker}}, recién divulgado",
+  "eventsCongressSold": "{{name}} vendió {{ticker}}, recién divulgado",
+  "eventsCongressTraded": "{{name}} operó con {{ticker}}, recién divulgado",
+  "eventsCongressLocked_one": "Se hizo pública {{count}} operación del Congreso en estas acciones. Mira quién con Pro.",
+  "eventsCongressLocked_other": "Se hicieron públicas {{count}} operaciones del Congreso en estas acciones. Mira quién con Pro.",
+  "eventsMore_one": "Ver {{count}} más",
+  "eventsMore_other": "Ver {{count}} más"
 }

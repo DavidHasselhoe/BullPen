@@ -108,5 +108,17 @@
   "scorecardChartEmpty": "Not enough history yet. Check back after the next close.",
   "scorecardChartError": "Could not load the chart. Try again in a minute.",
   "scorecardChartProTitle": "See how this list has done over time",
-  "scorecardChartProBody": "Pro charts your picks against the S&P 500, close by close, since the first one you added."
+  "scorecardChartProBody": "Pro charts your picks against the S&P 500, close by close, since the first one you added.",
+  "eventsTitle": "This week on your list",
+  "eventsYesterday": "Yesterday",
+  "eventsThisWeek": "This week",
+  "eventsIndexJoined": "{{ticker}} joined the {{index}}",
+  "eventsIndexLeft": "{{ticker}} left the {{index}}",
+  "eventsCongressBought": "{{name}} bought {{ticker}}, newly disclosed",
+  "eventsCongressSold": "{{name}} sold {{ticker}}, newly disclosed",
+  "eventsCongressTraded": "{{name}} traded {{ticker}}, newly disclosed",
+  "eventsCongressLocked_one": "{{count}} congress trade in these stocks became public. See who with Pro.",
+  "eventsCongressLocked_other": "{{count}} congress trades in these stocks became public. See who with Pro.",
+  "eventsMore_one": "Show {{count}} more",
+  "eventsMore_other": "Show {{count}} more"
 }
