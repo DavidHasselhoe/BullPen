@@ -128,6 +128,7 @@
   "toolStatus_getCompanyFinancials": "Reading financial statements…",
   "toolStatus_getLiveQuote": "Fetching live price…",
   "toolStatus_getEarningsData": "Checking earnings history…",
+  "toolStatus_getUpcomingEarnings": "Checking earnings dates…",
   "toolStatus_getCompanyProfile": "Looking up company profile…",
   "toolStatus_getLiveCompanyProfile": "Looking up company profile…",
   "toolStatus_getCompanyMetrics": "Pulling historical metrics…",

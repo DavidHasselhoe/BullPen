@@ -14,13 +14,14 @@ export interface EarningsRow {
   surprise: string;
 }
 
-export function EarningsResultCard({ output }: { output: EarningsRow[] }) {
+export function EarningsResultCard({ output, ticker }: { output: EarningsRow[]; ticker?: string }) {
   const { t } = useTranslation('ai');
   const rows = output.slice(0, 4);
   if (rows.length === 0) return null;
   return (
     <CardShell>
-      <div className="mb-2 font-semibold text-foreground">{t('earningsHistoryTitle')}</div>
+      {/* Chats saved before 2026-10-22 have no ticker on the result. */}
+      <div className="mb-2 font-semibold text-foreground">{ticker ? `${ticker} ` : ''}{t('earningsHistoryTitle')}</div>
       <div className="space-y-1.5">
         {rows.map((r) => (
           <div key={r.period} className="flex items-center justify-between gap-2">

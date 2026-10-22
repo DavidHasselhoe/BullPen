@@ -14,6 +14,7 @@ import { toSafeErrorMessage } from '@/lib/ai/error-utils';
 import { saveConversation } from '@/lib/ai/conversations';
 import { validateUUID } from '@/lib/security/input-validation';
 import { isSupportedLanguage } from '@/lib/i18n/language-names';
+import { createServerClient } from '@/lib/supabase/client';
 
 async function handler(
   req: NextRequest,
@@ -49,7 +50,16 @@ async function handler(
   const riskProfile = (body?.riskProfile as 'conservative' | 'balanced' | 'aggressive') ?? null;
   const investmentHorizon = (body?.investmentHorizon as 'short' | 'medium' | 'long') ?? null;
   const responseStyle = (body?.responseStyle as 'concise' | 'balanced' | 'detailed') ?? null;
-  const allowHoldingsContext = body?.allowHoldingsContext === true;
+  // Read from the row, not the request: the client's copy of settings went
+  // stale (QA account had it on, the chat sent it off) and a privacy opt-in
+  // is not the client's to assert.
+  const { data: settingsRow } = await createServerClient()
+    .from('users')
+    .select('settings')
+    .eq('id', session.userId)
+    .maybeSingle();
+  const allowHoldingsContext =
+    (settingsRow as { settings: Record<string, unknown> | null } | null)?.settings?.allow_holdings_context === true;
 
   try {
     const result = await runAgent(messages, context, experienceLevel, language, riskProfile, investmentHorizon, responseStyle, session.userId, allowHoldingsContext, req.signal);

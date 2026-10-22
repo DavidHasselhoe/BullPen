@@ -274,7 +274,6 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     riskProfile: user?.risk_profile ?? null,
     investmentHorizon: (user?.settings as Record<string, unknown> | null)?.investment_horizon ?? null,
     responseStyle: (user?.settings as Record<string, unknown> | null)?.response_style ?? null,
-    allowHoldingsContext: (user?.settings as Record<string, unknown> | null)?.allow_holdings_context === true,
   });
   requestParamsRef.current = {
     effectiveContext,
@@ -283,7 +282,6 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     riskProfile: user?.risk_profile ?? null,
     investmentHorizon: (user?.settings as Record<string, unknown> | null)?.investment_horizon ?? null,
     responseStyle: (user?.settings as Record<string, unknown> | null)?.response_style ?? null,
-    allowHoldingsContext: (user?.settings as Record<string, unknown> | null)?.allow_holdings_context === true,
   };
 
   const runClientAction = useCallback(
@@ -371,7 +369,6 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             ...(p.riskProfile ? { riskProfile: p.riskProfile } : {}),
             ...(p.investmentHorizon ? { investmentHorizon: p.investmentHorizon } : {}),
             ...(p.responseStyle ? { responseStyle: p.responseStyle } : {}),
-            ...(p.allowHoldingsContext ? { allowHoldingsContext: true } : {}),
           },
         };
       },

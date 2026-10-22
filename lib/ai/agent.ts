@@ -115,15 +115,15 @@ export async function runAgent(
   // createAlert needs userId to check the free-tier alert limit server-side —
   // it's built per-request rather than living in the static BULLPEN_TOOLS map.
   // Omitted entirely when userId is unavailable so the model never sees it.
-  // getPortfolioContext is opt-in (Settings > Ask Bull) — omitted unless the
-  // user has explicitly allowed Bull to read their holdings/watchlist.
+  // getPortfolioContext is opt-in (Settings > Ask Bull): without that it
+  // reads nothing and only tells the model the setting is off.
   const tools = {
     ...BULLPEN_TOOLS,
     // Registered for everyone, signed in or not: each one applies the same
     // tier gate as its page, so a logged-out caller just gets the free layer.
     ...appContentTools(userId ?? null),
     ...(userId ? { createAlert: createAlertTool(userId), getMyAlerts: getMyAlertsTool(userId) } : {}),
-    ...(userId && allowHoldingsContext ? { getPortfolioContext: getPortfolioContextTool(userId) } : {}),
+    ...(userId ? { getPortfolioContext: getPortfolioContextTool(userId, allowHoldingsContext === true) } : {}),
     // Pro-gated (see /api/stock/[ticker]/insider-transactions) — needs userId
     // to check tier server-side, so it can't live in the static tool map.
     ...(userId ? { getInsiderActivity: getInsiderActivityTool(userId) } : {}),
@@ -165,8 +165,8 @@ export async function runAgent(
      *
      * The cached prefix is only stable while the tool set is. `tools` above is
      * built by spreading a static object literal, so its order is fixed, but
-     * the three conditional tools mean logged-out, logged-in, and
-     * holdings-enabled callers each get their own cache entry. That is fine;
+     * the conditional tools mean logged-out and logged-in callers each get
+     * their own cache entry. That is fine;
      * each cohort is stable within itself.
      */
     messages: [

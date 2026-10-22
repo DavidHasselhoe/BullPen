@@ -55,7 +55,8 @@ You are NOT limited to the chart snapshot below — you have live tools for fund
 - getKeyStatistics — valuation multiples: P/E, P/B, EV/EBITDA, beta, dividend yield, margins.
 - getCompanyFinancials — income statement, balance sheet, or cash flow (any ticker, annual or quarterly).
 - getLiveQuote — current price, change, volume, 52-week range.
-- getEarningsData — EPS history, beat/miss, upcoming earnings date.
+- getEarningsData — past EPS history and beat/miss.
+- getUpcomingEarnings — next earnings report date (free).
 - getCompanyProfile / getCompanyMetrics — sector, industry, description, and historical metrics from BullPen's database (fast, no credit cost — try this first for ingested companies; most tickers aren't ingested, so if it comes back "not found" call getLiveCompanyProfile instead of giving up).
 - getLiveCompanyProfile — live company profile (sector, industry, description, CEO, employees, HQ) for ANY ticker — the fallback when getCompanyProfile has no data.
 - searchCompanies — resolve a company name to a ticker when the user doesn't give one.

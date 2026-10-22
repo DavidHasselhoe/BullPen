@@ -24,7 +24,10 @@ import {
   type IncomeStatementPeriod,
   type BalanceSheetPeriod,
   type CashFlowPeriod,
+  type EarningsCalendarItem,
 } from '@/lib/twelvedata/twelvedata-client';
+import { getCalendarRange, WARM_DAYS_BACK, WARM_DAYS_FORWARD } from '@/lib/market-data/calendar-days';
+import { addDays, todayET } from '@/lib/dates/calendar-format';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { coalesce } from '@/lib/cache/request-coalesce';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
@@ -498,9 +501,15 @@ function navigateAction(path: string, label: string, explicitUserRequest: boolea
     // actually sees, it improvised: re-asked the question it had just asked,
     // or announced "Done, you should now be on the page" while the Yes/No
     // prompt was still waiting for an answer.
+    // "Only add something if it answers the question" read as "add nothing"
+    // when the offer came before the answer: asked which holdings report
+    // soon, Bull fetched every date, offered the calendar and wrote only
+    // "Use the Yes/No buttons below" (2026-10-22).
     note: explicitUserRequest
       ? `${label} is opening now. Do not announce it or say it is done; only add something if it answers the question.`
-      : 'The user now sees Yes/No buttons under your reply. They have not moved. Do not repeat the offer, ask again, or say they are there; only add something if it answers the question.',
+      : 'The user now sees Yes/No buttons under your reply. They have not moved. Do not repeat the offer, ask again, or ' +
+        'say the buttons are there. If you have not yet written the answer to their question in this reply, write it ' +
+        'now in full: the buttons are an extra, never the answer.',
   };
 }
 
@@ -1191,22 +1200,31 @@ export function getMyAlertsTool(userId: string) {
  * reproduce that report. The tool description tells the model to defer to
  * Risk Analysis for anything wanting that depth.
  */
-export function getPortfolioContextTool(userId: string) {
+export function getPortfolioContextTool(userId: string, allowed: boolean) {
   return tool({
     description:
       'Read the user\'s actual holdings and watchlist. Use when the user asks about their own portfolio in a way ' +
       'that needs the real data — "what do I own", "how much of my portfolio is in tech", "am I overweight NVDA", ' +
-      '"what\'s on my watchlist". Position weights returned here are by COST BASIS (what was paid), not live market ' +
-      'value, so treat them as a rough guide. If the user wants a precise, scored risk assessment (diversification ' +
-      'score, stress-test scenarios, live-priced weights), do NOT attempt that yourself — tell them to run Portfolio ' +
-      'Risk Analysis on the Holdings page instead; that feature is built for exactly that and keeps a history to ' +
-      'compare over time.',
+      '"what\'s on my watchlist", "do any of my holdings report earnings soon". Position weights returned here are by ' +
+      'COST BASIS (what was paid), not live market value, so treat them as a rough guide. If the user wants a precise, ' +
+      'scored risk assessment (diversification score, stress-test scenarios, live-priced weights), do NOT attempt that ' +
+      'yourself — tell them to run Portfolio Risk Analysis on the Holdings page instead; that feature is built for ' +
+      'exactly that and keeps a history to compare over time. If the result says holdings access is off, tell the ' +
+      'user exactly that and how to turn it on, or offer to answer for tickers they name. Never guess what they own.',
     inputSchema: jsonSchema<Record<string, never>>({
       type: 'object',
       properties: {},
       additionalProperties: false,
     }),
     execute: async () => {
+      // Registered even when off: without it the model did not know the
+      // setting existed and answered portfolio questions with a guess.
+      if (!allowed) {
+        return {
+          holdingsAccess: 'off' as const,
+          howToTurnOn: 'Settings > Ask Bull > "Let Bull see my holdings and watchlist"',
+        };
+      }
       const [holdingsResult, watchlistRes] = await Promise.all([
         getHoldings(userId),
         supabase()
@@ -1448,11 +1466,15 @@ const getLiveCompanyProfile = tool({
   },
 });
 
+// Said "and upcoming earnings dates" until 2026-10-22, but /earnings returns
+// past reports. Asked "any of my holdings have earnings soon?", Bull called
+// this once per holding and could name no date, only six history cards.
 const getEarningsData = tool({
   description:
-    'Fetch historical earnings data for a stock: EPS estimates vs actuals, beat/miss, and upcoming earnings dates. ' +
-    'Use when the user asks when a company next reports, whether it beat earnings, or its EPS history. ' +
-    'Costs ~20 API credits.',
+    'Fetch one stock\'s PAST earnings: EPS estimates vs actuals and beat/miss for its recent reports. ' +
+    'Use when the user asks whether a company beat earnings or about its EPS history. ' +
+    'It does not give the next report date: use getUpcomingEarnings for "when does X report" or ' +
+    '"which of my stocks report soon". Costs ~20 API credits.',
   inputSchema: jsonSchema<{ ticker: string }>({
     type: 'object',
     properties: {
@@ -1469,24 +1491,121 @@ const getEarningsData = tool({
       );
       if (outcome.denied) return { error: 'Rate limit reached fetching earnings. Try again shortly.' };
       const earnings = outcome.data;
-      return earnings.map((e) => {
-        const beat = e.actual != null && e.estimate != null
-          ? e.actual >= e.estimate ? 'Beat' : 'Missed'
-          : 'N/A';
-        return {
-          period: e.period,
-          epsActual: e.actual?.toFixed(2) ?? 'N/A',
-          epsEstimate: e.estimate?.toFixed(2) ?? 'N/A',
-          epsActualRaw: e.actual ?? null,
-          epsEstimateRaw: e.estimate ?? null,
-          result: beat,
-          surprise: e.surprisePercent != null ? `${e.surprisePercent > 0 ? '+' : ''}${e.surprisePercent.toFixed(1)}%` : 'N/A',
-        };
-      });
+      // An object with the ticker, not a bare array: the card has to say whose
+      // history it is, or several in one reply are anonymous.
+      return {
+        ticker: symbol,
+        history: earnings.map((e) => {
+          const beat = e.actual != null && e.estimate != null
+            ? e.actual >= e.estimate ? 'Beat' : 'Missed'
+            : 'N/A';
+          return {
+            period: e.period,
+            epsActual: e.actual?.toFixed(2) ?? 'N/A',
+            epsEstimate: e.estimate?.toFixed(2) ?? 'N/A',
+            epsActualRaw: e.actual ?? null,
+            epsEstimateRaw: e.estimate ?? null,
+            result: beat,
+            surprise: e.surprisePercent != null ? `${e.surprisePercent > 0 ? '+' : ''}${e.surprisePercent.toFixed(1)}%` : 'N/A',
+          };
+        }),
+      };
     } catch (err) {
       if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
       return { error: `Could not fetch earnings for ${ticker}: ${(err as Error).message}` };
     }
+  },
+});
+
+/** Nasdaq writes BMO/AMC, TwelveData "Pre Market" / "After Hours". */
+function reportSession(time: string | undefined): 'before open' | 'after close' | null {
+  const t = (time ?? '').toLowerCase();
+  if (t === 'bmo' || t.startsWith('pre')) return 'before open';
+  if (t === 'amc' || t.startsWith('after')) return 'after close';
+  return null;
+}
+
+/**
+ * Cache only, zero credits: the market calendar the prefetch cron keeps warm
+ * WARM_DAYS_FORWARD ahead, then each stock page's cached /earnings rows for
+ * dates past that window. A ticker in neither gets no date rather than a
+ * live fan-out, since the question is usually about a whole portfolio.
+ */
+const getUpcomingEarnings = tool({
+  description:
+    'Next earnings report date for one or more stocks, e.g. every holding or watchlist stock the user has. ' +
+    'Use for "when does X report", "any of my holdings have earnings soon", "what reports this week". ' +
+    'Pass all tickers in ONE call. Free: reads BullPen\'s earnings calendar, no API credits. ' +
+    'Answer in text, one line per stock with its date and, when known, "before open" or "after close". ' +
+    'estimated: true means the date is projected from past reporting dates, not announced by the company: say so. ' +
+    'reportedRecently lists stocks that already reported in the past week: say when, they are not missing. ' +
+    'Tickers under noDateFound have no date on file (often ETFs, funds or crypto, which do not report earnings); ' +
+    'say that rather than guessing. Do not also call getEarningsData unless the user asked about past results. ' +
+    'The result already puts Yes/No buttons to open the full earnings calendar under your reply, so do not ' +
+    'call navigateTo for it.',
+  inputSchema: jsonSchema<{ tickers: string[] }>({
+    type: 'object',
+    properties: {
+      tickers: {
+        type: 'array',
+        items: { type: 'string' },
+        minItems: 1,
+        maxItems: SCREEN_TICKER_CAP,
+        description: 'Stock tickers, e.g. ["MU", "AAPL"].',
+      },
+    },
+    required: ['tickers'],
+    additionalProperties: false,
+  }),
+  execute: async ({ tickers }) => {
+    const wanted = new Set(tickers.map((t) => t.toUpperCase()));
+    const today = todayET();
+    type Row = { ticker: string; name: string | null; date: string; session: string | null; estimated: boolean };
+    const found = new Map<string, Row>();
+    // The warmed week behind today too: asked the day after TSLA and META
+    // reported, a forward-only read left them dateless and Bull guessed.
+    const recent = new Map<string, Row>();
+
+    try {
+      const { byDate } = await getCalendarRange<EarningsCalendarItem>(
+        'earnings', addDays(today, -WARM_DAYS_BACK), addDays(today, WARM_DAYS_FORWARD), { allowFetch: false }
+      );
+      for (const date of [...byDate.keys()].sort()) {
+        for (const r of byDate.get(date) ?? []) {
+          const sym = r.symbol?.toUpperCase();
+          if (!wanted.has(sym)) continue;
+          const row = { ticker: sym, name: r.name ?? null, date, session: reportSession(r.time), estimated: r.date_estimated === true };
+          if (date < today) recent.set(sym, row);
+          else if (!found.has(sym)) found.set(sym, row);
+        }
+      }
+    } catch {
+      // Fall through to the per-stock cache below.
+    }
+
+    await Promise.all([...wanted].filter((s) => !found.has(s)).map(async (sym) => {
+      const rows = await getCachedStale<Array<{ date: string; time?: string; epsActual: number | null }>>(`snap-earnings:${sym}`).catch(() => null);
+      const next = (rows ?? []).filter((r) => r.date >= today && r.epsActual == null).sort((a, b) => a.date.localeCompare(b.date))[0];
+      // Past the calendar window, so no company announcement backs it yet.
+      if (next) found.set(sym, { ticker: sym, name: null, date: next.date, session: reportSession(next.time), estimated: true });
+    }));
+
+    // The calendar offer rides on this result. Left to a separate navigateTo
+    // call, the model drafted the list in hidden reasoning, made the call,
+    // and replied with only "use the buttons below" three tries out of three.
+    const calendar = resolveDestination('calendar', {});
+    return {
+      today,
+      upcoming: [...found.values()].sort((a, b) => a.date.localeCompare(b.date)),
+      reportedRecently: [...recent.values()].filter((r) => !found.has(r.ticker)),
+      noDateFound: [...wanted].filter((s) => !found.has(s) && !recent.has(s)),
+      ...('error' in calendar ? {} : {
+        ...navigateAction(calendar.path, calendar.label, false),
+        // The card is bare Yes/No buttons, so the reply has to ask the question.
+        note: 'Yes/No buttons that open the earnings calendar appear under your reply. Write the dated list, then ' +
+          'end with one short question offering the full earnings calendar. Do not mention the buttons.',
+      }),
+    };
   },
 });
 
@@ -1628,6 +1747,7 @@ export const COMPANY_DATA_TOOLS = {
   getKeyStatistics,
   getCompanyFinancials,
   getEarningsData,
+  getUpcomingEarnings,
   getHealthScore,
   getLiveCompanyProfile,
 };
@@ -1937,6 +2057,7 @@ export const BULLPEN_TOOLS = {
   getKeyStatistics,
   getCompanyFinancials,
   getEarningsData,
+  getUpcomingEarnings,
   getHealthScore,
   getLiveCompanyProfile,
 };

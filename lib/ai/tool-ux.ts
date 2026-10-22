@@ -56,6 +56,7 @@ const STATUS_LABELS: Record<string, string> = {
   getCompanyFinancials: 'Reading financial statements…',
   getLiveQuote: 'Fetching live price…',
   getEarningsData: 'Checking earnings history…',
+  getUpcomingEarnings: 'Checking earnings dates…',
   getCompanyProfile: 'Looking up company profile…',
   getLiveCompanyProfile: 'Looking up company profile…',
   getCompanyMetrics: 'Pulling historical metrics…',

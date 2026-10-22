@@ -125,8 +125,11 @@ export function ToolResultCard({
       return <CompanyFinancialsResultCard output={output as CompanyFinancialsRow[]} />;
     }
     case 'getEarningsData': {
-      if (!Array.isArray(output)) return null;
-      return <EarningsResultCard output={output as EarningsRow[]} />;
+      // A bare array in chats saved before the result carried its ticker.
+      if (Array.isArray(output)) return <EarningsResultCard output={output as EarningsRow[]} />;
+      const o = output as { ticker?: string; history?: EarningsRow[] };
+      if (!Array.isArray(o.history)) return null;
+      return <EarningsResultCard output={o.history} ticker={o.ticker} />;
     }
     case 'getCompanyMetrics': {
       const o = output as Partial<CompanyMetricsOutput>;
