@@ -99,6 +99,15 @@ export function convertCurrency(
 }
 
 /**
+ * 1 unit of a listing's trading currency in USD. Quotes and avg_price arrive in
+ * the listing's own currency (EUR for a Frankfurt listing) while portfolio sums
+ * run in USD. 1 for USD listings, and when the rates (any base) lack the code.
+ */
+export function listingToUsd(tradingCurrency: string | null | undefined, rates: ExchangeRates | null | undefined): number {
+  return convertCurrency(1, (tradingCurrency ?? 'USD') as CurrencyCode, 'USD', rates ?? null);
+}
+
+/**
  * Options for currency formatting
  */
 export interface FormatCurrencyOptions {

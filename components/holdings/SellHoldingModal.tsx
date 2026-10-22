@@ -27,12 +27,12 @@ interface SellHoldingModalProps {
    *  Must stay in USD (never display-currency-converted): avg_price on the
    *  holding is always USD, and realized P/L here and server-side both
    *  subtract this from avg_price directly. */
-  currentPriceUSD?: number;
+  currentListingPrice?: number;
 }
 
 const QUICK_PERCENTS = [25, 50, 75, 100] as const;
 
-export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD }: SellHoldingModalProps) {
+export function SellHoldingModal({ open, onOpenChange, holding, currentListingPrice }: SellHoldingModalProps) {
   const { t } = useTranslation('holdings');
   const [quantity, setQuantity] = useState('');
   const [salePrice, setSalePrice] = useState('');
@@ -43,20 +43,20 @@ export function SellHoldingModal({ open, onOpenChange, holding, currentPriceUSD 
   const [cashError, setCashError] = useState(false);
 
   useEffect(() => {
-    // Deliberately excludes currentPriceUSD from the deps: this page has a live
-    // price feed, so currentPriceUSD ticks every few seconds while the modal is
-    // open. Populate once per open+holding only — including currentPriceUSD
+    // Deliberately excludes currentListingPrice from the deps: this page has a live
+    // price feed, so currentListingPrice ticks every few seconds while the modal is
+    // open. Populate once per open+holding only — including currentListingPrice
     // here previously wiped the user's typed quantity/price/date back to
     // defaults on every live tick, silently discarding in-progress input.
     if (holding && open) {
       setQuantity('');
-      setSalePrice(currentPriceUSD != null ? String(currentPriceUSD) : (holding.avg_price?.toString() ?? ''));
+      setSalePrice(currentListingPrice != null ? String(currentListingPrice) : (holding.avg_price?.toString() ?? ''));
       setSaleDate(new Date().toISOString().slice(0, 10));
       setSaved(false);
       setCashError(false);
       cash.setEnabled(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- currentPriceUSD intentionally excluded, see comment above
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- currentListingPrice intentionally excluded, see comment above
   }, [holding, open]);
 
   if (!holding) return null;

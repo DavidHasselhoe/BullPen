@@ -33,7 +33,7 @@ import { useBrokerageAccounts, useBrokerageConnect } from '@/hooks/use-brokerage
 import { BrokerageConnect } from '@/components/brokerage/BrokerageConnect';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
-import { convertCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { convertCurrency, listingToUsd, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { CashBalanceDialog } from '@/components/holdings/CashBalanceDialog';
@@ -81,7 +81,9 @@ export default function HoldingsPage() {
     return c as CurrencyCode;
   }, [user]);
 
-  const exchangeRates = useExchangeRates(userCurrency);
+  // A EUR listing needs EUR→USD even for a USD user, so fetch rates whenever one is held.
+  const hasForeignListings = holdings.some((h) => (h.trading_currency ?? 'USD') !== 'USD');
+  const exchangeRates = useExchangeRates(userCurrency, hasForeignListings);
 
   // Scalar rate: 1 USD = X userCurrency at today's rates (1 when USD). Hoisted out of
   // holdingsWithPrices so PortfolioPerformanceChart can convert its own USD-denominated
@@ -187,12 +189,16 @@ export default function HoldingsPage() {
 
     const conv = (usd: number) => usd * currentFxRate;
 
+    // Quotes and avg_price are in the listing's own currency (EUR for a Frankfurt
+    // listing); everything below adds up in USD, so convert where they come in.
+    const toUsd = (h: { trading_currency: string | null }) => listingToUsd(h.trading_currency, exchangeRates.data);
+
     // Allocation — use live price where available so the percentages stay current.
     const totalMarketValueUSD = holdings.reduce((sum, holding) => {
       const lp = throttledLivePrices.get(holding.symbol);
       const bq = quotesMap[holding.symbol];
       const price = lp?.price ?? bq?.price;
-      return price && holding.quantity ? sum + price * holding.quantity : sum;
+      return price && holding.quantity ? sum + price * holding.quantity * toUsd(holding) : sum;
     }, cashValue / currentFxRate);
 
     return holdings.map((holding) => {
@@ -201,11 +207,13 @@ export default function HoldingsPage() {
       const logoUrl = holding.logo_url ?? null;
       const sector = sectorsMap[holding.symbol] ?? null;
 
-      const currentPriceUSD = liveQuote?.price ?? batchQuote?.price;
+      const fx = toUsd(holding);
+      const currentPriceNative = liveQuote?.price ?? batchQuote?.price;
+      const currentPriceUSD = currentPriceNative !== undefined ? currentPriceNative * fx : undefined;
 
       // batchQuote.stale means the REST fetch missed this symbol and it came
       // from the shared last-price cache instead — only worth flagging when
-      // there's also no live tick (a live tick always wins in currentPriceUSD
+      // there's also no live tick (a live tick always wins in currentPriceNative
       // above, so the row is truly showing a fresh price either way).
       const isPriceStale = !liveQuote && !!batchQuote?.stale;
 
@@ -214,7 +222,7 @@ export default function HoldingsPage() {
       // tick's previousClose, which the stream seeds within ~0.5s of page load.
       // (Previously this used only the batch quote, so the column showed 0%/blank
       //  for any symbol the batch missed until it eventually arrived.)
-      const previousCloseUSD =
+      const previousCloseNative =
         batchQuote && batchQuote.price > 0 && batchQuote.change !== undefined
           ? batchQuote.price - batchQuote.change
           : liveQuote && liveQuote.previousClose > 0
@@ -223,27 +231,36 @@ export default function HoldingsPage() {
 
       // Recompute change from live price whenever we have a previous close anchor,
       // else fall back to whatever change the batch or live tick already carries.
-      const dayChangeUSD =
-        currentPriceUSD !== undefined && previousCloseUSD !== undefined
-          ? currentPriceUSD - previousCloseUSD
+      const dayChangeNative =
+        currentPriceNative !== undefined && previousCloseNative !== undefined
+          ? currentPriceNative - previousCloseNative
           : batchQuote?.change ?? liveQuote?.change;
+      const dayChangeUSD = dayChangeNative !== undefined ? dayChangeNative * fx : undefined;
 
       const dayChangePercent =
-        currentPriceUSD !== undefined && previousCloseUSD && previousCloseUSD > 0
-          ? ((currentPriceUSD - previousCloseUSD) / previousCloseUSD) * 100
+        currentPriceNative !== undefined && previousCloseNative && previousCloseNative > 0
+          ? ((currentPriceNative - previousCloseNative) / previousCloseNative) * 100
           : batchQuote?.changePercent ?? liveQuote?.changePercent;
 
       const marketValueUSD =
         currentPriceUSD && holding.quantity ? currentPriceUSD * holding.quantity : undefined;
 
       // FX-aware P&L: cost basis uses the rate at purchase, current value uses today's rate.
-      // For holdings without a stored purchase rate (pre-migration or USD users), fall back to
-      // currentFxRate — this collapses to the plain USD calculation, the same as before.
-      const purchaseFxRate = holding.purchase_fx_rate ?? currentFxRate;
+      // The stored rate is USD→purchase_currency on the purchase date, so it only applies to
+      // a USD listing still shown in the currency it was saved for. Otherwise (no stored rate,
+      // display currency changed since, or a non-USD listing) cost converts at today's rate:
+      // the P/L then leaves out the currency move rather than inventing one. A rate of 1 saved
+      // in USD and read as USD→NOK showed AAPL at +1074%.
+      const purchaseFxRate =
+        (holding.trading_currency ?? 'USD') === 'USD' &&
+        holding.purchase_currency === userCurrency &&
+        holding.purchase_fx_rate != null
+          ? holding.purchase_fx_rate
+          : currentFxRate;
 
       const costBasisHome =
         holding.avg_price != null && holding.quantity != null
-          ? holding.avg_price * holding.quantity * purchaseFxRate
+          ? holding.avg_price * fx * holding.quantity * purchaseFxRate
           : undefined;
 
       const currentValueHome =
@@ -270,8 +287,9 @@ export default function HoldingsPage() {
         ...holding,
         currentPrice: currentPriceUSD !== undefined ? conv(currentPriceUSD) : undefined,
         currentPriceUSD,
+        currentPriceNative,
         dayChange: dayChangeUSD !== undefined ? conv(dayChangeUSD) : undefined,
-        dayChangeNative: dayChangeUSD,
+        dayChangeNative,
         dayChangePercent,
         marketValue: marketValueUSD !== undefined ? conv(marketValueUSD) : undefined,
         unrealizedPL,
@@ -282,7 +300,7 @@ export default function HoldingsPage() {
         isPriceStale,
       };
     });
-  }, [holdings, quotesData.data, currentFxRate, throttledLivePrices, cashValue]);
+  }, [holdings, quotesData.data, currentFxRate, exchangeRates.data, userCurrency, throttledLivePrices, cashValue]);
 
   // Throttle at 3 s so live WebSocket ticks don't thrash the entire UI on every price event.
   // The portfolio value widget updates instantly (it reads livePrices directly via the memo),

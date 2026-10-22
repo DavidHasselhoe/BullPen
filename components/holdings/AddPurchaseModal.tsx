@@ -27,10 +27,10 @@ interface AddPurchaseModalProps {
   onOpenChange: (open: boolean) => void;
   holding: UserHolding | null;
   /** Live market price in USD, if available — prefills the purchase price field. */
-  currentPriceUSD?: number;
+  currentListingPrice?: number;
 }
 
-export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD }: AddPurchaseModalProps) {
+export function AddPurchaseModal({ open, onOpenChange, holding, currentListingPrice }: AddPurchaseModalProps) {
   const { t } = useTranslation('holdings');
   const { user } = useAuth();
   const [quantity, setQuantity] = useState('');
@@ -63,18 +63,18 @@ export function AddPurchaseModal({ open, onOpenChange, holding, currentPriceUSD 
   });
 
   useEffect(() => {
-    // Same deliberate omission of currentPriceUSD from deps as SellHoldingModal:
-    // this page has a live price feed, so currentPriceUSD ticks every few
+    // Same deliberate omission of currentListingPrice from deps as SellHoldingModal:
+    // this page has a live price feed, so currentListingPrice ticks every few
     // seconds while the modal is open. Populate once per open+holding only.
     if (holding && open) {
       setQuantity('');
-      setPrice(currentPriceUSD != null ? String(currentPriceUSD) : '');
+      setPrice(currentListingPrice != null ? String(currentListingPrice) : '');
       setPurchaseDate(new Date().toISOString().slice(0, 10));
       setSaved(false);
       setCashError(false);
       cash.setEnabled(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- currentPriceUSD intentionally excluded, see comment above
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- currentListingPrice intentionally excluded, see comment above
   }, [holding, open]);
 
   if (!holding) return null;

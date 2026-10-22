@@ -87,13 +87,15 @@ const formatSignedCurrency = (value: number, currency: CurrencyCode, opts?: { ro
  * A per-share figure in the listing's own trading currency, never converted:
  * the price the user paid and the price the stock quotes at everywhere else.
  * USD reads "$298.40" like every other money cell in the row; anything else
- * keeps its code, since formatCurrency falls back to "$" for codes it doesn't know.
+ * keeps its code ("EUR 120.00"), since formatCurrency falls back to "$" for
+ * codes it doesn't know. Fixed decimals: formatNumber would print "EUR 120".
  */
 function formatListingPrice(value: number, tradingCurrency: string | null, roundNumbers: boolean) {
   const code = tradingCurrency ?? 'USD';
+  const digits = roundNumbers ? 0 : 2;
   return code === 'USD'
     ? formatCurrencyValue(value, 'USD', roundNumbers ? { round: true } : undefined)
-    : `${code} ${formatNumberUtil(value, roundNumbers)}`;
+    : `${code} ${value.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 }
 
 // ─── Export ───────────────────────────────────────────────────────────────────
@@ -121,7 +123,7 @@ function buildHoldingsTable(rows: HoldingWithPrice[], currency: string) {
       h.asset_type ?? 'stock',
       csvShares(h.quantity),
       csvNum(h.avg_price),
-      csvNum(h.currentPriceUSD),
+      csvNum(h.currentPriceNative),
       csvNum(costBasis),
       csvNum(h.marketValue),
       csvNum(h.unrealizedPL),
@@ -381,13 +383,13 @@ const HoldingRow = memo(function HoldingRow({
       <td className="py-4 px-2 xl:px-3 text-sm font-medium text-foreground">
         {showPriceSkeleton ? (
           <div className="space-y-1"><PriceSkeleton /><PriceSkeleton /></div>
-        ) : holding.currentPriceUSD !== undefined ? (
+        ) : holding.currentPriceNative !== undefined ? (
           <div className="space-y-0.5">
             <div
               className={cn('animate-in fade-in duration-300', holding.isPriceStale && 'text-muted-foreground')}
               title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
             >
-              {formatListingPrice(holding.currentPriceUSD, holding.trading_currency, roundNumbers)}
+              {formatListingPrice(holding.currentPriceNative, holding.trading_currency, roundNumbers)}
             </div>
             {holding.dayChangePercent !== undefined && (
               <DayChangeCell
@@ -459,7 +461,7 @@ const HoldingRow = memo(function HoldingRow({
     </tr>
   );
 }, (prev, next) =>
-  prev.holding.currentPriceUSD === next.holding.currentPriceUSD &&
+  prev.holding.currentPriceNative === next.holding.currentPriceNative &&
   prev.holding.dayChangePercent === next.holding.dayChangePercent &&
   prev.holding.isPriceStale === next.holding.isPriceStale &&
   prev.holding.marketValue === next.holding.marketValue &&
@@ -863,7 +865,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices, h
                     label={t('holdingsTableFieldPrice')}
                     valueClass={holding.isPriceStale ? 'text-muted-foreground' : undefined}
                     title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
-                    value={holding.currentPriceUSD !== undefined ? formatListingPrice(holding.currentPriceUSD, holding.trading_currency, roundNumbers) : '—'}
+                    value={holding.currentPriceNative !== undefined ? formatListingPrice(holding.currentPriceNative, holding.trading_currency, roundNumbers) : '—'}
                   />
                   <HoldingField
                     label={t('holdingsTableFieldDay')}
@@ -1047,13 +1049,13 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices, h
         open={isSellModalOpen}
         onOpenChange={setIsSellModalOpen}
         holding={sellingHolding}
-        currentPriceUSD={sellingHolding ? holdingsWithPrices.find((h) => h.id === sellingHolding.id)?.currentPriceUSD : undefined}
+        currentListingPrice={sellingHolding ? holdingsWithPrices.find((h) => h.id === sellingHolding.id)?.currentPriceNative : undefined}
       />
       <AddPurchaseModal
         open={isAddPurchaseModalOpen}
         onOpenChange={setIsAddPurchaseModalOpen}
         holding={addingPurchaseHolding}
-        currentPriceUSD={addingPurchaseHolding ? holdingsWithPrices.find((h) => h.id === addingPurchaseHolding.id)?.currentPriceUSD : undefined}
+        currentListingPrice={addingPurchaseHolding ? holdingsWithPrices.find((h) => h.id === addingPurchaseHolding.id)?.currentPriceNative : undefined}
       />
       {deletingHolding && (
         <DeleteHoldingDialog

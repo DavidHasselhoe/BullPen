@@ -9,7 +9,7 @@ import { useWatchlist } from '@/hooks/use-watchlist';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useCashValue } from '@/hooks/use-cash-value';
 import { useTradingSession, type TradingSession } from '@/hooks/use-trading-session';
-import { convertCurrency, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { convertCurrency, listingToUsd, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { fetchHoldingQuotes } from '@/lib/holdings/holding-quotes';
 
 export interface HomeMover {
@@ -40,15 +40,16 @@ export function useHomePortfolio() {
     const c = (user?.settings as Record<string, unknown> | null)?.default_currency as string | undefined;
     return !c || c === 'exchange' ? 'USD' : (c as CurrencyCode);
   })();
-  const rates = useExchangeRates(currency);
-  const usdRate = currency === 'USD' || !rates.data ? 1 : convertCurrency(1, 'USD', currency, rates.data);
-  const cashValue = useCashValue(currency, usdRate, !!rates.data);
-
   // Fully sold positions keep a zero-quantity row for undo and chart history.
   const holdings = useMemo(
     () => (allHoldings ?? []).filter(isOpenPosition),
     [allHoldings],
   );
+
+  // A EUR listing needs EUR→USD even for a USD user, as on My Holdings.
+  const rates = useExchangeRates(currency, holdings.some((h) => (h.trading_currency ?? 'USD') !== 'USD'));
+  const usdRate = currency === 'USD' || !rates.data ? 1 : convertCurrency(1, 'USD', currency, rates.data);
+  const cashValue = useCashValue(currency, usdRate, !!rates.data);
 
   const symbols = useMemo(() => {
     const set = new Set<string>();
@@ -75,8 +76,9 @@ export function useHomePortfolio() {
     for (const h of holdings) {
       const q = quotes[h.symbol];
       if (!q || !h.quantity) continue;
-      valueUSD += q.price * h.quantity;
-      changeUSD += (q.change ?? 0) * h.quantity;
+      const fx = listingToUsd(h.trading_currency, rates.data);
+      valueUSD += q.price * h.quantity * fx;
+      changeUSD += (q.change ?? 0) * h.quantity * fx;
       priced++;
     }
     if (priced === 0) return null;
@@ -86,7 +88,7 @@ export function useHomePortfolio() {
       todayChange: changeUSD * usdRate,
       todayPct: prevUSD > 0 ? (changeUSD / prevUSD) * 100 : 0,
     };
-  }, [quotes, holdings, usdRate, cashValue]);
+  }, [quotes, holdings, rates.data, usdRate, cashValue]);
 
   const movers = useMemo((): HomeMover[] => {
     if (!quotes) return [];
@@ -104,6 +106,8 @@ export function useHomePortfolio() {
     currency,
     /** 1 USD in `currency`, for converting USD-denominated series. */
     usdRate,
+    /** 1 unit of a holding's listing currency in USD; quotes arrive in that currency. */
+    toUsd: (h: { trading_currency: string | null }) => listingToUsd(h.trading_currency, rates.data),
     session: session as TradingSession,
     holdings,
     symbols,

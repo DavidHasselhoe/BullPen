@@ -33,14 +33,15 @@ export function YourPositionCard({ ticker }: { ticker: string }) {
   const tone = (v: number) =>
     Math.abs(v) < 0.005 ? 'text-muted-foreground' : v > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
 
-  const valueUSD = q.price * h.quantity;
+  const fx = home.toUsd(h);
+  const valueUSD = q.price * h.quantity * fx;
   const holdingsUSD = home.holdings.reduce((sum, x) => {
     const xq = home.quotes?.[x.symbol];
-    return xq && x.quantity ? sum + xq.price * x.quantity : sum;
+    return xq && x.quantity ? sum + xq.price * x.quantity * home.toUsd(x) : sum;
   }, 0);
-  const plUSD = h.avg_price ? (q.price - h.avg_price) * h.quantity : null;
+  const plUSD = h.avg_price ? (q.price - h.avg_price) * h.quantity * fx : null;
   const plPct = h.avg_price ? ((q.price - h.avg_price) / h.avg_price) * 100 : null;
-  const todayUSD = (q.change ?? 0) * h.quantity;
+  const todayUSD = (q.change ?? 0) * h.quantity * fx;
   const todayPct = q.changePercent ?? 0;
   const share = holdingsUSD > 0 ? (valueUSD / holdingsUSD) * 100 : null;
   const shares = h.quantity.toLocaleString(i18n.language, { maximumFractionDigits: 6 });
@@ -84,7 +85,7 @@ export function YourPositionCard({ ticker }: { ticker: string }) {
         <div>
           <dt className="text-xs text-muted-foreground">{t('positionAvgCost')}</dt>
           <dd className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">
-            {h.avg_price ? fmt(h.avg_price) : '—'}
+            {h.avg_price ? fmt(h.avg_price * fx) : '—'}
           </dd>
           <dd className="mt-0.5 text-xs text-muted-foreground">{t('positionPerShare')}</dd>
         </div>
