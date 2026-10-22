@@ -107,5 +107,12 @@
   "notifSourceCalendar": "Calendario del Mercado",
   "notifSourceHoldings": "Mis posiciones",
   "notifSourcePriceAlerts": "Alertas de precio",
-  "notifSourceAcademy": "Academia"
+  "notifSourceAcademy": "Academia",
+  "notifEarningsTodayOne": "{{symbol}} presenta resultados hoy",
+  "notifEarningsTodayOwned": "{{n}} acciones que tienes presentan resultados hoy",
+  "notifEarningsTodayWatched": "{{n}} acciones de tu lista de seguimiento presentan resultados hoy",
+  "notifEarningsTodayMixed": "{{n}} de tus acciones presentan resultados hoy",
+  "notifEarningsYouOwn": "Tienes {{list}}.",
+  "notifEarningsOnWatchlist": "En tu lista de seguimiento: {{list}}.",
+  "notifEarningsMore": "{{n}} más"
 }

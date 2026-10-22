@@ -107,5 +107,12 @@
   "notifSourceCalendar": "マーケットカレンダー",
   "notifSourceHoldings": "保有銘柄",
   "notifSourcePriceAlerts": "価格アラート",
-  "notifSourceAcademy": "アカデミー"
+  "notifSourceAcademy": "アカデミー",
+  "notifEarningsTodayOne": "{{symbol}} は本日決算を発表します",
+  "notifEarningsTodayOwned": "保有銘柄のうち {{n}} 銘柄が本日決算を発表します",
+  "notifEarningsTodayWatched": "ウォッチリストの {{n}} 銘柄が本日決算を発表します",
+  "notifEarningsTodayMixed": "お持ちの銘柄のうち {{n}} 銘柄が本日決算を発表します",
+  "notifEarningsYouOwn": "保有銘柄：{{list}}。",
+  "notifEarningsOnWatchlist": "ウォッチリスト：{{list}}。",
+  "notifEarningsMore": "ほか {{n}} 件"
 }

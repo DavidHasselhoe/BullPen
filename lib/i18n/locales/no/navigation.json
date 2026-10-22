@@ -107,5 +107,12 @@
   "notifSourceCalendar": "Markedskalender",
   "notifSourceHoldings": "Mine beholdninger",
   "notifSourcePriceAlerts": "Kursvarsler",
-  "notifSourceAcademy": "Akademi"
+  "notifSourceAcademy": "Akademi",
+  "notifEarningsTodayOne": "{{symbol}} legger frem resultat i dag",
+  "notifEarningsTodayOwned": "{{n}} aksjer du eier legger frem resultat i dag",
+  "notifEarningsTodayWatched": "{{n}} aksjer på favorittlisten din legger frem resultat i dag",
+  "notifEarningsTodayMixed": "{{n}} av aksjene dine legger frem resultat i dag",
+  "notifEarningsYouOwn": "Du eier {{list}}.",
+  "notifEarningsOnWatchlist": "På favorittlisten din: {{list}}.",
+  "notifEarningsMore": "{{n}} til"
 }

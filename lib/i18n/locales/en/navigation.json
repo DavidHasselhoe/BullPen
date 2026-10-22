@@ -107,5 +107,12 @@
   "notifSourceCalendar": "Market Calendar",
   "notifSourceHoldings": "My holdings",
   "notifSourcePriceAlerts": "Price alerts",
-  "notifSourceAcademy": "Academy"
+  "notifSourceAcademy": "Academy",
+  "notifEarningsTodayOne": "{{symbol}} reports earnings today",
+  "notifEarningsTodayOwned": "{{n}} stocks you own report earnings today",
+  "notifEarningsTodayWatched": "{{n}} stocks on your watchlist report earnings today",
+  "notifEarningsTodayMixed": "{{n}} of your stocks report earnings today",
+  "notifEarningsYouOwn": "You own {{list}}.",
+  "notifEarningsOnWatchlist": "On your watchlist: {{list}}.",
+  "notifEarningsMore": "{{n}} more"
 }

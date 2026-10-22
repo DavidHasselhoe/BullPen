@@ -3734,5 +3734,13 @@
   "discover.indexColWeightLabel": "81d27ef6d5033c3e1d46b7b2b50868604fd432ddb77716b5ed9383c30c08432f",
   "discover.indexColWeightTip_sp500": "3cb51b75b032a524a19f6df2cb7d893ea5680a89a27928030609199651e71830",
   "discover.indexColWeightTip_dow30": "3b13df2fd1d1798d028153add4f33fa514a61ee7f2710b5d0fa4e197a1c52e25",
-  "discover.indexName_sp500": "be47fc91200109dea682f95cb303fa2d0fe75e7ee5369ab73860b670a96f8c9f"
+  "discover.indexName_sp500": "be47fc91200109dea682f95cb303fa2d0fe75e7ee5369ab73860b670a96f8c9f",
+  "navigation.notifSourceWashington": "cde66354e64b1052d1f5ee0517c716ef8d5690ac32114d62255a006d63bca5d4",
+  "navigation.notifEarningsTodayOne": "460a51216a560a599643e3f922cf8d04ed291bfcf904c7f1d4b651804a370c65",
+  "navigation.notifEarningsTodayOwned": "83950ef9089ae227cf2352869d29d77d9814dc1ce739cd631e1066bdc0179cb8",
+  "navigation.notifEarningsTodayWatched": "b842c4dcda72c63d8796a3281302463cbf5adc7860eb27cef6c795a010d5e559",
+  "navigation.notifEarningsTodayMixed": "2f7358233adb8b1884d7a3cbbbb10514ae19790c11ea10854689e2092a170a8a",
+  "navigation.notifEarningsYouOwn": "bcf644d1d72c07211a40a61d4a47239dc652b75db5854713351b5981721e4241",
+  "navigation.notifEarningsOnWatchlist": "ce15e24231ec290901a59d35825c211b56497f3487909e5166cadec6ab491c07",
+  "navigation.notifEarningsMore": "73fea678cb9bc49d4b8788140fcfdadca7cfbd7aaa008f996513c7cce8d02705"
 }

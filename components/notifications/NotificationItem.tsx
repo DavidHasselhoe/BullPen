@@ -7,7 +7,7 @@ import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, 
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ClampedText } from '@/components/ui/ClampedText';
-import type { Notification } from '@/lib/notifications/notifications-db';
+import type { EarningsTodayParams, Notification } from '@/lib/notifications/notifications-db';
 import { useQuery } from '@tanstack/react-query';
 import { useClock } from '@/hooks/use-clock';
 import { fmtClockDate } from '@/lib/dates/clock';
@@ -139,9 +139,42 @@ function GenericIcon({ type }: { type: Notification['type'] }) {
   );
 }
 
+/**
+ * Tickers in an earnings-today digest: from params, or for rows written
+ * before 2026-10-22 from the title ("BE reports…") or message ("BE, WDC +2 more").
+ */
+function earningsTickers(n: Notification): string[] {
+  if (n.params?.kind === 'earnings_today') return [...n.params.owned, ...n.params.watched];
+  const one = leadingTicker(n.title);
+  if (one) return [one];
+  return (n.message ?? '').replace(/\s\+\d+ more$/, '').split(', ').filter((s) => /^[A-Z][A-Z0-9./-]{0,9}$/.test(s));
+}
+
+/** Title and message for an earnings-today digest, in the reader's language. */
+function earningsTodayText(p: EarningsTodayParams, t: TFunction<'navigation'>, language: string) {
+  const fmt = new Intl.ListFormat(intlLocale(language), { type: 'conjunction' });
+  const list = (syms: string[]) => fmt.format(syms.length > 5 ? [...syms.slice(0, 4), t('notifEarningsMore', { n: syms.length - 4 })] : syms);
+  const n = p.owned.length + p.watched.length;
+  const title = n === 1 ? t('notifEarningsTodayOne', { symbol: p.owned[0] ?? p.watched[0] })
+    : !p.watched.length ? t('notifEarningsTodayOwned', { n })
+    : !p.owned.length ? t('notifEarningsTodayWatched', { n })
+    : t('notifEarningsTodayMixed', { n });
+  const message = [
+    p.owned.length ? t('notifEarningsYouOwn', { list: n === 1 && p.name ? p.name : list(p.owned) }) : '',
+    p.watched.length ? t('notifEarningsOnWatchlist', { list: n === 1 && p.name ? p.name : list(p.watched) }) : '',
+  ].filter(Boolean).join(' ');
+  return { title, message };
+}
+
 /** Choose the icon: company logo(s) for stock moves, themed glyph otherwise. */
 function NotificationIcon({ n }: { n: Notification }) {
   const direction = moveDirection(n);
+
+  if (n.type === 'earnings' && n.entity_type === 'portfolio') {
+    const tickers = earningsTickers(n);
+    if (tickers.length === 1) return <MoveLogo ticker={tickers[0]} direction={null} />;
+    if (tickers.length > 1) return <LogoStack tickers={tickers} direction={null} />;
+  }
 
   if (n.type === 'price_move' && n.entity_type === 'portfolio') {
     const tickers = parseTickersFromMessage(n.message ?? '');
@@ -337,6 +370,9 @@ function StandardNotificationItem({ notification, onMarkRead }: NotificationItem
   const { t, i18n } = useTranslation('navigation');
   const source = notificationSource(notification, t);
   const unread = !notification.is_read;
+  const text = notification.params?.kind === 'earnings_today'
+    ? earningsTodayText(notification.params, t, i18n.language)
+    : notification;
   const handleClick = () => {
     if (unread) onMarkRead(notification.id);
   };
@@ -348,7 +384,7 @@ function StandardNotificationItem({ notification, onMarkRead }: NotificationItem
   const title = (
     <>
       {unread && <span className="sr-only">{t('notifUnreadPrefix')} </span>}
-      {notification.title}
+      {text.title}
     </>
   );
 
@@ -375,12 +411,12 @@ function StandardNotificationItem({ notification, onMarkRead }: NotificationItem
             {formatRelativeTime(notification.created_at, i18n.language)}
           </span>
         </div>
-        {notification.message && (
+        {text.message && (
           <ClampedText
             textClassName="text-sm leading-snug text-muted-foreground"
             toggleClassName="relative z-10"
           >
-            {notification.message}
+            {text.message}
           </ClampedText>
         )}
         {source && (

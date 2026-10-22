@@ -32,6 +32,8 @@ export interface EarningsItem {
   symbol: string;
   companyName?: string;
   date: string; // YYYY-MM-DD
+  /** Held (open position) rather than only on a watchlist. */
+  owned?: boolean;
 }
 
 /** "Oct 21" from a YYYY-MM-DD market date, read in UTC so no zone moves it a day. */
@@ -531,21 +533,30 @@ export async function createEarningsUpcomingNotification(
   if (await alreadyNotifiedToday(userId, 'earnings', dedupeId)) return false;
 
   const count = items.length;
-  const tickerList = items
-    .slice(0, 5)
-    .map((e) => e.symbol)
-    .join(', ');
+  const owned = items.filter((e) => e.owned).map((e) => e.symbol);
+  const watched = items.filter((e) => !e.owned).map((e) => e.symbol);
+  const name = count === 1 ? (items[0].companyName ?? items[0].symbol) : undefined;
 
-  const suffix = count > 5 ? ` +${count - 5} more` : '';
+  // English fallback for builds that don't read params; the panel words it
+  // from params in the reader's language (NotificationItem earningsTodayText).
+  const list = (syms: string[]) => syms.slice(0, 5).join(', ') + (syms.length > 5 ? ` +${syms.length - 5} more` : '');
+  const message = count === 1
+    ? (owned.length ? `You own ${name}.` : `On your watchlist: ${name}.`)
+    : [owned.length ? `You own ${list(owned)}.` : '', watched.length ? `On your watchlist: ${list(watched)}.` : ''].filter(Boolean).join(' ');
+  const title = count === 1 ? `${items[0].symbol} reports earnings today`
+    : !watched.length ? `${count} stocks you own report earnings today`
+    : !owned.length ? `${count} stocks on your watchlist report earnings today`
+    : `${count} of your stocks report earnings today`;
 
   const input: CreateNotificationInput = {
     user_id: userId,
     type: 'earnings',
-    title: count === 1 ? `${items[0].symbol} reports earnings today` : `${count} of your stocks report earnings today`,
-    message: count === 1 ? (items[0].companyName ?? items[0].symbol) : tickerList + suffix,
+    title,
+    message,
     entity_type: 'portfolio',
     entity_id: dedupeId,
     severity: 'info',
+    params: { kind: 'earnings_today', owned, watched, ...(name ? { name } : {}) },
   };
 
   const result = await createNotification(input);

@@ -70,13 +70,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         .or(OPEN_POSITION_FILTER) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
     ]);
 
-    const userSymbols = new Map<string, Map<string, string>>(); // userId → (symbol → companyName)
+    // userId → (symbol → companyName, owned). Holdings first, so a stock that
+    // is both held and watched counts as owned.
+    const userSymbols = new Map<string, Map<string, { companyName: string; owned: boolean }>>();
 
-    for (const row of [...(watchlistRes.data ?? []), ...(holdingsRes.data ?? [])]) {
+    const tracked = [
+      ...(holdingsRes.data ?? []).map((r) => ({ ...r, owned: true })),
+      ...(watchlistRes.data ?? []).map((r) => ({ ...r, owned: false })),
+    ];
+    for (const row of tracked) {
       if (!eligibleUserIds.has(row.user_id)) continue;
       if (!userSymbols.has(row.user_id)) userSymbols.set(row.user_id, new Map());
       if (!userSymbols.get(row.user_id)!.has(row.symbol)) {
-        userSymbols.get(row.user_id)!.set(row.symbol, row.company_name || row.symbol);
+        userSymbols.get(row.user_id)!.set(row.symbol, { companyName: row.company_name || row.symbol, owned: row.owned });
       }
     }
 
@@ -122,9 +128,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     for (const [userId, symbolMap] of userSymbols.entries()) {
       const upcoming: EarningsItem[] = [];
 
-      for (const [symbol, companyName] of symbolMap.entries()) {
+      for (const [symbol, { companyName, owned }] of symbolMap.entries()) {
         const date = earningsMap.get(symbol);
-        if (date) upcoming.push({ symbol, companyName, date });
+        if (date) upcoming.push({ symbol, companyName, date, owned });
       }
 
       if (upcoming.length === 0) continue;

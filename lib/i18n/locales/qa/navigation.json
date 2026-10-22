@@ -107,5 +107,12 @@
   "notifSourceCalendar": "«Maarkeet Caaleendaar»",
   "notifSourceHoldings": "«My hooldiings»",
   "notifSourcePriceAlerts": "«Priicee aaleerts»",
-  "notifSourceAcademy": "«AAcaadeemy»"
+  "notifSourceAcademy": "«AAcaadeemy»",
+  "notifEarningsTodayOne": "«{{symbol}} reepoorts eeaarniings toodaay»",
+  "notifEarningsTodayOwned": "«{{n}} stoocks yoouu oown reepoort eeaarniings toodaay»",
+  "notifEarningsTodayWatched": "«{{n}} stoocks oon yoouur waatchliist reepoort eeaarniings toodaay»",
+  "notifEarningsTodayMixed": "«{{n}} oof yoouur stoocks reepoort eeaarniings toodaay»",
+  "notifEarningsYouOwn": "«Yoouu oown {{list}}.»",
+  "notifEarningsOnWatchlist": "«OOn yoouur waatchliist: {{list}}.»",
+  "notifEarningsMore": "«{{n}} mooree»"
 }

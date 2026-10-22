@@ -61,10 +61,6 @@
   "inviteStats_one": "{{count}} ami s'est inscrit jusqu'à présent. Mois gratuits gagnés : {{months}}.",
   "inviteStats_other": "{{count}} amis se sont inscrits jusqu'à présent. Mois gratuits gagnés : {{months}}.",
   "inviteLimits": "Seuls les nouveaux comptes comptent. Vous pouvez gagner jusqu'à 3 mois gratuits tous les 30 jours, et 12 au total.",
-  "navMenuTitle": "Menu",
-  "navAdminLabel": "Admin",
-  "notifTitle": "Notifications",
-  "notifBellAriaLabel": "Notifications",
   "notifBellAriaLabelNew": "Notifications ({{count}} nouvelle(s))",
   "notifMarkAllRead": "Tout marquer comme lu",
   "notifSettingsLabel": "Paramètres des notifications",
@@ -107,5 +103,16 @@
   "notifSourceCalendar": "Calendrier boursier",
   "notifSourceHoldings": "Mes positions",
   "notifSourcePriceAlerts": "Alertes de cours",
-  "notifSourceAcademy": "Académie"
+  "notifSourceAcademy": "Académie",
+  "navMenuTitle": "Menu",
+  "navAdminLabel": "Admin",
+  "notifTitle": "Notifications",
+  "notifBellAriaLabel": "Notifications",
+  "notifEarningsTodayOne": "{{symbol}} publie ses résultats aujourd'hui",
+  "notifEarningsTodayOwned": "{{n}} actions que vous possédez publient leurs résultats aujourd'hui",
+  "notifEarningsTodayWatched": "{{n}} actions de votre liste de suivi publient leurs résultats aujourd'hui",
+  "notifEarningsTodayMixed": "{{n}} de vos actions publient leurs résultats aujourd'hui",
+  "notifEarningsYouOwn": "Vous possédez {{list}}.",
+  "notifEarningsOnWatchlist": "Sur votre liste de suivi : {{list}}.",
+  "notifEarningsMore": "{{n}} de plus"
 }

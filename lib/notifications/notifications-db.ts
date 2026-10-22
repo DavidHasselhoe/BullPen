@@ -16,7 +16,20 @@ export interface Notification {
   /** Shown in the bell or on /notifications; clears the badge without marking it read. */
   is_seen?: boolean;
   created_at: string;
+  /** Structured data the client words in the reader's language; title/message are the English fallback. */
+  params?: NotificationParams | null;
 }
+
+/** Earnings-today digest: which reporting tickers the user holds and which they only watch. */
+export interface EarningsTodayParams {
+  kind: 'earnings_today';
+  owned: string[];
+  watched: string[];
+  /** Company name, only when a single ticker reports. */
+  name?: string;
+}
+
+export type NotificationParams = EarningsTodayParams;
 
 export interface NotificationDBResult<T> {
   success: boolean;
@@ -32,6 +45,7 @@ export interface CreateNotificationInput {
   entity_type?: 'stock' | 'portfolio' | 'market' | 'user' | 'institution' | 'politician' | null;
   entity_id?: string | null;
   severity?: 'info' | 'warning' | 'critical';
+  params?: NotificationParams | null;
 }
 
 /**
@@ -67,6 +81,7 @@ export async function createNotification(
             title: input.title,
             message: input.message,
             severity: input.severity || 'info',
+            params: input.params ?? null,
             is_read: false, // Reset read status on update
             is_seen: false,
             created_at: new Date().toISOString(), // Update timestamp
@@ -94,6 +109,7 @@ export async function createNotification(
         entity_type: input.entity_type || null,
         entity_id: input.entity_id || null,
         severity: input.severity || 'info',
+        params: input.params ?? null,
         is_read: false,
       })
       .select()

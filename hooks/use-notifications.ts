@@ -57,7 +57,7 @@ export function useNotifications(limit: number = 50) {
       const supabase = createBrowserClient();
       const { data, error } = await supabase
         .from('notifications')
-        .select('id, type, title, message, created_at, is_read, is_seen, severity, entity_type, entity_id')
+        .select('id, type, title, message, created_at, is_read, is_seen, severity, entity_type, entity_id, params')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(limit);

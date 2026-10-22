@@ -107,5 +107,12 @@
   "notifSourceCalendar": "市场日历",
   "notifSourceHoldings": "我的持仓",
   "notifSourcePriceAlerts": "价格提醒",
-  "notifSourceAcademy": "学院"
+  "notifSourceAcademy": "学院",
+  "notifEarningsTodayOne": "{{symbol}} 今日发布财报",
+  "notifEarningsTodayOwned": "你持有的 {{n}} 只股票今日发布财报",
+  "notifEarningsTodayWatched": "你的自选股中有 {{n}} 只股票今日发布财报",
+  "notifEarningsTodayMixed": "你的股票中有 {{n}} 只今日发布财报",
+  "notifEarningsYouOwn": "你持有 {{list}}。",
+  "notifEarningsOnWatchlist": "自选股中：{{list}}。",
+  "notifEarningsMore": "另外 {{n}} 只"
 }
