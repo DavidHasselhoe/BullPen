@@ -97,7 +97,7 @@ export function ListEvents({ listId, symbols }: { listId: string; symbols: strin
   return (
     <section aria-labelledby="list-events-title" className="flex flex-col gap-2">
       <h2 id="list-events-title" className="text-sm font-semibold text-foreground">{t('eventsTitle')}</h2>
-      <ul className="grid gap-1 rounded-xl bg-muted/40 p-1.5 lg:grid-cols-2">
+      <ul className="grid gap-1 rounded-xl bg-muted/40 p-1.5">
         {shown.map((r, i) => {
           const body = (
             <>

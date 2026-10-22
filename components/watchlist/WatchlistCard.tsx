@@ -169,14 +169,14 @@ export function WatchlistCard({
         {quote ? (
           <div className="flex items-end justify-between">
             <span
-              className={cn('text-lg font-bold tabular-nums', quote.stale ? 'text-muted-foreground' : 'text-foreground')}
+              className={cn('font-mono text-lg font-bold tabular-nums', quote.stale ? 'text-muted-foreground' : 'text-foreground')}
               title={quote.stale ? t('watchlistStaleTitle') : undefined}
             >
               {formatQuotePrice(quote.price, symbol, locale)}
             </span>
             <div
               className={cn(
-                'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full',
+                'flex items-center gap-1 font-mono text-xs font-medium tabular-nums px-2 py-1 rounded-full',
                 isUp && 'bg-emerald-500/10 text-emerald-500',
                 // red-400, not red-500: red-500 measured 4.36:1 on this pill's
                 // dark red-tinted background — under WCAG AA. Darker reds get
@@ -216,10 +216,11 @@ export function WatchlistCard({
           </div>
         )}
 
-        {/* The plan's buy-below price, only once one is set. Info blue, not
-            emerald: reaching your price is a fact, not a gain. */}
+        {/* The plan's buy-below price, only once one is set. Ink, not emerald or
+            Info Blue: reaching your price is a fact, not a gain, and Info Blue
+            is for status pills (DESIGN.md). Weight carries the change. */}
         {buyBelow != null && quote && (
-          <p className={cn('text-xs tabular-nums', quote.price <= buyBelow ? 'font-medium text-sky-500' : 'text-muted-foreground')}>
+          <p className={cn('text-xs tabular-nums', quote.price <= buyBelow ? 'font-medium text-foreground' : 'text-muted-foreground')}>
             {quote.price <= buyBelow
               ? t('planCardReached', { price: formatQuotePrice(buyBelow, symbol, locale) })
               : t('planCardDistance', { price: formatQuotePrice(buyBelow, symbol, locale), pct: ((quote.price / buyBelow - 1) * 100).toFixed(1) })}

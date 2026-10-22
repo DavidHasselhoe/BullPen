@@ -232,7 +232,7 @@ export default function WatchlistPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-4 py-10 sm:px-6 lg:px-8 space-y-8">
+      <div className="max-w-6xl mx-auto flex flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
 
         {/* Header: stacks on phones, where title + toolbar + a 288px search do not fit one row */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -393,18 +393,22 @@ export default function WatchlistPage() {
           />
         )}
 
+        {/* The week ahead and today's movers, side by side from lg. On phones
+            they follow the cards (order-last): the list is what the page is
+            for, and stacked above it they pushed the first card two screens
+            down. The events strip hides itself on a quiet week; the movers
+            then take the full row. */}
         {!displayLoading && activeListId && displayItems.length > 0 && (
-          <ListEvents key={`events-${activeListId}`} listId={activeListId} symbols={displayItems.map((i) => i.symbol)} />
-        )}
-
-        {!displayLoading && activeListId && displayItems.length > 0 && (
-          <ListMovers
-            key={`movers-${activeListId}`}
-            listName={lists?.find((l) => l.id === activeListId)?.name ?? ''}
-            items={displayItems}
-            quotes={quotes}
-            seed={seedQuotes}
-          />
+          <div className="order-last grid items-start gap-8 lg:order-none lg:grid-cols-2 lg:[&>*:only-child]:col-span-2">
+            <ListEvents key={`events-${activeListId}`} listId={activeListId} symbols={displayItems.map((i) => i.symbol)} />
+            <ListMovers
+              key={`movers-${activeListId}`}
+              listName={lists?.find((l) => l.id === activeListId)?.name ?? ''}
+              items={displayItems}
+              quotes={quotes}
+              seed={seedQuotes}
+            />
+          </div>
         )}
 
         {/* Content */}

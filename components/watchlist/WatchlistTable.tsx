@@ -177,7 +177,7 @@ export function WatchlistTable({ items, quotes, sinceAdded, enhancedData, onRemo
                 </TableCell>
 
                 <TableCell
-                  className={cn('tabular-nums font-medium', q?.stale && 'text-muted-foreground')}
+                  className={cn('font-mono tabular-nums font-medium', q?.stale && 'text-muted-foreground')}
                   title={q?.stale ? t('watchlistStaleTitle') : undefined}
                 >
                   {q ? `${q.price.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
@@ -187,7 +187,7 @@ export function WatchlistTable({ items, quotes, sinceAdded, enhancedData, onRemo
                   {q ? (
                     <div
                       className={cn(
-                        'tabular-nums text-sm font-medium leading-tight',
+                        'font-mono tabular-nums text-sm font-medium leading-tight',
                         isUp && 'text-emerald-500',
                         isDown && 'text-red-500',
                         !isUp && !isDown && 'text-muted-foreground',
@@ -219,11 +219,11 @@ export function WatchlistTable({ items, quotes, sinceAdded, enhancedData, onRemo
                   ) : '—'}
                 </TableCell>
 
-                <TableCell className="tabular-nums text-sm text-muted-foreground">
+                <TableCell className="font-mono tabular-nums text-sm text-muted-foreground">
                   {enhanced?.marketCap != null ? fmtMarketCap(enhanced.marketCap) : '—'}
                 </TableCell>
 
-                <TableCell className="tabular-nums text-sm text-muted-foreground">
+                <TableCell className="font-mono tabular-nums text-sm text-muted-foreground">
                   {enhanced?.peRatio != null && enhanced.peRatio > 0
                     ? enhanced.peRatio.toFixed(1)
                     : '—'}
@@ -264,7 +264,7 @@ export function WatchlistTable({ items, quotes, sinceAdded, enhancedData, onRemo
                   {new Date(item.added_at).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                 </TableCell>
 
-                <TableCell className="text-sm tabular-nums">
+                <TableCell className="font-mono text-sm tabular-nums">
                   {(() => {
                     const pct = sinceAdded?.[item.symbol];
                     if (pct == null) {

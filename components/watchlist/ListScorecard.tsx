@@ -61,7 +61,7 @@ export function ListScorecard({ listId, today, score, scoreLoading, allNew, grad
         <Stat label={t('scorecardToday')}>
           {today ? (
             <>
-              <span className={cn('text-lg font-semibold tabular-nums', tone(today.avg))}>{signed(today.avg)}</span>
+              <span className={cn('font-mono text-lg font-semibold tabular-nums', tone(today.avg))}>{signed(today.avg)}</span>
               <span className="text-xs text-muted-foreground">
                 {t('scorecardUpDownFlat', { up: today.up, down: today.down, flat: today.flat })}
               </span>
@@ -71,7 +71,7 @@ export function ListScorecard({ listId, today, score, scoreLoading, allNew, grad
   
         <Stat label={t('scorecardBestWorst')}>
           {today ? (
-            <div className="flex flex-col text-sm font-medium tabular-nums">
+            <div className="flex flex-col font-mono text-sm font-medium tabular-nums">
               <span className={tone(today.best.changePercent)}>{today.best.symbol} {signed(today.best.changePercent)}</span>
               <span className={tone(today.worst.changePercent)}>{today.worst.symbol} {signed(today.worst.changePercent)}</span>
             </div>
@@ -103,7 +103,7 @@ export function ListScorecard({ listId, today, score, scoreLoading, allNew, grad
             <Skeleton className="h-10 w-28" />
           ) : score ? (
             <>
-              <span className={cn('text-lg font-semibold tabular-nums', tone(score.pct))}>{signed(score.pct)}</span>
+              <span className={cn('font-mono text-lg font-semibold tabular-nums', tone(score.pct))}>{signed(score.pct)}</span>
               <span className="text-xs text-muted-foreground tabular-nums">
                 {t('scorecardBenchmark', { pct: signed(score.benchPct) })}
               </span>

@@ -21,9 +21,11 @@ interface Props {
   initialAlertType?: AlertType;
   /** Pre-fill the target price (dollars) for price conditions. */
   initialThreshold?: number;
+  /** Hide the condition picker and keep initialAlertType (the watchlist plan only sets a buy-below price). */
+  lockAlertType?: boolean;
 }
 
-export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, initialAlertType, initialThreshold }: Props) {
+export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, initialAlertType, initialThreshold, lockAlertType = false }: Props) {
   const { t } = useTranslation('alerts');
   const [ticker, setTicker] = useState<SearchResult | null>(
     initialTicker
@@ -108,13 +110,15 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
         </div>
       )}
 
-      {/* Step 2 — condition */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium">
-          {t('stepCondition')}
-        </label>
-        <AlertTypePicker value={alertType} onChange={setAlertType} />
-      </div>
+      {/* Step 2 — condition. Skipped when the caller fixed it (the watchlist plan's buy-below). */}
+      {!lockAlertType && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">
+            {t('stepCondition')}
+          </label>
+          <AlertTypePicker value={alertType} onChange={setAlertType} />
+        </div>
+      )}
 
       {/* Step 3 — threshold (only when needed) */}
       {needsThreshold && (

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { getSharedList, type SharedList } from '@/lib/watchlist/shared-list';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { fmtClockDate, fmtClockTime, type Clock } from '@/lib/dates/clock';
@@ -69,11 +70,17 @@ function Scorecard({ list }: { list: SharedList }) {
           : `${Math.abs(gap).toFixed(1)} points ${gap > 0 ? 'ahead of' : 'behind'} the market.`}
         {s.removed > 0 && ` Includes ${s.removed} ${s.removed === 1 ? 'stock' : 'stocks'} taken off the list.`}
       </p>
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        Worked out as if the same amount had gone into each stock at the close on the day it was added, and the same
-        into the S&amp;P 500 on those days. Nobody necessarily bought these. Stocks taken off the list still count, up to
-        the day they left, so dropping the losers can&apos;t improve the record.
-      </p>
+      {/* Methodology stays one tap away (DESIGN.md: explanations go behind an accordion). */}
+      <Accordion type="single" collapsible className="-mb-2">
+        <AccordionItem value="how" className="border-none">
+          <AccordionTrigger className="py-2 text-sm text-muted-foreground hover:no-underline">How is this worked out?</AccordionTrigger>
+          <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+            As if the same amount had gone into each stock at the close on the day it was added, and the same into the
+            S&amp;P 500 on those days. Nobody necessarily bought these. Stocks taken off the list still count, up to the
+            day they left, so dropping the losers can&apos;t improve the record.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </section>
   );
 }
@@ -88,13 +95,12 @@ export default async function SharedListPage({ params }: Props) {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10 sm:px-6">
       <header className="flex flex-col gap-1">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Shared watchlist</p>
         <h1 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight text-foreground">
           {list.color && <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: list.color }} aria-hidden />}
           {list.name}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {list.stocks.length} {list.stocks.length === 1 ? 'stock' : 'stocks'}
+          A shared watchlist · {list.stocks.length} {list.stocks.length === 1 ? 'stock' : 'stocks'}
           {list.sharedAt && <> · shared {fmtClockDate(new Date(list.sharedAt), { month: 'short', day: 'numeric', year: 'numeric' }, ET)}</>}
         </p>
       </header>
@@ -127,7 +133,7 @@ export default async function SharedListPage({ params }: Props) {
                   {s.changePercent != null ? signed(s.changePercent) : '—'}
                 </span>
                 <span className={cn('col-start-2 text-right font-mono text-sm tabular-nums sm:col-start-auto', tone(s.sinceAdded))}>
-                  <span className="text-xs text-muted-foreground sm:hidden">Since added </span>
+                  <span className="font-sans text-xs text-muted-foreground sm:hidden">Since added </span>
                   {s.sinceAdded != null ? signed(s.sinceAdded) : '—'}
                 </span>
                 <span className="hidden text-right text-xs text-muted-foreground sm:block">

@@ -121,7 +121,7 @@ export function StockPlanDialog({ symbol, companyName, price, week52Low, week52H
             {alert ? (
               <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2">
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-sm font-semibold tabular-nums text-foreground">{fmt(alert.threshold)}</span>
+                  <span className="font-mono text-sm font-semibold tabular-nums text-foreground">{fmt(alert.threshold)}</span>
                   {price != null && (
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {price <= alert.threshold
@@ -145,6 +145,7 @@ export function StockPlanDialog({ symbol, companyName, price, week52Low, week52H
               <CreateAlertForm
                 initialTicker={{ ticker: symbol, name: companyName }}
                 initialAlertType="price_below"
+                lockAlertType
                 onCreate={create}
                 onCreated={() => setComposerOpen(false)}
                 onCancel={() => setComposerOpen(false)}
@@ -164,7 +165,7 @@ export function StockPlanDialog({ symbol, companyName, price, week52Low, week52H
             <section className="flex flex-col gap-2">
               <h3 className="text-xs font-medium text-muted-foreground">{t('planRangeLabel')}</h3>
               <RangeBar low={week52Low} high={week52High} price={price} label={t('planRangeAria', { low: fmt(week52Low!), high: fmt(week52High!), price: fmt(price!) })} />
-              <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
+              <div className="flex justify-between font-mono text-xs tabular-nums text-muted-foreground">
                 <span>{fmt(week52Low!)}</span>
                 <span>{fmt(week52High!)}</span>
               </div>
