@@ -4,11 +4,15 @@ import type { UserHolding } from '@/lib/types/database';
 
 export interface HoldingWithPrice extends UserHolding {
   currentPrice?: number;
-  /** Raw USD price, unconverted — avg_price is always stored in USD, so the
-   *  sell flow needs this instead of the display-currency `currentPrice`
-   *  to keep the realized-gain math in one currency. */
+  /** Raw quote price, unconverted, in the listing's `trading_currency` (USD for
+   *  US listings, despite the name). avg_price is stored in that same currency,
+   *  so the positions table shows this beside it and the sell flow uses it to
+   *  keep the realized-gain math in one currency. */
   currentPriceUSD?: number;
+  /** Today's move per share in the display currency (for portfolio totals). */
   dayChange?: number;
+  /** Today's move per share in the listing's currency, beside currentPriceUSD. */
+  dayChangeNative?: number;
   dayChangePercent?: number;
   marketValue?: number;
   unrealizedPL?: number;

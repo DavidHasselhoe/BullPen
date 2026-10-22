@@ -271,6 +271,7 @@ export default function HoldingsPage() {
         currentPrice: currentPriceUSD !== undefined ? conv(currentPriceUSD) : undefined,
         currentPriceUSD,
         dayChange: dayChangeUSD !== undefined ? conv(dayChangeUSD) : undefined,
+        dayChangeNative: dayChangeUSD,
         dayChangePercent,
         marketValue: marketValueUSD !== undefined ? conv(marketValueUSD) : undefined,
         unrealizedPL,

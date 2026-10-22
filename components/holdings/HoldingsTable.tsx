@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -74,7 +74,7 @@ import type { HoldingWithPrice } from './types';
 import { getSectorLabel, CASH_SECTOR } from './HoldingsPieChart';
 import { CashIcon } from './CashIcon';
 import type { UserHolding } from '@/lib/types/database';
-import { convertCurrency, formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
+import { formatCurrency as formatCurrencyValue, formatNumber as formatNumberUtil, formatPercent as formatPercentUtil, type CurrencyCode } from '@/lib/currency/currency-conversion';
 import { useExchangeRates } from '@/hooks/use-exchange-rates';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { displayCompanyName } from '@/lib/market-data/company-name';
@@ -83,20 +83,35 @@ import { displayCompanyName } from '@/lib/market-data/company-name';
 const formatSignedCurrency = (value: number, currency: CurrencyCode, opts?: { round: boolean }) =>
   `${value > 0 ? '+' : ''}${formatCurrencyValue(value, currency, opts)}`;
 
+/**
+ * A per-share figure in the listing's own trading currency, never converted:
+ * the price the user paid and the price the stock quotes at everywhere else.
+ * USD reads "$298.40" like every other money cell in the row; anything else
+ * keeps its code, since formatCurrency falls back to "$" for codes it doesn't know.
+ */
+function formatListingPrice(value: number, tradingCurrency: string | null, roundNumbers: boolean) {
+  const code = tradingCurrency ?? 'USD';
+  return code === 'USD'
+    ? formatCurrencyValue(value, 'USD', roundNumbers ? { round: true } : undefined)
+    : `${code} ${formatNumberUtil(value, roundNumbers)}`;
+}
+
 // ─── Export ───────────────────────────────────────────────────────────────────
 
 /**
  * One row model, rendered as CSV or PDF.
  *
- * Monetary values are all in `currency`, already converted, and are written as
- * plain fixed-decimal numbers with no symbol or thousands separator so a
- * spreadsheet reads them as numbers rather than text.
+ * Avg Cost, Current Price and Cost Basis are in the listing's currency (the
+ * Listing Currency column), as in the table; Market Value and P/L are in
+ * `currency`, already converted. All are written as plain fixed-decimal
+ * numbers with no symbol or thousands separator so a spreadsheet reads them as
+ * numbers rather than text.
  */
 function buildHoldingsTable(rows: HoldingWithPrice[], currency: string) {
   const headers = [
     'Symbol', 'Company', 'Asset Type', 'Shares', 'Avg Cost', 'Current Price',
     'Cost Basis', 'Market Value', 'Unrealized P/L', 'Unrealized P/L %',
-    'Allocation %', 'Date Purchased', 'Currency',
+    'Allocation %', 'Date Purchased', 'Currency', 'Listing Currency',
   ];
   const body = rows.map((h) => {
     const costBasis = h.avg_price != null && h.quantity != null ? h.avg_price * h.quantity : null;
@@ -106,7 +121,7 @@ function buildHoldingsTable(rows: HoldingWithPrice[], currency: string) {
       h.asset_type ?? 'stock',
       csvShares(h.quantity),
       csvNum(h.avg_price),
-      csvNum(h.currentPrice),
+      csvNum(h.currentPriceUSD),
       csvNum(costBasis),
       csvNum(h.marketValue),
       csvNum(h.unrealizedPL),
@@ -114,6 +129,7 @@ function buildHoldingsTable(rows: HoldingWithPrice[], currency: string) {
       csvNum(h.allocation),
       h.date_purchased ?? '',
       currency,
+      h.trading_currency ?? 'USD',
     ];
   });
   // Everything from Shares to Allocation is a figure and belongs right-aligned.
@@ -124,11 +140,12 @@ function buildHoldingsTable(rows: HoldingWithPrice[], currency: string) {
 interface HoldingsTableProps {
   onAddClick?: () => void;
   onImportClick?: () => void;
-  holdingsWithPrices?: HoldingWithPrice[];
+  /** Priced and converted by the page (app/holdings/page.tsx), the one place that does it. */
+  holdingsWithPrices: HoldingWithPrice[];
   /** When set, rows not matching this sector label are dimmed. */
   hoveredSector?: string | null;
   /** True while batch quotes are in-flight — shows shimmer in price columns. */
-  isPricesLoading?: boolean;
+  isPricesLoading: boolean;
   /** Tracked cash in the display currency (0 once spent); null when the user does not track cash. */
   cashValue?: number | null;
   /** Opens the add/edit cash dialog. */
@@ -211,15 +228,16 @@ function DayChangeCell({
   isPositive,
   colorClass,
   isPriceStale,
-  currency,
+  tradingCurrency,
   roundNumbers,
 }: {
   dayChangePercent: number;
+  /** Per share, in the listing's currency, matching the price above it. */
   dayChange: number | undefined;
   isPositive: boolean;
   colorClass: string;
   isPriceStale: boolean | undefined;
-  currency: CurrencyCode;
+  tradingCurrency: string | null;
   roundNumbers: boolean;
 }) {
   const { t } = useTranslation('holdings');
@@ -240,8 +258,7 @@ function DayChangeCell({
     );
   }
 
-  const opts = roundNumbers ? { round: true } : undefined;
-  const signedAmount = `${dayChange >= 0 ? '+' : ''}${formatCurrencyValue(dayChange, currency, opts)}`;
+  const signedAmount = `${dayChange >= 0 ? '+' : ''}${formatListingPrice(dayChange, tradingCurrency, roundNumbers)}`;
 
   return (
     <Tooltip>
@@ -351,14 +368,11 @@ const HoldingRow = memo(function HoldingRow({
         {holding.quantity !== null ? formatNumberUtil(holding.quantity, roundNumbers) : '—'}
       </td>
       <td className="py-4 px-2 xl:px-3 text-sm whitespace-nowrap text-foreground">
-        {/* Avg price is shown in the asset's native trading currency (USD/NOK/EUR…),
-            never converted — it's the cost basis the user actually paid. USD reads
-            "$298.40" like every other money cell in the row; anything else keeps
-            its code, since formatCurrency falls back to "$" for codes it doesn't know. */}
+        {/* Avg and current price stay in the listing's own currency so the two
+            compare at a glance ($379 → $880); Market Value and P/L carry the
+            user's currency. */}
         {holding.avg_price !== null && holding.avg_price !== undefined
-          ? (holding.trading_currency ?? 'USD') === 'USD'
-            ? formatCurrencyValue(holding.avg_price, 'USD', roundNumbers ? { round: true } : undefined)
-            : `${holding.trading_currency} ${formatNumberUtil(holding.avg_price, roundNumbers)}`
+          ? formatListingPrice(holding.avg_price, holding.trading_currency, roundNumbers)
           : '—'}
       </td>
       {/* Price with today's move under it, the same two-line shape as the P/L
@@ -367,22 +381,22 @@ const HoldingRow = memo(function HoldingRow({
       <td className="py-4 px-2 xl:px-3 text-sm font-medium text-foreground">
         {showPriceSkeleton ? (
           <div className="space-y-1"><PriceSkeleton /><PriceSkeleton /></div>
-        ) : holding.currentPrice !== undefined ? (
+        ) : holding.currentPriceUSD !== undefined ? (
           <div className="space-y-0.5">
             <div
               className={cn('animate-in fade-in duration-300', holding.isPriceStale && 'text-muted-foreground')}
               title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
             >
-              {formatCurrencyValue(holding.currentPrice, currency, roundNumbers ? { round: true } : undefined)}
+              {formatListingPrice(holding.currentPriceUSD, holding.trading_currency, roundNumbers)}
             </div>
             {holding.dayChangePercent !== undefined && (
               <DayChangeCell
                 dayChangePercent={holding.dayChangePercent}
-                dayChange={holding.dayChange}
+                dayChange={holding.dayChangeNative}
                 isPositive={isPositive}
                 colorClass={holding.isPriceStale ? `${dayChangeColor} opacity-60` : dayChangeColor}
                 isPriceStale={holding.isPriceStale}
-                currency={currency}
+                tradingCurrency={holding.trading_currency}
                 roundNumbers={roundNumbers}
               />
             )}
@@ -445,7 +459,7 @@ const HoldingRow = memo(function HoldingRow({
     </tr>
   );
 }, (prev, next) =>
-  prev.holding.currentPrice === next.holding.currentPrice &&
+  prev.holding.currentPriceUSD === next.holding.currentPriceUSD &&
   prev.holding.dayChangePercent === next.holding.dayChangePercent &&
   prev.holding.isPriceStale === next.holding.isPriceStale &&
   prev.holding.marketValue === next.holding.marketValue &&
@@ -462,7 +476,7 @@ const HoldingRow = memo(function HoldingRow({
 
 // ─── Main table ───────────────────────────────────────────────────────────────
 
-export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: externalHoldings, hoveredSector, isPricesLoading, cashValue = null, onCashClick }: HoldingsTableProps) {
+export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices, hoveredSector, isPricesLoading: isLoadingPrices, cashValue = null, onCashClick }: HoldingsTableProps) {
   const { t } = useTranslation('holdings');
   const { data: holdings, isLoading } = useHoldings();
   const { user } = useAuth();
@@ -483,8 +497,8 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
 
   // Batch sparklines — one request for all symbols instead of N individual candle fetches.
   const allSymbols = useMemo(
-    () => (externalHoldings ?? holdings ?? []).map(h => h.symbol),
-    [externalHoldings, holdings]
+    () => holdingsWithPrices.map(h => h.symbol),
+    [holdingsWithPrices]
   );
   const sparklines = useHoldingsSparklines(allSymbols);
 
@@ -519,127 +533,10 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
   const exchangeRates = useExchangeRates(userCurrency);
 
   // True while we're converting to a non-USD display currency but don't have rates yet.
-  // Guards against showing a raw USD number under a non-USD currency label — currentPrice
-  // is never `undefined` (it defaults to the unconverted USD value), so isLoadingPrices
-  // alone can't catch this: the price "looks loaded" while still mislabeled.
+  // Guards against showing a raw USD number under a non-USD currency label: the page
+  // converts at a rate of 1 until rates arrive, so Market Value and P/L "look loaded"
+  // while still mislabeled, and isLoadingPrices alone can't catch that.
   const isFxLoading = userCurrency !== null && exchangeRates.isLoading;
-
-  // Only run the internal quote fetch when no live data is provided from the parent page.
-  // When externalHoldings is present we skip this to avoid duplicate API calls. Logos are
-  // NOT fetched here — they arrive already attached on `holdings` from getHoldings()
-  // (lib/holdings/holdings-db.ts), so they render on the first paint instead of waiting
-  // on this second, holdings-gated query.
-  const quotes = useQuery({
-    queryKey: ['holdings-quotes', holdings?.map((h) => h.symbol)],
-    queryFn: async () => {
-      if (!holdings || holdings.length === 0) return { quotes: {} };
-
-      const quoteMap: Record<string, { price: number; change: number; changePercent: number }> = {};
-      const tickers = holdings.map((h) => h.symbol);
-
-      // Batch quotes (throttled server-side to avoid Twelve Data rate limits)
-      const batchRes = await fetch('/api/quotes/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: tickers }),
-      });
-      const batchData = await batchRes.json();
-      if (batchRes.status === 429) {
-        throw new Error(batchData.error || 'Market data rate limit exceeded. Please try again in a minute.');
-      }
-      if (batchData.success && batchData.quotes) {
-        Object.assign(quoteMap, batchData.quotes);
-      }
-
-      return { quotes: quoteMap };
-    },
-    // Skip the internal fetch entirely when the parent already supplies live data.
-    enabled: !externalHoldings && !!holdings && holdings.length > 0,
-    staleTime: 3 * 60 * 1000,
-    // Keep price cache for 5 min max — stale quotes older than this are garbage-
-    // collected so returning users always see a fresh fetch, not stale prices.
-    gcTime: 5 * 60 * 1000,
-  });
-
-  // True while price data is in-flight — drives skeleton cells in price columns.
-  const isLoadingPrices = isPricesLoading !== undefined ? isPricesLoading : quotes.isLoading;
-
-  // Combine holdings with quotes and calculate derived values.
-  // Skipped when externalHoldings is provided — the parent already did this work.
-  const internalHoldingsWithPrices = useMemo((): HoldingWithPrice[] => {
-    if (externalHoldings) return externalHoldings;
-    if (!holdings) return [];
-    
-    const quotesMap = quotes.data?.quotes || {};
-    const rates = exchangeRates.data;
-
-    // Calculate total market value (in USD)
-    const totalMarketValue = holdings.reduce((sum, holding) => {
-      const quote = quotesMap[holding.symbol];
-      if (quote && holding.quantity) {
-        return sum + quote.price * holding.quantity;
-      }
-      return sum;
-    }, 0);
-
-    return holdings.map((holding) => {
-      const quote = quotesMap[holding.symbol];
-      const logoUrl = holding.logo_url ?? null;
-      
-      // All values are in USD initially
-      const currentPriceUSD = quote?.price;
-      const dayChangeUSD = quote?.change;
-      const dayChangePercent = quote?.changePercent;
-      
-      const marketValueUSD = currentPriceUSD && holding.quantity
-        ? currentPriceUSD * holding.quantity
-        : undefined;
-      
-      const unrealizedPLUSD = currentPriceUSD && holding.avg_price && holding.quantity
-        ? (currentPriceUSD - holding.avg_price) * holding.quantity
-        : undefined;
-      
-      const unrealizedPLPercent = currentPriceUSD && holding.avg_price
-        ? ((currentPriceUSD - holding.avg_price) / holding.avg_price) * 100
-        : undefined;
-      
-      const allocation = marketValueUSD && totalMarketValue > 0
-        ? (marketValueUSD / totalMarketValue) * 100
-        : undefined;
-
-      // Convert to user's preferred currency if specified
-      let currentPrice: number | undefined = currentPriceUSD;
-      let dayChange: number | undefined = dayChangeUSD;
-      let marketValue: number | undefined = marketValueUSD;
-      let unrealizedPL: number | undefined = unrealizedPLUSD;
-      let avg_price: number | null = holding.avg_price;
-      
-      if (userCurrency && rates) {
-        currentPrice = currentPriceUSD ? convertCurrency(currentPriceUSD, 'USD', userCurrency, rates) : undefined;
-        dayChange = dayChangeUSD ? convertCurrency(dayChangeUSD, 'USD', userCurrency, rates) : undefined;
-        marketValue = marketValueUSD ? convertCurrency(marketValueUSD, 'USD', userCurrency, rates) : undefined;
-        unrealizedPL = unrealizedPLUSD ? convertCurrency(unrealizedPLUSD, 'USD', userCurrency, rates) : undefined;
-        avg_price = holding.avg_price !== null ? convertCurrency(holding.avg_price, 'USD', userCurrency, rates) : null;
-      }
-
-      return {
-        ...holding,
-        currentPrice,
-        currentPriceUSD,
-        dayChange,
-        dayChangePercent,
-        marketValue,
-        unrealizedPL,
-        unrealizedPLPercent,
-        allocation,
-        logoUrl,
-        avg_price,
-      };
-    });
-  }, [externalHoldings, holdings, quotes.data, exchangeRates.data, userCurrency]);
-
-  // Alias so the rest of the component is unchanged.
-  const holdingsWithPrices = internalHoldingsWithPrices;
 
   // Hidden while searching: search filters positions by symbol/name, and cash has neither.
   const showCash = cashValue != null && !search;
@@ -966,7 +863,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices: e
                     label={t('holdingsTableFieldPrice')}
                     valueClass={holding.isPriceStale ? 'text-muted-foreground' : undefined}
                     title={holding.isPriceStale ? t('holdingsTableStaleLastClose') : undefined}
-                    value={holding.currentPrice !== undefined ? formatCurrencyValue(holding.currentPrice, ccy, opts) : '—'}
+                    value={holding.currentPriceUSD !== undefined ? formatListingPrice(holding.currentPriceUSD, holding.trading_currency, roundNumbers) : '—'}
                   />
                   <HoldingField
                     label={t('holdingsTableFieldDay')}
