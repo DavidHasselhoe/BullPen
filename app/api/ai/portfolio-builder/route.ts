@@ -155,10 +155,16 @@ async function runPortfolioBuilder(params: {
         user_id: userId,
         type: 'ai_insight',
         title: 'Your portfolio build is ready',
-        message: finalPortfolio.theme_summary || 'Your AI-generated portfolio has finished — tap to view it.',
+        message: finalPortfolio.theme_summary || 'Your AI-generated portfolio is ready. Tap to view it.',
         entity_type: null,
         entity_id: `portfolio_builder:${id}`,
         severity: 'info',
+        // The theme summary is model-written, so it stays as stored.
+        params: {
+          kind: 'i18n',
+          title: { key: 'notifBuildTitle' },
+          ...(finalPortfolio.theme_summary ? {} : { message: { key: 'notifBuildFallback' } }),
+        },
       });
     }
   } catch (err) {

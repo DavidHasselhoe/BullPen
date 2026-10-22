@@ -8,7 +8,7 @@
  * createNotification, preventing duplicate daily-digest spam.
  */
 
-import { createNotification, type CreateNotificationInput } from './notifications-db';
+import { createNotification, type CreateNotificationInput, type NotifMsg, type I18nParams } from './notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
 import type { NewTrade } from '@/lib/congress/ingest-trades';
 import { formatAmountRange, tradeDirection } from '@/lib/congress/types';
@@ -35,6 +35,17 @@ export interface EarningsItem {
   /** Held (open position) rather than only on a watchlist. */
   owned?: boolean;
 }
+
+// title and message are written once, in English, as the fallback for rows
+// read by older builds. params carries the same text as i18n keys
+// (navigation `notif*`), which the panel words in the reader's language
+// (NotificationItem renderMsg). Values that are data, not wording (tickers,
+// prices, fund and course names, model-written headlines), pass through as is.
+const msg = (key: string, vars?: NotifMsg['vars']): NotifMsg => (vars ? { key, vars } : { key });
+const i18n = (title: NotifMsg, message?: NotifMsg): I18nParams => (message ? { kind: 'i18n', title, message } : { kind: 'i18n', title });
+/** Up to five, then "N more", as the list values the panel formats. */
+const capped = (items: string[]): Array<string | NotifMsg> =>
+  items.length > 5 ? [...items.slice(0, 5), msg('notifEarningsMore', { n: items.length - 5 })] : items;
 
 /** "Oct 21" from a YYYY-MM-DD market date, read in UTC so no zone moves it a day. */
 function shortDate(ymd: string): string {
@@ -87,14 +98,18 @@ export async function createPriceMoveNotification(
     absPct >= 10 ? 'critical' : absPct >= 7 ? 'warning' : 'info';
 
   const name = mover.companyName || mover.symbol;
+  const pctStr = `${sign}${pct.toFixed(1)}%`;
+  const price = `$${mover.price.toFixed(2)}`;
+  const change = `${sign}$${mover.change.toFixed(2)}`;
   const input: CreateNotificationInput = {
     user_id: userId,
     type: 'price_move',
-    title: `${mover.symbol} moved ${sign}${pct.toFixed(1)}% today`,
-    message: `${name} closed at $${mover.price.toFixed(2)} (${sign}$${mover.change.toFixed(2)})`,
+    title: `${mover.symbol} moved ${pctStr} today`,
+    message: `${name} closed at ${price} (${change})`,
     entity_type: 'stock',
     entity_id: dedupeId,
     severity,
+    params: i18n(msg('notifPriceMoveTitle', { symbol: mover.symbol, pct: pctStr }), msg('notifPriceMoveMessage', { name, price, change })),
   };
 
   const result = await createNotification(input);
@@ -120,19 +135,17 @@ export async function createPriceMoveDigestNotification(
   if (gainers.length > 0) {
     const dedupeId = 'portfolio:price_digest_gain';
     if (!(await alreadyNotifiedToday(userId, 'price_move', dedupeId))) {
-      const topList = gainers
-        .slice(0, 5)
-        .map((m) => `${m.symbol} +${m.changePercent.toFixed(1)}%`)
-        .join(', ');
+      const lines = gainers.map((m) => `${m.symbol} +${m.changePercent.toFixed(1)}%`);
       const suffix = gainers.length > 5 ? ` +${gainers.length - 5} more` : '';
       const result = await createNotification({
         user_id: userId,
         type: 'price_move',
-        title: `${gainers.length} of your stocks ${gainers.length === 1 ? 'is' : 'are'} up today (${gainers[0].symbol} +${gainers[0].changePercent.toFixed(1)}%)`,
-        message: topList + suffix,
+        title: `${gainers.length} of your stocks ${gainers.length === 1 ? 'is' : 'are'} up today (${lines[0]})`,
+        message: lines.slice(0, 5).join(', ') + suffix,
         entity_type: 'portfolio',
         entity_id: dedupeId,
         severity: 'info',
+        params: i18n(msg('notifDigestUp', { count: gainers.length, top: lines[0] }), msg('notifList', { items: capped(lines) })),
       });
       if (result.success) created = true;
     }
@@ -141,19 +154,17 @@ export async function createPriceMoveDigestNotification(
   if (losers.length > 0) {
     const dedupeId = 'portfolio:price_digest_loss';
     if (!(await alreadyNotifiedToday(userId, 'price_move', dedupeId))) {
-      const topList = losers
-        .slice(0, 5)
-        .map((m) => `${m.symbol} ${m.changePercent.toFixed(1)}%`)
-        .join(', ');
+      const lines = losers.map((m) => `${m.symbol} ${m.changePercent.toFixed(1)}%`);
       const suffix = losers.length > 5 ? ` +${losers.length - 5} more` : '';
       const result = await createNotification({
         user_id: userId,
         type: 'price_move',
-        title: `${losers.length} of your stocks ${losers.length === 1 ? 'is' : 'are'} down today (${losers[0].symbol} ${losers[0].changePercent.toFixed(1)}%)`,
-        message: topList + suffix,
+        title: `${losers.length} of your stocks ${losers.length === 1 ? 'is' : 'are'} down today (${lines[0]})`,
+        message: lines.slice(0, 5).join(', ') + suffix,
         entity_type: 'portfolio',
         entity_id: dedupeId,
         severity: losers.some((m) => Math.abs(m.changePercent) >= 10) ? 'warning' : 'info',
+        params: i18n(msg('notifDigestDown', { count: losers.length, top: lines[0] }), msg('notifList', { items: capped(lines) })),
       });
       if (result.success) created = true;
     }
@@ -188,14 +199,17 @@ export async function createPortfolioRecapNotification(
 
   const sign = recap.dayPct >= 0 ? '+' : '';
   const topSign = recap.topPct >= 0 ? '+' : '';
+  const pct = `${sign}${recap.dayPct.toFixed(2)}%`;
+  const topPct = `${topSign}${recap.topPct.toFixed(1)}%`;
   const input: CreateNotificationInput = {
     user_id: userId,
     type: 'price_move',
-    title: `Your portfolio ${sign}${recap.dayPct.toFixed(2)}% today`,
-    message: `${recap.holdingsCount} holding${recap.holdingsCount === 1 ? '' : 's'} · ${recap.topSymbol} ${topSign}${recap.topPct.toFixed(1)}% led`,
+    title: `Your portfolio ${pct} today`,
+    message: `${recap.holdingsCount} holding${recap.holdingsCount === 1 ? '' : 's'} · ${recap.topSymbol} ${topPct} led`,
     entity_type: 'portfolio',
     entity_id: dedupeId,
     severity: 'info',
+    params: i18n(msg('notifRecapTitle', { pct }), msg('notifRecapMessage', { count: recap.holdingsCount, symbol: recap.topSymbol, pct: topPct })),
   };
 
   const result = await createNotification(input);
@@ -204,7 +218,7 @@ export async function createPortfolioRecapNotification(
 
 // ─── User-defined alert notifications ────────────────────────────────────────
 
-import { describeAlert, type UserAlert } from '@/types/alerts';
+import { describeAlert, describeAlertKey, type UserAlert } from '@/types/alerts';
 import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 
 /**
@@ -223,6 +237,7 @@ export async function createUserAlertNotification(
 
   const name = alert.companyName || alert.symbol;
   const priceStr = `$${currentPrice.toFixed(2)}`;
+  const described = describeAlertKey(alert, 'en-US');
 
   const input: CreateNotificationInput = {
     user_id: userId,
@@ -232,6 +247,10 @@ export async function createUserAlertNotification(
     entity_type: 'user_alert',
     entity_id: dedupeId,
     severity: 'info',
+    params: i18n(
+      msg('notifAlertHitTitle', { symbol: alert.symbol, price: priceStr }),
+      msg('notifAlertHitMessage', { alert: [msg(`alerts:${described.key}`, described.vars)], name }),
+    ),
   };
 
   const result = await createNotification(input);
@@ -273,6 +292,10 @@ export async function createHealthScoreChangeNotification(
     entity_type: 'stock',
     entity_id: dedupeId,
     severity: improved ? 'info' : 'warning',
+    params: i18n(
+      msg(improved ? 'notifHealthImproved' : 'notifHealthDropped', { symbol: change.symbol, grade: change.newGrade }),
+      msg('notifHealthMessage', { name, oldGrade: change.oldGrade, oldScore: change.oldScore, newGrade: change.newGrade, newScore: change.newScore }),
+    ),
   };
 
   const result = await createNotification(input);
@@ -353,6 +376,7 @@ export async function createWeeklyPickNotification(
     entity_type: 'stock',
     entity_id: dedupeId,
     severity: 'info',
+    params: i18n(msg('notifWeeklyPickTitle', { symbol: pick.symbol })),
   });
   return result.success;
 }
@@ -379,6 +403,7 @@ export async function createDailyBriefReadyNotification(
     entity_type: 'market',
     entity_id: dedupeId,
     severity: 'info',
+    params: i18n(msg('notifDailyBriefTitle')),
   });
   return result.success;
 }
@@ -425,6 +450,12 @@ export async function createDividendReminderNotification(
     entity_type: 'portfolio',
     entity_id: dedupeId,
     severity: 'info',
+    params: count === 1
+      ? i18n(
+        msg('notifDividendOneTitle', { symbol: items[0].symbol, date: { date: items[0].exDate } }),
+        msg('notifDividendOneMessage', { date: { date: items[0].exDate } }),
+      )
+      : i18n(msg('notifDividendManyTitle', { count }), msg('notifList', { items: capped(items.map((d) => d.symbol)) })),
   };
 
   const result = await createNotification(input);
@@ -461,6 +492,7 @@ export async function createDailyChallengeReminderNotification(
     entity_type: 'market',
     entity_id: dedupeId,
     severity: 'info',
+    params: i18n(msg('notifStreakTitle'), msg('notifStreakMessage')),
   });
   return result.success;
 }
@@ -510,6 +542,7 @@ export async function notifyNewAcademyCourse(course: { slug: string; title: stri
     entity_type: 'market',
     entity_id: entityId,
     severity: 'info',
+    params: i18n(msg('notifNewCourseTitle', { title: course.title }), msg(course.requiresPro ? 'notifNewCoursePro' : 'notifNewCourseFree')),
   }));
   for (let i = 0; i < rows.length; i += 500) {
     const { error } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
@@ -645,6 +678,11 @@ export async function notifyInstitutionFilingChange(notice: InstitutionFilingNot
       entity_type: 'institution',
       entity_id: entityId,
       severity: 'info',
+      // The summary is templated English from the filing diff; only the fallback line is worded here.
+      params: i18n(
+        msg('notifFilingTitle', { fund: notice.displayName, quarter }),
+        notice.summary ? undefined : msg('notifFilingNoSummary', { quarter }),
+      ),
     };
     const result = await createNotification(input);
     if (result.success) sent++;
@@ -694,14 +732,24 @@ export async function notifyPoliticianTrades(notice: PoliticianTradesNotice): Pr
 
   const newest = Math.max(...trades.map((t) => t.dc_trade_id));
   const entityId = `politician:${notice.slug}:${newest}`;
-  const described = trades.slice(0, 3).map((t) => {
+  const shown = trades.slice(0, 3).map((t) => {
     const dir = tradeDirection(t.trade_type);
+    const amount = formatAmountRange(t.amount_low, t.amount_high, t.amount_range);
     const verb = dir === 'buy' ? 'Bought' : dir === 'sell' ? 'Sold' : t.trade_type;
-    return `${verb} ${t.symbol} (${formatAmountRange(t.amount_low, t.amount_high, t.amount_range)})`;
+    return {
+      text: `${verb} ${t.symbol} (${amount})`,
+      msg: dir === 'buy' ? msg('notifPolBought', { symbol: t.symbol!, amount })
+        : dir === 'sell' ? msg('notifPolSold', { symbol: t.symbol!, amount })
+        : msg('notifPolOther', { type: t.trade_type, symbol: t.symbol!, amount }),
+    };
   });
-  const more = trades.length - described.length;
-  const message = described.join(', ') + (more > 0 ? ` and ${more} more.` : '.');
+  const more = trades.length - shown.length;
+  const message = shown.map((s) => s.text).join(', ') + (more > 0 ? ` and ${more} more.` : '.');
   const title = `${notice.displayName} disclosed ${trades.length} new trade${trades.length === 1 ? '' : 's'}`;
+  const params = i18n(
+    msg('notifPolTradesTitle', { name: notice.displayName, count: trades.length }),
+    msg('notifPolTradesMessage', { items: [...shown.map((s) => s.msg), ...(more > 0 ? [msg('notifEarningsMore', { n: more })] : [])] }),
+  );
 
   let sent = 0;
   for (const userId of enabled) {
@@ -723,6 +771,7 @@ export async function notifyPoliticianTrades(notice: PoliticianTradesNotice): Pr
       entity_type: 'politician',
       entity_id: entityId,
       severity: 'info',
+      params,
     });
     if (result.success) sent++;
   }
@@ -737,16 +786,23 @@ export async function notifyPoliticianTrades(notice: PoliticianTradesNotice): Pr
 export async function notifyHoldersOfPoliticianTrades(
   batch: { displayName: string; trades: NewTrade[] }[],
 ): Promise<number> {
-  const bySymbol = new Map<string, string[]>();
+  // symbol -> who did what in it, as English text and as a worded message.
+  const bySymbol = new Map<string, Array<{ text: string; msg: NotifMsg }>>();
   let newest = 0;
   for (const m of batch) {
     for (const t of m.trades) {
       if (!t.symbol) continue;
       newest = Math.max(newest, t.dc_trade_id);
       const dir = tradeDirection(t.trade_type);
-      const line = `${m.displayName} ${dir === 'buy' ? 'bought' : dir === 'sell' ? 'sold' : t.trade_type.toLowerCase()}`;
+      const text = `${m.displayName} ${dir === 'buy' ? 'bought' : dir === 'sell' ? 'sold' : t.trade_type.toLowerCase()}`;
       const lines = bySymbol.get(t.symbol) ?? [];
-      if (!lines.includes(line)) bySymbol.set(t.symbol, [...lines, line]);
+      if (lines.some((l) => l.text === text)) continue;
+      bySymbol.set(t.symbol, [...lines, {
+        text,
+        msg: dir === 'buy' ? msg('notifPolActorBought', { name: m.displayName })
+          : dir === 'sell' ? msg('notifPolActorSold', { name: m.displayName })
+          : msg('notifPolActorOther', { name: m.displayName, type: t.trade_type.toLowerCase() }),
+      }]);
     }
   }
   if (bySymbol.size === 0) return 0;
@@ -784,7 +840,8 @@ export async function notifyHoldersOfPoliticianTrades(
       .limit(1).maybeSingle<{ id: string }>();
     if (existing) continue;
 
-    const parts = mine.slice(0, 3).map((s) => `${s}: ${bySymbol.get(s)!.join(', ')}`);
+    const top = mine.slice(0, 3);
+    const parts = top.map((s) => `${s}: ${bySymbol.get(s)!.map((l) => l.text).join(', ')}`);
     const more = mine.length - parts.length;
     const result = await createNotification({
       user_id: u.id,
@@ -794,6 +851,15 @@ export async function notifyHoldersOfPoliticianTrades(
       entity_type: 'politician',
       entity_id: entityId,
       severity: 'info',
+      params: i18n(
+        msg('notifPolHoldersTitle', { count: mine.length }),
+        msg('notifSentences', {
+          sentences: [
+            ...top.map((s) => msg('notifPolHoldingLine', { symbol: s, actors: bySymbol.get(s)!.map((l) => l.msg) })),
+            ...(more > 0 ? [msg('notifAndMore', { n: more })] : []),
+          ],
+        }),
+      ),
     });
     if (result.success) sent++;
   }
@@ -862,7 +928,11 @@ export async function notifyEconomicEventsToday(date: string, events: EconomicRe
       ? `${ECONOMIC_KINDS[first.kind].name} today at ${et(first.release_at)} ET`
       : `${mine.length} economic releases today`;
     const message = mine.map((e) => `${ECONOMIC_KINDS[e.kind].name} at ${et(e.release_at)} ET`).join(' · ');
-    return [{ user_id, type: 'market', title, message, entity_type: 'market', entity_id: entityId, severity: 'info' }];
+    // Only the title is worded: the panel lists the releases itself, in the reader's zone.
+    const params = i18n(mine.length === 1
+      ? msg('notifEconomicOne', { name: [msg(`tools:economicName_${first.kind}`)], time: et(first.release_at) })
+      : msg('notifEconomicMany', { count: mine.length }));
+    return [{ user_id, type: 'market', title, message, entity_type: 'market', entity_id: entityId, severity: 'info', params }];
   });
   for (let i = 0; i < rows.length; i += 500) {
     const { error } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
@@ -927,7 +997,7 @@ export async function notifyIndexMembershipChanges(events: IndexChangeEvent[]): 
 
   const stockEntity = (e: IndexChangeEvent) => `${e.ticker}:index-${e.change}:${e.indexId}:${e.detectedOn}`;
   const list = (items: string[]) => new Intl.ListFormat('en', { type: 'conjunction' }).format(items);
-  const rows: Array<{ user_id: string; type: 'market'; title: string; message: string; entity_type: 'stock' | 'market'; entity_id: string; severity: 'info' }> = [];
+  const rows: Array<{ user_id: string; type: 'market'; title: string; message: string; entity_type: 'stock' | 'market'; entity_id: string; severity: 'info'; params: I18nParams }> = [];
 
   for (const [user_id, mine] of stockTrackers) {
     if (optedOut.has(user_id)) continue;
@@ -944,6 +1014,10 @@ export async function notifyIndexMembershipChanges(events: IndexChangeEvent[]): 
         entity_type: 'stock',
         entity_id: stockEntity(e),
         severity: 'info',
+        params: i18n(
+          msg(e.change === 'added' ? 'notifIndexJoined' : 'notifIndexLeft', { symbol: e.ticker, index: name }),
+          msg(e.change === 'added' ? 'notifIndexJoinedMessage' : 'notifIndexLeftMessage', { index: name, week: { date: indexChangeWeekOf(e.detectedOn) } }),
+        ),
       });
     }
   }
@@ -961,6 +1035,22 @@ export async function notifyIndexMembershipChanges(events: IndexChangeEvent[]): 
       const one = mine.length === 1 ? mine[0] : null;
       const joined = mine.filter((e) => e.change === 'added').map((e) => e.ticker);
       const left = mine.filter((e) => e.change === 'removed').map((e) => e.ticker);
+      const weekOf = { date: indexChangeWeekOf(mine[0].detectedOn) };
+      const params = one
+        ? i18n(
+          msg(one.change === 'added' ? 'notifIndexFundNowOwns' : 'notifIndexFundNoLongerOwns', { funds, symbol: one.ticker }),
+          msg(one.change === 'added' ? 'notifIndexFundOneAdded' : 'notifIndexFundOneRemoved', { symbol: one.ticker, index: name, week: weekOf }),
+        )
+        : i18n(
+          msg('notifIndexFundChanged', { index: name, funds }),
+          msg('notifSentences', {
+            sentences: [
+              ...(joined.length > 0 ? [msg('notifIndexJoinedList', { list: joined })] : []),
+              ...(left.length > 0 ? [msg('notifIndexLeftList', { list: left })] : []),
+              msg('notifIndexWeek', { week: weekOf }),
+            ],
+          }),
+        );
       rows.push({
         user_id,
         type: 'market',
@@ -974,6 +1064,7 @@ export async function notifyIndexMembershipChanges(events: IndexChangeEvent[]): 
         entity_type: 'market',
         entity_id: `index-fund:${indexId}:${mine[0].detectedOn}`,
         severity: 'info',
+        params,
       });
     }
   }

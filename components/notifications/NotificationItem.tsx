@@ -7,7 +7,7 @@ import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, 
 import { cn } from '@/lib/utils';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ClampedText } from '@/components/ui/ClampedText';
-import type { EarningsTodayParams, Notification } from '@/lib/notifications/notifications-db';
+import type { EarningsTodayParams, NotifMsg, Notification } from '@/lib/notifications/notifications-db';
 import { useQuery } from '@tanstack/react-query';
 import { useClock } from '@/hooks/use-clock';
 import { fmtClockDate } from '@/lib/dates/clock';
@@ -166,6 +166,55 @@ function earningsTodayText(p: EarningsTodayParams, t: TFunction<'navigation'>, l
   return { title, message };
 }
 
+/** Words a stored NotifMsg in the reader's language. Lists use the reader's list format, `{ date }` a short date. */
+function renderMsg(m: NotifMsg, t: TFunction, list: Intl.ListFormat, date: Intl.DateTimeFormat): string {
+  const vars: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(m.vars ?? {})) {
+    if (Array.isArray(v)) {
+      const parts = v.map((x) => (typeof x === 'string' ? x : renderMsg(x, t, list, date)));
+      vars[k] = k === 'sentences' ? parts.join(' ') : list.format(parts);
+    } else if (typeof v === 'object') {
+      vars[k] = date.format(new Date(`${v.date}T12:00:00Z`));
+    } else {
+      vars[k] = v;
+    }
+  }
+  return t(m.key, vars);
+}
+
+/** Namespaces other than navigation that a message's keys name ("alerts:describePriceAbove"). */
+function extraNamespaces(m: NotifMsg | undefined, out = new Set<string>()): Set<string> {
+  if (!m) return out;
+  if (m.key.includes(':')) out.add(m.key.split(':')[0]);
+  for (const v of Object.values(m.vars ?? {})) {
+    if (Array.isArray(v)) v.forEach((x) => typeof x !== 'string' && extraNamespaces(x, out));
+  }
+  return out;
+}
+
+/**
+ * Title and message in the reader's language. Rows without params (written
+ * before 2026-10-22, or by a producer that stores English only) show their
+ * stored text, and so does any row while a namespace it needs is loading.
+ */
+export function useNotificationText(n: Notification): { title: string; message: string } {
+  const p = n.params;
+  const extra = p?.kind === 'i18n' ? [...extraNamespaces(p.message, extraNamespaces(p.title))].sort() : [];
+  const { t, i18n, ready } = useTranslation(['navigation', ...extra]);
+  if (p?.kind === 'earnings_today') return earningsTodayText(p, t as TFunction<'navigation'>, i18n.language);
+  if (p?.kind !== 'i18n' || !ready) return { title: n.title, message: n.message };
+  const locale = intlLocale(i18n.language);
+  const list = new Intl.ListFormat(locale, { type: 'conjunction' });
+  const date = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  // A short date can end in its own period ("19. okt."), so one closing a
+  // sentence read "19. okt..". No key has a real double period.
+  const render = (m: NotifMsg) => renderMsg(m, t, list, date).replace(/\.\./g, '.');
+  return {
+    title: render(p.title),
+    message: p.message ? render(p.message) : n.message,
+  };
+}
+
 /** Choose the icon: company logo(s) for stock moves, themed glyph otherwise. */
 function NotificationIcon({ n }: { n: Notification }) {
   const direction = moveDirection(n);
@@ -287,6 +336,7 @@ interface NotificationItemProps {
 function EconomicNotification({ notification, date, onRead }: { notification: Notification; date: string; onRead: () => void }) {
   useClock(); // re-render when the time zone or 12/24h clock changes
   const { t, i18n } = useTranslation('navigation');
+  const { title } = useNotificationText(notification);
   // Same picks the cron used to decide this user gets notified.
   const { prefs } = useCalendarPrefs();
   const { data: events } = useQuery<EconomicEvent[]>({
@@ -312,7 +362,7 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-start justify-between gap-2">
           <p className={cn('text-sm leading-snug', !notification.is_read ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground')}>
-            {notification.title}
+            {title}
             {!notification.is_read && <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary align-middle" />}
           </p>
           <span className="shrink-0 pt-px text-xs tabular-nums text-muted-foreground">{formatRelativeTime(notification.created_at, i18n.language)}</span>
@@ -370,9 +420,7 @@ function StandardNotificationItem({ notification, onMarkRead }: NotificationItem
   const { t, i18n } = useTranslation('navigation');
   const source = notificationSource(notification, t);
   const unread = !notification.is_read;
-  const text = notification.params?.kind === 'earnings_today'
-    ? earningsTodayText(notification.params, t, i18n.language)
-    : notification;
+  const text = useNotificationText(notification);
   const handleClick = () => {
     if (unread) onMarkRead(notification.id);
   };

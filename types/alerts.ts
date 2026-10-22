@@ -124,20 +124,34 @@ export function alertTypeLabel(type: AlertType, t?: TFunction): string {
 }
 
 /** Compact human summary for the alert card. `t` is optional — see groupLabel() above. */
+const DESCRIBE_KEYS: Record<AlertType, string> = {
+  price_above: 'describePriceAbove',
+  price_below: 'describePriceBelow',
+  pct_change_up: 'describePctChangeUp',
+  pct_change_down: 'describePctChangeDown',
+  near_52w_high: 'describeNear52wHigh',
+  near_52w_low: 'describeNear52wLow',
+  all_time_high: 'describeAllTimeHigh',
+};
+
+/** The `alerts` key and values describing an alert, for text worded later (a stored notification). */
+export function describeAlertKey(a: Pick<UserAlert, 'alertType' | 'threshold'>, locale?: string): { key: string; vars: { price: string; pct: string } } {
+  return {
+    key: DESCRIBE_KEYS[a.alertType],
+    vars: {
+      price: a.threshold.toLocaleString(locale, { maximumFractionDigits: 2 }),
+      pct: (a.threshold * 100).toFixed(1),
+    },
+  };
+}
+
 export function describeAlert(a: Pick<UserAlert, 'alertType' | 'threshold'>, t?: TFunction): string {
   const price = a.threshold.toLocaleString(undefined, { maximumFractionDigits: 2 });
   const pct = (a.threshold * 100).toFixed(1);
 
   if (t) {
-    switch (a.alertType) {
-      case 'price_above':     return t('describePriceAbove', { price });
-      case 'price_below':     return t('describePriceBelow', { price });
-      case 'pct_change_up':   return t('describePctChangeUp', { pct });
-      case 'pct_change_down': return t('describePctChangeDown', { pct });
-      case 'near_52w_high':   return t('describeNear52wHigh', { pct });
-      case 'near_52w_low':    return t('describeNear52wLow', { pct });
-      case 'all_time_high':   return t('describeAllTimeHigh');
-    }
+    const { key, vars } = describeAlertKey(a);
+    return t(key, vars);
   }
 
   switch (a.alertType) {

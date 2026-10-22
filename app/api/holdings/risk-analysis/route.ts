@@ -349,6 +349,13 @@ async function runRiskAnalysis(params: {
         entity_type: 'portfolio',
         entity_id: `risk_analysis:${id}`,
         severity: 'info',
+        params: {
+          kind: 'i18n',
+          title: { key: 'notifRiskTitle' },
+          message: score != null
+            ? { key: 'notifRiskMessage', vars: { level: riskLevel, score } }
+            : { key: 'notifRiskDone' },
+        },
       });
     }
   } catch (err) {

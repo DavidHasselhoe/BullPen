@@ -148,6 +148,11 @@ async function runDeepDive(params: {
         entity_type: 'stock',
         entity_id: `${symbol}:deep_dive`,
         severity: 'info',
+        params: {
+          kind: 'i18n',
+          title: { key: 'notifDeepDiveTitle', vars: { symbol } },
+          message: { key: 'notifDeepDiveMessage', vars: { name: report.companyName } },
+        },
       });
     }
   } catch (err) {

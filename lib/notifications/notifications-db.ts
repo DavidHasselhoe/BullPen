@@ -29,7 +29,27 @@ export interface EarningsTodayParams {
   name?: string;
 }
 
-export type NotificationParams = EarningsTodayParams;
+/**
+ * A piece of notification text the panel words in the reader's language: an
+ * i18n key (in `navigation`, or `ns:key` for another namespace, which the
+ * panel loads on demand) and its values. A value can be a list, rendered with
+ * the reader's list format ("A, B and C"), or a `{ date }` (YYYY-MM-DD) shown
+ * as a short date. A list named `sentences` is joined with spaces instead.
+ */
+export interface NotifMsg {
+  key: string;
+  vars?: Record<string, NotifVar>;
+}
+export type NotifVar = string | number | { date: string } | Array<string | NotifMsg>;
+
+/** Any notification worded from keys. No message: the stored message is shown as is (model-written text). */
+export interface I18nParams {
+  kind: 'i18n';
+  title: NotifMsg;
+  message?: NotifMsg;
+}
+
+export type NotificationParams = EarningsTodayParams | I18nParams;
 
 export interface NotificationDBResult<T> {
   success: boolean;

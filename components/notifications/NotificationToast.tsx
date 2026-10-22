@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useMarkNotificationRead } from '@/hooks/use-notifications';
 import type { Notification } from '@/lib/notifications/notifications-db';
+import { useNotificationText } from './NotificationItem';
 
 interface NotificationToastProps {
   notification: Notification;
@@ -21,6 +22,7 @@ interface NotificationToastProps {
  */
 export function NotificationToast({ notification, onDismiss }: NotificationToastProps) {
   const { t } = useTranslation('navigation');
+  const text = useNotificationText(notification);
   const [isVisible, setIsVisible] = useState(true);
   const markRead = useMarkNotificationRead();
 
@@ -94,8 +96,8 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
       <div className="flex items-start gap-3 p-4">
         <Icon className={cn('h-5 w-5 shrink-0 mt-0.5', iconColor)} />
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm mb-1">{notification.title}</h4>
-          <p className="text-sm text-muted-foreground">{notification.message}</p>
+          <h4 className="font-medium text-sm mb-1">{text.title}</h4>
+          <p className="text-sm text-muted-foreground">{text.message}</p>
         </div>
         <div className="flex items-start gap-2 shrink-0">
           {linkUrl !== '/' && (
