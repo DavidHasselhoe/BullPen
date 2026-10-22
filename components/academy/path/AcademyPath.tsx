@@ -69,9 +69,10 @@ export function AcademyPath({ courses }: Props) {
           x: r.left + r.width / 2 - shellRect.left,
           y: r.top + r.height / 2 - shellRect.top,
           done: c.isCompleted,
+          unit: c.unitLabel,
         };
       })
-      .filter((p): p is { x: number; y: number; done: boolean } => p !== null);
+      .filter((p): p is { x: number; y: number; done: boolean; unit: string | null } => p !== null);
 
     if (points.length < 2) {
       setPathD({ done: '', todo: '' });
@@ -81,21 +82,20 @@ export function AcademyPath({ courses }: Props) {
 
     let done = '';
     let todo = '';
-    let doneStarted = false;
-    let todoStarted = false;
 
     for (let i = 1; i < points.length; i++) {
       const a = points[i - 1];
       const b = points[i];
+      // Each unit's path starts fresh below its banner: no line crosses into
+      // the next unit.
+      if (a.unit !== b.unit) continue;
+      // Every segment moves to its own start. Without it, a dark segment after
+      // a gap curved from the last finished node, straight through the
+      // unfinished ones in between.
       const midY = (a.y + b.y) / 2;
-      const seg = ` C ${a.x} ${midY}, ${b.x} ${midY}, ${b.x} ${b.y}`;
-      if (a.done && b.done) {
-        if (!doneStarted) { done += `M ${a.x} ${a.y}`; doneStarted = true; }
-        done += seg;
-      } else {
-        if (!todoStarted) { todo += `M ${a.x} ${a.y}`; todoStarted = true; }
-        todo += seg;
-      }
+      const seg = ` M ${a.x} ${a.y} C ${a.x} ${midY}, ${b.x} ${midY}, ${b.x} ${b.y}`;
+      if (a.done && b.done) done += seg;
+      else todo += seg;
     }
 
     setPathD({ done, todo });
