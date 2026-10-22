@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { cache } from 'react';
 import { Lock } from 'lucide-react';
 import { getDisplayNames } from '@/lib/market-data/display-names';
-import { getAvailableSubpages, getFundHolders, getSubpageCoverage } from '@/lib/stock/subpage-data';
+import { getAvailableSubpages, getFundHolders, getSubpageCoverage, MIN_FUND_HOLDERS } from '@/lib/stock/subpage-data';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCurrentUserId } from '@/lib/auth/server-session';
@@ -46,12 +46,15 @@ const load = cache(async (ticker: string) => {
 
 export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }): Promise<Metadata> {
   const ticker = (await params).ticker.toUpperCase();
-  const [{ name, holders, failed }, t] = await Promise.all([load(ticker), getRequestLocale().then((l) => getServerT(l, `/stock/${ticker}`))]);
+  const [{ name, holders, failed, peerCounts }, t] = await Promise.all([load(ticker), getRequestLocale().then((l) => getServerT(l, `/stock/${ticker}`))]);
+  // Empty, or too thin for the sitemap (peerCounts is the sitemap's own count;
+  // tickers outside it are disallowed in robots.txt): still linked, not indexed.
+  const thin = (holders.length === 0 && !failed) || (peerCounts != null && (peerCounts.get(ticker) ?? 0) < MIN_FUND_HOLDERS);
   return {
     title: t('stock:fundsMetaTitle', { name, ticker }),
     description: t('stock:fundsMetaDescription', { name, ticker }),
     alternates: { canonical: `/stock/${ticker}/fund-holders` },
-    ...(holders.length === 0 && !failed ? { robots: { index: false, follow: true } } : {}),
+    ...(thin ? { robots: { index: false, follow: true } } : {}),
   };
 }
 

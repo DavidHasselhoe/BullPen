@@ -3,7 +3,7 @@ import { canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
 import { createServerClient } from '@/lib/supabase/client';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { SITE_URL } from '@/lib/site';
-import { getSubpageCoverage } from '@/lib/stock/subpage-data';
+import { getSubpageCoverage, MIN_CONGRESS_TRADES, MIN_FUND_HOLDERS } from '@/lib/stock/subpage-data';
 
 /**
  * Served at /sitemap.xml.
@@ -18,10 +18,6 @@ import { getSubpageCoverage } from '@/lib/stock/subpage-data';
 // Rebuilt daily. As a build-time static file, a new weekly pick only reached
 // the sitemap on the next deploy (found 2026-09-28: live stopped at 09-21).
 export const revalidate = 86400;
-
-// Below these, a stock subpage is a sentence and a couple of rows.
-const MIN_CONGRESS_TRADES = 5;
-const MIN_FUND_HOLDERS = 3;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const BASE_URL = SITE_URL;

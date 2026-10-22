@@ -144,6 +144,16 @@ export async function getAvailableSubpages(ticker: string): Promise<Array<'divid
 }
 
 /**
+ * Below these, a congress-trades / fund-holders subpage is a sentence and a
+ * couple of rows. Such a page stays linked for readers but is left out of the
+ * sitemap and marked noindex, both measured with getSubpageCoverage's counts
+ * so the two can't disagree. 2026-10-22 Search Console: ~468 of these pages,
+ * found through the stock page's links, sat in "Discovered, not indexed".
+ */
+export const MIN_CONGRESS_TRADES = 5;
+export const MIN_FUND_HOLDERS = 3;
+
+/**
  * Of the given tickers, how many congress trades / tracked funds (latest
  * filing) each has, and which pay a dividend, for the sitemap and the stock
  * page's subpage links. A ticker with none is absent, so `.has()` means "has
