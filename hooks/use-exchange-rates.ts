@@ -11,7 +11,8 @@ export function useExchangeRates(currency: CurrencyCode | null = 'USD', evenForU
     queryKey: ['exchange-rates', currency],
     queryFn: () => getExchangeRates(currency ?? 'USD'),
     enabled: !!currency && (currency !== 'USD' || evenForUsd),
-    staleTime: 60 * 60 * 1000,
+    // USD and EUR pairs are live (server caches them a minute); the rest is a daily fix.
+    staleTime: 5 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
   });
 }
