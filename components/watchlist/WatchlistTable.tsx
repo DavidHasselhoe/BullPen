@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, X, Target } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -17,6 +17,7 @@ import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 import { todayET } from '@/lib/dates/calendar-format';
+import { RangeBar, StockPlanDialog, formatQuotePrice } from './StockPlan';
 
 const THESIS_KEY = { bull: 'watchlistThesisBull', bear: 'watchlistThesisBear', neutral: 'watchlistThesisNeutral' } as const;
 
@@ -144,6 +145,7 @@ export function WatchlistTable({ items, quotes, sinceAdded, enhancedData, onRemo
             <TableHead className="w-48"><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColSymbol')} col="symbol" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColPrice')} col="price" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColChange')} col="changePercent" /></TableHead>
+            <TableHead className="text-xs font-medium text-muted-foreground">{t('watchlistCol52w')}</TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColMktCap')} col="marketCap" /></TableHead>
             <TableHead className="text-xs font-medium text-muted-foreground"><TermTooltip term="P/E" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColHealth')} col="health" /></TableHead>
@@ -151,7 +153,7 @@ export function WatchlistTable({ items, quotes, sinceAdded, enhancedData, onRemo
             <TableHead className="text-xs font-medium text-muted-foreground"><TermTooltip term="Thesis" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColAdded')} col="added_at" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColSinceAdded')} col="sinceAdded" /></TableHead>
-            <TableHead className="w-10" />
+            <TableHead className="w-20" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -198,6 +200,22 @@ export function WatchlistTable({ items, quotes, sinceAdded, enhancedData, onRemo
                         {isUp ? '+' : ''}{(q.change ?? 0) >= 0 && !isUp ? '' : ''}{(q.change ?? 0).toFixed(2)}
                       </div>
                     </div>
+                  ) : '—'}
+                </TableCell>
+
+                <TableCell>
+                  {q && enhanced?.week52Low != null && enhanced.week52High != null ? (
+                    <RangeBar
+                      low={enhanced.week52Low}
+                      high={enhanced.week52High}
+                      price={q.price}
+                      className="w-20"
+                      label={t('planRangeAria', {
+                        low: formatQuotePrice(enhanced.week52Low, item.symbol, locale),
+                        high: formatQuotePrice(enhanced.week52High, item.symbol, locale),
+                        price: formatQuotePrice(q.price, item.symbol, locale),
+                      })}
+                    />
                   ) : '—'}
                 </TableCell>
 
@@ -262,14 +280,35 @@ export function WatchlistTable({ items, quotes, sinceAdded, enhancedData, onRemo
                 </TableCell>
 
                 <TableCell>
-                  <button
-                    onClick={() => onRemove(item.symbol)}
-                    disabled={removing}
-                    className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:text-destructive transition-colors"
-                    aria-label={t('watchlistTableRemoveAriaLabel', { symbol: item.symbol })}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="flex items-center">
+                    <StockPlanDialog
+                      symbol={item.symbol}
+                      companyName={item.company_name}
+                      price={q?.price ?? null}
+                      week52Low={enhanced?.week52Low ?? null}
+                      week52High={enhanced?.week52High ?? null}
+                      thesisText={enhanced?.thesisText ?? null}
+                      thesisSentiment={enhanced?.thesisSentiment ?? null}
+                      trigger={
+                        <button
+                          type="button"
+                          className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={t('planButtonTitle', { symbol: item.symbol })}
+                          title={t('planButtonTitle', { symbol: item.symbol })}
+                        >
+                          <Target className="h-3.5 w-3.5" />
+                        </button>
+                      }
+                    />
+                    <button
+                      onClick={() => onRemove(item.symbol)}
+                      disabled={removing}
+                      className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:text-destructive transition-colors"
+                      aria-label={t('watchlistTableRemoveAriaLabel', { symbol: item.symbol })}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </TableCell>
               </TableRow>
             );

@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { X, TrendingUp, TrendingDown, Minus, Bell } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Minus, Bell, Target } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
+import { StockPlanDialog, formatQuotePrice } from './StockPlan';
 import { cn } from '@/lib/utils';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { Sparkline } from '@/components/viz/Sparkline';
@@ -41,23 +42,12 @@ interface WatchlistCardProps {
   sparkline?: number[];
   /** The line starts at the last session's open and runs to now (today's regular session is under an hour old). */
   sparklineIsPreviousSession?: boolean;
-}
-
-/**
- * In the currency the price is quoted in. A ticker's watchlist quote is always
- * USD (the quote path rejects non-USD listings), but a pair is priced in its
- * second half: EUR/NOK in krone. Sub-dollar coins keep enough digits to move.
- */
-function formatPrice(p: number, symbol: string, locale: string) {
-  const currency = symbol.includes('/') ? symbol.split('/')[1] : 'USD';
-  const digits = { minimumFractionDigits: 2, maximumFractionDigits: p < 1 ? 6 : 2 };
-  try {
-    // narrowSymbol: "$", not "US$" in some locales; "kr" for NOK.
-    return p.toLocaleString(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', ...digits });
-  } catch {
-    // Not an ISO currency code (a coin quoted in another coin, ETH/BTC).
-    return `${p.toLocaleString(locale, digits)} ${currency}`;
-  }
+  /** The user's own thesis text, for the plan. */
+  thesisText?: string | null;
+  /** The plan's buy-below price: the user's highest active price_below alert. */
+  buyBelow?: number | null;
+  week52Low?: number | null;
+  week52High?: number | null;
 }
 
 function gradeColor(grade: string) {
@@ -90,6 +80,10 @@ export function WatchlistCard({
   thesisSentiment,
   sparkline,
   sparklineIsPreviousSession,
+  thesisText,
+  buyBelow,
+  week52Low,
+  week52High,
 }: WatchlistCardProps) {
   const { t } = useTranslation('watchlist');
   const locale = useIntlLocale();
@@ -105,6 +99,25 @@ export function WatchlistCard({
           (no hover there) and whenever focus is inside the card, so a phone or
           keyboard can still reach them. */}
       <div className="absolute right-2 top-2 z-10 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+        <StockPlanDialog
+          symbol={symbol}
+          companyName={company_name}
+          price={quote?.price ?? null}
+          week52Low={week52Low ?? null}
+          week52High={week52High ?? null}
+          thesisText={thesisText ?? null}
+          thesisSentiment={thesisSentiment ?? null}
+          trigger={
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              title={t('planButtonTitle', { symbol })}
+              aria-label={t('planButtonTitle', { symbol })}
+            >
+              <Target className="h-3.5 w-3.5" />
+            </button>
+          }
+        />
         <AlertDialog
           symbol={symbol}
           companyName={company_name}
@@ -138,7 +151,7 @@ export function WatchlistCard({
         {/* Header */}
         <div className="flex items-center gap-3">
           <CompanyLogo name={company_name} ticker={symbol} logoUrl={logo_url ?? null} size={36} />
-          <div className="min-w-0 flex-1 [@media(hover:none)]:pr-16">
+          <div className="min-w-0 flex-1 [@media(hover:none)]:pr-24">
             {/* clamp-ok: a company name is a short label; the full legal name is on hover. */}
             <p className="flex items-baseline gap-1.5 text-sm font-semibold text-foreground leading-none" title={company_name || undefined}>
               <span className="truncate">{display_name || displayCompanyName(company_name || symbol, symbol)}</span>
@@ -159,7 +172,7 @@ export function WatchlistCard({
               className={cn('text-lg font-bold tabular-nums', quote.stale ? 'text-muted-foreground' : 'text-foreground')}
               title={quote.stale ? t('watchlistStaleTitle') : undefined}
             >
-              {formatPrice(quote.price, symbol, locale)}
+              {formatQuotePrice(quote.price, symbol, locale)}
             </span>
             <div
               className={cn(
@@ -201,6 +214,16 @@ export function WatchlistCard({
                 : t('watchlistSparklineAriaLabel', { symbol })}
             />
           </div>
+        )}
+
+        {/* The plan's buy-below price, only once one is set. Info blue, not
+            emerald: reaching your price is a fact, not a gain. */}
+        {buyBelow != null && quote && (
+          <p className={cn('text-xs tabular-nums', quote.price <= buyBelow ? 'font-medium text-sky-500' : 'text-muted-foreground')}>
+            {quote.price <= buyBelow
+              ? t('planCardReached', { price: formatQuotePrice(buyBelow, symbol, locale) })
+              : t('planCardDistance', { price: formatQuotePrice(buyBelow, symbol, locale), pct: ((quote.price / buyBelow - 1) * 100).toFixed(1) })}
+          </p>
         )}
 
         {/* Bottom row: health score + earnings countdown */}

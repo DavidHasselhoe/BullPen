@@ -14,6 +14,8 @@ export interface EnhancedData {
   nextEarningsDate: string | null;
   daysToEarnings: number | null;
   thesisSentiment: 'bull' | 'bear' | 'neutral' | null;
+  /** The user's own latest thesis text on this stock. */
+  thesisText: string | null;
   marketCap: number | null;
   peRatio: number | null;
   week52High: number | null;

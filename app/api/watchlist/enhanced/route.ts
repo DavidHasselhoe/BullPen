@@ -26,6 +26,8 @@ interface EnhancedData {
   nextEarningsDate: string | null;
   daysToEarnings: number | null;
   thesisSentiment: ThesisSentiment | null;
+  /** The user's own latest thesis on this stock, for the watchlist plan. */
+  thesisText: string | null;
   marketCap: number | null;
   peRatio: number | null;
   week52High: number | null;
@@ -78,15 +80,15 @@ async function handler(
   // ── Thesis sentiments (single query) ──────────────────────────────────────
   const { data: thesisRows } = await supabase
     .from('stock_theses')
-    .select('symbol, sentiment')
+    .select('symbol, sentiment, content')
     .eq('user_id', session.userId)
     .in('symbol', symbols)
     .order('created_at', { ascending: false });
 
-  const thesisMap: Record<string, ThesisSentiment> = {};
+  const thesisMap: Record<string, { sentiment: ThesisSentiment; content: string }> = {};
   for (const row of thesisRows ?? []) {
     if (!thesisMap[row.symbol]) {
-      thesisMap[row.symbol] = row.sentiment as ThesisSentiment;
+      thesisMap[row.symbol] = { sentiment: row.sentiment as ThesisSentiment, content: row.content as string };
     }
   }
 
@@ -146,7 +148,8 @@ async function handler(
       healthScore,
       nextEarningsDate,
       daysToEarnings,
-      thesisSentiment: thesisMap[sym] ?? null,
+      thesisSentiment: thesisMap[sym]?.sentiment ?? null,
+      thesisText: thesisMap[sym]?.content ?? null,
       marketCap: stats?.marketCap ?? null,
       peRatio: stats?.peRatioTTM ?? null,
       week52High: stats?.week52High ?? null,

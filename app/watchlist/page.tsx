@@ -9,6 +9,8 @@ import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
 import { ListScorecard } from '@/components/watchlist/ListScorecard';
 import { ListEvents } from '@/components/watchlist/ListEvents';
+import { buyBelowAlert } from '@/components/watchlist/StockPlan';
+import { useAlerts } from '@/hooks/use-alerts';
 import { listScore, pickReturn, todaySummary } from '@/lib/watchlist/scorecard';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { useLivePrices } from '@/hooks/use-live-prices';
@@ -145,6 +147,9 @@ export default function WatchlistPage() {
       : seed ?? null;
   };
   const quotes = Object.fromEntries(displayItems.map((item) => [item.symbol, quoteOf(item.symbol)]));
+
+  // Each card's buy-below price is the user's own price_below alert (StockPlan).
+  const { alerts } = useAlerts();
 
   // List scorecard: today's equal-weight move and the picks since they were added vs SPY.
   const { data: sinceAddedEntries, isLoading: sinceAddedLoading } = useSinceAdded(activeListId);
@@ -471,6 +476,10 @@ export default function WatchlistPage() {
                   nextEarningsDate={enhanced?.nextEarningsDate}
                   daysToEarnings={enhanced?.daysToEarnings}
                   thesisSentiment={enhanced?.thesisSentiment}
+                  thesisText={enhanced?.thesisText}
+                  buyBelow={buyBelowAlert(alerts, item.symbol)?.threshold ?? null}
+                  week52Low={enhanced?.week52Low}
+                  week52High={enhanced?.week52High}
                   sparkline={sparklinesResult?.sparklines[item.symbol]}
                   sparklineIsPreviousSession={sparklinesResult?.previousSession.includes(item.symbol)}
                 />
