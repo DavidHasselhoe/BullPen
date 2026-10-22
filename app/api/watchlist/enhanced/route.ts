@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCached } from '@/lib/cache/market-data-cache';
-import type { CompanyStatistics } from '@/lib/twelvedata/twelvedata-client';
+import type { CompanyStatistics, EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
+import { getCalendarRange, WARM_DAYS_FORWARD } from '@/lib/market-data/calendar-days';
+import { addDays, todayET } from '@/lib/dates/calendar-format';
 
 function gradeLabel(grade: string): string {
   switch (grade) {
@@ -41,10 +43,10 @@ interface EnhancedData {
  * Health score: read from screener_stats — the same persisted, synced value
  * shown on the stock page and screener, rather than recomputed here from
  * whatever happens to be cached (which could disagree with those surfaces).
- * Earnings: read from the cached TwelveData /earnings payload only — no Finnhub
- * fallback, since BullPen isn't licensed to display Finnhub data (news + fallback
- * prices are the only permitted uses). A symbol with no cached upcoming date from
- * TD simply shows no earnings badge.
+ * Earnings: the shared earnings calendar (cache only), then the stock's cached
+ * TwelveData /earnings payload. No Finnhub fallback, since BullPen isn't licensed
+ * to display Finnhub data (news + fallback prices are the only permitted uses).
+ * A symbol with no upcoming date in either simply shows no earnings badge.
  * Market cap / P/E: from stats cache when available.
  */
 async function handler(
@@ -110,15 +112,33 @@ async function handler(
   }
 
   // ── Read remaining caches in parallel ─────────────────────────────────────
-  const cacheResults = await Promise.all(
-    symbols.map(async (sym) => {
-      const [stats, earnings] = await Promise.all([
-        getCached<CompanyStatistics>(`stats:${sym}`),
-        getCached<EarningsItem[]>(`snap-earnings:${sym}`),
-      ]);
-      return { sym, stats, earnings };
-    })
-  );
+  const today = todayET();
+  const [cacheResults, calendar] = await Promise.all([
+    Promise.all(
+      symbols.map(async (sym) => {
+        const [stats, earnings] = await Promise.all([
+          getCached<CompanyStatistics>(`stats:${sym}`),
+          getCached<EarningsItem[]>(`snap-earnings:${sym}`),
+        ]);
+        return { sym, stats, earnings };
+      })
+    ),
+    // The shared earnings calendar, cache only (a cron keeps it warm this far
+    // ahead), is the same source as Home's Coming up and the list's events
+    // strip, so the column can't say "—" while the strip names a date.
+    getCalendarRange<EarningsCalendarItem>('earnings', today, addDays(today, WARM_DAYS_FORWARD), { allowFetch: false })
+      .catch(() => null),
+  ]);
+
+  // First confirmed date per symbol. A Nasdaq-estimated date stays out: a bare
+  // countdown can't say "not confirmed" the way the events strip does.
+  const calendarNext = new Map<string, string>();
+  const wanted = new Set(symbols);
+  for (const [date, rows] of [...(calendar?.byDate ?? [])].sort(([a], [b]) => a.localeCompare(b))) {
+    for (const r of rows) {
+      if (wanted.has(r.symbol) && !r.date_estimated && !calendarNext.has(r.symbol)) calendarNext.set(r.symbol, date);
+    }
+  }
 
   // ── Build results ─────────────────────────────────────────────────────────
   const results: Record<string, EnhancedData> = {};
@@ -126,11 +146,12 @@ async function handler(
   for (const { sym, stats, earnings } of cacheResults) {
     const healthScore = healthMap.get(sym) ?? null;
 
-    // Earnings — TD cache only (see doc comment above on why there's no fallback)
-    let nextEarningsDate: string | null = null;
+    // Earnings: the calendar first, then the stock's own TD cache (no Finnhub
+    // fallback, see the doc comment above)
+    let nextEarningsDate: string | null = calendarNext.get(sym) ?? null;
     let daysToEarnings: number | null = null;
 
-    if (earnings && earnings.length > 0) {
+    if (!nextEarningsDate && earnings && earnings.length > 0) {
       const upcoming = earnings
         .filter(e => e.epsActual === null && Date.parse(e.date) > now)
         .map(e => e.date)
@@ -141,7 +162,8 @@ async function handler(
     }
 
     if (nextEarningsDate) {
-      daysToEarnings = Math.ceil((Date.parse(nextEarningsDate) - now) / 86_400_000);
+      // Calendar days in market time: 0 is today, 1 tomorrow, whatever the hour.
+      daysToEarnings = Math.round((Date.parse(`${nextEarningsDate.slice(0, 10)}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000);
     }
 
     results[sym] = {
