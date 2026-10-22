@@ -16,6 +16,7 @@ import { TermTooltip } from '@/components/ui/TermTooltip';
 import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { displayCompanyName } from '@/lib/market-data/company-name';
+import { todayET } from '@/lib/dates/calendar-format';
 
 const THESIS_KEY = { bull: 'watchlistThesisBull', bear: 'watchlistThesisBear', neutral: 'watchlistThesisNeutral' } as const;
 
@@ -30,12 +31,14 @@ interface Quote {
 interface WatchlistTableProps {
   items: WatchlistItem[];
   quotes: Record<string, Quote | null>;
+  /** Percent change since each stock was added to this list; null while unpriced or added today. */
+  sinceAdded?: Record<string, number | null>;
   enhancedData?: EnhancedDataMap;
   onRemove: (symbol: string) => void;
   isRemoving?: (symbol: string) => boolean;
 }
 
-type SortKey = 'symbol' | 'price' | 'changePercent' | 'health' | 'earnings' | 'marketCap' | 'added_at';
+type SortKey = 'symbol' | 'price' | 'changePercent' | 'health' | 'earnings' | 'marketCap' | 'added_at' | 'sinceAdded';
 type SortDir = 'asc' | 'desc';
 
 function gradeToNum(grade: string | undefined): number {
@@ -83,7 +86,7 @@ function Col({
   );
 }
 
-export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemoving }: WatchlistTableProps) {
+export function WatchlistTable({ items, quotes, sinceAdded, enhancedData, onRemove, isRemoving }: WatchlistTableProps) {
   const { t } = useTranslation('watchlist');
   const locale = useIntlLocale();
   const [sortKey, setSortKey] = useState<SortKey>('added_at');
@@ -127,6 +130,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
       }
       case 'marketCap': cmp = (ea?.marketCap ?? -Infinity) - (eb?.marketCap ?? -Infinity); break;
       case 'added_at': cmp = a.added_at.localeCompare(b.added_at); break;
+      case 'sinceAdded': cmp = (sinceAdded?.[a.symbol] ?? -Infinity) - (sinceAdded?.[b.symbol] ?? -Infinity); break;
     }
 
     return sortDir === 'asc' ? cmp : -cmp;
@@ -146,6 +150,7 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColEarnings')} col="earnings" /></TableHead>
             <TableHead className="text-xs font-medium text-muted-foreground"><TermTooltip term="Thesis" /></TableHead>
             <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColAdded')} col="added_at" /></TableHead>
+            <TableHead><Col sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} label={t('watchlistColSinceAdded')} col="sinceAdded" /></TableHead>
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
@@ -239,6 +244,21 @@ export function WatchlistTable({ items, quotes, enhancedData, onRemove, isRemovi
 
                 <TableCell className="text-xs text-muted-foreground">
                   {new Date(item.added_at).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+                </TableCell>
+
+                <TableCell className="text-sm tabular-nums">
+                  {(() => {
+                    const pct = sinceAdded?.[item.symbol];
+                    if (pct == null) {
+                      const addedToday = new Date(item.added_at).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) === todayET();
+                      return <span className="text-xs text-muted-foreground">{addedToday ? t('watchlistSinceAddedNew') : '—'}</span>;
+                    }
+                    return (
+                      <span className={cn('font-medium', pct > 0 && 'text-emerald-500', pct < 0 && 'text-red-500')}>
+                        {pct > 0 ? '+' : ''}{pct.toFixed(2)}%
+                      </span>
+                    );
+                  })()}
                 </TableCell>
 
                 <TableCell>

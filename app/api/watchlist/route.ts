@@ -3,6 +3,7 @@ import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
 import { addWatchlistItem } from '@/lib/watchlist/add-item';
+import { removeWatchlistItems } from '@/lib/watchlist/remove-item';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 
 /** GET /api/watchlist — list current user's watchlist */
@@ -119,7 +120,7 @@ async function postHandler(
     company_name: company_name ?? symbol,
     // Set by both branches above: the caller's own list, or their first/new one.
     list_id: list_id as string,
-  });
+  }, { restore: body?.restore === true });
 
   if (error || !data) {
     return addSecurityHeaders(
@@ -147,17 +148,7 @@ async function deleteHandler(
 
   const supabase = createServerClient();
 
-  let query = supabase
-    .from('user_watchlist')
-    .delete()
-    .eq('user_id', session.userId)
-    .eq('symbol', symbol);
-
-  if (list_id) {
-    query = query.eq('list_id', list_id);
-  }
-
-  const { error } = await query;
+  const { error } = await removeWatchlistItems(supabase, { user_id: session.userId, symbol, list_id });
 
   if (error) {
     return addSecurityHeaders(

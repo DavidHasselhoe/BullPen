@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
-import { batchFetch, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { rget, rset } from '@/lib/cache/redis-cache';
+import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
+import { getMonthCloses, monthClosesKey, LOOKBACK_DAYS } from '@/lib/market-data/month-closes';
 import { createServerClient } from '@/lib/supabase/client';
 import { getExchangesForTickers } from '@/lib/market/ticker-exchange-map';
 import { getClosedHolidays } from '@/lib/market/exchange-holidays';
@@ -21,26 +21,6 @@ import {
   monthRange,
   todayET,
 } from '@/lib/dates/calendar-format';
-
-interface TsValue { datetime: string; close: string }
-interface TsResponse { values?: TsValue[]; status?: string }
-
-/**
- * A completed month's daily closes never change again, split re-adjustment
- * aside — so they cache for a day. The current month gains a bar at each
- * close and its last bar moves intraday, hence the short TTL.
- */
-const TTL_PAST_MONTH = 24 * 60 * 60;
-const TTL_CURRENT_MONTH = 10 * 60;
-
-/** TwelveData's /batch cap is ~120 requests; 100 matches the SEED_CHUNK used elsewhere. */
-const BATCH_CHUNK = 100;
-
-/**
- * Days of runway before the month starts, so day 1 has a previous close to
- * diff against. Seven covers a long weekend plus a holiday.
- */
-const LOOKBACK_DAYS = 7;
 
 async function handler(
   request: NextRequest,
@@ -135,7 +115,6 @@ async function handler(
   }
 
   const symbolList = [...symbols];
-  const ttl = month === currentMonthKey() ? TTL_CURRENT_MONTH : TTL_PAST_MONTH;
 
   // Same exchange_holidays table and `type === 'closed'` rule the Market Hours
   // widget uses (see lib/market/market-status.ts), so a blank calendar cell and
@@ -143,68 +122,29 @@ async function handler(
   // than awaited here, since it's independent of it.
   const holidaysPromise = getClosedHolidays(getExchangesForTickers(symbolList), first, last);
 
-  const cacheHits = await Promise.all(
-    symbolList.map(async (symbol) => ({
-      symbol,
-      cached: await rget<SymbolCloses[]>(`dailycloses:v2:${symbol}:${month}`),
-    }))
-  );
-
   const closes: Record<string, SymbolCloses[]> = {};
-  const missing: string[] = [];
-  for (const { symbol, cached } of cacheHits) {
-    if (cached && cached.length > 0) closes[symbol] = cached;
-    else missing.push(symbol);
-  }
-
-  if (missing.length > 0) {
-    const apiKey = process.env.TWELVE_DATA_API_KEY ?? '';
-    try {
-      for (let i = 0; i < missing.length; i += BATCH_CHUNK) {
-        const chunk = missing.slice(i, i + BATCH_CHUNK);
-        const requests: Record<string, string> = {};
-        for (const symbol of chunk) {
-          // end_date is EXCLUSIVE for daily bars — verified against the API:
-          // requesting end_date=2026-06-30 returns through 06-29 only. Passing
-          // windowEnd directly silently drops the last day of every month.
-          requests[symbol] =
-            `/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day` +
-            `&start_date=${windowStart}&end_date=${addDays(windowEnd, 1)}` +
-            `&order=ASC&apikey=${apiKey}`;
-        }
-
-        const raw = await batchFetch<TsResponse>(requests);
-
-        for (const [symbol, data] of Object.entries(raw)) {
-          if (!Array.isArray(data?.values)) continue;
-          const series: SymbolCloses[] = [];
-          for (const v of data.values) {
-            const close = parseFloat(v.close);
-            // TwelveData returns daily datetimes as plain YYYY-MM-DD.
-            if (!isNaN(close)) series.push({ date: v.datetime.slice(0, 10), close });
-          }
-          if (series.length === 0) continue;
-          series.sort((a, b) => a.date.localeCompare(b.date));
-          closes[symbol] = series;
-          void rset(`dailycloses:v2:${symbol}:${month}`, series, ttl);
-        }
-      }
-    } catch (error) {
-      if (error instanceof TwelveDataRateLimitError) {
-        // Status 200 with a gated marker so the widget renders a plan-gated
-        // message rather than an error state, and nothing retries into the limit.
-        return addSecurityHeaders(
-          NextResponse.json({ success: false, error: 'plan_restricted' }, { status: 200 })
-        );
-      }
-      // Non-fatal: fall through and compute from whatever the cache gave us, so
-      // a single bad symbol doesn't blank the whole month.
-      if (Object.keys(closes).length === 0) {
-        return addSecurityHeaders(
-          NextResponse.json({ success: false, error: 'unavailable' }, { status: 200 })
-        );
-      }
+  try {
+    const result = await getMonthCloses(symbolList.map((symbol) => ({ symbol, month })));
+    for (const symbol of symbolList) {
+      const series = result.closes.get(monthClosesKey(symbol, month));
+      if (series) closes[symbol] = series;
     }
+    // Non-fatal: compute from whatever came back, so a single bad symbol
+    // doesn't blank the whole month.
+    if (result.incomplete && Object.keys(closes).length === 0) {
+      return addSecurityHeaders(
+        NextResponse.json({ success: false, error: 'unavailable' }, { status: 200 })
+      );
+    }
+  } catch (error) {
+    if (error instanceof TwelveDataRateLimitError) {
+      // Status 200 with a gated marker so the widget renders a plan-gated
+      // message rather than an error state, and nothing retries into the limit.
+      return addSecurityHeaders(
+        NextResponse.json({ success: false, error: 'plan_restricted' }, { status: 200 })
+      );
+    }
+    throw error;
   }
 
   // Converted at today's rate, as the chart and the table do: each day's move

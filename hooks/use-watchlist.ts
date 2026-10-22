@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
+import type { SinceAddedEntry } from '@/lib/watchlist/scorecard';
 
 export interface WatchlistItem {
   id: string;
@@ -63,12 +64,13 @@ export function useAddToWatchlist() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ symbol, company_name, listId }: { symbol: string; company_name: string; listId?: string }) => {
+    /** restore: Undo of a remove, so the row keeps the added_at it had. */
+    mutationFn: async ({ symbol, company_name, listId, restore }: { symbol: string; company_name: string; listId?: string; restore?: boolean }) => {
       const url = listId ? `/api/watchlist/lists/${listId}/items` : '/api/watchlist';
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol, company_name }),
+        body: JSON.stringify({ symbol, company_name, restore }),
       });
       if (!res.ok) throw new Error('Failed to add to watchlist');
       return res.json();
@@ -110,6 +112,7 @@ export function useAddToWatchlist() {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-items'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-sparklines'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-since-added'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] }); // refresh item_count badge
     },
   });
@@ -188,6 +191,7 @@ export function useRemoveFromWatchlist() {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-items'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-sparklines'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-since-added'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] }); // refresh item_count badge
       queryClient.invalidateQueries({ queryKey: ['user-alerts'] }); // server removes alerts for unwatched symbol
     },
@@ -225,6 +229,23 @@ export function useWatchlistItems(listId: string | null) {
     },
     enabled: isAuthenticated && !!listId,
     staleTime: 60 * 1000,
+  });
+}
+
+/** Each pick's close on the day it was added (and SPY's), removed picks included, for the list scorecard */
+export function useSinceAdded(listId: string | null) {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery({
+    queryKey: ['watchlist-since-added', listId],
+    queryFn: async (): Promise<SinceAddedEntry[]> => {
+      const res = await fetch(`/api/watchlist/lists/${listId}/since-added`);
+      if (!res.ok) throw new Error('Failed to fetch since-added');
+      const data = await res.json();
+      return data.entries ?? [];
+    },
+    enabled: isAuthenticated && !!listId,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

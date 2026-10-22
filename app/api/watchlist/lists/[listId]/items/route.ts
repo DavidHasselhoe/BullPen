@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { addWatchlistItem } from '@/lib/watchlist/add-item';
+import { removeWatchlistItems } from '@/lib/watchlist/remove-item';
 import { createServerClient } from '@/lib/supabase/client';
 
 interface RouteContext {
@@ -52,7 +53,11 @@ async function postHandler(
   }
 
   // Adds to this list without taking it out of any other.
-  const { data, error } = await addWatchlistItem(supabase, { user_id: session.userId, symbol, company_name: company_name ?? symbol, list_id: listId });
+  const { data, error } = await addWatchlistItem(
+    supabase,
+    { user_id: session.userId, symbol, company_name: company_name ?? symbol, list_id: listId },
+    { restore: body?.restore === true },
+  );
 
   if (error || !data) {
     return addSecurityHeaders(
@@ -87,12 +92,7 @@ async function deleteHandler(
     );
   }
 
-  const { error } = await supabase
-    .from('user_watchlist')
-    .delete()
-    .eq('user_id', session.userId)
-    .eq('symbol', symbol)
-    .eq('list_id', listId);
+  const { error } = await removeWatchlistItems(supabase, { user_id: session.userId, symbol, list_id: listId });
 
   if (error) {
     return addSecurityHeaders(

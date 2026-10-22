@@ -4,9 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
-import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist, useCreateWatchlistList } from '@/hooks/use-watchlist';
+import { useWatchlist, useWatchlistLists, useWatchlistItems, useAddToWatchlist, useRemoveFromWatchlist, useCreateWatchlistList, useSinceAdded } from '@/hooks/use-watchlist';
 import { useWatchlistEnhanced } from '@/hooks/use-watchlist-enhanced';
 import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
+import { ListScorecard } from '@/components/watchlist/ListScorecard';
+import { listScore, pickReturn, todaySummary } from '@/lib/watchlist/scorecard';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { useLivePrices } from '@/hooks/use-live-prices';
 import { useThrottle } from '@/hooks/use-throttle';
@@ -81,8 +83,10 @@ export default function WatchlistPage() {
   // Live price stream for all watchlist symbols via WsManager SSE
   // A stock in two lists is two rows; prices and charts are per stock.
   const allSymbols = [...new Set((watchlist ?? []).map((w) => w.symbol))];
+  // SPY rides along for the scorecard's S&P 500 comparison; it gets no card.
+  const priceSymbols = [...new Set([...allSymbols, 'SPY'])];
   // Every 3s, same as holdings, which is what the pre-market subtitle promises.
-  const livePrices = useThrottle(useLivePrices(allSymbols), 3000);
+  const livePrices = useThrottle(useLivePrices(priceSymbols), 3000);
   const { data: enhancedData } = useWatchlistEnhanced(allSymbols);
 
   // Sparkline charts: today's 5min candles, or the last full session while today is still empty
@@ -110,13 +114,13 @@ export default function WatchlistPage() {
 
   // Fallback batch fetch for all symbols (runs once on load, populates prices before WS ticks arrive)
   const { data: seedQuotes } = useQuery({
-    queryKey: ['watchlist-seed-quotes', allSymbols.join(',')],
+    queryKey: ['watchlist-seed-quotes', priceSymbols.join(',')],
     queryFn: async (): Promise<QuoteMap> => {
       if (allSymbols.length === 0) return {};
       const res = await fetch('/api/quotes/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: allSymbols }),
+        body: JSON.stringify({ symbols: priceSymbols }),
       });
       if (!res.ok) return {};
       const data = await res.json();
@@ -126,6 +130,27 @@ export default function WatchlistPage() {
     staleTime: 5 * 60_000,
     refetchInterval: false,
   });
+
+  // A live tick before prevClose is seeded carries undefined change/%
+  // — fall back to the seed quote so the column never blanks to 0.
+  const quoteOf = (symbol: string) => {
+    const live = livePrices.get(symbol);
+    const seed = seedQuotes?.[symbol];
+    return live
+      ? { price: live.price, change: live.change ?? seed?.change ?? 0, changePercent: live.changePercent ?? seed?.changePercent ?? 0 }
+      : seed ?? null;
+  };
+  const quotes = Object.fromEntries(displayItems.map((item) => [item.symbol, quoteOf(item.symbol)]));
+
+  // List scorecard: today's equal-weight move and the picks since they were added vs SPY.
+  const { data: sinceAddedEntries, isLoading: sinceAddedLoading } = useSinceAdded(activeListId);
+  const spyPrice = quoteOf('SPY')?.price;
+  const sinceAdded: Record<string, number | null> = {};
+  for (const e of sinceAddedEntries ?? []) {
+    if (!e.removedAt) sinceAdded[e.symbol] = pickReturn(e, quotes[e.symbol]?.price, spyPrice)?.pct ?? null;
+  }
+  const today = todaySummary(displayItems.flatMap((i) => quotes[i.symbol] ? [{ symbol: i.symbol, changePercent: quotes[i.symbol]!.changePercent }] : []));
+  const score = listScore(sinceAddedEntries ?? [], (s) => quotes[s]?.price, spyPrice);
 
   const handleAdd = async (result: SearchResult) => {
     let listId = activeListId ?? undefined;
@@ -162,7 +187,7 @@ export default function WatchlistPage() {
   };
   const undoRemove = () => {
     if (!removed) return;
-    addMutation.mutate({ symbol: removed.symbol, company_name: removed.company_name, listId: removed.listId ?? undefined });
+    addMutation.mutate({ symbol: removed.symbol, company_name: removed.company_name, listId: removed.listId ?? undefined, restore: true });
     if (undoTimer.current) clearTimeout(undoTimer.current);
     setRemoved(null);
   };
@@ -335,6 +360,17 @@ export default function WatchlistPage() {
           />
         )}
 
+        {/* List scorecard: one stock is its own card already */}
+        {!displayLoading && displayItems.length >= 2 && (
+          <ListScorecard
+            today={today}
+            score={score}
+            scoreLoading={sinceAddedLoading}
+            allNew={(sinceAddedEntries ?? []).every((e) => e.startClose == null && !e.removedAt)}
+            grades={displayItems.flatMap((i) => enhancedData?.[i.symbol]?.healthScore?.grade ?? [])}
+          />
+        )}
+
         {/* Content */}
         {displayLoading ? (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -400,21 +436,8 @@ export default function WatchlistPage() {
         ) : viewMode === 'table' ? (
           <WatchlistTable
             items={displayItems}
-            quotes={Object.fromEntries(
-              displayItems.map((item) => {
-                const live = livePrices.get(item.symbol);
-                const seed = seedQuotes?.[item.symbol];
-                // A live tick before prevClose is seeded carries undefined change/%
-                // — fall back to the seed quote so the column never blanks to 0.
-                return [item.symbol, live
-                  ? {
-                      price: live.price,
-                      change: live.change ?? seed?.change ?? 0,
-                      changePercent: live.changePercent ?? seed?.changePercent ?? 0,
-                    }
-                  : seed ?? null];
-              })
-            )}
+            quotes={quotes}
+            sinceAdded={sinceAdded}
             enhancedData={enhancedData}
             onRemove={handleRemove}
             isRemoving={(sym) => removeMutation.isPending && removeMutation.variables?.symbol === sym}
@@ -422,15 +445,7 @@ export default function WatchlistPage() {
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {displayItems.map((item) => {
-              const live = livePrices.get(item.symbol);
-              const seed = seedQuotes?.[item.symbol];
-              const quote = live
-                ? {
-                    price: live.price,
-                    change: live.change ?? seed?.change ?? 0,
-                    changePercent: live.changePercent ?? seed?.changePercent ?? 0,
-                  }
-                : seed ?? null;
+              const quote = quotes[item.symbol];
               const enhanced = enhancedData?.[item.symbol];
               return (
                 <WatchlistCard
