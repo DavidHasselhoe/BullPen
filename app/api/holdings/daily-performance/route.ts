@@ -5,6 +5,9 @@ import { rget, rset } from '@/lib/cache/redis-cache';
 import { createServerClient } from '@/lib/supabase/client';
 import { getExchangesForTickers } from '@/lib/market/ticker-exchange-map';
 import { getClosedHolidays } from '@/lib/market/exchange-holidays';
+import { getLatestRates } from '@/lib/currency/latest-rates';
+import { listingToUsd } from '@/lib/currency/currency-conversion';
+import { logger } from '@/lib/utils/logger';
 import {
   computeDailyPerformance,
   type HoldingInput,
@@ -67,13 +70,20 @@ async function handler(
   const [{ data: holdingRows }, { data: saleRows }] = await Promise.all([
     supabase
       .from('user_holdings')
-      .select('symbol, company_name, quantity, date_purchased, created_at')
+      .select('symbol, company_name, quantity, date_purchased, created_at, trading_currency')
       .eq('user_id', session.userId),
     supabase
       .from('holding_sales')
-      .select('symbol, sale_date, quantity_sold')
+      .select('symbol, sale_date, quantity_sold, trading_currency')
       .eq('user_id', session.userId),
   ]);
+
+  // Closes come in each listing's own currency (EUR for a Frankfurt listing)
+  // and the day sums run in USD. A surviving holding row wins over its sales.
+  const listingCurrency = new Map<string, string>();
+  for (const row of [...(saleRows ?? []), ...(holdingRows ?? [])] as { symbol: string; trading_currency: string | null }[]) {
+    if (row.trading_currency) listingCurrency.set(row.symbol.toUpperCase(), row.trading_currency);
+  }
 
   // Symbols are upper-cased once here so holdings, sales, cache keys and the
   // closes map all agree — the computation looks closes up by the holding's own
@@ -194,6 +204,19 @@ async function handler(
           NextResponse.json({ success: false, error: 'unavailable' }, { status: 200 })
         );
       }
+    }
+  }
+
+  // Converted at today's rate, as the chart and the table do: each day's move
+  // is the listing's own, not the currency's. Cached closes stay unconverted.
+  if ([...listingCurrency.values()].some((c) => c !== 'USD')) {
+    const rates = await getLatestRates('USD').catch((err) => {
+      logger.warn('[daily-performance] no FX rates, non-USD listings summed as USD', { error: err });
+      return null;
+    });
+    for (const [symbol, series] of Object.entries(closes)) {
+      const fx = listingToUsd(listingCurrency.get(symbol), rates);
+      if (fx !== 1) closes[symbol] = series.map((c) => ({ date: c.date, close: c.close * fx }));
     }
   }
 
