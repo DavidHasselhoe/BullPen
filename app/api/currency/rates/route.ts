@@ -49,14 +49,23 @@ function withLive(base: string, rates: Record<string, number>, live: Record<stri
   return out;
 }
 
+// The ECB publishes once a business day around 16:00 CET, so Frankfurter's
+// latest table only changes then. Cached by age, not date: its date is
+// yesterday's every morning (Friday's on a weekend), so a lookup by today's date
+// missed until 16:00 and called Frankfurter on every request, and could also
+// hit rows /historical saved under today's date, then serve them all day.
+const DAILY_TTL_SECONDS = 60 * 60;
+
+interface DailyRates { base: string; date: string; rates: Record<string, number> }
+
 /**
  * GET /api/currency/rates
- * Daily rates from Frankfurter (cached in Supabase), with the USD and EUR pairs
- * swapped for live TwelveData quotes when available.
+ * Daily rates from Frankfurter (cached an hour in Redis, kept in Supabase under
+ * their real date for /historical), with the USD and EUR pairs swapped for live
+ * TwelveData quotes when available.
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient();
     const searchParams = request.nextUrl.searchParams;
     const base = (searchParams.get('base') || 'USD').toUpperCase();
     // It ends up in a Redis key, a TwelveData symbol and the Frankfurter URL.
@@ -65,74 +74,41 @@ export async function GET(request: NextRequest) {
     }
     const livePromise = liveUsdRates(base);
 
-    // Check if we have today's rates cached
-    const today = new Date().toISOString().split('T')[0];
-
-    const { data: cachedRates, error: cacheError } = await supabase
-      .from('currency_exchange_rates')
-      .select('target_currency, rate, date')
-      .eq('base_currency', base)
-      .eq('date', today);
-
-    // If we have cached rates for today, return them
-    if (!cacheError && cachedRates && cachedRates.length > 0) {
-      const rates: Record<string, number> = {};
-      cachedRates.forEach((rate) => {
-        rates[rate.target_currency] = Number(rate.rate);
+    const cacheKey = `fx:daily:${base}`;
+    let daily = await rget<DailyRates>(cacheKey);
+    const cached = !!daily;
+    if (!daily) {
+      const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${base}`, {
+        headers: { Accept: 'application/json' },
       });
-      const live = await livePromise;
+      if (!response.ok) {
+        throw new Error(`Frankfurter API error: ${response.statusText}`);
+      }
+      const data: DailyRates = await response.json();
+      daily = { base: data.base, date: data.date, rates: data.rates };
+      void rset(cacheKey, daily, DAILY_TTL_SECONDS);
 
-      return NextResponse.json({
-        success: true,
-        base,
-        date: today,
-        rates: live ? withLive(base, rates, live) : rates,
-        cached: true,
-        live: !!live,
-      });
-    }
-
-    // Fetch from Frankfurter API
-    const frankfurterUrl = `https://api.frankfurter.dev/v1/latest?base=${base}`;
-    const response = await fetch(frankfurterUrl, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Frankfurter API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    // Cache the rates in database
-    const ratesToCache = Object.entries(data.rates).map(([currency, rate]) => ({
-      base_currency: base,
-      target_currency: currency,
-      rate: Number(rate),
-      date: data.date,
-    }));
-
-    // Insert rates (ON CONFLICT DO NOTHING since we check date)
-    const { error: insertError } = await supabase
-      .from('currency_exchange_rates')
-      .upsert(ratesToCache, {
-        onConflict: 'base_currency,target_currency,date',
-      });
-
-    if (insertError) {
-      logger.error('Error caching exchange rates', insertError);
-      // Continue even if caching fails
+      const { error: insertError } = await createServerClient()
+        .from('currency_exchange_rates')
+        .upsert(
+          Object.entries(data.rates).map(([currency, rate]) => ({
+            base_currency: base,
+            target_currency: currency,
+            rate: Number(rate),
+            date: data.date,
+          })),
+          { onConflict: 'base_currency,target_currency,date' },
+        );
+      if (insertError) logger.error('Error caching exchange rates', insertError);
     }
     const live = await livePromise;
 
     return NextResponse.json({
       success: true,
-      base: data.base,
-      date: data.date,
-      rates: live ? withLive(base, data.rates, live) : data.rates,
-      cached: false,
+      base: daily.base,
+      date: daily.date,
+      rates: live ? withLive(base, daily.rates, live) : daily.rates,
+      cached,
       live: !!live,
     });
   } catch (error) {

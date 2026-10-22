@@ -15,7 +15,7 @@ import { ReferenceLine } from '@/components/charts/reference-line';
 import { XAxis } from '@/components/charts/x-axis';
 import { ChartTooltip } from '@/components/charts/tooltip';
 import type { HoldingWithPrice } from './types';
-import type { CurrencyCode } from '@/lib/currency/currency-conversion';
+import { listingToUsd, type CurrencyCode, type ExchangeRates } from '@/lib/currency/currency-conversion';
 import type { HoldingSale } from '@/lib/types/database';
 import type { TotalReturn } from '@/lib/holdings/total-return';
 
@@ -62,17 +62,19 @@ function floorLookup(pairs: [number, number][], ts: number): number | undefined 
 interface Props {
   holdings: HoldingWithPrice[];
   currency?: CurrencyCode;
-  /** 1 USD = X `currency` at today's rate (1 for USD). Candle closes are USD-denominated
-   *  (matching how the rest of the holdings page treats quotes), so this scales the
-   *  chart's raw P/L into the user's display currency the same way the header stats do. */
+  /** 1 USD = X `currency` at today's rate (1 for USD). Scales the chart's USD P/L into
+   *  the user's display currency the same way the header stats do. */
   fxRate?: number;
+  /** Candles, avg_price and sales are in each listing's own currency (EUR for a
+   *  Frankfurt listing); these rates take each holding's P/L to USD first. */
+  rates?: ExchangeRates | null;
   isLoading?: boolean;
   /** The stat card's total return. The all-time line ends on it, at live prices,
    *  instead of on the last daily close, so the two figures always match. */
   liveTotal?: TotalReturn;
 }
 
-export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate = 1, isLoading: holdingsLoading, liveTotal }: Props) {
+export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate = 1, rates = null, isLoading: holdingsLoading, liveTotal }: Props) {
   const { t } = useTranslation('holdings');
   const [range, setRange]           = useState<Range>('MAX');
   const [showBenchmark, setShowBenchmark] = useState(false);
@@ -126,6 +128,8 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
         purchase_currency: null,
         purchase_fx_rate: null,
         trading_currency: last.trading_currency,
+        mic_code: null,
+        exchange: null,
         created_at: sales[0].sale_date,
         updated_at: last.sale_date,
       });
@@ -218,6 +222,8 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
       const sales = salesBySymbol.get(holding.symbol) ?? [];
       const currentQty = holding.quantity ?? 0;
       const { t, c } = candles;
+      // Everything below is in the listing's currency until it's added to the USD total.
+      const fx = listingToUsd(holding.trading_currency, rates);
 
       // Basis is avg_price whenever the holding was bought during the
       // selected window (the common case — and for MAX, effectively always,
@@ -263,7 +269,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
         return realized;
       };
 
-      periodBasis += basePrice * sharesHeldAt(periodStartMs);
+      periodBasis += basePrice * sharesHeldAt(periodStartMs) * fx;
 
       let j = -1; // index of this holding's latest candle at or before ts
       for (const ts of allTimes) {
@@ -272,7 +278,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
         const tsMs = ts * 1000;
         if (tsMs < holdingStart) continue;
         const shares = sharesHeldAt(tsMs);
-        const pl = (c[j] - basePrice) * shares + realizedAt(tsMs);
+        const pl = ((c[j] - basePrice) * shares + realizedAt(tsMs)) * fx;
         plByTime.set(ts, (plByTime.get(ts) ?? 0) + pl);
       }
     }
@@ -295,7 +301,7 @@ export function PortfolioPerformanceChart({ holdings, currency = 'USD', fxRate =
       points.push({ time: openedAt, pl: liveTotal.total, plPct: liveTotal.pct });
     }
     return points;
-  }, [candleResults, salesBySymbol, fxRate, range, liveTotal, openedAt]);
+  }, [candleResults, salesBySymbol, fxRate, rates, range, liveTotal, openedAt]);
 
   // Enrich chart points with SPY % return, normalized from the first portfolio timestamp
   const enrichedData = useMemo<ChartPoint[]>(() => {

@@ -1,5 +1,6 @@
 import type { HoldingSale } from '@/lib/types/database';
 import type { HoldingWithPrice } from '@/components/holdings/types';
+import { listingToUsd, type ExchangeRates } from '@/lib/currency/currency-conversion';
 
 export interface TotalReturn {
   /** Open positions at today's prices minus what they cost. */
@@ -20,12 +21,15 @@ export interface TotalReturn {
  *
  * Display currency. Unrealized comes from the holdings page's own FX-aware
  * figures (cost at the purchase-date rate); sales carry no rate of their own,
- * so they convert at today's, the same way the chart converts its line.
+ * so they convert at today's, the same way the chart converts its line. A
+ * sale's figures are in its listing's currency (EUR for a Frankfurt listing),
+ * so `rates` takes them to USD before `fxRate` takes USD to the display currency.
  */
 export function totalReturn(
   holdings: Pick<HoldingWithPrice, 'marketValue' | 'unrealizedPL'>[],
-  sales: Pick<HoldingSale, 'realized_pl' | 'avg_cost_basis' | 'quantity_sold'>[] | undefined,
+  sales: Pick<HoldingSale, 'realized_pl' | 'avg_cost_basis' | 'quantity_sold' | 'trading_currency'>[] | undefined,
   fxRate: number,
+  rates: ExchangeRates | null = null,
 ): TotalReturn {
   let unrealized = 0;
   let openCost = 0;
@@ -37,8 +41,9 @@ export function totalReturn(
   let realized = 0;
   let soldCost = 0;
   for (const s of sales ?? []) {
-    realized += s.realized_pl * fxRate;
-    soldCost += s.avg_cost_basis * s.quantity_sold * fxRate;
+    const toDisplay = listingToUsd(s.trading_currency, rates) * fxRate;
+    realized += s.realized_pl * toDisplay;
+    soldCost += s.avg_cost_basis * s.quantity_sold * toDisplay;
   }
   const total = unrealized + realized;
   const invested = openCost + soldCost;

@@ -81,8 +81,10 @@ export default function HoldingsPage() {
     return c as CurrencyCode;
   }, [user]);
 
-  // A EUR listing needs EUR→USD even for a USD user, so fetch rates whenever one is held.
-  const hasForeignListings = holdings.some((h) => (h.trading_currency ?? 'USD') !== 'USD');
+  // A EUR listing needs EUR→USD even for a USD user, so fetch rates whenever one is
+  // held or was sold (sales stay in total P/L and the chart).
+  const { data: sales } = useHoldingSales();
+  const hasForeignListings = [...holdings, ...(sales ?? [])].some((h) => (h.trading_currency ?? 'USD') !== 'USD');
   const exchangeRates = useExchangeRates(userCurrency, hasForeignListings);
 
   // Scalar rate: 1 USD = X userCurrency at today's rates (1 when USD). Hoisted out of
@@ -310,8 +312,10 @@ export default function HoldingsPage() {
   const statsLoading = holdingsLoading || quotesData.isLoading || (!!holdings?.length && !hasPricedHoldings);
 
   // One "total P/L" for the stat card and the chart's all-time view.
-  const { data: sales } = useHoldingSales();
-  const total = useMemo(() => totalReturn(throttledHoldings, sales, currentFxRate), [throttledHoldings, sales, currentFxRate]);
+  const total = useMemo(
+    () => totalReturn(throttledHoldings, sales, currentFxRate, exchangeRates.data),
+    [throttledHoldings, sales, currentFxRate, exchangeRates.data],
+  );
 
   // Today's calendar cell from the same numbers as the Day Change column. Only
   // while a session is live: after the close the fetched daily bar is the real
@@ -411,7 +415,7 @@ export default function HoldingsPage() {
       {(statsLoading || throttledHoldings.length > 0) && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
           <div className="xl:col-span-2 flex flex-col">
-            <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} fxRate={currentFxRate} isLoading={statsLoading} liveTotal={total} />
+            <PortfolioPerformanceChart holdings={throttledHoldings} currency={userCurrency} fxRate={currentFxRate} rates={exchangeRates.data} isLoading={statsLoading} liveTotal={total} />
           </div>
           <div className="flex flex-col">
             <HoldingsPieChart holdings={throttledHoldings} currency={userCurrency} onSectorHover={setHoveredSector} isLoading={statsLoading} cashValue={cashValue} />
