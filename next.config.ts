@@ -71,6 +71,13 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '1mb',
     },
+    // The stylesheet (Tailwind, one file for the whole app, ~32KB brotli) came
+    // in <head> as a <link>, and a phone fetched it alongside ~30 async script
+    // chunks (~520KB) sharing the same slow connection: on Discover the HTML
+    // was done at 0.8s, the CSS at 4.3s, first paint at 4.5s (Lighthouse,
+    // devtools throttling, 2026-10-22). Inlined, styles arrive with the HTML.
+    // Cost: no cross-page caching of the CSS, ~32KB more per full page load.
+    inlineCss: true,
   },
   // The marketing landing moved from /welcome to / (Nov 2026). Keep old inbound
   // links (Show HN posts, tweets, etc.) working.
