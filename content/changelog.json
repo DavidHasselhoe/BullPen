@@ -1,5 +1,78 @@
 [
   {
+    "date": "2026-10-22",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Each watchlist now has a scorecard: how the list moved today, and how your picks have done since you added them compared with the S&P 500"
+      },
+      {
+        "type": "new",
+        "text": "Pro members can open a chart of a watchlist's picks against the S&P 500 over time"
+      },
+      {
+        "type": "new",
+        "text": "\"This week on your list\" shows upcoming earnings and dividends, index changes and Congress trades for the stocks you watch"
+      },
+      {
+        "type": "new",
+        "text": "Each watchlist shows its biggest moves today, with Bull's explanation of why they moved"
+      },
+      {
+        "type": "new",
+        "text": "Make a plan for any stock you watch: a note on why you're watching, a buy-below price alert, and where the price sits in its 52-week range"
+      },
+      {
+        "type": "new",
+        "text": "Share a watchlist as a read-only page with a link, and stop sharing whenever you like"
+      },
+      {
+        "type": "fixed",
+        "text": "Crypto, currencies and commodities can be added to watchlists again"
+      },
+      {
+        "type": "fixed",
+        "text": "Watchlists with more than 50 stocks show every card's details again, and earnings dates on cards match the calendar"
+      },
+      {
+        "type": "improved",
+        "text": "My Holdings shows each stock's current price in the currency it trades in, right next to what you paid. Value and profit stay in your own currency"
+      },
+      {
+        "type": "improved",
+        "text": "Values in your currency now use the live exchange rate instead of the previous day's rate"
+      },
+      {
+        "type": "fixed",
+        "text": "Profit and loss is now right for stocks listed outside the US, and for purchases made before you changed your display currency"
+      },
+      {
+        "type": "fixed",
+        "text": "The performance chart, the performance calendar and total profit now count stocks in other currencies correctly"
+      },
+      {
+        "type": "improved",
+        "text": "Notifications are written in your language, and the earnings notification shows company logos and says which stocks you own and which you only watch"
+      },
+      {
+        "type": "fixed",
+        "text": "Ask Bull whether your holdings report earnings soon and it lists each stock's next report date"
+      },
+      {
+        "type": "fixed",
+        "text": "Lines on the Academy path now stay within each section"
+      },
+      {
+        "type": "improved",
+        "text": "Pages appear faster on slow phone connections"
+      },
+      {
+        "type": "fixed",
+        "text": "On phones, the cookie notice no longer covers the sign-up form and other pop-ups"
+      }
+    ]
+  },
+  {
     "date": "2026-10-21",
     "entries": [
       {
