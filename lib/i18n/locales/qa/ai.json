@@ -128,6 +128,7 @@
   "toolStatus_getCompanyFinancials": "«Reeaadiing fiinaanciiaal staateemeents…»",
   "toolStatus_getLiveQuote": "«Feetchiing liivee priicee…»",
   "toolStatus_getEarningsData": "«Cheeckiing eeaarniings hiistoory…»",
+  "toolStatus_getUpcomingEarnings": "«Cheeckiing eeaarniings daatees…»",
   "toolStatus_getCompanyProfile": "«Looookiing uup coompaany proofiilee…»",
   "toolStatus_getLiveCompanyProfile": "«Looookiing uup coompaany proofiilee…»",
   "toolStatus_getCompanyMetrics": "«Puulliing hiistooriicaal meetriics…»",
