@@ -23,6 +23,8 @@ export interface WatchlistList {
   position: number;
   created_at: string;
   item_count: number;
+  /** Set while the list is shared at /lists/<share_token> (migration 179). */
+  share_token?: string | null;
 }
 
 /** Fetch the current user's watchlist */
@@ -285,6 +287,23 @@ export function useUpdateWatchlistList() {
       });
       if (!res.ok) throw new Error('Failed to update list');
       return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] });
+    },
+  });
+}
+
+/** Turn a list's public read-only page on or off. Returns the share token when on. */
+export function useShareWatchlistList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ listId, share }: { listId: string; share: boolean }): Promise<string | null> => {
+      const res = await fetch(`/api/watchlist/lists/${listId}/share`, { method: share ? 'POST' : 'DELETE' });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) throw new Error(data?.error ?? 'Failed to update sharing');
+      return share ? data.token : null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] });

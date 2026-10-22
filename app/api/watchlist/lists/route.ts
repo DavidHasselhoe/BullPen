@@ -13,7 +13,7 @@ async function getHandler(
 
   const { data: lists, error: listsError } = await supabase
     .from('watchlist_lists')
-    .select('id, name, color, position, created_at')
+    .select('id, name, color, position, created_at, share_token')
     .eq('user_id', session.userId)
     .order('position', { ascending: true })
     .order('created_at', { ascending: true });

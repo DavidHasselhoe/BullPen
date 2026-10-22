@@ -10,6 +10,7 @@ import { WatchlistListTabs } from '@/components/watchlist/WatchlistListTabs';
 import { ListScorecard } from '@/components/watchlist/ListScorecard';
 import { ListEvents } from '@/components/watchlist/ListEvents';
 import { ListMovers } from '@/components/watchlist/ListMovers';
+import { ShareListDialog } from '@/components/watchlist/ShareListDialog';
 import { buyBelowAlert } from '@/components/watchlist/StockPlan';
 import { useAlerts } from '@/hooks/use-alerts';
 import { listScore, pickReturn, todaySummary } from '@/lib/watchlist/scorecard';
@@ -276,6 +277,11 @@ export default function WatchlistPage() {
               <Sparkles className="h-4 w-4" />
               <span className="sr-only sm:not-sr-only">{t('watchlistTemplatesButtonLabel')}</span>
             </button>
+            {/* Share the selected list */}
+            {(() => {
+              const activeList = lists?.find((l) => l.id === activeListId);
+              return activeList && displayItems.length > 0 ? <ShareListDialog list={activeList} /> : null;
+            })()}
             {/* View toggle */}
             <div className="flex rounded-lg border border-border overflow-hidden">
               <button

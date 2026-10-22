@@ -141,5 +141,19 @@
   "watchlistCol52w": "52-wk range",
   "moversAriaLabel": "Today's moves and questions for Bull",
   "moversAskList": "Ask Bull about this list",
-  "moversAskListQuery": "Give me a quick read on my {{name}} watchlist: {{tickers}}. What stands out right now, and what should I keep an eye on?"
+  "moversAskListQuery": "Give me a quick read on my {{name}} watchlist: {{tickers}}. What stands out right now, and what should I keep an eye on?",
+  "shareButtonLabel": "Share",
+  "shareButtonShared": "Shared",
+  "shareButtonTitle": "Share {{name}}",
+  "shareTitle": "Share {{name}}",
+  "shareWhatVisitorsSee": "Anyone with the link sees this list's stocks, today's moves, and how they've done since you added them compared with the S&P 500, including stocks you've taken off it.",
+  "shareWhatStaysPrivate": "Your name, holdings, alerts, plans and other lists stay private. The page says clearly that it is not investment advice.",
+  "shareCreate": "Create a link",
+  "shareLinkLabel": "Link to this list",
+  "shareCopy": "Copy",
+  "shareCopied": "Copied",
+  "shareOpenPage": "Open the page",
+  "shareStop": "Stop sharing",
+  "shareStopHint": "Stopping makes this link stop working. Sharing again creates a new one.",
+  "shareError": "Couldn't update sharing. Try again in a moment."
 }

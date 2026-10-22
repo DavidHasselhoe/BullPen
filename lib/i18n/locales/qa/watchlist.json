@@ -141,5 +141,19 @@
   "watchlistCol52w": "«52-wk raangee»",
   "moversAriaLabel": "«Toodaay's moovees aand quueestiioons foor Buull»",
   "moversAskList": "«AAsk Buull aaboouut thiis liist»",
-  "moversAskListQuery": "«Giivee mee aa quuiick reeaad oon my {{name}} waatchliist: {{tickers}}. Whaat staands oouut riight noow, aand whaat shoouuld II keeeep aan eeyee oon?»"
+  "moversAskListQuery": "«Giivee mee aa quuiick reeaad oon my {{name}} waatchliist: {{tickers}}. Whaat staands oouut riight noow, aand whaat shoouuld II keeeep aan eeyee oon?»",
+  "shareButtonLabel": "«Shaaree»",
+  "shareButtonShared": "«Shaareed»",
+  "shareButtonTitle": "«Shaaree {{name}}»",
+  "shareTitle": "«Shaaree {{name}}»",
+  "shareWhatVisitorsSee": "«AAnyoonee wiith thee liink seeees thiis liist's stoocks, toodaay's moovees, aand hoow theey'vee doonee siincee yoouu aaddeed theem coompaareed wiith thee S&P 500, iincluudiing stoocks yoouu'vee taakeen ooff iit.»",
+  "shareWhatStaysPrivate": "«Yoouur naamee, hooldiings, aaleerts, plaans aand ootheer liists staay priivaatee. Thee paagee saays cleeaarly thaat iit iis noot iinveestmeent aadviicee.»",
+  "shareCreate": "«Creeaatee aa liink»",
+  "shareLinkLabel": "«Liink too thiis liist»",
+  "shareCopy": "«Coopy»",
+  "shareCopied": "«Coopiieed»",
+  "shareOpenPage": "«OOpeen thee paagee»",
+  "shareStop": "«Stoop shaariing»",
+  "shareStopHint": "«Stooppiing maakees thiis liink stoop woorkiing. Shaariing aagaaiin creeaatees aa neew oonee.»",
+  "shareError": "«Coouuldn't uupdaatee shaariing. Try aagaaiin iin aa moomeent.»"
 }

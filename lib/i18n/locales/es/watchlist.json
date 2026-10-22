@@ -141,5 +141,19 @@
   "watchlistCol52w": "Rango 52 sem.",
   "moversAriaLabel": "Movimientos de hoy y preguntas para Bull",
   "moversAskList": "Preguntar a Bull por esta lista",
-  "moversAskListQuery": "Dame un resumen rápido de mi lista {{name}}: {{tickers}}. ¿Qué destaca ahora mismo y a qué debería prestar atención?"
+  "moversAskListQuery": "Dame un resumen rápido de mi lista {{name}}: {{tickers}}. ¿Qué destaca ahora mismo y a qué debería prestar atención?",
+  "shareButtonLabel": "Compartir",
+  "shareButtonShared": "Compartida",
+  "shareButtonTitle": "Compartir {{name}}",
+  "shareTitle": "Compartir {{name}}",
+  "shareWhatVisitorsSee": "Quien tenga el enlace verá las acciones de esta lista, los movimientos de hoy y cómo les ha ido desde que las añadiste frente al S&P 500, incluidas las que quitaste.",
+  "shareWhatStaysPrivate": "Tu nombre, tus posiciones, alertas, planes y otras listas siguen siendo privados. La página deja claro que no es asesoramiento de inversión.",
+  "shareCreate": "Crear enlace",
+  "shareLinkLabel": "Enlace a esta lista",
+  "shareCopy": "Copiar",
+  "shareCopied": "Copiado",
+  "shareOpenPage": "Abrir la página",
+  "shareStop": "Dejar de compartir",
+  "shareStopHint": "El enlace dejará de funcionar. Si vuelves a compartir, se crea uno nuevo.",
+  "shareError": "No se pudo actualizar. Inténtalo de nuevo en un momento."
 }

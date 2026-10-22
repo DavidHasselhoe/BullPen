@@ -141,5 +141,19 @@
   "watchlistCol52w": "52 周区间",
   "moversAriaLabel": "今日涨跌与向 Bull 提问",
   "moversAskList": "向 Bull 询问这个列表",
-  "moversAskListQuery": "请快速解读我的「{{name}}」自选列表：{{tickers}}。现在有什么值得注意的，我应该关注什么？"
+  "moversAskListQuery": "请快速解读我的「{{name}}」自选列表：{{tickers}}。现在有什么值得注意的，我应该关注什么？",
+  "shareButtonLabel": "分享",
+  "shareButtonShared": "已分享",
+  "shareButtonTitle": "分享 {{name}}",
+  "shareTitle": "分享 {{name}}",
+  "shareWhatVisitorsSee": "拥有链接的人可以看到这个列表中的股票、今日涨跌，以及自你添加以来相对标普500的表现，包括你已移除的股票。",
+  "shareWhatStaysPrivate": "你的名字、持仓、提醒、计划和其他列表仍然保密。页面会明确说明这不是投资建议。",
+  "shareCreate": "创建链接",
+  "shareLinkLabel": "此列表的链接",
+  "shareCopy": "复制",
+  "shareCopied": "已复制",
+  "shareOpenPage": "打开页面",
+  "shareStop": "停止分享",
+  "shareStopHint": "停止后此链接将失效。再次分享会生成新链接。",
+  "shareError": "无法更新分享设置，请稍后再试。"
 }

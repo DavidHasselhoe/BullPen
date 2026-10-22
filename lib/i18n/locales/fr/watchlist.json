@@ -141,5 +141,19 @@
   "watchlistCol52w": "Fourchette 52 sem.",
   "moversAriaLabel": "Mouvements du jour et questions pour Bull",
   "moversAskList": "Demander à Bull à propos de cette liste",
-  "moversAskListQuery": "Fais-moi un point rapide sur ma liste {{name}} : {{tickers}}. Qu'est-ce qui ressort en ce moment, et que dois-je surveiller ?"
+  "moversAskListQuery": "Fais-moi un point rapide sur ma liste {{name}} : {{tickers}}. Qu'est-ce qui ressort en ce moment, et que dois-je surveiller ?",
+  "shareButtonLabel": "Partager",
+  "shareButtonShared": "Partagée",
+  "shareButtonTitle": "Partager {{name}}",
+  "shareTitle": "Partager {{name}}",
+  "shareWhatVisitorsSee": "Toute personne ayant le lien voit les actions de cette liste, les variations du jour et leur évolution depuis leur ajout par rapport au S&P 500, y compris celles que vous avez retirées.",
+  "shareWhatStaysPrivate": "Votre nom, vos positions, alertes, plans et autres listes restent privés. La page indique clairement qu'il ne s'agit pas d'un conseil en investissement.",
+  "shareCreate": "Créer un lien",
+  "shareLinkLabel": "Lien vers cette liste",
+  "shareCopy": "Copier",
+  "shareCopied": "Copié",
+  "shareOpenPage": "Ouvrir la page",
+  "shareStop": "Arrêter le partage",
+  "shareStopHint": "Le lien cessera de fonctionner. Partager à nouveau en crée un nouveau.",
+  "shareError": "Impossible de modifier le partage. Réessayez dans un instant."
 }

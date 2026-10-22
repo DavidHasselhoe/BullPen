@@ -141,5 +141,19 @@
   "watchlistCol52w": "52週レンジ",
   "moversAriaLabel": "今日の値動きとBullへの質問",
   "moversAskList": "このリストについてBullに聞く",
-  "moversAskListQuery": "私のウォッチリスト「{{name}}」（{{tickers}}）を簡単に解説してください。今目立っている点と、注意しておくべき点は何ですか？"
+  "moversAskListQuery": "私のウォッチリスト「{{name}}」（{{tickers}}）を簡単に解説してください。今目立っている点と、注意しておくべき点は何ですか？",
+  "shareButtonLabel": "共有",
+  "shareButtonShared": "共有中",
+  "shareButtonTitle": "{{name}}を共有",
+  "shareTitle": "{{name}}を共有",
+  "shareWhatVisitorsSee": "リンクを知っている人は、このリストの銘柄、今日の値動き、追加してからのS&P 500との比較を見ることができます。リストから外した銘柄も含まれます。",
+  "shareWhatStaysPrivate": "あなたの名前、保有銘柄、アラート、プラン、他のリストは非公開のままです。ページには投資助言ではないことが明記されます。",
+  "shareCreate": "リンクを作成",
+  "shareLinkLabel": "このリストへのリンク",
+  "shareCopy": "コピー",
+  "shareCopied": "コピーしました",
+  "shareOpenPage": "ページを開く",
+  "shareStop": "共有を停止",
+  "shareStopHint": "停止するとこのリンクは使えなくなります。再度共有すると新しいリンクが作成されます。",
+  "shareError": "共有設定を更新できませんでした。少し待ってからもう一度お試しください。"
 }

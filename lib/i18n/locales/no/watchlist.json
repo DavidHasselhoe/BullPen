@@ -141,5 +141,19 @@
   "watchlistCol52w": "52-ukers spenn",
   "moversAriaLabel": "Dagens bevegelser og spørsmål til Bull",
   "moversAskList": "Spør Bull om denne listen",
-  "moversAskListQuery": "Gi meg en rask gjennomgang av watchlisten min {{name}}: {{tickers}}. Hva skiller seg ut nå, og hva bør jeg følge med på?"
+  "moversAskListQuery": "Gi meg en rask gjennomgang av watchlisten min {{name}}: {{tickers}}. Hva skiller seg ut nå, og hva bør jeg følge med på?",
+  "shareButtonLabel": "Del",
+  "shareButtonShared": "Delt",
+  "shareButtonTitle": "Del {{name}}",
+  "shareTitle": "Del {{name}}",
+  "shareWhatVisitorsSee": "Alle med lenken ser aksjene i denne listen, dagens bevegelser og hvordan de har gjort det siden du la dem til sammenlignet med S&P 500, også aksjer du har fjernet.",
+  "shareWhatStaysPrivate": "Navnet ditt, beholdningen, varslene, planene og de andre listene dine forblir private. Siden sier tydelig at den ikke er investeringsråd.",
+  "shareCreate": "Lag en lenke",
+  "shareLinkLabel": "Lenke til denne listen",
+  "shareCopy": "Kopier",
+  "shareCopied": "Kopiert",
+  "shareOpenPage": "Åpne siden",
+  "shareStop": "Slutt å dele",
+  "shareStopHint": "Da slutter lenken å virke. Deler du igjen, lages en ny.",
+  "shareError": "Kunne ikke oppdatere delingen. Prøv igjen om litt."
 }

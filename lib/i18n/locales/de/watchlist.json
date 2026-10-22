@@ -141,5 +141,19 @@
   "watchlistCol52w": "52-W-Spanne",
   "moversAriaLabel": "Heutige Bewegungen und Fragen an Bull",
   "moversAskList": "Bull zu dieser Liste fragen",
-  "moversAskListQuery": "Gib mir einen kurzen Überblick über meine Watchlist {{name}}: {{tickers}}. Was fällt gerade auf, und worauf sollte ich achten?"
+  "moversAskListQuery": "Gib mir einen kurzen Überblick über meine Watchlist {{name}}: {{tickers}}. Was fällt gerade auf, und worauf sollte ich achten?",
+  "shareButtonLabel": "Teilen",
+  "shareButtonShared": "Geteilt",
+  "shareButtonTitle": "{{name}} teilen",
+  "shareTitle": "{{name}} teilen",
+  "shareWhatVisitorsSee": "Wer den Link hat, sieht die Aktien dieser Liste, die heutigen Bewegungen und wie sie sich seit dem Hinzufügen im Vergleich zum S&P 500 entwickelt haben, einschließlich entfernter Aktien.",
+  "shareWhatStaysPrivate": "Dein Name, deine Positionen, Alarme, Pläne und anderen Listen bleiben privat. Die Seite sagt klar, dass sie keine Anlageberatung ist.",
+  "shareCreate": "Link erstellen",
+  "shareLinkLabel": "Link zu dieser Liste",
+  "shareCopy": "Kopieren",
+  "shareCopied": "Kopiert",
+  "shareOpenPage": "Seite öffnen",
+  "shareStop": "Teilen beenden",
+  "shareStopHint": "Danach funktioniert dieser Link nicht mehr. Erneutes Teilen erstellt einen neuen.",
+  "shareError": "Teilen konnte nicht geändert werden. Versuch es gleich noch einmal."
 }
