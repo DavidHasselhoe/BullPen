@@ -97,5 +97,16 @@
   "scorecardUnavailable": "No disponible ahora mismo",
   "scorecardHealth": "Health Scores",
   "watchlistColSinceAdded": "Desde que se añadió",
-  "watchlistSinceAddedNew": "Nueva"
+  "watchlistSinceAddedNew": "Nueva",
+  "scorecardChartShow": "Ver gráfico",
+  "scorecardChartHide": "Ocultar gráfico",
+  "scorecardChartPicks": "Tus selecciones",
+  "scorecardChartSp500": "S&P 500",
+  "scorecardChartSince": "Desde el {{date}}",
+  "scorecardChartAdded": "Añadida",
+  "scorecardChartNote": "Cada acción entra al 0 % el día en que la añadiste, así que la línea puede dar un salto cuando añades una. La línea del S&P 500 salta los mismos días.",
+  "scorecardChartEmpty": "Aún no hay suficiente historial. Vuelve después del próximo cierre.",
+  "scorecardChartError": "No se pudo cargar el gráfico. Inténtalo de nuevo en un minuto.",
+  "scorecardChartProTitle": "Mira cómo le ha ido a esta lista con el tiempo",
+  "scorecardChartProBody": "Pro compara tus selecciones con el S&P 500, cierre a cierre, desde la primera que añadiste."
 }

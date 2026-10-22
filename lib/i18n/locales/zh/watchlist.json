@@ -97,5 +97,16 @@
   "scorecardUnavailable": "暂时无法获取",
   "scorecardHealth": "健康评分",
   "watchlistColSinceAdded": "添加以来",
-  "watchlistSinceAddedNew": "新"
+  "watchlistSinceAddedNew": "新",
+  "scorecardChartShow": "显示图表",
+  "scorecardChartHide": "隐藏图表",
+  "scorecardChartPicks": "你的选股",
+  "scorecardChartSp500": "标普500",
+  "scorecardChartSince": "自 {{date}} 起",
+  "scorecardChartAdded": "添加",
+  "scorecardChartNote": "每只股票在你添加当天从 0% 开始，所以添加股票时曲线可能出现跳变。标普500曲线在同样的日子也会跳变。",
+  "scorecardChartEmpty": "历史数据还不够。下次收盘后再来看看。",
+  "scorecardChartError": "无法加载图表。请一分钟后再试。",
+  "scorecardChartProTitle": "查看这个列表的长期表现",
+  "scorecardChartProBody": "Pro 会从你添加第一只股票起，逐个收盘对比你的选股与标普500。"
 }

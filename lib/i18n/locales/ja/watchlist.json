@@ -97,5 +97,16 @@
   "scorecardUnavailable": "現在利用できません",
   "scorecardHealth": "Health Score",
   "watchlistColSinceAdded": "追加以降",
-  "watchlistSinceAddedNew": "新規"
+  "watchlistSinceAddedNew": "新規",
+  "scorecardChartShow": "チャートを表示",
+  "scorecardChartHide": "チャートを隠す",
+  "scorecardChartPicks": "あなたの銘柄",
+  "scorecardChartSp500": "S&P 500",
+  "scorecardChartSince": "{{date}}以降",
+  "scorecardChartAdded": "追加",
+  "scorecardChartNote": "各銘柄は追加した日に0%から始まるため、銘柄を追加するとラインが段差になることがあります。S&P 500のラインも同じ日に段差になります。",
+  "scorecardChartEmpty": "まだ十分な履歴がありません。次の終値の後にもう一度ご確認ください。",
+  "scorecardChartError": "チャートを読み込めませんでした。1分後にもう一度お試しください。",
+  "scorecardChartProTitle": "このリストの推移を見る",
+  "scorecardChartProBody": "Proでは、最初の銘柄を追加した日から、終値ごとにS&P 500と比較したチャートを表示します。"
 }

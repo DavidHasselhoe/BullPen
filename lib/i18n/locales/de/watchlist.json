@@ -97,5 +97,16 @@
   "scorecardUnavailable": "Gerade nicht verfügbar",
   "scorecardHealth": "Health Scores",
   "watchlistColSinceAdded": "Seit hinzugefügt",
-  "watchlistSinceAddedNew": "Neu"
+  "watchlistSinceAddedNew": "Neu",
+  "scorecardChartShow": "Chart anzeigen",
+  "scorecardChartHide": "Chart ausblenden",
+  "scorecardChartPicks": "Deine Auswahl",
+  "scorecardChartSp500": "S&P 500",
+  "scorecardChartSince": "Seit {{date}}",
+  "scorecardChartAdded": "Hinzugefügt",
+  "scorecardChartNote": "Jede Aktie startet an dem Tag, an dem du sie hinzugefügt hast, bei 0 %. Deshalb kann die Linie springen, wenn du eine hinzufügst. Die S&P-500-Linie springt an denselben Tagen.",
+  "scorecardChartEmpty": "Noch nicht genug Verlauf. Schau nach dem nächsten Börsenschluss wieder vorbei.",
+  "scorecardChartError": "Der Chart konnte nicht geladen werden. Versuch es in einer Minute erneut.",
+  "scorecardChartProTitle": "Sieh, wie sich diese Liste entwickelt hat",
+  "scorecardChartProBody": "Pro zeigt deine Auswahl im Vergleich zum S&P 500, Schlusskurs für Schlusskurs, seit der ersten Aktie, die du hinzugefügt hast."
 }

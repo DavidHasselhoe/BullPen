@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
-import { getMonthCloses, monthClosesKey, closeOnOrBefore } from '@/lib/market-data/month-closes';
+import { getMonthCloses, monthClosesKey } from '@/lib/market-data/month-closes';
 import { monthKeyOf, todayET } from '@/lib/dates/calendar-format';
-import type { SinceAddedEntry } from '@/lib/watchlist/scorecard';
+import { closeOnOrBefore, etDate, type SinceAddedEntry } from '@/lib/watchlist/scorecard';
 
 interface RouteContext {
   params: Promise<{ listId: string }>;
@@ -12,9 +12,6 @@ interface RouteContext {
 
 /** The S&P 500 stand-in. SPY's split-adjusted closes track the index. */
 const BENCHMARK = 'SPY';
-
-/** A timestamp's date in US market time, the calendar daily closes are keyed by. */
-const etDate = (ts: string) => new Date(ts).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
 /**
  * GET /api/watchlist/lists/[listId]/since-added

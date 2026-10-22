@@ -3,7 +3,7 @@
  * Run: npx tsx scripts/test-watchlist-scorecard.ts
  */
 import assert from 'node:assert/strict';
-import { listScore, pickReturn, todaySummary, type SinceAddedEntry } from '../lib/watchlist/scorecard';
+import { closeOnOrBefore, listScore, pickReturn, scoreHistory, todaySummary, type SinceAddedEntry } from '../lib/watchlist/scorecard';
 
 const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
 
@@ -41,5 +41,42 @@ assert.deepEqual([today.up, today.down, today.flat], [1, 1, 1]);
 assert.equal(today.best.symbol, 'Z');
 assert.equal(today.worst.symbol, 'X');
 assert.equal(todaySummary([]), null);
+
+// History: the last point must equal the strip's simple average, not a chained return.
+const series: Record<string, { date: string; close: number }[]> = {
+  A: [{ date: '2026-09-01', close: 100 }, { date: '2026-09-02', close: 110 }, { date: '2026-09-03', close: 110 }, { date: '2026-09-04', close: 120 }],
+  B: [{ date: '2026-09-02', close: 50 }, { date: '2026-09-03', close: 55 }, { date: '2026-09-04', close: 99 }],
+};
+const spy = ['2026-08-31', '2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04'].map((date) => ({ date, close: 500 }));
+const hist = scoreHistory(
+  [{ symbol: 'A', start: '2026-09-01' }, { symbol: 'B', start: '2026-09-02', end: '2026-09-03' }],
+  (s) => series[s],
+  spy,
+);
+assert.deepEqual(hist.map((p) => p.date), ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04']);
+near(hist[0].pct, 0);
+assert.deepEqual(hist[0].added, ['A']);
+near(hist[1].pct, 5); // A +10, B joins at 0
+assert.deepEqual(hist[1].added, ['B']);
+near(hist[2].pct, 10); // both +10; a chained return would read about +14.8
+near(hist[3].pct, 15); // A +20, B frozen at its exit (+10), not the later 99
+near(hist[3].benchPct, 0);
+// Added on Saturday 09-05: joins at 0% on Friday 09-04's close, not on Monday.
+const weekend = scoreHistory([{ symbol: 'A', start: '2026-09-05' }], (s) => series[s], spy);
+assert.equal(weekend[0].date, '2026-09-04');
+near(weekend[0].pct, 0);
+assert.deepEqual(weekend[0].added, ['A']);
+// A weekend-trading pick (crypto) added Saturday also sits at 0% on Friday's close.
+const crypto = scoreHistory(
+  [{ symbol: 'C', start: '2026-09-05' }],
+  () => [{ date: '2026-09-04', close: 10 }, { date: '2026-09-05', close: 11 }, { date: '2026-09-07', close: 12 }],
+  [...spy, { date: '2026-09-08', close: 500 }],
+);
+assert.equal(crypto[0].date, '2026-09-04');
+near(crypto[0].pct, 0);
+near(crypto[1].pct, (12 / 11 - 1) * 100); // 09-08 measured from Saturday's close, as the strip does
+assert.equal(closeOnOrBefore(spy, '2026-09-06'), 500);
+assert.equal(closeOnOrBefore(spy, '2026-08-01'), null);
+assert.deepEqual(scoreHistory([], (s) => series[s], spy), []);
 
 console.log('watchlist scorecard: all checks passed');

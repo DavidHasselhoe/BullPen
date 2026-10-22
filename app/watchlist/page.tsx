@@ -361,8 +361,10 @@ export default function WatchlistPage() {
         )}
 
         {/* List scorecard: one stock is its own card already */}
-        {!displayLoading && displayItems.length >= 2 && (
+        {!displayLoading && activeListId && displayItems.length >= 2 && (
           <ListScorecard
+            key={activeListId}
+            listId={activeListId}
             today={today}
             score={score}
             scoreLoading={sinceAddedLoading}

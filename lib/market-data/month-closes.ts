@@ -106,13 +106,3 @@ export async function getMonthCloses(
 
   return { closes, incomplete };
 }
-
-/** The last close on or before `date` (a weekend or holiday falls back to the session before). */
-export function closeOnOrBefore(series: SymbolCloses[] | undefined, date: string): number | null {
-  let found: number | null = null;
-  for (const c of series ?? []) {
-    if (c.date > date) break;
-    found = c.close;
-  }
-  return found;
-}

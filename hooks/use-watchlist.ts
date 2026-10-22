@@ -113,6 +113,7 @@ export function useAddToWatchlist() {
       queryClient.invalidateQueries({ queryKey: ['watchlist-items'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-sparklines'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-since-added'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-performance'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] }); // refresh item_count badge
     },
   });
@@ -192,6 +193,7 @@ export function useRemoveFromWatchlist() {
       queryClient.invalidateQueries({ queryKey: ['watchlist-items'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-sparklines'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-since-added'] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist-performance'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] }); // refresh item_count badge
       queryClient.invalidateQueries({ queryKey: ['user-alerts'] }); // server removes alerts for unwatched symbol
     },

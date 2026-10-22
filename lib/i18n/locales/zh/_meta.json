@@ -3797,5 +3797,16 @@
   "watchlist.scorecardUnavailable": "64833438f39ec81d0ec74316e10be5c0d4edb85a3cbfc32eef095c88c4d0920d",
   "watchlist.scorecardHealth": "8a00e833d3e87ac4e4076434b4e8243a6f285fc4c5d4676c9f719777bb5ed8a0",
   "watchlist.watchlistColSinceAdded": "bd82ce5859063a20ede861154f5345cffbe184721e3254b2e0a54fd4a52c6076",
-  "watchlist.watchlistSinceAddedNew": "18fdd549b2ed367ac0c74cbec1214644728515b30edbcb78e7d322757a7c8359"
+  "watchlist.watchlistSinceAddedNew": "18fdd549b2ed367ac0c74cbec1214644728515b30edbcb78e7d322757a7c8359",
+  "watchlist.scorecardChartShow": "6d64a1a5dcbf43c47846f31b006075a02e041ed74d7fc047f78989520de3865b",
+  "watchlist.scorecardChartHide": "6b614de91d5df181d360c4f0afd8f39505091d1c047be2d35718fd00cdffa6bb",
+  "watchlist.scorecardChartPicks": "1d8179618d9b7e53141bded0c273aba6b48af0e0404a786c850ab63e1b87416c",
+  "watchlist.scorecardChartSp500": "be47fc91200109dea682f95cb303fa2d0fe75e7ee5369ab73860b670a96f8c9f",
+  "watchlist.scorecardChartSince": "6aa0093624dbc8b0ddad8ad3d0e36c11b7a411203094ac298aae2e1a0dd229d2",
+  "watchlist.scorecardChartAdded": "6b02e0d363a4af1c95eef50364bb0202c8b250aa05a48a69e68fd7787b4b0632",
+  "watchlist.scorecardChartNote": "a796656502bdfafe93042fe5a95fead04f1c70bdef5c28974e0a55d1f4fdd292",
+  "watchlist.scorecardChartEmpty": "79dffe123a58f395cd0698cb009157fe4e3926751c00da1dec2c8548b1b4b215",
+  "watchlist.scorecardChartError": "edcd7af4100855bd19215425d5114d7a5bfb9c6a322e80f20f22dc4fe066f25f",
+  "watchlist.scorecardChartProTitle": "ce802d2c6ed9c70bc00bc247be5b266f165c1e6967ddf4607a307c2dd5f9faed",
+  "watchlist.scorecardChartProBody": "70ae657b75fe4922e9045d817c150f887ad026a04f5cc7cce725095c48fddbcf"
 }

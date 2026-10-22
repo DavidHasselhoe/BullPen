@@ -97,5 +97,16 @@
   "scorecardUnavailable": "Not available right now",
   "scorecardHealth": "Health Scores",
   "watchlistColSinceAdded": "Since added",
-  "watchlistSinceAddedNew": "New"
+  "watchlistSinceAddedNew": "New",
+  "scorecardChartShow": "Show chart",
+  "scorecardChartHide": "Hide chart",
+  "scorecardChartPicks": "Your picks",
+  "scorecardChartSp500": "S&P 500",
+  "scorecardChartSince": "Since {{date}}",
+  "scorecardChartAdded": "Added",
+  "scorecardChartNote": "Each stock joins at 0% on the day you added it, so the line can step when you add one. The S&P 500 line steps on the same days.",
+  "scorecardChartEmpty": "Not enough history yet. Check back after the next close.",
+  "scorecardChartError": "Could not load the chart. Try again in a minute.",
+  "scorecardChartProTitle": "See how this list has done over time",
+  "scorecardChartProBody": "Pro charts your picks against the S&P 500, close by close, since the first one you added."
 }

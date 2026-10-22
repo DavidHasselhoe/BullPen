@@ -97,5 +97,16 @@
   "scorecardUnavailable": "Ikke tilgjengelig akkurat nå",
   "scorecardHealth": "Health Score",
   "watchlistColSinceAdded": "Siden lagt til",
-  "watchlistSinceAddedNew": "Ny"
+  "watchlistSinceAddedNew": "Ny",
+  "scorecardChartShow": "Vis graf",
+  "scorecardChartHide": "Skjul graf",
+  "scorecardChartPicks": "Dine valg",
+  "scorecardChartSp500": "S&P 500",
+  "scorecardChartSince": "Siden {{date}}",
+  "scorecardChartAdded": "Lagt til",
+  "scorecardChartNote": "Hver aksje starter på 0 % den dagen du la den til, så linjen kan hoppe når du legger til en. S&P 500-linjen hopper de samme dagene.",
+  "scorecardChartEmpty": "Ikke nok historikk ennå. Sjekk igjen etter neste sluttkurs.",
+  "scorecardChartError": "Kunne ikke laste grafen. Prøv igjen om et minutt.",
+  "scorecardChartProTitle": "Se hvordan denne listen har gjort det over tid",
+  "scorecardChartProBody": "Pro viser valgene dine mot S&P 500, sluttkurs for sluttkurs, siden den første du la til."
 }
