@@ -4,7 +4,7 @@
  * PDFs all read it from here.
  *
  * Moved from bullpen.no on 2026-09-28; bullpen.no 308-redirects here. Email
- * still sends from updates.bullpen.no. If this ever changes again, also set
+ * sends from mail.bullpeninvest.com since 2026-10-23. If this ever changes again, also set
  * NEXT_PUBLIC_APP_URL in Vercel (email and Instagram code prefer it) and
  * hand-edit public/llms.txt, content/legal/*.html and the GitHub Actions
  * APP_URL default, which can't import this.

@@ -98,8 +98,8 @@ DISCORD_INDEX_SYNC_WEBHOOK_URL=https://discord.com/api/webhooks/your-index-sync-
 NEXT_PUBLIC_POSTHOG_KEY=phc_your-project-api-key
 NEXT_PUBLIC_POSTHOG_HOST=https://us.posthog.com
 
-# Optional: override default sender (default: BullPen <hello@updates.bullpen.no>)
-# RESEND_FROM_EMAIL=BullPen <noreply@updates.bullpen.no>
+# Optional: override default sender (default: BullPen <hello@mail.bullpeninvest.com>)
+# RESEND_FROM_EMAIL=BullPen <noreply@mail.bullpeninvest.com>
 
 # Optional: app URL for email links (default: https://bullpeninvest.com)
 # NEXT_PUBLIC_APP_URL=https://bullpeninvest.com

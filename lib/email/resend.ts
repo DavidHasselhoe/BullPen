@@ -2,14 +2,14 @@
  * Resend email client for BullPen.
  *
  * Set RESEND_API_KEY in .env.local.
- * Uses updates.bullpen.no for sending (verify domain in Resend dashboard).
+ * Uses mail.bullpeninvest.com for sending (verify domain in Resend dashboard).
  * Override with RESEND_FROM_EMAIL if needed.
  */
 
 import { Resend } from 'resend';
 import { withEmailFooter, type EmailKind, type FooterOptions } from './footer';
 
-const defaultFrom = process.env.RESEND_FROM_EMAIL ?? 'BullPen <hello@updates.bullpen.no>';
+const defaultFrom = process.env.RESEND_FROM_EMAIL ?? 'BullPen <hello@mail.bullpeninvest.com>';
 
 function getClient(): Resend {
   // Read at call time so env is loaded (e.g. by scripts that load .env.local before import)
@@ -26,7 +26,7 @@ export interface SendEmailOptions {
   to: string | string[];
   subject: string;
   html: string;
-  from?: string; // Default: hello@updates.bullpen.no
+  from?: string; // Default: hello@mail.bullpeninvest.com
   /**
    * Which CAN-SPAM category this message falls in. Required, and deliberately
    * not defaulted: the footer rules differ (marketing must carry an opt-out and
