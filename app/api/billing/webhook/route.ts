@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStripe, statusGrantsPro, TIER_PRO, TIER_FREE } from '@/lib/billing/stripe';
-import { sendRenewalReminderEmail, sendTrialEndingEmail, sendTrialRevokedEmail, sendTrialStartedEmail } from '@/lib/email/billing-reminder';
+import { sendCancellationConfirmedEmail, sendRenewalReminderEmail, sendTrialEndingEmail, sendTrialRevokedEmail, sendTrialStartedEmail } from '@/lib/email/billing-reminder';
 import { shouldSendRenewalReminder, willRenew } from '@/lib/billing/trial-copy';
 import { createNotification } from '@/lib/notifications/notifications-db';
 import { logSecurityEvent } from '@/lib/security/security-events';
@@ -104,6 +104,21 @@ export async function POST(request: NextRequest) {
           const interval = sub.items?.data?.[0]?.price?.recurring?.interval === 'year' ? 'year' : 'month';
           if (customerId && sub.trial_end) {
             await sendTrialStartedEmail(customerId, userId, upcomingAmountCents(sub), sub.currency, interval, sub.trial_end).catch((err) => console.error('[billing/webhook] trial-started email failed', err));
+          }
+        }
+
+        // Cancellation just scheduled (portal sets cancel_at; older flows set
+        // cancel_at_period_end): confirm in writing that no charge is coming.
+        // Best-effort, like the other billing emails.
+        // ponytail: a redelivered event re-sends it; dedupe if that ever shows up.
+        const prev = (event.data as { previous_attributes?: Partial<Stripe.Subscription> }).previous_attributes;
+        const justCancelled = event.type === 'customer.subscription.updated' && !!prev && !willRenew(sub) &&
+          (('cancel_at' in prev && !prev.cancel_at) || prev.cancel_at_period_end === false);
+        if (justCancelled && customerId) {
+          const endsAt = sub.cancel_at ?? sub.items.data[0]?.current_period_end;
+          if (endsAt) {
+            await sendCancellationConfirmedEmail(customerId, userId, endsAt, sub.status === 'trialing')
+              .catch((err) => console.error('[billing/webhook] cancellation email failed', err));
           }
         }
 

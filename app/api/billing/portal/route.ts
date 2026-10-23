@@ -37,7 +37,8 @@ async function portalHandler(
   const base = process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${base}/dashboard`,
+    // The param tells the dashboard to check for a fresh cancellation (CancelledModal).
+    return_url: `${base}/dashboard?billing=portal`,
   });
 
   return NextResponse.json({ url: portalSession.url });

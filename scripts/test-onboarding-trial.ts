@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { PRICING } from '../lib/billing/entitlements';
 import { renewalTerms, trialTermsLine, shouldSendRenewalReminder, willRenew } from '../lib/billing/trial-copy';
-import { buildTrialEndingEmailHtml, buildTrialRevokedEmailHtml, MANAGE_BILLING_URL } from '../lib/email/billing-reminder';
+import { buildCancellationConfirmedEmailHtml, buildTrialEndingEmailHtml, buildTrialRevokedEmailHtml, MANAGE_BILLING_URL } from '../lib/email/billing-reminder';
 import { checkoutReturnUrls, parseReturnTarget } from '../lib/billing/checkout-return';
 import {
   parsePendingOnboarding,
@@ -53,6 +53,13 @@ assert.equal(shouldSendRenewalReminder(null), true);
 assert.equal(willRenew({ cancel_at: null, cancel_at_period_end: false }), true);
 assert.equal(willRenew({ cancel_at: 1793158020, cancel_at_period_end: false }), false, 'portal cancel during a trial sets cancel_at');
 assert.equal(willRenew({ cancel_at: null, cancel_at_period_end: true }), false);
+{
+  const html = buildCancellationConfirmedEmailHtml('October 28, 2026', true, MANAGE_BILLING_URL);
+  assert.ok(html.includes("won't be charged"), 'cancellation email says no charge is coming');
+  assert.ok(html.includes('October 28, 2026'), 'cancellation email names the end date');
+  assert.ok(html.includes(MANAGE_BILLING_URL), 'cancellation email links a way to keep Pro');
+  assert.ok(!/[–—]/.test(html), 'no en/em dashes in user copy');
+}
 
 // ── Task 2: trial emails ─────────────────────────────────────────────────────
 const ending = buildTrialEndingEmailHtml('$108.00', 'September 22, 2026', 'https://billing.example/portal');

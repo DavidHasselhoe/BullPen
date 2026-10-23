@@ -139,6 +139,49 @@ export function buildTrialStartedEmailHtml(amount: string, period: string, endDa
   );
 }
 
+/**
+ * The written record of a cancellation: no charge is coming and when Pro ends.
+ * Facts only, so it stays transactional; what they'll miss lives in the
+ * in-app CancelledModal, not here.
+ */
+export function buildCancellationConfirmedEmailHtml(endDate: string, trialing: boolean, manageUrl: string): string {
+  return emailShell(
+    trialing ? 'Your BullPen Pro trial is cancelled' : 'Your BullPen Pro subscription is cancelled',
+    `
+    <p style="margin: 0; font-size: 16px; color: #94a3b8;">
+      ${trialing ? "You won't be charged." : "You won't be charged again."} You keep Pro until <strong>${endDate}</strong>, then your account moves to the Free plan.
+    </p>
+    <p style="margin: 16px 0 0; font-size: 14px; color: #64748b;">
+      Changed your mind? You can keep Pro any time before ${endDate}.
+    </p>
+    <p style="margin: 20px 0 0;">
+      <a href="${manageUrl}" style="display: inline-block; background: #22c55e; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600;">
+        Manage subscription
+      </a>
+    </p>
+    <p style="margin: 24px 0 0; font-size: 12px; color: #64748b;">
+      This is a billing notice sent whenever a subscription is cancelled and isn't optional in Settings.
+    </p>`
+  );
+}
+
+export async function sendCancellationConfirmedEmail(
+  customerId: string,
+  userId: string | null,
+  endsAtUnixSeconds: number,
+  trialing: boolean
+): Promise<void> {
+  const email = (userId ? await emailForUser(userId) : null) ?? (await emailForCustomer(customerId));
+  if (!email) return;
+  const endDate = formatDate(endsAtUnixSeconds);
+  await sendEmail({
+    to: email,
+    subject: trialing ? "Your BullPen Pro trial is cancelled. You won't be charged" : `Your BullPen Pro subscription is cancelled. Pro ends on ${endDate}`,
+    html: buildCancellationConfirmedEmailHtml(endDate, trialing, MANAGE_BILLING_URL),
+    kind: 'transactional',
+  });
+}
+
 export function buildTrialRevokedEmailHtml(amount: string, moneyBackDays: number): string {
   return emailShell(
     'Your BullPen Pro subscription has started',

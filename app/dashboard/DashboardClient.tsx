@@ -20,6 +20,7 @@ import { FromFollows } from '@/components/dashboard/FromFollows';
 import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
 import { StarterPicker } from '@/components/dashboard/StarterPicker';
 import { TrialStartedModal } from '@/components/billing/TrialStartedModal';
+import { CancelledModal } from '@/components/billing/CancelledModal';
 import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
 
 function WidgetSlot({ id }: { id: string }) {
@@ -71,6 +72,7 @@ export default function DashboardClient({
     <HomepageRedirect>
       <div className={`min-h-screen ${hasAnimatedBackground ? '' : 'bg-background'}`}>
         <TrialStartedModal />
+        <CancelledModal />
         <main className="container mx-auto min-w-0 max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           <HomeHeader initialWelcome={initialWelcome} showWelcome={showWelcomeText !== false} indices={indices} />
 
