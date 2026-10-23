@@ -62,6 +62,18 @@ export function Navigation() {
     window.addEventListener('settings:open', handler);
     return () => window.removeEventListener('settings:open', handler);
   }, []);
+
+  // ?settings=<tab> opens Settings on that tab: the email footers link
+  // ?settings=notifications so the email opt-out is one tap from any email.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const url = new URL(window.location.href);
+    const tab = url.searchParams.get('settings');
+    if (!tab) return;
+    url.searchParams.delete('settings');
+    window.history.replaceState(window.history.state, '', url);
+    window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab } }));
+  }, [isAuthenticated]);
   // Community and Tools open on hover. One shared state so only one is ever
   // open and moving between them switches instantly. Hover intent:
   // - opening waits briefly, so sweeping the cursor across the nav doesn't pop menus;

@@ -31,7 +31,7 @@ export default async function EmailUnsubscribePage({
               Your alerts still show up in BullPen. You can turn the email back on in Settings, under Notifications.
             </p>
             <Button asChild variant="outline" className="mt-6 h-11 w-full">
-              <Link href="/dashboard">Go to BullPen</Link>
+              <Link href="/notifications?settings=notifications">Email settings</Link>
             </Button>
           </>
         ) : valid && !failed ? (
@@ -59,7 +59,7 @@ export default async function EmailUnsubscribePage({
               Sign in and turn the email off in Settings, under Notifications.
             </p>
             <Button asChild variant="outline" className="mt-6 h-11 w-full">
-              <Link href="/login">Sign in</Link>
+              <Link href={`/login?redirect=${encodeURIComponent('/notifications?settings=notifications')}`}>Sign in</Link>
             </Button>
           </>
         )}

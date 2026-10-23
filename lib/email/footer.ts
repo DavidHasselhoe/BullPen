@@ -21,6 +21,11 @@ function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 }
 
+/** Opens Settings on the Notifications tab, where the email toggles live (Navigation reads ?settings=). */
+export function emailSettingsUrl(): string {
+  return `${appUrl()}/notifications?settings=notifications`;
+}
+
 /**
  * The physical postal address CAN-SPAM requires in commercial mail.
  *
@@ -87,7 +92,7 @@ export function emailFooterHtml(kind: EmailKind, options: FooterOptions = {}): s
 
   if (kind === 'marketing') {
     if (!address) throw new MissingPostalAddressError();
-    const url = options.unsubscribeUrl ?? `${appUrl()}/notifications`;
+    const url = options.unsubscribeUrl ?? emailSettingsUrl();
     lines.push(
       `<a href="${escapeHtml(url)}" style="color: #94a3b8; text-decoration: underline;">Unsubscribe from these emails</a>`
     );
@@ -95,7 +100,7 @@ export function emailFooterHtml(kind: EmailKind, options: FooterOptions = {}): s
   } else {
     lines.push(
       `${escapeHtml(options.reason ?? 'You are receiving this because you have a BullPen account.')} ` +
-        `<a href="${escapeHtml(options.unsubscribeUrl ?? `${appUrl()}/notifications`)}" style="color: #cbd5e1; text-decoration: underline;">${escapeHtml(options.unsubscribeLabel ?? 'Manage email preferences')}</a>`
+        `<a href="${escapeHtml(options.unsubscribeUrl ?? emailSettingsUrl())}" style="color: #cbd5e1; text-decoration: underline;">${escapeHtml(options.unsubscribeLabel ?? 'Manage email preferences')}</a>`
     );
     // Not legally required on transactional mail, but there is no reason to
     // withhold it when it is configured, and it helps deliverability.

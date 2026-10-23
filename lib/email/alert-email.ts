@@ -50,6 +50,9 @@ interface EmailItem {
 
 // ─── Unsubscribe token ───────────────────────────────────────────────────────
 
+// ponytail: keyed on the service role key, so rotating that key breaks the
+// unsubscribe links in emails already sent (CAN-SPAM wants them working for 30
+// days). If it is ever rotated, accept the old key here for 30 days too.
 function signingKey(): Buffer {
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
@@ -301,26 +304,34 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   const run: AlertEmailRun = { candidates: 0, sent: 0, skippedUnverified: 0, skippedOptedOut: 0, errors: [] };
   if (opts.dryRun) run.previews = [];
 
+  // Paged: PostgREST caps a response at 1000 rows, and a row cut here is never
+  // emailed, since by the next run it is older than the lookback.
   const since = new Date(Date.now() - LOOKBACK_MS).toISOString();
-  let query = supabase
-    .from('notifications')
-    .select('id, user_id, type, entity_type, entity_id, title, message, created_at')
-    .in('type', ['earnings', 'dividend', 'price_move'])
-    .is('emailed_at', null)
-    .gte('created_at', since)
-    .order('created_at', { ascending: true })
-    .limit(1000);
-  if (opts.userId) query = query.eq('user_id', opts.userId);
-  const { data: rows, error } = await query;
-  if (error) {
-    run.errors.push(`notifications: ${error.message}`);
-    return run;
+  const rows: AlertRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    let query = supabase
+      .from('notifications')
+      .select('id, user_id, type, entity_type, entity_id, title, message, created_at')
+      .in('type', ['earnings', 'dividend', 'price_move'])
+      .is('emailed_at', null)
+      .gte('created_at', since)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + 999);
+    if (opts.userId) query = query.eq('user_id', opts.userId);
+    const { data, error } = await query;
+    if (error) {
+      run.errors.push(`notifications: ${error.message}`);
+      return run;
+    }
+    rows.push(...((data ?? []) as AlertRow[]));
+    if (!data || data.length < 1000) break;
   }
 
   const byUser = new Map<string, { ids: string[]; items: EmailItem[] }>();
   const today = todayET();
   const etDay = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(iso));
-  for (const row of (rows ?? []) as AlertRow[]) {
+  for (const row of rows) {
     // "Reports earnings today" is only true on the day it was written. The
     // 26h window would otherwise carry yesterday's row into this morning on
     // launch day or when the 08:00 cron drifts past this one.
@@ -340,13 +351,15 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     .select('id, email, email_verified_at, settings')
     .in('id', [...byUser.keys()]);
 
-  // Who has had one before: the first email explains why it is arriving.
-  const { data: emailedBefore } = await supabase
-    .from('notifications')
-    .select('user_id')
-    .in('user_id', [...byUser.keys()])
-    .not('emailed_at', 'is', null);
-  const returning = new Set(((emailedBefore ?? []) as Array<{ user_id: string }>).map((r) => r.user_id));
+  // Who has had one before: the first email explains why it is arriving. One
+  // row per user at most, so the answer can't be cut off by the row cap.
+  const returning = new Set<string>();
+  await Promise.all(
+    [...byUser.keys()].map(async (id) => {
+      const { data } = await supabase.from('notifications').select('id').eq('user_id', id).not('emailed_at', 'is', null).limit(1);
+      if (data?.length) returning.add(id);
+    }),
+  );
 
   for (const u of (users ?? []) as Array<{ id: string; email: string | null; email_verified_at: string | null; settings: { notifications?: Record<string, boolean> } | null }>) {
     const entry = byUser.get(u.id);
