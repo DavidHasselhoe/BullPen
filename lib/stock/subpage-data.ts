@@ -60,7 +60,7 @@ export interface FundHolderRow {
 /** The tracked funds whose latest 13F lists this ticker, biggest position first. */
 export async function getFundHolders(symbol: string): Promise<FundHolderRow[]> {
   const db = createServerClient();
-  // ~17 funds x 5 quarters: well under PostgREST's 1000-row cap.
+  // ~18 funds x 5 quarters: well under PostgREST's 1000-row cap.
   const { data: filings, error } = await db
     .from('institutional_filings')
     .select('id, investor_id, period_of_report, institutional_investors!inner(slug, display_name, manager_name, is_active)')

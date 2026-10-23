@@ -71,7 +71,7 @@ export async function getFundMovesForSymbols(symbols: string[]): Promise<FundMov
   if (wanted.length === 0) return [];
   const db = createServerClient();
 
-  // ~17 funds x 5 quarters: well under the 1000-row cap.
+  // ~18 funds x 5 quarters: well under the 1000-row cap.
   const { data: filings, error } = await db
     .from('institutional_filings')
     .select('id, investor_id, period_of_report, institutional_investors!inner(slug, display_name, manager_name, logo_url, is_active)')

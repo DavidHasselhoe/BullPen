@@ -32,6 +32,7 @@ export const INSTITUTIONAL_FUND_SLUGS = [
   'citadel-advisors',
   'situational-awareness',
   'thiel-macro',
+  'harvard-management',
 ] as const;
 
 export type InstitutionalFundSlug = typeof INSTITUTIONAL_FUND_SLUGS[number];

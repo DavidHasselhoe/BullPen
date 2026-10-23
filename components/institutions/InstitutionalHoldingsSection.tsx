@@ -320,7 +320,7 @@ function ConcentrationDots({ read }: { read: ConcentrationRead }) {
  * every avatar made the grid read as decoration rather than as a dozen funds,
  * and the color means nothing beyond "not the one next to it".
  *
- * Sorting and filtering happen here, on the list already fetched: seventeen
+ * Sorting and filtering happen here, on the list already fetched: eighteen
  * funds do not need a round trip per control change.
  *
  * `preview` is the Discover teaser: no controls, the funds you follow first,
