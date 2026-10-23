@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-10-23",
+    "entries": [
+      {
+        "type": "new",
+        "text": "The earnings, ex-dividend and big-move alerts you turned on now also arrive in one short morning email, only on days something happens. You can turn the email off in Settings or from any email"
+      },
+      {
+        "type": "fixed",
+        "text": "Big-move alerts and the daily portfolio recap are arriving again. They had stopped in early September"
+      },
+      {
+        "type": "fixed",
+        "text": "Bull no longer lists stocks you've sold as part of your current holdings"
+      },
+      {
+        "type": "new",
+        "text": "Follow Harvard's endowment in Institutions, with five quarters of its holdings"
+      },
+      {
+        "type": "improved",
+        "text": "After cancelling Pro you now see when it ends and what changes on Free, and you get a confirmation email"
+      },
+      {
+        "type": "fixed",
+        "text": "A cancelled trial no longer gets a reminder that a charge is coming"
+      },
+      {
+        "type": "fixed",
+        "text": "\"Start exploring\" closes the trial welcome window again"
+      }
+    ]
+  },
+  {
     "date": "2026-10-22",
     "entries": [
       {
