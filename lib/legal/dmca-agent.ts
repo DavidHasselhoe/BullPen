@@ -50,7 +50,7 @@ export const SERVICE_PROVIDER_NAME = 'Hasselø Bullpen';
  * Also the physical address in email footers (lib/email/footer.ts), since it
  * is the same company's same address.
  */
-export const REGISTERED_ADDRESS_LINES = ['Tiriltunga 19', '6518 Kristiansund', 'Norway'];
+export const REGISTERED_ADDRESS_LINES = ['Tiriltunga 19', '6518 Kristiansund N', 'Norway'];
 
 export function dmcaAgent(): DmcaAgent {
   const name = process.env.DMCA_AGENT_NAME?.trim() || 'David Hasselø';
