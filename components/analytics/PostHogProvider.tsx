@@ -6,6 +6,7 @@ import type { PostHog } from 'posthog-js';
 import { flushPendingEvents, loadPostHog, loadedPostHog } from '@/lib/analytics/track';
 import { getStoredConsent, COOKIE_CONSENT_CHANGE_EVENT, type CookieConsentValue } from '@/lib/cookie-consent/storage';
 import { aiSource } from '@/lib/analytics/ai-referrer';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.posthog.com';
@@ -58,6 +59,23 @@ function initPostHog(posthog: PostHog) {
   }
 }
 
+/**
+ * Ties the PostHog person to the account, so a visitor's pre-signup visits,
+ * their signup and their later sessions are one person. Before this nothing
+ * called identify, and retention could not be measured per account.
+ * The account's UUID only: no email or name goes to PostHog. Signing out
+ * resets, so a shared browser doesn't merge the next person into this one.
+ * `undefined` = auth still loading; do nothing until it's known.
+ */
+function syncIdentity(posthog: PostHog, userId: string | null | undefined) {
+  if (userId === undefined) return;
+  if (userId) {
+    if (posthog.get_distinct_id() !== userId) posthog.identify(userId);
+  } else if (posthog._isIdentified()) {
+    posthog.reset();
+  }
+}
+
 /** Fires a $pageview on every App Router navigation, including the initial
  * load — tagged with whatever UTM params PostHog auto-attaches. That's what
  * lets a funnel be broken down by utm_content (e.g. an Instagram post's
@@ -67,6 +85,16 @@ function PostHogInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const urlRef = useRef(currentUrl(pathname ?? '/', searchParams.toString()));
+  const { user, isLoading } = useAuth();
+  const userId = isLoading ? undefined : (user?.id ?? null);
+  const userIdRef = useRef(userId);
+
+  // Before the consent effect, so start() below reads the current account.
+  useEffect(() => {
+    userIdRef.current = userId;
+    const posthog = loadedPostHog();
+    if (posthog) syncIdentity(posthog, userId);
+  }, [userId]);
 
   // Route-change capture. Runs on every render where the URL changed; on the
   // very first render posthog isn't initialized yet (the consent effect
@@ -89,6 +117,7 @@ function PostHogInner() {
       loadPostHog().then((posthog) => {
         const wasLoaded = posthog.__loaded;
         initPostHog(posthog);
+        syncIdentity(posthog, userIdRef.current);
         if (!wasLoaded) posthog.capture('$pageview', { $current_url: urlRef.current });
         flushPendingEvents(posthog);
       });
