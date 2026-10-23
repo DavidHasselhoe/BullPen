@@ -41,7 +41,9 @@ export async function getMyHoldings(/* userId ignored — session-derived */): P
 }> {
   const uid = await getCurrentUserId();
   if (!uid) return { success: false, error: 'Authentication required' };
-  return await getHoldings(uid);
+  // Closed rows too: the holdings page shows sale history and the performance
+  // chart from them, and every client consumer filters with isOpenPosition.
+  return await getHoldings(uid, { includeClosed: true });
 }
 
 /**

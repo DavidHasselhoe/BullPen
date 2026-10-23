@@ -8,6 +8,7 @@ import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
 import { recordPortfolioActivity } from '@/lib/holdings/portfolio-activity';
 import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
 import { getDisplayNames } from '@/lib/market-data/display-names';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 
 /** Cap how many profiles we resolve per fetch so a fresh portfolio doesn't burst the API. */
 const MAX_CURRENCY_BACKFILL = 25;
@@ -102,17 +103,24 @@ export interface RemoveHoldingResult {
 }
 
 /**
- * Get all holdings for a user
+ * A user's holdings, open positions only by default. A fully sold position
+ * keeps its row at quantity 0 for sale history, and callers that forgot to drop
+ * it told users they still held stocks they had sold. Pass `includeClosed` only
+ * where that history is shown.
  */
-export async function getHoldings(userId: string): Promise<GetHoldingsResult> {
+export async function getHoldings(
+  userId: string,
+  { includeClosed = false }: { includeClosed?: boolean } = {},
+): Promise<GetHoldingsResult> {
   try {
     const supabase = createServerClient();
 
-    const { data: holdings, error } = await supabase
+    let query = supabase
       .from('user_holdings')
       .select('id, user_id, symbol, company_name, quantity, avg_price, date_purchased, asset_type, source, brokerage_account_id, alerts_enabled, purchase_currency, purchase_fx_rate, trading_currency, mic_code, exchange, created_at, updated_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .eq('user_id', userId);
+    if (!includeClosed) query = query.or(OPEN_POSITION_FILTER);
+    const { data: holdings, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       logger.error('Error fetching holdings:', error);
