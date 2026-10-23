@@ -71,6 +71,9 @@ const FUND_DOMAINS: Record<string, string[]> = {
   'viking-global': ['vikingglobal.com'],
   'lone-pine-capital': ['lonepinecapital.com'],
   'duquesne-family': ['duquesne.com', 'duquesnefamilyoffice.com'],
+  // logo.dev serves the university's Veritas shield for both: HMC is wholly
+  // owned by Harvard and has no mark of its own there (checked 2026-10-23).
+  'harvard-management': ['hmc.harvard.edu', 'harvard.edu'],
   // Appaloosa is absent on purpose: it has essentially no web presence and
   // logo.dev has nothing for appaloosamanagement.com or appaloosalp.com. Do
   // NOT "fix" that with appaloosa.com or tepper.com — both return a real
