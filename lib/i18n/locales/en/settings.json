@@ -116,6 +116,8 @@
   "notifEarningsTodayLabel": "Earnings today",
   "notifExDividendDescription": "Get notified a few days before a tracked stock goes ex-dividend",
   "notifExDividendLabel": "Ex-dividend reminders",
+  "notifEmailAlertsLabel": "Morning email",
+  "notifEmailAlertsDescription": "Earnings, big moves and ex-dividend dates for your stocks, in one email when something happens",
   "notifHealthScoreDescription": "Get notified when a tracked stock's BullPen health score crosses a letter grade",
   "notifHealthScoreLabel": "Health score changes",
   "notifNewCourseLabel": "New courses",

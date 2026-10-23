@@ -197,6 +197,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     politician_trades_holdings: true,
     // Opt-in: ~6-8 market-wide releases a month is noise for anyone not following macro.
     economic_events: false,
+    // The morning email (lib/email/alert-email.ts) of the three stock alerts above it.
+    email_alerts: true,
   });
   type NotificationKey = keyof typeof notifications;
   const notif = (key: NotificationKey) => ({
@@ -289,6 +291,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         politician_trades: settings.notifications?.politician_trades !== false,
         politician_trades_holdings: settings.notifications?.politician_trades_holdings !== false,
         economic_events: settings.notifications?.economic_events === true,
+        email_alerts: settings.notifications?.email_alerts !== false,
       });
       const dh = (settings.default_homepage as string) || '/dashboard';
       setDefaultHomepage(dh);
@@ -907,6 +910,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     <ToggleSetting label={t('notifBigPriceMovesLabel')} description={t('notifBigPriceMovesDescription')} {...notif('price_alerts')} />
                     <ToggleSetting label={t('notifPortfolioRecapLabel')} description={t('notifPortfolioRecapDescription')} {...notif('portfolio_recap')} />
                     <ToggleSetting label={t('notifExDividendLabel')} description={t('notifExDividendDescription')} {...notif('dividend_reminder')} />
+                    <ToggleSetting label={t('notifEmailAlertsLabel')} description={t('notifEmailAlertsDescription')} {...notif('email_alerts')} />
                     <ToggleSetting label={t('notifHealthScoreLabel')} description={t('notifHealthScoreDescription')} {...notif('health_score_change')} />
                     <ToggleSetting label={t('notifIndexChangesLabel')} description={t('notifIndexChangesDescription')} {...notif('index_changes')} />
                     {/* Pro-only: a Free user saw this "on" and could flip it,

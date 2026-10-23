@@ -36,6 +36,8 @@ export interface SendEmailOptions {
   kind: EmailKind;
   /** Per-recipient opt-out link, when it is not the generic settings page. */
   footer?: FooterOptions;
+  /** Extra headers, e.g. List-Unsubscribe for one-click opt-out. */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -49,6 +51,7 @@ export async function sendEmail({
   from = defaultFrom,
   kind,
   footer,
+  headers,
 }: SendEmailOptions) {
   const resend = getClient();
 
@@ -61,6 +64,7 @@ export async function sendEmail({
     to: Array.isArray(to) ? to : [to],
     subject,
     html: body,
+    ...(headers ? { headers } : {}),
   });
 
   if (error) {

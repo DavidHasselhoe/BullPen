@@ -17,7 +17,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
-import { getStockCandles } from '@/lib/market-data';
+import { getStockCandles, getStockQuotes } from '@/lib/market-data';
+import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import {
   createPriceMoveNotification,
   createPriceMoveDigestNotification,
@@ -148,28 +149,33 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     ];
     summary.symbolsChecked = allSymbols.length;
 
+    // Quotes come straight from TwelveData. Until 2026-10-23 this POSTed to
+    // its own /api/quotes/batch over HTTP; once the job moved to Vercel's
+    // scheduler (2026-09-03) that call stopped coming back ok, a non-ok
+    // response was skipped without an error, and every user got zero big-move
+    // alerts and zero portfolio recaps for seven weeks. getStockQuotes also
+    // drops rate-limited symbols silently, so the missing ones get one retry
+    // and whatever is still missing is reported.
     const quoteMap = new Map<string, { price: number; change: number; changePercent: number }>();
-    const BATCH_SIZE = 20;
-    const origin = request.nextUrl.origin;
-
-    for (let i = 0; i < allSymbols.length; i += BATCH_SIZE) {
-      const batch = allSymbols.slice(i, i + BATCH_SIZE);
-      try {
-        const res = await fetch(`${origin}/api/quotes/batch`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cronSecret}` },
-          body: JSON.stringify({ symbols: batch }),
-        });
-        if (res.ok) {
-          const json = await res.json();
-          for (const [sym, q] of Object.entries(json.quotes ?? {})) {
-            quoteMap.set(sym, q as { price: number; change: number; changePercent: number });
+    const BATCH_SIZE = 100;
+    const fetchQuotes = async (symbols: string[]) => {
+      for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+        const batch = symbols.slice(i, i + BATCH_SIZE);
+        await waitForCronCreditBudget(batch.length);
+        try {
+          for (const [sym, q] of await getStockQuotes(batch)) {
+            if (q.c > 0) quoteMap.set(sym, { price: q.c, change: q.d, changePercent: q.dp });
           }
+        } catch (e) {
+          summary.errors.push(`Quote batch failed for ${batch.join(',')}: ${String(e)}`);
         }
-      } catch (e) {
-        summary.errors.push(`Quote batch failed for ${batch.join(',')}: ${String(e)}`);
       }
-    }
+    };
+    await fetchQuotes(allSymbols);
+    const missing = allSymbols.filter((s) => !quoteMap.has(s));
+    if (missing.length) await fetchQuotes(missing);
+    const stillMissing = allSymbols.filter((s) => !quoteMap.has(s));
+    if (stillMissing.length) summary.errors.push(`No quote for ${stillMissing.length}/${allSymbols.length}: ${stillMissing.slice(0, 20).join(',')}`);
 
     // ── 3b. Sanity-check implausibly large moves before they can alert anyone ──
     const untrustedSymbols = new Set<string>();
