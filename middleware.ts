@@ -94,7 +94,10 @@ export async function middleware(request: NextRequest) {
   // webhooks, GitHub Actions crons) don't send an Origin header at all, so
   // this only blocks requests that DO send one and it doesn't match.
   const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-  if (isApiRoute && MUTATING_METHODS.has(request.method)) {
+  // The one-click unsubscribe target is POSTed by mail providers (RFC 8058),
+  // some with their own Origin; it carries a signed token, not a cookie, so
+  // there is no session to forge.
+  if (isApiRoute && MUTATING_METHODS.has(request.method) && request.nextUrl.pathname !== '/api/email/unsubscribe') {
     const origin = request.headers.get('origin');
     if (origin && origin !== request.nextUrl.origin) {
       return NextResponse.json({ error: 'Invalid origin' }, { status: 403 });
