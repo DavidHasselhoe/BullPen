@@ -13,7 +13,9 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { createServerClient } from '@/lib/supabase/client';
 import { sendEmail } from '@/lib/email/resend';
-import { emailShell } from '@/lib/email/billing-reminder';
+import { EMAIL_FOOTER_MARKER } from '@/lib/email/footer';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { todayET } from '@/lib/dates/calendar-format';
 import { logger } from '@/lib/utils/logger';
 import { SITE_URL } from '@/lib/site';
 
@@ -41,6 +43,8 @@ interface EmailItem {
   direction?: 'up' | 'down';
   headline: string;
   detail: string;
+  /** Moves only: where the tap leads, said out loud. */
+  cue?: string;
   href: string;
 }
 
@@ -94,7 +98,34 @@ export async function disableAlertEmail(userId: string): Promise<boolean> {
 
 // ─── Picking and wording the alerts ──────────────────────────────────────────
 
-const leadingTicker = (title: string) => title.match(/^([A-Z]{1,6}(?:\/[A-Z]{1,6})?)\b/)?.[1] ?? null;
+const leadingTicker = (title: string) => title.match(/^([A-Z]{1,6}(?:[./][A-Z]{1,6})?)\b/)?.[1] ?? null;
+
+/** A real minus sign: a hyphen before a number reads as "dash" aloud and looks lighter than "+". */
+const minus = (s: string) => s.replace(/-(?=\$?\d)/g, '−');
+
+/**
+ * Stored move text is written at the close for the panel ("META moved -7.0%
+ * today", "AMD +6.2%, MU +5.4% +3 more"). Read the next morning by a beginner
+ * it wants plain verbs, no signs in the headline, and no "+3 more" that reads
+ * like one more percentage. Anything that doesn't match is shown as stored.
+ */
+function moveCopy(n: AlertRow, single: boolean, down: boolean): { headline: string; detail: string } {
+  if (single) {
+    const pct = n.title.match(/^(\S+) moved [+-]?(\d+(?:\.\d+)?)%/);
+    const close = n.message.match(/^(.+) closed at (\$[\d,.]+) \(([+-])(\$[\d,.]+)\)$/);
+    return {
+      headline: pct ? `${pct[1]} ${down ? 'fell' : 'rose'} ${pct[2]}%` : minus(n.title.replace(/ today\b/, '')),
+      detail: close ? `${close[1]} closed at ${close[2]}, ${close[3] === '-' ? 'down' : 'up'} ${close[4]}.` : minus(n.message),
+    };
+  }
+  const count = n.title.match(/^(\d+) of your stocks/)?.[1];
+  return {
+    headline: count ? `${count} of your stocks ${down ? 'fell' : 'rose'} 5% or more` : minus(n.title.replace(/ today\b/, '')),
+    // A no-break space keeps "AVGO +5.0%" on one line when the list wraps.
+    detail: minus(n.message.replace(/ \+(\d+) more$/, (_, k: string) => `, and ${k} other${k === '1' ? '' : 's'}`))
+      .replace(/([A-Z]) (?=[+−]\d)/g, '$1 '),
+  };
+}
 
 /**
  * The three alert kinds onboarding offers, worded for a morning read. Custom
@@ -108,22 +139,22 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
       section: n.type === 'earnings' ? 'earnings' : 'dividend',
       headline: n.title,
       detail: n.message,
-      href: one ? `/stock/${one}` : '/tools/calendar',
+      href: one ? slugToAssetPath(one) : '/tools/calendar',
     };
   }
   if (n.type !== 'price_move') return null;
-  const single = n.entity_type === 'stock' && n.entity_id?.endsWith(':price_move');
+  const single = n.entity_type === 'stock' && !!n.entity_id?.endsWith(':price_move');
   const digest = n.entity_id === 'portfolio:price_digest_gain' || n.entity_id === 'portfolio:price_digest_loss';
   if (!single && !digest) return null;
   const down = n.entity_id === 'portfolio:price_digest_loss' || (single && /-\d/.test(n.title));
+  const symbol = single && n.entity_id ? n.entity_id.split(':')[0] : null;
   return {
     section: 'move',
     direction: down ? 'down' : 'up',
-    // Written at the close as "... today"; read the next morning, so the
-    // section heading carries the timing instead.
-    headline: n.title.replace(/ today\b/, ''),
-    detail: n.message,
-    href: single && n.entity_id ? `/stock/${n.entity_id.split(':')[0]}` : '/dashboard',
+    ...moveCopy(n, single, down),
+    // The stock page opens with Why Today; Home lists each mover with its own "Why?".
+    cue: symbol ? `See why it ${down ? 'fell' : 'rose'}` : 'See why on Home',
+    href: symbol ? slugToAssetPath(symbol) : '/dashboard',
   };
 }
 
@@ -133,6 +164,26 @@ const SECTION_TITLES: Record<Section, string> = {
   move: 'Big moves at the last close',
 };
 
+const SECTION_ORDER: Section[] = ['earnings', 'dividend', 'move'];
+
+/**
+ * BullPen's dark tokens (DESIGN.md) as hex, since mail clients don't read
+ * CSS variables or oklch: the neutrals carry the faint green of bg-dark /
+ * surface-dark, and color is spent only on gain/loss and the one CTA.
+ */
+const C = {
+  bg: '#0b0f0d',
+  surface: '#161b19',
+  border: '#262b29',
+  ink: '#fafafa',
+  muted: '#a3a3a3',
+  up: '#34d399',
+  down: '#f87171',
+  accent: '#3cc47c',
+  accentInk: '#06210f',
+};
+const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
 function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -141,50 +192,92 @@ function withUtm(href: string): string {
   return `${APP_URL}${href}${href.includes('?') ? '&' : '?'}${UTM}`;
 }
 
-const SECTION_ORDER: Section[] = ['earnings', 'dividend', 'move'];
+const bySection = (items: EmailItem[]) =>
+  [...items].sort((a, b) => SECTION_ORDER.indexOf(a.section) - SECTION_ORDER.indexOf(b.section));
 
-/** Leads with what the email leads with: today's reports before last night's moves. */
+/**
+ * Names up to two alerts, in the email's own order, so the inbox line says
+ * what happened rather than "plus 3 more". Kept near the ~60 characters a
+ * phone shows.
+ */
 export function alertEmailSubject(items: EmailItem[]): string {
-  const first = [...items].sort((a, b) => SECTION_ORDER.indexOf(a.section) - SECTION_ORDER.indexOf(b.section))[0].headline;
-  return items.length === 1 ? first : `${first}, plus ${items.length - 1} more`;
+  const [a, b] = bySection(items);
+  if (!b) return a.headline;
+  const two = `${a.headline}, ${b.headline}`;
+  const rest = items.length - 2;
+  if (two.length <= 60) return rest ? `${two}, and ${rest} more` : two;
+  return `${a.headline}, and ${items.length - 1} more`;
 }
 
-export function buildAlertEmailHtml(items: EmailItem[], opts: { first: boolean; unsubscribeUrl: string }): string {
-  const intro = opts.first
-    ? `<p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #94a3b8;">
-      You turned these alerts on when you joined BullPen. Until now they only showed up in the app, so from today we also send them here: one email in the morning, only when something happens to a stock you follow.
-      Not for you? <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color: #94a3b8; text-decoration: underline;">Turn off these emails</a>.
-    </p>`
+/** Inbox preview text: every alert in one line. Padded so the body doesn't leak in after it. */
+function preheader(items: EmailItem[]): string {
+  const text = bySection(items).map((i) => i.headline).join(' · ');
+  return `<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:${C.bg};">${escapeHtml(text)}${'&#847;&zwnj;&nbsp;'.repeat(60)}</div>`;
+}
+
+/** "Friday, October 23" in New York, the market's calendar. */
+function marketDate(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric' }).format(now);
+}
+
+function card(i: EmailItem): string {
+  const arrow = i.direction
+    ? `<span aria-hidden="true" style="color:${i.direction === 'up' ? C.up : C.down};">${i.direction === 'up' ? '&#9650;' : '&#9660;'}</span>&nbsp;`
     : '';
+  return `
+          <tr><td style="padding:0 0 10px;">
+            <a href="${escapeHtml(withUtm(i.href))}" style="display:block;text-decoration:none;background:${C.surface};border:1px solid ${C.border};border-radius:14px;padding:14px 16px;font-variant-numeric:tabular-nums;">
+              <span style="display:block;font-size:16px;line-height:1.4;font-weight:600;color:${C.ink};">${arrow}${escapeHtml(i.headline)}</span>
+              ${i.detail ? `<span style="display:block;margin-top:3px;font-size:14px;line-height:1.5;color:${C.muted};">${escapeHtml(i.detail)}</span>` : ''}
+              ${i.cue ? `<span style="display:block;margin-top:8px;font-size:14px;line-height:1.4;font-weight:600;color:${C.ink};">${escapeHtml(i.cue)}&nbsp;&rarr;</span>` : ''}
+            </a>
+          </td></tr>`;
+}
 
-  const sections = SECTION_ORDER
-    .map((section) => {
-      const rows = items.filter((i) => i.section === section);
-      if (!rows.length) return '';
-      const list = rows
-        .map(
-          (i) => `
-      <a href="${escapeHtml(withUtm(i.href))}" style="display: block; text-decoration: none; padding: 12px 14px; margin: 0 0 8px; background: #1e293b; border-radius: 8px;">
-        <span style="display: block; font-size: 15px; font-weight: 600; color: #e2e8f0;">${i.direction ? `<span style="color: ${i.direction === 'up' ? '#22c55e' : '#ef4444'};">${i.direction === 'up' ? '▲' : '▼'}</span> ` : ''}${escapeHtml(i.headline)}</span>
-        ${i.detail ? `<span style="display: block; margin-top: 2px; font-size: 13px; color: #94a3b8;">${escapeHtml(i.detail)}</span>` : ''}
-      </a>`
-        )
-        .join('');
-      return `
-    <p style="margin: 20px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b;">${SECTION_TITLES[section]}</p>${list}`;
-    })
-    .join('');
+/**
+ * Table layout with the background on the table, not <body>: Gmail strips
+ * body styles, which would leave light text on white. The footer lands at
+ * the marker, inside the dark panel (lib/email/footer.ts).
+ */
+export function buildAlertEmailHtml(items: EmailItem[], opts: { first: boolean; unsubscribeUrl: string }): string {
+  const lead = opts.first
+    ? `You turned these alerts on when you joined. Until now they only showed up in the app. From today they also come here, one email in the morning, only when something happens to a stock you follow. Not for you? <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:${C.ink};text-decoration:underline;">Turn off these emails</a>.`
+    : 'What happened with the stocks you follow.';
 
-  return emailShell(
-    'Your stocks this morning',
-    `${intro}${sections}
-    <p style="margin: 20px 0 0;">
-      <a href="${escapeHtml(withUtm('/dashboard'))}" style="display: inline-block; background: #22c55e; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600;">Open BullPen</a>
-    </p>
-    <p style="margin: 24px 0 0; font-size: 12px; color: #64748b;">
-      Choose which alerts you get in Settings, under Notifications.
-    </p>`
-  );
+  const sections = SECTION_ORDER.map((section) => {
+    const rows = items.filter((i) => i.section === section);
+    if (!rows.length) return '';
+    return `
+          <tr><td style="padding:22px 0 10px;"><h2 style="margin:0;font-size:15px;line-height:1.3;font-weight:600;color:${C.muted};">${SECTION_TITLES[section]}</h2></td></tr>${rows.map(card).join('')}`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+  <title>Your stocks this morning</title>
+</head>
+<body style="margin:0;padding:0;background:${C.bg};">
+  ${preheader(items)}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.bg}" style="background:${C.bg};">
+    <tr><td align="center" style="padding:28px 16px 32px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;font-family:${FONT};">
+        <tr><td style="padding:0 0 20px;font-size:17px;font-weight:700;letter-spacing:-0.02em;color:${C.ink};">bullpen</td></tr>
+        <tr><td><h1 style="margin:0;font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${C.ink};">${marketDate()}</h1></td></tr>
+        <tr><td style="padding:8px 0 0;font-size:15px;line-height:1.55;color:${C.muted};">${lead}</td></tr>${sections}
+        <tr><td style="padding:16px 0 0;">
+          <a href="${escapeHtml(withUtm('/dashboard'))}" style="display:inline-block;background:${C.accent};color:${C.accentInk};text-decoration:none;font-size:16px;line-height:1;font-weight:600;padding:15px 24px;border-radius:999px;">Open BullPen</a>
+        </td></tr>
+        <tr><td style="padding:12px 0 0;">${EMAIL_FOOTER_MARKER}</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
 }
 
 // ─── Sending ─────────────────────────────────────────────────────────────────
@@ -225,7 +318,13 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   }
 
   const byUser = new Map<string, { ids: string[]; items: EmailItem[] }>();
+  const today = todayET();
+  const etDay = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(iso));
   for (const row of (rows ?? []) as AlertRow[]) {
+    // "Reports earnings today" is only true on the day it was written. The
+    // 26h window would otherwise carry yesterday's row into this morning on
+    // launch day or when the 08:00 cron drifts past this one.
+    if (row.type === 'earnings' && etDay(row.created_at) !== today) continue;
     const item = toEmailItem(row);
     if (!item) continue;
     const entry = byUser.get(row.user_id) ?? { ids: [], items: [] };
@@ -280,7 +379,11 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
         // Alerts the user switched on: transactional per lib/email/footer.ts,
         // with the one-click opt-out linked anyway.
         kind: 'transactional',
-        footer: { unsubscribeUrl: unsub },
+        footer: {
+          unsubscribeUrl: unsub,
+          reason: 'You get this because you turned on stock alerts in BullPen.',
+          unsubscribeLabel: 'Turn off these emails',
+        },
         headers: {
           'List-Unsubscribe': `<${oneClickUrl(u.id)}>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',

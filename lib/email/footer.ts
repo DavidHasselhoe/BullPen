@@ -68,7 +68,17 @@ export interface FooterOptions {
    * transactional mail it is optional and points at notification settings.
    */
   unsubscribeUrl?: string;
+  /** Transactional only: why this email arrived, when "you have an account" undersells it. */
+  reason?: string;
+  /** Transactional only: the link's words, when it doesn't lead to general preferences. */
+  unsubscribeLabel?: string;
 }
+
+/**
+ * Where a template wants the footer. Without it the footer goes at the end of
+ * <body>, which Gmail renders outside a dark template's own background.
+ */
+export const EMAIL_FOOTER_MARKER = '<!--bullpen-email-footer-->';
 
 export function emailFooterHtml(kind: EmailKind, options: FooterOptions = {}): string {
   const lines: string[] = [];
@@ -84,8 +94,8 @@ export function emailFooterHtml(kind: EmailKind, options: FooterOptions = {}): s
     lines.push(escapeHtml(address));
   } else {
     lines.push(
-      `You are receiving this because you have a BullPen account. ` +
-        `<a href="${escapeHtml(options.unsubscribeUrl ?? `${appUrl()}/notifications`)}" style="color: #94a3b8; text-decoration: underline;">Manage email preferences</a>`
+      `${escapeHtml(options.reason ?? 'You are receiving this because you have a BullPen account.')} ` +
+        `<a href="${escapeHtml(options.unsubscribeUrl ?? `${appUrl()}/notifications`)}" style="color: #cbd5e1; text-decoration: underline;">${escapeHtml(options.unsubscribeLabel ?? 'Manage email preferences')}</a>`
     );
     // Not legally required on transactional mail, but there is no reason to
     // withhold it when it is configured, and it helps deliverability.
@@ -93,7 +103,7 @@ export function emailFooterHtml(kind: EmailKind, options: FooterOptions = {}): s
   }
 
   return `
-<div style="max-width: 480px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid #1e293b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; line-height: 1.6; color: #64748b;">
+<div style="max-width: 480px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid #1e293b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.6; color: #94a3b8;">
   ${lines.map((l) => `<p style="margin: 0 0 6px;">${l}</p>`).join('\n  ')}
 </div>`.trim();
 }
@@ -101,6 +111,7 @@ export function emailFooterHtml(kind: EmailKind, options: FooterOptions = {}): s
 /** Appends the footer inside <body> when there is one, otherwise at the end. */
 export function withEmailFooter(html: string, kind: EmailKind, options?: FooterOptions): string {
   const footer = emailFooterHtml(kind, options);
+  if (html.includes(EMAIL_FOOTER_MARKER)) return html.replace(EMAIL_FOOTER_MARKER, footer);
   const closingBody = html.lastIndexOf('</body>');
   if (closingBody === -1) return `${html}\n${footer}`;
   return `${html.slice(0, closingBody)}${footer}\n${html.slice(closingBody)}`;

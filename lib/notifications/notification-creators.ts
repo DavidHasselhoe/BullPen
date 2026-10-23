@@ -443,10 +443,11 @@ export async function createDividendReminderNotification(
     // link reads the ticker from the start of the title.
     title: count === 1
       ? `${items[0].symbol} goes ex-dividend ${shortDate(items[0].exDate)}`
-      : `${count} of your stocks go ex-dividend soon`,
+      // The cron asks for one day, so every item shares that ex-date.
+      : `${count} of your stocks go ex-dividend ${shortDate(items[0].exDate)}`,
     message: count === 1
       ? `Shares bought before ${shortDate(items[0].exDate)} get the next payout.`
-      : tickerList + suffix,
+      : `${tickerList}${suffix}. Shares bought before ${shortDate(items[0].exDate)} get the next payout.`,
     entity_type: 'portfolio',
     entity_id: dedupeId,
     severity: 'info',
