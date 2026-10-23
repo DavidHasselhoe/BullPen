@@ -69,7 +69,7 @@ export function Navigation() {
     if (!isAuthenticated) return;
     const url = new URL(window.location.href);
     const tab = url.searchParams.get('settings');
-    if (!tab) return;
+    if (!tab || !['preferences', 'notifications', 'customize', 'plan', 'privacy', 'ai'].includes(tab)) return;
     url.searchParams.delete('settings');
     window.history.replaceState(window.history.state, '', url);
     window.dispatchEvent(new CustomEvent('settings:open', { detail: { tab } }));
