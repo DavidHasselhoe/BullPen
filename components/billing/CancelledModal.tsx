@@ -1,12 +1,12 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PLAN_COMPARISON } from '@/lib/billing/entitlements';
@@ -35,6 +35,7 @@ function CancelledModalInner() {
   const router = useRouter();
   const fromPortal = params.get('billing') === 'portal';
   const [dismissed, setDismissed] = useState(false);
+  const doneRef = useRef<HTMLButtonElement>(null);
 
   const { data } = useQuery<SubscriptionState>({
     queryKey: ['billing-subscription', fromPortal],
@@ -64,10 +65,14 @@ function CancelledModalInner() {
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) close(); }}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+      <DialogContent
+        className="max-h-[85vh] overflow-y-auto sm:max-w-md"
+        // Focus the acknowledgement, not "Keep Pro" (first in the DOM): respect the decision.
+        onOpenAutoFocus={(e) => { e.preventDefault(); doneRef.current?.focus(); }}
+      >
         <DialogHeader>
           <DialogTitle>{t('cancelledTitle')}</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-pretty">
             {t(data.trialing ? 'cancelledTrialBody' : 'cancelledPaidBody', { date })}
           </DialogDescription>
         </DialogHeader>
@@ -89,14 +94,14 @@ function CancelledModalInner() {
           <p className="mt-3 text-sm text-muted-foreground">{t('cancelledResumeHint', { date })}</p>
         </div>
 
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <DialogFooter>
           <Button asChild variant="outline" className="min-h-11 sm:min-h-9">
             <Link href="/billing/manage" onClick={() => trackEvent('cancel_keep_pro_clicked', { trialing: Boolean(data.trialing) })}>
               {t('cancelledKeepPro')}
             </Link>
           </Button>
-          <Button onClick={close} className="min-h-11 sm:min-h-9">{t('cancelledDone')}</Button>
-        </div>
+          <Button ref={doneRef} onClick={close} className="min-h-11 sm:min-h-9">{t('cancelledDone')}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
