@@ -15,9 +15,11 @@
  * documented ways 512(c) safe harbour gets lost, so if the registration is
  * amended, amend this in the same sitting.
  *
- * Filed 2026-07-28, status Active. A designation expires after three years
- * unless renewed, and an expired one takes the safe harbour with it, so this
- * needs renewing by **2029-07-28**.
+ * Filed 2026-07-28; amended 2026-10-23 (name casing, Kristiansund N, phone
+ * with country code, contact@bullpeninvest.com, alternate name
+ * bullpeninvest.com), status Active. A designation expires three years after
+ * it was last filed or amended, and an expired one takes the safe harbour with
+ * it, so this needs renewing by **2029-10-23**.
  */
 
 export interface DmcaAgent {
@@ -39,11 +41,10 @@ export interface DmcaAgent {
  * The registered service provider name, also used as the sender name in email
  * footers.
  *
- * Spelled "Bullpen", lowercase p, because that is how the active record reads.
- * The product is "BullPen" everywhere else; do not tidy this one up to match
- * it. The page has to agree with the directory, not with the brand.
+ * Spelled exactly as the active record reads. Brreg stores the name in capitals
+ * only, so the casing comes from the Copyright Office record, not the brand.
  */
-export const SERVICE_PROVIDER_NAME = 'Hasselø Bullpen';
+export const SERVICE_PROVIDER_NAME = 'Hasselø BullPen';
 
 /**
  * Registered postal address, one line per line, as it appears on the record.
@@ -57,13 +58,7 @@ export function dmcaAgent(): DmcaAgent {
   const address =
     process.env.DMCA_AGENT_ADDRESS?.trim() ||
     [SERVICE_PROVIDER_NAME, ...REGISTERED_ADDRESS_LINES].join('\n');
-  // Same number as the record, written in international format: the record
-  // stores the bare 95402213, which a US sender cannot dial. A country code on
-  // the same number is a more usable rendering of an identical contact, not a
-  // different one, so this is the one field deliberately not character for
-  // character. Worth putting "+4795402213" in the registration next time it is
-  // edited, so the two read the same.
-  const phone = process.env.DMCA_AGENT_PHONE?.trim() || '+47 954 02 213';
+  const phone = process.env.DMCA_AGENT_PHONE?.trim() || '+4795402213';
   const email = process.env.DMCA_AGENT_EMAIL?.trim() || 'contact@bullpeninvest.com';
   const registrationNumber = process.env.DMCA_AGENT_REGISTRATION_NUMBER?.trim() || 'DMCA-1076710';
 
