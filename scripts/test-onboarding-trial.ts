@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict';
 import { PRICING } from '../lib/billing/entitlements';
-import { renewalTerms, trialTermsLine, shouldSendRenewalReminder } from '../lib/billing/trial-copy';
+import { renewalTerms, trialTermsLine, shouldSendRenewalReminder, willRenew } from '../lib/billing/trial-copy';
 import { buildTrialEndingEmailHtml, buildTrialRevokedEmailHtml, MANAGE_BILLING_URL } from '../lib/email/billing-reminder';
 import { checkoutReturnUrls, parseReturnTarget } from '../lib/billing/checkout-return';
 import {
@@ -50,6 +50,9 @@ assert.ok(!hasDash(trialTermsLine('annual')), 'terms line has no dash');
 assert.equal(shouldSendRenewalReminder('trialing'), false, 'trialing gets the trial email, not the renewal one');
 assert.equal(shouldSendRenewalReminder('active'), true);
 assert.equal(shouldSendRenewalReminder(null), true);
+assert.equal(willRenew({ cancel_at: null, cancel_at_period_end: false }), true);
+assert.equal(willRenew({ cancel_at: 1793158020, cancel_at_period_end: false }), false, 'portal cancel during a trial sets cancel_at');
+assert.equal(willRenew({ cancel_at: null, cancel_at_period_end: true }), false);
 
 // ── Task 2: trial emails ─────────────────────────────────────────────────────
 const ending = buildTrialEndingEmailHtml('$108.00', 'September 22, 2026', 'https://billing.example/portal');

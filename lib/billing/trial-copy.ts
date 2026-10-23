@@ -64,3 +64,13 @@ export function trialTermsLine(cycle: BillingCycle): string {
 export function shouldSendRenewalReminder(subscriptionStatus: string | null | undefined): boolean {
   return subscriptionStatus !== 'trialing';
 }
+
+/**
+ * False once the subscriber has cancelled. A cancelled trial is still
+ * `trialing` until it ends, and the portal cancels with `cancel_at` (flexible
+ * billing mode) rather than `cancel_at_period_end`, so check both. Every
+ * "you'll be charged" notice must skip these: no charge is coming.
+ */
+export function willRenew(sub: { cancel_at?: number | null; cancel_at_period_end?: boolean | null }): boolean {
+  return !sub.cancel_at && !sub.cancel_at_period_end;
+}

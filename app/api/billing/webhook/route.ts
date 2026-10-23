@@ -3,7 +3,7 @@ import type Stripe from 'stripe';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStripe, statusGrantsPro, TIER_PRO, TIER_FREE } from '@/lib/billing/stripe';
 import { sendRenewalReminderEmail, sendTrialEndingEmail, sendTrialRevokedEmail, sendTrialStartedEmail } from '@/lib/email/billing-reminder';
-import { shouldSendRenewalReminder } from '@/lib/billing/trial-copy';
+import { shouldSendRenewalReminder, willRenew } from '@/lib/billing/trial-copy';
 import { createNotification } from '@/lib/notifications/notifications-db';
 import { logSecurityEvent } from '@/lib/security/security-events';
 
@@ -121,7 +121,8 @@ export async function POST(request: NextRequest) {
         // user gets; invoice.upcoming skips trialing subscriptions below.
         const sub = event.data.object as Stripe.Subscription;
         const customerId = asId(sub.customer);
-        if (!customerId || sub.status !== 'trialing' || !sub.trial_end) break;
+        // Already cancelled: no charge is coming, so "you'll be charged" would be false.
+        if (!customerId || sub.status !== 'trialing' || !sub.trial_end || !willRenew(sub)) break;
         try {
           await sendTrialEndingEmail(customerId, upcomingAmountCents(sub), sub.currency, sub.trial_end);
           const userId = (sub.metadata?.supabase_user_id as string | undefined) ?? null;
@@ -155,7 +156,7 @@ export async function POST(request: NextRequest) {
             // A trialing subscription already got the trial-ending email; one
             // reminder per charge, not two.
             const subscription = await stripe.subscriptions.retrieve(asId(subscriptionId) as string);
-            if (shouldSendRenewalReminder(subscription.status)) {
+            if (shouldSendRenewalReminder(subscription.status) && willRenew(subscription)) {
               await sendRenewalReminderEmail(
                 customerId,
                 invoice.amount_due,

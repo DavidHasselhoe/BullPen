@@ -65,7 +65,8 @@ export function UpgradeSuccessModal({ open, onOpenChange }: Props) {
         </div>
 
         <Button asChild className="w-full">
-          <Link href="/dashboard">{t('upgradeSuccessStartExploring')}</Link>
+          {/* Close too: on /dashboard the link goes nowhere and the modal would stay open. */}
+          <Link href="/dashboard" onClick={() => onOpenChange(false)}>{t('upgradeSuccessStartExploring')}</Link>
         </Button>
       </DialogContent>
     </Dialog>
