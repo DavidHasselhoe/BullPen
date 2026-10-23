@@ -36,7 +36,7 @@ const REVENUE_TAGS = [
 ].join('|');
 
 function userAgent(): string {
-  return process.env.SEC_EDGAR_USER_AGENT || 'BullPen contact@bullpen.no';
+  return process.env.SEC_EDGAR_USER_AGENT || 'BullPen contact@bullpeninvest.com';
 }
 
 async function secFetch(url: string): Promise<string> {

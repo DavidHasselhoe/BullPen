@@ -20,7 +20,7 @@
  * scraper/terminal ultimately reads from.
  */
 
-const DEFAULT_USER_AGENT = 'BullPen contact@bullpen.no';
+const DEFAULT_USER_AGENT = 'BullPen contact@bullpeninvest.com';
 
 function userAgent(): string {
   return process.env.SEC_EDGAR_USER_AGENT || DEFAULT_USER_AGENT;

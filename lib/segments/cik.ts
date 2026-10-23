@@ -12,7 +12,7 @@ const MAP_KEY = 'sec:ticker-cik-map';
 const MAP_TTL_SEC = 7 * 24 * 60 * 60;
 
 function userAgent(): string {
-  return process.env.SEC_EDGAR_USER_AGENT || 'BullPen contact@bullpen.no';
+  return process.env.SEC_EDGAR_USER_AGENT || 'BullPen contact@bullpeninvest.com';
 }
 
 async function loadMap(): Promise<Record<string, string>> {

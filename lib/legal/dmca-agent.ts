@@ -64,7 +64,7 @@ export function dmcaAgent(): DmcaAgent {
   // character. Worth putting "+4795402213" in the registration next time it is
   // edited, so the two read the same.
   const phone = process.env.DMCA_AGENT_PHONE?.trim() || '+47 954 02 213';
-  const email = process.env.DMCA_AGENT_EMAIL?.trim() || 'david@hasselo.no';
+  const email = process.env.DMCA_AGENT_EMAIL?.trim() || 'contact@bullpeninvest.com';
   const registrationNumber = process.env.DMCA_AGENT_REGISTRATION_NUMBER?.trim() || 'DMCA-1076710';
 
   // All four contact facts have to be present before the page says there is a
