@@ -31,6 +31,7 @@ import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 import { useSignupGate } from '@/components/auth/SignupGate';
 import { DeepDivePaywallPreview } from '@/components/billing/DeepDivePaywallPreview';
 import type { QuotaState } from '@/lib/billing/quotas';
+import { trackEvent } from '@/lib/analytics/track';
 
 type Phase = 'loading' | 'idle' | 'generating' | 'done' | 'error';
 type ErrorCode = 'parse_failed' | 'rate_limited' | 'payment_required' | 'invalid_key' | 'unknown';
@@ -123,6 +124,7 @@ export default function DeepDivePage() {
 
         if (data.status === 'done' && data.report) {
           stopPolling();
+          trackEvent('deep_dive_viewed', { ticker: symbol, source: 'generated' });
           setReport(data.report);
           setCreatedAt(data.report.generatedAt ?? null);
           invalidateQuota('deep_dive');
@@ -137,6 +139,7 @@ export default function DeepDivePage() {
           }, 1650);
         } else if (data.status === 'error') {
           stopPolling();
+          trackEvent('deep_dive_failed', { ticker: symbol, code: data.errorCode ?? 'unknown' });
           setErrorCode(data.errorCode ?? 'unknown');
           setErrorMessage(data.errorMessage ?? '');
           setPhase('error');
@@ -164,6 +167,7 @@ export default function DeepDivePage() {
           setReport(data.report as Report);
           setCreatedAt(data.createdAt ?? null);
           setPhase('done');
+          trackEvent('deep_dive_viewed', { ticker: symbol, source: 'saved' });
           // Landed here from a notification (or just revisiting) — the
           // report is already on screen, so clear its unread notification.
           markEntityRead.mutate(`${symbol}:deep_dive`);
@@ -202,6 +206,11 @@ export default function DeepDivePage() {
         body: JSON.stringify({ experienceLevel: level, holds, checkFit, excludeTickers: checkFit ? fitExcluded : [] }),
       });
 
+      // What the Generate click led to; a started one ends in deep_dive_viewed or deep_dive_failed.
+      trackEvent('deep_dive_requested', {
+        ticker: symbol,
+        outcome: res.status === 429 ? 'rate_limited' : res.status === 402 ? 'paywall' : res.ok ? 'started' : 'error',
+      });
       if (res.status === 429) { setErrorCode('rate_limited'); setPhase('error'); return; }
       if (res.status === 402) {
         const data = await res.json().catch(() => ({}));
@@ -219,7 +228,7 @@ export default function DeepDivePage() {
       setErrorCode('unknown');
       setPhase('error');
     }
-  }, [rawTicker, level, holds, checkFit, fitExcluded, report, stopPolling, pollStatus]);
+  }, [rawTicker, symbol, level, holds, checkFit, fitExcluded, report, stopPolling, pollStatus]);
 
   const askAI = useCallback(() => {
     openAIPanel({

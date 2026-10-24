@@ -17,6 +17,7 @@ import { Search } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { humanizeError } from '@/lib/errors/humanize';
+import { trackEvent } from '@/lib/analytics/track';
 
 interface SearchResult {
   ticker: string;
@@ -50,6 +51,7 @@ export function StockSearch() {
 
   const handleSelect = useCallback(
     (result: SearchResult) => {
+      trackEvent('search_used', { surface: 'search_bar', action: 'company' });
       setOpen(false);
       setSearchQuery('');
       const path = slugToAssetPath(result.ticker, result.instrument_type);

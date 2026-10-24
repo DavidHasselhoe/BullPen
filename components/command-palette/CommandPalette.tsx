@@ -22,6 +22,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
 import { fetchWithTimeout } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics/track';
 import { Briefcase, Filter, TrendingUp, Scale, Users, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
 import { slugToAssetPath, inferAssetType, fundLabel } from '@/lib/assets/asset-type';
 import type { PublicUser } from '@/app/api/users/search/route';
@@ -34,6 +35,9 @@ function AskBullIcon({ className }: { className?: string }) {
 
 /** Types whose raw TwelveData string is not what a reader should see: "Mutual
  *  Fund" is technically right and useless, "Index fund" is what it is. */
+/** What a palette pick led to. Never the typed query. */
+const trackPick = (action: string) => trackEvent('search_used', { surface: 'palette', action });
+
 const FUND_TYPES = new Set(['Mutual Fund', 'Closed-end Fund', 'Exchange-Traded Note']);
 
 interface SearchResult {
@@ -123,6 +127,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const handleSelectCompany = useCallback(
     async (result: SearchResult) => {
+      trackPick('company');
       onOpenChange(false);
       setSearchQuery('');
       router.push(slugToAssetPath(result.ticker));
@@ -135,6 +140,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   // lands on the right page.
   const handleSelectRecent = useCallback(
     (ticker: string) => {
+      trackPick('recent');
       onOpenChange(false);
       setSearchQuery('');
       router.push(slugToAssetPath(ticker));
@@ -144,6 +150,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const handleQuickAction = useCallback(
     (action: (typeof QUICK_ACTIONS)[number]) => {
+      trackPick('quick_action');
       onOpenChange(false);
       setSearchQuery('');
       if (action.opensAIPanel) {
@@ -157,6 +164,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const handleAskAI = useCallback(
     (query?: string) => {
+      trackPick('ask_bull');
       onOpenChange(false);
       const q = (query || searchQuery).trim();
       openAIPanel({ query: q || undefined });
@@ -167,6 +175,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const handleCompare = useCallback(
     (ticker: string) => {
+      trackPick('compare');
       onOpenChange(false);
       setSearchQuery('');
       router.push(`/tools/compare?tickers=${encodeURIComponent(ticker)}`);
@@ -176,6 +185,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const handleDeepDive = useCallback(
     (ticker: string) => {
+      trackPick('deep_dive');
       onOpenChange(false);
       setSearchQuery('');
       router.push(`/tools/deep-dive/${encodeURIComponent(ticker)}?new=1`);
@@ -185,6 +195,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const handlePriceAlert = useCallback(
     (ticker: string, name: string) => {
+      trackPick('price_alert');
       onOpenChange(false);
       setSearchQuery('');
       router.push(`/tools/alerts?symbol=${encodeURIComponent(ticker)}&name=${encodeURIComponent(name)}`);
@@ -418,6 +429,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                           key={person.id}
                           value={`person-${person.id}`}
                           onSelect={() => {
+                            trackPick('person');
                             onOpenChange(false);
                             setSearchQuery('');
                             router.push(href);
@@ -445,6 +457,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     <CommandItem
                       value="browse-all-people"
                       onSelect={() => {
+                        trackPick('people_search');
                         onOpenChange(false);
                         setSearchQuery('');
                         router.push(`/users?q=${encodeURIComponent(debouncedQuery)}`);

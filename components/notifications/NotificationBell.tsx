@@ -8,6 +8,7 @@ import { useUnreadCount } from '@/hooks/use-notifications';
 import { NotificationCenter } from './NotificationCenter';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics/track';
 
 interface NotificationBellProps {
   open: boolean;
@@ -23,7 +24,13 @@ export function NotificationBell({ open, onOpenChange }: NotificationBellProps) 
   const { data: unreadCount = 0, isLoading } = useUnreadCount();
 
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) trackEvent('notifications_opened', { unread: unreadCount });
+        onOpenChange(next);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="ghost"

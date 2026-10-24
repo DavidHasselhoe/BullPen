@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, CreditCard, GraduationCap, HeartPulse, Landmark, Star, Newspaper, Crown, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics/track';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { ClampedText } from '@/components/ui/ClampedText';
 import type { EarningsTodayParams, NotifMsg, Notification } from '@/lib/notifications/notifications-db';
@@ -409,7 +410,10 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
       <EconomicNotification
         notification={notification}
         date={notification.entity_id.slice('economic:'.length)}
-        onRead={() => { if (!notification.is_read) onMarkRead(notification.id); }}
+        onRead={() => {
+          trackEvent('notification_clicked', { type: notification.type, was_unread: !notification.is_read, has_link: false });
+          if (!notification.is_read) onMarkRead(notification.id);
+        }}
       />
     );
   }
@@ -422,6 +426,7 @@ function StandardNotificationItem({ notification, onMarkRead }: NotificationItem
   const unread = !notification.is_read;
   const text = useNotificationText(notification);
   const handleClick = () => {
+    trackEvent('notification_clicked', { type: notification.type, was_unread: unread, has_link: !!source });
     if (unread) onMarkRead(notification.id);
   };
 

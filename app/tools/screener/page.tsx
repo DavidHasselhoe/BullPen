@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics/track';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -94,6 +95,14 @@ function ScreenerContent() {
   const [filters, setFilters] = useState<ScreenerFilterValues>(() => filtersFromParams(searchParams));
   // Debounced copy — drives the query key and URL so typing doesn't re-fetch on every keystroke
   const debouncedFilters = useDebounce(filters, 350);
+  // One event per settled filter change (not per keystroke), names only. The
+  // first run is the filters the page opened with, which nobody just chose.
+  const filtersSeen = useRef(false);
+  useEffect(() => {
+    if (!filtersSeen.current) { filtersSeen.current = true; return; }
+    const active = Object.entries(debouncedFilters).filter(([, v]) => v !== '').map(([k]) => k);
+    trackEvent('screener_filtered', { filters: active, count: active.length });
+  }, [debouncedFilters]);
   const [refreshStatus, setRefreshStatus] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);

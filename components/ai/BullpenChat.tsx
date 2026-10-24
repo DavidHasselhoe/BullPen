@@ -18,6 +18,7 @@ import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowDown, Check, Copy, RotateCcw, Send, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics/track';
 import type { AuthUser } from '@/lib/auth/auth';
 import { useStickToBottom } from '@/hooks/use-stick-to-bottom';
 import { useSmoothText } from '@/hooks/use-smooth-text';
@@ -377,6 +378,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       // Server returns 402 with body { error: 'quota_exceeded', quota: QuotaState }.
       // The transport surfaces the body as part of the error message; pick out the JSON.
       const msg = err?.message ?? '';
+      trackEvent('ask_bull_failed', { reason: msg.includes('quota_exceeded') ? 'quota' : 'error' });
       if (msg.includes('quota_exceeded')) {
         try {
           const match = msg.match(/\{[\s\S]*\}/);
@@ -430,8 +432,17 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     return () => clearTimeout(id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Never the message text: what was asked stays out of analytics.
+  const trackAskBull = (source: 'typed' | 'suggestion' | 'followup') =>
+    trackEvent('ask_bull_sent', {
+      source,
+      first_in_chat: messages.length === 0,
+      context: aiContext?.screener ? 'screener' : effectiveContext?.tickers.length ? 'ticker' : 'none',
+    });
+
   /** Sending always brings the reader back to the conversation's end. */
-  const send = (text: string) => {
+  const send = (text: string, source: 'typed' | 'suggestion' | 'followup') => {
+    trackAskBull(source);
     setStoppedId(null);
     sendMessage({ parts: [{ type: 'text', text }] });
     requestAnimationFrame(() => scrollToBottom('smooth'));
@@ -466,6 +477,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   useEffect(() => {
     if (!initialQuery || !open || lastSentInitialQueryRef.current === initialQuery) return;
     lastSentInitialQueryRef.current = initialQuery;
+    // Opened with a question already asked (command palette, Deep Dive, chart): the panel sent it.
+    trackEvent('ask_bull_sent', { source: 'opened_with_question' });
     sendMessage({ parts: [{ type: 'text', text: initialQuery }] });
     onConsumedQuery?.();
   }, [initialQuery, open, sendMessage, onConsumedQuery]);
@@ -510,7 +523,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     const text = inputRef.current.trim();
     if (!text || isStreaming) return;
 
-    send(text);
+    send(text, 'typed');
 
     inputRef.current = '';
     setHasInput(false);
@@ -601,7 +614,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                     hidden: { opacity: 0, y: 6 },
                     visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.25, 1, 0.5, 1] } },
                   }}
-                  onClick={() => send(suggestion)}
+                  onClick={() => send(suggestion, 'suggestion')}
                   className={cn(chipClass, 'justify-center rounded-xl')}
                 >
                   {suggestion}
@@ -760,7 +773,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
             className="flex flex-wrap gap-2"
           >
             {followups.map((s) => (
-              <button key={s} type="button" onClick={() => send(s)} className={chipClass}>
+              <button key={s} type="button" onClick={() => send(s, 'followup')} className={chipClass}>
                 {s}
               </button>
             ))}
