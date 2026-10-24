@@ -45,7 +45,21 @@ function fmtDate(iso: string, locale: string): string {
   });
 }
 
-export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
+/**
+ * `initialFunds` and `initialTeaser` come from the page's server render, so a
+ * crawler (kept out of /api/ by robots.txt) sees the fund's name and its free
+ * sample. The teaser is only used when it was built in the language this
+ * client renders in.
+ */
+export function InstitutionalFundDetailClient({
+  slug,
+  initialFunds,
+  initialTeaser,
+}: {
+  slug: string;
+  initialFunds?: InstitutionalFundSummary[];
+  initialTeaser?: { lang: string; teaser: FundTeaser };
+}) {
   const { t, i18n } = useTranslation('discover');
   const { isAuthenticated } = useAuth();
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -56,6 +70,7 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
       const res = await fetch('/api/institutions');
       return res.json();
     },
+    initialData: initialFunds ? { success: true, funds: initialFunds } : undefined,
     staleTime: 10 * 60 * 1000,
   });
   const fundIndex = listData?.funds?.findIndex((f) => f.slug === slug) ?? -1;
@@ -96,6 +111,7 @@ export function InstitutionalFundDetailClient({ slug }: { slug: string }) {
       const res = await fetch(`/api/institutions/${slug}/teaser?lang=${encodeURIComponent(i18n.language)}`);
       return res.ok ? res.json() : null;
     },
+    initialData: initialTeaser?.lang === i18n.language ? { success: true, ...initialTeaser.teaser } : undefined,
     enabled: locked,
     staleTime: 60 * 60 * 1000,
   });

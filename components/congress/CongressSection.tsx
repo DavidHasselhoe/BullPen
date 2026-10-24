@@ -12,7 +12,7 @@ import { PoliticianAvatar } from './PoliticianAvatar';
 import { YourStocksInWashington } from './YourStocksInWashington';
 import { FollowFundButton } from '@/components/institutions/FollowFundButton';
 import { useFollowedSlugs } from '@/hooks/use-institution-follow';
-import type { CongressMemberSummary } from '@/app/api/congress/route';
+import type { CongressMemberSummary } from '@/lib/congress/member-data';
 
 const ALL = 'all';
 
@@ -71,9 +71,14 @@ function SectionSkeleton() {
 /** On Discover: members you follow first, one row, then a link to /discover/politicians. */
 const PREVIEW_COUNT = 3;
 
-export function CongressSection({ preview = false }: { preview?: boolean }) {
+export function CongressSection({ preview = false, initialMembers }: { preview?: boolean; initialMembers?: CongressMemberSummary[] }) {
   const { t, i18n } = useTranslation('discover');
-  const { data, isLoading, error } = useQuery(MEMBERS_QUERY);
+  // The full-list page passes the list it rendered on the server, so crawlers
+  // (kept out of /api/ by robots.txt) see the members too.
+  const { data, isLoading, error } = useQuery({
+    ...MEMBERS_QUERY,
+    initialData: initialMembers ? { success: true, members: initialMembers } : undefined,
+  });
   const members = useMemo(() => data?.members ?? [], [data]);
   const { data: followedSlugs } = useFollowedSlugs('politician');
 

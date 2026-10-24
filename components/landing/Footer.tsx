@@ -22,6 +22,9 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: 'Glossary', href: '/glossary' },
       // The crawl path to every stock page: see lib/market-data/stock-directory.ts.
       { label: 'Stocks by sector', href: '/stocks' },
+      // The crawl paths to every member and fund page; both lists render on the server.
+      { label: 'Politician stock trades', href: '/discover/politicians' },
+      { label: 'Hedge fund holdings', href: '/discover/institutions' },
     ],
   },
   {

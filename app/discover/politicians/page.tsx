@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { CongressSection } from '@/components/congress/CongressSection';
 import { SITE_URL } from '@/lib/site';
+import { loadCongressMembers } from '@/lib/congress/member-data';
 
 const title = 'Washington Trading: stock trades by members of Congress | BullPen';
 const description = 'Stock trades disclosed by members of Congress and senior executive-branch officials, with positions and filing dates.';
@@ -14,8 +15,13 @@ export const metadata: Metadata = {
   openGraph: { title, description, url: `${SITE_URL}/discover/politicians` },
 };
 
-/** The full member list with its filters. Discover shows a one-row preview that links here. */
-export default function PoliticiansPage() {
+/**
+ * The full member list with its filters. Discover shows a one-row preview that
+ * links here. Rendered with the list on the server: it is the crawl path to
+ * every member page.
+ */
+export default async function PoliticiansPage() {
+  const members = await loadCongressMembers().catch(() => undefined);
   return (
     <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0">
       <Link
@@ -26,7 +32,7 @@ export default function PoliticiansPage() {
         Back to Discover
       </Link>
       <h1 className="sr-only">Washington Trading</h1>
-      <CongressSection />
+      <CongressSection initialMembers={members} />
     </main>
   );
 }

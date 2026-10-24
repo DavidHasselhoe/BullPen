@@ -4,6 +4,8 @@ import { createServerClient } from '@/lib/supabase/client';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { SITE_URL } from '@/lib/site';
 import { getSubpageCoverage, MIN_CONGRESS_TRADES, MIN_FUND_HOLDERS } from '@/lib/stock/subpage-data';
+import { loadCongressMembers, MIN_MEMBER_TRADES } from '@/lib/congress/member-data';
+import { loadFundSummaries } from '@/lib/institutions/fund-summaries';
 
 /**
  * Served at /sitemap.xml.
@@ -108,5 +110,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }))
     : [];
 
-  return [...staticEntries, ...glossaryEntries, ...pickEntries, ...stockEntries, ...subpageEntries];
+  // Washington Trading and 13F pages: searched by name ("Pelosi stock trades",
+  // "Berkshire 13F"). Members below MIN_MEMBER_TRADES render noindex, so they
+  // are left out here on the same count; funds only once a filing is parsed.
+  const [members, funds] = await Promise.all([
+    loadCongressMembers().catch(() => []),
+    loadFundSummaries().catch(() => []),
+  ]);
+  const discoverEntries = [
+    '/discover/politicians',
+    '/discover/institutions',
+    ...members.filter((m) => m.tradeCount >= MIN_MEMBER_TRADES).map((m) => `/discover/politicians/${m.slug}`),
+    ...funds.filter((f) => f.lastFiledDate).map((f) => `/discover/institutions/${f.slug}`),
+  ].map((path) => ({
+    url: `${BASE_URL}${path}`,
+    lastModified,
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...glossaryEntries, ...pickEntries, ...stockEntries, ...subpageEntries, ...discoverEntries];
 }

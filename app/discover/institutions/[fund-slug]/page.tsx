@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/client';
 import { INSTITUTIONAL_FUND_SLUGS, isInstitutionalFundSlug } from '@/lib/institutions/fund-list';
 import { InstitutionalFundDetailClient } from '@/components/institutions/InstitutionalFundDetailClient';
+import { loadFundSummaries } from '@/lib/institutions/fund-summaries';
+import { buildFundTeaser } from '@/lib/institutions/fund-teaser';
+import { getRequestLocale } from '@/lib/i18n/server';
 
 import { SITE_URL } from '@/lib/site';
 const BASE_URL = SITE_URL;
@@ -47,13 +50,25 @@ export default async function InstitutionalFundPage({
   const { 'fund-slug': slug } = await params;
   if (!isInstitutionalFundSlug(slug)) notFound();
 
+  // The header and the free sample, rendered on the server for crawlers. A
+  // failed read leaves the page to load in the browser as before.
+  const lang = await getRequestLocale();
+  const [funds, teaser] = await Promise.all([
+    loadFundSummaries().catch(() => undefined),
+    buildFundTeaser(slug, lang).catch(() => null),
+  ]);
+
   // Same container as /discover (its page.tsx) — without it this page rendered
   // edge to edge, stretching the holdings bars to ~2000px on a wide screen,
   // where neither the bar lengths nor a row's ticker and its percentage could
   // be compared without crossing the whole viewport.
   return (
     <main className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 min-w-0">
-      <InstitutionalFundDetailClient slug={slug} />
+      <InstitutionalFundDetailClient
+        slug={slug}
+        initialFunds={funds}
+        initialTeaser={teaser?.ok ? { lang, teaser: teaser.teaser } : undefined}
+      />
     </main>
   );
 }

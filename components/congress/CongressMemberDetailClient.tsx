@@ -17,7 +17,7 @@ import { PoliticianScorecard } from './PoliticianScorecard';
 import { ListSearch } from './ListSearch';
 import { PoliticianAvatar } from './PoliticianAvatar';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import type { CongressMemberDetail, CongressHoldingRow } from '@/app/api/congress/[slug]/route';
+import type { CongressMemberDetail, CongressHoldingRow } from '@/lib/congress/member-data';
 import type { CongressTradeRow } from '@/lib/congress/types';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 
@@ -175,7 +175,7 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
   );
 }
 
-export function CongressMemberDetailClient({ slug }: { slug: string }) {
+export function CongressMemberDetailClient({ slug, initialMember }: { slug: string; initialMember?: CongressMemberDetail }) {
   const { t } = useTranslation('discover');
   const [filter, setFilter] = useState<TradeFilter>('all');
   const [year, setYear] = useState(ALL_YEARS);
@@ -194,6 +194,8 @@ export function CongressMemberDetailClient({ slug }: { slug: string }) {
       if (!res.ok) throw new Error(`Failed: ${res.status}`);
       return res.json();
     },
+    // Rendered on the server by the page, so crawlers see the trades too.
+    initialData: initialMember ? { success: true, member: initialMember } : undefined,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     refetchOnWindowFocus: false,

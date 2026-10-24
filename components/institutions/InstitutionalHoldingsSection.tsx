@@ -330,9 +330,14 @@ function ConcentrationDots({ read }: { read: ConcentrationRead }) {
  */
 const PREVIEW_COUNT = 3;
 
-export function InstitutionalHoldingsSection({ preview = false }: { preview?: boolean }) {
+export function InstitutionalHoldingsSection({ preview = false, initialFunds }: { preview?: boolean; initialFunds?: InstitutionalFundSummary[] }) {
   const { t, i18n } = useTranslation('discover');
-  const { data, isLoading, error } = useQuery(FUNDS_QUERY);
+  // The full-list page passes the list it rendered on the server, so crawlers
+  // (kept out of /api/ by robots.txt) see the funds too.
+  const { data, isLoading, error } = useQuery({
+    ...FUNDS_QUERY,
+    initialData: initialFunds ? { success: true, funds: initialFunds } : undefined,
+  });
   const { isAuthenticated } = useAuth();
   const { data: followedSlugs } = useFollowedFunds();
 
