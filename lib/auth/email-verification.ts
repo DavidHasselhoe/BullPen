@@ -103,3 +103,65 @@ export async function sendVerificationEmail(userId: string, email: string): Prom
     kind: 'transactional',
   });
 }
+
+export function buildVerifyReminderHtml(link: string): string {
+  return emailShell(
+    'Your email still needs confirming',
+    `
+    <p style="margin: 0; font-size: 16px; color: #94a3b8;">
+      Once it's confirmed, BullPen can email you in the morning when something happens to a stock you follow. Until then, those alerts only show up in the app.
+    </p>
+    <p style="margin: 20px 0 0;">
+      <a href="${link}" style="display: inline-block; background: #22c55e; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600;">
+        Confirm email
+      </a>
+    </p>
+    <p style="margin: 24px 0 0; font-size: 12px; color: #64748b;">
+      This is the only reminder we send. If you didn't create a BullPen account, you can ignore this email.
+    </p>`
+  );
+}
+
+export interface VerifyReminderRun {
+  candidates: number;
+  sent: number;
+  errors: string[];
+}
+
+/**
+ * One reminder to email signups still unverified a day later; Google sign-ins
+ * are verified at creation. No "sent" column: each daily run takes accounts
+ * created 24-48h before the top of its hour, so every account falls in exactly
+ * one run even when the cron starts a few minutes late. A skipped run skips
+ * that day's signups, which is fine for a nudge.
+ */
+export async function sendVerificationReminders(opts: { dryRun?: boolean; now?: Date } = {}): Promise<VerifyReminderRun> {
+  const hour = new Date(opts.now ?? Date.now());
+  hour.setUTCMinutes(0, 0, 0);
+  const day = 24 * 60 * 60 * 1000;
+  const { data, error } = await createServerClient()
+    .from('users')
+    .select('id, email')
+    .is('email_verified_at', null)
+    .not('email', 'is', null)
+    .gte('created_at', new Date(hour.getTime() - 2 * day).toISOString())
+    .lt('created_at', new Date(hour.getTime() - day).toISOString());
+  const run: VerifyReminderRun = { candidates: data?.length ?? 0, sent: 0, errors: error ? [error.message] : [] };
+  if (opts.dryRun) return run;
+
+  for (const u of (data ?? []) as Array<{ id: string; email: string }>) {
+    const link = `${APP_URL}/auth/verify-email?token=${encodeURIComponent(createVerifyToken(u.id, u.email))}`;
+    try {
+      await sendEmail({
+        to: u.email,
+        subject: 'Confirm your email to get your stock alerts',
+        html: buildVerifyReminderHtml(link),
+        kind: 'transactional',
+      });
+      run.sent++;
+    } catch (err) {
+      run.errors.push(`${u.id}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  return run;
+}
