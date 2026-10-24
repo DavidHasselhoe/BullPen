@@ -23,6 +23,8 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 /** The crons write at 08:00 and 21:30 UTC; 26h covers both with slack for drift. */
 const LOOKBACK_MS = 26 * 60 * 60 * 1000;
 const UTM = 'utm_source=email&utm_medium=alert&utm_campaign=morning_alert';
+/** The email shipped 2026-10-23. Accounts older than this had alerts in the app only. */
+const EMAIL_LAUNCH = '2026-10-24T00:00:00Z';
 
 interface AlertRow {
   id: string;
@@ -242,10 +244,16 @@ function card(i: EmailItem): string {
  * body styles, which would leave light text on white. The footer lands at
  * the marker, inside the dark panel (lib/email/footer.ts).
  */
-export function buildAlertEmailHtml(items: EmailItem[], opts: { first: boolean; unsubscribeUrl: string }): string {
-  const lead = opts.first
-    ? `You turned these alerts on when you joined. Until now they only showed up in the app. From today they also come here, one email in the morning, only when something happens to a stock you follow. Not for you? <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:${C.ink};text-decoration:underline;">Turn off these emails</a>.`
-    : 'What happened with the stocks you follow.';
+export function buildAlertEmailHtml(
+  items: EmailItem[],
+  opts: { first: boolean; joinedBeforeLaunch: boolean; unsubscribeUrl: string },
+): string {
+  const optOut = `Not for you? <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:${C.ink};text-decoration:underline;">Turn off these emails</a>.`;
+  const lead = !opts.first
+    ? 'What happened with the stocks you follow.'
+    : opts.joinedBeforeLaunch
+      ? `You turned these alerts on when you joined. Until now they only showed up in the app. From today they also come here, one email in the morning, only when something happens to a stock you follow. ${optOut}`
+      : `You turned these alerts on when you joined. They come here as one email in the morning, only when something happens to a stock you follow. ${optOut}`;
 
   const sections = SECTION_ORDER.map((section) => {
     const rows = items.filter((i) => i.section === section);
@@ -348,7 +356,7 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
 
   const { data: users } = await supabase
     .from('users')
-    .select('id, email, email_verified_at, settings')
+    .select('id, email, email_verified_at, settings, created_at')
     .in('id', [...byUser.keys()]);
 
   // Who has had one before: the first email explains why it is arriving. One
@@ -361,7 +369,7 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     }),
   );
 
-  for (const u of (users ?? []) as Array<{ id: string; email: string | null; email_verified_at: string | null; settings: { notifications?: Record<string, boolean> } | null }>) {
+  for (const u of (users ?? []) as Array<{ id: string; email: string | null; email_verified_at: string | null; created_at: string; settings: { notifications?: Record<string, boolean> } | null }>) {
     const entry = byUser.get(u.id);
     if (!entry) continue;
     if (u.settings?.notifications?.email_alerts === false) {
@@ -377,7 +385,11 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
 
     const unsub = unsubscribeUrl(u.id);
     const subject = alertEmailSubject(entry.items);
-    const html = buildAlertEmailHtml(entry.items, { first: !returning.has(u.id), unsubscribeUrl: unsub });
+    const html = buildAlertEmailHtml(entry.items, {
+      first: !returning.has(u.id),
+      joinedBeforeLaunch: new Date(u.created_at) < new Date(EMAIL_LAUNCH),
+      unsubscribeUrl: unsub,
+    });
 
     if (opts.dryRun) {
       run.previews!.push({ userId: u.id, to: u.email, subject, html });
