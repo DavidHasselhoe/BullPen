@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { loadedPostHog } from '@/lib/analytics/track';
 
 export default function Error({
   error,
@@ -14,6 +15,9 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error('Unhandled error:', error);
+    // A render error React caught here never reaches window.onerror, so
+    // exception autocapture can't see it. Null before analytics consent.
+    loadedPostHog()?.captureException(error, error.digest ? { digest: error.digest } : undefined);
   }, [error]);
 
   return (

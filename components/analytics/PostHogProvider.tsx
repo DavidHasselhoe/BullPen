@@ -47,6 +47,10 @@ function initPostHog(posthog: PostHog) {
       recordBody: false,
     },
     disable_surveys: true,
+    // Uncaught errors and unhandled rejections, as PostHog error tracking
+    // issues. Consenting visitors only, like everything here; server errors
+    // reach PostHog for everyone through instrumentation.ts, without cookies.
+    capture_exceptions: true,
   });
 
   // Tag the session with the AI assistant that sent it, so funnels and
