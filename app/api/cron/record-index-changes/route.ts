@@ -11,6 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { INDEX_IDS, recordIndexChanges, type IndexChangesPayload } from '@/lib/market-data/index-events';
 import { notifyIndexMembershipChanges } from '@/lib/notifications/notification-creators';
@@ -32,7 +33,7 @@ function isPayload(p: unknown): p is IndexChangesPayload {
   );
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function handlePOST(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
     logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/record-index-changes' });
@@ -51,3 +52,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
+
+export const POST = withCronReport('record-index-changes', handlePOST);

@@ -15,6 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStockQuotes, getStatistics } from '@/lib/twelvedata/twelvedata-client';
@@ -80,7 +81,7 @@ function evaluate(
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -188,3 +189,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     uniqueSymbols: symbols.length,
   });
 }
+
+export const GET = withCronReport('check-user-alerts', handleGET);

@@ -9,13 +9,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { topUpDailyChallenges } from '@/lib/academy/daily-challenges';
 
 export const maxDuration = 300;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -30,3 +31,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+
+export const GET = withCronReport('top-up-daily-challenges', handleGET);

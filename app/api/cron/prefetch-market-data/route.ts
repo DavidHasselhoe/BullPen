@@ -38,6 +38,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { createServerClient } from '@/lib/supabase/client';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import {
@@ -505,7 +506,7 @@ async function handleFinancials(
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -534,3 +535,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   return handleStatsBatch(supabase, APIKEY(), allSymbols, batchIndex);
 }
+
+export const GET = withCronReport('prefetch-market-data', handleGET);

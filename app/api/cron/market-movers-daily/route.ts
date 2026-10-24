@@ -22,6 +22,7 @@
  */
 
 import { NextRequest, NextResponse, after } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { getClosedHolidays } from '@/lib/market/exchange-holidays';
@@ -46,7 +47,7 @@ function todayEtDateKey(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -140,3 +141,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     slideCount: staged.slideCount,
   });
 }
+
+export const GET = withCronReport('market-movers-daily', handleGET);

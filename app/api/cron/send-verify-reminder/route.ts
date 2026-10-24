@@ -9,12 +9,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { sendVerificationReminders } from '@/lib/auth/email-verification';
 
 export const maxDuration = 60;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
     logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/send-verify-reminder' });
@@ -23,3 +24,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json(await sendVerificationReminders({ dryRun: request.nextUrl.searchParams.get('dryRun') === '1' }));
 }
+
+export const GET = withCronReport('send-verify-reminder', handleGET);

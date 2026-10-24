@@ -33,6 +33,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import {
   buildWarmPlan,
@@ -51,7 +52,7 @@ export const maxDuration = 60;
  */
 const UNITS_PER_BATCH = 4;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -110,3 +111,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     done: nextBatch === null,
   });
 }
+
+export const GET = withCronReport('prefetch-calendar', handleGET);

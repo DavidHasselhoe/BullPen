@@ -15,6 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { ingestAllPoliticians } from '@/lib/congress/ingest-trades';
@@ -23,7 +24,7 @@ import { invalidateCachedPrefix } from '@/lib/cache/market-data-cache';
 
 export const maxDuration = 300;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
     logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/refresh-congress-trades' });
@@ -79,3 +80,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
+
+export const GET = withCronReport('refresh-congress-trades', handleGET);

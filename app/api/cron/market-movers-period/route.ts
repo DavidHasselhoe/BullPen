@@ -19,6 +19,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { getClosedHolidays } from '@/lib/market/exchange-holidays';
@@ -51,7 +52,7 @@ function dateLabelFor(period: MoversPeriod, date: string): string {
   return period === 'week' ? formatWeekLabel(periodStart('week', date), date) : fmtMonthLabel(monthKeyOf(date));
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -139,3 +140,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const failed = results.some((r) => 'error' in r);
   return NextResponse.json({ success: !failed, date, results }, { status: failed ? 500 : 200 });
 }
+
+export const GET = withCronReport('market-movers-period', handleGET);

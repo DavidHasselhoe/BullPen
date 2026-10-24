@@ -62,3 +62,7 @@ After that commit the same workflow POSTs the script's JSON (`INDEX_CHANGES_FILE
 
 The GitHub Actions workflows require **`CRON_SECRET`** to be set in repo secrets (Settings → Secrets and variables → Actions). The production URL defaults to `https://bullpeninvest.com` (was bullpen.no until 2026-09-28; it now 308-redirects there) — override with an `APP_URL` repo variable if needed.
 
+
+## Cron health (PostHog)
+
+Every cron route exports its handler through `withCronReport('<job>', handler)` (`lib/cron/report.ts`), which sends one `cron_completed` event per authorised run with the HTTP status, duration and the numbers in the route's JSON response. A new cron route must do the same, and get a row in the PostHog insight "Cron jobs: overdue runs" (expected max hours between runs). Two PostHog alerts read these: "Cron job missed its schedule" (daily) and "Cron job failed or ran empty" (hourly: status >= 400, any `errors`, or check-price-moves with zero symbols).

@@ -9,12 +9,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { syncEconomicCalendar } from '@/lib/market-data/economic-calendar';
 
 export const maxDuration = 60;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
     logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/sync-economic-calendar' });
@@ -26,3 +27,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (failed.length > 0) console.error('[sync-economic-calendar] sources failed', failed);
   return NextResponse.json(result);
 }
+
+export const GET = withCronReport('sync-economic-calendar', handleGET);

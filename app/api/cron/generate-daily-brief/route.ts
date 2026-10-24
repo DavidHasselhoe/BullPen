@@ -15,6 +15,7 @@
  */
 
 import { NextRequest, NextResponse, after } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient } from '@/lib/supabase/client';
@@ -324,7 +325,7 @@ async function fetchMarketContext(): Promise<{ vix: string | null; treasury10y: 
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   // ── Auth ──────────────────────────────────────────────────────────────────
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
@@ -817,3 +818,5 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
     sources: sources.length,
   });
 }
+
+export const GET = withCronReport('generate-daily-brief', handleGET);

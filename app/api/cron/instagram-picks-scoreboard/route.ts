@@ -14,6 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { isoWeekKey } from '@/lib/instagram/period-key';
@@ -24,7 +25,7 @@ export const maxDuration = 300;
 
 const CONTENT_TYPE = 'picks_scoreboard';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
     logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/instagram-picks-scoreboard' });
@@ -67,3 +68,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: false, periodKey, error: message }, { status: 500 });
   }
 }
+
+export const GET = withCronReport('instagram-picks-scoreboard', handleGET);

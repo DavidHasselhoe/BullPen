@@ -18,6 +18,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { generateCourseLessons } from '@/lib/academy/generate-course-content';
@@ -27,7 +28,7 @@ import { postToDiscord } from '@/lib/discord/post-message';
 import { SITE_URL } from '@/lib/site';
 export const maxDuration = 300;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -138,3 +139,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     lessonCount: nextOutline.lessons.length,
   });
 }
+
+export const GET = withCronReport('generate-academy-course', handleGET);

@@ -26,6 +26,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { ingestFiling, list13FFilings, type IngestTarget } from '@/lib/institutions/ingest-filing';
@@ -51,7 +52,7 @@ async function syncFund(supabase: ReturnType<typeof createServerClient>, investo
   return ingestFiling(supabase, investor, latest13F, { notify: true });
 }
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
@@ -165,3 +166,5 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({ success: true, results, symbolsFilled, firstFiled, sectors, trackedSectors, screenerSectors });
 }
+
+export const GET = withCronReport('sync-institutional-holdings', handleGET);

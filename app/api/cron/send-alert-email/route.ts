@@ -10,12 +10,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { sendMorningAlertEmails } from '@/lib/email/alert-email';
 
 export const maxDuration = 120;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
     logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/send-alert-email' });
@@ -31,3 +32,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { previews, ...summary } = run;
   return NextResponse.json({ ...summary, previews: previews?.map(({ html: _html, ...p }) => p) });
 }
+
+export const GET = withCronReport('send-alert-email', handleGET);

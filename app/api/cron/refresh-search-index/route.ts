@@ -19,6 +19,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { refreshSearchIndex, FeedTooSmallError, ALL_PARTS, type RefreshPart } from '@/lib/search/refresh-index';
 import { TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
@@ -78,5 +79,5 @@ async function handler(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export const GET = handler;
-export const POST = handler;
+export const GET = withCronReport('refresh-search-index', handler);
+export const POST = withCronReport('refresh-search-index', handler);

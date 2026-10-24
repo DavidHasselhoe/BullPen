@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { getEconomicEvents } from '@/lib/market-data/economic-calendar';
 import { notifyEconomicEventsToday } from '@/lib/notifications/notification-creators';
@@ -15,7 +16,7 @@ import { todayET } from '@/lib/dates/calendar-format';
 
 export const maxDuration = 60;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
     logSecurityEvent('cron_secret_mismatch', { path: '/api/cron/check-economic-events' });
@@ -32,3 +33,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
+
+export const GET = withCronReport('check-economic-events', handleGET);

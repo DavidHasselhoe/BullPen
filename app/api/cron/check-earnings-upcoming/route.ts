@@ -12,6 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
@@ -25,7 +26,7 @@ import {
 
 export const maxDuration = 120;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleGET(request: NextRequest): Promise<NextResponse> {
   // ── Auth ──────────────────────────────────────────────────────────────────
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
@@ -144,3 +145,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json(summary);
 }
+
+export const GET = withCronReport('check-earnings-upcoming', handleGET);
