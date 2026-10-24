@@ -1,11 +1,14 @@
 /**
  * The morning alert email: one email a day, only when something happened,
- * carrying the earnings, ex-dividend and big-move notifications a user turned
- * on. Before this those only ever landed in the in-app panel, and the
- * 2026-10-23 activation check found none of 14 new users had read one.
+ * carrying the alerts a user has on: earnings, ex-dividend dates, big moves,
+ * Health Score grade changes, politicians trading their stocks, index changes
+ * and the day's economic releases. Before this those only ever landed in the
+ * in-app panel, and the 2026-10-23 activation check found none of 14 new users
+ * had read one.
  *
- * Built from the notifications the 08:00 and 21:30 crons already wrote, so it
- * adds no data or AI cost and inherits each per-type toggle. `emailed_at`
+ * Built from the notifications the crons already wrote, plus Why Today answers
+ * someone already paid for, so it adds no data or AI cost and inherits each
+ * per-type toggle. `emailed_at`
  * (migration 181) keeps an alert from going out twice. English only for now:
  * the rows carry an English title/message beside their i18n params.
  */
@@ -16,6 +19,9 @@ import { sendEmail } from '@/lib/email/resend';
 import { EMAIL_FOOTER_MARKER } from '@/lib/email/footer';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { todayET } from '@/lib/dates/calendar-format';
+import { BIG_FOUR_LESSON } from '@/lib/market-data/economic-kinds';
+import { rget } from '@/lib/cache/redis-cache';
+import { whyTodayKey, isStale, type CachedWhyToday } from '@/lib/ai/why-today';
 import { logger } from '@/lib/utils/logger';
 import { SITE_URL } from '@/lib/site';
 
@@ -25,6 +31,8 @@ const LOOKBACK_MS = 26 * 60 * 60 * 1000;
 const UTM = 'utm_source=email&utm_medium=alert&utm_campaign=morning_alert';
 /** The email shipped 2026-10-23. Accounts older than this had alerts in the app only. */
 const EMAIL_LAUNCH = '2026-10-24T00:00:00Z';
+/** Past this the email stops being a glance; the rest is one "more in the app" line. */
+const MAX_CARDS = 6;
 
 interface AlertRow {
   id: string;
@@ -37,7 +45,7 @@ interface AlertRow {
   created_at: string;
 }
 
-type Section = 'earnings' | 'dividend' | 'move';
+type Section = 'earnings' | 'move' | 'health' | 'politicians' | 'index' | 'dividend' | 'economic';
 
 interface EmailItem {
   section: Section;
@@ -45,9 +53,15 @@ interface EmailItem {
   direction?: 'up' | 'down';
   headline: string;
   detail: string;
-  /** Moves only: where the tap leads, said out loud. */
+  /** Single big moves only: the cached Why Today answer, when there is one. */
+  why?: string;
+  /** Where the tap leads, said out loud, when the headline doesn't say it. */
   cue?: string;
   href: string;
+  /** The stock a single big move is about, to look up its Why Today answer. */
+  symbol?: string;
+  /** Signed close-to-close move, for the same lookup's staleness check. */
+  movePct?: number;
 }
 
 // ─── Unsubscribe token ───────────────────────────────────────────────────────
@@ -133,9 +147,10 @@ function moveCopy(n: AlertRow, single: boolean, down: boolean): { headline: stri
 }
 
 /**
- * The three alert kinds onboarding offers, worded for a morning read. Custom
- * price alerts (entity 'user_alert') and the daily portfolio recap are left
- * out: neither is one of those three choices.
+ * Each alert kind, worded for a morning read. Left out: custom price alerts
+ * (entity 'user_alert'), which are late by the next morning, trades by
+ * politicians someone follows rather than holds, and the portfolio recap,
+ * which is the email's opening line (recapLine), not a card.
  */
 export function toEmailItem(n: AlertRow): EmailItem | null {
   const one = leadingTicker(n.title);
@@ -147,12 +162,35 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
       href: one ? slugToAssetPath(one) : '/tools/calendar',
     };
   }
+  if (n.type === 'health_score' && one) {
+    return { section: 'health', headline: n.title.replace(' health score ', ' Health Score '), detail: n.message, href: slugToAssetPath(one) };
+  }
+  if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician-holdings:')) {
+    return { section: 'politicians', headline: n.title, detail: n.message, href: '/discover/politicians' };
+  }
+  if (n.type === 'market' && n.entity_id?.includes(':index-') && one) {
+    return { section: 'index', headline: n.title, detail: n.message, href: slugToAssetPath(one) };
+  }
+  if (n.type === 'market' && n.entity_id?.startsWith('index-fund:')) {
+    return { section: 'index', headline: n.title, detail: n.message, href: `/discover/indexes/${n.entity_id.split(':')[1]}` };
+  }
+  if (n.type === 'market' && n.entity_id?.startsWith('economic:')) {
+    return {
+      section: 'economic',
+      headline: n.title,
+      // Only a list when there are several: one release already has its time in the headline.
+      detail: n.message.includes(' · ') ? n.message : '',
+      cue: 'How releases like this move stocks',
+      href: BIG_FOUR_LESSON,
+    };
+  }
   if (n.type !== 'price_move') return null;
   const single = n.entity_type === 'stock' && !!n.entity_id?.endsWith(':price_move');
   const digest = n.entity_id === 'portfolio:price_digest_gain' || n.entity_id === 'portfolio:price_digest_loss';
   if (!single && !digest) return null;
   const down = n.entity_id === 'portfolio:price_digest_loss' || (single && /-\d/.test(n.title));
   const symbol = single && n.entity_id ? n.entity_id.split(':')[0] : null;
+  const pct = n.title.match(/moved ([+-]?\d+(?:\.\d+)?)%/)?.[1];
   return {
     section: 'move',
     direction: down ? 'down' : 'up',
@@ -160,16 +198,50 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
     // The stock page opens with Why Today; Home lists each mover with its own "Why?".
     cue: symbol ? `See why it ${down ? 'fell' : 'rose'}` : 'See why on Home',
     href: symbol ? slugToAssetPath(symbol) : '/dashboard',
+    ...(symbol && pct ? { symbol, movePct: Number(pct) } : {}),
   };
+}
+
+/**
+ * The Why Today answer Home or the stock page already wrote for this move.
+ * Never generates one: a call is ~$0.10, and most mornings someone has asked.
+ * At 08:30 UTC the session key is still the last close's, the move the card shows.
+ */
+async function cachedWhy(symbol: string, movePct: number): Promise<string | null> {
+  const hit = await rget<CachedWhyToday>(whyTodayKey(symbol, 'en'));
+  if (!hit?.text || isStale(hit, movePct)) return null;
+  // "Oracle ($ORCL)" is a hover chip in the app; in an email the bare ticker reads better.
+  return hit.text.replace(/\$([A-Z]{1,6})\b/g, '$1').replace(/\s*\n+\s*/g, ' ').trim();
+}
+
+/**
+ * "Your portfolio +1.23% today" / "8 holdings · NVDA +4.1% led", written at
+ * the close, as one plain opening sentence for the next morning. Null when the
+ * row doesn't match, so a reworded recap drops out instead of reading oddly.
+ */
+export function recapLine(n: Pick<AlertRow, 'title' | 'message'>): string | null {
+  const day = n.title.match(/^Your portfolio ([+-]?)(\d+(?:\.\d+)?)% today$/);
+  if (!day) return null;
+  const pct = Number(day[2]);
+  const top = n.message.match(/· (\S+) ([+-]?)(\d+(?:\.\d+)?)% led$/);
+  const lead = pct === 0
+    ? 'Your stocks were flat at the last close.'
+    : `Your stocks ${day[1] === '-' ? 'fell' : 'rose'} ${day[2]}% at the last close.`;
+  return top ? `${lead} ${top[1]} moved most, ${top[2] === '-' ? 'down' : 'up'} ${top[3]}%.` : lead;
 }
 
 const SECTION_TITLES: Record<Section, string> = {
   earnings: 'Reporting today',
-  dividend: 'Ex-dividend dates coming up',
   move: 'Big moves at the last close',
+  health: 'Health Score changes',
+  politicians: 'Politicians trading your stocks',
+  index: 'Index changes',
+  dividend: 'Ex-dividend dates coming up',
+  economic: 'On the calendar today',
 };
 
-const SECTION_ORDER: Section[] = ['earnings', 'dividend', 'move'];
+/** What touches their money first, market-wide background last. Also the order the cap cuts in. */
+const SECTION_ORDER: Section[] = ['earnings', 'move', 'health', 'politicians', 'index', 'dividend', 'economic'];
 
 /**
  * BullPen's dark tokens (DESIGN.md) as hex, since mail clients don't read
@@ -234,6 +306,7 @@ function card(i: EmailItem): string {
             <a href="${escapeHtml(withUtm(i.href))}" style="display:block;text-decoration:none;background:${C.surface};border:1px solid ${C.border};border-radius:14px;padding:14px 16px;font-variant-numeric:tabular-nums;">
               <span style="display:block;font-size:16px;line-height:1.4;font-weight:600;color:${C.ink};">${arrow}${escapeHtml(i.headline)}</span>
               ${i.detail ? `<span style="display:block;margin-top:3px;font-size:14px;line-height:1.5;color:${C.muted};">${escapeHtml(i.detail)}</span>` : ''}
+              ${i.why ? `<span style="display:block;margin-top:8px;font-size:14px;line-height:1.5;color:${C.ink};">${escapeHtml(i.why)}</span>` : ''}
               ${i.cue ? `<span style="display:block;margin-top:8px;font-size:14px;line-height:1.4;font-weight:600;color:${C.ink};">${escapeHtml(i.cue)}&nbsp;&rarr;</span>` : ''}
             </a>
           </td></tr>`;
@@ -246,21 +319,32 @@ function card(i: EmailItem): string {
  */
 export function buildAlertEmailHtml(
   items: EmailItem[],
-  opts: { first: boolean; joinedBeforeLaunch: boolean; unsubscribeUrl: string },
+  opts: { first: boolean; joinedBeforeLaunch: boolean; unsubscribeUrl: string; recap?: string | null },
 ): string {
   const optOut = `Not for you? <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:${C.ink};text-decoration:underline;">Turn off these emails</a>.`;
+  // A returning reader gets the recap in place of the generic line; a first one gets it after the explanation.
   const lead = !opts.first
-    ? 'What happened with the stocks you follow.'
+    ? (opts.recap ? escapeHtml(opts.recap) : 'What happened with the stocks you follow.')
     : opts.joinedBeforeLaunch
       ? `You turned these alerts on when you joined. Until now they only showed up in the app. From today they also come here, one email in the morning, only when something happens to a stock you follow. ${optOut}`
       : `You turned these alerts on when you joined. They come here as one email in the morning, only when something happens to a stock you follow. ${optOut}`;
+  const recapRow = opts.first && opts.recap
+    ? `
+        <tr><td style="padding:12px 0 0;font-size:15px;line-height:1.55;color:${C.ink};">${escapeHtml(opts.recap)}</td></tr>`
+    : '';
 
+  const shown = bySection(items).slice(0, MAX_CARDS);
+  const hidden = items.length - shown.length;
   const sections = SECTION_ORDER.map((section) => {
-    const rows = items.filter((i) => i.section === section);
+    const rows = shown.filter((i) => i.section === section);
     if (!rows.length) return '';
     return `
           <tr><td style="padding:22px 0 10px;"><h2 style="margin:0;font-size:15px;line-height:1.3;font-weight:600;color:${C.muted};">${SECTION_TITLES[section]}</h2></td></tr>${rows.map(card).join('')}`;
   }).join('');
+  const more = hidden
+    ? `
+          <tr><td style="padding:4px 0 0;font-size:15px;line-height:1.5;"><a href="${escapeHtml(withUtm('/notifications'))}" style="color:${C.ink};text-decoration:underline;">And ${hidden} more in BullPen</a></td></tr>`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -279,7 +363,7 @@ export function buildAlertEmailHtml(
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;font-family:${FONT};">
         <tr><td style="padding:0 0 20px;font-size:17px;font-weight:700;letter-spacing:-0.02em;color:${C.ink};">bullpen</td></tr>
         <tr><td><h1 style="margin:0;font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${C.ink};">${marketDate()}</h1></td></tr>
-        <tr><td style="padding:8px 0 0;font-size:15px;line-height:1.55;color:${C.muted};">${lead}</td></tr>${sections}
+        <tr><td style="padding:8px 0 0;font-size:15px;line-height:1.55;color:${C.muted};">${lead}</td></tr>${recapRow}${sections}${more}
         <tr><td style="padding:16px 0 0;">
           <a href="${escapeHtml(withUtm('/dashboard'))}" style="display:inline-block;background:${C.accent};color:${C.accentInk};text-decoration:none;font-size:16px;line-height:1;font-weight:600;padding:15px 24px;border-radius:999px;">Open BullPen</a>
         </td></tr>
@@ -320,7 +404,7 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     let query = supabase
       .from('notifications')
       .select('id, user_id, type, entity_type, entity_id, title, message, created_at')
-      .in('type', ['earnings', 'dividend', 'price_move'])
+      .in('type', ['earnings', 'dividend', 'price_move', 'health_score', 'politician_trade', 'market'])
       .is('emailed_at', null)
       .gte('created_at', since)
       .order('created_at', { ascending: true })
@@ -337,6 +421,7 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   }
 
   const byUser = new Map<string, { ids: string[]; items: EmailItem[] }>();
+  const recaps = new Map<string, AlertRow>();
   const today = todayET();
   const etDay = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(iso));
   for (const row of rows) {
@@ -344,6 +429,13 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     // 26h window would otherwise carry yesterday's row into this morning on
     // launch day or when the 08:00 cron drifts past this one.
     if (row.type === 'earnings' && etDay(row.created_at) !== today) continue;
+    // Same for "CPI today at 8:30 AM ET": the entity id carries the release day.
+    if (row.entity_id?.startsWith('economic:') && row.entity_id !== `economic:${today}`) continue;
+    // The recap rides along with a real alert; it never sends an email on its own.
+    if (row.entity_id?.startsWith('portfolio:daily_recap:')) {
+      recaps.set(row.user_id, row);
+      continue;
+    }
     const item = toEmailItem(row);
     if (!item) continue;
     const entry = byUser.get(row.user_id) ?? { ids: [], items: [] };
@@ -353,6 +445,20 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   }
   run.candidates = byUser.size;
   if (!byUser.size) return run;
+
+  // One read per stock, shared by everyone who holds it.
+  const whys = new Map<string, Promise<string | null>>();
+  for (const { items } of byUser.values()) {
+    for (const item of items) {
+      if (!item.symbol || item.movePct === undefined) continue;
+      if (!whys.has(item.symbol)) whys.set(item.symbol, cachedWhy(item.symbol, item.movePct).catch(() => null));
+      const why = await whys.get(item.symbol)!;
+      if (why) {
+        item.why = why;
+        item.cue = `More on ${item.symbol}`;
+      }
+    }
+  }
 
   const { data: users } = await supabase
     .from('users')
@@ -385,10 +491,13 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
 
     const unsub = unsubscribeUrl(u.id);
     const subject = alertEmailSubject(entry.items);
+    const recap = recaps.get(u.id);
+    if (recap) entry.ids.push(recap.id);
     const html = buildAlertEmailHtml(entry.items, {
       first: !returning.has(u.id),
       joinedBeforeLaunch: new Date(u.created_at) < new Date(EMAIL_LAUNCH),
       unsubscribeUrl: unsub,
+      recap: recap ? recapLine(recap) : null,
     });
 
     if (opts.dryRun) {
