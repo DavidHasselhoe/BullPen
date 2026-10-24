@@ -84,7 +84,7 @@ assert.deepEqual(checkoutReturnUrls('https://bullpen.no', 'upgrade'), {
 });
 assert.deepEqual(checkoutReturnUrls('https://bullpen.no', 'onboarding'), {
   success: 'https://bullpen.no/dashboard?trial=started',
-  cancel: 'https://bullpen.no/get-started/trial',
+  cancel: 'https://bullpen.no/get-started/trial?checkout=cancelled',
 });
 assert.equal(parseReturnTarget('onboarding'), 'onboarding');
 assert.equal(parseReturnTarget('https://evil.example'), 'upgrade', 'anything unknown falls back, never a raw URL');

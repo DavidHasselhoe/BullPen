@@ -55,6 +55,10 @@ export default function TrialOfferPage() {
     if (!isLoading && isAuthenticated && !isPro) {
       trackEvent('get_started_step_viewed', { step_key: 'trial_offer', step_number: 5 });
       trackEvent('trial_offer_viewed', {});
+      // Stripe's cancel_url brings them back here: they saw checkout and left.
+      if (new URLSearchParams(window.location.search).get('checkout') === 'cancelled') {
+        trackEvent('trial_checkout_cancelled', {});
+      }
     }
   }, [isLoading, isAuthenticated, isPro]);
 
@@ -69,6 +73,11 @@ export default function TrialOfferPage() {
     setStatus('loading');
     trackEvent('trial_offer_started', { cycle });
     const result = await startCheckout(cycle, { returnTo: 'onboarding' });
+    // What the click led to, so the funnel can tell Stripe checkout from the
+    // verify-email gate or an error. Beacon: the page navigates away next.
+    const outcome = result.url ? 'checkout' : result.alreadyPro ? 'already_pro'
+      : result.emailUnverified ? 'verify_email' : result.waitlisted ? 'unavailable' : 'error';
+    trackEvent('trial_offer_outcome', { cycle, outcome }, { transport: 'sendBeacon' });
     if (result.url) {
       window.location.href = result.url;
       return;
