@@ -16,8 +16,10 @@ export default function Error({
   useEffect(() => {
     console.error('Unhandled error:', error);
     // A render error React caught here never reaches window.onerror, so
-    // exception autocapture can't see it. Null before analytics consent.
-    loadedPostHog()?.captureException(error, error.digest ? { digest: error.digest } : undefined);
+    // exception autocapture can't see it. Null before analytics consent. A
+    // digest means it came from the server, where instrumentation.ts already
+    // reported the real error; the browser only gets a generic message.
+    if (!error.digest) loadedPostHog()?.captureException(error);
   }, [error]);
 
   return (

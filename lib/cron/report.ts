@@ -23,12 +23,7 @@ export function withCronReport(job: string, handler: Handler): Handler {
     // A wrong or missing CRON_SECRET is a stranger probing the URL, not a run.
     if (response.status === 401) return response;
 
-    const properties: Record<string, unknown> = {
-      job,
-      status: response.status,
-      ok: response.status < 400,
-      duration_ms: Date.now() - started,
-    };
+    const properties: Record<string, unknown> = {};
     try {
       const body = await response.clone().json();
       if (body && typeof body === 'object' && !Array.isArray(body)) {
@@ -40,6 +35,8 @@ export function withCronReport(job: string, handler: Handler): Handler {
     } catch {
       // Not JSON: the status alone still says the job ran.
     }
+    // Last, so a response field of the same name can't overwrite what the alerts filter on.
+    Object.assign(properties, { job, status: response.status, ok: response.status < 400, duration_ms: Date.now() - started });
     await captureServerEvent('cron_completed', properties);
     return response;
   };

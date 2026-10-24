@@ -446,19 +446,21 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   run.candidates = byUser.size;
   if (!byUser.size) return run;
 
-  // One read per stock, shared by everyone who holds it.
+  // One read per stock, shared by everyone who holds it, all at once.
+  const moves = [...byUser.values()].flatMap(({ items }) => items.filter((i) => i.symbol && i.movePct !== undefined));
   const whys = new Map<string, Promise<string | null>>();
-  for (const { items } of byUser.values()) {
-    for (const item of items) {
-      if (!item.symbol || item.movePct === undefined) continue;
-      if (!whys.has(item.symbol)) whys.set(item.symbol, cachedWhy(item.symbol, item.movePct).catch(() => null));
-      const why = await whys.get(item.symbol)!;
+  for (const item of moves) {
+    if (!whys.has(item.symbol!)) whys.set(item.symbol!, cachedWhy(item.symbol!, item.movePct!).catch(() => null));
+  }
+  await Promise.all(
+    moves.map(async (item) => {
+      const why = await whys.get(item.symbol!)!;
       if (why) {
         item.why = why;
         item.cue = `More on ${item.symbol}`;
       }
-    }
-  }
+    }),
+  );
 
   const { data: users } = await supabase
     .from('users')
