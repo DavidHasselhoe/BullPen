@@ -4,7 +4,7 @@
 // headers are in next.config.ts.
 
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import type { NextFetchEvent, NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { isSupportedLanguage, isValidLocale } from './lib/i18n/language-names';
 
@@ -12,6 +12,13 @@ const LOCALE_COOKIE = 'bp_lang';
 const LOCALE_HEADER = 'x-bp-locale';
 const PATHNAME_HEADER = 'x-bp-pathname';
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+
+// `${userId}:${utcDay}` already stamped by this instance, so a signed-in
+// visitor costs one touch_active_day() call per instance per day, not one
+// per page load. ponytail: per-instance memory, so a cold start re-stamps
+// (harmless: the insert ignores duplicates). Cleared each day to stay small.
+const stampedToday = new Set<string>();
+let stampedDay = '';
 
 /**
  * Resolves the request's locale without a DB round-trip: the `bp_lang`
@@ -38,7 +45,7 @@ function resolveLocale(request: NextRequest): string {
   return 'en';
 }
 
-export async function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest, event: NextFetchEvent) {
   // API routes authenticate themselves per-request (getSessionForApiRoute →
   // cookie-based getSession(), no network call) and don't rely on middleware
   // to refresh the session cookie. Skipping the network round-trip to
@@ -122,7 +129,23 @@ export async function middleware(request: NextRequest) {
       },
     });
     // Refresh session so Server Actions and Server Components see it
-    await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Return-visit tracking (user_active_days, migration 182): server-side,
+    // so it counts every account whether or not it accepted analytics cookies.
+    // Runs after the response; a failure only loses that day's stamp.
+    if (user) {
+      const day = new Date().toISOString().slice(0, 10);
+      if (day !== stampedDay) { stampedToday.clear(); stampedDay = day; }
+      const key = `${user.id}:${day}`;
+      if (!stampedToday.has(key)) {
+        stampedToday.add(key);
+        event.waitUntil(Promise.resolve(supabase.rpc('touch_active_day')).then(
+          ({ error }) => { if (error) stampedToday.delete(key); },
+          () => { stampedToday.delete(key); },
+        ));
+      }
+    }
   }
 
   // Attribution: first-touch cookie for the shareable-card growth loop.
