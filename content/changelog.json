@@ -1,5 +1,22 @@
 [
   {
+    "date": "2026-10-24",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "The morning email now also covers Health Score changes, politicians trading your stocks, index changes and the day's big economic releases. It opens with how your stocks did at the last close, and a big move comes with a short reason when one is ready"
+      },
+      {
+        "type": "improved",
+        "text": "If you haven't confirmed your email a day after signing up, you get one reminder, so your stock alerts can reach your inbox"
+      },
+      {
+        "type": "improved",
+        "text": "Politician and fund pages show their trades and holdings straight away instead of loading them after the page opens"
+      }
+    ]
+  },
+  {
     "date": "2026-10-23",
     "entries": [
       {
