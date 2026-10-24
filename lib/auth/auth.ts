@@ -28,6 +28,10 @@ export interface AuthUser {
   // Referral-reward bonus Pro access (migrations 114/115), independent of
   // account_tier and never touched by the Stripe webhook. See tierFromUser().
   pro_bonus_until: string | null;
+  /** Stripe subscription status written by the billing webhook ('trialing',
+   *  'active', 'canceled', ...); null with no subscription. Comes back with
+   *  the rest of the row from get_own_profile. */
+  stripe_status: string | null;
   settings: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;

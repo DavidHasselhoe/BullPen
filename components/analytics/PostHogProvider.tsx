@@ -7,6 +7,8 @@ import { flushPendingEvents, loadPostHog, loadedPostHog } from '@/lib/analytics/
 import { getStoredConsent, COOKIE_CONSENT_CHANGE_EVENT, type CookieConsentValue } from '@/lib/cookie-consent/storage';
 import { aiSource } from '@/lib/analytics/ai-referrer';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { tierFromUser } from '@/lib/billing/tier';
+import type { AuthUser } from '@/lib/auth/auth';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.posthog.com';
@@ -67,17 +69,31 @@ function initPostHog(posthog: PostHog) {
  * Ties the PostHog person to the account, so a visitor's pre-signup visits,
  * their signup and their later sessions are one person. Before this nothing
  * called identify, and retention could not be measured per account.
- * The account's UUID only: no email or name goes to PostHog. Signing out
- * resets, so a shared browser doesn't merge the next person into this one.
+ * The account's UUID plus segmenting traits only (plan, experience level,
+ * signup date): no email or name goes to PostHog. Signing out resets, so a
+ * shared browser doesn't merge the next person into this one.
  * `undefined` = auth still loading; do nothing until it's known.
  */
-function syncIdentity(posthog: PostHog, userId: string | null | undefined) {
+function syncIdentity(posthog: PostHog, userId: string | null | undefined, traits: PersonTraits | null) {
   if (userId === undefined) return;
   if (userId) {
-    if (posthog.get_distinct_id() !== userId) posthog.identify(userId);
+    if (posthog.get_distinct_id() !== userId) posthog.identify(userId, traits ?? undefined);
+    else if (traits) posthog.setPersonProperties(traits);
   } else if (posthog._isIdentified()) {
     posthog.reset();
   }
+}
+
+type PersonTraits = { plan: string; experience_level: string | null; signed_up_on: string };
+
+/** Pro from a referral reward is split out from paid Pro, and a Stripe trial from both. */
+function personTraits(user: AuthUser): PersonTraits {
+  const tier = tierFromUser(user.account_tier, user.role, user.pro_bonus_until);
+  const plan = tier !== 'pro' ? tier
+    : user.stripe_status === 'trialing' ? 'trial'
+    : (user.account_tier ?? 0) >= 3 ? 'pro'
+    : 'pro_bonus';
+  return { plan, experience_level: user.experience_level, signed_up_on: user.created_at.slice(0, 10) };
 }
 
 /** Fires a $pageview on every App Router navigation, including the initial
@@ -92,13 +108,19 @@ function PostHogInner() {
   const { user, isLoading } = useAuth();
   const userId = isLoading ? undefined : (user?.id ?? null);
   const userIdRef = useRef(userId);
+  const traits = user ? personTraits(user) : null;
+  // A string, so the effect below re-sends only when a trait really changes
+  // (an upgrade, a level picked in setup), not on every new user object.
+  const traitsKey = traits ? JSON.stringify(traits) : null;
+  const traitsRef = useRef(traits);
 
   // Before the consent effect, so start() below reads the current account.
   useEffect(() => {
     userIdRef.current = userId;
+    traitsRef.current = traitsKey ? (JSON.parse(traitsKey) as PersonTraits) : null;
     const posthog = loadedPostHog();
-    if (posthog) syncIdentity(posthog, userId);
-  }, [userId]);
+    if (posthog) syncIdentity(posthog, userId, traitsRef.current);
+  }, [userId, traitsKey]);
 
   // Route-change capture. Runs on every render where the URL changed; on the
   // very first render posthog isn't initialized yet (the consent effect
@@ -121,7 +143,7 @@ function PostHogInner() {
       loadPostHog().then((posthog) => {
         const wasLoaded = posthog.__loaded;
         initPostHog(posthog);
-        syncIdentity(posthog, userIdRef.current);
+        syncIdentity(posthog, userIdRef.current, traitsRef.current);
         if (!wasLoaded) posthog.capture('$pageview', { $current_url: urlRef.current });
         flushPendingEvents(posthog);
       });
