@@ -90,6 +90,9 @@ export function useInlineWhy(movers: HomeMover[]) {
   };
 }
 
+/** `${source}:${symbol}` already reported as shown. Module memory, so a visit ends on a full page load. */
+const shownWhyThisVisit = new Set<string>();
+
 /** `source` prefixes the analytics events, so the watchlist's reads don't count as Home's. */
 export function MoverRow({ mover, why, onWhy, source = 'home' }: { mover: HomeMover; why: InlineWhy | 'loading' | null; onWhy: () => void; source?: 'home' | 'watchlist' }) {
   const { t } = useTranslation('discover');
@@ -97,8 +100,13 @@ export function MoverRow({ mover, why, onWhy, source = 'home' }: { mover: HomeMo
   const writing = why === 'loading' || (why !== null && why.status === 'pending');
 
   // Analytics only (no state): did anyone get an explanation, and read it.
+  // Once per stock per visit: rows remount on every refetch, which sent 700+
+  // events from 3 people in a month.
   useEffect(() => {
-    if (explained) trackEvent(`${source}_why_inline_shown`, { ticker: mover.symbol });
+    const key = `${source}:${mover.symbol}`;
+    if (!explained || shownWhyThisVisit.has(key)) return;
+    shownWhyThisVisit.add(key);
+    trackEvent(`${source}_why_inline_shown`, { ticker: mover.symbol });
   }, [explained, mover.symbol, source]);
 
   return (
