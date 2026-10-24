@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/client';
 import { INSTITUTIONAL_FUND_SLUGS, isInstitutionalFundSlug } from '@/lib/institutions/fund-list';
 import { InstitutionalFundDetailClient } from '@/components/institutions/InstitutionalFundDetailClient';
@@ -50,12 +51,15 @@ export default async function InstitutionalFundPage({
   const { 'fund-slug': slug } = await params;
   if (!isInstitutionalFundSlug(slug)) notFound();
 
-  // The header and the free sample, rendered on the server for crawlers. A
-  // failed read leaves the page to load in the browser as before.
+  // The header and the free sample, rendered on the server for crawlers and
+  // signed-out visitors. A signed-in visitor (same sb- cookie test as
+  // middleware.ts) may be Pro and never see the teaser, so their page loads
+  // in the browser as before, and so does any failed read.
+  const signedIn = (await cookies()).getAll().some((c) => c.name.startsWith('sb-'));
   const lang = await getRequestLocale();
   const [funds, teaser] = await Promise.all([
     loadFundSummaries().catch(() => undefined),
-    buildFundTeaser(slug, lang).catch(() => null),
+    signedIn ? null : buildFundTeaser(slug, lang).catch(() => null),
   ]);
 
   // Same container as /discover (its page.tsx) — without it this page rendered
