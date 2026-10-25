@@ -1,5 +1,18 @@
 [
   {
+    "date": "2026-10-25",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Bull's Weekly Pick now arrives in your morning email on Mondays, and Pro members get each day's Daily Brief there too"
+      },
+      {
+        "type": "fixed",
+        "text": "Turning off Daily Brief notifications in Settings now stops them"
+      }
+    ]
+  },
+  {
     "date": "2026-10-24",
     "entries": [
       {
