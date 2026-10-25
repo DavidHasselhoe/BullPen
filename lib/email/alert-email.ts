@@ -188,7 +188,7 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
   }
   if (n.type === 'daily_brief') {
     // The brief lives on Home. Its title is model-written and shown whole.
-    return { section: 'brief', headline: n.message, detail: '', cue: "Read today's brief", href: '/dashboard' };
+    return { section: 'brief', headline: n.message.replace(/\$([A-Z]{1,6})\b/g, '$1'), detail: '', cue: "Read today's brief", href: '/dashboard' };
   }
   if (n.type === 'weekly_pick' && n.entity_id?.startsWith('weekly_pick:')) {
     const symbol = n.title.match(/\$([A-Z][A-Z0-9.]*)$/)?.[1];
@@ -344,8 +344,8 @@ export function buildAlertEmailHtml(
   const lead = !opts.first
     ? (opts.recap ? escapeHtml(opts.recap) : "Here's what's new this morning.")
     : opts.joinedBeforeLaunch
-      ? `You turned these alerts on when you joined. Until now they only showed up in the app. From today they also come here, one email in the morning, only on mornings with something new for you. ${optOut}`
-      : `You turned these alerts on when you joined. They come here as one email in the morning, only on mornings with something new for you. ${optOut}`;
+      ? `Until now your BullPen alerts only showed up in the app. From today they also come here, one email in the morning, only on mornings with something new for you. ${optOut}`
+      : `Your BullPen alerts come here as one email in the morning, only on mornings with something new for you. ${optOut}`;
   const recapRow = opts.first && opts.recap
     ? `
         <tr><td style="padding:12px 0 0;font-size:15px;line-height:1.55;color:${C.ink};">${escapeHtml(opts.recap)}</td></tr>`
