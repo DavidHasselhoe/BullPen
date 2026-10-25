@@ -1,8 +1,10 @@
 /**
  * The morning alert email: one email a day, only when something happened,
  * carrying the alerts a user has on: earnings, ex-dividend dates, big moves,
- * Health Score grade changes, politicians trading their stocks, index changes
- * and the day's economic releases. Before this those only ever landed in the
+ * Health Score grade changes, politicians trading their stocks, index changes,
+ * the day's economic releases, the Daily Brief (Pro) and Monday's Weekly Pick.
+ * The pick is the one alert nearly every account gets, so for most people it is
+ * the only thing that reaches them outside the app. Before this those only ever landed in the
  * in-app panel, and the 2026-10-23 activation check found none of 14 new users
  * had read one.
  *
@@ -45,7 +47,7 @@ interface AlertRow {
   created_at: string;
 }
 
-type Section = 'earnings' | 'move' | 'health' | 'politicians' | 'index' | 'dividend' | 'economic';
+type Section = 'earnings' | 'move' | 'health' | 'politicians' | 'index' | 'dividend' | 'brief' | 'pick' | 'economic';
 
 interface EmailItem {
   section: Section;
@@ -184,6 +186,20 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
       href: BIG_FOUR_LESSON,
     };
   }
+  if (n.type === 'daily_brief') {
+    // The brief lives on Home. Its title is model-written and shown whole.
+    return { section: 'brief', headline: n.message, detail: '', cue: "Read today's brief", href: '/dashboard' };
+  }
+  if (n.type === 'weekly_pick' && n.entity_id?.startsWith('weekly_pick:')) {
+    const symbol = n.title.match(/\$([A-Z][A-Z0-9.]*)$/)?.[1];
+    return {
+      section: 'pick',
+      headline: symbol ? `Bull picked ${symbol} this week` : n.title.replace(/\$(?=[A-Z])/g, ''),
+      detail: n.message,
+      cue: 'See the pick',
+      href: `/picks/${n.entity_id.slice('weekly_pick:'.length)}`,
+    };
+  }
   if (n.type !== 'price_move') return null;
   const single = n.entity_type === 'stock' && !!n.entity_id?.endsWith(':price_move');
   const digest = n.entity_id === 'portfolio:price_digest_gain' || n.entity_id === 'portfolio:price_digest_loss';
@@ -237,11 +253,13 @@ const SECTION_TITLES: Record<Section, string> = {
   politicians: 'Politicians trading your stocks',
   index: 'Index changes',
   dividend: 'Ex-dividend dates coming up',
+  brief: "Today's Daily Brief",
+  pick: "Bull's Weekly Pick",
   economic: 'On the calendar today',
 };
 
 /** What touches their money first, market-wide background last. Also the order the cap cuts in. */
-const SECTION_ORDER: Section[] = ['earnings', 'move', 'health', 'politicians', 'index', 'dividend', 'economic'];
+const SECTION_ORDER: Section[] = ['earnings', 'move', 'health', 'politicians', 'index', 'dividend', 'brief', 'pick', 'economic'];
 
 /**
  * BullPen's dark tokens (DESIGN.md) as hex, since mail clients don't read
@@ -324,10 +342,10 @@ export function buildAlertEmailHtml(
   const optOut = `Not for you? <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:${C.ink};text-decoration:underline;">Turn off these emails</a>.`;
   // A returning reader gets the recap in place of the generic line; a first one gets it after the explanation.
   const lead = !opts.first
-    ? (opts.recap ? escapeHtml(opts.recap) : 'What happened with the stocks you follow.')
+    ? (opts.recap ? escapeHtml(opts.recap) : "Here's what's new this morning.")
     : opts.joinedBeforeLaunch
-      ? `You turned these alerts on when you joined. Until now they only showed up in the app. From today they also come here, one email in the morning, only when something happens to a stock you follow. ${optOut}`
-      : `You turned these alerts on when you joined. They come here as one email in the morning, only when something happens to a stock you follow. ${optOut}`;
+      ? `You turned these alerts on when you joined. Until now they only showed up in the app. From today they also come here, one email in the morning, only on mornings with something new for you. ${optOut}`
+      : `You turned these alerts on when you joined. They come here as one email in the morning, only on mornings with something new for you. ${optOut}`;
   const recapRow = opts.first && opts.recap
     ? `
         <tr><td style="padding:12px 0 0;font-size:15px;line-height:1.55;color:${C.ink};">${escapeHtml(opts.recap)}</td></tr>`
@@ -404,7 +422,7 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     let query = supabase
       .from('notifications')
       .select('id, user_id, type, entity_type, entity_id, title, message, created_at')
-      .in('type', ['earnings', 'dividend', 'price_move', 'health_score', 'politician_trade', 'market'])
+      .in('type', ['earnings', 'dividend', 'price_move', 'health_score', 'politician_trade', 'market', 'daily_brief', 'weekly_pick'])
       .is('emailed_at', null)
       .gte('created_at', since)
       .order('created_at', { ascending: true })
@@ -431,6 +449,8 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     if (row.type === 'earnings' && etDay(row.created_at) !== today) continue;
     // Same for "CPI today at 8:30 AM ET": the entity id carries the release day.
     if (row.entity_id?.startsWith('economic:') && row.entity_id !== `economic:${today}`) continue;
+    // Briefs land at ~07:05 UTC, so the 26h window also holds yesterday's.
+    if (row.type === 'daily_brief' && row.entity_id !== `daily_brief:${today}`) continue;
     // The recap rides along with a real alert; it never sends an email on its own.
     if (row.entity_id?.startsWith('portfolio:daily_recap:')) {
       recaps.set(row.user_id, row);

@@ -8,7 +8,7 @@
  * createNotification, preventing duplicate daily-digest spam.
  */
 
-import { createNotification, type CreateNotificationInput, type NotifMsg, type I18nParams } from './notifications-db';
+import { createNotification, isNotificationEnabled, type CreateNotificationInput, type NotifMsg, type I18nParams } from './notifications-db';
 import { createServerClient } from '@/lib/supabase/client';
 import type { NewTrade } from '@/lib/congress/ingest-trades';
 import { formatAmountRange, tradeDirection } from '@/lib/congress/types';
@@ -393,6 +393,8 @@ export async function createDailyBriefReadyNotification(
   brief: { title: string; publishedDate: string }
 ): Promise<boolean> {
   const dedupeId = `daily_brief:${brief.publishedDate}`;
+  // The caller picks users by tier only; the Settings toggle is checked here.
+  if (!(await isNotificationEnabled(userId, 'daily_brief_ready'))) return false;
   if (await alreadyNotifiedToday(userId, 'daily_brief', dedupeId)) return false;
 
   const result = await createNotification({
