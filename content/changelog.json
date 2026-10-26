@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-10-26",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Search for gold, silver, platinum, palladium and oil by name, each with its own icon"
+      },
+      {
+        "type": "improved",
+        "text": "Commodity pages now show the funds and companies you can buy to own them, where the price sits in its yearly range, long-term returns against the S&P 500, the price per gram or litre in your currency, and what moves the price"
+      },
+      {
+        "type": "fixed",
+        "text": "Gold and oil charts now show their full 24-hour trading day instead of a stock market day"
+      },
+      {
+        "type": "improved",
+        "text": "Bull now checks current prices, including pre-market and after-hours, instead of asking first, and words a move by the session it happened in"
+      },
+      {
+        "type": "improved",
+        "text": "Your morning email now shows how your watchlist did each morning (the past week on Mondays), names the company behind the Weekly Pick with its reasoning, and includes the start of the Daily Brief"
+      },
+      {
+        "type": "improved",
+        "text": "Browser tab titles on stock and commodity pages now follow your language"
+      },
+      {
+        "type": "fixed",
+        "text": "A few morning emails were not delivered when many went out at once"
+      }
+    ]
+  },
+  {
     "date": "2026-10-25",
     "entries": [
       {
