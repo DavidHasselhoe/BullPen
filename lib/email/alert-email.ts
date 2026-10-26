@@ -20,7 +20,10 @@ import { createServerClient } from '@/lib/supabase/client';
 import { sendEmail } from '@/lib/email/resend';
 import { EMAIL_FOOTER_MARKER } from '@/lib/email/footer';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
-import { todayET } from '@/lib/dates/calendar-format';
+import { addDays, monthKeyOf, todayET } from '@/lib/dates/calendar-format';
+import { displayCompanyName } from '@/lib/market-data/company-name';
+import { getMonthCloses, monthClosesKey } from '@/lib/market-data/month-closes';
+import { closeOnOrBefore } from '@/lib/watchlist/scorecard';
 import { BIG_FOUR_LESSON } from '@/lib/market-data/economic-kinds';
 import { rget } from '@/lib/cache/redis-cache';
 import { whyTodayKey, isStale, type CachedWhyToday } from '@/lib/ai/why-today';
@@ -55,8 +58,12 @@ interface EmailItem {
   direction?: 'up' | 'down';
   headline: string;
   detail: string;
-  /** Single big moves only: the cached Why Today answer, when there is one. */
+  /** Single big moves: the cached Why Today answer. The pick: its plain-English case. The brief: its TL;DR. */
   why?: string;
+  /** One muted line of figures under the detail, e.g. the pick's price and next report. */
+  stats?: string;
+  /** The pick and the brief: the day their full record is stored under, to fill in `why` and `stats`. */
+  date?: string;
   /** Where the tap leads, said out loud, when the headline doesn't say it. */
   cue?: string;
   href: string;
@@ -188,7 +195,14 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
   }
   if (n.type === 'daily_brief') {
     // The brief lives on Home. Its title is model-written and shown whole.
-    return { section: 'brief', headline: n.message.replace(/\$([A-Z]{1,6})\b/g, '$1'), detail: '', cue: "Read today's brief", href: '/dashboard' };
+    return {
+      section: 'brief',
+      headline: n.message.replace(/\$([A-Z]{1,6})\b/g, '$1'),
+      detail: '',
+      cue: "Read today's brief",
+      href: '/dashboard',
+      date: n.entity_id?.slice('daily_brief:'.length),
+    };
   }
   if (n.type === 'weekly_pick' && n.entity_id?.startsWith('weekly_pick:')) {
     const symbol = n.title.match(/\$([A-Z][A-Z0-9.]*)$/)?.[1];
@@ -198,6 +212,7 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
       detail: n.message,
       cue: 'See the pick',
       href: `/picks/${n.entity_id.slice('weekly_pick:'.length)}`,
+      date: n.entity_id.slice('weekly_pick:'.length),
     };
   }
   if (n.type !== 'price_move') return null;
@@ -245,6 +260,82 @@ export function recapLine(n: Pick<AlertRow, 'title' | 'message'>): string | null
     : `Your stocks ${day[1] === '-' ? 'fell' : 'rose'} ${day[2]}% at the last close.`;
   return top ? `${lead} ${top[1]} moved most, ${top[2] === '-' ? 'down' : 'up'} ${top[3]}%.` : lead;
 }
+
+/** Markdown the model writes, as plain email text: no bold markers, link syntax or $TICKER chips. */
+const plain = (s: string) =>
+  s.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\$([A-Z]{1,6})\b/g, '$1').replace(/\s+/g, ' ').trim();
+
+/**
+ * The brief's TL;DR paragraph: the headline alone ("Telecom Bleeds Into
+ * Verizon's Print") gives no reason to open it. Falls back to the first
+ * paragraph when a brief has no TL;DR heading. Shown whole, never cut.
+ */
+export function briefLead(content: string): string | null {
+  const body = content.split(/^##\s*TL;?DR\s*$/im)[1] ?? content;
+  const para = body.split(/\n\s*\n/).map((p) => p.trim()).find((p) => p && !p.startsWith('#'));
+  return para ? plain(para) : null;
+}
+
+export interface PickRow {
+  symbol: string;
+  company_name: string | null;
+  one_liner: string | null;
+  metrics_snapshot: { price?: number; healthGrade?: string; diligence?: { catalyst?: string | null } } | null;
+}
+
+/**
+ * The pick by name ("ALL" alone reads as the word in an inbox), its case in
+ * plain English, and the figures a beginner checks first.
+ */
+export function pickCopy(p: PickRow): Pick<EmailItem, 'headline' | 'why' | 'stats'> {
+  const name = p.company_name ? displayCompanyName(p.company_name, p.symbol) : null;
+  const m = p.metrics_snapshot ?? {};
+  const stats = [
+    m.price ? `${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(m.price)} when picked` : null,
+    m.healthGrade ? `Health Score ${m.healthGrade}` : null,
+    // "Q3 results Nov 4 (call Nov 5)": the call is detail for the page.
+    m.diligence?.catalyst ? `Next: ${m.diligence.catalyst.replace(/\s*\(.*\)\s*$/, '')}` : null,
+  ].filter(Boolean).join(' · ');
+  return {
+    headline: name && name !== p.symbol ? `Bull picked ${name} (${p.symbol}) this week` : `Bull picked ${p.symbol} this week`,
+    ...(p.one_liner ? { why: plain(p.one_liner) } : {}),
+    ...(stats ? { stats } : {}),
+  };
+}
+
+export interface WatchMove {
+  symbol: string;
+  name: string;
+  /** Last close against the last close a week before it, percent. */
+  pct: number;
+}
+
+/**
+ * Each symbol's change over the past week: the last close against the last
+ * close at least 7 days before it. Daily closes come from the cache the
+ * watchlist scorecard shares (about 1 credit per cold symbol-month). Two
+ * months, so a week that started last month still has its start.
+ */
+async function weekMoves(symbols: string[]): Promise<Map<string, number>> {
+  const today = todayET();
+  const months = [...new Set([monthKeyOf(addDays(today, -12)), monthKeyOf(today)])];
+  const { closes } = await getMonthCloses(symbols.flatMap((symbol) => months.map((month) => ({ symbol, month }))));
+  const out = new Map<string, number>();
+  for (const symbol of symbols) {
+    // Completed sessions only: once New York opens, the series carries today's unfinished bar.
+    const series = months
+      .flatMap((m) => closes.get(monthClosesKey(symbol, m)) ?? [])
+      .filter((d) => d.date < today)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const last = series.at(-1);
+    const start = last ? closeOnOrBefore(series, addDays(last.date, -7)) : null;
+    if (last && start) out.set(symbol, (last.close / start - 1) * 100);
+  }
+  return out;
+}
+
+/** How many watchlist rows the email shows: the biggest moves, either way. */
+const WATCH_ROWS = 5;
 
 const SECTION_TITLES: Record<Section, string> = {
   earnings: 'Reporting today',
@@ -325,8 +416,41 @@ function card(i: EmailItem): string {
               <span style="display:block;font-size:16px;line-height:1.4;font-weight:600;color:${C.ink};">${arrow}${escapeHtml(i.headline)}</span>
               ${i.detail ? `<span style="display:block;margin-top:3px;font-size:14px;line-height:1.5;color:${C.muted};">${escapeHtml(i.detail)}</span>` : ''}
               ${i.why ? `<span style="display:block;margin-top:8px;font-size:14px;line-height:1.5;color:${C.ink};">${escapeHtml(i.why)}</span>` : ''}
+              ${i.stats ? `<span style="display:block;margin-top:8px;font-size:13px;line-height:1.5;color:${C.muted};">${escapeHtml(i.stats)}</span>` : ''}
               ${i.cue ? `<span style="display:block;margin-top:8px;font-size:14px;line-height:1.4;font-weight:600;color:${C.ink};">${escapeHtml(i.cue)}&nbsp;&rarr;</span>` : ''}
             </a>
+          </td></tr>`;
+}
+
+/**
+ * The reader's own stocks over the past week: the biggest moves of their
+ * watchlist, so a morning with only the pick in it still says something about
+ * what they follow. Arrow and colour together, never colour alone.
+ */
+function watchlistBlock(moves: WatchMove[], total: number): string {
+  const rows = moves.map((m) => {
+    const flat = Math.abs(m.pct) < 0.05;
+    const color = flat ? C.muted : m.pct > 0 ? C.up : C.down;
+    const arrow = flat ? '' : `<span aria-hidden="true">${m.pct > 0 ? '&#9650;' : '&#9660;'}</span>&nbsp;`;
+    const label = flat ? 'Flat' : `${m.pct > 0 ? 'Up' : 'Down'} ${Math.abs(m.pct).toFixed(1)}%`;
+    return `
+              <tr>
+                <td style="padding:6px 0;font-size:15px;line-height:1.4;color:${C.ink};"><a href="${escapeHtml(withUtm(slugToAssetPath(m.symbol)))}" style="color:${C.ink};text-decoration:none;">${escapeHtml(m.name)}</a> <span style="color:${C.muted};">${escapeHtml(m.symbol)}</span></td>
+                <td align="right" style="padding:6px 0 6px 12px;font-size:15px;line-height:1.4;white-space:nowrap;font-weight:600;color:${color};">${arrow}${label}</td>
+              </tr>`;
+  }).join('');
+  const of = total > moves.length ? `The biggest moves among your ${total} stocks.` : '';
+  return `
+          <tr><td style="padding:22px 0 10px;"><h2 style="margin:0;font-size:15px;line-height:1.3;font-weight:600;color:${C.muted};">Your watchlist this past week</h2></td></tr>
+          <tr><td style="padding:0 0 10px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.surface};border:1px solid ${C.border};border-radius:14px;font-variant-numeric:tabular-nums;">
+              <tr><td style="padding:10px 16px 12px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${of ? `
+                  <tr><td colspan="2" style="padding:0 0 4px;font-size:13px;line-height:1.5;color:${C.muted};">${of}</td></tr>` : ''}${rows}
+                </table>
+                <a href="${escapeHtml(withUtm('/watchlist'))}" style="display:block;margin-top:8px;font-size:14px;line-height:1.4;font-weight:600;color:${C.ink};text-decoration:none;">See your watchlist&nbsp;&rarr;</a>
+              </td></tr>
+            </table>
           </td></tr>`;
 }
 
@@ -337,7 +461,13 @@ function card(i: EmailItem): string {
  */
 export function buildAlertEmailHtml(
   items: EmailItem[],
-  opts: { first: boolean; joinedBeforeLaunch: boolean; unsubscribeUrl: string; recap?: string | null },
+  opts: {
+    first: boolean;
+    joinedBeforeLaunch: boolean;
+    unsubscribeUrl: string;
+    recap?: string | null;
+    watchlist?: { moves: WatchMove[]; total: number } | null;
+  },
 ): string {
   const optOut = `Not for you? <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:${C.ink};text-decoration:underline;">Turn off these emails</a>.`;
   // A returning reader gets the recap in place of the generic line; a first one gets it after the explanation.
@@ -355,8 +485,10 @@ export function buildAlertEmailHtml(
   const hidden = items.length - shown.length;
   const sections = SECTION_ORDER.map((section) => {
     const rows = shown.filter((i) => i.section === section);
-    if (!rows.length) return '';
-    return `
+    // Their own stocks come after the alerts about them and before the market-wide brief.
+    const watch = section === 'brief' && opts.watchlist?.moves.length ? watchlistBlock(opts.watchlist.moves, opts.watchlist.total) : '';
+    if (!rows.length) return watch;
+    return `${watch}
           <tr><td style="padding:22px 0 10px;"><h2 style="margin:0;font-size:15px;line-height:1.3;font-weight:600;color:${C.muted};">${SECTION_TITLES[section]}</h2></td></tr>${rows.map(card).join('')}`;
   }).join('');
   const more = hidden
@@ -423,12 +555,13 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
       .from('notifications')
       .select('id, user_id, type, entity_type, entity_id, title, message, created_at')
       .in('type', ['earnings', 'dividend', 'price_move', 'health_score', 'politician_trade', 'market', 'daily_brief', 'weekly_pick'])
-      .is('emailed_at', null)
       .gte('created_at', since)
       .order('created_at', { ascending: true })
       .order('id', { ascending: true })
       .range(from, from + 999);
     if (opts.userId) query = query.eq('user_id', opts.userId);
+    // A one-account dry run previews this morning's email even after it went out.
+    if (!(opts.dryRun && opts.userId)) query = query.is('emailed_at', null);
     const { data, error } = await query;
     if (error) {
       run.errors.push(`notifications: ${error.message}`);
@@ -465,6 +598,59 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   }
   run.candidates = byUser.size;
   if (!byUser.size) return run;
+
+  // The pick and the brief, filled in from their stored records: one read each, shared by everyone.
+  const all = [...byUser.values()].flatMap((e) => e.items);
+  const dates = (section: Section) => [...new Set(all.filter((i) => i.section === section && i.date).map((i) => i.date!))];
+  const [picks, briefs] = await Promise.all([
+    dates('pick').length
+      ? supabase.from('ai_stock_picks').select('pick_date, symbol, company_name, one_liner, metrics_snapshot').in('pick_date', dates('pick'))
+      : { data: [] },
+    dates('brief').length
+      ? supabase.from('daily_briefs').select('published_date, content').in('published_date', dates('brief'))
+      : { data: [] },
+  ]);
+  const pickBy = new Map(((picks.data ?? []) as Array<PickRow & { pick_date: string }>).map((p) => [p.pick_date, p]));
+  const leadBy = new Map(((briefs.data ?? []) as Array<{ published_date: string; content: string }>).map((b) => [b.published_date, briefLead(b.content)]));
+  for (const item of all) {
+    const pick = item.section === 'pick' && item.date ? pickBy.get(item.date) : undefined;
+    if (pick) Object.assign(item, pickCopy(pick));
+    const lead = item.section === 'brief' && item.date ? leadBy.get(item.date) : null;
+    if (lead) item.why = lead;
+  }
+
+  // Watchlists, for the "this past week" block. Optional: any failure just leaves it out.
+  const watchBy = new Map<string, Map<string, string>>();
+  const ids = [...byUser.keys()];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from('user_watchlist')
+      .select('user_id, symbol, company_name')
+      .in('user_id', ids)
+      .order('id', { ascending: true })
+      .range(from, from + 999);
+    if (error) break;
+    for (const w of (data ?? []) as Array<{ user_id: string; symbol: string; company_name: string | null }>) {
+      // A stock on two of someone's lists counts once.
+      const own = watchBy.get(w.user_id) ?? new Map<string, string>();
+      own.set(w.symbol, w.company_name ? displayCompanyName(w.company_name, w.symbol) : w.symbol);
+      watchBy.set(w.user_id, own);
+    }
+    if (!data || data.length < 1000) break;
+  }
+  const weekBy = await weekMoves([...new Set([...watchBy.values()].flatMap((m) => [...m.keys()]))]).catch((err) => {
+    logger.error('[alert-email] watchlist prices failed', { msg: err instanceof Error ? err.message : String(err) });
+    return new Map<string, number>();
+  });
+  const watchlistFor = (userId: string) => {
+    const own = watchBy.get(userId);
+    if (!own) return null;
+    const moves = [...own]
+      .flatMap(([symbol, name]) => (weekBy.has(symbol) ? [{ symbol, name, pct: weekBy.get(symbol)! }] : []))
+      .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
+      .slice(0, WATCH_ROWS);
+    return moves.length ? { moves, total: own.size } : null;
+  };
 
   // One read per stock, shared by everyone who holds it, all at once.
   const moves = [...byUser.values()].flatMap(({ items }) => items.filter((i) => i.symbol && i.movePct !== undefined));
@@ -520,6 +706,7 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
       joinedBeforeLaunch: new Date(u.created_at) < new Date(EMAIL_LAUNCH),
       unsubscribeUrl: unsub,
       recap: recap ? recapLine(recap) : null,
+      watchlist: watchlistFor(u.id),
     });
 
     if (opts.dryRun) {
