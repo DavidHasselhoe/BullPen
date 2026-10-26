@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { slugToSymbol } from '@/lib/assets/asset-type';
+import { slugToSymbol, COMMODITIES } from '@/lib/assets/asset-type';
 
 /**
  * Same reasoning as app/stock/[ticker]/layout.tsx: page.tsx is a client
@@ -19,10 +19,11 @@ export async function generateMetadata({
   const { slug: rawSlug } = await params;
   const slug = rawSlug.toUpperCase();
   const symbol = slugToSymbol(slug);
+  const name = COMMODITIES.find((c) => c.ticker === symbol)?.name ?? symbol;
 
   return {
-    title: `${symbol} Price`,
-    description: `Real-time price and chart for ${symbol} on BullPen.`,
+    title: `${name} Price`,
+    description: `Real-time price and chart for ${name} on BullPen.`,
     alternates: { canonical: `/asset/${slug}` },
   };
 }

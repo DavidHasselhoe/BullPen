@@ -86,14 +86,26 @@ export function slugToAssetPath(symbolOrSlug: string, instrumentType?: string): 
 // "gold" or "oil" (only gold ETFs, mostly foreign), so they are listed here and
 // matched by name in search. Copper (HG1) is in its /commodities list but
 // returned no quote when checked on 2026-10-26.
+const metalAbout = (metal: string, fund: string) =>
+  `The live price of one troy ounce of ${metal} in US dollars, for delivery right now. Traders call this the spot ` +
+  `price. Funds like ${fund} follow it, but their share price is a different number, so compare percentage moves.`;
+const oilAbout = (barrel: string) =>
+  `The live price of one barrel of ${barrel} in US dollars, for delivery right now. Traders call this the spot price.`;
+
 export const COMMODITIES = [
-  { ticker: 'XAU/USD', name: 'Gold spot', terms: ['gold', 'xau'], icon: '/logos/commodities/xau.svg' },
-  { ticker: 'XAG/USD', name: 'Silver spot', terms: ['silver', 'xag'], icon: '/logos/commodities/xag.svg' },
-  { ticker: 'XPT/USD', name: 'Platinum spot', terms: ['platinum', 'xpt'], icon: '/logos/commodities/xpt.svg' },
-  { ticker: 'XPD/USD', name: 'Palladium spot', terms: ['palladium', 'xpd'], icon: '/logos/commodities/xpd.svg' },
-  { ticker: 'WTI/USD', name: 'Crude oil (WTI) spot', terms: ['oil', 'crude', 'wti'], icon: '/logos/commodities/wti.svg' },
-  { ticker: 'XBR/USD', name: 'Brent crude oil spot', terms: ['oil', 'crude', 'brent', 'xbr'], icon: '/logos/commodities/xbr.svg' },
-] as const;
+  { ticker: 'XAU/USD', name: 'Gold', terms: ['gold', 'xau'], icon: '/logos/commodities/xau.svg', about: metalAbout('gold', 'GLD') },
+  { ticker: 'XAG/USD', name: 'Silver', terms: ['silver', 'xag'], icon: '/logos/commodities/xag.svg', about: metalAbout('silver', 'SLV') },
+  { ticker: 'XPT/USD', name: 'Platinum', terms: ['platinum', 'xpt'], icon: '/logos/commodities/xpt.svg', about: metalAbout('platinum', 'PPLT') },
+  { ticker: 'XPD/USD', name: 'Palladium', terms: ['palladium', 'xpd'], icon: '/logos/commodities/xpd.svg', about: metalAbout('palladium', 'PALL') },
+  {
+    ticker: 'WTI/USD', name: 'Crude oil (WTI)', terms: ['oil', 'crude', 'wti'], icon: '/logos/commodities/wti.svg',
+    about: oilAbout('West Texas Intermediate crude') + ' WTI is the main benchmark for US oil.',
+  },
+  {
+    ticker: 'XBR/USD', name: 'Crude oil (Brent)', terms: ['oil', 'crude', 'brent', 'xbr'], icon: '/logos/commodities/xbr.svg',
+    about: oilAbout('Brent crude') + ' Brent comes from the North Sea and is the benchmark for most of the world\'s oil.',
+  },
+];
 
 const COMMODITY_TICKERS = new Set<string>(COMMODITIES.map((c) => c.ticker));
 
