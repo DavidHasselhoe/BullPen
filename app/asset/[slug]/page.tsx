@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,14 +13,37 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useBackground } from '@/hooks/use-background';
 import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { AlertDialog } from '@/components/alerts/AlertDialog';
 import { useAssetProfile } from '@/hooks/use-asset-profile';
 import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
-import { slugToSymbol } from '@/lib/assets/asset-type';
+import { slugToSymbol, findCommodity } from '@/lib/assets/asset-type';
 import dynamic from 'next/dynamic';
 
 const StockPricePanel = dynamic(
   () => import('@/components/stock/StockPricePanel').then((m) => ({ default: m.StockPricePanel })),
   { ssr: false, loading: () => <div className="mb-8 h-[340px] animate-shimmer rounded-2xl" /> }
+);
+
+const CommoditySections = dynamic(
+  () => import('@/components/asset/CommodityInsights').then((m) => ({
+    default: function CommoditySections({ slug }: { slug: string }) {
+      const commodity = findCommodity(slug);
+      if (!commodity) return null;
+      return (
+        <>
+          <m.CommodityOwnCard commodity={commodity} slug={slug} />
+          <m.CommodityContextCard commodity={commodity} slug={slug} />
+          <m.CommodityAboutCard commodity={commodity} />
+        </>
+      );
+    },
+  })),
+  { ssr: false }
+);
+
+const CommodityStatusChip = dynamic(
+  () => import('@/components/asset/CommodityInsights').then((m) => ({ default: m.CommodityStatusChip })),
+  { ssr: false }
 );
 
 const AssetStatsCard = dynamic(
@@ -41,12 +65,14 @@ export default function AssetPage() {
   const slug = (params.slug as string) ?? '';
   const symbol = slugToSymbol(slug.toUpperCase());
   const { hasAnimatedBackground } = useBackground();
-  const { open: openAIPanel, setAIContext } = useAIPanel();
+  const { setAIContext } = useAIPanel();
+  const { t } = useTranslation('stock');
+  const commodity = findCommodity(slug);
 
   const { data: profile, isLoading: profileLoading } = useAssetProfile(slug.toUpperCase());
   const snapshot = useStockSnapshot(slug.toUpperCase());
 
-  const displayName = profile?.name ?? symbol;
+  const displayName = commodity ? t(`commodityName_${commodity.id}`) : profile?.name ?? symbol;
   const assetType = profile?.assetType ?? 'unknown';
 
   // The asset profile route infers the type from the symbol pattern, so a bogus
@@ -76,7 +102,7 @@ export default function AssetPage() {
               className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t('stockBack')}
             </button>
           </div>
           <div className="py-20">
@@ -104,7 +130,7 @@ export default function AssetPage() {
             className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t('stockBack')}
           </button>
         </div>
 
@@ -124,8 +150,8 @@ export default function AssetPage() {
         ) : (
           <Card className="mb-8">
             <CardHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3">
                     <CompanyLogo
                       name={displayName}
@@ -134,13 +160,15 @@ export default function AssetPage() {
                       size={64}
                       loading="eager"
                     />
-                    <div>
+                    <div className="min-w-0">
                       <h1 className="text-3xl font-semibold text-foreground">{displayName}</h1>
-                      <div className="mt-1 flex items-center gap-2">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <Badge variant="outline" className="font-mono text-sm">
                           {symbol}
                         </Badge>
-                        {assetType !== 'unknown' && (
+                        {commodity ? (
+                          <CommodityStatusChip />
+                        ) : assetType !== 'unknown' && (
                           <span className="text-sm text-muted-foreground">
                             {ASSET_TYPE_LABEL[assetType] ?? assetType}
                           </span>
@@ -151,15 +179,17 @@ export default function AssetPage() {
                           </span>
                         )}
                       </div>
+                      {commodity && (
+                        <p className="mt-1 text-sm text-muted-foreground">{t(`commodityUnit_${commodity.unit.per}`)}</p>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2 flex-wrap justify-end">
+                {/* Watch leads, as on stock pages. Ask Bull lives in the floating
+                    button on every page; here it ran off-screen on a phone. */}
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end [&_button]:max-sm:h-10">
                   <AddToListPicker symbol={symbol} companyName={displayName} />
-                  <Button variant="outline" size="sm" onClick={() => openAIPanel()} className="gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Ask Bull
-                  </Button>
+                  <AlertDialog symbol={symbol} companyName={displayName} />
                 </div>
               </div>
             </CardHeader>
@@ -169,13 +199,16 @@ export default function AssetPage() {
         {/* Price panel — slug is passed as ticker; routes convert slug → symbol internally */}
         <StockPricePanel ticker={slug.toUpperCase()} />
 
-        {/* Asset-specific stats card for non-equity assets */}
-        {assetType !== 'stock' && assetType !== 'unknown' && (
+        {/* Commodities get their own sections: the generic stats card only
+            repeated the panel above for them. */}
+        {commodity ? (
+          <CommoditySections slug={slug.toUpperCase()} />
+        ) : assetType !== 'stock' && assetType !== 'unknown' && (
           <AssetStatsCard ticker={slug.toUpperCase()} assetType={assetType} />
         )}
 
-        {/* Description from profile (for commodity/forex) */}
-        {profile?.description && (
+        {/* Description from profile (for forex) */}
+        {!commodity && profile?.description && (
           <Card className="mb-8">
             <CardHeader>
               <p className="text-sm leading-relaxed text-muted-foreground">{profile.description}</p>

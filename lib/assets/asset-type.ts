@@ -86,26 +86,85 @@ export function slugToAssetPath(symbolOrSlug: string, instrumentType?: string): 
 // "gold" or "oil" (only gold ETFs, mostly foreign), so they are listed here and
 // matched by name in search. Copper (HG1) is in its /commodities list but
 // returned no quote when checked on 2026-10-26.
-const metalAbout = (metal: string, fund: string) =>
-  `The live price of one troy ounce of ${metal} in US dollars, for delivery right now. Traders call this the spot ` +
-  `price. Funds like ${fund} follow it, but their share price is a different number, so compare percentage moves.`;
-const oilAbout = (barrel: string) =>
-  `The live price of one barrel of ${barrel} in US dollars, for delivery right now. Traders call this the spot price.`;
+/** How someone actually owns it: a fund holding the metal, a futures fund, miners, producers. */
+export type OwnKind = 'physical' | 'futures' | 'miners' | 'producer' | 'sector';
+export interface CommodityOwn { ticker: string; name: string; kind: OwnKind }
 
-export const COMMODITIES = [
-  { ticker: 'XAU/USD', name: 'Gold', terms: ['gold', 'xau'], icon: '/logos/commodities/xau.svg', about: metalAbout('gold', 'GLD') },
-  { ticker: 'XAG/USD', name: 'Silver', terms: ['silver', 'xag'], icon: '/logos/commodities/xag.svg', about: metalAbout('silver', 'SLV') },
-  { ticker: 'XPT/USD', name: 'Platinum', terms: ['platinum', 'xpt'], icon: '/logos/commodities/xpt.svg', about: metalAbout('platinum', 'PPLT') },
-  { ticker: 'XPD/USD', name: 'Palladium', terms: ['palladium', 'xpd'], icon: '/logos/commodities/xpd.svg', about: metalAbout('palladium', 'PALL') },
+export interface Commodity {
+  /** Stable key for icons and copy (stock.json commodityAbout_<id> etc.). */
+  id: 'xau' | 'xag' | 'xpt' | 'xpd' | 'wti' | 'xbr';
+  ticker: string;
+  name: string;
+  terms: string[];
+  icon: string;
+  group: 'metal' | 'oil';
+  /** Grams per quoted unit (troy ounce) for metals; litres per barrel for oil. */
+  unit: { per: 'gram' | 'litre'; size: number };
+  own: CommodityOwn[];
+}
+
+const TROY_OUNCE_G = 31.1034768;
+const BARREL_L = 158.987295;
+const metal = { group: 'metal' as const, unit: { per: 'gram' as const, size: TROY_OUNCE_G } };
+const oil = { group: 'oil' as const, unit: { per: 'litre' as const, size: BARREL_L } };
+
+// Tickers checked to quote on 2026-10-26. The fund names are proper nouns and stay untranslated.
+export const COMMODITIES: Commodity[] = [
   {
-    ticker: 'WTI/USD', name: 'Crude oil (WTI)', terms: ['oil', 'crude', 'wti'], icon: '/logos/commodities/wti.svg',
-    about: oilAbout('West Texas Intermediate crude') + ' WTI is the main benchmark for US oil.',
+    id: 'xau', ticker: 'XAU/USD', name: 'Gold', terms: ['gold', 'xau'], icon: '/logos/commodities/xau.svg', ...metal,
+    own: [
+      { ticker: 'GLD', name: 'SPDR Gold Shares', kind: 'physical' },
+      { ticker: 'IAU', name: 'iShares Gold Trust', kind: 'physical' },
+      { ticker: 'GDX', name: 'VanEck Gold Miners ETF', kind: 'miners' },
+      { ticker: 'NEM', name: 'Newmont', kind: 'producer' },
+    ],
   },
   {
-    ticker: 'XBR/USD', name: 'Crude oil (Brent)', terms: ['oil', 'crude', 'brent', 'xbr'], icon: '/logos/commodities/xbr.svg',
-    about: oilAbout('Brent crude') + ' Brent comes from the North Sea and is the benchmark for most of the world\'s oil.',
+    id: 'xag', ticker: 'XAG/USD', name: 'Silver', terms: ['silver', 'xag'], icon: '/logos/commodities/xag.svg', ...metal,
+    own: [
+      { ticker: 'SLV', name: 'iShares Silver Trust', kind: 'physical' },
+      { ticker: 'SIL', name: 'Global X Silver Miners ETF', kind: 'miners' },
+      { ticker: 'PAAS', name: 'Pan American Silver', kind: 'producer' },
+    ],
+  },
+  {
+    id: 'xpt', ticker: 'XPT/USD', name: 'Platinum', terms: ['platinum', 'xpt'], icon: '/logos/commodities/xpt.svg', ...metal,
+    own: [
+      { ticker: 'PPLT', name: 'abrdn Platinum ETF', kind: 'physical' },
+      { ticker: 'SBSW', name: 'Sibanye Stillwater', kind: 'producer' },
+    ],
+  },
+  {
+    id: 'xpd', ticker: 'XPD/USD', name: 'Palladium', terms: ['palladium', 'xpd'], icon: '/logos/commodities/xpd.svg', ...metal,
+    own: [
+      { ticker: 'PALL', name: 'abrdn Palladium ETF', kind: 'physical' },
+      { ticker: 'SBSW', name: 'Sibanye Stillwater', kind: 'producer' },
+    ],
+  },
+  {
+    id: 'wti', ticker: 'WTI/USD', name: 'Crude oil (WTI)', terms: ['oil', 'crude', 'wti'], icon: '/logos/commodities/wti.svg', ...oil,
+    own: [
+      { ticker: 'USO', name: 'United States Oil Fund', kind: 'futures' },
+      { ticker: 'XLE', name: 'Energy Select Sector SPDR', kind: 'sector' },
+      { ticker: 'XOM', name: 'Exxon Mobil', kind: 'producer' },
+      { ticker: 'CVX', name: 'Chevron', kind: 'producer' },
+    ],
+  },
+  {
+    id: 'xbr', ticker: 'XBR/USD', name: 'Crude oil (Brent)', terms: ['oil', 'crude', 'brent', 'xbr'], icon: '/logos/commodities/xbr.svg', ...oil,
+    own: [
+      { ticker: 'BNO', name: 'United States Brent Oil Fund', kind: 'futures' },
+      { ticker: 'SHEL', name: 'Shell', kind: 'producer' },
+      { ticker: 'BP', name: 'BP', kind: 'producer' },
+    ],
   },
 ];
+
+/** The commodity for a symbol or slug ('XAU/USD', 'XAU-USD'), or undefined. */
+export function findCommodity(tickerOrSlug: string): Commodity | undefined {
+  const sym = slugToSymbol(tickerOrSlug.toUpperCase());
+  return COMMODITIES.find((c) => c.ticker === sym);
+}
 
 const COMMODITY_TICKERS = new Set<string>(COMMODITIES.map((c) => c.ticker));
 

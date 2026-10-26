@@ -18,11 +18,13 @@ interface RangeBarProps {
   highLabel?: string;
   srLabel: string;
   className?: string;
+  /** The current value's label sits centred, not under the notch, so it reads as mid-range. Hide it where the value is shown elsewhere. */
+  hideCurrentLabel?: boolean;
 }
 
 const defaultFormat = (v: number) => `$${v.toFixed(2)}`;
 
-export function RangeBar({ low, high, current, format = defaultFormat, lowLabel, highLabel, srLabel, className }: RangeBarProps) {
+export function RangeBar({ low, high, current, format = defaultFormat, lowLabel, highLabel, srLabel, className, hideCurrentLabel }: RangeBarProps) {
   const hasMarker = current != null && high > low;
   // Clamp to 1.5–98.5% so the notch never overhangs the track's rounded ends
   const pct = hasMarker ? Math.max(1.5, Math.min(98.5, ((current - low) / (high - low)) * 100)) : 0;
@@ -39,7 +41,7 @@ export function RangeBar({ low, high, current, format = defaultFormat, lowLabel,
       </div>
       <div className="mt-1.5 flex items-baseline justify-between text-xs leading-none tabular-nums text-muted-foreground">
         <span>{lowLabel ?? format(low)}</span>
-        {hasMarker && <span className="font-medium text-foreground/80">{format(current)}</span>}
+        {hasMarker && !hideCurrentLabel && <span className="font-medium text-foreground/80">{format(current)}</span>}
         <span>{highLabel ?? format(high)}</span>
       </div>
     </div>

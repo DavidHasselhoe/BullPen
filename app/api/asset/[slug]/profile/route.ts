@@ -57,7 +57,7 @@ async function handler(
         currency: null,
         sector: null,
         country: null,
-        description: commodity?.about ?? null,
+        description: null,
         type: null,
       })
     );

@@ -722,9 +722,11 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
             )}
 
             {/* Range tabs + settings gear */}
-            <div className="flex flex-wrap items-center gap-1">
-              {/* Same segmented control as Home's chart periods. */}
-              <div role="group" aria-label={t('chartPeriod')} className="flex flex-wrap gap-0.5 rounded-md bg-muted/50 p-0.5">
+            <div className="flex flex-wrap items-center gap-1 max-sm:w-full">
+              {/* Same segmented control as Home's chart periods. On a phone the
+                  eight periods share one full-width row: as a wrapping flex row
+                  ALL fell onto a line of its own. */}
+              <div role="group" aria-label={t('chartPeriod')} className="flex flex-wrap gap-0.5 rounded-md bg-muted/50 p-0.5 max-sm:grid max-sm:w-full max-sm:grid-cols-8">
                 {RANGES.map((r) => (
                   <button
                     key={r}
@@ -732,7 +734,7 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
                     aria-pressed={range === r}
                     onClick={() => { setRange(r); if (r === '1D') setActiveIndicators(new Set()); }}
                     className={cn(
-                      'h-9 min-w-9 rounded px-2 font-mono text-xs font-medium transition-colors sm:h-7',
+                      'h-9 rounded font-mono text-xs font-medium transition-colors sm:h-7 sm:min-w-9 sm:px-2',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       range === r
                         ? 'bg-background text-foreground shadow-sm'

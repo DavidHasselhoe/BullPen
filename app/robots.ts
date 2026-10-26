@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
+import { COMMODITIES, symbolToSlug } from '@/lib/assets/asset-type';
 
 import { SITE_URL } from '@/lib/site';
 /**
@@ -43,11 +44,14 @@ export default function robots(): MetadataRoute.Robots {
   // (/dividends, /congress-trades, /fund-holders). A subpage with nothing to
   // show marks itself noindex, so the prefix does not open empty pages.
   const allowedStockPaths = [...SIGNIFICANT_TICKERS].flatMap((ticker) => [`/stock/${ticker}$`, `/stock/${ticker}/`]);
+  // The six spot commodities: a fixed set, so no open-ended crawl cost, and
+  // "gold price" is a search people make daily. Crypto and forex pairs stay out.
+  const allowedCommodityPaths = COMMODITIES.map((c) => `/asset/${symbolToSlug(c.ticker)}$`);
 
   return {
     rules: {
       userAgent: '*',
-      allow: ['/', '/api/instagram/render/', ...allowedStockPaths],
+      allow: ['/', '/api/instagram/render/', ...allowedStockPaths, ...allowedCommodityPaths],
       // /users: member profiles carry real names. Opt-in visibility (lib/social/visibility.ts)
       // decides who can see them in the app; it is not consent to be indexed.
       disallow: ['/api/', '/stock/', '/asset/', '/etf/', '/tools/deep-dive/', '/admin/', '/users', '/invite/', '/lists/'],

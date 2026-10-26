@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
 import { createServerClient } from '@/lib/supabase/client';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
+import { COMMODITIES, symbolToSlug } from '@/lib/assets/asset-type';
 import { SITE_URL } from '@/lib/site';
 import { getSubpageCoverage, MIN_CONGRESS_TRADES, MIN_FUND_HOLDERS } from '@/lib/stock/subpage-data';
 import { loadCongressMembers, MIN_MEMBER_TRADES } from '@/lib/congress/member-data';
@@ -36,6 +37,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/help', priority: 0.6, changeFrequency: 'monthly' },
     { path: '/glossary', priority: 0.6, changeFrequency: 'monthly' },
     { path: '/stocks', priority: 0.7, changeFrequency: 'weekly' },
+    // Spot commodities, the only /asset pages robots.ts lets crawlers in.
+    ...COMMODITIES.map((c) => ({ path: `/asset/${symbolToSlug(c.ticker)}`, priority: 0.6, changeFrequency: 'daily' as const })),
     { path: '/discover/indexes/sp500', priority: 0.7, changeFrequency: 'weekly' },
     { path: '/discover/indexes/nasdaq100', priority: 0.7, changeFrequency: 'weekly' },
     { path: '/discover/indexes/dow30', priority: 0.6, changeFrequency: 'weekly' },
