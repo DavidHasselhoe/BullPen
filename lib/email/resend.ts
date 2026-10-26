@@ -59,17 +59,21 @@ export async function sendEmail({
   // sender identification, and no marketing email without an opt-out.
   const body = withEmailFooter(html, kind, footer);
 
-  const { data, error } = await resend.emails.send({
-    from,
-    to: Array.isArray(to) ? to : [to],
-    subject,
-    html: body,
-    ...(headers ? { headers } : {}),
-  });
-
-  if (error) {
-    throw new Error(`Failed to send email: ${error.message}`);
+  // Resend allows a few requests a second per team. A loop like the morning
+  // email sends faster than that, and 3 of 26 sends were refused on 10-26, so
+  // a rate-limited send waits and tries again instead of failing.
+  for (let attempt = 1; ; attempt++) {
+    const { data, error } = await resend.emails.send({
+      from,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html: body,
+      ...(headers ? { headers } : {}),
+    });
+    if (!error) return data;
+    if (error.name !== 'rate_limit_exceeded' || attempt === 4) {
+      throw new Error(`Failed to send email: ${error.message}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
   }
-
-  return data;
 }

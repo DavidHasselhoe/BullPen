@@ -8,7 +8,8 @@
  *
  * Properties: `job`, `status` (HTTP), `ok`, `duration_ms`, every top-level
  * number or boolean in the response (`sent`, `symbolsChecked`, `skipped`...),
- * and `<key>_count` for every top-level array (`errors_count`).
+ * `<key>_count` for every top-level array (`errors_count`), and the first
+ * five `errors` strings as `errors_sample`.
  */
 
 import type { NextRequest, NextResponse } from 'next/server';
@@ -29,7 +30,12 @@ export function withCronReport(job: string, handler: Handler): Handler {
       if (body && typeof body === 'object' && !Array.isArray(body)) {
         for (const [key, value] of Object.entries(body)) {
           if (typeof value === 'number' || typeof value === 'boolean') properties[key] = value;
-          else if (Array.isArray(value)) properties[`${key}_count`] = value.length;
+          else if (Array.isArray(value)) {
+            properties[`${key}_count`] = value.length;
+            // The text, not just the count: Vercel keeps runtime logs for an hour,
+            // so by the time anyone looks this is the only record of what failed.
+            if (key === 'errors' && value.length) properties.errors_sample = value.slice(0, 5).map((e) => (typeof e === 'string' ? e : JSON.stringify(e)).slice(0, 300));
+          }
         }
       }
     } catch {
