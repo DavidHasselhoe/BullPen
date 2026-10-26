@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { commodityIcon } from '@/lib/assets/asset-type';
 
 export interface CompanyLogoProps {
   name: string;
@@ -46,8 +47,10 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className, loadi
   // to follow redirects to dynamically-resolved upstream image hosts and 400s
   // even when the destination is whitelisted in remotePatterns. These logos
   // are tiny (22–40px) so the optimization gain isn't worth the breakage.
+  // Spot commodities (gold, oil) have no company logo anywhere, so their
+  // bundled icons are resolved here, ahead of the proxy, for every surface.
   const effectiveUrl =
-    logoUrl ?? (ticker ? `/api/logo/${encodeURIComponent(ticker)}` : null);
+    logoUrl ?? (ticker ? commodityIcon(ticker) ?? `/api/logo/${encodeURIComponent(ticker)}` : null);
   const showFallback = !effectiveUrl || imageError;
 
   const displayText = ticker.toUpperCase();

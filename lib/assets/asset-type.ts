@@ -87,15 +87,21 @@ export function slugToAssetPath(symbolOrSlug: string, instrumentType?: string): 
 // matched by name in search. Copper (HG1) is in its /commodities list but
 // returned no quote when checked on 2026-10-26.
 export const COMMODITIES = [
-  { ticker: 'XAU/USD', name: 'Gold spot', terms: ['gold', 'xau'] },
-  { ticker: 'XAG/USD', name: 'Silver spot', terms: ['silver', 'xag'] },
-  { ticker: 'XPT/USD', name: 'Platinum spot', terms: ['platinum', 'xpt'] },
-  { ticker: 'XPD/USD', name: 'Palladium spot', terms: ['palladium', 'xpd'] },
-  { ticker: 'WTI/USD', name: 'Crude oil (WTI) spot', terms: ['oil', 'crude', 'wti'] },
-  { ticker: 'XBR/USD', name: 'Brent crude oil spot', terms: ['oil', 'crude', 'brent', 'xbr'] },
+  { ticker: 'XAU/USD', name: 'Gold spot', terms: ['gold', 'xau'], icon: '/logos/commodities/xau.svg' },
+  { ticker: 'XAG/USD', name: 'Silver spot', terms: ['silver', 'xag'], icon: '/logos/commodities/xag.svg' },
+  { ticker: 'XPT/USD', name: 'Platinum spot', terms: ['platinum', 'xpt'], icon: '/logos/commodities/xpt.svg' },
+  { ticker: 'XPD/USD', name: 'Palladium spot', terms: ['palladium', 'xpd'], icon: '/logos/commodities/xpd.svg' },
+  { ticker: 'WTI/USD', name: 'Crude oil (WTI) spot', terms: ['oil', 'crude', 'wti'], icon: '/logos/commodities/wti.svg' },
+  { ticker: 'XBR/USD', name: 'Brent crude oil spot', terms: ['oil', 'crude', 'brent', 'xbr'], icon: '/logos/commodities/xbr.svg' },
 ] as const;
 
 const COMMODITY_TICKERS = new Set<string>(COMMODITIES.map((c) => c.ticker));
+
+/** The bundled icon for a spot commodity ("XAU/USD" or slug "XAU-USD"); no logo source has one. */
+export function commodityIcon(ticker: string): string | undefined {
+  const sym = slugToSymbol(ticker.toUpperCase());
+  return COMMODITIES.find((c) => c.ticker === sym)?.icon;
+}
 
 /** Commodities whose name or symbol the query starts, or names as a whole word ("gold price"). */
 export function matchCommodities(query: string) {
