@@ -176,7 +176,8 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
     return {
       section: 'earnings',
       headline: name && name !== one ? n.title.replace(one!, `${name} (${one})`) : n.title,
-      detail: '',
+      // "2 of your stocks report earnings today" carries its list ("BE, WDC") in the message.
+      detail: one ? '' : n.message,
       cue: openCue,
       href: one ? slugToAssetPath(one) : '/tools/calendar',
     };
