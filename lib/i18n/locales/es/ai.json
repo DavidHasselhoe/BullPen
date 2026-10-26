@@ -1,9 +1,9 @@
 {
   "askBull": "Ask Bull",
   "authGateCreateAccount": "Crear cuenta gratuita",
-  "authGateDescription": "Obtén respuestas instantáneas sobre presentaciones ante la SEC, métricas financieras e investigación de inversiones.",
+  "authGateDescription": "Obtén respuestas al instante sobre acciones, fondos, criptomonedas y materias primas: las cifras, los informes oficiales y lo que mueve el precio.",
   "authGateSignIn": "Iniciar sesión",
-  "authGateTitle": "Pregúntale a Bull sobre cualquier acción",
+  "authGateTitle": "Pregúntale a Bull sobre cualquier inversión",
   "chatContextPromptFilings": "Presentaciones recientes de {{ticker}}",
   "chatContextPromptMargins": "¿Cuál empresa tiene márgenes más fuertes?",
   "chatContextPromptProfitability": "Explicar diferencias de rentabilidad",
@@ -116,7 +116,7 @@
   "chatScreenerPromptWhatToLookFor": "¿Qué debo buscar en una acción?",
   "chatScreenerPromptCandidates": "Muéstrame algunos candidatos sólidos",
   "chatScreenerPromptReviewFilters": "¿Son buenos mis filtros?",
-  "whyTodayGuestContext": "Why Today explica el movimiento de una acción en lenguaje sencillo. Es parte de Pro: crea una cuenta gratuita y luego prueba Pro gratis durante {{trialDays}} días.",
+  "whyTodayGuestContext": "Why Today explica un movimiento de precio en lenguaje sencillo. Es parte de Pro: crea una cuenta gratuita y luego prueba Pro gratis durante {{trialDays}} días.",
   "toolStatus_default": "Funcionando…",
   "toolStatus_getHealthScore": "Comprobando salud financiera…",
   "toolStatus_getKeyStatistics": "Obteniendo métricas de valoración…",
@@ -175,5 +175,6 @@
   "navigateNo": "No",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "toolStatus_getUpcomingEarnings": "Consultando fechas de resultados…"
 }

@@ -1,9 +1,9 @@
 {
   "askBull": "Ask Bull",
   "authGateCreateAccount": "Opprett gratis konto",
-  "authGateDescription": "Få øyeblikkelige svar om SEC-registreringer, finansielle nøkkeltall og investeringsanalyser.",
+  "authGateDescription": "Få øyeblikkelige svar om aksjer, fond, kryptovaluta og råvarer: tallene, rapportene og hva som driver kursen.",
   "authGateSignIn": "Logg inn",
-  "authGateTitle": "Spør Bull om hvilken som helst aksje",
+  "authGateTitle": "Spør Bull om alt du investerer i",
   "chatContextPromptFilings": "Nylige registreringer for {{ticker}}",
   "chatContextPromptMargins": "Hvilken selskap har sterkere marginer?",
   "chatContextPromptProfitability": "Forklar resultatforskjeller",
@@ -117,7 +117,7 @@
   "chatScreenerPromptWhatToLookFor": "Hva bør jeg se etter i en aksje?",
   "chatScreenerPromptCandidates": "Vis meg noen sterke kandidater",
   "chatScreenerPromptReviewFilters": "Er filtrene mine gode?",
-  "whyTodayGuestContext": "Why Today forklarer en aksjekurs' bevegelse på enkel norsk. Det er en del av Pro: opprett en gratis konto, og prøv Pro gratis i {{trialDays}} dager.",
+  "whyTodayGuestContext": "Why Today forklarer en kursbevegelse på enkel norsk. Det er en del av Pro: opprett en gratis konto, og prøv Pro gratis i {{trialDays}} dager.",
   "toolStatus_default": "Arbeider…",
   "toolStatus_getHealthScore": "Sjekker økonomisk helse…",
   "toolStatus_getKeyStatistics": "Henter verdsettelsesmål…",
@@ -175,5 +175,6 @@
   "financialsCapex": "CapEx",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "toolStatus_getUpcomingEarnings": "Sjekker datoer for resultatpublisering…"
 }

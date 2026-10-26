@@ -1,9 +1,9 @@
 {
   "askBull": "Ask Bull",
   "authGateCreateAccount": "Créer un compte gratuit",
-  "authGateDescription": "Obtenez des réponses instantanées sur les dépôts SEC, les métriques financières et la recherche d'investissement.",
+  "authGateDescription": "Obtenez des réponses instantanées sur les actions, les fonds, les cryptomonnaies et les matières premières : les chiffres, les dépôts réglementaires et ce qui fait bouger le cours.",
   "authGateSignIn": "Se connecter",
-  "authGateTitle": "Posez une question à Ask Bull sur n'importe quelle action",
+  "authGateTitle": "Posez vos questions à Bull sur tous vos investissements",
   "chatContextPromptFilings": "Récents dépôts de {{ticker}}",
   "chatContextPromptMargins": "Quelle entreprise a des marges plus fortes ?",
   "chatContextPromptProfitability": "Expliquer les différences de rentabilité",
@@ -116,7 +116,7 @@
   "chatScreenerPromptWhatToLookFor": "Que dois-je rechercher dans une action ?",
   "chatScreenerPromptCandidates": "Montre-moi quelques candidats solides",
   "chatScreenerPromptReviewFilters": "Mes filtres sont-ils bons ?",
-  "whyTodayGuestContext": "Why Today explique le mouvement d'une action en langage simple. C'est inclus dans Pro : créez un compte gratuit, puis essayez Pro gratuitement pendant {{trialDays}} jours.",
+  "whyTodayGuestContext": "Why Today explique un mouvement de prix en langage simple. C'est inclus dans Pro : créez un compte gratuit, puis essayez Pro gratuitement pendant {{trialDays}} jours.",
   "toolStatus_default": "En cours…",
   "toolStatus_getHealthScore": "Vérification de la santé financière…",
   "toolStatus_getKeyStatistics": "Extraction des métriques de valorisation…",
@@ -175,5 +175,6 @@
   "chatUnitMessages": "messages",
   "financialsCapex": "CapEx",
   "insiderNet": "Net {{value}}",
-  "statisticsEvEbitda": "EV/EBITDA"
+  "statisticsEvEbitda": "EV/EBITDA",
+  "toolStatus_getUpcomingEarnings": "Vérification des dates de résultats…"
 }

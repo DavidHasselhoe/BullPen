@@ -1,9 +1,9 @@
 {
   "askBull": "Ask Bull",
   "authGateCreateAccount": "Kostenloses Konto erstellen",
-  "authGateDescription": "Erhalte sofort Antworten zu SEC-Anmeldungen, Finanzkennzahlen und Anlageforschung.",
+  "authGateDescription": "Hol dir sofort Antworten zu Aktien, Fonds, Krypto und Rohstoffen: die Zahlen, die Berichte und was den Kurs bewegt.",
   "authGateSignIn": "Anmelden",
-  "authGateTitle": "Ask Bull zu jeder Aktie",
+  "authGateTitle": "Ask Bull zu allem, worin du investierst",
   "chatContextPromptFilings": "Aktuelle Einreichungen für {{ticker}}",
   "chatContextPromptMargins": "Welches Unternehmen hat stärkere Margen?",
   "chatContextPromptProfitability": "Unterschiede der Rentabilität erklären",
@@ -116,7 +116,7 @@
   "chatScreenerPromptWhatToLookFor": "Worauf sollte ich bei einer Aktie achten?",
   "chatScreenerPromptCandidates": "Zeig mir ein paar starke Kandidaten",
   "chatScreenerPromptReviewFilters": "Sind meine Filter in Ordnung?",
-  "whyTodayGuestContext": "Why Today erklärt dir die Kursbewegung einer Aktie in verständlichen Worten. Das ist Teil von Pro: Erstelle ein kostenloses Konto und probiere Pro dann {{trialDays}} Tage kostenlos aus.",
+  "whyTodayGuestContext": "Why Today erklärt dir eine Kursbewegung in verständlichen Worten. Das ist Teil von Pro: Erstelle ein kostenloses Konto und probiere Pro dann {{trialDays}} Tage kostenlos aus.",
   "toolStatus_default": "Funktioniert…",
   "toolStatus_getHealthScore": "Finanzielle Gesundheit wird überprüft…",
   "toolStatus_getKeyStatistics": "Bewertungskennzahlen werden abgerufen…",
@@ -175,5 +175,6 @@
   "financialsOperatingCf": "Betrieblicher CF",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "toolStatus_getUpcomingEarnings": "Prüfe Termine für Quartalszahlen…"
 }

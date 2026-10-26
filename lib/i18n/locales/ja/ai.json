@@ -1,9 +1,9 @@
 {
   "askBull": "Ask Bull",
   "authGateCreateAccount": "無料アカウントを作成",
-  "authGateDescription": "SEC申告書、財務指標、投資調査について即座に回答を得られます。",
+  "authGateDescription": "株、投資信託、暗号資産、コモディティについて、数字、開示資料、株価を動かす要因をすぐにお答えします。",
   "authGateSignIn": "サインイン",
-  "authGateTitle": "どの銘柄でもBullに質問できます",
+  "authGateTitle": "投資対象について、Ask Bullに何でも聞いてみましょう",
   "chatContextPromptFilings": "{{ticker}}の最近のファイリング",
   "chatContextPromptMargins": "どちらの企業がより強いマージンを持っていますか？",
   "chatContextPromptProfitability": "収益性の違いを説明してください",
@@ -118,7 +118,7 @@
   "chatScreenerPromptWhatToLookFor": "株を選ぶときは何を見ればいいですか？",
   "chatScreenerPromptCandidates": "強力な候補銘柄を見せてください",
   "chatScreenerPromptReviewFilters": "私のフィルター設定は良いですか？",
-  "whyTodayGuestContext": "Why Todayは株価変動をわかりやすく説明します。これはProの機能です。無料アカウントを作成してから、Proを{{trialDays}}日間無料でお試しください。",
+  "whyTodayGuestContext": "Why Todayは価格の動きをわかりやすく説明します。これはProの機能です。無料アカウントを作成してから、Proを{{trialDays}}日間無料でお試しください。",
   "toolStatus_default": "処理中…",
   "toolStatus_getHealthScore": "財務状態を確認中…",
   "toolStatus_getKeyStatistics": "評価指標を取得中…",
@@ -175,5 +175,6 @@
   "receiptSharesCount_other": "{{count}}株",
   "statisticsBeta": "ベータ値",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "ベータ値"
+  "termsGateBeta": "ベータ値",
+  "toolStatus_getUpcomingEarnings": "決算発表日を確認しています…"
 }

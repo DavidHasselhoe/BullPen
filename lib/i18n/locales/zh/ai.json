@@ -1,9 +1,9 @@
 {
   "askBull": "Ask Bull",
   "authGateCreateAccount": "免费创建账户",
-  "authGateDescription": "快速获取关于 SEC 备案、财务指标和投资研究的答案。",
+  "authGateDescription": "即时解答你关于股票、基金、加密货币和大宗商品的问题：数据、披露文件，以及影响股价的因素。",
   "authGateSignIn": "登录",
-  "authGateTitle": "向 Bull 询问任何股票",
+  "authGateTitle": "向 Bull 询问你的任何投资",
   "chatContextPromptFilings": "{{ticker}} 的最近申报文件",
   "chatContextPromptMargins": "哪家公司的利润率更强？",
   "chatContextPromptProfitability": "解释盈利能力差异",
@@ -120,7 +120,7 @@
   "chatScreenerPromptWhatToLookFor": "我应该在股票中寻找什么?",
   "chatScreenerPromptCandidates": "给我展示一些强劲的候选股票",
   "chatScreenerPromptReviewFilters": "我的筛选条件好吗?",
-  "whyTodayGuestContext": "Why Today 用通俗易懂的方式解释股票的涨跌。这是 Pro 功能：创建免费账户，然后免费试用 Pro {{trialDays}} 天。",
+  "whyTodayGuestContext": "Why Today 用通俗易懂的方式解释价格的涨跌。这是 Pro 功能：创建免费账户，然后免费试用 Pro {{trialDays}} 天。",
   "toolStatus_default": "正在处理…",
   "toolStatus_getHealthScore": "正在检查财务健康状况…",
   "toolStatus_getKeyStatistics": "正在提取估值指标…",
@@ -175,5 +175,6 @@
   "receiptQtySharesOf_other": "{{count}} 股 ",
   "receiptSharesCount_one": "{{count}} 股",
   "receiptSharesCount_other": "{{count}} 股",
-  "statisticsEvEbitda": "EV/EBITDA"
+  "statisticsEvEbitda": "EV/EBITDA",
+  "toolStatus_getUpcomingEarnings": "正在查询财报日期…"
 }
