@@ -656,5 +656,12 @@
   "commodityRangePosition": "{{below}} % under 52-ukers høyeste, {{above}} % over laveste",
   "commodityPerGram": "Per gram",
   "commodityPerKilo": "Per kilo",
-  "commodityPerLitre": "Per liter"
+  "commodityPerLitre": "Per liter",
+  "stockMetaTitle": "{{name}} ({{ticker}}) aksjekurs",
+  "stockMetaTitleTicker": "{{ticker}} aksjekurs",
+  "stockMetaDescription": "Sanntidskurs, regnskapstall og AI-analyse av {{name}} ({{ticker}}) på BullPen.",
+  "stockMetaDescriptionTicker": "Sanntidskurs, regnskapstall og AI-analyse av {{ticker}} på BullPen.",
+  "assetMetaTitle": "Pris på {{noun}}",
+  "assetMetaDescription": "Sanntidspris og graf for {{noun}} på BullPen.",
+  "commodityMetaDescription": "Sanntidsprisen på {{noun}}, fondene og selskapene folk eier det gjennom, og hva som driver prisen, forklart på BullPen."
 }

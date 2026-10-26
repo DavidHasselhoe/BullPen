@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getDisplayNames } from '@/lib/market-data/display-names';
+import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 
 /**
  * The page itself (page.tsx) is a client component, which can't export
@@ -21,11 +22,17 @@ export async function generateMetadata({
   const ticker = rawTicker.toUpperCase();
 
   // Properly cased ("Texas Instruments"), not the SEC's "TEXAS INSTRUMENTS INC".
-  const name = (await getDisplayNames([ticker])).get(ticker);
-  const title = name ? `${name} (${ticker}) Stock Price` : `${ticker} Stock Price`;
+  // In the reader's language (middleware: cookie, else Accept-Language), as the
+  // subpages already were; a crawler sends neither and gets English.
+  const [names, t] = await Promise.all([
+    getDisplayNames([ticker]),
+    getRequestLocale().then((l) => getServerT(l, `/stock/${ticker}`)),
+  ]);
+  const name = names.get(ticker);
+  const title = name ? t('stock:stockMetaTitle', { name, ticker }) : t('stock:stockMetaTitleTicker', { ticker });
   const description = name
-    ? `Real-time price, financials, and AI-powered analysis for ${name} (${ticker}) on BullPen.`
-    : `Real-time price, financials, and AI-powered analysis for ${ticker} on BullPen.`;
+    ? t('stock:stockMetaDescription', { name, ticker })
+    : t('stock:stockMetaDescriptionTicker', { ticker });
 
   // A plain string title here would stop the root "%s | BullPen" template at
   // this segment, so the subpages (dividends, congress-trades, fund-holders)

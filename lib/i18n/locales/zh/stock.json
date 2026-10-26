@@ -656,5 +656,12 @@
   "commodityRangePosition": "较52周高点低{{below}}%，较52周低点高{{above}}%",
   "commodityPerGram": "每克",
   "commodityPerKilo": "每千克",
-  "commodityPerLitre": "每升"
+  "commodityPerLitre": "每升",
+  "stockMetaTitle": "{{name}} ({{ticker}}) 股价",
+  "stockMetaTitleTicker": "{{ticker}} 股价",
+  "stockMetaDescription": "在 BullPen 查看 {{name}} ({{ticker}}) 的实时股价、财务数据和 AI 分析。",
+  "stockMetaDescriptionTicker": "在 BullPen 查看 {{ticker}} 的实时股价、财务数据和 AI 分析。",
+  "assetMetaTitle": "{{name}}价格",
+  "assetMetaDescription": "在 BullPen 查看{{name}}的实时价格和走势图。",
+  "commodityMetaDescription": "在 BullPen 查看{{name}}的实时价格、可投资的基金和公司，以及影响价格的因素。"
 }

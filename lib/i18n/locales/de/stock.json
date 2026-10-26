@@ -656,5 +656,12 @@
   "commodityRangePosition": "{{below}} % unter dem 52-Wochen-Hoch, {{above}} % über dem Tief",
   "commodityPerGram": "Pro Gramm",
   "commodityPerKilo": "Pro Kilo",
-  "commodityPerLitre": "Pro Liter"
+  "commodityPerLitre": "Pro Liter",
+  "stockMetaTitle": "{{name}} ({{ticker}}) Aktienkurs",
+  "stockMetaTitleTicker": "{{ticker}} Aktienkurs",
+  "stockMetaDescription": "Echtzeitkurs, Finanzzahlen und KI-Analyse zu {{name}} ({{ticker}}) auf BullPen.",
+  "stockMetaDescriptionTicker": "Echtzeitkurs, Finanzzahlen und KI-Analyse zu {{ticker}} auf BullPen.",
+  "assetMetaTitle": "{{name}}: aktueller Preis",
+  "assetMetaDescription": "Echtzeitpreis und Chart für {{name}} auf BullPen.",
+  "commodityMetaDescription": "{{name}}: aktueller Preis, die Fonds und Unternehmen, über die man investiert, und was den Preis bewegt, erklärt auf BullPen."
 }

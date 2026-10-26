@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { slugToSymbol, COMMODITIES } from '@/lib/assets/asset-type';
+import { slugToSymbol, findCommodity } from '@/lib/assets/asset-type';
+import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 
 /**
  * Same reasoning as app/stock/[ticker]/layout.tsx: page.tsx is a client
@@ -19,11 +20,15 @@ export async function generateMetadata({
   const { slug: rawSlug } = await params;
   const slug = rawSlug.toUpperCase();
   const symbol = slugToSymbol(slug);
-  const name = COMMODITIES.find((c) => c.ticker === symbol)?.name ?? symbol;
+  const commodity = findCommodity(slug);
+  // In the reader's language (middleware: cookie, else Accept-Language); a crawler sends neither and gets English.
+  const t = await getServerT(await getRequestLocale(), `/asset/${slug}`);
+  const name = commodity ? t(`stock:commodityName_${commodity.id}`) : symbol;
+  const noun = commodity ? t(`stock:commodityNoun_${commodity.id}`) : symbol;
 
   return {
-    title: `${name} Price`,
-    description: `Real-time price and chart for ${name} on BullPen.`,
+    title: t('stock:assetMetaTitle', { name, noun }),
+    description: t(commodity ? 'stock:commodityMetaDescription' : 'stock:assetMetaDescription', { name, noun }),
     alternates: { canonical: `/asset/${slug}` },
   };
 }

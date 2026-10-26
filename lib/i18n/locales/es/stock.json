@@ -656,5 +656,12 @@
   "commodityRangePosition": "{{below}}% por debajo de su máximo de 52 semanas, {{above}}% por encima de su mínimo",
   "commodityPerGram": "Por gramo",
   "commodityPerKilo": "Por kilo",
-  "commodityPerLitre": "Por litro"
+  "commodityPerLitre": "Por litro",
+  "stockMetaTitle": "Precio de la acción de {{name}} ({{ticker}})",
+  "stockMetaTitleTicker": "Precio de la acción de {{ticker}}",
+  "stockMetaDescription": "Precio en tiempo real, datos financieros y análisis con IA de {{name}} ({{ticker}}) en BullPen.",
+  "stockMetaDescriptionTicker": "Precio en tiempo real, datos financieros y análisis con IA de {{ticker}} en BullPen.",
+  "assetMetaTitle": "{{name}}: precio actual",
+  "assetMetaDescription": "{{name}}: precio en tiempo real y gráfico en BullPen.",
+  "commodityMetaDescription": "{{name}}: precio en tiempo real, los fondos y empresas para invertir y lo que mueve el precio, explicado en BullPen."
 }
