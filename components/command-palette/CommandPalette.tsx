@@ -24,7 +24,7 @@ import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
 import { fetchWithTimeout } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics/track';
 import { Briefcase, Filter, TrendingUp, Scale, Users, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
-import { slugToAssetPath, inferAssetType, fundLabel } from '@/lib/assets/asset-type';
+import { slugToAssetPath, inferAssetType, fundLabel, COMMODITY_TYPES } from '@/lib/assets/asset-type';
 import type { PublicUser } from '@/app/api/users/search/route';
 
 /** Matches the LucideIcon call signature (`<Icon className="..." />`) so it
@@ -301,7 +301,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   <>
                     {(() => {
                       const CRYPTO_TYPES = new Set(['Digital Currency', 'Cryptocurrency']);
-                      const COMMODITY_TYPES = new Set(['Commodity', 'Physical Currency']);
                       const stocks = searchResults.filter((r) => !CRYPTO_TYPES.has(r.instrument_type ?? '') && !COMMODITY_TYPES.has(r.instrument_type ?? ''));
                       const crypto = searchResults.filter((r) => CRYPTO_TYPES.has(r.instrument_type ?? ''));
                       const commodities = searchResults.filter((r) => COMMODITY_TYPES.has(r.instrument_type ?? ''));

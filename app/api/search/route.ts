@@ -14,6 +14,7 @@ import { validateLimit } from '@/lib/security/input-validation';
 import { logger } from '@/lib/utils/logger';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { createServerClient } from '@/lib/supabase/client';
+import { COMMODITY_TYPES } from '@/lib/assets/asset-type';
 
 const SEARCH_TTL_SECONDS = 60 * 60; // 1 hour
 
@@ -57,8 +58,7 @@ const RELEVANT_TYPES = new Set([
   // Crypto & commodity
   'Digital Currency',
   'Cryptocurrency',
-  'Commodity',
-  'Physical Currency',
+  ...COMMODITY_TYPES,
 ]);
 
 async function handler(request: NextRequest) {

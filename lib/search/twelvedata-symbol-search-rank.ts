@@ -1,4 +1,5 @@
 import type { SymbolSearchResult } from '@/lib/twelvedata/twelvedata-client';
+import { COMMODITY_TYPES } from '@/lib/assets/asset-type';
 
 /** True if query looks like a ticker or pair (not a company name). */
 export function isLikelyTickerQuery(query: string): boolean {
@@ -169,7 +170,7 @@ function normalizeCompanyName(name: string): string {
  * foreign companies and are legitimately US-listed.
  */
 const NON_EQUITY_TYPES = new Set([
-  'Digital Currency', 'Cryptocurrency', 'Commodity', 'Physical Currency', 'Currency', 'Forex',
+  'Digital Currency', 'Cryptocurrency', 'Currency', 'Forex', ...COMMODITY_TYPES,
 ]);
 
 export function filterNonUsWhenUsExists(rows: SymbolSearchResult[]): SymbolSearchResult[] {

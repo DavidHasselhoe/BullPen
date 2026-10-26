@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCompanyProfile, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
-import { slugToSymbol, inferAssetType } from '@/lib/assets/asset-type';
+import { slugToSymbol, inferAssetType, COMMODITIES } from '@/lib/assets/asset-type';
 
 async function handler(
   _req: NextRequest,
@@ -9,8 +9,12 @@ async function handler(
 ) {
   const { slug } = await context.params;
   const symbol = slugToSymbol(slug.toUpperCase());
+  // Spot commodities have no company profile: the call cost 10 credits to
+  // return an error, and the page then titled gold "XAU/USD".
+  const commodity = COMMODITIES.find((c) => c.ticker === symbol);
 
   try {
+    if (commodity) throw new Error('no profile for spot commodities');
     const profile = await getCompanyProfile(symbol);
     const assetType = inferAssetType(symbol, profile.type ?? undefined);
 
@@ -46,7 +50,7 @@ async function handler(
         success: true,
         symbol,
         slug,
-        name: symbol,
+        name: commodity?.name ?? symbol,
         assetType,
         logoUrl: null,
         exchange: null,

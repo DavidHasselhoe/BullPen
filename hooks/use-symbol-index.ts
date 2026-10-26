@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { parseSearchIndex, searchSymbols, type SymbolEntry } from '@/lib/search/local-index';
 import { useDebounce } from '@/hooks/use-debounce';
+import { matchCommodities } from '@/lib/assets/asset-type';
 
 /**
  * Downloads the symbol catalogue once and keeps it parsed in the query cache,
@@ -138,7 +139,12 @@ export function useInstantSearch(query: string, limit = 8) {
   });
 
   const results = useMemo(() => {
-    const merged = local.map(toResult);
+    // Spot commodities lead: someone typing "gold" wants the gold price, and
+    // neither the catalogue nor the server search would surface it.
+    const commodities: InstantSearchResult[] = matchCommodities(trimmed).map((c) => ({
+      ticker: c.ticker, name: c.name, instrument_type: 'Commodity', cik: '', has_data: true, logo_url: null,
+    }));
+    const merged = [...commodities, ...local.map(toResult)];
     const seen = new Set(merged.map((r) => r.ticker.toUpperCase()));
     // Room is kept for server-only hits even when local matches already fill the
     // list. Searching "bitcoin" otherwise returns eight Bitcoin ETFs and never
@@ -152,7 +158,7 @@ export function useInstantSearch(query: string, limit = 8) {
       extras--;
     }
     return merged;
-  }, [local, remote]);
+  }, [trimmed, local, remote]);
 
   return {
     results,

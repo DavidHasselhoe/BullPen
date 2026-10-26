@@ -81,9 +81,34 @@ export function slugToAssetPath(symbolOrSlug: string, instrumentType?: string): 
 
 // ─── Type inference ───────────────────────────────────────────────────────────
 
-// TwelveData instrument_type values for non-equity assets
+// ─── Commodities ──────────────────────────────────────────────────────────────
+// Spot prices TwelveData quotes. Its symbol search never returns these for
+// "gold" or "oil" (only gold ETFs, mostly foreign), so they are listed here and
+// matched by name in search. Copper (HG1) is in its /commodities list but
+// returned no quote when checked on 2026-10-26.
+export const COMMODITIES = [
+  { ticker: 'XAU/USD', name: 'Gold spot', terms: ['gold', 'xau'] },
+  { ticker: 'XAG/USD', name: 'Silver spot', terms: ['silver', 'xag'] },
+  { ticker: 'XPT/USD', name: 'Platinum spot', terms: ['platinum', 'xpt'] },
+  { ticker: 'XPD/USD', name: 'Palladium spot', terms: ['palladium', 'xpd'] },
+  { ticker: 'WTI/USD', name: 'Crude oil (WTI) spot', terms: ['oil', 'crude', 'wti'] },
+  { ticker: 'XBR/USD', name: 'Brent crude oil spot', terms: ['oil', 'crude', 'brent', 'xbr'] },
+] as const;
+
+const COMMODITY_TICKERS = new Set<string>(COMMODITIES.map((c) => c.ticker));
+
+/** Commodities whose name or symbol the query starts, or names as a whole word ("gold price"). */
+export function matchCommodities(query: string) {
+  const q = query.trim().toLowerCase();
+  if (q.length < 3) return [];
+  const words = q.split(/[^a-z]+/);
+  return COMMODITIES.filter((c) => c.terms.some((t) => t.startsWith(q) || words.includes(t)));
+}
+
+// TwelveData instrument_type values for non-equity assets. Its /commodities
+// list files spot metals and energy under the last three, not "Commodity".
 const CRYPTO_TYPES    = new Set(['Digital Currency', 'Cryptocurrency']);
-const COMMODITY_TYPES = new Set(['Commodity', 'Physical Currency']);
+export const COMMODITY_TYPES = new Set(['Commodity', 'Physical Currency', 'Precious Metal', 'Industrial Metal', 'Energy Resource']);
 const FOREX_TYPES     = new Set(['Currency', 'Forex']);
 // Mutual funds route and render exactly like ETFs: same price/chart page, same
 // absence of earnings and financials. Only the label differs, via fundLabel().
@@ -107,6 +132,8 @@ export function inferAssetType(symbol: string, instrumentType?: string): AssetTy
   // Static registry of well-known ETF tickers (heuristic when instrumentType is absent)
   const sym = symbol.toUpperCase();
   if (KNOWN_ETF_TICKERS.has(sym)) return 'etf';
+  // Before the crypto pattern below, which WTI/USD also fits.
+  if (COMMODITY_TICKERS.has(sym)) return 'commodity';
 
   // Precious-metal spot prices: XAU/USD, XAG/USD, XPT/USD, XPD/USD
   if (/^X[A-Z]{2}\/USD$/.test(sym)) return 'commodity';
