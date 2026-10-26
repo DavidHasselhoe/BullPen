@@ -59,6 +59,7 @@ import { computeHealthScore, healthColumns, HEALTH_SCORE_METHOD } from '@/lib/fi
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
+import { MARKET_CAP_PROMOTION_FLOOR } from '@/lib/market-data/screener-universe';
 import { notifyHealthScoreChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
@@ -462,6 +463,16 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       console.error('[screener-stats] upsert error:', error);
       throw new Error(error.message);
     }
+  }
+
+  // Promote here rather than only in the refresh cron: a big company first
+  // fetched on demand (a holding, a heatmap tile) used to stay tier 0, so no
+  // cron ever refreshed it again. TSM sat on a June row until 2026-10-26.
+  const promote = rows.filter((r) => (r.market_cap ?? 0) >= MARKET_CAP_PROMOTION_FLOOR).map((r) => r.ticker);
+  if (promote.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('screener_universe').update({ tier: 1 }).in('ticker', promote).eq('tier', 0);
+    if (error) console.error('[screener-stats] tier promotion failed:', error);
   }
 
   return rows;

@@ -12,7 +12,8 @@
 import { tool, jsonSchema } from 'ai';
 import { createServerClient } from '@/lib/supabase/client';
 import {
-  getStockQuote,
+  getStockQuotes,
+  isOutsideRegularSessionET,
   getStatistics,
   getCompanyEarnings,
   getIncomeStatement,
@@ -658,7 +659,11 @@ export const screenStocks = tool({
     'to getHealthScore. Tickers the screener does not track come back in notCovered; use getHealthScore for those ' +
     'rather than saying they have no score. When filters are set, filterImpact lists how many stocks would match ' +
     'without each one, largest first: the filter with the biggest jump over matchedFilters is the bottleneck. A stock ' +
-    'missing a value (no dividend, no sector on record) fails any filter on that value. The user already sees the ' +
+    'missing a value (no dividend, no sector on record) fails any filter on that value. dataAsOf is the date of the ' +
+    'nightly refresh: P/E, forward P/E and market cap are priced at that day\'s close, so they already reflect any ' +
+    'move up to then and are not old data. A result with staleAsOf missed its refresh: name that one stock\'s date, ' +
+    'never present the whole set as that old, and use getKeyStatistics for its current multiples if they matter to ' +
+    'the answer. week52High against a live quote measures a pullback. The user already sees the ' +
     'results as a ranked list with logos, health scores and the ranked metric: do not repeat them as a table or list. ' +
     'Reply with what the ranking means, citing a figure only where it makes a point.',
   inputSchema: jsonSchema<ScreenerToolFilters & {
@@ -711,7 +716,12 @@ export const screenStocks = tool({
 
     const present = new Set(rows.map((r) => r.ticker.toUpperCase()));
     const notCovered = symbols?.filter((t) => !present.has(t)) ?? [];
-    const oldest = ranked.reduce<string | null>((min, r) => (!min || r.updated_at < min ? r.updated_at : min), null);
+    // The newest date is the table's; a row a few days behind it missed its
+    // refresh and is flagged on its own. Reporting the oldest row as the date
+    // of the whole set had Bull call nightly data "five months old" because one
+    // holding (TSM) had dropped out of the refresh.
+    const newest = ranked.reduce<string | null>((max, r) => (!max || r.updated_at > max ? r.updated_at : max), null);
+    const staleBefore = newest ? new Date(Date.parse(newest) - 3 * 86_400_000).toISOString() : null;
 
     // For each active filter, how many stocks would match without it. The
     // biggest jump is the bottleneck, which is what lets Bull critique a filter
@@ -739,18 +749,21 @@ export const screenStocks = tool({
       ...(filterImpact ? { filterImpact } : {}),
       rankedBy: sortBy,
       order,
-      dataAsOf: oldest?.slice(0, 10) ?? null,
+      dataAsOf: newest?.slice(0, 10) ?? null,
       ...(notCovered.length > 0 ? { notCovered } : {}),
       results: ranked.map((r, i) => ({
         rank: i + 1,
         ticker: r.ticker,
         name: r.name,
         sector: r.sector,
+        ...(staleBefore && r.updated_at < staleBefore ? { staleAsOf: r.updated_at.slice(0, 10) } : {}),
         healthScore: r.health_score,
         healthGrade: r.health_score_grade,
         marketCap: fmt(r.market_cap),
         pe: round1(r.pe_ratio),
+        forwardPe: round1(r.forward_pe),
         pb: round1(r.pb_ratio),
+        week52High: r.week52_high,
         beta: round1(r.beta),
         // screener_stats stores these three as 0..1 fractions
         dividendYieldPct: round1(r.dividend_yield != null ? r.dividend_yield * 100 : null),
@@ -1275,9 +1288,15 @@ export function getPortfolioContextTool(userId: string, allowed: boolean) {
 
 const getLiveQuote = tool({
   description:
-    'Fetch the live (real-time) stock price and basic market data for a ticker. ' +
-    'Use this when the user asks what a stock is trading at, its daily change, volume, ' +
-    'or 52-week range. Costs ~1 API credit.',
+    'Fetch the current stock price and day change for a ticker. Use it whenever the answer depends on where a ' +
+    'price is now: what a stock trades at, its move today, a pullback or dip, how far it sits from the user\'s ' +
+    'average cost or its 52-week high. Costs 1 API credit, so fetch it rather than offer to; for several tickers, ' +
+    'call it once per ticker in the same step. session says which price this is: regular (market open), ' +
+    'pre-market or after-hours (an extended-hours trade at extendedTradeAt, the same price the Holdings page ' +
+    'shows), or closed (the last regular close, no extended trade since). changePercent is measured from ' +
+    'previousClose. Outside the regular session, open, high and low belong to the last regular session. Word ' +
+    'the move to match the session: "up 0.3% in pre-market", or "closed down 1.5% on Friday", never "today" for ' +
+    'a session that has ended.',
   inputSchema: jsonSchema<{ ticker: string }>({
     type: 'object',
     properties: {
@@ -1286,13 +1305,31 @@ const getLiveQuote = tool({
     required: ['ticker'],
   }),
   execute: async ({ ticker }) => {
+    const symbol = ticker.toUpperCase();
     try {
-      const q = await getStockQuote(ticker.toUpperCase());
+      // Off-session a plain quote is the last close and that session's change,
+      // which Bull reported as "down 1.5% today" on a Monday pre-market. prepost
+      // returns the extended-hours trade instead, as the stock page and Holdings do.
+      const extended = isOutsideRegularSessionET();
+      const q = (await getStockQuotes([symbol], { prepost: extended })).get(symbol);
+      if (!q) return { error: `Could not fetch quote for ${symbol}.` };
+      // Label by the trade's own time: before Monday's first pre-market trade
+      // the extended price is still Friday's after-hours print.
+      const etHour = q.et != null
+        ? Number(new Date(q.et * 1000).toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false }))
+        : null;
+      const session = !extended ? 'regular' : etHour == null ? 'closed' : etHour < 12 ? 'pre-market' : 'after-hours';
       // StockQuote uses short Finnhub-style fields: c=close, d=change, dp=changePercent,
-      // h=high, l=low, o=open, pc=previousClose, t=timestamp
+      // h=high, l=low, o=open, pc=previousClose, t=timestamp, et=extended trade time
       const changeSign = (q.d ?? 0) >= 0 ? '+' : '';
       return {
-        ticker: ticker.toUpperCase(),
+        ticker: symbol,
+        session,
+        ...(q.et != null && session !== 'regular' ? {
+          extendedTradeAt: new Date(q.et * 1000).toLocaleString('en-US', {
+            timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit',
+          }) + ' ET',
+        } : {}),
         price: q.c != null ? `$${q.c.toFixed(2)}` : 'N/A',
         priceRaw: q.c ?? null,
         change: q.d != null ? `${changeSign}${q.d.toFixed(2)}` : 'N/A',
@@ -1304,7 +1341,7 @@ const getLiveQuote = tool({
       };
     } catch (err) {
       if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
-      return { error: `Could not fetch quote for ${ticker}: ${(err as Error).message}` };
+      return { error: `Could not fetch quote for ${symbol}: ${(err as Error).message}` };
     }
   },
 });
@@ -1314,7 +1351,11 @@ const getKeyStatistics = tool({
     'Fetch key valuation and financial statistics for a stock: P/E ratio (TTM and forward), ' +
     'P/B ratio, EV/EBITDA, beta, market cap, dividend yield, profit margin, short ratio, and growth rates. ' +
     'Use when the user asks whether a stock is expensive, its valuation multiples, or general financial health. ' +
-    'Costs ~200 API credits — use only when statistics are specifically needed.',
+    // Said ~200 until 2026-10-26; /statistics is ~53 (screener/refresh measures
+    // 5 x 53), and the overstatement made Bull ask permission instead of fetching.
+    'Costs about 50 API credits, cached for a day. For a set of stocks, screenStocks has nightly P/E, forward ' +
+    'P/E and P/B for free; use this when a stock is not covered there, its row is stale, or EV/EBITDA, short ' +
+    'ratio or EPS growth is needed.',
   inputSchema: jsonSchema<{ ticker: string }>({
     type: 'object',
     properties: {

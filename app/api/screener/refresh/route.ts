@@ -53,25 +53,33 @@ export const dynamic = 'force-dynamic';
 
 const BATCH_SIZE = 5;
 
-/** Stamp market_cap + last_refreshed_at onto screener_universe and promote big caps. */
-async function stampUniverse(rows: { ticker: string; market_cap: number | null }[]) {
-  if (rows.length === 0) return;
+/**
+ * Stamp market_cap + last_refreshed_at onto screener_universe. Promotion to
+ * tier 1 happens inside fetchAndUpsertScreenerStats, for every caller.
+ */
+async function stampUniverse(symbols: string[], rows: { ticker: string; market_cap: number | null }[]) {
+  if (symbols.length === 0) return;
   const supabase = createServerClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
   const now = new Date().toISOString();
 
-  const stamp = rows.map((r) => ({ ticker: r.ticker, market_cap: r.market_cap, last_refreshed_at: now }));
-  await db.from('screener_universe').upsert(stamp, { onConflict: 'ticker' }).then(
-    () => undefined,
-    () => undefined,
-  );
+  if (rows.length > 0) {
+    const stamp = rows.map((r) => ({ ticker: r.ticker, market_cap: r.market_cap, last_refreshed_at: now }));
+    await db.from('screener_universe').upsert(stamp, { onConflict: 'ticker' }).then(
+      () => undefined,
+      () => undefined,
+    );
+  }
 
-  const promote = rows
-    .filter((r) => (r.market_cap ?? 0) >= MARKET_CAP_PROMOTION_FLOOR)
-    .map((r) => r.ticker);
-  if (promote.length > 0) {
-    await db.from('screener_universe').update({ tier: 1 }).in('ticker', promote).eq('tier', 0).then(
+  // A symbol that came back with no stats was still tried. Left unstamped it
+  // kept a null last_refreshed_at, stayed at the head of the discovery queue,
+  // and every nightly sweep retried the same dead tickers, so nothing behind
+  // them was reached after mid-July.
+  const fetched = new Set(rows.map((r) => r.ticker));
+  const missed = symbols.filter((s) => !fetched.has(s));
+  if (missed.length > 0) {
+    await db.from('screener_universe').update({ last_refreshed_at: now }).in('ticker', missed).then(
       () => undefined,
       () => undefined,
     );
@@ -134,7 +142,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
 
   try {
     const rows = await fetchAndUpsertScreenerStats(symbols);
-    await stampUniverse(rows.map((r) => ({ ticker: r.ticker, market_cap: r.market_cap })));
+    await stampUniverse(symbols, rows.map((r) => ({ ticker: r.ticker, market_cap: r.market_cap })));
 
     const promoted = rows.filter((r) => (r.market_cap ?? 0) >= MARKET_CAP_PROMOTION_FLOOR).length;
 
