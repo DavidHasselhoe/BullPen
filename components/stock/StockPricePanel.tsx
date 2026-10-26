@@ -411,8 +411,11 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
     const [etHStr, etMStr] = etTimeStr.split(':');
     const etMins = parseInt(etHStr) * 60 + parseInt(etMStr);
     const liveSession: 'pre' | 'regular' | 'post' = etMins < 570 ? 'pre' : etMins >= 960 ? 'post' : 'regular';
+    // Only a session-tagged line gets a session on its live point: gold has no
+    // pre-market, and tagging its last point by the NY clock greyed it out.
+    const session = chartData.some((d) => d.session) ? liveSession : undefined;
 
-    return [...chartData, { time: nowSec, price: live.price, volume: 0, session: liveSession }];
+    return [...chartData, { time: nowSec, price: live.price, volume: 0, session }];
   }, [chartData, isIntradayRange, isLive, live]);
 
   // Strip pre/post candles when extended hours are hidden (1D and 5D).

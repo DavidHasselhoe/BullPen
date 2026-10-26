@@ -167,7 +167,12 @@ export function inferAssetType(symbol: string, instrumentType?: string): AssetTy
 
 // ─── Type guards ──────────────────────────────────────────────────────────────
 
-export const has24hTrading = (t: AssetType): boolean => t === 'crypto';
+/**
+ * No US exchange sessions: no pre-market, after-hours or 9:30 open. Crypto
+ * trades 24/7; commodities and forex nearly 24h on weekdays. Gold was charted
+ * as a stock, its morning drawn grey and labelled "Pre-market".
+ */
+export const has24hTrading = (t: AssetType): boolean => t === 'crypto' || t === 'commodity' || t === 'forex';
 export const hasEarnings   = (t: AssetType): boolean => t === 'stock' || t === 'etf';
 export const hasFinancials = (t: AssetType): boolean => t === 'stock';
 export const isCrypto      = (t: AssetType): boolean => t === 'crypto';

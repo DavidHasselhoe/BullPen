@@ -77,7 +77,11 @@ async function handler(
   const todayDateET = is1D && !isCrypto24h
     ? new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) // "YYYY-MM-DD"
     : undefined;
-  const from = is1D ? now - 24 * 60 * 60 : now - (config.daysBack + padDays) * 24 * 60 * 60;
+  // Commodities and forex close for the weekend, so a plain last-24h window is
+  // empty from Friday evening to Sunday evening. Ask for three days (4,320
+  // one-minute bars fits one 5,000-point call) and keep the last 24h that traded.
+  const weekendGap = is1D && isCrypto24h && assetType !== 'crypto';
+  const from = is1D ? now - (weekendGap ? 72 : 24) * 60 * 60 : now - (config.daysBack + padDays) * 24 * 60 * 60;
   // 1W uses 5min bars — include pre/post market candles so today's extended-hours
   // move shows as part of the line instead of stopping at the prior regular close.
   // 1M (1h bars) is deliberately excluded: TwelveData rejects prepost for any
@@ -163,6 +167,12 @@ async function handler(
       }
     } else {
       candles = await withRateLimitRetry(() => getStockCandles(symbol, from, now, resolution, candleOptions));
+    }
+
+    if (weekendGap && candles && candles.t.length > 0) {
+      const start = candles.t.findIndex((t) => t >= candles!.t[candles!.t.length - 1] - 24 * 60 * 60);
+      const keep = <T,>(a: T[]) => a.slice(start);
+      candles = { ...candles, t: keep(candles.t), o: keep(candles.o), h: keep(candles.h), l: keep(candles.l), c: keep(candles.c), v: keep(candles.v) };
     }
 
     if (!candles || candles.s === 'no_data' || candles.t.length === 0) {
