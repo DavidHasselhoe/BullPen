@@ -83,6 +83,7 @@ const STATUS_LABELS: Record<string, string> = {
   applyPreset: 'Applying preset…',
   toggleVolume: 'Updating volume display…',
   toggleEvents: 'Updating earnings markers…',
+  drawLevels: 'Drawing levels…',
 };
 
 /** Follow-up prompts to suggest after a given tool has just answered the user. Capped to 3 by callers. */
@@ -91,6 +92,7 @@ const FOLLOWUPS: Record<string, string[]> = {
   getKeyStatistics: ['Show financial health', 'Compare to a peer'],
   getCompanyFinancials: ['Show financial health', 'Show valuation multiples'],
   getLiveQuote: ['Show financial health', 'Show recent earnings'],
+  getTechnicals: ['Show recent earnings', 'Show financial health'],
   getInsiderActivity: ['Show financial health', 'What is the current price?'],
   getEarningsData: ['Show financial health', 'What is the current price?'],
   getCompanyProfile: ['Show financial health', 'What is the current price?'],

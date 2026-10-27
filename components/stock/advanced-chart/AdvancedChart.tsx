@@ -18,6 +18,7 @@ import type { AdvancedChartType } from '@/hooks/use-chart-prefs';
 import { useClock } from '@/hooks/use-clock';
 import { fmtClockDate, fmtClockTime, fmtTradingDate } from '@/lib/dates/clock';
 import { cn } from '@/lib/utils';
+import type { ChartLevel } from './chart-context';
 
 export type ChartTool = 'none' | 'measure' | 'alert';
 
@@ -43,10 +44,18 @@ interface Props {
   tool?: ChartTool;
   /** Called with a clicked price level when the alert tool is active. */
   onCreateAlert?: (price: number) => void;
+  /** Horizontal lines Bull drew (support, resistance...). */
+  levels?: ChartLevel[];
 }
 
 const UP = '#22c55e';
 const DOWN = '#ef4444';
+const LEVEL_COLOR = '#71717a';
+const LEVEL_TITLE_KEY = {
+  support: 'advancedChartLevelSupport',
+  resistance: 'advancedChartLevelResistance',
+  level: 'advancedChartLevelOther',
+} as const;
 
 interface LastBar { time: UTCTimestamp; open: number; high: number; low: number; close: number }
 interface MeasureBox {
@@ -106,7 +115,7 @@ function pricePoints(candles: OHLCV, displayFrom?: number) {
 
 export function AdvancedChart({
   candles, chartType, indicators, showVolume, isDark, intraday, fitKey, events, transactions, displayFrom,
-  livePrice, tool = 'none', onCreateAlert,
+  livePrice, tool = 'none', onCreateAlert, levels,
 }: Props) {
   const { t } = useTranslation('stock');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -215,6 +224,18 @@ export function AdvancedChart({
     priceSeriesRef.current = priceSeries;
     seriesRef.current.push(priceSeries);
     lastBarRef.current = points.candle.length ? points.candle[points.candle.length - 1] : null;
+
+    // ── Levels Bull drew. Neutral: green and red mean gain and loss here. ──
+    for (const level of levels ?? []) {
+      priceSeries.createPriceLine({
+        price: level.price,
+        color: LEVEL_COLOR,
+        lineWidth: 1,
+        lineStyle: level.kind === 'resistance' ? LineStyle.Dotted : LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: t(LEVEL_TITLE_KEY[level.kind]),
+      });
+    }
 
     // Markers (earnings events + SMA crosses) are all set in one call at the end.
     const markers: SeriesMarker<Time>[] = [];
@@ -383,7 +404,7 @@ export function AdvancedChart({
     }
 
     setLegendLines(newLegendLines);
-  }, [candles, points, chartType, indicators, showVolume, fitKey, events, transactions, t]);
+  }, [candles, points, chartType, indicators, showVolume, fitKey, events, transactions, levels, t]);
 
   // ── Live last-bar update (intraday) ─────────────────────────────────────────
   useEffect(() => {

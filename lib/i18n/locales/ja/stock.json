@@ -654,5 +654,9 @@
   "stockMetaDescriptionTicker": "BullPenで{{ticker}}のリアルタイム株価、財務データ、AI分析をチェック。",
   "assetMetaTitle": "{{name}}価格",
   "assetMetaDescription": "BullPenで{{name}}のリアルタイム価格とチャートをチェック。",
-  "commodityMetaDescription": "BullPenで{{name}}のリアルタイム価格、投資できるファンドや企業、価格を動かす要因をチェック。"
+  "commodityMetaDescription": "BullPenで{{name}}のリアルタイム価格、投資できるファンドや企業、価格を動かす要因をチェック。",
+  "advancedChartLevelSupport": "サポート",
+  "advancedChartLevelResistance": "レジスタンス",
+  "advancedChartLevelOther": "価格帯",
+  "advancedChartClearLevels": "ラインを消去"
 }

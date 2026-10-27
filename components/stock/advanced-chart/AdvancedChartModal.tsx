@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
 import { useStockQuote } from '@/hooks/use-stock-price';
@@ -29,7 +29,7 @@ import {
 import { AdvancedChart, type ChartTool } from './AdvancedChart';
 import { ChartToolbar } from './ChartToolbar';
 import { ChartAIPanel } from './ChartAIPanel';
-import { buildChartSnapshot, type ChartAction } from './chart-context';
+import { buildChartSnapshot, type ChartAction, type ChartLevel } from './chart-context';
 import { etDayKey } from '@/lib/charts/intraday-axis';
 import { useChartPresets, type ChartPreset } from '@/hooks/use-chart-presets';
 
@@ -40,6 +40,8 @@ interface CandlesResponse {
 }
 
 const INTRADAY_RANGES = new Set<ChartRange>(['1D', '1W', '1M']);
+// Stable, so a caller without levels doesn't rebuild the chart every render.
+const NO_LEVELS: ChartLevel[] = [];
 
 // Approximate bars-per-calendar-day + the visible window per range — used to
 // fetch enough warm-up history for long indicators (e.g. SMA 200) so they cover
@@ -90,6 +92,9 @@ interface Props {
   holding?: TransactionMarkerInput;
   sales: SaleMarkerInput[];
   purchases?: PurchaseMarkerInput[];
+  /** Lines Bull drew, owned by the caller so a "Show on chart" link can set them. */
+  levels?: ChartLevel[];
+  onLevelsChange?: (levels: ChartLevel[]) => void;
 }
 
 export function AdvancedChartModal({
@@ -97,6 +102,7 @@ export function AdvancedChartModal({
   chartType, onChartType, onRangeChange, indicators, onAddIndicator, onRemoveIndicator, onUpdateIndicator, onApplyPreset,
   onReplaceIndicators, onApplyConfig,
   showVolume, onToggleVolume, showEvents, onToggleEvents, showTransactions, onToggleTransactions, holding, sales, purchases = [],
+  levels = NO_LEVELS, onLevelsChange,
 }: Props) {
   const { t } = useTranslation('stock');
   const router = useRouter();
@@ -239,10 +245,11 @@ export function AdvancedChartModal({
         indicatorLabels: indicators.map(indicatorLabel),
         showVolume,
         showEvents,
+        levels,
         candles,
         displayFrom,
       }),
-    [ticker, range, chartType, indicators, showVolume, showEvents, candles, displayFrom],
+    [ticker, range, chartType, indicators, showVolume, showEvents, levels, candles, displayFrom],
   );
   // Bull can add several indicators in one reply; each add has to build on the
   // last one, not on the list from before the reply.
@@ -296,6 +303,9 @@ export function AdvancedChartModal({
         break;
       case 'chart_toggle_events':
         if (action.show !== showEvents) onToggleEvents();
+        break;
+      case 'chart_draw_levels':
+        onLevelsChange?.(action.levels);
         break;
     }
   };
@@ -376,7 +386,19 @@ export function AdvancedChartModal({
               livePrice={livePrice}
               tool={tool}
               onCreateAlert={handleCreateAlert}
+              levels={levels}
             />
+          )}
+
+          {hasData && levels.length > 0 && onLevelsChange && (
+            <button
+              type="button"
+              onClick={() => onLevelsChange([])}
+              className="absolute right-20 top-2 z-10 inline-flex min-h-8 items-center gap-1.5 rounded-full border border-border/60 bg-background/90 px-3 text-xs text-muted-foreground backdrop-blur transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {t('advancedChartClearLevels')}
+              <X className="h-3.5 w-3.5" aria-hidden />
+            </button>
           )}
         </div>
 

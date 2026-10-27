@@ -22,8 +22,24 @@ export interface Level {
   lastTouched: number;
 }
 
+export interface BigMove {
+  at: number;
+  changePct: number;
+  /** Open against the prior close: how much of the move happened overnight. */
+  gapPct: number;
+  /** That day's volume over the 50-day average. */
+  volumeVsAvg: number | null;
+  /** True when the day was, or followed, an earnings report. Null when no earnings dates were given. */
+  onEarnings: boolean | null;
+}
+
 export interface Technicals {
   price: number;
+  volume: { latest: number; avg50: number; latestVsAvg: number; last5VsAvg: number } | null;
+  /** SMA 50 against SMA 200, and the last time they crossed within the history. */
+  crossover: { sma50Above200: boolean; last: { type: 'golden' | 'death'; at: number } | null } | null;
+  /** The three largest daily moves of the last three months, biggest first. */
+  bigMoves: BigMove[];
   movingAverages: { length: number; value: number; pctFromPrice: number; slope: 'rising' | 'falling' | 'flat' }[];
   /** Lengths asked for that need more history than the bars cover. */
   unavailableLengths: number[];
@@ -36,9 +52,68 @@ export interface Technicals {
 
 const round = (n: number) => Math.round(n * 100) / 100;
 const pctFrom = (price: number, level: number) => round(((price - level) / level) * 100);
+/** A daily bar's trading date (YYYY-MM-DD, New York). */
+export const etDate = (unix: number) => new Date(unix * 1000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-export function computeTechnicals(bars: OHLCV, price: number, smaLengths = DEFAULT_SMA_LENGTHS): Technicals {
+/** Three months of trading days, the window for bigMoves. */
+const MOVE_BARS = 63;
+
+export function computeTechnicals(
+  bars: OHLCV,
+  price: number,
+  smaLengths = DEFAULT_SMA_LENGTHS,
+  /** Earnings report dates (YYYY-MM-DD). Omit when unknown and onEarnings stays null. */
+  earningsDates?: string[],
+): Technicals {
   const n = bars.c.length;
+
+  const avg = (from: number, to: number) => {
+    let s = 0;
+    for (let i = from; i < to; i++) s += bars.v[i];
+    return s / (to - from);
+  };
+  const avg50 = n >= 51 ? avg(n - 51, n - 1) : 0;
+  const volume = avg50 > 0
+    ? { latest: bars.v[n - 1], avg50: Math.round(avg50), latestVsAvg: round(bars.v[n - 1] / avg50), last5VsAvg: round(avg(n - 5, n) / avg50) }
+    : null;
+
+  const sma50 = sma(bars.c, 50);
+  const sma200 = sma(bars.c, 200);
+  let crossover: Technicals['crossover'] = null;
+  if (sma50[n - 1] != null && sma200[n - 1] != null) {
+    let last: { type: 'golden' | 'death'; at: number } | null = null;
+    for (let i = n - 1; i > 0 && !last; i--) {
+      const a = sma50[i - 1], b = sma200[i - 1], c = sma50[i]!, d = sma200[i]!;
+      if (a == null || b == null) break;
+      if (a <= b && c > d) last = { type: 'golden', at: bars.t[i] };
+      else if (a >= b && c < d) last = { type: 'death', at: bars.t[i] };
+    }
+    crossover = { sma50Above200: sma50[n - 1]! > sma200[n - 1]!, last };
+  }
+
+  const earnings = earningsDates ? new Set(earningsDates) : null;
+  // Reports come quarterly, so dates go stale: a move well past the newest
+  // known report may sit on one the cache hasn't caught yet. Unknown, not false.
+  const knownThrough = earningsDates?.length
+    ? etDate(Math.max(...earningsDates.map((d) => Date.parse(`${d}T12:00:00Z`) / 1000)) + 80 * 86_400)
+    : null;
+  const moves: BigMove[] = [];
+  for (let i = Math.max(1, n - MOVE_BARS); i < n; i++) {
+    const prev = bars.c[i - 1];
+    // Before-open reports move that day, after-close reports move the next.
+    const day = etDate(bars.t[i]);
+    const onEarnings = earnings && knownThrough && day <= knownThrough
+      ? earnings.has(day) || earnings.has(etDate(bars.t[i - 1]))
+      : null;
+    moves.push({
+      at: bars.t[i],
+      changePct: pctFrom(bars.c[i], prev),
+      gapPct: pctFrom(bars.o[i], prev),
+      volumeVsAvg: avg50 > 0 ? round(bars.v[i] / avg50) : null,
+      onEarnings,
+    });
+  }
+  const bigMoves = moves.sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct)).slice(0, 3);
 
   const movingAverages: Technicals['movingAverages'] = [];
   const unavailableLengths: number[] = [];
@@ -103,6 +178,9 @@ export function computeTechnicals(bars: OHLCV, price: number, smaLengths = DEFAU
 
   return {
     price: round(price),
+    volume,
+    crossover,
+    bigMoves,
     movingAverages,
     unavailableLengths,
     rsi14,

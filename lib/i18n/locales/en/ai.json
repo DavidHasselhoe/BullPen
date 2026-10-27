@@ -176,5 +176,15 @@
   "receiptQtySharesOf_one": "{{count}} share of ",
   "receiptQtySharesOf_other": "{{count}} shares of ",
   "receiptSharesCount_one": "{{count}} share",
-  "receiptSharesCount_other": "{{count}} shares"
+  "receiptSharesCount_other": "{{count}} shares",
+  "technicalsCardTitle": "Technicals",
+  "technicalsChartAria": "{{ticker}} over the past year with its 50-day and 200-day averages and support and resistance lines",
+  "technicalsLegend50": "50-day",
+  "technicalsLegend200": "200-day",
+  "technicalsLegendLevels": "Support and resistance",
+  "technicalsVsSma": "vs {{length}}-day",
+  "technicalsRsi": "RSI 14",
+  "technicalsFromHigh": "From 52-wk high",
+  "technicalsShowOnChart": "Show on chart",
+  "toolStatus_drawLevels": "Drawing levels…"
 }

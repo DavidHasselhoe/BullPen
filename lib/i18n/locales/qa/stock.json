@@ -654,5 +654,9 @@
   "stockMetaDescriptionTicker": "«Reeaal-tiimee priicee, fiinaanciiaals, aand AAII-pooweereed aanaalysiis foor {{ticker}} oon BuullPeen.»",
   "assetMetaTitle": "«{{name}} Priicee»",
   "assetMetaDescription": "«Reeaal-tiimee priicee aand chaart foor {{name}} oon BuullPeen.»",
-  "commodityMetaDescription": "«Thee liivee {{noun}} priicee, thee fuunds aand coompaaniiees peeooplee oown iit throouugh, aand whaat moovees iit, eexplaaiineed oon BuullPeen.»"
+  "commodityMetaDescription": "«Thee liivee {{noun}} priicee, thee fuunds aand coompaaniiees peeooplee oown iit throouugh, aand whaat moovees iit, eexplaaiineed oon BuullPeen.»",
+  "advancedChartLevelSupport": "«Suuppoort»",
+  "advancedChartLevelResistance": "«Reesiistaancee»",
+  "advancedChartLevelOther": "«Leeveel»",
+  "advancedChartClearLevels": "«Cleeaar liinees»"
 }

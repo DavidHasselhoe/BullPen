@@ -34,6 +34,7 @@ interface AIContext {
     indicators?: unknown;
     showVolume?: unknown;
     showEvents?: unknown;
+    levels?: unknown;
     window?: Record<string, unknown> | null;
   };
 }
@@ -47,7 +48,9 @@ function chartContextPrefix(symbol: string, c: NonNullable<AIContext['chart']>):
   const windowLine = w
     ? ` Visible window: ${num(w.bars)} bars, open ${num(w.open)}, close ${num(w.close)}, high ${num(w.high)}, low ${num(w.low)}, ${num(w.changePct)}% over the period.`
     : '';
-  return `[Current page context: The user has the fullscreen chart for ${symbol} open: ${word(c.timeframe)} timeframe, ${word(c.chartType)} chart, indicators: ${indicators.length ? indicators.join(', ') : 'none'}, volume ${c.showVolume === true ? 'shown' : 'hidden'}, earnings markers ${c.showEvents === true ? 'shown' : 'hidden'}.${windowLine} When they ask to change the chart, call the chart tools rather than describing how; several in one turn is fine, then confirm in one line. Read trend, moving averages and support from getTechnicals, not from the visible window.]\n\n`;
+  const levels = (Array.isArray(c.levels) ? c.levels : []).slice(0, 8)
+    .map((l) => `${word((l as { kind?: unknown })?.kind)} ${num((l as { price?: unknown })?.price)}`);
+  return `[Current page context: The user has the fullscreen chart for ${symbol} open: ${word(c.timeframe)} timeframe, ${word(c.chartType)} chart, indicators: ${indicators.length ? indicators.join(', ') : 'none'}, lines drawn: ${levels.length ? levels.join(', ') : 'none'}, volume ${c.showVolume === true ? 'shown' : 'hidden'}, earnings markers ${c.showEvents === true ? 'shown' : 'hidden'}.${windowLine} When they ask to change the chart, call the chart tools rather than describing how; several in one turn is fine, then confirm in one line. Read trend, moving averages and support from getTechnicals, not from the visible window.]\n\n`;
 }
 
 /** Turns the screener page's state into the exact screenStocks arguments that reproduce it. */
@@ -89,9 +92,6 @@ export async function runAgent(
   allowHoldingsContext?: boolean | null,
   abortSignal?: AbortSignal,
 ) {
-  // The history comes from the client. Only user and assistant turns: a
-  // client-sent 'system' message would reach the model with system authority.
-  const modelMessages = await convertToModelMessages(messages.filter((m) => m.role === 'user' || m.role === 'assistant'));
 
   const languagePrefix = language && language !== 'en'
     ? `[Language: You MUST respond entirely in ${languageName(language)}. Do not switch to English under any circumstance.]\n\n`
@@ -156,6 +156,14 @@ export async function runAgent(
     ...(chartSymbol ? CHART_TOOLS : {}),
   };
   assertNoMutatingToolsWithExternalContent(Object.keys(tools));
+
+  // The history comes from the client. Only user and assistant turns: a
+  // client-sent 'system' message would reach the model with system authority.
+  // `tools` lets each tool's toModelOutput trim its past results too.
+  const modelMessages = await convertToModelMessages(
+    messages.filter((m) => m.role === 'user' || m.role === 'assistant'),
+    { tools },
+  );
 
   /**
    * Everything that varies per request, kept OUT of the cached prefix.

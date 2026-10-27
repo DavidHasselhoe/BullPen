@@ -176,5 +176,15 @@
   "receiptQtySharesOf_one": "«{{count}} shaaree oof »",
   "receiptQtySharesOf_other": "«{{count}} shaarees oof »",
   "receiptSharesCount_one": "«{{count}} shaaree»",
-  "receiptSharesCount_other": "«{{count}} shaarees»"
+  "receiptSharesCount_other": "«{{count}} shaarees»",
+  "technicalsCardTitle": "«Teechniicaals»",
+  "technicalsChartAria": "«{{ticker}} ooveer thee paast yeeaar wiith iits 50-daay aand 200-daay aaveeraagees aand suuppoort aand reesiistaancee liinees»",
+  "technicalsLegend50": "«50-daay»",
+  "technicalsLegend200": "«200-daay»",
+  "technicalsLegendLevels": "«Suuppoort aand reesiistaancee»",
+  "technicalsVsSma": "«vs {{length}}-daay»",
+  "technicalsRsi": "«RSI 14»",
+  "technicalsFromHigh": "«Froom 52-wk hiigh»",
+  "technicalsShowOnChart": "«Shoow oon chaart»",
+  "toolStatus_drawLevels": "«Draawiing leeveels…»"
 }

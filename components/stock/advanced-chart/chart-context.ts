@@ -22,7 +22,33 @@ export type ChartAction =
   | { type: 'chart_clear_indicators' }
   | { type: 'chart_apply_preset'; preset: string }
   | { type: 'chart_toggle_volume'; show: boolean }
-  | { type: 'chart_toggle_events'; show: boolean };
+  | { type: 'chart_toggle_events'; show: boolean }
+  | { type: 'chart_draw_levels'; levels: ChartLevel[] };
+
+/** A horizontal line Bull draws at a price it talked about. */
+export interface ChartLevel {
+  price: number;
+  kind: 'support' | 'resistance' | 'level';
+}
+
+const KIND_CODE = { support: 's', resistance: 'r', level: 'l' } as const;
+
+/** `?levels=` value for a fullscreen-chart link, e.g. "s851.01,r871.13". */
+export function encodeLevels(levels: ChartLevel[]): string {
+  return levels.map((l) => `${KIND_CODE[l.kind]}${l.price}`).join(',');
+}
+
+/** Reads `?levels=`. Anything malformed is dropped rather than drawn at a wrong price. */
+export function decodeLevels(raw: string | null): ChartLevel[] {
+  if (!raw) return [];
+  const out: ChartLevel[] = [];
+  for (const part of raw.split(',').slice(0, 8)) {
+    const kind = part[0] === 's' ? 'support' : part[0] === 'r' ? 'resistance' : part[0] === 'l' ? 'level' : null;
+    const price = Number(part.slice(1));
+    if (kind && Number.isFinite(price) && price > 0) out.push({ price, kind });
+  }
+  return out;
+}
 
 // ── The view Bull reads ─────────────────────────────────────────────────────
 export interface ChartSnapshot {
@@ -32,6 +58,8 @@ export interface ChartSnapshot {
   indicators: string[];        // human labels, e.g. ["SMA 50", "RSI 14"]
   showVolume: boolean;
   showEvents: boolean;
+  /** Lines Bull drew. */
+  levels: ChartLevel[];
   /** Stats over the *visible* window (from the loaded candles). */
   window: {
     bars: number;
@@ -54,6 +82,7 @@ export function buildChartSnapshot(args: {
   indicatorLabels: string[];
   showVolume: boolean;
   showEvents: boolean;
+  levels?: ChartLevel[];
   candles: OHLCV | null;
   /** Start of the visible window (unix s). Bars before it are indicator
    *  warm-up and must not count as "the period". */
@@ -92,6 +121,7 @@ export function buildChartSnapshot(args: {
     indicators: args.indicatorLabels,
     showVolume: args.showVolume,
     showEvents: args.showEvents,
+    levels: args.levels ?? [],
     window,
   };
 }

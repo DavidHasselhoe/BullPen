@@ -2,7 +2,7 @@
  * Self-check for lib/finance/technicals.ts. Run: npm run test-technicals
  */
 import assert from 'node:assert/strict';
-import { computeTechnicals } from '../lib/finance/technicals';
+import { computeTechnicals, etDate as etDay } from '../lib/finance/technicals';
 
 // 300 bars oscillating between ~90 and ~110 with a 40-bar period, so swing
 // lows sit near 90 and swing highs near 110, several times each.
@@ -33,5 +33,27 @@ assert.ok(t.support[0].distancePct > 0 && t.resistance[0].distancePct < 0);
 
 assert.ok(t.rsi14 != null && t.rsi14 >= 0 && t.rsi14 <= 100);
 assert.equal(t.high52w.value, 110.5);
+assert.equal(t.volume?.latestVsAvg, 1, 'flat volume is 1x its average');
+
+// A long climb then a slide: the 50-day falls through the 200-day.
+const c2 = Array.from({ length: n }, (_, i) => (i < 200 ? 100 + i * 0.5 : 200 - (i - 200) * 0.5));
+const v2 = c2.map(() => 1_000);
+// A 15% jump on 3x volume ten days ago, the session after an earnings report.
+const jump = n - 10;
+for (let i = jump; i < n; i++) c2[i] *= 1.15;
+v2[jump] = 3_000;
+const bars2 = { ...bars, o: c2, h: c2, l: c2, c: c2, v: v2 };
+const t2 = computeTechnicals(bars2, c2[n - 1], undefined, [etDay(bars.t[jump - 1])]);
+
+assert.equal(t2.crossover?.sma50Above200, false);
+assert.equal(t2.crossover?.last?.type, 'death');
+assert.equal(t2.bigMoves[0].at, bars.t[jump], 'the jump is the biggest move');
+assert.ok(Math.abs(t2.bigMoves[0].changePct - 15) < 1.5, `jump ~15%, got ${t2.bigMoves[0].changePct}`);
+assert.ok(t2.bigMoves[0].volumeVsAvg! > 2.5);
+assert.equal(t2.bigMoves[0].onEarnings, true, 'moved the session after the report');
+assert.equal(computeTechnicals(bars2, 1).bigMoves[0].onEarnings, null, 'no dates given means unknown');
+// The newest known report is 100 days before the jump: a newer one may be missing.
+const stale = computeTechnicals(bars2, 1, undefined, [etDay(bars.t[jump] - 100 * 86_400)]);
+assert.equal(stale.bigMoves[0].onEarnings, null, 'past the known report dates means unknown');
 
 console.log('test-technicals: ok');

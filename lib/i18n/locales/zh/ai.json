@@ -176,5 +176,15 @@
   "receiptSharesCount_one": "{{count}} 股",
   "receiptSharesCount_other": "{{count}} 股",
   "statisticsEvEbitda": "EV/EBITDA",
-  "toolStatus_getUpcomingEarnings": "正在查询财报日期…"
+  "toolStatus_getUpcomingEarnings": "正在查询财报日期…",
+  "technicalsCardTitle": "技术面",
+  "technicalsChartAria": "{{ticker}} 过去一年走势，含50日和200日均线及支撑位与阻力位",
+  "technicalsLegend50": "50日",
+  "technicalsLegend200": "200日",
+  "technicalsLegendLevels": "支撑与阻力",
+  "technicalsVsSma": "较{{length}}日线",
+  "technicalsRsi": "RSI 14",
+  "technicalsFromHigh": "距52周高点",
+  "technicalsShowOnChart": "在图表中查看",
+  "toolStatus_drawLevels": "正在绘制价位线…"
 }

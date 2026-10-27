@@ -2,6 +2,7 @@
 
 import { HealthScoreResultCard, type HealthScoreOutput } from './cards/HealthScoreResultCard';
 import { LiveQuoteResultCard, type LiveQuoteOutput } from './cards/LiveQuoteResultCard';
+import { TechnicalsResultCard, type TechnicalsOutput } from './cards/TechnicalsResultCard';
 import { KeyStatisticsResultCard, type KeyStatisticsOutput } from './cards/KeyStatisticsResultCard';
 import { CompanyProfileResultCard, type CompanyProfileOutput } from './cards/CompanyProfileResultCard';
 import { CompanyFinancialsResultCard, type CompanyFinancialsRow } from './cards/CompanyFinancialsResultCard';
@@ -108,6 +109,11 @@ export function ToolResultCard({
       const o = output as Partial<LiveQuoteOutput>;
       if (!o.price || !o.changePercent) return null;
       return <LiveQuoteResultCard output={o as LiveQuoteOutput} />;
+    }
+    case 'getTechnicals': {
+      const o = output as Partial<TechnicalsOutput>;
+      if (typeof o.price !== 'number' || !Array.isArray(o.movingAverages) || !o.high52w) return null;
+      return <TechnicalsResultCard output={o as TechnicalsOutput} />;
     }
     case 'getKeyStatistics': {
       const o = output as Partial<KeyStatisticsOutput> & { ticker?: string };

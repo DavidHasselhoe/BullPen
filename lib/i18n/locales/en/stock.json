@@ -654,5 +654,9 @@
   "stockMetaDescriptionTicker": "Real-time price, financials, and AI-powered analysis for {{ticker}} on BullPen.",
   "assetMetaTitle": "{{name}} Price",
   "assetMetaDescription": "Real-time price and chart for {{name}} on BullPen.",
-  "commodityMetaDescription": "The live {{noun}} price, the funds and companies people own it through, and what moves it, explained on BullPen."
+  "commodityMetaDescription": "The live {{noun}} price, the funds and companies people own it through, and what moves it, explained on BullPen.",
+  "advancedChartLevelSupport": "Support",
+  "advancedChartLevelResistance": "Resistance",
+  "advancedChartLevelOther": "Level",
+  "advancedChartClearLevels": "Clear lines"
 }

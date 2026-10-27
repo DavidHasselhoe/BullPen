@@ -654,5 +654,9 @@
   "stockMetaDescriptionTicker": "在 BullPen 查看 {{ticker}} 的实时股价、财务数据和 AI 分析。",
   "assetMetaTitle": "{{name}}价格",
   "assetMetaDescription": "在 BullPen 查看{{name}}的实时价格和走势图。",
-  "commodityMetaDescription": "在 BullPen 查看{{name}}的实时价格、可投资的基金和公司，以及影响价格的因素。"
+  "commodityMetaDescription": "在 BullPen 查看{{name}}的实时价格、可投资的基金和公司，以及影响价格的因素。",
+  "advancedChartLevelSupport": "支撑",
+  "advancedChartLevelResistance": "阻力",
+  "advancedChartLevelOther": "价位",
+  "advancedChartClearLevels": "清除线条"
 }

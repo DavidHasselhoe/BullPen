@@ -176,5 +176,15 @@
   "statisticsBeta": "ベータ値",
   "statisticsEvEbitda": "EV/EBITDA",
   "termsGateBeta": "ベータ値",
-  "toolStatus_getUpcomingEarnings": "決算発表日を確認しています…"
+  "toolStatus_getUpcomingEarnings": "決算発表日を確認しています…",
+  "technicalsCardTitle": "テクニカル",
+  "technicalsChartAria": "過去1年の{{ticker}}、50日・200日移動平均とサポート・レジスタンスライン",
+  "technicalsLegend50": "50日",
+  "technicalsLegend200": "200日",
+  "technicalsLegendLevels": "サポートとレジスタンス",
+  "technicalsVsSma": "{{length}}日線比",
+  "technicalsRsi": "RSI 14",
+  "technicalsFromHigh": "52週高値比",
+  "technicalsShowOnChart": "チャートで表示",
+  "toolStatus_drawLevels": "ラインを描画中…"
 }

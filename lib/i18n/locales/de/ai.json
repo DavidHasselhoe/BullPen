@@ -176,5 +176,15 @@
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
   "termsGateBeta": "Beta",
-  "toolStatus_getUpcomingEarnings": "Prüfe Termine für Quartalszahlen…"
+  "toolStatus_getUpcomingEarnings": "Prüfe Termine für Quartalszahlen…",
+  "technicalsCardTitle": "Technische Analyse",
+  "technicalsChartAria": "{{ticker}} im letzten Jahr mit 50- und 200-Tage-Durchschnitt sowie Unterstützungs- und Widerstandslinien",
+  "technicalsLegend50": "50 Tage",
+  "technicalsLegend200": "200 Tage",
+  "technicalsLegendLevels": "Unterstützung und Widerstand",
+  "technicalsVsSma": "vs. {{length}} Tage",
+  "technicalsRsi": "RSI 14",
+  "technicalsFromHigh": "Vom 52-W-Hoch",
+  "technicalsShowOnChart": "Im Chart zeigen",
+  "toolStatus_drawLevels": "Linien werden gezeichnet…"
 }

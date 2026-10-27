@@ -654,5 +654,9 @@
   "stockMetaDescriptionTicker": "Cours en temps réel, données financières et analyse par IA de {{ticker}} sur BullPen.",
   "assetMetaTitle": "{{name}} : cours actuel",
   "assetMetaDescription": "{{name}} : prix en temps réel et graphique sur BullPen.",
-  "commodityMetaDescription": "{{name}} : prix en temps réel, les fonds et entreprises pour y investir, et ce qui fait bouger le prix, expliqués sur BullPen."
+  "commodityMetaDescription": "{{name}} : prix en temps réel, les fonds et entreprises pour y investir, et ce qui fait bouger le prix, expliqués sur BullPen.",
+  "advancedChartLevelSupport": "Support",
+  "advancedChartLevelResistance": "Résistance",
+  "advancedChartLevelOther": "Niveau",
+  "advancedChartClearLevels": "Effacer les lignes"
 }

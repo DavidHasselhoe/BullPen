@@ -176,5 +176,15 @@
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
   "termsGateBeta": "Beta",
-  "toolStatus_getUpcomingEarnings": "Sjekker datoer for resultatpublisering…"
+  "toolStatus_getUpcomingEarnings": "Sjekker datoer for resultatpublisering…",
+  "technicalsCardTitle": "Teknisk analyse",
+  "technicalsChartAria": "{{ticker}} det siste året med 50- og 200-dagers snitt og støtte- og motstandslinjer",
+  "technicalsLegend50": "50 dager",
+  "technicalsLegend200": "200 dager",
+  "technicalsLegendLevels": "Støtte og motstand",
+  "technicalsVsSma": "mot {{length}} dager",
+  "technicalsRsi": "RSI 14",
+  "technicalsFromHigh": "Fra 52-ukers topp",
+  "technicalsShowOnChart": "Vis i grafen",
+  "toolStatus_drawLevels": "Tegner nivåer…"
 }

@@ -3925,5 +3925,19 @@
   "stock.stockMetaDescriptionTicker": "c423c1736e56a7bfdeee5feb19a77393845a6040891d08803a31c428e4243f07",
   "stock.assetMetaTitle": "c5d659f49ff16e89f0142ce086246ffbc6f9b0de1ca6973a6d617635c0440459",
   "stock.assetMetaDescription": "ee7a500cd274e99a4f2bd7b4a9aeb1845a405bdb0236b92f0c0fd9816bff4011",
-  "stock.commodityMetaDescription": "6a30254048a2685fd0ac9472d9fa8906df73c957744c4482014f7a07902212c6"
+  "stock.commodityMetaDescription": "6a30254048a2685fd0ac9472d9fa8906df73c957744c4482014f7a07902212c6",
+  "ai.technicalsCardTitle": "e58cc3467233c87f3f8804df8553e00e1d149389746c6cf312590d6e8e5a1b11",
+  "ai.technicalsChartAria": "6ca8df71440b88c426570cc9278c866edff3fe3431b32cb0325a8f1de89aebf6",
+  "ai.technicalsLegend50": "790dba9a3b7b7517147c70bd409ca95e4aa3219a800ff69834c4780de8df883d",
+  "ai.technicalsLegend200": "928bc66ccf89126dbfd4c03a0153add3ccaed365e39458d4fedc250ad37830d7",
+  "ai.technicalsLegendLevels": "2fbfc9dd7c61df7f822410f3fae243323dd2f75c9cbcb05b2085928b39b7abd5",
+  "ai.technicalsVsSma": "32574146ba41128a30f43427728983fc4417089ee1c413b42858c7a160c97d42",
+  "ai.technicalsRsi": "d21c27e0a26dabb8eaba544fb758809744074c58a6ffe03368f55fdf336d58da",
+  "ai.technicalsFromHigh": "d387e0c271b91008b018c11e2e0badde718d7725da1e650b543b9945b9bba5fe",
+  "ai.technicalsShowOnChart": "aa7fdcc1fa7855a6b0e921a676e22fd338b53c4562a2fb1187e46e2b36749308",
+  "ai.toolStatus_drawLevels": "d547b3e066e59849b39322746667cd48d06a3f48245d3b67851feb3c388a6c17",
+  "stock.advancedChartLevelSupport": "be91940b79f469101df9a50544b6873aa5509a12f1f93f1cb5e3be3990d344b3",
+  "stock.advancedChartLevelResistance": "c35070bce1f5544161f673d2ab7c57d1c00804d69fffb266173621c3718ce4e6",
+  "stock.advancedChartLevelOther": "1709305c9fa966d14f56f0da3c3614bbc10adcf53d72f90341bb96d24afcfca3",
+  "stock.advancedChartClearLevels": "356551701da1189b73d5aed8d14b7e6acc07cd63d9769ea4d1a78e93eb59c857"
 }

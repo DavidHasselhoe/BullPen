@@ -176,5 +176,15 @@
   "financialsCapex": "CapEx",
   "insiderNet": "Net {{value}}",
   "statisticsEvEbitda": "EV/EBITDA",
-  "toolStatus_getUpcomingEarnings": "Vérification des dates de résultats…"
+  "toolStatus_getUpcomingEarnings": "Vérification des dates de résultats…",
+  "technicalsCardTitle": "Analyse technique",
+  "technicalsChartAria": "{{ticker}} sur un an avec ses moyennes à 50 et 200 jours et les lignes de support et de résistance",
+  "technicalsLegend50": "50 jours",
+  "technicalsLegend200": "200 jours",
+  "technicalsLegendLevels": "Support et résistance",
+  "technicalsVsSma": "vs {{length}} jours",
+  "technicalsRsi": "RSI 14",
+  "technicalsFromHigh": "Depuis le plus haut 52 sem.",
+  "technicalsShowOnChart": "Voir sur le graphique",
+  "toolStatus_drawLevels": "Tracé des niveaux…"
 }

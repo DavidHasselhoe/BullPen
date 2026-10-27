@@ -654,5 +654,9 @@
   "stockMetaDescriptionTicker": "Echtzeitkurs, Finanzzahlen und KI-Analyse zu {{ticker}} auf BullPen.",
   "assetMetaTitle": "{{name}}: aktueller Preis",
   "assetMetaDescription": "Echtzeitpreis und Chart für {{name}} auf BullPen.",
-  "commodityMetaDescription": "{{name}}: aktueller Preis, die Fonds und Unternehmen, über die man investiert, und was den Preis bewegt, erklärt auf BullPen."
+  "commodityMetaDescription": "{{name}}: aktueller Preis, die Fonds und Unternehmen, über die man investiert, und was den Preis bewegt, erklärt auf BullPen.",
+  "advancedChartLevelSupport": "Unterstützung",
+  "advancedChartLevelResistance": "Widerstand",
+  "advancedChartLevelOther": "Marke",
+  "advancedChartClearLevels": "Linien entfernen"
 }

@@ -40,6 +40,7 @@ import { InkReveal, InkBullets } from '@/components/ai/InkText';
 import { trackEvent } from '@/lib/analytics/track';
 import { useResumeAction } from '@/components/auth/SignupGate';
 import type { ExtendedHoursQuote, IndicatorValue, CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
+import { decodeLevels, type ChartLevel } from './advanced-chart/chart-context';
 
 // Fullscreen advanced chart is loaded on demand so lightweight-charts stays out
 // of the main bundle (only advanced users who click Expand pay for it). This
@@ -173,6 +174,7 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
     new Set(minimal ? [] : (prefs.defaultIndicators as Indicator[]))
   );
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [chartLevels, setChartLevels] = useState<ChartLevel[]>([]);
   const { isSimplified } = useExperienceLevel();
   const { requestWhyToday, paywallOpen, setPaywallOpen, paywallQuota } = useWhyTodayGate();
 
@@ -180,15 +182,18 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
   // ?chart=fullscreen — same URL navigateTo builds for the "stock_fullscreen"
   // destination (lib/ai/app-destinations.ts).
   // Stripped from the URL right after so a refresh or the back button doesn't
-  // reopen the modal.
+  // reopen the modal. &levels= comes from the "Show on chart" button on Bull's
+  // technicals card and draws those lines.
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   useEffect(() => {
     if (searchParams.get('chart') !== 'fullscreen') return;
     setAdvancedOpen(true);
+    if (searchParams.has('levels')) setChartLevels(decodeLevels(searchParams.get('levels')));
     const params = new URLSearchParams(searchParams);
     params.delete('chart');
+    params.delete('levels');
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1031,6 +1036,8 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
           holding={myHolding ? { date_purchased: myHolding.date_purchased, avg_price: myHolding.avg_price, quantity: myHolding.quantity } : undefined}
           sales={mySales}
           purchases={myPurchases}
+          levels={chartLevels}
+          onLevelsChange={setChartLevels}
         />
       )}
 

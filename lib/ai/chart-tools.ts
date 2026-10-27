@@ -140,6 +140,40 @@ const toggleEvents = tool({
     clientAction({ type: 'chart_toggle_events', show }, show ? 'Earnings markers shown.' : 'Earnings markers hidden.'),
 });
 
+// ── Levels ──────────────────────────────────────────────────────────────────
+const drawLevels = tool({
+  description:
+    'Draw horizontal lines on the chart at the prices you are talking about: support and resistance from ' +
+    'getTechnicals, or any other level ("kind": "level"). Call it whenever your reply names specific price levels, ' +
+    'so the user sees them on the chart instead of hunting for the number. It replaces the lines drawn before; ' +
+    'pass an empty list to remove them.',
+  inputSchema: jsonSchema<{ levels: { price: number; kind: 'support' | 'resistance' | 'level' }[] }>({
+    type: 'object',
+    properties: {
+      levels: {
+        type: 'array',
+        maxItems: 8,
+        items: {
+          type: 'object',
+          properties: {
+            price: { type: 'number', exclusiveMinimum: 0 },
+            kind: { type: 'string', enum: ['support', 'resistance', 'level'] },
+          },
+          required: ['price', 'kind'],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ['levels'],
+    additionalProperties: false,
+  }),
+  execute: async ({ levels }) =>
+    clientAction(
+      { type: 'chart_draw_levels', levels: levels.slice(0, 8) },
+      levels.length ? `Drew ${levels.length} level${levels.length === 1 ? '' : 's'} on the chart.` : 'Removed the drawn levels.',
+    ),
+});
+
 export const CHART_TOOLS = {
   setTimeframe,
   setChartType,
@@ -149,4 +183,5 @@ export const CHART_TOOLS = {
   applyPreset,
   toggleVolume,
   toggleEvents,
+  drawLevels,
 };

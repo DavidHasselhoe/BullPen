@@ -9,7 +9,7 @@
  * (e.g. type: "None" with Zod v4).
  */
 
-import { tool, jsonSchema } from 'ai';
+import { tool, jsonSchema, type JSONValue } from 'ai';
 import { createServerClient } from '@/lib/supabase/client';
 import {
   getStockQuotes,
@@ -34,7 +34,8 @@ import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-ca
 import { coalesce } from '@/lib/cache/request-coalesce';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
-import { computeTechnicals } from '@/lib/finance/technicals';
+import { computeTechnicals, etDate } from '@/lib/finance/technicals';
+import { sma } from '@/lib/finance/indicators';
 import { getTier, isPro } from '@/lib/billing/tier';
 import { AlertTypeSchema, alertTypeLabel, describeAlert, FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
@@ -1351,7 +1352,14 @@ const getLiveQuote = tool({
 /** Calendar days of daily bars: ~345 trading days, enough for a 300-day SMA plus its 20-bar slope. */
 const TECHNICALS_DAYS = 500;
 
-const etDate = (unix: number) => new Date(unix * 1000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+/** Past report dates from whichever earnings cache is warm. Never fetches: big moves just lose their onEarnings flag. */
+async function cachedEarningsDates(symbol: string): Promise<string[] | undefined> {
+  for (const key of [`earnings-history:${symbol}`, `ai-earnings:${symbol}`]) {
+    const rows = await getCachedStale<{ period?: string }[]>(key);
+    if (Array.isArray(rows) && rows.length) return rows.map((r) => r.period).filter((p): p is string => !!p);
+  }
+  return undefined;
+}
 
 const getTechnicals = tool({
   description:
@@ -1364,7 +1372,14 @@ const getTechnicals = tool({
     'first; touches counts how many times the price turned there, and more touches make a level more meaningful. ' +
     'A level with one touch is a single swing point, say so rather than calling it strong support. pctFromPrice and ' +
     'distancePct are how far the current price is above (positive) or below (negative) that level. Levels describe ' +
-    'what the price has done, never a prediction.',
+    'what the price has done, never a prediction. volume compares the latest session (still partial while the ' +
+    'market is open) and the last five with the 50-day average, so 2.1 means twice the usual trading. crossover ' +
+    'says whether the 50-day SMA is above the 200-day and when they last crossed: a golden cross (50 rose above ' +
+    '200) or a death cross (50 fell below); last is null when they have not crossed since historyFrom. bigMoves ' +
+    'are the three largest daily moves of the last three months, with the overnight gap and volume against average; ' +
+    'onEarnings true means the move came on or right after an earnings report, null means the dates are unknown. ' +
+    'Use them to say whether a drop came on heavy trading or on earnings. The result also shows the user a chart card, ' +
+    'so keep the reply to what the numbers mean rather than restating every figure.',
   inputSchema: jsonSchema<{ ticker: string; smaLengths?: number[] }>({
     type: 'object',
     properties: {
@@ -1392,16 +1407,26 @@ const getTechnicals = tool({
       const bars = gated.data;
       if (bars.t.length < 30) return { error: `Not enough price history for ${symbol}.` };
 
-      const quote = (await getStockQuotes([symbol])).get(symbol);
-      const live = quote?.c ?? null;
+      const [quotes, earningsDates] = await Promise.all([getStockQuotes([symbol]), cachedEarningsDates(symbol)]);
+      const live = quotes.get(symbol)?.c ?? null;
       const price = live ?? bars.c[bars.c.length - 1];
-      const t = computeTechnicals(bars, price, lengths?.length ? lengths : undefined);
+      const t = computeTechnicals(bars, price, lengths?.length ? lengths : undefined, earningsDates);
       const level = (l: (typeof t.support)[number]) => ({ ...l, lastTouched: etDate(l.lastTouched) });
       return {
         ticker: symbol,
         price: t.price,
-        priceSource: live != null ? 'live quote' : `last close ${etDate(bars.t[bars.t.length - 1])}`,
+        // A plain quote off-session is the last regular close, not the
+        // pre-market or after-hours price on the stock page.
+        priceSource: live == null
+          ? `last close ${etDate(bars.t[bars.t.length - 1])}`
+          : isOutsideRegularSessionET() ? 'last regular-session close (market closed now)' : 'live quote',
         historyFrom: etDate(bars.t[0]),
+        volume: t.volume,
+        crossover: t.crossover && {
+          sma50Above200: t.crossover.sma50Above200,
+          last: t.crossover.last && { type: t.crossover.last.type, at: etDate(t.crossover.last.at) },
+        },
+        bigMoves: t.bigMoves.map((m) => ({ ...m, at: etDate(m.at) })),
         movingAverages: t.movingAverages,
         ...(t.unavailableLengths.length ? { notEnoughHistoryFor: t.unavailableLengths } : {}),
         rsi14: t.rsi14,
@@ -1409,13 +1434,37 @@ const getTechnicals = tool({
         low52w: { ...t.low52w, at: etDate(t.low52w.at) },
         support: t.support.map(level),
         resistance: t.resistance.map(level),
+        chart: technicalsChartSeries(bars),
       };
     } catch (err) {
       if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
       return { error: `Could not fetch price history for ${symbol}: ${(err as Error).message}` };
     }
   },
+  // The card's price series is for the user's eyes only: about 500 numbers
+  // the model has no use for, resent on every later turn.
+  toModelOutput: ({ output }) => {
+    const { chart: _chart, ...rest } = output as Record<string, unknown>;
+    return { type: 'json', value: rest as JSONValue };
+  },
 });
+
+/** The last year of closes with SMA 50/200, every other bar: enough for the chat card's chart. */
+function technicalsChartSeries(bars: { t: number[]; c: number[] }) {
+  const s50 = sma(bars.c, 50);
+  const s200 = sma(bars.c, 200);
+  const out = { t: [] as number[], c: [] as number[], sma50: [] as (number | null)[], sma200: [] as (number | null)[] };
+  const r = (v: number | null) => (v == null ? null : Math.round(v * 100) / 100);
+  const n = bars.c.length;
+  // Counted back from the last bar so today's close is always the final point.
+  for (let i = n - 1 - Math.floor(Math.min(n - 1, 251) / 2) * 2; i < n; i += 2) {
+    out.t.push(bars.t[i]);
+    out.c.push(r(bars.c[i])!);
+    out.sma50.push(r(s50[i]));
+    out.sma200.push(r(s200[i]));
+  }
+  return out;
+}
 
 const getKeyStatistics = tool({
   description:
