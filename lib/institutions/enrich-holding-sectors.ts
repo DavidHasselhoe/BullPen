@@ -16,6 +16,7 @@ import type { createServerClient } from '@/lib/supabase/client';
 import { getCompanyProfile, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { normalizeSector } from '@/lib/finance/sector-benchmarks';
+import { isUsExchange } from '@/lib/assets/asset-type';
 
 /** /profile is billed at 10 credits a call on this plan, not the 1 its docs
  *  row claimed: measured 2026-09-15 from the api-credits-used header, which
@@ -92,9 +93,10 @@ export async function enrichHoldingSectors(
         try {
           const profile = await getCompanyProfile(symbol);
           // TwelveData resolves an ambiguous ticker to whichever listing shares
-          // it ("CTRA" came back as an Indonesian company). A foreign currency
+          // it ("CTRA" came back as an Indonesian company). A foreign exchange
           // means it is not our company, and a wrong sector is worse than none.
-          if (profile.currency && profile.currency !== 'USD') {
+          // (/profile has no currency field, so checking one never fired.)
+          if (!isUsExchange(profile.exchange)) {
             result.noSector++;
             await recordMiss(supabase, symbol, 'no_sector');
             return;

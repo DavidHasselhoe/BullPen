@@ -15,6 +15,7 @@ import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { INDEX_IDS, recordIndexChanges, type IndexChangesPayload } from '@/lib/market-data/index-events';
 import { notifyIndexMembershipChanges } from '@/lib/notifications/notification-creators';
+import { dropDelistedTickers } from '@/lib/market-data/screener-universe';
 
 export const maxDuration = 60;
 
@@ -46,7 +47,13 @@ async function handlePOST(request: NextRequest): Promise<NextResponse> {
   try {
     const stored = await recordIndexChanges(payload);
     const notified = await notifyIndexMembershipChanges(stored);
-    return NextResponse.json({ stored: stored.length, weights: payload.weights.map((w) => `${w.indexId}@${w.asOf}`), notified });
+    // A company usually leaves an index because it was acquired. Drop it from
+    // the screener once TwelveData stops listing it in the US; one that merely
+    // moved down an index is still listed and keeps its place.
+    const dropped = await dropDelistedTickers(
+      [...new Set(payload.events.filter((e) => e.change === 'removed').map((e) => e.ticker))],
+    );
+    return NextResponse.json({ stored: stored.length, weights: payload.weights.map((w) => `${w.indexId}@${w.asOf}`), notified, dropped });
   } catch (error) {
     console.error('[record-index-changes] failed', error);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });

@@ -60,7 +60,7 @@ import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
-import { MARKET_CAP_PROMOTION_FLOOR } from '@/lib/market-data/screener-universe';
+import { MARKET_CAP_PROMOTION_FLOOR, dropDelistedTickers } from '@/lib/market-data/screener-universe';
 import { notifyHealthScoreChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
@@ -306,6 +306,8 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
 
   const rows: ScreenerRow[] = [];
   const degradedSymbols = new Set<string>();
+  // Usually a US company that was acquired, its symbol now someone else's abroad.
+  const foreignListings: string[] = [];
 
   for (const group of chunk(symbolsToFetch, CHUNK_SIZE)) {
     await waitForCronCreditBudget(group.length * CREDITS_PER_STATS_SYMBOL);
@@ -340,6 +342,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
           `[screener-stats] skipping ${sym}: TwelveData resolved it to "${statsRaw.meta.name}" ` +
           `(${statsRaw.meta.exchange}, ${statsRaw.meta.currency}) instead of a USD-listed company`
         );
+        foreignListings.push(sym);
         continue;
       }
 
@@ -466,6 +469,8 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       throw new Error(error.message);
     }
   }
+
+  if (foreignListings.length > 0) await dropDelistedTickers(foreignListings);
 
   // Promote here rather than only in the refresh cron: a big company first
   // fetched on demand (a holding, a heatmap tile) used to stay tier 0, so no

@@ -1707,12 +1707,13 @@ interface TwelveDataStocksResponse {
  * Endpoint: GET /stocks. Reference data — very low credit cost.
  */
 export async function getUsStocksList(
-  opts: { country?: string; exchange?: string } = {}
+  opts: { country?: string; exchange?: string; symbol?: string } = {}
 ): Promise<StockReference[]> {
-  logUsage('/stocks', opts.exchange ?? opts.country ?? 'all');
+  logUsage('/stocks', opts.symbol ?? opts.exchange ?? opts.country ?? 'all');
   const url = buildUrl('/stocks', {
     country: opts.country ?? 'United States',
     exchange: opts.exchange,
+    symbol: opts.symbol,
   });
   const res = await tdFetch(url, {
     cache: 'no-store',

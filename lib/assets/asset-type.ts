@@ -254,6 +254,19 @@ export function fundLabel(instrumentType?: string): string {
  */
 const US_MICS = new Set(['XNAS', 'XNGS', 'XNMS', 'XNCM', 'XNYS', 'ARCX', 'BATS', 'XASE', 'IEXG']);
 
+/** TwelveData exchange names of US venues, as /profile and /statistics meta report them. */
+const US_EXCHANGES = new Set(['NYSE', 'NASDAQ', 'CBOE', 'AMEX', 'NYSE AMERICAN', 'NYSE ARCA', 'OTC', 'BATS', 'IEX']);
+
+/**
+ * Whether a TwelveData profile's exchange is a US one. /profile carries no
+ * currency, so this is how to tell a bare US symbol that now resolves abroad
+ * (MRO to Melrose on LSE, X to TMX Group on TSX) from the company we meant.
+ * An empty exchange counts as US: missing data is not evidence of a collision.
+ */
+export function isUsExchange(exchange: string | null | undefined): boolean {
+  return !exchange || US_EXCHANGES.has(exchange.toUpperCase());
+}
+
 /**
  * The mic_code worth honouring, or null. Pins exist so a foreign listing never
  * borrows a US ticker's price (bare KOG is Kroger, not Kongsberg), and pinned

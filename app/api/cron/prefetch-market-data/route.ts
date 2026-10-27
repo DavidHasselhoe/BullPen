@@ -59,6 +59,7 @@ import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { parseStats as parseScreenerStatsRow, type TwelveDataStatisticsRaw } from '@/lib/market-data/screener-stats';
 import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
+import { isUsExchange } from '@/lib/assets/asset-type';
 
 export const maxDuration = 60;
 
@@ -196,10 +197,11 @@ async function getProfileFields(
     const profile = await withRateLimitRetry(() => getCompanyProfile(sym));
     // Same symbol-collision risk as the /statistics fetch (see isForeignListing) —
     // don't cache or return another company's identity under our ticker.
-    if (isForeignListing(profile.currency)) {
+    // /profile has no currency field, so the exchange is the tell.
+    if (!isUsExchange(profile.exchange)) {
       console.warn(
         `[prefetch] skipping profile for ${sym}: TwelveData resolved it to "${profile.name}" ` +
-        `(${profile.exchange}, ${profile.currency}) instead of a USD-listed company`
+        `(${profile.exchange}, ${profile.country}) instead of a US-listed company`
       );
       return { name: null, sector: null, industry: null, logoUrl: null };
     }
