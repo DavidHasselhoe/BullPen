@@ -629,10 +629,21 @@ export function buildAlertEmailHtml(
 
 // ─── Sending ─────────────────────────────────────────────────────────────────
 
+/** Reserved for examples and testing (RFC 2606, 6761): no mail is ever delivered there. */
+const RESERVED_DOMAIN = /(^|\.)(example\.(com|net|org)|example|test|invalid|localhost)$/i;
+
+/** False for an address no mail server will take: no dotted domain, or a reserved one. */
+export function isDeliverableEmail(email: string): boolean {
+  const m = /^[^@\s]+@([^@\s]+\.[^@\s.]+)$/.exec(email.trim());
+  return !!m && !RESERVED_DOMAIN.test(m[1]);
+}
+
 export interface AlertEmailRun {
   candidates: number;
   sent: number;
   skippedUnverified: number;
+  /** Addresses no mail server accepts: a missing domain, or a reserved one like example.com. */
+  skippedUndeliverable: number;
   skippedOptedOut: number;
   /** Emails sent with no alert in them, only the reader's watchlist. */
   watchlistOnly: number;
@@ -648,7 +659,7 @@ export interface AlertEmailRun {
  */
 export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: string } = {}): Promise<AlertEmailRun> {
   const supabase = createServerClient();
-  const run: AlertEmailRun = { candidates: 0, sent: 0, skippedUnverified: 0, skippedOptedOut: 0, watchlistOnly: 0, errors: [] };
+  const run: AlertEmailRun = { candidates: 0, sent: 0, skippedUnverified: 0, skippedUndeliverable: 0, skippedOptedOut: 0, watchlistOnly: 0, errors: [] };
   if (opts.dryRun) run.previews = [];
 
   // Paged: PostgREST caps a response at 1000 rows, and a row cut here is never
@@ -802,6 +813,12 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     // other send's deliverability. Google sign-ins are verified at creation.
     if (!u.email || !u.email_verified_at) {
       run.skippedUnverified++;
+      continue;
+    }
+    // Test accounts (example.com, "x@admin") are marked verified but Resend
+    // refuses them, which filled errors_sample every morning.
+    if (!isDeliverableEmail(u.email)) {
+      run.skippedUndeliverable++;
       continue;
     }
 
