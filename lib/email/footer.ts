@@ -85,6 +85,19 @@ export interface FooterOptions {
  */
 export const EMAIL_FOOTER_MARKER = '<!--bullpen-email-footer-->';
 
+/**
+ * BullPen's dark neutrals (DESIGN.md, same hexes as the morning email), not
+ * Tailwind slate. The opt-out sits on its own line with vertical padding, so
+ * its tap target is ~44px instead of one 17px line of text.
+ */
+const MUTED = '#a3a3a3';
+const LINK = '#d4d4d4';
+const BORDER = '#262b29';
+
+function optOutLink(url: string, label: string): string {
+  return `<a href="${escapeHtml(url)}" style="display: inline-block; padding: 12px 0; color: ${LINK}; text-decoration: underline;">${escapeHtml(label)}</a>`;
+}
+
 export function emailFooterHtml(kind: EmailKind, options: FooterOptions = {}): string {
   const lines: string[] = [];
 
@@ -92,23 +105,18 @@ export function emailFooterHtml(kind: EmailKind, options: FooterOptions = {}): s
 
   if (kind === 'marketing') {
     if (!address) throw new MissingPostalAddressError();
-    const url = options.unsubscribeUrl ?? emailSettingsUrl();
-    lines.push(
-      `<a href="${escapeHtml(url)}" style="color: #94a3b8; text-decoration: underline;">Unsubscribe from these emails</a>`
-    );
+    lines.push(optOutLink(options.unsubscribeUrl ?? emailSettingsUrl(), 'Unsubscribe from these emails'));
     lines.push(escapeHtml(address));
   } else {
-    lines.push(
-      `${escapeHtml(options.reason ?? 'You are receiving this because you have a BullPen account.')} ` +
-        `<a href="${escapeHtml(options.unsubscribeUrl ?? emailSettingsUrl())}" style="color: #cbd5e1; text-decoration: underline;">${escapeHtml(options.unsubscribeLabel ?? 'Manage email preferences')}</a>`
-    );
+    lines.push(escapeHtml(options.reason ?? 'You are receiving this because you have a BullPen account.'));
+    lines.push(optOutLink(options.unsubscribeUrl ?? emailSettingsUrl(), options.unsubscribeLabel ?? 'Manage email preferences'));
     // Not legally required on transactional mail, but there is no reason to
     // withhold it when it is configured, and it helps deliverability.
     if (address) lines.push(escapeHtml(address));
   }
 
   return `
-<div style="max-width: 480px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid #1e293b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.6; color: #94a3b8;">
+<div style="max-width: 480px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid ${BORDER}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.6; color: ${MUTED};">
   ${lines.map((l) => `<p style="margin: 0 0 6px;">${l}</p>`).join('\n  ')}
 </div>`.trim();
 }
