@@ -6,7 +6,7 @@ import {
   createChart, createSeriesMarkers, ColorType, CrosshairMode, LineStyle,
   CandlestickSeries, LineSeries, AreaSeries, HistogramSeries,
   type IChartApi, type ISeriesApi, type UTCTimestamp, type SeriesType,
-  type SeriesMarker, type Time, TickMarkType,
+  type SeriesMarker, type Time, type IPriceLine, TickMarkType,
 } from 'lightweight-charts';
 import {
   getIndicatorDef,
@@ -225,18 +225,6 @@ export function AdvancedChart({
     seriesRef.current.push(priceSeries);
     lastBarRef.current = points.candle.length ? points.candle[points.candle.length - 1] : null;
 
-    // ── Levels Bull drew. Neutral: green and red mean gain and loss here. ──
-    for (const level of levels ?? []) {
-      priceSeries.createPriceLine({
-        price: level.price,
-        color: LEVEL_COLOR,
-        lineWidth: 1,
-        lineStyle: level.kind === 'resistance' ? LineStyle.Dotted : LineStyle.Dashed,
-        axisLabelVisible: true,
-        title: t(LEVEL_TITLE_KEY[level.kind]),
-      });
-    }
-
     // Markers (earnings events + SMA crosses) are all set in one call at the end.
     const markers: SeriesMarker<Time>[] = [];
 
@@ -404,6 +392,28 @@ export function AdvancedChart({
     }
 
     setLegendLines(newLegendLines);
+  }, [candles, points, chartType, indicators, showVolume, fitKey, events, transactions, t]);
+
+  // ── Levels Bull drew. Neutral: green and red mean gain and loss here. ──
+  // Own effect so drawing or clearing lines doesn't rebuild the chart. Runs
+  // after the rebuild above (same deps plus levels) to redraw on a new series.
+  const levelLinesRef = useRef<{ series: ISeriesApi<SeriesType>; lines: IPriceLine[] } | null>(null);
+  useEffect(() => {
+    const ps = priceSeriesRef.current;
+    if (!ps) return;
+    const prev = levelLinesRef.current;
+    if (prev?.series === ps) for (const line of prev.lines) ps.removePriceLine(line);
+    levelLinesRef.current = {
+      series: ps,
+      lines: (levels ?? []).map((level) => ps.createPriceLine({
+        price: level.price,
+        color: LEVEL_COLOR,
+        lineWidth: 1,
+        lineStyle: level.kind === 'resistance' ? LineStyle.Dotted : LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: t(LEVEL_TITLE_KEY[level.kind]),
+      })),
+    };
   }, [candles, points, chartType, indicators, showVolume, fitKey, events, transactions, levels, t]);
 
   // ── Live last-bar update (intraday) ─────────────────────────────────────────

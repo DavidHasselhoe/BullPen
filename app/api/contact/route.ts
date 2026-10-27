@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
 import { sendEmail } from '@/lib/email/resend';
+import { EMAIL_FOOTER_MARKER } from '@/lib/email/footer';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -57,7 +58,8 @@ async function handler(req: NextRequest): Promise<NextResponse> {
   sendEmail({
     to: 'david@hasselo.no',
     subject: `New contact form submission from ${name}`,
-    html: `<p><strong>From:</strong> ${safeName} (${safeEmail})</p><p>${safeMessage}</p>`,
+    // Dark like every other BullPen email: the shared footer's greys assume it.
+    html: `<div style="background: #0b0f0d; color: #fafafa; padding: 24px;"><p><strong>From:</strong> ${safeName} (${safeEmail})</p><p>${safeMessage}</p>${EMAIL_FOOTER_MARKER}</div>`,
     // Internal notification to our own inbox, not mail to a subscriber.
     kind: 'transactional',
   }).catch((err) => {

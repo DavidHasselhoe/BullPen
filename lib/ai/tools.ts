@@ -242,6 +242,8 @@ const CONVERTED_STATEMENTS_NOTE =
   'Amounts and EPS are in US dollars. For a company that reports in another currency (TSM in TWD, SAP in EUR) ' +
   'they are converted at the latest exchange rate, and the result carries convertedFrom and fxRate: tell the user ' +
   'the figures were converted from that currency. Margins and growth rates are unaffected by the conversion. ' +
+  'Converted EPS is per ordinary share in the home market, and a US-listed ADR can stand for several (TSM: 5), so never ' +
+  'divide the US share price by it to get a P/E. ' +
   'If the result carries `currency` instead, no rate was available and the amounts are in that currency.';
 
 /** Fetches up to `outputsize` periods for `metric` from whichever TwelveData statement endpoint carries it. */

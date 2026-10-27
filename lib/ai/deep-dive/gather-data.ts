@@ -186,6 +186,7 @@ export function formatDataBlock(d: DeepDiveData): string {
     lines.push(
       `STATEMENT CURRENCY: ${d.symbol} reports in ${d.fx.from}. The statement amounts and EPS below were converted to US dollars ` +
       `at the latest rate, 1 USD = ${d.fx.rate.toFixed(4)} ${d.fx.from} (${d.fx.date}), for every period. Margins and growth rates are unaffected. ` +
+      `EPS is per ordinary share in the home market; a US-listed ADR can represent several of them (TSM: 5), so never set this EPS against the US share price to work out a P/E. ` +
       `Say in the report that the figures were converted from ${d.fx.from}.`
     );
   } else if (d.statementCurrency !== 'USD') {

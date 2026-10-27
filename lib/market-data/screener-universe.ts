@@ -2,6 +2,7 @@ import { SP500_TICKERS } from './sp500';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTickerOverride } from './ticker-overrides';
 import { getUsStocksList } from '@/lib/twelvedata/twelvedata-client';
+import { isUsExchange } from '@/lib/assets/asset-type';
 
 /**
  * Static fallback universe (S&P 500). Used when the DB-backed
@@ -78,7 +79,9 @@ export async function dropDelistedTickers(candidates: string[]): Promise<string[
   const checks = await Promise.allSettled(
     candidates
       .filter((t) => !getTickerOverride(t))
-      .map(async (t) => ((await getUsStocksList({ symbol: t })).length === 0 ? t : null)),
+      // Any country, then the exchange: an ADR's row can carry the issuer's
+      // home country while it trades on the NYSE.
+      .map(async (t) => ((await getUsStocksList({ symbol: t, country: '' })).some((s) => isUsExchange(s.exchange)) ? null : t)),
   );
   const drop = checks.flatMap((c) => (c.status === 'fulfilled' && c.value ? [c.value] : []));
   if (drop.length === 0) return [];

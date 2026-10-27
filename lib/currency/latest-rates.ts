@@ -121,8 +121,21 @@ export async function getLatestRates(base: string): Promise<LatestRates> {
 const STATEMENT_FX_FRESH_MS = 6 * 60 * 60 * 1000;
 const STATEMENT_FX_KEEP_SECONDS = 7 * 24 * 60 * 60;
 
+// Concurrent misses for one currency (a prefetch batch, Compare's two tickers)
+// share one quote instead of each reserving a credit for the same rate.
+const fxInFlight = new Map<string, Promise<StatementFx | null>>();
+
 /** USD rate for converting a statement reported in `currency`; null when there is none to be had. */
-async function statementFx(currency: string): Promise<StatementFx | null> {
+function statementFx(currency: string): Promise<StatementFx | null> {
+  let p = fxInFlight.get(currency);
+  if (!p) {
+    p = fetchStatementFx(currency).finally(() => fxInFlight.delete(currency));
+    fxInFlight.set(currency, p);
+  }
+  return p;
+}
+
+async function fetchStatementFx(currency: string): Promise<StatementFx | null> {
   const key = `fx:statement:${currency}`;
   const cached = await rget<StatementFx & { at: number }>(key);
   const last = cached && { from: cached.from, rate: cached.rate, date: cached.date };
@@ -142,6 +155,23 @@ async function statementFx(currency: string): Promise<StatementFx | null> {
   return last;
 }
 
+// A company's reporting currency doesn't change, so each server instance reads
+// it from the income cache once a day instead of on every stock page and
+// statement request (almost all of which end in "USD").
+// ponytail: per-instance memo, unbounded but one short string per symbol seen.
+const REPORTING_CURRENCY_MS = 24 * 60 * 60 * 1000;
+const reportingCurrencyMemo = new Map<string, { currency: string; at: number }>();
+
+async function reportingCurrency(sym: string): Promise<string | null> {
+  const hit = reportingCurrencyMemo.get(sym);
+  if (hit && Date.now() - hit.at < REPORTING_CURRENCY_MS) return hit.currency;
+  const rows = await getCachedStale<{ reported_currency?: string | null }[]>(`financials:${sym}:income:quarterly`);
+  const currency = rows?.find((r) => r.reported_currency)?.reported_currency ?? null;
+  // Unknown isn't memoized: the cache may fill on the next request.
+  if (currency) reportingCurrencyMemo.set(sym, { currency, at: Date.now() });
+  return currency;
+}
+
 /**
  * Statement rows (income, balance or cash flow) in USD, for every caller that
  * shows them: the Financials card, Revenue Flow and Bull. The cache keeps the
@@ -157,9 +187,7 @@ export async function statementsInUsd<T extends object>(
   // Balance sheet and cash flow rows cached before they carried a currency
   // take it from the same company's income statement.
   const tagged = (rows as { reported_currency?: string | null }[]).find((r) => r.reported_currency)?.reported_currency;
-  const currency = tagged
-    ?? (await getCachedStale<{ reported_currency?: string | null }[]>(`financials:${symbol.toUpperCase()}:income:quarterly`))?.[0]?.reported_currency
-    ?? 'USD';
+  const currency = tagged ?? (await reportingCurrency(symbol.toUpperCase())) ?? 'USD';
   if (currency === 'USD' || rows.length === 0) return { rows, currency: 'USD', fx: null };
   const fx = await statementFx(currency);
   return fx ? { rows: rowsToUsd(rows, fx), currency: 'USD', fx } : { rows, currency, fx: null };
@@ -181,10 +209,12 @@ export async function fixForeignValuation(
 ): Promise<void> {
   if (!v) return;
   const sym = symbol.toUpperCase();
+  const currency = statements
+    ? statements.income.find((r) => r.reported_currency)?.reported_currency
+    : await reportingCurrency(sym);
+  if (!currency || currency === 'USD') return;
   const income = statements?.income
     ?? (await getCachedStale<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`)) ?? [];
-  const currency = income.find((r) => r.reported_currency)?.reported_currency;
-  if (!currency || currency === 'USD') return;
   const balance = statements?.balance
     ?? (await getCachedStale<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`)) ?? [];
   const fx = await statementFx(currency);

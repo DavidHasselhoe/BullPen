@@ -254,8 +254,12 @@ export function fundLabel(instrumentType?: string): string {
  */
 const US_MICS = new Set(['XNAS', 'XNGS', 'XNMS', 'XNCM', 'XNYS', 'ARCX', 'BATS', 'XASE', 'IEXG']);
 
-/** TwelveData exchange names of US venues, as /profile and /statistics meta report them. */
-const US_EXCHANGES = new Set(['NYSE', 'NASDAQ', 'CBOE', 'AMEX', 'NYSE AMERICAN', 'NYSE ARCA', 'OTC', 'BATS', 'IEX']);
+/**
+ * TwelveData exchange names of US venues, as /profile and /statistics meta
+ * report them. Matched as a prefix so variants ("NYSE MKT", "CBOE BZX",
+ * "OTC Markets") count too.
+ */
+const US_EXCHANGE = /^(NYSE|NASDAQ|CBOE|AMEX|OTC|BATS|IEX)\b/;
 
 /**
  * Whether a TwelveData profile's exchange is a US one. /profile carries no
@@ -264,7 +268,7 @@ const US_EXCHANGES = new Set(['NYSE', 'NASDAQ', 'CBOE', 'AMEX', 'NYSE AMERICAN',
  * An empty exchange counts as US: missing data is not evidence of a collision.
  */
 export function isUsExchange(exchange: string | null | undefined): boolean {
-  return !exchange || US_EXCHANGES.has(exchange.toUpperCase());
+  return !exchange || US_EXCHANGE.test(exchange.toUpperCase());
 }
 
 /**
