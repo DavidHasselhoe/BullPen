@@ -26,6 +26,7 @@
     "test-resend": "tsx scripts/test-resend.ts",
     "test-credit-budget": "tsx scripts/test-credit-budget.ts",
     "test-technicals": "tsx scripts/test-technicals.ts",
+    "test-navigate-dedupe": "tsx scripts/test-navigate-dedupe.ts",
     "test-cron-coverage": "tsx scripts/test-cron-coverage.ts",
     "test-daily-challenges": "tsx scripts/test-daily-challenges.ts",
     "test-ai-error-classification": "tsx scripts/test-ai-error-classification.ts",

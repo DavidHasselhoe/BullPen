@@ -151,6 +151,10 @@ export function getCompletedToolCalls(
 ): Array<{ toolName: string; output: unknown; clientAction?: ClientAction; chartAction?: ChartAction }> {
   if (!message?.parts) return [];
   const out: Array<{ toolName: string; output: unknown; clientAction?: ClientAction; chartAction?: ChartAction }> = [];
+  // Two tools can offer the same page in one reply (getUpcomingEarnings carries
+  // its own calendar offer, and the model also called navigateTo for it): one
+  // Yes/No card per destination.
+  const offeredPaths = new Set<string>();
   for (const part of message.parts) {
     const name = toolNameFromPart(part);
     if (!name || part.state !== 'output-available') continue;
@@ -162,6 +166,10 @@ export function getCompletedToolCalls(
       // Chart controls run straight away and render no card, so they stay out of clientAction.
       if (typeof type === 'string' && type.startsWith('chart_')) chartAction = raw.__clientAction as ChartAction;
       else if (typeof type === 'string') clientAction = raw.__clientAction as ClientAction;
+    }
+    if (clientAction?.type === 'navigate') {
+      if (offeredPaths.has(clientAction.path)) clientAction = undefined;
+      else offeredPaths.add(clientAction.path);
     }
     out.push({ toolName: name, output: part.output, clientAction, chartAction });
   }

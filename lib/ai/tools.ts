@@ -1764,7 +1764,8 @@ const getUpcomingEarnings = tool({
         ...navigateAction(calendar.path, calendar.label, false),
         // The card is bare Yes/No buttons, so the reply has to ask the question.
         note: 'Yes/No buttons that open the earnings calendar appear under your reply. Write the dated list, then ' +
-          'end with one short question offering the full earnings calendar. Do not mention the buttons.',
+          'end with one short question offering the full earnings calendar. Do not mention the buttons, and do not ' +
+          'call navigateTo for the calendar: these buttons already are that offer.',
       }),
     };
   },
