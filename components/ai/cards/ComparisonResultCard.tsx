@@ -16,6 +16,8 @@ interface ComparisonRow {
   metric?: string;
   period?: string;
   data?: ComparisonPeriod[];
+  /** The company's own currency, when the amounts were converted to USD. */
+  convertedFrom?: string;
   error?: string;
 }
 
@@ -62,6 +64,9 @@ export function ComparisonResultCard({ output }: { output: ComparisonOutput }) {
                 srLabel={t('trendSrLabel', { metric: metricLabel, subject: row.company ?? row.ticker, count: oldestToNewest.length, formatted: latest.formatted })}
                 className="text-foreground"
               />
+              {row.convertedFrom && (
+                <p className="mt-1 text-[11px] text-muted-foreground">{t('financialsConvertedFrom', { from: row.convertedFrom })}</p>
+              )}
             </div>
           );
         })}

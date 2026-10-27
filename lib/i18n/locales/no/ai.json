@@ -173,6 +173,7 @@
   "receiptSharesCount_one": "{{count}} aksje",
   "receiptSharesCount_other": "{{count}} aksjer",
   "financialsCapex": "CapEx",
+  "financialsConvertedFrom": "Omregnet fra {{from}} til amerikanske dollar",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
   "termsGateBeta": "Beta",

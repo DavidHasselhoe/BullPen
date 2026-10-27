@@ -434,6 +434,7 @@
   "financialsYearEndTitle": "Regnskapsår avsluttet {{date}}",
   "financialsReportedOn": "Rapportert {{date}}",
   "financialsReportPending": "{{period}} ble rapportert {{date}}. Fullstendige finansielle rapporter er ikke innlevert ennå.",
+  "financialsConvertedNote": "Vist i amerikanske dollar. Omregnet fra {{from}} til 1 USD = {{rate}} {{from}}, kursen {{date}}.",
   "sectorPeersHeading": "Flere i {{sector}}",
   "sectorPeersSubtitle": "Selskaper av lignende størrelse i samme sektor",
   "sectorPeersSeeAll": "Alle aksjer etter sektor",

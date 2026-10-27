@@ -15,6 +15,7 @@ import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import type { RevenuePart } from '@/lib/segments/select-breakdown';
 import { useEarningsHistory } from '@/hooks/use-earnings-history';
 import { fiscalLabel, statementLabel, pendingReport, shortPeriodDate, longPeriodDate, type FiscalTag } from '@/lib/finance/fiscal-label';
+import type { StatementFx } from '@/lib/currency/statement-fx';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,8 @@ interface FinancialsResponse {
   success: boolean;
   error?: string;
   data: IncomeStatementPeriod[];
+  /** Set when the rows were converted to USD from the company's own currency. */
+  fx?: StatementFx | null;
 }
 
 interface SegmentsResponse {
@@ -714,11 +717,14 @@ export function SankeyCard({ ticker }: { ticker: string }) {
   // first view of a stock (the endpoint fills its cache in the background) and
   // absent for good on roughly a third of filers, so the chart must be
   // complete without it.
+  // The filing's parts are in the company's own currency, so they are matched
+  // against revenue in that currency and converted the same way as the rows.
+  const fxRate = data?.fx?.rate ?? 1;
   const { data: segmentData } = useQuery<SegmentsResponse>({
-    queryKey: ['stock-segments', ticker, row?.fiscal_date, period],
+    queryKey: ['stock-segments', ticker, row?.fiscal_date, period, fxRate],
     queryFn: () =>
       fetch(
-        `/api/stock/${ticker}/segments?periodEnd=${row!.fiscal_date}&revenue=${row!.revenue}&period=${period}`,
+        `/api/stock/${ticker}/segments?periodEnd=${row!.fiscal_date}&revenue=${row!.revenue! * fxRate}&period=${period}`,
       ).then((r) => r.json()),
     enabled: !!ticker && !!row?.fiscal_date && !!row?.revenue,
     staleTime: 24 * 60 * 60 * 1000,
@@ -728,8 +734,8 @@ export function SankeyCard({ ticker }: { ticker: string }) {
   });
 
   const graph = useMemo(
-    () => (row ? buildGraph(row, segmentData?.parts) : null),
-    [row, segmentData],
+    () => (row ? buildGraph(row, segmentData?.parts?.map((p) => ({ ...p, value: p.value / fxRate }))) : null),
+    [row, segmentData, fxRate],
   );
   const conf    = useMemo(() => (row ? deriveConfidence(row) : null), [row]);
   const revenue = row?.revenue ?? 0;
@@ -878,6 +884,12 @@ export function SankeyCard({ ticker }: { ticker: string }) {
               period: fiscalLabel(t, pending),
               date: shortPeriodDate(pending.date),
             })}
+          </p>
+        )}
+
+        {!isLoading && !noData && !isPlanRestricted && data?.fx && (
+          <p className="px-6 pb-1 text-xs text-muted-foreground">
+            {t('financialsConvertedNote', { from: data.fx.from, rate: data.fx.rate.toFixed(2), date: shortPeriodDate(data.fx.date) })}
           </p>
         )}
 

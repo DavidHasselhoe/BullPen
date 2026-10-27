@@ -32,6 +32,7 @@
   "earningsSrLabelEstimate": "1株あたり${{estimate}}を予想",
   "financialsBalanceStatement": "貸借対照表",
   "financialsCapex": "資本支出",
+  "financialsConvertedFrom": "{{from}}から米ドルに換算",
   "financialsCashflowStatement": "キャッシュフロー計算書",
   "financialsEpsDiluted": "EPS（希薄化後）",
   "financialsEquity": "自己資本",

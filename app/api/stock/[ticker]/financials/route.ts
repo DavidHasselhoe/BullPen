@@ -14,6 +14,7 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { getFiscalCalendar, periodForStatement, type FiscalCalendar } from '@/lib/finance/fiscal-calendar';
 import type { FiscalTag } from '@/lib/finance/fiscal-label';
+import { statementsInUsd } from '@/lib/currency/latest-rates';
 
 /**
  * Reserves against the shared per-minute credit budget (see
@@ -82,11 +83,23 @@ async function handler(
     ? getFiscalCalendar(symbol).catch(() => null)
     : Promise.resolve(null);
 
+  // Statements go out in USD with the rate they were converted at; the
+  // cached rows stay in the company's own currency.
+  const respond = async (rows: unknown) => {
+    const isStatement = Array.isArray(rows) && (type === 'income' || type === 'balance' || type === 'cashflow');
+    const usd = isStatement ? await statementsInUsd(symbol, rows as object[]) : null;
+    return addSecurityHeaders(NextResponse.json({
+      success: true,
+      data: withFiscal(usd ? usd.rows : rows, await calendar, period),
+      type,
+      period,
+      ...(usd && { currency: usd.currency, fx: usd.fx }),
+    }));
+  };
+
   try {
     const cached = await getCached<unknown>(cacheKey);
-    if (cached) {
-      return addSecurityHeaders(NextResponse.json({ success: true, data: withFiscal(cached, await calendar, period), type, period }));
-    }
+    if (cached) return respond(cached);
 
     // withRateLimitRetry guards against a genuine 429 (rare on the current 610/min
     // Venture plan) so it doesn't surface as a false "no data" to the client — same
@@ -138,7 +151,7 @@ async function handler(
     if (Array.isArray(result) ? result.length > 0 : !!result) {
       await setCached(cacheKey, symbol, 'financials', result, ttlForType(type));
     }
-    return addSecurityHeaders(NextResponse.json({ success: true, data: withFiscal(result, await calendar, period), type, period }));
+    return respond(result);
   } catch (err) {
     if (err instanceof TwelveDataRateLimitError) {
       return addSecurityHeaders(

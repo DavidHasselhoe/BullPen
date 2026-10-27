@@ -440,6 +440,7 @@
   "financialsYearEndTitle": "{{date}}終了の会計年度",
   "financialsReportedOn": "{{date}}に報告",
   "financialsReportPending": "{{period}}は{{date}}に報告されました。完全な財務諸表はまだ提出されていません。",
+  "financialsConvertedNote": "米ドルで表示しています。{{date}}のレート（1 USD = {{rate}} {{from}}）で{{from}}から換算しました。",
   "sectorPeersHeading": "{{sector}}内の他の企業",
   "sectorPeersSubtitle": "同じセクター内の同規模企業",
   "sectorPeersSeeAll": "セクター別すべての銘柄",

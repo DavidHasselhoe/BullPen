@@ -1289,6 +1289,8 @@ export interface BalanceSheetPeriod {
   total_stockholders_equity: number | null;
   retained_earnings: number | null;
   goodwill_and_intangible_assets: number | null;
+  /** Reporting currency from the response meta; see IncomeStatementPeriod. */
+  reported_currency: string | null;
 }
 
 interface TwelveDataBalanceItem {
@@ -1321,6 +1323,7 @@ interface TwelveDataBalanceItem {
 
 interface TwelveDataBalanceResponse {
   balance_sheet?: TwelveDataBalanceItem[];
+  meta?: { currency?: string };
   status?: string;
   code?: number;
   message?: string;
@@ -1360,6 +1363,7 @@ export async function getBalanceSheet(
     goodwill_and_intangible_assets:
       (item.assets?.non_current_assets?.goodwill ?? 0) +
       (item.assets?.non_current_assets?.intangible_assets ?? 0) || null,
+    reported_currency: data.meta?.currency ?? null,
   }));
 }
 
@@ -1375,6 +1379,8 @@ export interface CashFlowPeriod {
   investing_activities_cash_flow: number | null;
   financing_activities_cash_flow: number | null;
   dividends_paid: number | null;
+  /** Reporting currency from the response meta; see IncomeStatementPeriod. */
+  reported_currency: string | null;
 }
 
 interface TwelveDataCashFlowItem {
@@ -1397,6 +1403,7 @@ interface TwelveDataCashFlowItem {
 
 interface TwelveDataCashFlowResponse {
   cash_flow?: TwelveDataCashFlowItem[];
+  meta?: { currency?: string };
   status?: string;
   code?: number;
   message?: string;
@@ -1433,6 +1440,7 @@ export async function getCashFlow(
     investing_activities_cash_flow: item.investing_activities?.investing_cash_flow ?? null,
     financing_activities_cash_flow: item.financing_activities?.financing_cash_flow ?? null,
     dividends_paid: item.financing_activities?.common_dividends ?? null,
+    reported_currency: data.meta?.currency ?? null,
   }));
 }
 

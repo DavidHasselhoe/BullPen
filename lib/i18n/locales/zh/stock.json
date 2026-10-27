@@ -442,6 +442,7 @@
   "financialsYearEndTitle": "截至 {{date}} 的财政年度",
   "financialsReportedOn": "于 {{date}} 披露",
   "financialsReportPending": "{{period}} 已于 {{date}} 披露。完整财务报表尚未提交。",
+  "financialsConvertedNote": "以美元显示。按 {{date}} 的汇率（1 USD = {{rate}} {{from}}）从 {{from}} 换算。",
   "sectorPeersHeading": "{{sector}}行业更多公司",
   "sectorPeersSubtitle": "同行业规模相近的公司",
   "sectorPeersSeeAll": "按行业查看所有股票",

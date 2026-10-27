@@ -32,6 +32,7 @@
   "earningsSrLabelEstimate": "预期每股 ${{estimate}}",
   "financialsBalanceStatement": "资产负债表",
   "financialsCapex": "资本支出",
+  "financialsConvertedFrom": "已从 {{from}} 换算为美元",
   "financialsCashflowStatement": "现金流量表",
   "financialsEpsDiluted": "EPS（摊薄）",
   "financialsEquity": "权益",

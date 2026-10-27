@@ -32,6 +32,7 @@
   "earningsSrLabelEstimate": "Estimate ${{estimate}} per share",
   "financialsBalanceStatement": "Balance statement",
   "financialsCapex": "CapEx",
+  "financialsConvertedFrom": "Converted from {{from}} to US dollars",
   "financialsCashflowStatement": "Cash flow statement",
   "financialsEpsDiluted": "EPS (diluted)",
   "financialsEquity": "Equity",

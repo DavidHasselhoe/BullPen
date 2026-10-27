@@ -31,6 +31,7 @@ import {
 import { getCalendarRange, WARM_DAYS_BACK, WARM_DAYS_FORWARD } from '@/lib/market-data/calendar-days';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
+import { statementsInUsd } from '@/lib/currency/latest-rates';
 import { coalesce } from '@/lib/cache/request-coalesce';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
@@ -77,6 +78,11 @@ function fmt(n: number | null): string {
 // multiplies by 100 — same convention StatisticsGrid's fmt('percent') uses
 // for the identical fields. Passing an already-percent-scale value in here
 // would need a new helper, not a change to this one.
+/** fmt in another currency: unit "TWD " gives "TWD 1.27T". */
+function fmtIn(unit: string, n: number | null): string {
+  return unit === '$' ? fmt(n) : fmt(n).replace('$', unit);
+}
+
 function fmtPct(n: number | null): string {
   if (n == null) return 'N/A';
   return `${(n * 100).toFixed(1)}%`;
@@ -211,14 +217,32 @@ async function fetchGatedStatementRows(
   ticker: string,
   statementType: 'income' | 'balance' | 'cashflow',
   period: 'annual' | 'quarterly'
-): Promise<{ denied: true } | { denied: false; data: unknown[] }> {
+): Promise<{ denied: true } | { denied: false; data: unknown[]; unit: string; currencyFields: Record<string, string> }> {
   const cacheKey = `financials:${ticker}:${statementType}:${period}`;
   const fetcher =
     statementType === 'income' ? () => getIncomeStatement(ticker, period)
     : statementType === 'balance' ? () => getBalanceSheet(ticker, period)
     : () => getCashFlow(ticker, period);
-  return gatedFetch<unknown[]>(cacheKey, ticker, 'financials', 101, FINANCIALS_TTL_SECONDS, fetcher);
+  const outcome = await gatedFetch<object[]>(cacheKey, ticker, 'financials', 101, FINANCIALS_TTL_SECONDS, fetcher);
+  if (outcome.denied) return outcome;
+  // Same USD conversion the Financials card shows, so Bull and the page agree.
+  const { rows, currency, fx } = await statementsInUsd(ticker, outcome.data);
+  return {
+    denied: false,
+    data: rows,
+    // "$" unless no USD rate could be had; then the amounts say what they are.
+    unit: currency === 'USD' ? '$' : `${currency} `,
+    currencyFields: fx
+      ? { convertedFrom: fx.from, fxRate: `1 USD = ${fx.rate.toFixed(4)} ${fx.from} (${fx.date})` }
+      : currency === 'USD' ? {} : { currency },
+  };
 }
+
+const CONVERTED_STATEMENTS_NOTE =
+  'Amounts and EPS are in US dollars. For a company that reports in another currency (TSM in TWD, SAP in EUR) ' +
+  'they are converted at the latest exchange rate, and the result carries convertedFrom and fxRate: tell the user ' +
+  'the figures were converted from that currency. Margins and growth rates are unaffected by the conversion. ' +
+  'If the result carries `currency` instead, no rate was available and the amounts are in that currency.';
 
 /** Fetches up to `outputsize` periods for `metric` from whichever TwelveData statement endpoint carries it. */
 async function fetchMetricPeriods(
@@ -226,23 +250,16 @@ async function fetchMetricPeriods(
   metric: string,
   period: 'annual' | 'quarterly',
   outputsize: number
-): Promise<{ fiscalDate: string; value: number | null }[]> {
-  if (metric in INCOME_STATEMENT_METRICS) {
-    const outcome = await fetchGatedStatementRows(ticker, 'income', period);
-    if (outcome.denied) return [];
-    const extract = INCOME_STATEMENT_METRICS[metric];
-    return (outcome.data as IncomeStatementPeriod[]).slice(0, outputsize).map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
-  }
-  if (metric in BALANCE_SHEET_METRICS) {
-    const outcome = await fetchGatedStatementRows(ticker, 'balance', period);
-    if (outcome.denied) return [];
-    const extract = BALANCE_SHEET_METRICS[metric];
-    return (outcome.data as BalanceSheetPeriod[]).slice(0, outputsize).map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
-  }
-  const outcome = await fetchGatedStatementRows(ticker, 'cashflow', period);
-  if (outcome.denied) return [];
-  const extract = CASH_FLOW_METRICS[metric];
-  return (outcome.data as CashFlowPeriod[]).slice(0, outputsize).map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) }));
+): Promise<{ periods: { fiscalDate: string; value: number | null }[]; unit: string; currencyFields: Record<string, string> }> {
+  const type = metric in INCOME_STATEMENT_METRICS ? 'income' : metric in BALANCE_SHEET_METRICS ? 'balance' : 'cashflow';
+  const extract = ({ ...INCOME_STATEMENT_METRICS, ...BALANCE_SHEET_METRICS, ...CASH_FLOW_METRICS } as Record<string, (r: unknown) => number | null>)[metric];
+  const outcome = await fetchGatedStatementRows(ticker, type, period);
+  if (outcome.denied) return { periods: [], unit: '$', currencyFields: {} };
+  return {
+    periods: (outcome.data as { fiscal_date: string }[]).slice(0, outputsize).map((r) => ({ fiscalDate: r.fiscal_date, value: extract(r) })),
+    unit: outcome.unit,
+    currencyFields: outcome.currencyFields,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -254,7 +271,7 @@ export const getCompanyMetrics = tool({
     'Fetch historical financial metrics for a specific company. Works for any ticker globally, not just ' +
     'companies in the BullPen database. Use this when the user asks about a company\'s revenue, earnings, ' +
     'EPS, margins, cash flow, balance sheet items, or any other financial data. Returns up to 6 periods. ' +
-    'Costs ~1 API credit.',
+    'Costs ~1 API credit. ' + CONVERTED_STATEMENTS_NOTE,
   inputSchema: jsonSchema<{ ticker: string; metric: typeof METRIC_VALUES[number]; period: 'annual' | 'quarterly' }>({
     type: 'object',
     properties: {
@@ -281,7 +298,7 @@ export const getCompanyMetrics = tool({
       const companyName = company?.name ?? sym;
       const isMonetary = metric !== 'eps_diluted' && metric !== 'eps_basic';
 
-      const periods = await fetchMetricPeriods(sym, metric, period, 6);
+      const { periods, unit, currencyFields } = await fetchMetricPeriods(sym, metric, period, 6);
 
       if (periods.length === 0) {
         return {
@@ -298,7 +315,7 @@ export const getCompanyMetrics = tool({
         period: p.fiscalDate,
         periodEnd: p.fiscalDate,
         value: p.value,
-        formatted: isMonetary ? fmt(p.value) : p.value != null ? `$${p.value.toFixed(2)}` : 'N/A',
+        formatted: isMonetary ? fmtIn(unit, p.value) : p.value != null ? `${unit}${p.value.toFixed(2)}` : 'N/A',
       }));
 
       return {
@@ -306,6 +323,7 @@ export const getCompanyMetrics = tool({
         company: companyName,
         metric: METRIC_LABELS[metric] ?? metric,
         period,
+        ...currencyFields,
         rows,
       };
     } catch (err) {
@@ -395,7 +413,8 @@ const COMPARE_METRIC_VALUES = [
 export const compareCompanies = tool({
   description:
     'Compare multiple companies side-by-side on key financial metrics. ' +
-    'Use when the user asks to compare two or more companies. Costs ~1 API credit per company.',
+    'Use when the user asks to compare two or more companies. Costs ~1 API credit per company. ' +
+    CONVERTED_STATEMENTS_NOTE,
   inputSchema: jsonSchema<{
     tickers: string[];
     metric?: typeof COMPARE_METRIC_VALUES[number];
@@ -432,7 +451,7 @@ export const compareCompanies = tool({
       tickers.map(async (ticker) => {
         const sym = ticker.toUpperCase();
         try {
-          const [company, periods] = await Promise.all([
+          const [company, { periods, unit, currencyFields }] = await Promise.all([
             resolveCompanyId(sym),
             fetchMetricPeriods(sym, metric, period, 4),
           ]);
@@ -441,10 +460,11 @@ export const compareCompanies = tool({
             company: company?.name ?? sym,
             metric: METRIC_LABELS[metric] ?? metric,
             period,
+            ...currencyFields,
             data: periods.map((p) => ({
               period: p.fiscalDate,
               value: p.value,
-              formatted: isMonetary ? fmt(p.value) : p.value != null ? `$${p.value.toFixed(2)}` : 'N/A',
+              formatted: isMonetary ? fmtIn(unit, p.value) : p.value != null ? `${unit}${p.value.toFixed(2)}` : 'N/A',
             })),
           };
         } catch (err) {
@@ -1526,7 +1546,8 @@ const getCompanyFinancials = tool({
     // decide between this and the 1-credit single-metric tool.
     'Expensive: about 100 API credits per call, against 1 credit for getCompanyMetrics. ' +
     'Prefer getCompanyMetrics when a single line item over time would answer the question; ' +
-    'use this when the user wants a whole statement. Results are cached server-side for 24h.',
+    'use this when the user wants a whole statement. Results are cached server-side for 24h. ' +
+    CONVERTED_STATEMENTS_NOTE,
   inputSchema: jsonSchema<{ ticker: string; type: 'income' | 'balance' | 'cashflow'; period: 'annual' | 'quarterly' }>({
     type: 'object',
     properties: {
@@ -1549,15 +1570,17 @@ const getCompanyFinancials = tool({
       const sym = ticker.toUpperCase();
       const outcome = await fetchGatedStatementRows(sym, type, period);
       if (outcome.denied) return { error: 'Rate limit reached fetching financials. Try again shortly.' };
+      const money = (n: number | null) => fmtIn(outcome.unit, n);
       if (type === 'income') {
         const rows = outcome.data as IncomeStatementPeriod[];
         return rows.slice(0, 4).map((r) => ({
           period: r.fiscal_date,
-          revenue: fmt(r.revenue),
-          grossProfit: fmt(r.gross_profit),
-          operatingIncome: fmt(r.operating_income),
-          netIncome: fmt(r.net_income),
-          ebitda: fmt(r.ebitda),
+          ...outcome.currencyFields,
+          revenue: money(r.revenue),
+          grossProfit: money(r.gross_profit),
+          operatingIncome: money(r.operating_income),
+          netIncome: money(r.net_income),
+          ebitda: money(r.ebitda),
           epsBasic: r.eps_basic?.toFixed(2) ?? 'N/A',
           epsDiluted: r.eps_diluted?.toFixed(2) ?? 'N/A',
         }));
@@ -1565,24 +1588,26 @@ const getCompanyFinancials = tool({
         const rows = outcome.data as BalanceSheetPeriod[];
         return rows.slice(0, 4).map((r) => ({
           period: r.fiscal_date,
-          totalAssets: fmt(r.total_assets),
-          totalCurrentAssets: fmt(r.total_current_assets),
-          cash: fmt(r.cash_and_equivalents),
-          totalLiabilities: fmt(r.total_liabilities),
-          longTermDebt: fmt(r.long_term_debt),
-          equity: fmt(r.total_stockholders_equity),
-          retainedEarnings: fmt(r.retained_earnings),
+          ...outcome.currencyFields,
+          totalAssets: money(r.total_assets),
+          totalCurrentAssets: money(r.total_current_assets),
+          cash: money(r.cash_and_equivalents),
+          totalLiabilities: money(r.total_liabilities),
+          longTermDebt: money(r.long_term_debt),
+          equity: money(r.total_stockholders_equity),
+          retainedEarnings: money(r.retained_earnings),
         }));
       } else {
         const rows = outcome.data as CashFlowPeriod[];
         return rows.slice(0, 4).map((r) => ({
           period: r.fiscal_date,
-          operatingCashFlow: fmt(r.operating_cash_flow),
-          investingCashFlow: fmt(r.investing_activities_cash_flow),
-          financingCashFlow: fmt(r.financing_activities_cash_flow),
-          capitalExpenditures: fmt(r.capital_expenditures),
-          freeCashFlow: fmt(r.free_cash_flow),
-          dividendsPaid: fmt(r.dividends_paid),
+          ...outcome.currencyFields,
+          operatingCashFlow: money(r.operating_cash_flow),
+          investingCashFlow: money(r.investing_activities_cash_flow),
+          financingCashFlow: money(r.financing_activities_cash_flow),
+          capitalExpenditures: money(r.capital_expenditures),
+          freeCashFlow: money(r.free_cash_flow),
+          dividendsPaid: money(r.dividends_paid),
         }));
       }
     } catch (err) {

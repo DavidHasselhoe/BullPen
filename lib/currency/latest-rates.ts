@@ -4,6 +4,8 @@ import { getStockQuotes } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import type { ExchangeRates } from '@/lib/currency/currency-conversion';
+import { getCachedStale } from '@/lib/cache/market-data-cache';
+import { rowsToUsd, type StatementFx } from '@/lib/currency/statement-fx';
 
 // Frankfurter is the ECB reference rate, fixed once a day around 16:00 CET, so
 // every morning it still converts at yesterday's rate: 0.2% off Nordnet on
@@ -110,4 +112,54 @@ export async function getLatestRates(base: string): Promise<LatestRates> {
     cached,
     live: !!live,
   };
+}
+
+// A statement is a quarter old by the time anyone reads it, so the rate it is
+// converted at only needs to be fresh to the day. Kept a week so a failed
+// refresh falls back to the last rate instead of leaving the card empty.
+const STATEMENT_FX_FRESH_MS = 6 * 60 * 60 * 1000;
+const STATEMENT_FX_KEEP_SECONDS = 7 * 24 * 60 * 60;
+
+/** USD rate for converting a statement reported in `currency`; null when there is none to be had. */
+async function statementFx(currency: string): Promise<StatementFx | null> {
+  const key = `fx:statement:${currency}`;
+  const cached = await rget<StatementFx & { at: number }>(key);
+  const last = cached && { from: cached.from, rate: cached.rate, date: cached.date };
+  if (cached && Date.now() - cached.at < STATEMENT_FX_FRESH_MS) return last;
+  if (process.env.TWELVE_DATA_API_KEY && (await tryReserveOrganicCredits(1))) {
+    try {
+      const q = (await getStockQuotes([`USD/${currency}`])).get(`USD/${currency}`);
+      if (q && q.c > 0) {
+        const fx = { from: currency, rate: q.c, date: new Date().toISOString().slice(0, 10) };
+        void rset(key, { ...fx, at: Date.now() }, STATEMENT_FX_KEEP_SECONDS);
+        return fx;
+      }
+    } catch (err) {
+      logger.warn('[statement-fx] USD rate unavailable', { currency, error: err });
+    }
+  }
+  return last;
+}
+
+/**
+ * Statement rows (income, balance or cash flow) in USD, for every caller that
+ * shows them: the Financials card, Revenue Flow and Bull. The cache keeps the
+ * rows as TwelveData sent them; conversion happens here, on the way out.
+ *
+ * `currency` is what the returned rows are in: USD, or the reporting currency
+ * when no rate could be had (then `fx` is null and the rows are untouched).
+ */
+export async function statementsInUsd<T extends object>(
+  symbol: string,
+  rows: T[],
+): Promise<{ rows: T[]; currency: string; fx: StatementFx | null }> {
+  // Balance sheet and cash flow rows cached before they carried a currency
+  // take it from the same company's income statement.
+  const tagged = (rows as { reported_currency?: string | null }[]).find((r) => r.reported_currency)?.reported_currency;
+  const currency = tagged
+    ?? (await getCachedStale<{ reported_currency?: string | null }[]>(`financials:${symbol.toUpperCase()}:income:quarterly`))?.[0]?.reported_currency
+    ?? 'USD';
+  if (currency === 'USD' || rows.length === 0) return { rows, currency: 'USD', fx: null };
+  const fx = await statementFx(currency);
+  return fx ? { rows: rowsToUsd(rows, fx), currency: 'USD', fx } : { rows, currency, fx: null };
 }

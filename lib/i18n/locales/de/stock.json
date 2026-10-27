@@ -430,6 +430,7 @@
   "financialsYearEndTitle": "Geschäftsjahr endend {{date}}",
   "financialsReportedOn": "Berichtet {{date}}",
   "financialsReportPending": "{{period}} wurde am {{date}} berichtet. Die vollständigen Jahresabschlüsse sind noch nicht eingereicht.",
+  "financialsConvertedNote": "In US-Dollar angezeigt. Umgerechnet aus {{from}} zu 1 USD = {{rate}} {{from}}, Kurs vom {{date}}.",
   "sectorPeersHeading": "Mehr in {{sector}}",
   "sectorPeersSubtitle": "Unternehmen ähnlicher Größe aus demselben Sektor",
   "sectorPeersSeeAll": "Alle Aktien nach Sektor",

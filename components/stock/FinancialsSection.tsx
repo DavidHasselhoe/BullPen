@@ -30,6 +30,7 @@ import type {
   SplitItem,
 } from '@/lib/twelvedata/twelvedata-client';
 import { fiscalLabel, statementLabel, reportedOnFor, pendingReport, longPeriodDate, type FiscalTag } from '@/lib/finance/fiscal-label';
+import type { StatementFx } from '@/lib/currency/statement-fx';
 
 type Tab = 'income' | 'balance' | 'cashflow' | 'dividends' | 'splits';
 type Period = 'quarterly' | 'annual';
@@ -40,6 +41,10 @@ interface FinancialsResponse {
   type: Tab;
   period: Period;
   error?: string;
+  /** What the statement rows are in. USD unless no rate could be had for a foreign reporter. */
+  currency?: string;
+  /** Set when the rows were converted to USD from the company's own currency. */
+  fx?: StatementFx | null;
 }
 
 // ---- Formatting helpers ----
@@ -499,7 +504,12 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
   // report may not be here yet: say so instead of looking a quarter stale.
   const { data: earningsData } = useEarningsHistory(ticker);
   const annual = period === 'annual';
-  const statementRows = (activeTab === 'income' || activeTab === 'balance' || activeTab === 'cashflow') && data?.success && data.data
+  // Every amount here is formatted with "$". A foreign reporter whose USD rate
+  // could not be fetched gets the no-data state rather than its own currency
+  // under a dollar sign.
+  // ponytail: no TWD/EUR formatting path; thread a unit through fmtNum if the fallback ever shows up.
+  const inUsd = !data?.currency || data.currency === 'USD';
+  const statementRows = (activeTab === 'income' || activeTab === 'balance' || activeTab === 'cashflow') && data?.success && inUsd && data.data
     ? (data.data as { fiscal_date: string; fiscal?: FiscalTag | null }[])
     : [];
   const periodColumns: PeriodColumn[] = statementRows.slice(0, 5).map((row) => ({
@@ -512,7 +522,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
 
   // ── Chart-first lead per statement tab ─────────────────────────────────
   let chart: React.ReactNode = null;
-  if (!isLoading && data?.success && data.data) {
+  if (!isLoading && data?.success && inUsd && data.data) {
     if (activeTab === 'income') {
       chart = (
         <FinancialsTrendChart
@@ -647,7 +657,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
           </div>
         )}
 
-        {!isLoading && data?.success && data.data && (
+        {!isLoading && data?.success && inUsd && data.data && (
           <>
             {pendingReportNote && (
               <p className="-mt-1 mb-4 text-xs text-muted-foreground">
@@ -655,6 +665,11 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                   period: fiscalLabel(t, pendingReportNote),
                   date: fmtShortDate(pendingReportNote.date),
                 })}
+              </p>
+            )}
+            {data.fx && (
+              <p className="-mt-1 mb-4 text-xs text-muted-foreground">
+                {t('financialsConvertedNote', { from: data.fx.from, rate: data.fx.rate.toFixed(2), date: fmtShortDate(data.fx.date) })}
               </p>
             )}
             {chart}
@@ -743,14 +758,14 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
           </>
         )}
 
-        {!isLoading && !data?.success && data?.error === 'plan_restricted' && (
+        {!isLoading && !(data?.success && inUsd) && data?.error === 'plan_restricted' && (
           <div className="flex flex-col items-center justify-center py-12 gap-1.5 text-center">
             <p className="text-sm text-muted-foreground">{t('financialsPlanRestricted')}</p>
             <p className="text-xs text-muted-foreground">{t('financialsPlanRestrictedDividendsHint')}</p>
           </div>
         )}
 
-        {!isLoading && !data?.success && data?.error !== 'plan_restricted' && (
+        {!isLoading && !(data?.success && inUsd) && data?.error !== 'plan_restricted' && (
           <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
             {t('financialsNoFinancialData')}
           </div>

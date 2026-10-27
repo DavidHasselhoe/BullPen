@@ -32,6 +32,7 @@
   "earningsSrLabelEstimate": "«EEstiimaatee ${{estimate}} peer shaaree»",
   "financialsBalanceStatement": "«Baalaancee staateemeent»",
   "financialsCapex": "«CaapEEx»",
+  "financialsConvertedFrom": "«Coonveerteed froom {{from}} too UUS doollaars»",
   "financialsCashflowStatement": "«Caash floow staateemeent»",
   "financialsEpsDiluted": "«EEPS (diiluuteed)»",
   "financialsEquity": "«EEquuiity»",

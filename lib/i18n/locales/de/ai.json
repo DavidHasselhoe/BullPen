@@ -172,6 +172,7 @@
   "receiptSharesCount_one": "{{count}} Aktie",
   "receiptSharesCount_other": "{{count}} Aktien",
   "financialsCapex": "CapEx",
+  "financialsConvertedFrom": "Aus {{from}} in US-Dollar umgerechnet",
   "financialsOperatingCf": "Betrieblicher CF",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",

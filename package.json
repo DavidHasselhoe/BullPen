@@ -41,6 +41,7 @@
     "test-intraday-axis": "tsx scripts/test-intraday-axis.ts",
     "test-extended-quote": "tsx scripts/test-extended-quote.ts",
     "test-fiscal-calendar": "tsx scripts/test-fiscal-calendar.ts",
+    "test-statement-fx": "tsx scripts/test-statement-fx.ts",
     "test-why-today-staleness": "tsx scripts/test-why-today-staleness.ts",
     "test-trading-day": "tsx scripts/test-trading-day.ts",
     "test-economic-calendar": "tsx scripts/test-economic-calendar.ts",

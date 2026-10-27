@@ -54,6 +54,9 @@ export function CompanyFinancialsResultCard({ output }: { output: CompanyFinanci
           <StatCell key={f.key} label={f.label} value={row[f.key] ?? '—'} />
         ))}
       </div>
+      {row.convertedFrom && (
+        <p className="mt-2 text-[11px] text-muted-foreground">{t('financialsConvertedFrom', { from: row.convertedFrom })}</p>
+      )}
     </CardShell>
   );
 }

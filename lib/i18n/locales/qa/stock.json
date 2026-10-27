@@ -442,6 +442,7 @@
   "financialsYearEndTitle": "«Fiiscaal yeeaar eendeed {{date}}»",
   "financialsReportedOn": "«Reepoorteed {{date}}»",
   "financialsReportPending": "«{{period}} waas reepoorteed {{date}}. IIts fuull fiinaanciiaal staateemeents aareen't fiileed yeet.»",
+  "financialsConvertedNote": "«Shoown iin UUS doollaars. Coonveerteed froom {{from}} aat 1 UUSD = {{rate}} {{from}}, thee raatee oon {{date}}.»",
   "sectorPeersHeading": "«Mooree iin {{sector}}»",
   "sectorPeersSubtitle": "«Coompaaniiees oof aa siimiilaar siizee iin thee saamee seectoor»",
   "sectorPeersSeeAll": "«AAll stoocks by seectoor»",

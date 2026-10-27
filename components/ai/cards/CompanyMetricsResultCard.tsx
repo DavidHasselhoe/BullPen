@@ -16,6 +16,8 @@ export interface CompanyMetricsOutput {
   company: string;
   metric: string;
   period: string;
+  /** The company's own currency, when the amounts were converted to USD. */
+  convertedFrom?: string;
   rows: MetricRow[];
 }
 
@@ -41,6 +43,9 @@ export function CompanyMetricsResultCard({ output }: { output: CompanyMetricsOut
         srLabel={t('trendSrLabel', { metric: output.metric, subject: output.company, count: oldestToNewest.length, formatted: latest.formatted })}
         className="text-foreground"
       />
+      {output.convertedFrom && (
+        <p className="mt-2 text-[11px] text-muted-foreground">{t('financialsConvertedFrom', { from: output.convertedFrom })}</p>
+      )}
     </CardShell>
   );
 }

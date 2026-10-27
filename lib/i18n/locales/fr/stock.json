@@ -428,6 +428,7 @@
   "financialsYearEndTitle": "Exercice fiscal clos le {{date}}",
   "financialsReportedOn": "Rapporté {{date}}",
   "financialsReportPending": "{{period}} a été rapporté {{date}}. Ses états financiers complets ne sont pas encore déposés.",
+  "financialsConvertedNote": "Affiché en dollars américains. Converti depuis {{from}} à 1 USD = {{rate}} {{from}}, le taux du {{date}}.",
   "sectorPeersHeading": "Plus dans {{sector}}",
   "sectorPeersSubtitle": "Entreprises de taille similaire dans le même secteur",
   "sectorPeersSeeAll": "Tous les titres par secteur",

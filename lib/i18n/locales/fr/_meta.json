@@ -3915,5 +3915,7 @@
   "stock.advancedChartLevelSupport": "be91940b79f469101df9a50544b6873aa5509a12f1f93f1cb5e3be3990d344b3",
   "stock.advancedChartLevelResistance": "c35070bce1f5544161f673d2ab7c57d1c00804d69fffb266173621c3718ce4e6",
   "stock.advancedChartLevelOther": "1709305c9fa966d14f56f0da3c3614bbc10adcf53d72f90341bb96d24afcfca3",
-  "stock.advancedChartClearLevels": "356551701da1189b73d5aed8d14b7e6acc07cd63d9769ea4d1a78e93eb59c857"
+  "stock.advancedChartClearLevels": "356551701da1189b73d5aed8d14b7e6acc07cd63d9769ea4d1a78e93eb59c857",
+  "stock.financialsConvertedNote": "1e706cd1e14485c942b7b0a766d646ad2f399681276649feed1c9bd76d1188de",
+  "ai.financialsConvertedFrom": "d8b04aa779c74f9f90cb5d82d124fc41a6824deb6a529a032715d074654e809a"
 }
