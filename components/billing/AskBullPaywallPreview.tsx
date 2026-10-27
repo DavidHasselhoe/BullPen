@@ -5,12 +5,12 @@ import { PreviewLines } from './PreviewShapes';
 
 interface Props {
   /** Real ticker the chart/page was showing when the gate fired, if known
-   *  — the in-chart assistant (ChartAIPanel) always has this. */
+   *  (BullpenChat passes it when the page is about one ticker). */
   ticker?: string;
 }
 
 /**
- * Ask Bull paywall teaser (the main chat and the in-chart assistant share it).
+ * Ask Bull paywall teaser.
  * The question is an invitation, so it names the reader's ticker. The reply
  * is the outline of an answer: a written one was about NVDA's data-center
  * demand and showed up under Coca-Cola as Bull's view of it.

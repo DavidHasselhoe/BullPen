@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -11,7 +11,6 @@ import { useTranslation } from 'react-i18next';
 import type { AdvancedChartType, ChartRange } from '@/hooks/use-chart-prefs';
 import { useStockQuote } from '@/hooks/use-stock-price';
 import { useLivePrices } from '@/hooks/use-live-prices';
-import { useAlerts } from '@/hooks/use-alerts';
 import type { CompanyEarnings } from '@/lib/twelvedata/twelvedata-client';
 import {
   buildTransactionMarkers,
@@ -113,7 +112,6 @@ export function AdvancedChartModal({
   };
 
   const { presets, savePreset, deletePreset } = useChartPresets();
-  const { create: createAlert } = useAlerts();
 
   const handleClearIndicators = () => onReplaceIndicators([]);
   const handleSavePreset = (name: string) =>
@@ -231,8 +229,7 @@ export function AdvancedChartModal({
   const candles = data?.candles ?? null;
   const hasData = !!candles && candles.t.length > 0;
 
-  // Live snapshot the AI reads — rebuilt as the chart state changes.
-  const currentPrice = livePrice ?? quote?.c ?? null;
+  // The view Bull gets as context, rebuilt as the chart state changes.
   const snapshot = useMemo(
     () =>
       buildChartSnapshot({
@@ -242,19 +239,27 @@ export function AdvancedChartModal({
         indicatorLabels: indicators.map(indicatorLabel),
         showVolume,
         showEvents,
-        currentPrice,
-        changePctToday: quote?.dp ?? null,
         candles,
         displayFrom,
       }),
-    [ticker, range, chartType, indicators, showVolume, showEvents, currentPrice, quote?.dp, candles, displayFrom],
+    [ticker, range, chartType, indicators, showVolume, showEvents, candles, displayFrom],
   );
+  // Bull can add several indicators in one reply; each add has to build on the
+  // last one, not on the list from before the reply.
+  const indicatorsRef = useRef(indicators);
+  useEffect(() => {
+    indicatorsRef.current = indicators;
+  }, [indicators]);
+  const replaceIndicators = (next: IndicatorInstance[]) => {
+    indicatorsRef.current = next;
+    onReplaceIndicators(next);
+  };
   // Header move: today's change on 1D, first → last visible bar otherwise
   // (same convention as the inline stock chart's period banner).
   const headerPct = range === '1D' ? quote?.dp : snapshot.window?.changePct;
 
   // Execute an AI-issued chart action against the real chart handlers.
-  const dispatchChartAction = async (action: ChartAction) => {
+  const dispatchChartAction = (action: ChartAction) => {
     switch (action.type) {
       case 'chart_set_timeframe':
         handleSetRange(action.range);
@@ -270,17 +275,18 @@ export function AdvancedChartModal({
           const spec = def.params.find((p) => p.key === 'length');
           if (spec) params.length = Math.min(spec.max, Math.max(spec.min, Math.round(action.length)));
         }
-        const used = new Set(indicators.map((i) => i.color));
-        const color = INDICATOR_PALETTE.find((c) => !used.has(c)) ?? INDICATOR_PALETTE[indicators.length % INDICATOR_PALETTE.length];
-        const inst: IndicatorInstance = { id: `${action.indicator}-${Date.now()}`, type: action.indicator, params, color };
-        onReplaceIndicators([...indicators, inst]);
+        const current = indicatorsRef.current;
+        const used = new Set(current.map((i) => i.color));
+        const color = INDICATOR_PALETTE.find((c) => !used.has(c)) ?? INDICATOR_PALETTE[current.length % INDICATOR_PALETTE.length];
+        const inst: IndicatorInstance = { id: `${action.indicator}-${Date.now()}-${current.length}`, type: action.indicator, params, color };
+        replaceIndicators([...current, inst]);
         break;
       }
       case 'chart_remove_indicator':
-        onReplaceIndicators(indicators.filter((i) => i.type !== action.indicator));
+        replaceIndicators(indicatorsRef.current.filter((i) => i.type !== action.indicator));
         break;
       case 'chart_clear_indicators':
-        onReplaceIndicators([]);
+        replaceIndicators([]);
         break;
       case 'chart_apply_preset':
         onApplyPreset(action.preset);
@@ -291,22 +297,6 @@ export function AdvancedChartModal({
       case 'chart_toggle_events':
         if (action.show !== showEvents) onToggleEvents();
         break;
-      case 'chart_set_alert': {
-        const base = currentPrice ?? action.price;
-        const alertType =
-          action.direction === 'below'
-            ? 'price_below'
-            : action.direction === 'above'
-            ? 'price_above'
-            : action.price >= base
-            ? 'price_above'
-            : 'price_below';
-        // Throws on failure so Bull's confirmation card shows the error
-        // instead of "Alert set" (the result used to be ignored).
-        const result = await createAlert({ symbol: ticker.toUpperCase(), alertType, threshold: action.price });
-        if (!result.ok) throw new Error(result.error || 'alert_failed');
-        break;
-      }
     }
   };
 

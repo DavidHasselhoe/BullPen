@@ -33,6 +33,7 @@ import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { splitTickers, useKnownTickers } from '@/components/company/TickerText';
 import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, useNavigateConfirmations, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
+import type { ChartAction, ChartSnapshot } from '@/components/stock/advanced-chart/chart-context';
 
 // Byte-identical to AISidePanel's starterPromptHealthCheck/InsiderBuying/GrowthStocks — reused rather than duplicated.
 function getDefaultStarterPrompts(t: TFunction): string[] {
@@ -47,6 +48,8 @@ export interface AIContextProp {
   tickers: string[];
   label?: string;
   screener?: ScreenerAIContext;
+  /** The fullscreen chart's view. Registers the chart tools server-side. */
+  chart?: ChartSnapshot;
 }
 
 interface BullpenChatProps {
@@ -54,7 +57,7 @@ interface BullpenChatProps {
   compact?: boolean;
   /** Authenticated user — used to show profile avatar on user messages */
   user?: AuthUser | null;
-  /** Custom starter prompts when there are no messages */
+  /** Custom starter prompts when there are no messages; they win over the page-context ones */
   starterPrompts?: string[];
   /** When true, auto-focus the input (e.g. when panel opens). Omit for full-page chat (focus on mount). */
   open?: boolean;
@@ -64,6 +67,8 @@ interface BullpenChatProps {
   aiContext?: AIContextProp;
   /** Called after initial query has been sent */
   onConsumedQuery?: () => void;
+  /** Runs the chart tools' actions (timeframe, indicators...) against the open chart. */
+  onChartAction?: (action: ChartAction) => void | Promise<void>;
   /**
    * Stable id for this conversation, used to save/resume chat history. When
    * omitted, one is generated on mount (still saved server-side, just not
@@ -211,7 +216,7 @@ export interface BullpenChatHandle {
 }
 
 export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(function BullpenChat(
-  { compact = false, user, starterPrompts, open, initialQuery, aiContext, onConsumedQuery, conversationId, initialMessages },
+  { compact = false, user, starterPrompts, open, initialQuery, aiContext, onConsumedQuery, onChartAction, conversationId, initialMessages },
   ref
 ) {
   const router = useRouter();
@@ -284,6 +289,11 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     investmentHorizon: (user?.settings as Record<string, unknown> | null)?.investment_horizon ?? null,
     responseStyle: (user?.settings as Record<string, unknown> | null)?.response_style ?? null,
   };
+
+  // useChat keeps the onFinish it was built with, so the chart handler is read
+  // through a ref: the modal's handler closes over the chart's current state.
+  const onChartActionRef = useRef(onChartAction);
+  onChartActionRef.current = onChartAction;
 
   const runClientAction = useCallback(
     async (action: ClientAction, key: string) => {
@@ -396,6 +406,14 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
       if (plain) setAnnouncement(t('chatReplyAnnouncement', { text: plain }));
       const tickers = extractTickers(message);
       if (tickers.length) noteTicker(tickers[tickers.length - 1]);
+      for (const call of getCompletedToolCalls(message)) {
+        if (!call.chartAction) continue;
+        try {
+          await onChartActionRef.current?.(call.chartAction);
+        } catch {
+          // One failed chart change shouldn't stop the rest.
+        }
+      }
       getCompletedToolCalls(message).forEach((call, i) => {
         // Only a navigation the user explicitly asked for runs on its own.
         // Everything that changes their account (holdings, alerts) waits for
@@ -437,7 +455,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     trackEvent('ask_bull_sent', {
       source,
       first_in_chat: messages.length === 0,
-      context: aiContext?.screener ? 'screener' : effectiveContext?.tickers.length ? 'ticker' : 'none',
+      context: aiContext?.screener ? 'screener' : aiContext?.chart ? 'chart' : effectiveContext?.tickers.length ? 'ticker' : 'none',
     });
 
   /** Sending always brings the reader back to the conversation's end. */
@@ -509,7 +527,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           t('chatContextPromptFilings', { ticker: aiContext.tickers[0] }),
         ]
     : [];
-  const displayPrompts = contextPrompts.length > 0 ? contextPrompts : resolvedStarterPrompts;
+  const displayPrompts = starterPrompts ?? (contextPrompts.length > 0 ? contextPrompts : resolvedStarterPrompts);
 
   const refocusInput = () => {
     // After submit, React may re-render; run after paint so focus isn’t stolen by disabled state (we avoid disabling while streaming).
@@ -579,6 +597,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
         onOpenChange={(o) => !o && setPaywallQuota(null)}
         featureName={t('askBull')}
         quota={paywallQuota ?? undefined}
+        previewContext={aiContext?.tickers.length === 1 ? { ticker: aiContext.tickers[0] } : undefined}
       />
 
       {/* One announcement per finished reply, for screen readers. */}

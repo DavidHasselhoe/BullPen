@@ -13,6 +13,7 @@ import { tool, jsonSchema } from 'ai';
 import { createServerClient } from '@/lib/supabase/client';
 import {
   getStockQuotes,
+  getStockCandles,
   isOutsideRegularSessionET,
   getStatistics,
   getCompanyEarnings,
@@ -33,6 +34,7 @@ import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-ca
 import { coalesce } from '@/lib/cache/request-coalesce';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
+import { computeTechnicals } from '@/lib/finance/technicals';
 import { getTier, isPro } from '@/lib/billing/tier';
 import { AlertTypeSchema, alertTypeLabel, describeAlert, FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
@@ -1346,6 +1348,75 @@ const getLiveQuote = tool({
   },
 });
 
+/** Calendar days of daily bars: ~345 trading days, enough for a 300-day SMA plus its 20-bar slope. */
+const TECHNICALS_DAYS = 500;
+
+const etDate = (unix: number) => new Date(unix * 1000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+const getTechnicals = tool({
+  description:
+    'Read a ticker\'s chart from its daily price history: simple moving averages and where the price sits against ' +
+    'each, RSI(14), the 52-week high and low, and support and resistance levels. Use it for any question about ' +
+    'the chart or price trend: "is it above its 200-day", "where is support", "is it oversold", "is it in a ' +
+    'downtrend", "how far from the high". Costs about 2 API credits, so fetch it rather than offer to or send the ' +
+    'user to the chart. smaLengths defaults to 20, 50, 100, 150 and 200; pass the lengths the user names (up to 300). ' +
+    'Support and resistance are price zones where at least one swing low or high turned in the last year, nearest ' +
+    'first; touches counts how many times the price turned there, and more touches make a level more meaningful. ' +
+    'A level with one touch is a single swing point, say so rather than calling it strong support. pctFromPrice and ' +
+    'distancePct are how far the current price is above (positive) or below (negative) that level. Levels describe ' +
+    'what the price has done, never a prediction.',
+  inputSchema: jsonSchema<{ ticker: string; smaLengths?: number[] }>({
+    type: 'object',
+    properties: {
+      ticker: { type: 'string', description: 'Ticker symbol, e.g. AAPL, GEV, BTC/USD' },
+      smaLengths: {
+        type: 'array',
+        items: { type: 'integer', minimum: 2, maximum: 300 },
+        maxItems: 6,
+        description: 'Moving-average lengths in trading days. Omit for 20, 50, 100, 150, 200.',
+      },
+    },
+    required: ['ticker'],
+  }),
+  execute: async ({ ticker, smaLengths }) => {
+    const symbol = ticker.toUpperCase();
+    const lengths = smaLengths?.filter((n) => Number.isInteger(n) && n >= 2 && n <= 300).slice(0, 6);
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      // Bars cache for an hour: SMAs and levels barely move intraday, and the
+      // live quote below supplies the current price.
+      const gated = await gatedFetch(`technicals-bars:${symbol}`, symbol, 'candles', 1, 60 * 60, () =>
+        getStockCandles(symbol, now - TECHNICALS_DAYS * 86_400, now, 'D'),
+      );
+      if (gated.denied) return { error: 'Market data is busy right now. Try again in a minute.' };
+      const bars = gated.data;
+      if (bars.t.length < 30) return { error: `Not enough price history for ${symbol}.` };
+
+      const quote = (await getStockQuotes([symbol])).get(symbol);
+      const live = quote?.c ?? null;
+      const price = live ?? bars.c[bars.c.length - 1];
+      const t = computeTechnicals(bars, price, lengths?.length ? lengths : undefined);
+      const level = (l: (typeof t.support)[number]) => ({ ...l, lastTouched: etDate(l.lastTouched) });
+      return {
+        ticker: symbol,
+        price: t.price,
+        priceSource: live != null ? 'live quote' : `last close ${etDate(bars.t[bars.t.length - 1])}`,
+        historyFrom: etDate(bars.t[0]),
+        movingAverages: t.movingAverages,
+        ...(t.unavailableLengths.length ? { notEnoughHistoryFor: t.unavailableLengths } : {}),
+        rsi14: t.rsi14,
+        high52w: { ...t.high52w, at: etDate(t.high52w.at) },
+        low52w: { ...t.low52w, at: etDate(t.low52w.at) },
+        support: t.support.map(level),
+        resistance: t.resistance.map(level),
+      };
+    } catch (err) {
+      if (err instanceof TwelveDataRateLimitError) return { error: 'Rate limit reached. Try again shortly.' };
+      return { error: `Could not fetch price history for ${symbol}: ${(err as Error).message}` };
+    }
+  },
+});
+
 const getKeyStatistics = tool({
   description:
     'Fetch key valuation and financial statistics for a stock: P/E ratio (TTM and forward), ' +
@@ -1785,6 +1856,7 @@ export const COMPANY_DATA_TOOLS = {
   getCompanyMetrics,
   compareCompanies,
   getLiveQuote,
+  getTechnicals,
   getKeyStatistics,
   getCompanyFinancials,
   getEarningsData,
@@ -2095,6 +2167,7 @@ export const BULLPEN_TOOLS = {
   getCompanyMetrics,
   compareCompanies,
   getLiveQuote,
+  getTechnicals,
   getKeyStatistics,
   getCompanyFinancials,
   getEarningsData,

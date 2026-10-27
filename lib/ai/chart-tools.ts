@@ -1,11 +1,11 @@
 /**
- * Chart-control tools for the in-chart AI assistant.
+ * Chart-control tools, registered in runAgent only while the fullscreen chart
+ * is open (context.chart).
  *
- * Unlike the data tools in ./tools.ts, these don't touch the network — each one
- * simply returns a `__clientAction` payload that the ChartAIPanel executes
- * against the live chart (change timeframe, add indicators, set alerts, …).
- * This reuses the exact `__clientAction` mechanism the main chat already uses
- * for navigation and holdings edits.
+ * Unlike the data tools in ./tools.ts, these don't touch the network: each one
+ * returns a `__clientAction` payload that BullpenChat hands to the chart
+ * (change timeframe, add indicators, ...). Price alerts go through the main
+ * createAlert tool and its Confirm card.
  */
 
 import { tool, jsonSchema } from 'ai';
@@ -140,29 +140,6 @@ const toggleEvents = tool({
     clientAction({ type: 'chart_toggle_events', show }, show ? 'Earnings markers shown.' : 'Earnings markers hidden.'),
 });
 
-// ── Price alert ─────────────────────────────────────────────────────────────
-const setPriceAlert = tool({
-  description:
-    'Create a price alert for this stock so the user is notified when it crosses a level. ' +
-    'Provide the target `price`. If the direction is obvious from the request use it ("alert me if it drops below 200" → below); ' +
-    'otherwise omit it and the app infers above/below from the current price.',
-  inputSchema: jsonSchema<{ price: number; direction?: 'above' | 'below' }>({
-    type: 'object',
-    properties: {
-      price: { type: 'number', description: 'Target price in USD' },
-      direction: { type: 'string', enum: ['above', 'below'] },
-    },
-    required: ['price'],
-    additionalProperties: false,
-  }),
-  execute: async ({ price, direction }) =>
-    clientAction(
-      { type: 'chart_set_alert', price, ...(direction ? { direction } : {}) },
-      // Not created yet: the user confirms with a button under the reply.
-      `Alert at $${price}${direction ? ` (${direction})` : ''} is ready. Nothing is saved until the user presses Confirm under your reply: ask them to confirm, and never say the alert is set.`,
-    ),
-});
-
 export const CHART_TOOLS = {
   setTimeframe,
   setChartType,
@@ -172,5 +149,4 @@ export const CHART_TOOLS = {
   applyPreset,
   toggleVolume,
   toggleEvents,
-  setPriceAlert,
 };

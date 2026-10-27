@@ -10,6 +10,7 @@ import { streamText, convertToModelMessages, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
+import { CHART_TOOLS } from './chart-tools';
 import { BULLPEN_TOOLS, createAlertTool, getMyAlertsTool, getPortfolioContextTool, getInsiderActivityTool, appContentTools } from './tools';
 import { languageName } from '@/lib/i18n/language-names';
 import { assertNoMutatingToolsWithExternalContent } from './tool-boundary';
@@ -26,6 +27,27 @@ interface AIContext {
     resultCount?: number;
     shown?: { tickers?: unknown[]; sortKey?: unknown; sortDir?: unknown };
   };
+  /** The fullscreen chart's view (ChartSnapshot in components/stock/advanced-chart/chart-context.ts). Client-supplied, so sanitized. */
+  chart?: {
+    timeframe?: unknown;
+    chartType?: unknown;
+    indicators?: unknown;
+    showVolume?: unknown;
+    showEvents?: unknown;
+    window?: Record<string, unknown> | null;
+  };
+}
+
+/** Describes the open fullscreen chart. Its tools are registered only while this applies. */
+function chartContextPrefix(symbol: string, c: NonNullable<AIContext['chart']>): string {
+  const word = (v: unknown) => (typeof v === 'string' && /^[\w .,()-]{1,24}$/.test(v) ? v : '?');
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : '?');
+  const indicators = (Array.isArray(c.indicators) ? c.indicators : []).slice(0, 12).map(word);
+  const w = c.window;
+  const windowLine = w
+    ? ` Visible window: ${num(w.bars)} bars, open ${num(w.open)}, close ${num(w.close)}, high ${num(w.high)}, low ${num(w.low)}, ${num(w.changePct)}% over the period.`
+    : '';
+  return `[Current page context: The user has the fullscreen chart for ${symbol} open: ${word(c.timeframe)} timeframe, ${word(c.chartType)} chart, indicators: ${indicators.length ? indicators.join(', ') : 'none'}, volume ${c.showVolume === true ? 'shown' : 'hidden'}, earnings markers ${c.showEvents === true ? 'shown' : 'hidden'}.${windowLine} When they ask to change the chart, call the chart tools rather than describing how; several in one turn is fine, then confirm in one line. Read trend, moving averages and support from getTechnicals, not from the visible window.]\n\n`;
 }
 
 /** Turns the screener page's state into the exact screenStocks arguments that reproduce it. */
@@ -106,8 +128,11 @@ export async function runAgent(
 
   // Prepend a context block when the user is viewing a specific stock/comparison page.
   const contextLabel = context?.label ?? context?.tickers?.join(', ') ?? '';
+  const chartSymbol = context?.chart ? context.tickers?.[0]?.slice(0, 20) : undefined;
   const contextPrefix = context?.screener
     ? screenerContextPrefix(context.screener)
+    : chartSymbol && context?.chart
+    ? chartContextPrefix(chartSymbol, context.chart)
     : context?.tickers?.length
     ?`[Current page context: The user is viewing "${contextLabel}" (${context.tickers.join(', ')}). Unless the user specifies a different company, answer questions about ${context.tickers.join(' and ')} first.]\n\n`
     : '';
@@ -127,6 +152,8 @@ export async function runAgent(
     // Pro-gated (see /api/stock/[ticker]/insider-transactions) — needs userId
     // to check tier server-side, so it can't live in the static tool map.
     ...(userId ? { getInsiderActivity: getInsiderActivityTool(userId) } : {}),
+    // Last, so every other page keeps the same cached tools prefix.
+    ...(chartSymbol ? CHART_TOOLS : {}),
   };
   assertNoMutatingToolsWithExternalContent(Object.keys(tools));
 

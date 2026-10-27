@@ -1,6 +1,5 @@
 /**
- * Shared UX helpers for AI tool calls — used by both BullpenChat and the
- * in-chart AI assistant so the two surfaces behave consistently:
+ * Shared UX helpers for BullpenChat's tool calls:
  *  - a friendly "doing X" status label while a tool is in flight
  *  - follow-up prompt suggestions based on which tool(s) just ran
  *  - extracting ticker symbols mentioned in tool calls (for cross-surface context)
@@ -9,6 +8,7 @@
 
 import { useCallback, useState } from 'react';
 import type { AlertType } from '@/types/alerts';
+import type { ChartAction } from '@/components/stock/advanced-chart/chart-context';
 
 /** Minimal shape of a `tool-*` UIMessage part — loosely typed like the rest of this codebase's message-part helpers. */
 export interface ToolPart {
@@ -55,6 +55,7 @@ const STATUS_LABELS: Record<string, string> = {
   getKeyStatistics: 'Pulling valuation metrics…',
   getCompanyFinancials: 'Reading financial statements…',
   getLiveQuote: 'Fetching live price…',
+  getTechnicals: 'Reading the chart…',
   getEarningsData: 'Checking earnings history…',
   getUpcomingEarnings: 'Checking earnings dates…',
   getCompanyProfile: 'Looking up company profile…',
@@ -63,7 +64,7 @@ const STATUS_LABELS: Record<string, string> = {
   getInsiderActivity: 'Checking insider activity…',
   searchCompanies: 'Searching companies…',
   compareCompanies: 'Comparing companies…',
-  // Navigation / portfolio (main chat only)
+  // Navigation / portfolio
   navigateTo: 'Opening that page…',
   openScreener: 'Opening screener…',
   openDividendCalculator: 'Opening dividend calculator…',
@@ -73,7 +74,7 @@ const STATUS_LABELS: Record<string, string> = {
   createAlert: 'Setting up your alert…',
   getMyAlerts: 'Checking your alerts…',
   getPoliticianTrades: 'Checking politician trades…',
-  // Chart controls (chart assistant only)
+  // Chart controls (fullscreen chart only)
   setTimeframe: 'Changing timeframe…',
   setChartType: 'Changing chart type…',
   addIndicator: 'Adding indicator…',
@@ -82,7 +83,6 @@ const STATUS_LABELS: Record<string, string> = {
   applyPreset: 'Applying preset…',
   toggleVolume: 'Updating volume display…',
   toggleEvents: 'Updating earnings markers…',
-  setPriceAlert: 'Setting price alert…',
 };
 
 /** Follow-up prompts to suggest after a given tool has just answered the user. Capped to 3 by callers. */
@@ -146,20 +146,22 @@ export function getToolStatusLabel(toolName: string | null, translate?: ToolUxTr
 /** All completed tool calls (name + output) on a message, in order. Parses each output's `__clientAction` (if present) too. */
 export function getCompletedToolCalls(
   message: MessageLike | undefined
-): Array<{ toolName: string; output: unknown; clientAction?: ClientAction }> {
+): Array<{ toolName: string; output: unknown; clientAction?: ClientAction; chartAction?: ChartAction }> {
   if (!message?.parts) return [];
-  const out: Array<{ toolName: string; output: unknown; clientAction?: ClientAction }> = [];
+  const out: Array<{ toolName: string; output: unknown; clientAction?: ClientAction; chartAction?: ChartAction }> = [];
   for (const part of message.parts) {
     const name = toolNameFromPart(part);
     if (!name || part.state !== 'output-available') continue;
     let clientAction: ClientAction | undefined;
+    let chartAction: ChartAction | undefined;
     if (part.output && typeof part.output === 'object') {
       const raw = part.output as { __clientAction?: unknown };
-      if (raw.__clientAction && typeof (raw.__clientAction as { type?: unknown }).type === 'string') {
-        clientAction = raw.__clientAction as ClientAction;
-      }
+      const type = raw.__clientAction ? (raw.__clientAction as { type?: unknown }).type : undefined;
+      // Chart controls run straight away and render no card, so they stay out of clientAction.
+      if (typeof type === 'string' && type.startsWith('chart_')) chartAction = raw.__clientAction as ChartAction;
+      else if (typeof type === 'string') clientAction = raw.__clientAction as ClientAction;
     }
-    out.push({ toolName: name, output: part.output, clientAction });
+    out.push({ toolName: name, output: part.output, clientAction, chartAction });
   }
   return out;
 }

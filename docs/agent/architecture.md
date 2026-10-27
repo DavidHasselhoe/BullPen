@@ -51,7 +51,7 @@ Index funds are in there too: TwelveData's `/funds` catalogue is 122k US mutual 
 
 ### AI chat stack
 
-**"Bull" is the product name for this AI chat assistant** (the mascot — see `BullAiIcon.tsx`, the "Ask Bull" trigger button, and the `AISidePanel` header). When the user says "Bull" or "Ask Bull" in conversation (e.g. "allow Bull to..."), they mean this chat assistant — `BullpenChat.tsx` / `lib/ai/agent.ts` / `lib/ai/tools.ts` for the main chat, or `ChartAIPanel.tsx` / `lib/ai/chart-agent.ts` for the in-chart assistant.
+**"Bull" is the product name for this AI chat assistant** (the mascot — see `BullAiIcon.tsx`, the "Ask Bull" trigger button, and the `AISidePanel` header). When the user says "Bull" or "Ask Bull" in conversation (e.g. "allow Bull to..."), they mean this chat assistant — `BullpenChat.tsx` / `lib/ai/agent.ts` / `lib/ai/tools.ts`. The fullscreen chart mounts the same BullpenChat (`ChartAIPanel.tsx`) with the chart view as context, which registers `lib/ai/chart-tools.ts`.
 
 ```
 BullpenChat.tsx (UI)

@@ -68,7 +68,7 @@ export const INDICATOR_PALETTE = [
 
 const N = (len: number): (number | null)[] => new Array(len).fill(null);
 
-function sma(src: number[], period: number): (number | null)[] {
+export function sma(src: number[], period: number): (number | null)[] {
   const out = N(src.length);
   if (period <= 0) return out;
   let sum = 0;
@@ -138,7 +138,7 @@ function wma(src: number[], period: number): (number | null)[] {
   return out;
 }
 
-function rsi(closes: number[], period: number): (number | null)[] {
+export function rsi(closes: number[], period: number): (number | null)[] {
   const out = N(closes.length);
   if (closes.length <= period) return out;
   let gain = 0;
