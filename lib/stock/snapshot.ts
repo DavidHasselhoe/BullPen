@@ -14,6 +14,7 @@ import { getCached, getCachedWithMeta, getCachedStale, getCachedStaleWithMeta, s
 import { rget, rset, candleTtlSeconds } from '@/lib/cache/redis-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { slugToSymbol, inferAssetType, hasEarnings } from '@/lib/assets/asset-type';
+import { fixForeignValuation } from '@/lib/currency/latest-rates';
 
 const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 
@@ -202,6 +203,7 @@ export async function buildSnapshot(tickerParam: string): Promise<StockSnapshot>
       const statRaw = raw.statistics as { statistics?: Statistics; code?: number; status?: string; message?: string } | undefined;
       if (statRaw && !statRaw.code && statRaw.status !== 'error' && statRaw.statistics) {
         const s = statRaw.statistics;
+        await fixForeignValuation(sym, s.valuations_metrics as Record<string, number> | undefined);
         const v = (s.valuations_metrics as Record<string, number>) ?? {};
         const sp = (s.stock_price_summary as Record<string, number>) ?? {};
         const ss = (s.stock_statistics as Record<string, number>) ?? {};

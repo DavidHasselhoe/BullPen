@@ -5,7 +5,8 @@ import { rget, rset } from '@/lib/cache/redis-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import type { ExchangeRates } from '@/lib/currency/currency-conversion';
 import { getCachedStale } from '@/lib/cache/market-data-cache';
-import { rowsToUsd, type StatementFx } from '@/lib/currency/statement-fx';
+import { rowsToUsd, valuationFromStatements, type StatementFx, type StatementValuation } from '@/lib/currency/statement-fx';
+import type { IncomeStatementPeriod, BalanceSheetPeriod } from '@/lib/twelvedata/twelvedata-client';
 
 // Frankfurter is the ECB reference rate, fixed once a day around 16:00 CET, so
 // every morning it still converts at yesterday's rate: 0.2% off Nordnet on
@@ -162,4 +163,33 @@ export async function statementsInUsd<T extends object>(
   if (currency === 'USD' || rows.length === 0) return { rows, currency: 'USD', fx: null };
   const fx = await statementFx(currency);
   return fx ? { rows: rowsToUsd(rows, fx), currency: 'USD', fx } : { rows, currency, fx: null };
+}
+
+/**
+ * Replaces TwelveData's P/S, P/B, EV and EV/EBITDA in a raw /statistics
+ * `valuations_metrics` block with values built from the company's own
+ * statements, for companies that report in a currency other than USD (see
+ * valuationFromStatements). Every writer of statistics calls this before it
+ * maps the block, so the stock page, screener, health score and Bull agree.
+ * US filers, and rows cached before they carried a currency, are left alone.
+ * Pass `statements` when the caller already holds the quarterly rows.
+ */
+export async function fixForeignValuation(
+  symbol: string,
+  v: (Partial<StatementValuation> & { market_capitalization?: number | null }) | undefined,
+  statements?: { income: IncomeStatementPeriod[]; balance: BalanceSheetPeriod[] },
+): Promise<void> {
+  if (!v) return;
+  const sym = symbol.toUpperCase();
+  const income = statements?.income
+    ?? (await getCachedStale<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`)) ?? [];
+  const currency = income.find((r) => r.reported_currency)?.reported_currency;
+  if (!currency || currency === 'USD') return;
+  const balance = statements?.balance
+    ?? (await getCachedStale<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`)) ?? [];
+  const fx = await statementFx(currency);
+  // Without a rate the statements can't be set against a USD price, and no value beats a wrong one.
+  Object.assign(v, fx
+    ? valuationFromStatements(v.market_capitalization, rowsToUsd(income, fx), rowsToUsd(balance, fx))
+    : { price_to_sales_ttm: null, price_to_book_mrq: null, enterprise_value: null, enterprise_to_ebitda: null });
 }

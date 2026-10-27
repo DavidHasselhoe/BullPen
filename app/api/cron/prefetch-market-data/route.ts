@@ -58,6 +58,7 @@ import { getActiveUniverse } from '@/lib/market-data/screener-universe';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { parseStats as parseScreenerStatsRow, type TwelveDataStatisticsRaw } from '@/lib/market-data/screener-stats';
 import { normalizeSector } from '@/lib/finance/sector-benchmarks';
+import { fixForeignValuation } from '@/lib/currency/latest-rates';
 
 export const maxDuration = 60;
 
@@ -144,6 +145,7 @@ function parseStats(sym: string, raw: RawStats | undefined) {
     peRatioForward: v.forward_pe ?? null,
     pbRatio: v.price_to_book_mrq ?? null,
     evToEbitda: v.enterprise_to_ebitda ?? null,
+    psRatio: v.price_to_sales_ttm ?? null,
     beta: sp.beta ?? null,
     week52High: sp.fifty_two_week_high ?? null,
     week52Low: sp.fifty_two_week_low ?? null,
@@ -290,6 +292,9 @@ async function handleStatsBatch(
     }
 
     const raw = await batchFetch<Record<string, unknown>>(requests);
+
+    await Promise.all(needsStats.map((sym) =>
+      fixForeignValuation(sym, (raw[`${sym}_s`] as RawStats | undefined)?.statistics?.valuations_metrics as Record<string, number> | undefined)));
 
     let statsRefreshed = 0;
     let earningsRefreshed = 0;

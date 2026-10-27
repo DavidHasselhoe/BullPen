@@ -9,6 +9,8 @@ import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 import { fetchNasdaqEarningsDay } from '@/lib/market-data/nasdaq-earnings-calendar';
 import { sessionDateET } from '@/lib/market-data/trading-day';
 import { classifyTradingSession, strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
+// Circular (latest-rates quotes FX through this file); both sides only call each other at runtime.
+import { fixForeignValuation } from '@/lib/currency/latest-rates';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
@@ -1146,6 +1148,7 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
     throw new Error(msg);
   }
 
+  await fixForeignValuation(symbol, data.statistics?.valuations_metrics);
   const stats = data.statistics ?? {};
   const v = stats.valuations_metrics ?? {};
   const s = stats.stock_statistics ?? {};

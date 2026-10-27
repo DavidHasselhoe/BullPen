@@ -58,6 +58,7 @@ import { getCached, getCachedStale } from '@/lib/cache/market-data-cache';
 import { computeHealthScore, healthColumns, HEALTH_SCORE_METHOD } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { normalizeSector } from '@/lib/finance/sector-benchmarks';
+import { fixForeignValuation } from '@/lib/currency/latest-rates';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { MARKET_CAP_PROMOTION_FLOOR } from '@/lib/market-data/screener-universe';
 import { notifyHealthScoreChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
@@ -342,12 +343,13 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
         continue;
       }
 
+      const { income, balance, cashflow, degraded } = financialsMap.get(sym) ?? { income: [], balance: [], cashflow: [], degraded: false };
+      await fixForeignValuation(sym, statsRaw.statistics?.valuations_metrics, { income, balance });
       const stats = parseStats(statsRaw, sym);
       const company = companyMap.get(sym);
 
       // Compute health score from the full CompanyStatistics shape + financials
       const companyStats = rawToCompanyStats(statsRaw, sym);
-      const { income, balance, cashflow, degraded } = financialsMap.get(sym) ?? { income: [], balance: [], cashflow: [], degraded: false };
       if (degraded) degradedSymbols.add(sym);
       const sector =
         normalizeSector(cachedSectorMap.get(sym)) ??
