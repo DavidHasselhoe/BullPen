@@ -11,6 +11,8 @@ import {
   type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
 import { tryReserveCredits } from '@/lib/twelvedata/credit-budget';
+import { statementsInUsd } from '@/lib/currency/latest-rates';
+import type { StatementFx } from '@/lib/currency/statement-fx';
 
 const FINANCIALS_CACHE_TTL_SECONDS = 24 * 60 * 60;
 /** Real measured cost per statement (income/balance/cashflow), not the ~1
@@ -142,6 +144,8 @@ export interface CompareCompany {
   fiscal_year_end: string | null;
   sic_code: string | null;
   incorporation_location: string | null;
+  /** Set when the statements were converted to USD from the company's own currency (TSM's TWD). */
+  fx: StatementFx | null;
   metrics: {
     revenue: number | null;
     grossProfit: number | null;
@@ -205,15 +209,28 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
     getLogoManifest(),
   ]);
 
-  const ttmMetrics = buildTtmMetrics(quarterlyIncome, quarterlyBalance, quarterlyCashflow);
+  // The cache keeps rows in the filer's currency and everything here is shown
+  // in dollars, so convert on the way out as the Financials card does.
+  let fx: StatementFx | null = null;
+  const inUsd = async <T extends object>(rows: T[]): Promise<T[]> => {
+    const out = await statementsInUsd(ticker, rows);
+    fx ??= out.fx;
+    return out.rows;
+  };
+
+  const ttmMetrics = buildTtmMetrics(
+    quarterlyIncome && (await inUsd(quarterlyIncome)),
+    quarterlyBalance && (await inUsd(quarterlyBalance)),
+    quarterlyCashflow && (await inUsd(quarterlyCashflow)),
+  );
 
   // Financial History always needs real annual periods — a quarterly cache
   // only ever holds the last 4 quarters, not a multi-year trend. Balance
   // sheet was never used in history, only in metrics, so this is 2 guarded
   // statements instead of 3 regardless of which path metrics took below.
   const [income, cashflow] = await Promise.all([
-    getCachedFinancial(ticker, 'income', () => getIncomeStatement(ticker, 'annual', 4)),
-    getCachedFinancial(ticker, 'cashflow', () => getCashFlow(ticker, 'annual', 4)),
+    getCachedFinancial(ticker, 'income', () => getIncomeStatement(ticker, 'annual', 4)).then(inUsd),
+    getCachedFinancial(ticker, 'cashflow', () => getCashFlow(ticker, 'annual', 4)).then(inUsd),
   ]);
 
   if (income.length === 0 && !ttmMetrics) return null;
@@ -238,7 +255,7 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
     // Quarterly cache was cold (a ticker outside the ~1,400-ticker
     // cron-covered universe) — same guarded annual fetch as before, only
     // reached for that minority of tickers.
-    const balance = await getCachedFinancial(ticker, 'balance', () => getBalanceSheet(ticker, 'annual', 4));
+    const balance = await getCachedFinancial(ticker, 'balance', () => getBalanceSheet(ticker, 'annual', 4)).then(inUsd);
     const latest = income[0];
     const prev = income[1];
     const latestBalance = balance[0];
@@ -284,6 +301,7 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
     fiscal_year_end: companyRow?.fiscal_year_end ?? null,
     sic_code: companyRow?.sic_code ?? null,
     incorporation_location: companyRow?.incorporation_location ?? null,
+    fx,
     metrics,
     history,
   };

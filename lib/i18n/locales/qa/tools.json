@@ -171,6 +171,7 @@
   "compareRecentlyCompared": "«Reeceently coompaareed»",
   "compareRemoveButton": "«Reemoovee»",
   "compareRevenueLatest": "«Reeveenuuee (laateest)»",
+  "compareConvertedNote": "«Shoown iin UUS doollaars. Coonveerteed froom {{from}} aat 1 UUSD = {{rate}} {{from}}, thee raatee oon {{date}}.»",
   "compareSearchPlaceholder": "«Seeaarch by tiickeer oor coompaany naamee...»",
   "compareSearching": "«Seeaarchiing...»",
   "compareSelectCompanyDescription": "«Seeaarch by tiickeer oor coompaany naamee. Typee aat leeaast 2 chaaraacteers.»",

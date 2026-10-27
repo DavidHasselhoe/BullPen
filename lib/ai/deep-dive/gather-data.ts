@@ -14,6 +14,8 @@ import {
   type CashFlowPeriod, type CompanyProfile,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached } from '@/lib/cache/market-data-cache';
+import { statementsInUsd } from '@/lib/currency/latest-rates';
+import type { StatementFx } from '@/lib/currency/statement-fx';
 import type { HealthScore } from '@/lib/finance/health-score';
 import { computeAndSyncHealthScore } from '@/lib/finance/get-health-score';
 import { getFiscalCalendar, labelEarnings, periodForStatement, fiscalLabelEn, type FiscalCalendar } from '@/lib/finance/fiscal-calendar';
@@ -32,6 +34,10 @@ export interface DeepDiveData {
   income: IncomeStatementPeriod[];
   balance: BalanceSheetPeriod[];
   cashflow: CashFlowPeriod[];
+  /** Set when the statements were converted to USD from the company's own currency. */
+  fx: StatementFx | null;
+  /** What the statement amounts are in: USD, or the filer's currency when no rate could be had. */
+  statementCurrency: string;
   earnings: EarningsRow[];
   health: HealthScore | null;
   dataAsOf: string | null;
@@ -55,7 +61,7 @@ async function cachedOrFetch<T>(key: string, fetcher: () => Promise<T>, fallback
 export async function gatherDeepDiveData(symbol: string): Promise<DeepDiveData> {
   const sym = symbol.toUpperCase();
 
-  const [stats, income, balance, cashflow, profile, snapEarnings, fiscal] = await Promise.all([
+  const [stats, rawIncome, rawBalance, rawCashflow, profile, snapEarnings, fiscal] = await Promise.all([
     cachedOrFetch<CompanyStatistics | null>(`stats:${sym}`, () => getStatistics(sym), null),
     cachedOrFetch<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`, () => getIncomeStatement(sym, 'quarterly'), []),
     cachedOrFetch<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`, () => getBalanceSheet(sym, 'quarterly'), []),
@@ -64,6 +70,17 @@ export async function gatherDeepDiveData(symbol: string): Promise<DeepDiveData> 
     getCached<SnapEarnings[]>(`snap-earnings:${sym}`),
     getFiscalCalendar(sym).catch(() => null),
   ]);
+
+  // The cache keeps statements in the filer's currency (TSM's TWD); the report
+  // talks in dollars next to a USD market cap, so convert as the stock page does.
+  const [inc, bal, cf] = await Promise.all([
+    statementsInUsd(sym, rawIncome),
+    statementsInUsd(sym, rawBalance),
+    statementsInUsd(sym, rawCashflow),
+  ]);
+  const [income, balance, cashflow] = [inc.rows, bal.rows, cf.rows];
+  const fx = inc.fx ?? bal.fx ?? cf.fx;
+  const statementCurrency = [inc, bal, cf].find((r) => r.currency !== 'USD')?.currency ?? 'USD';
 
   // Earnings: prefer the cached snapshot rows, else fetch the per-company history.
   let earnings: EarningsRow[] = [];
@@ -102,7 +119,7 @@ export async function gatherDeepDiveData(symbol: string): Promise<DeepDiveData> 
 
   const dataAsOf = income[0]?.fiscal_date || balance[0]?.fiscal_date || null;
 
-  return { symbol: sym, profile, stats, income, balance, cashflow, earnings, health, dataAsOf, fiscal };
+  return { symbol: sym, profile, stats, income, balance, cashflow, fx, statementCurrency, earnings, health, dataAsOf, fiscal };
 }
 
 // ─── Formatting for the prompt ────────────────────────────────────────────────
@@ -161,12 +178,27 @@ export function formatDataBlock(d: DeepDiveData): string {
     return p ? `${fiscalLabelEn(p, d.fiscal!.offCalendar)} (ended ${p.periodEnd})` : fiscalDate;
   };
 
+  // Statement amounts are in USD unless no rate could be had for a foreign filer.
+  const sm = (n: number | null | undefined) =>
+    d.statementCurrency === 'USD' ? money(n) : n == null ? '—' : `${d.statementCurrency} ${big(n)}`;
+  if (d.fx) {
+    lines.push('');
+    lines.push(
+      `STATEMENT CURRENCY: ${d.symbol} reports in ${d.fx.from}. The statement amounts and EPS below were converted to US dollars ` +
+      `at the latest rate, 1 USD = ${d.fx.rate.toFixed(4)} ${d.fx.from} (${d.fx.date}), for every period. Margins and growth rates are unaffected. ` +
+      `Say in the report that the figures were converted from ${d.fx.from}.`
+    );
+  } else if (d.statementCurrency !== 'USD') {
+    lines.push('');
+    lines.push(`STATEMENT CURRENCY: the statement amounts and EPS below are in ${d.statementCurrency}, not US dollars. Say so wherever you quote them.`);
+  }
+
   if (d.income.length) {
     lines.push('');
     lines.push('INCOME STATEMENT (most recent quarters, newest first):');
     for (const q of d.income.slice(0, 4)) {
       lines.push(
-        `${periodName(q.fiscal_date)}: Rev ${money(q.revenue)} · GrossProfit ${money(q.gross_profit)} · OpInc ${money(q.operating_income)} · NetInc ${money(q.net_income)} · EBITDA ${money(q.ebitda)} · EPS(dil) ${num(q.eps_diluted)} · R&D ${money(q.r_and_d_expenses)}`
+        `${periodName(q.fiscal_date)}: Rev ${sm(q.revenue)} · GrossProfit ${sm(q.gross_profit)} · OpInc ${sm(q.operating_income)} · NetInc ${sm(q.net_income)} · EBITDA ${sm(q.ebitda)} · EPS(dil) ${num(q.eps_diluted)} · R&D ${sm(q.r_and_d_expenses)}`
       );
     }
   }
@@ -174,13 +206,13 @@ export function formatDataBlock(d: DeepDiveData): string {
   if (d.balance.length) {
     const b = d.balance[0];
     lines.push('');
-    lines.push(`BALANCE SHEET (${periodName(b.fiscal_date)}): Assets ${money(b.total_assets)} · Cash ${money(b.cash_and_equivalents)} · CurrentAssets ${money(b.total_current_assets)} · Liabilities ${money(b.total_liabilities)} · CurrentLiab ${money(b.total_current_liabilities)} · LT debt ${money(b.long_term_debt)} · Equity ${money(b.total_stockholders_equity)}`);
+    lines.push(`BALANCE SHEET (${periodName(b.fiscal_date)}): Assets ${sm(b.total_assets)} · Cash ${sm(b.cash_and_equivalents)} · CurrentAssets ${sm(b.total_current_assets)} · Liabilities ${sm(b.total_liabilities)} · CurrentLiab ${sm(b.total_current_liabilities)} · LT debt ${sm(b.long_term_debt)} · Equity ${sm(b.total_stockholders_equity)}`);
   }
 
   if (d.cashflow.length) {
     const c = d.cashflow[0];
     lines.push('');
-    lines.push(`CASH FLOW (${periodName(c.fiscal_date)}): Operating ${money(c.operating_cash_flow)} · CapEx ${money(c.capital_expenditures)} · FreeCashFlow ${money(c.free_cash_flow)} · Dividends paid ${money(c.dividends_paid)}`);
+    lines.push(`CASH FLOW (${periodName(c.fiscal_date)}): Operating ${sm(c.operating_cash_flow)} · CapEx ${sm(c.capital_expenditures)} · FreeCashFlow ${sm(c.free_cash_flow)} · Dividends paid ${sm(c.dividends_paid)}`);
   }
 
   if (d.earnings.length) {

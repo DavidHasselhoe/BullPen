@@ -169,6 +169,7 @@
   "compareRecentlyCompared": "Récemment comparés",
   "compareRemoveButton": "Supprimer",
   "compareRevenueLatest": "Chiffre d'affaires (dernier)",
+  "compareConvertedNote": "Affiché en dollars américains. Converti depuis {{from}} à 1 USD = {{rate}} {{from}}, le taux du {{date}}.",
   "compareSearchPlaceholder": "Rechercher par ticker ou nom d'entreprise...",
   "compareSearching": "Recherche en cours...",
   "compareSelectCompanyDescription": "Recherchez par ticker ou nom d'entreprise. Tapez au moins 2 caractères.",

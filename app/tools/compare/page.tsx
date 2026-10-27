@@ -47,6 +47,7 @@ import { RecentlyComparedCard } from '@/components/tools/compare/RecentlyCompare
 import { ToolPage, ToolHeader, ToolBackLink, ToolSectionTitle } from '@/components/tools/ToolHeader';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
 import { cn } from '@/lib/utils';
+import { fmtShortDate } from '@/lib/dates/calendar-format';
 import { Suspense, Fragment } from 'react';
 
 interface SearchResult {
@@ -850,6 +851,11 @@ function CompareContent() {
                           <p className="font-mono text-sm font-medium tabular-nums">
                             {fmt(c.metrics.revenue, na)}
                           </p>
+                          {c.fx && (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {t('compareConvertedNote', { from: c.fx.from, rate: c.fx.rate.toFixed(2), date: fmtShortDate(c.fx.date) })}
+                            </p>
+                          )}
                         </div>
                       </CardHeader>
                     </Card>

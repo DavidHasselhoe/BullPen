@@ -171,6 +171,7 @@
   "compareRecentlyCompared": "最近比较",
   "compareRemoveButton": "移除",
   "compareRevenueLatest": "收入（最新）",
+  "compareConvertedNote": "以美元显示。按 {{date}} 的汇率（1 USD = {{rate}} {{from}}）从 {{from}} 换算。",
   "compareSearchPlaceholder": "按代码或公司名称搜索...",
   "compareSearching": "搜索中...",
   "compareSelectCompanyDescription": "按股票代码或公司名称搜索。至少输入 2 个字符。",

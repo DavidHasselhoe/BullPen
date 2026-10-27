@@ -171,6 +171,7 @@
   "compareRecentlyCompared": "Comparados recientemente",
   "compareRemoveButton": "Eliminar",
   "compareRevenueLatest": "Ingresos (últimos)",
+  "compareConvertedNote": "Mostrado en dólares estadounidenses. Convertido desde {{from}} a 1 USD = {{rate}} {{from}}, el tipo del {{date}}.",
   "compareSearchPlaceholder": "Buscar por símbolo o nombre de empresa...",
   "compareSearching": "Buscando...",
   "compareSelectCompanyDescription": "Busca por ticker o nombre de empresa. Escribe al menos 2 caracteres.",

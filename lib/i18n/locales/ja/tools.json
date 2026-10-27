@@ -171,6 +171,7 @@
   "compareRecentlyCompared": "最近比較した銘柄",
   "compareRemoveButton": "削除",
   "compareRevenueLatest": "売上高（最新）",
+  "compareConvertedNote": "米ドルで表示しています。{{date}}のレート（1 USD = {{rate}} {{from}}）で{{from}}から換算しました。",
   "compareSearchPlaceholder": "ティッカーまたは企業名で検索...",
   "compareSearching": "検索中...",
   "compareSelectCompanyDescription": "ティッカーまたは企業名で検索してください。最低2文字入力してください。",

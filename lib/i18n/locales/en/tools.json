@@ -171,6 +171,7 @@
   "compareRecentlyCompared": "Recently compared",
   "compareRemoveButton": "Remove",
   "compareRevenueLatest": "Revenue (latest)",
+  "compareConvertedNote": "Shown in US dollars. Converted from {{from}} at 1 USD = {{rate}} {{from}}, the rate on {{date}}.",
   "compareSearchPlaceholder": "Search by ticker or company name...",
   "compareSearching": "Searching...",
   "compareSelectCompanyDescription": "Search by ticker or company name. Type at least 2 characters.",

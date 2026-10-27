@@ -171,6 +171,7 @@
   "compareRecentlyCompared": "Nylig sammenlignet",
   "compareRemoveButton": "Fjern",
   "compareRevenueLatest": "Omsetning (nyeste)",
+  "compareConvertedNote": "Vist i amerikanske dollar. Omregnet fra {{from}} til 1 USD = {{rate}} {{from}}, kursen {{date}}.",
   "compareSearchPlaceholder": "Søk etter ticker eller selskapsnavn...",
   "compareSearching": "Søker...",
   "compareSelectCompanyDescription": "Søk etter ticker eller selskapsnavn. Skriv minst 2 tegn.",

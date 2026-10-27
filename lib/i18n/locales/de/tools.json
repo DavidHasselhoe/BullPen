@@ -169,6 +169,7 @@
   "compareRecentlyCompared": "Zuletzt verglichen",
   "compareRemoveButton": "Entfernen",
   "compareRevenueLatest": "Umsatz (aktuell)",
+  "compareConvertedNote": "In US-Dollar angezeigt. Umgerechnet aus {{from}} zu 1 USD = {{rate}} {{from}}, Kurs vom {{date}}.",
   "compareSearchPlaceholder": "Nach Ticker oder Unternehmensname suchen...",
   "compareSearching": "Wird durchsucht...",
   "compareSelectCompanyDescription": "Suche nach Ticker oder Unternehmensname. Gib mindestens 2 Zeichen ein.",
