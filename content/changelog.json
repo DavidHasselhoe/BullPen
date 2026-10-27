@@ -1,5 +1,42 @@
 [
   {
+    "date": "2026-10-27",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Ask Bull whether a stock is at support or above its 150-day average and get the answer straight away, with a chart of the price, its moving averages and the key levels"
+      },
+      {
+        "type": "new",
+        "text": "Bull can draw support and resistance lines on the fullscreen chart, and a Show on chart button opens them there"
+      },
+      {
+        "type": "improved",
+        "text": "The fullscreen chart now uses the same Bull chat as the rest of the app, with its cards, history and abilities"
+      },
+      {
+        "type": "fixed",
+        "text": "Companies that report in another currency, like TSMC in Taiwan dollars, now show their financials in US dollars with a note on the rate used, on the stock page, Compare, Deep Dive and in Bull"
+      },
+      {
+        "type": "fixed",
+        "text": "Price-to-sales, price-to-book and enterprise value are now correct for companies that report in another currency"
+      },
+      {
+        "type": "fixed",
+        "text": "Companies that were bought out no longer linger in the screener under another company's name"
+      },
+      {
+        "type": "fixed",
+        "text": "Bull no longer asks the same Yes/No question twice in one reply"
+      },
+      {
+        "type": "improved",
+        "text": "The link to turn off emails is easier to tap on a phone"
+      }
+    ]
+  },
+  {
     "date": "2026-10-26",
     "entries": [
       {
