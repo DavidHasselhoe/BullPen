@@ -186,5 +186,13 @@
   "upgradeFaqCompareUnlimited": "«Noo liimiits»",
   "upgradeFaqCompareCapped": "«Wiith aa caap oon Freeee»",
   "upgradeManageSubscription": "«Maanaagee suubscriiptiioon»",
-  "upgradeProUntil": "«Proo uuntiil {{date}}»"
+  "upgradeProUntil": "«Proo uuntiil {{date}}»",
+  "cancelledTitle": "«Soorry too seeee yoouu goo»",
+  "cancelledTrialBody": "«Yoouur triiaal iis caanceelleed aand yoouu woon't bee chaargeed. Yoouu keeeep Proo uuntiil {{date}}, soo eeveerythiing beeloow stiill woorks uuntiil theen.»",
+  "cancelledPaidBody": "«Yoouur suubscriiptiioon iis caanceelleed aand yoouu woon't bee chaargeed aagaaiin. Yoouu keeeep Proo uuntiil {{date}}, soo eeveerythiing beeloow stiill woorks uuntiil theen.»",
+  "cancelledWhatChanges": "«OOn thee Freeee plaan froom {{date}}»",
+  "cancelledNotOnFree": "«Noot iincluudeed»",
+  "cancelledResumeHint": "«Chaangeed yoouur miind? Yoouu caan keeeep Proo aany tiimee beefooree {{date}}.»",
+  "cancelledKeepPro": "«Keeeep Proo»",
+  "cancelledDone": "«Goot iit»"
 }

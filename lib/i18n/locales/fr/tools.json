@@ -534,6 +534,8 @@
   "screenerDescriptionHoldings_one": "Sélection de votre {{count}} position détenue.",
   "screenerDescriptionHoldings_other": "Sélection de vos {{count}} positions détenues.",
   "screenerDescriptionSp500": "Sélection du S&P 500 complet avec prix en direct et données fondamentales.",
+  "screenerDescriptionNasdaq100": "Analysez le Nasdaq-100, les 100 plus grandes entreprises de la bourse Nasdaq, avec des prix en direct et des données fondamentales.",
+  "screenerDescriptionDow30": "Analysez les 30 entreprises du Dow Jones Industrial Average avec des prix en direct et des données fondamentales.",
   "screenerDescriptionWatchlist": "Sélection de votre liste de suivi.",
   "screenerDividendYieldHint": "2-4 % est typique pour les sociétés versant des dividendes établies. Les rendements au-dessus de 6 % peuvent signaler un risque supplémentaire, pas seulement un revenu supplémentaire.",
   "screenerDividendYieldLabel": "Rendement des dividendes",
@@ -835,8 +837,6 @@
   "portfolioBuilderPositionCount_other": "{{count}} positions",
   "portfolioBuilderRoleHedge": "Satellite",
   "screenerColVolumeLabel": "Volume",
-  "screenerDescriptionNasdaq100": "Analysez le Nasdaq-100, les 100 plus grandes entreprises de la bourse Nasdaq, avec des prix en direct et des données fondamentales.",
-  "screenerDescriptionDow30": "Analysez les 30 entreprises du Dow Jones Industrial Average avec des prix en direct et des données fondamentales.",
   "screenerMaxPlaceholder": "Max",
   "screenerMinPlaceholder": "Min",
   "screenerNasdaq100Label": "Nasdaq-100",
@@ -844,5 +844,6 @@
   "screenerVolumeHeading": "Volume",
   "economicShort_jolts": "JOLTS",
   "economicShort_fomc": "Fed",
-  "economicShort_pce": "PCE"
+  "economicShort_pce": "PCE",
+  "economicYourTime": "{{time}} à votre heure"
 }

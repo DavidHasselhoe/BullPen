@@ -118,6 +118,10 @@
   "notifExDividendLabel": "配当金支払日のリマインダー",
   "notifHealthScoreDescription": "追跡中の銘柄の BullPen ヘルススコアがレターグレードを越えたときに通知を受け取ります",
   "notifHealthScoreLabel": "ヘルススコアの変動",
+  "notifNewCourseLabel": "新しいコース",
+  "notifNewCourseDescription": "BullPenアカデミーで新しいコースが公開されたときに通知を受け取ります",
+  "notifIndexChangesLabel": "指数構成銘柄の変更",
+  "notifIndexChangesDescription": "保有または注目している銘柄がS&P 500、Nasdaq-100、Dow 30に組み入れられたり除外されたりした場合、またはVOOなど保有しているファンドの構成銘柄が変わった場合に通知を受け取ります",
   "notifInstitutionFilingDescription": "フォローしているファンドが新しい四半期保有状況を報告したときに通知を受け取ります。変更内容の概要が含まれます。",
   "notifInstitutionFilingLabel": "ファンドの届出",
   "notifPortfolioRecapDescription": "保有銘柄がどのように変動したか、そしてそれを駆動したものについての毎日のまとめ",
@@ -231,10 +235,12 @@
   "timeZoneAuto": "自動: {{zone}}",
   "timeZoneMarket": "米国市場時間（ニューヨーク）",
   "timeZoneSearch": "都市または地域で検索",
-  "timeZoneDescription": "チャートと経済カレンダーの時刻はこのタイムゾーンで表示されます。自動ではお使いのデバイスに従います。",
   "homeWidget_from_follows": "フォローしている相手から",
-  "notifNewCourseLabel": "新しいコース",
-  "notifNewCourseDescription": "BullPenアカデミーで新しいコースが公開されたときに通知を受け取ります",
-  "notifIndexChangesLabel": "指数構成銘柄の変更",
-  "notifIndexChangesDescription": "保有または注目している銘柄がS&P 500、Nasdaq-100、Dow 30に組み入れられたり除外されたりした場合、またはVOOなど保有しているファンドの構成銘柄が変わった場合に通知を受け取ります"
+  "notifEmailAlertsLabel": "朝のメール",
+  "notifEmailAlertsDescription": "保有銘柄の決算、大きな値動き、配当落ち日をお知らせします。該当するイベントが発生した際に、まとめて1通のメールでお届けします",
+  "timeZoneDescription": "BullPenのすべての時刻は、このタイムゾーンで表示されます。「自動」を選ぶと、お使いの端末の設定に従います。",
+  "timeFormat": "時刻の表示形式",
+  "timeFormatAuto": "自動（言語設定に従う）",
+  "timeFormat24": "24時間表記（19:00）",
+  "timeFormat12": "12時間表記（午後7:00）"
 }

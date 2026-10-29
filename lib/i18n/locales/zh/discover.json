@@ -623,9 +623,12 @@
   "indexPageJoined": "于{{date}}当周加入",
   "indexPageLeft": "于{{date}}当周退出",
   "indexColWeightLabel": "权重",
-  "indexColWeightTip_sp500": "How much of SPY, a fund that tracks the S&P 500, is in this company, as of {{date}}. Bigger companies count for more.",
   "indexColWeightTip_dow30": "截至{{date}},该公司在跟踪道琼斯指数的基金DIA中所占的比例。道琼斯指数按股价计算权重而非公司规模,因此股价越高的股票权重越大。",
   "indexName_sp500": "S&P 500",
   "indexName_nasdaq100": "纳斯达克100",
-  "indexName_dow30": "道琼斯30"
+  "indexName_dow30": "道琼斯30",
+  "homeComingOthersToday_one": "今天另有 {{count}} 家公司发布财报",
+  "homeComingOthersToday_other": "今天另有 {{count}} 家公司发布财报",
+  "homeComingTitleMine": "你的股票近期动态",
+  "indexColWeightTip_sp500": "How much of SPY, a fund that tracks the S&P 500, is in this company, as of {{date}}. Bigger companies count for more."
 }

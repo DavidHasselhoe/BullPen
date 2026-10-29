@@ -544,6 +544,8 @@
   "screenerDescriptionHoldings_one": "保有中の{{count}}銘柄をスクリーニング中。",
   "screenerDescriptionHoldings_other": "保有中の{{count}}銘柄をスクリーニング中。",
   "screenerDescriptionSp500": "S&P 500全銘柄をリアルタイム価格とファンダメンタルデータでスクリーニング",
+  "screenerDescriptionNasdaq100": "Nasdaq-100（Nasdaq取引所の最大100社）をスクリーニングしましょう。ライブ価格と基本的なファンダメンタルズデータが利用できます。",
+  "screenerDescriptionDow30": "ダウ・ジョーンズ工業株30種平均の30社をスクリーニングしましょう。ライブ価格と基本的なファンダメンタルズデータが利用できます。",
   "screenerDescriptionWatchlist": "ウォッチリストをスクリーニング中",
   "screenerDividendYieldHint": "2～4%は配当常連企業としては一般的です。6%を超える利回りは、単に利益が多いのではなく追加リスクを示す場合があります。",
   "screenerDividendYieldLabel": "配当利回り",
@@ -834,8 +836,6 @@
   "toolGateSignIn": "サインイン",
   "screenerGuestWatchlistContext_one": "無料アカウントを作成してこの銘柄をウォッチリストに保存し、値動きを受け取りましょう。",
   "screenerGuestWatchlistContext_other": "無料アカウントを作成してこれら{{count}}個の銘柄をウォッチリストに保存し、値動きを受け取りましょう。",
-  "screenerDescriptionNasdaq100": "Nasdaq-100（Nasdaq取引所の最大100社）をスクリーニングしましょう。ライブ価格と基本的なファンダメンタルズデータが利用できます。",
-  "screenerDescriptionDow30": "ダウ・ジョーンズ工業株30種平均の30社をスクリーニングしましょう。ライブ価格と基本的なファンダメンタルズデータが利用できます。",
   "screenerNasdaq100Label": "Nasdaq-100",
   "screenerDow30Label": "Dow 30",
   "economicName_gdp": "GDP",
@@ -844,5 +844,6 @@
   "economicShort_jolts": "JOLTS",
   "economicShort_gdp": "GDP",
   "economicShort_pce": "PCE",
-  "economicEtTime": "{{time}} ET"
+  "economicEtTime": "{{time}} ET",
+  "economicYourTime": "現地時間 {{time}}"
 }

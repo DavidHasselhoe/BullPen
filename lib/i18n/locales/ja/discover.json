@@ -627,5 +627,8 @@
   "indexColWeightTip_dow30": "ダウに連動するファンドであるDIAにおける、この企業の比率です（{{date}}時点）。ダウは企業の規模ではなく株価で比重を決めるため、株価の高い銘柄ほど比率が高くなります。",
   "indexName_sp500": "S&P 500",
   "indexName_nasdaq100": "ナスダック100",
-  "indexName_dow30": "ダウ30"
+  "indexName_dow30": "ダウ30",
+  "homeComingOthersToday_one": "本日は、他に{{count}}社が決算を発表します",
+  "homeComingOthersToday_other": "本日は、他に{{count}}社が決算を発表します",
+  "homeComingTitleMine": "あなたの銘柄の今後の予定"
 }

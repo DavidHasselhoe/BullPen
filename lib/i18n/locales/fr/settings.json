@@ -118,6 +118,10 @@
   "notifExDividendLabel": "Rappels ex-dividende",
   "notifHealthScoreDescription": "Recevez une notification lorsque le score de santé BullPen d'une action suivie franchit une note alphabétique",
   "notifHealthScoreLabel": "Changements du Score de santé",
+  "notifNewCourseLabel": "Nouveaux cours",
+  "notifNewCourseDescription": "Recevez une notification lorsqu'un nouveau cours de l'Academy est publié",
+  "notifIndexChangesLabel": "Changements d'indices",
+  "notifIndexChangesDescription": "Lorsqu'une action que vous possédez ou suivez entre ou sort du S&P 500, du Nasdaq-100 ou du Dow 30, ou lorsqu'un fonds que vous détenez, comme VOO, modifie ses positions",
   "notifInstitutionFilingDescription": "Recevez une notification quand un fonds que vous suivez dépose de nouvelles positions trimestrielles, avec un résumé des changements",
   "notifInstitutionFilingLabel": "Dépôts de fonds",
   "notifPortfolioRecapDescription": "Un résumé quotidien de l'évolution de vos positions et des facteurs qui l'ont influencée",
@@ -231,10 +235,12 @@
   "timeZoneAuto": "Automatique : {{zone}}",
   "timeZoneMarket": "Heure du marché américain (New York)",
   "timeZoneSearch": "Rechercher par ville ou région",
-  "timeZoneDescription": "Les heures des graphiques et du calendrier économique s’affichent dans ce fuseau. Automatique suit votre appareil.",
   "homeWidget_from_follows": "De ceux que vous suivez",
-  "notifNewCourseLabel": "Nouveaux cours",
-  "notifNewCourseDescription": "Recevez une notification lorsqu'un nouveau cours de l'Academy est publié",
-  "notifIndexChangesLabel": "Changements d'indices",
-  "notifIndexChangesDescription": "Lorsqu'une action que vous possédez ou suivez entre ou sort du S&P 500, du Nasdaq-100 ou du Dow 30, ou lorsqu'un fonds que vous détenez, comme VOO, modifie ses positions"
+  "notifEmailAlertsLabel": "E-mail du matin",
+  "notifEmailAlertsDescription": "Résultats, mouvements importants et dates de détachement de dividende de vos actions, regroupés dans un seul e-mail quand quelque chose se produit",
+  "timeZoneDescription": "Les heures affichées dans BullPen correspondent à ce fuseau horaire. Automatique suit votre appareil.",
+  "timeFormat": "Format de l'heure",
+  "timeFormatAuto": "Automatique (selon votre langue)",
+  "timeFormat24": "24 heures (19:00)",
+  "timeFormat12": "12 heures (7:00 PM)"
 }

@@ -118,6 +118,10 @@
   "notifExDividendLabel": "除息日提醒",
   "notifHealthScoreDescription": "当追踪的股票的 BullPen 健康评分跨越字母等级时获得通知",
   "notifHealthScoreLabel": "健康评分变化",
+  "notifNewCourseLabel": "新课程",
+  "notifNewCourseDescription": "新的 Academy 课程上线时通知我",
+  "notifIndexChangesLabel": "指数成分变动",
+  "notifIndexChangesDescription": "当你持有或关注的股票加入或退出 S&P 500、Nasdaq-100 或道琼斯 30 指数，或你持有的基金（如 VOO）调整了持仓时通知我",
   "notifInstitutionFilingDescription": "当你关注的基金提交新的季度持仓报告时获得通知，包括变化摘要",
   "notifInstitutionFilingLabel": "基金申报",
   "notifPortfolioRecapDescription": "您的持仓涨跌及其驱动因素的每日总结",
@@ -231,10 +235,12 @@
   "timeZoneAuto": "自动：{{zone}}",
   "timeZoneMarket": "美国市场时间（纽约）",
   "timeZoneSearch": "按城市或地区搜索",
-  "timeZoneDescription": "图表和经济日历中的时间将按此时区显示。自动将跟随你的设备。",
   "homeWidget_from_follows": "来自你的关注",
-  "notifNewCourseLabel": "新课程",
-  "notifNewCourseDescription": "新的 Academy 课程上线时通知我",
-  "notifIndexChangesLabel": "指数成分变动",
-  "notifIndexChangesDescription": "当你持有或关注的股票加入或退出 S&P 500、Nasdaq-100 或道琼斯 30 指数，或你持有的基金（如 VOO）调整了持仓时通知我"
+  "notifEmailAlertsLabel": "晨间邮件",
+  "notifEmailAlertsDescription": "你所持股票的财报、大幅波动和除息日信息，在事件发生时汇总成一封邮件发送",
+  "timeZoneDescription": "BullPen 中的所有时间都会按此时区显示。选择“自动”则跟随你的设备。",
+  "timeFormat": "时间格式",
+  "timeFormatAuto": "自动（跟随你的语言）",
+  "timeFormat24": "24 小时制（19:00）",
+  "timeFormat12": "12 小时制（晚上 7:00）"
 }

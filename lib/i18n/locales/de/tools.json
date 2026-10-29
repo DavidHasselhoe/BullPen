@@ -535,6 +535,8 @@
   "screenerDescriptionHoldings_one": "Screening deiner {{count}} gehaltenen Position.",
   "screenerDescriptionHoldings_other": "Screening deiner {{count}} gehaltenen Positionen.",
   "screenerDescriptionSp500": "Screene die vollständige S&P 500 mit Live-Kursen und Fundamentaldaten.",
+  "screenerDescriptionNasdaq100": "Screene die Nasdaq-100, die 100 größten Unternehmen an der Nasdaq-Börse, mit Live-Kursen und Fundamentaldaten.",
+  "screenerDescriptionDow30": "Screene die 30 Unternehmen des Dow Jones Industrial Average mit Live-Kursen und Fundamentaldaten.",
   "screenerDescriptionWatchlist": "Screening deiner Watchlist.",
   "screenerDividendYieldHint": "2-4 % ist typisch für etablierte Dividendenzahler. Renditen über 6 % können auf zusätzliches Risiko hindeuten, nicht nur auf zusätzliches Einkommen.",
   "screenerDividendYieldLabel": "Dividendenrendite",
@@ -830,8 +832,6 @@
   "screenerColBetaLabel": "Beta",
   "screenerColForwardPeLabel": "Fwd P/E",
   "screenerCsvTicker": "Ticker",
-  "screenerDescriptionNasdaq100": "Screene die Nasdaq-100, die 100 größten Unternehmen an der Nasdaq-Börse, mit Live-Kursen und Fundamentaldaten.",
-  "screenerDescriptionDow30": "Screene die 30 Unternehmen des Dow Jones Industrial Average mit Live-Kursen und Fundamentaldaten.",
   "screenerMaxPlaceholder": "Max",
   "screenerMinPlaceholder": "Min",
   "screenerPresetDeepValue": "Deep Value",
@@ -844,5 +844,6 @@
   "economicShort_jolts": "JOLTS",
   "economicShort_pce": "PCE",
   "economicEtTime": "{{time}} ET",
+  "economicYourTime": "{{time}} deine Zeit",
   "deepDiveStanceNeutral": "Neutral"
 }

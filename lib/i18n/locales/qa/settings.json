@@ -116,6 +116,8 @@
   "notifEarningsTodayLabel": "«EEaarniings toodaay»",
   "notifExDividendDescription": "«Geet nootiifiieed aa feew daays beefooree aa traackeed stoock gooees eex-diiviideend»",
   "notifExDividendLabel": "«EEx-diiviideend reemiindeers»",
+  "notifEmailAlertsLabel": "«Moorniing eemaaiil»",
+  "notifEmailAlertsDescription": "«EEaarniings, biig moovees aand eex-diiviideend daatees foor yoouur stoocks, iin oonee eemaaiil wheen soomeethiing haappeens»",
   "notifHealthScoreDescription": "«Geet nootiifiieed wheen aa traackeed stoock's BuullPeen heeaalth scooree croossees aa leetteer graadee»",
   "notifHealthScoreLabel": "«Heeaalth scooree chaangees»",
   "notifNewCourseLabel": "«Neew coouursees»",
@@ -235,6 +237,10 @@
   "timeZoneAuto": "«AAuutoomaatiic: {{zone}}»",
   "timeZoneMarket": "«UUS maarkeet tiimee (Neew Yoork)»",
   "timeZoneSearch": "«Seeaarch by ciity oor reegiioon»",
-  "timeZoneDescription": "«Tiimees oof daay iin chaarts aand thee eecoonoomiic caaleendaar shoow iin thiis zoonee. AAuutoomaatiic foolloows yoouur deeviicee.»",
+  "timeZoneDescription": "«Tiimees oof daay aacrooss BuullPeen shoow iin thiis zoonee. AAuutoomaatiic foolloows yoouur deeviicee.»",
+  "timeFormat": "«Tiimee foormaat»",
+  "timeFormatAuto": "«AAuutoomaatiic (foolloows yoouur laanguuaagee)»",
+  "timeFormat24": "«24-hoouur (19:00)»",
+  "timeFormat12": "«12-hoouur (7:00 PM)»",
   "homeWidget_from_follows": "«Froom whoo yoouu foolloow»"
 }

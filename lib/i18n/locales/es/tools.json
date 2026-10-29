@@ -540,6 +540,8 @@
   "screenerDescriptionHoldings_one": "Filtrando tu {{count}} posición.",
   "screenerDescriptionHoldings_other": "Filtrando tus {{count}} posiciones.",
   "screenerDescriptionSp500": "Filtra el S&P 500 completo con precios en vivo y datos fundamentales.",
+  "screenerDescriptionNasdaq100": "Explora el Nasdaq-100, las 100 empresas más grandes de la bolsa Nasdaq, con precios en tiempo real y datos fundamentales.",
+  "screenerDescriptionDow30": "Explora las 30 empresas del Dow Jones Industrial Average con precios en tiempo real y datos fundamentales.",
   "screenerDescriptionWatchlist": "Filtrando tu lista de seguimiento.",
   "screenerDividendYieldHint": "2-4% es típico para las empresas que pagan dividendos establecidas. Rendimientos por encima del 6% pueden señalar riesgo adicional, no solo ingresos adicionales.",
   "screenerDividendYieldLabel": "Rendimiento de Dividendos",
@@ -836,13 +838,12 @@
   "screenerBetaLabel": "Beta",
   "screenerColBetaLabel": "Beta",
   "screenerCsvSector": "Sector",
-  "screenerDescriptionNasdaq100": "Explora el Nasdaq-100, las 100 empresas más grandes de la bolsa Nasdaq, con precios en tiempo real y datos fundamentales.",
-  "screenerDescriptionDow30": "Explora las 30 empresas del Dow Jones Industrial Average con precios en tiempo real y datos fundamentales.",
   "screenerSectorLabel": "Sector",
   "screenerNasdaq100Label": "Nasdaq-100",
   "screenerDow30Label": "Dow 30",
   "economicShort_jolts": "JOLTS",
   "economicShort_pce": "PCE",
   "economicEtTime": "{{time}} ET",
+  "economicYourTime": "{{time}} en tu hora",
   "deepDiveStanceNeutral": "Neutral"
 }
