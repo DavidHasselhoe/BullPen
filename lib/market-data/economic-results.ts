@@ -241,15 +241,17 @@ async function syncKind(kind: ResultKind): Promise<SeriesMap> {
   for (const id of seriesFor(kind)) {
     let obs = await fredObservations(id, yearsAgo(years));
     if (RATE_SERIES.includes(id)) obs = changePoints(obs);
-    if (id === PROJECTION_SERIES) {
-      // Only the newest projections are shown. Older vintages would linger
-      // under years the latest SEP no longer covers.
-      await supabase.from('economic_observations').delete().eq('series_id', id);
-    }
-    const rows = obs.map((o) => ({ series_id: id, period: o.period, value: o.value, fetched_at: new Date().toISOString() }));
+    const fetchedAt = new Date().toISOString();
+    const rows = obs.map((o) => ({ series_id: id, period: o.period, value: o.value, fetched_at: fetchedAt }));
     for (let i = 0; i < rows.length; i += 500) {
       const { error } = await supabase.from('economic_observations').upsert(rows.slice(i, i + 500), { onConflict: 'series_id,period' });
       if (error) throw error;
+    }
+    if (id === PROJECTION_SERIES) {
+      // Only the newest projections are shown. Older vintages would linger
+      // under years the latest SEP no longer covers. Deleted after the upsert
+      // so a failed write keeps the old ones.
+      await supabase.from('economic_observations').delete().eq('series_id', id).lt('fetched_at', fetchedAt);
     }
     out[id] = new Map(obs.map((o) => [o.period, o.value]));
   }
@@ -407,7 +409,7 @@ const CHART_YEARS: Record<ResultKind, number> = { fomc: 20, cpi: 5, pce: 5, jobs
 export async function getEconomyPage(kind: ResultKind, today = etDateOf(new Date().toISOString())): Promise<EconomyPageData> {
   const supabase = createServerClient();
   const [{ data: obs, error }, { data: next }, { data: last }] = await Promise.all([
-    supabase.from('economic_observations').select('series_id, period, value, fetched_at').in('series_id', seriesFor(kind)).order('period').limit(1000),
+    supabase.from('economic_observations').select('series_id, period, value, fetched_at').in('series_id', seriesFor(kind)).order('period', { ascending: false }).limit(1000), // newest first: the 1000-row cap drops the oldest
     supabase.from('economic_events').select('date, release_at, detail').eq('kind', kind).gt('release_at', new Date().toISOString())
       .order('release_at').limit(1),
     supabase.from('economic_events').select('date, release_at, detail, verdict').eq('kind', kind).lte('release_at', new Date().toISOString())
@@ -439,7 +441,8 @@ export async function getEconomyPage(kind: ResultKind, today = etDateOf(new Date
     const history = [
       ...(before ? [{ period: from, values: before.values }] : []),
       ...all.filter((r) => r.period >= from),
-      ...(all.length ? [{ period: today, values: all.at(-1)!.values }] : []),
+      // Not on a decision day after a change: fillFomc already wrote tomorrow's row.
+      ...(all.length && today > all.at(-1)!.period ? [{ period: today, values: all.at(-1)!.values }] : []),
     ];
     const cur = all.at(-1);
     const prev = all.at(-2);

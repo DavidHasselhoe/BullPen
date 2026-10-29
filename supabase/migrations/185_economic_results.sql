@@ -22,7 +22,7 @@ CREATE POLICY economic_observations_public_read ON public.economic_observations
 -- The result as published on the day, frozen: a later revision changes the
 -- charts (economic_observations) but not what a release said at the time.
 ALTER TABLE public.economic_events
-  ADD COLUMN IF NOT EXISTS period_label TEXT NULL,      -- 'September 2026', 'Q3 2026', 'Week ending Oct 24'
+  ADD COLUMN IF NOT EXISTS period_label TEXT NULL,      -- the period covered as YYYY-MM-DD (month/quarter start, week ending, decision day)
   ADD COLUMN IF NOT EXISTS results JSONB NULL,          -- [{ key, actual, previous }]
   ADD COLUMN IF NOT EXISTS results_at TIMESTAMPTZ NULL,
   ADD COLUMN IF NOT EXISTS verdict TEXT NULL CHECK (verdict IN ('hold', 'raise', 'lower'));
