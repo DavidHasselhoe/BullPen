@@ -117,7 +117,8 @@ export function ScreenerResults({
   }, []);
 
   const sorted = useMemo(() => {
-    const col = SCREENER_COLUMNS.find((c) => c.key === sortKey);
+    // Visible columns first: a page can pass its own (the index pages' fund weight), which isn't in the static list.
+    const col = columns.find((c) => c.key === sortKey) ?? SCREENER_COLUMNS.find((c) => c.key === sortKey);
     return [...data].sort((a, b) => {
       if (sortKey === 'ticker') {
         return sortDir === 'asc'
@@ -131,7 +132,7 @@ export function ScreenerResults({
       if (bv == null) return -1;
       return sortDir === 'asc' ? av - bv : bv - av;
     });
-  }, [data, sortKey, sortDir, livePrices]);
+  }, [data, columns, sortKey, sortDir, livePrices]);
 
   const totalPages = Math.ceil(sorted.length / pageSize);
   const paginated = useMemo(
