@@ -106,3 +106,38 @@ export async function fetchNasdaqEarningsDay(date: string): Promise<NasdaqEarnin
     return [];
   }
 }
+
+interface NasdaqSurpriseResponse {
+  data?: { earningsSurpriseTable?: { rows?: { dateReported?: string; eps?: number | string; consensusForecast?: string }[] | null } | null } | null;
+}
+
+/**
+ * EPS surprise % for a company's last 4 reports, newest first, from the same
+ * unofficial API (/company/<symbol>/earnings-surprise). One consistent
+ * adjusted basis, unlike TwelveData's /earnings history, which for META held
+ * a $1.61 estimate for a quarter consensus had near $8 and mixed GAAP with
+ * adjusted actuals (checked 2026-10-29). Fails soft to [].
+ */
+export async function fetchNasdaqEpsSurprises(symbol: string): Promise<{ date: string; surprisePercent: number }[]> {
+  try {
+    const res = await fetch(`https://api.nasdaq.com/api/company/${encodeURIComponent(symbol)}/earnings-surprise`, {
+      headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    const body = (await res.json()) as NasdaqSurpriseResponse;
+    const out: { date: string; surprisePercent: number }[] = [];
+    for (const r of body.data?.earningsSurpriseTable?.rows ?? []) {
+      const [m, d, y] = (r.dateReported ?? '').split('/');
+      const actual = Number(r.eps);
+      const estimate = Number(r.consensusForecast);
+      // Recomputed from the two figures rather than trusting the table's own %:
+      // a near-zero estimate turns any rounding into a four-digit surprise.
+      if (!y || !Number.isFinite(actual) || !Number.isFinite(estimate) || Math.abs(estimate) < 0.05) continue;
+      out.push({ date: `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`, surprisePercent: ((actual - estimate) / Math.abs(estimate)) * 100 });
+    }
+    return out;
+  } catch (err) {
+    console.error(`[nasdaq-earnings-calendar] surprise fetch failed for ${symbol}:`, err);
+    return [];
+  }
+}

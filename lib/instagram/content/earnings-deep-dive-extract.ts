@@ -55,6 +55,14 @@ const ExtractedSchema = z.object({
   guidanceRevenueLow: z.number().nullable(), // dollars
   guidanceRevenueHigh: z.number().nullable(), // dollars
   reportTiming: z.enum(['BMO', 'AMC']).nullable(),
+  outlookDirection: z.enum(['raised', 'maintained', 'lowered', 'initiated', 'mixed']).nullable(),
+  outlookNote: z.string().nullable(),
+  grossMarginGuidancePercent: z.number().nullable(), // next quarter, midpoint
+  capexActual: z.number().nullable(), // dollars, positive
+  capexPriorYear: z.number().nullable(), // dollars, positive
+  keyMetricLabel: z.string().nullable(),
+  keyMetricValueText: z.string().nullable(),
+  keyMetricYoyPercent: z.number().nullable(),
 });
 
 export type ExtractedEarnings = z.infer<typeof ExtractedSchema>;
@@ -73,8 +81,14 @@ Rules:
 - reportTiming: "AMC" if the release says after market close / after the bell, "BMO" if before market open, null if genuinely unclear.
 - fiscalPeriodLabel: which fiscal period this release reports, exactly as the company itself states it (nearly always right in the headline/title, e.g. "NVIDIA Announces Financial Results for Second Quarter Fiscal 2026" or "Reports Q2 FY26 Results"). Normalize to a short "Q<n> FY<yyyy>" form (e.g. "Q2 FY2026") when the release names a specific quarter; use "FY<yyyy>" alone (e.g. "FY2026") when it's a full fiscal-year report with no quarter named (e.g. "IREN Reports FY26 Results"). Expand a 2-digit fiscal year to 4 digits. This is the company's OWN fiscal calendar, which for many companies does not match the calendar year — never compute or guess it from the filing date, only from what the release itself states.
 
+- outlookDirection: how the company's FULL-YEAR REVENUE or EARNINGS (EPS, operating income) outlook changed versus its own previous outlook, only when the release says so ("raises", "reaffirms", "lowers", or states the previous figures next to the new ones). "initiated" = a first full-year outlook. "mixed" = revenue outlook and earnings outlook moved in opposite directions (e.g. revenue raised, EPS lowered). Expense, cost or capital spending guidance never sets this field, in either direction: a higher spending outlook is not a "raised" outlook to an investor. Put such a change in outlookNote and leave outlookDirection null unless a revenue or earnings outlook also changed. null if the release gives no full-year revenue or earnings outlook or doesn't say how it compares.
+- outlookNote: the single most important outlook figure or change, in the release's own numbers, at most 100 characters, plain words, no dashes between clauses. E.g. "2026 revenue $91B to $92B, was $85B to $87B" or "Q4 gross margin guided to 58%, below this quarter's 59.4%" or "2026 capital spending $135B to $145B". Include a capital spending or margin outlook here when the release gives one and it changed. null if the release gives no outlook at all.
+- grossMarginGuidancePercent: the gross margin the company guides for the NEXT quarter, as a percent; the midpoint when a range or "plus or minus" is given (e.g. "59.5% plus or minus 50 basis points" -> 59.5). Use non-GAAP when both bases are guided, GAAP when only GAAP is. null if no gross margin outlook is given.
+- capexActual / capexPriorYear: capital expenditures for the THREE-MONTH quarter just reported and for the same quarter a year earlier, as positive dollars, from the cash flow statement ("purchases of property and equipment", "capital expenditures"; include finance-lease principal only if the release itself adds it into one stated capex figure). null when the release only shows year-to-date figures, never derive a quarter by subtracting year-to-date columns.
+- keyMetricLabel / keyMetricValueText / keyMetricYoyPercent: the one operating figure the release itself highlights for this business that is NOT total revenue or EPS (e.g. "AWS revenue" "$33.0B" 20; "Gross dollar volume" "$3.0T" 9; "Vehicle deliveries" "497K" 7; "Mounjaro revenue" "$7.2B" 54). keyMetricValueText is short, as the release states it, at most 12 characters. keyMetricYoyPercent only if stated. All null if the release highlights nothing beyond revenue and EPS.
+
 Output ONLY a JSON object with exactly these fields, no markdown fences, no commentary:
-{"companyName": string|null, "fiscalPeriodLabel": string|null, "epsActualGaap": number|null, "epsActualNonGaap": number|null, "epsAdjustmentNote": string|null, "revenueActual": number|null, "revenueYoyGrowthPercent": number|null, "segmentRevenueActual": number|null, "segmentYoyGrowthPercent": number|null, "grossMarginActualGaapPercent": number|null, "grossMarginActualNonGaapPercent": number|null, "operatingMarginNonGaapPercent": number|null, "freeCashFlow": number|null, "guidanceRevenueLow": number|null, "guidanceRevenueHigh": number|null, "reportTiming": "BMO"|"AMC"|null}`;
+{"companyName": string|null, "fiscalPeriodLabel": string|null, "epsActualGaap": number|null, "epsActualNonGaap": number|null, "epsAdjustmentNote": string|null, "revenueActual": number|null, "revenueYoyGrowthPercent": number|null, "segmentRevenueActual": number|null, "segmentYoyGrowthPercent": number|null, "grossMarginActualGaapPercent": number|null, "grossMarginActualNonGaapPercent": number|null, "operatingMarginNonGaapPercent": number|null, "freeCashFlow": number|null, "guidanceRevenueLow": number|null, "guidanceRevenueHigh": number|null, "reportTiming": "BMO"|"AMC"|null, "outlookDirection": "raised"|"maintained"|"lowered"|"initiated"|"mixed"|null, "outlookNote": string|null, "grossMarginGuidancePercent": number|null, "capexActual": number|null, "capexPriorYear": number|null, "keyMetricLabel": string|null, "keyMetricValueText": string|null, "keyMetricYoyPercent": number|null}`;
 }
 
 /**
@@ -134,5 +148,20 @@ export async function extractEarningsActuals(
   if (!result.success) {
     throw new Error(`earnings-deep-dive extraction schema validation failed: ${result.error.message}`);
   }
-  return result.data;
+  // Slide text is never cut (CLAUDE.md), so a line too long for its row is
+  // dropped rather than sliced. Losing an optional story row beats failing
+  // the whole extraction over it.
+  const d = result.data;
+  const fits = (s: string | null, max: number) => (s && s.trim().length <= max ? s.trim() : null);
+  d.outlookNote = fits(d.outlookNote, 120);
+  d.keyMetricLabel = fits(d.keyMetricLabel, 40);
+  d.keyMetricValueText = fits(d.keyMetricValueText, 16);
+  if (!d.keyMetricLabel || !d.keyMetricValueText) {
+    d.keyMetricLabel = null;
+    d.keyMetricValueText = null;
+    d.keyMetricYoyPercent = null;
+  }
+  // "Azure revenue growth: 48%" already is the growth; "+48% vs a year ago" under it repeats it.
+  if (d.keyMetricValueText?.includes('%')) d.keyMetricYoyPercent = null;
+  return d;
 }

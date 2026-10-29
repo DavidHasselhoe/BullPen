@@ -69,6 +69,7 @@
     "trigger-market-movers": "tsx scripts/trigger-market-movers.ts",
     "sync-index-constituents": "tsx scripts/sync-index-constituents.ts",
     "watch-earnings": "tsx scripts/watch-earnings.ts",
+    "test-deep-dive-story": "tsx scripts/test-deep-dive-story.ts",
     "test-holdings-diff": "tsx scripts/test-holdings-diff.ts",
     "test-onboarding-trial": "tsx scripts/test-onboarding-trial.ts",
     "test-movers-period": "tsx scripts/test-movers-period.ts",

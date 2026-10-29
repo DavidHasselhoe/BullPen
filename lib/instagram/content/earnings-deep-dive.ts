@@ -27,6 +27,9 @@ import { fetchDeepDiveEstimates } from './earnings-deep-dive-estimates';
 import type { ExtractedEarnings } from './earnings-deep-dive-extract';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
+import { fetchRevenueGrowthHistory } from '@/lib/edgar/revenue-history';
+import { fetchNasdaqEpsSurprises } from '@/lib/market-data/nasdaq-earnings-calendar';
+import { buildStoryPoints, statusFor } from './deep-dive-story';
 
 // Lazy — see earnings-deep-dive-estimates.ts's getAnthropic() comment: a
 // module-scope client breaks when this is imported from a plain tsx script
@@ -45,28 +48,34 @@ import { SITE_URL } from '@/lib/site';
 const MODEL = 'claude-sonnet-5-5';
 const CONTENT_TYPE = 'earnings_deep_dive';
 
-/** Within this band (percent), a result counts as "in line" rather than a
- *  beat or miss — real-world actuals essentially never land EXACTLY on
- *  consensus, so a strict equality check would make "in line" a state that
- *  never actually fires. */
-const INLINE_BAND_PERCENT = 0.5;
-
 const DEEP_DIVE_DISCLAIMER = 'Not financial advice. Figures sourced from the company\'s own earnings release and public analyst consensus estimates.';
 
 function periodKeyFor(ticker: string, reportDate: string): string {
   return `${ticker.toUpperCase()}-${reportDate}`;
 }
 
-function statusFor(estimate: number | null, actual: number | null): 'beat' | 'missed' | 'inline' | null {
-  if (estimate == null || actual == null || estimate === 0) return null;
-  const diffPercent = ((actual - estimate) / Math.abs(estimate)) * 100;
-  if (Math.abs(diffPercent) < INLINE_BAND_PERCENT) return 'inline';
-  return diffPercent > 0 ? 'beat' : 'missed';
-}
-
 function surprisePercent(estimate: number | null, actual: number | null): number | null {
   if (estimate == null || actual == null || estimate === 0) return null;
   return ((actual - estimate) / Math.abs(estimate)) * 100;
+}
+
+/**
+ * EPS surprise % for the company's last 4 reported quarters, newest first, so
+ * a beat can be read against its own habit: an 8% beat is a letdown from a
+ * company that usually beats by 25%.
+ *
+ * From Nasdaq, not TwelveData's /earnings: TD mixes GAAP and adjusted actuals
+ * (AMZN's July row read +216%, META's history held a $1.61 estimate). Free, no
+ * credits. A quarter past 50% either way is still treated as a basis mismatch
+ * and skipped, and fewer than 3 usable quarters means no history at all.
+ * ponytail: fixed 50% outlier cut, a per-company basis check if it misfires.
+ */
+export async function fetchEpsSurpriseHistory(ticker: string, reportDate: string): Promise<number[] | null> {
+  const surprises = (await fetchNasdaqEpsSurprises(ticker))
+    .filter((r) => r.date < reportDate && Math.abs(r.surprisePercent) <= 50)
+    .map((r) => r.surprisePercent)
+    .slice(0, 4);
+  return surprises.length >= 3 ? surprises : null;
 }
 
 interface InstagramPostRow {
@@ -103,7 +112,16 @@ export async function seedEarningsDeepDiveDraft(params: {
 
   if (existing) return { postId: existing.id as string, alreadyExisted: true };
 
-  const estimates = await fetchDeepDiveEstimates(ticker, params.segmentLabel);
+  // History for the story slide is fetched here, hours ahead, so nothing new
+  // sits between "filing detected" and "post staged". Either may be null.
+  const [estimates, revenueGrowthHistory, epsSurpriseHistory] = await Promise.all([
+    fetchDeepDiveEstimates(ticker, params.segmentLabel),
+    fetchRevenueGrowthHistory(ticker, params.reportDate).catch((err) => {
+      console.error(`[earnings-deep-dive] ${ticker} revenue history failed:`, err);
+      return null;
+    }),
+    fetchEpsSurpriseHistory(ticker, params.reportDate),
+  ]);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
   const logoUrl = await resolveLogoUrl(appUrl, ticker);
 
@@ -136,6 +154,8 @@ export async function seedEarningsDeepDiveDraft(params: {
     guidanceConsensus: estimates.guidanceConsensus,
     whyThisMatters: null,
     afterHoursChangePercent: null,
+    revenueGrowthHistory,
+    epsSurpriseHistory,
     headline: null,
     caption: null,
   };
@@ -253,7 +273,7 @@ export async function refreshDraftEstimates(params: {
   };
 }
 
-async function writeHeadlineAndCaption(data: EarningsDeepDiveData): Promise<{ headline: string; caption: string }> {
+export async function writeHeadlineAndCaption(data: EarningsDeepDiveData): Promise<{ headline: string; caption: string }> {
   const spend = await checkAnthropicDailySpend();
   if (!spend.allowed) {
     return {
@@ -272,6 +292,9 @@ async function writeHeadlineAndCaption(data: EarningsDeepDiveData): Promise<{ he
     data.guidanceRevenueLow != null && data.guidanceRevenueHigh != null
       ? `Next-quarter guidance: ${data.guidanceRevenueLow} to ${data.guidanceRevenueHigh}${data.guidanceConsensus != null ? ` vs ${data.guidanceConsensus} consensus` : ''}`
       : null,
+    data.outlookNote ? `Full-year outlook${data.outlookDirection ? ` (${data.outlookDirection})` : ''}: ${data.outlookNote}` : null,
+    data.keyMetricLabel ? `${data.keyMetricLabel}: ${data.keyMetricValueText}${data.keyMetricYoyPercent != null ? `, ${data.keyMetricYoyPercent}% YoY` : ''}` : null,
+    data.storyPoints?.length ? `WHAT CHANGED, most market-moving first:\n${data.storyPoints.map((p) => `- ${p}`).join('\n')}` : null,
   ].filter(Boolean).join('\n');
 
   const systemPrompt = `You write short, punchy Instagram copy for BullPen, a financial app for beginner-to-intermediate investors.
@@ -280,8 +303,10 @@ Voice: confident, clear, never hype-y. No emoji spam (0-1 max, only if it genuin
 
 DATA FIDELITY (critical): you are given a real, fixed set of figures for one company's just-released earnings report. Use ONLY these figures and their already-computed beat/missed/in-line labels. Do not add, invent, or imply any other figure, and do not restate exact dollar numbers or percentages beyond what's given, since the slide images already show the exact figures.
 
+WHAT TO LEAD WITH: a beat on its own is not news, about four in five companies beat every quarter, and stocks often fall after one. When a WHAT CHANGED list is given, the headline is about its FIRST item, not about beating or missing, and the caption explains that item before mentioning the beat or miss. Never call a report strong, great, or a win when the first WHAT CHANGED item is bad news. Never describe any figure as steady, holding, up, down, faster, or slower unless a WHAT CHANGED item says exactly that: a single number on its own has no trend. Only when no WHAT CHANGED list is given may the headline be about the beat or miss.
+
 Output ONLY a JSON object with exactly two fields, nothing else, no markdown fences:
-{"headline": "a punchy hook under 10 words capturing the headline result", "caption": "a 2-4 sentence Instagram caption summarizing the report, ending with a soft call to action to see the full breakdown on BullPen"}`;
+{"headline": "a punchy hook under 10 words capturing what changed", "caption": "a 2-4 sentence Instagram caption summarizing the report, ending with a soft call to action to see the full breakdown on BullPen"}`;
 
   const userPrompt = `${data.companyName} (${data.ticker}) reported earnings ${data.reportDate}.\n${facts}\n\nWrite the headline and caption now.`;
 
@@ -380,22 +405,18 @@ export async function completeEarningsDeepDiveFromFiling(
     secondaryMetricIsCurrency: secondaryMetricLabel === 'Free Cash Flow',
     guidanceRevenueLow: extracted.guidanceRevenueLow,
     guidanceRevenueHigh: extracted.guidanceRevenueHigh,
+    outlookDirection: extracted.outlookDirection,
+    outlookNote: extracted.outlookNote,
+    grossMarginGuidancePercent: extracted.grossMarginGuidancePercent,
+    capexActual: extracted.capexActual,
+    capexPriorYear: extracted.capexPriorYear,
+    keyMetricLabel: extracted.keyMetricLabel,
+    keyMetricValueText: extracted.keyMetricValueText,
+    keyMetricYoyPercent: extracted.keyMetricYoyPercent,
   };
 
-  const whyThisMatters = (() => {
-    const parts: string[] = [];
-    if (merged.epsStatus && merged.revenueStatus && merged.epsStatus !== merged.revenueStatus) {
-      parts.push(`EPS ${merged.epsStatus} but revenue ${merged.revenueStatus}.`);
-    }
-    if (merged.guidanceRevenueHigh != null && merged.guidanceConsensus != null) {
-      const guidanceMid = merged.guidanceRevenueLow != null
-        ? (merged.guidanceRevenueLow + merged.guidanceRevenueHigh) / 2
-        : merged.guidanceRevenueHigh;
-      parts.push(guidanceMid >= merged.guidanceConsensus ? 'Guidance came in above consensus.' : 'Guidance came in below consensus.');
-    }
-    return parts.length > 0 ? parts.join(' ') : null;
-  })();
-  merged.whyThisMatters = whyThisMatters;
+  merged.storyPoints = buildStoryPoints(merged);
+  merged.whyThisMatters = merged.storyPoints.length > 0 ? merged.storyPoints.slice(0, 2).join(' ') : null;
 
   const { headline, caption } = await writeHeadlineAndCaption(merged);
   merged.headline = headline;
@@ -432,10 +453,8 @@ export async function completeEarningsDeepDiveFromFiling(
       fields: [{ name: 'Publish', value: `\`npm run instagram-publish -- --id=${row.id}\`` }],
       timestamp: new Date().toISOString(),
     };
-    // Summary card + the shared conversion CTA slide (see
-    // lib/instagram/render/slides.tsx's DeepDiveSummarySlide/CTASlide) —
-    // slideCount is always 2, but this still loops rather than hardcoding
-    // indices so it keeps working unchanged if the shape changes again.
+    // Summary card, the story slide when there's enough for one, then the
+    // shared CTA slide (lib/instagram/render/slides.tsx) — 2 or 3, so loop.
     const slideEmbeds = Array.from({ length: slideCount }, (_, i) => ({
       image: { url: `${appUrl}/api/instagram/render/${row.id}/${i}` },
     }));

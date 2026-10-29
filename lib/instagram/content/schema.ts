@@ -216,6 +216,28 @@ export interface EarningsDeepDiveData {
   // Market reaction (optional — filled in later once after-hours data settles)
   afterHoursChangePercent: number | null;
 
+  // The story slide: what tends to move the stock more than the beat itself
+  // (2026-10-29 review: 9 of 14 "beat" posts fell the next day, META on
+  // capex, MRVL on its margin outlook). All optional so posts staged before
+  // this existed keep rendering as 2 slides.
+  /** Full-year outlook versus the company's own previous one, only as the release states it. */
+  outlookDirection?: 'raised' | 'maintained' | 'lowered' | 'initiated' | 'mixed' | null;
+  /** The outlook change in the release's own figures, e.g. "2026 revenue $91-92B, was $85-87B". */
+  outlookNote?: string | null;
+  grossMarginGuidancePercent?: number | null; // next quarter, midpoint, same basis as grossMarginActualPercent
+  capexActual?: number | null; // dollars, this quarter
+  capexPriorYear?: number | null; // dollars, same quarter a year earlier
+  /** The one operating figure the release leads with (AWS revenue, payments volume). */
+  keyMetricLabel?: string | null;
+  keyMetricValueText?: string | null; // as the release states it, e.g. "$33.0B"
+  keyMetricYoyPercent?: number | null;
+  /** Revenue growth vs a year earlier for the quarters BEFORE this one, oldest first (SEC XBRL). */
+  revenueGrowthHistory?: { periodEnd: string; yoyPercent: number }[] | null;
+  /** EPS surprise %, the company's previous reported quarters, newest first (Nasdaq). */
+  epsSurpriseHistory?: number[] | null;
+  /** Deterministic, most market-moving first. Feeds the headline/caption so they don't lead with "beat". */
+  storyPoints?: string[] | null;
+
   headline: string | null;
   caption: string | null;
 }

@@ -57,6 +57,7 @@ import type {
 } from '@/lib/instagram/content/schema';
 
 import { SITE_HOST } from '@/lib/site';
+import { buildStory, capexShareOfRevenue, type StoryPoint } from '@/lib/instagram/content/deep-dive-story';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 export const SLIDE_WIDTH = 1080;
 export const SLIDE_HEIGHT = 1350;
@@ -106,7 +107,7 @@ export function companiesPerListSlide(companyCount: number): number {
 
 export type SlideKind =
   | 'hook' | 'list' | 'cta' | 'movers_cover' | 'winners' | 'losers'
-  | 'deepdive_summary'
+  | 'deepdive_summary' | 'deepdive_story'
   | 'scoreboard_cover' | 'scoreboard_list' | 'scoreboard_callouts';
 
 /** Picks per scoreboard list page. Every pick is shown; past this the list paginates. */
@@ -121,13 +122,14 @@ function listSlideCount(companyCount: number): number {
 }
 
 /** Total slide count for a given post. market_movers is always a fixed 4
- *  slides (ink cover, winners, losers, cta); earnings_deep_dive is always a fixed 2
- *  (the info-dense summary card, then the shared conversion CTA slide every
- *  other content type ends on); earnings_calendar/earnings_results paginate
- *  their company list across a hook, 1+ list slides, and a CTA. */
+ *  slides (ink cover, winners, losers, cta); earnings_deep_dive is the
+ *  info-dense summary card, then the story slide when there is enough for one
+ *  (see storyRows), then the shared conversion CTA slide every other content
+ *  type ends on; earnings_calendar/earnings_results paginate their company
+ *  list across a hook, 1+ list slides, and a CTA. */
 export function totalSlideCount(slides: InstagramPostSlides): number {
   if (slides.contentType === 'market_movers') return 4;
-  if (slides.contentType === 'earnings_deep_dive') return 2;
+  if (slides.contentType === 'earnings_deep_dive') return hasStorySlide(slides.data) ? 3 : 2;
   if (slides.contentType === 'picks_scoreboard') return 1 + scoreboardPageCount(slides.picks.length) + 2;
   return 1 + listSlideCount(slides.companies.length) + 1;
 }
@@ -141,7 +143,8 @@ export function slideKindAt(index: number, slides: InstagramPostSlides): SlideKi
     return 'cta';
   }
   if (slides.contentType === 'earnings_deep_dive') {
-    return index === 0 ? 'deepdive_summary' : 'cta';
+    if (index === 0) return 'deepdive_summary';
+    return index === 1 && hasStorySlide(slides.data) ? 'deepdive_story' : 'cta';
   }
   if (slides.contentType === 'picks_scoreboard') {
     const pages = scoreboardPageCount(slides.picks.length);
@@ -195,6 +198,7 @@ export function altTextForSlide(
     if (kind === 'deepdive_summary') {
       return `${d.ticker} (${d.companyName}) earnings: EPS ${d.epsActual != null ? d.epsActual : 'pending'} vs estimate ${d.epsEstimate ?? 'N/A'}, revenue ${d.revenueActual != null ? d.revenueActual : 'pending'} vs estimate ${d.revenueEstimate ?? 'N/A'}. Track ${d.ticker} free on BullPen.`;
     }
+    if (kind === 'deepdive_story') return storyAltText(d);
     return 'Open the BullPen app to track earnings, prices, and your whole portfolio in one place.';
   }
   const kind = slideKindAt(slideIndex, content);
@@ -1297,6 +1301,298 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
           {SITE_HOST}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Earnings Deep Dive story slide ──────────────────────────────────────────
+// What tends to move a stock more than the beat itself: the outlook, the
+// spending, the growth trend, the beat against the company's own habit, and
+// the one operating figure the release leads with. Added after a review found
+// 9 of 14 "beat" posts fell the next day (META on capex, MRVL on its margin
+// outlook). White, like every data slide after an ink cover.
+//
+// The headline is the lead story, ranked by the same buildStory() the caption
+// writer uses, so slide and caption always open on the same fact. A fixed
+// stack of equal cards (the first version) put MRVL's green "Raised" above
+// the margin slip that was the actual news. Rows below the lead are hairline
+// separated, exist only when their figures do, and never read N/A. Every
+// direction is said in words, not by color alone (DESIGN.md).
+
+type StoryRow =
+  | { kind: 'outlook'; label: string; alt: string; word: string | null; color: string; note: string | null }
+  | { kind: 'margin'; label: string; alt: string; value: string; color: string; side: string }
+  | { kind: 'spending'; label: string; alt: string; capex: number | null; capexYoy: number | null; fcf: number | null }
+  | { kind: 'metric'; label: string; alt: string; value: string; yoy: number | null }
+  | { kind: 'growth'; label: string; alt: string; word: string; side: string; bars: Bar[] }
+  | { kind: 'beat'; label: string; alt: string; bars: Bar[] };
+
+interface Bar { label: string; value: number; current: boolean }
+
+const SHORT_ROWS = new Set<StoryRow['kind']>(['margin', 'spending', 'metric']);
+
+const OUTLOOK_WORD: Record<string, { word: string; color: string }> = {
+  raised: { word: 'Raised', color: GAIN_TEXT },
+  lowered: { word: 'Cut', color: LOSS_TEXT },
+  maintained: { word: 'Kept', color: FG },
+  initiated: { word: 'First outlook', color: FG },
+  mixed: { word: 'Mixed', color: FG },
+};
+
+/** "Sep '25" for a quarter-end date. */
+function quarterLabel(periodEnd: string): string {
+  const d = new Date(periodEnd + 'T12:00:00Z');
+  return `${d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })} '${String(d.getUTCFullYear()).slice(2)}`;
+}
+
+const signColorText = (v: number) => (v > 0 ? GAIN_TEXT : v < 0 ? LOSS_TEXT : FG);
+
+/** The lead story: the headline and first sentence of the slide. */
+function storyLead(d: EarningsDeepDiveData): StoryPoint | null {
+  return buildStory(d)[0] ?? null;
+}
+
+export function storyRows(d: EarningsDeepDiveData): StoryRow[] {
+  const lead = storyLead(d);
+  const rows: StoryRow[] = [];
+
+  if (d.outlookNote || d.outlookDirection) {
+    const o = d.outlookDirection ? OUTLOOK_WORD[d.outlookDirection] : null;
+    rows.push({
+      kind: 'outlook', label: 'Outlook', alt: [o ? `${o.word} full-year outlook` : null, d.outlookNote].filter(Boolean).join(': '),
+      word: o?.word ?? null, color: o?.color ?? FG, note: d.outlookNote ?? null,
+    });
+  }
+
+  // The lead sentence already states both margins, so a margin lead has no row of its own.
+  if (d.grossMarginGuidancePercent != null && d.grossMarginActualPercent != null && lead?.kind !== 'margin') {
+    const diff = d.grossMarginGuidancePercent - d.grossMarginActualPercent;
+    const now = `${d.grossMarginActualPercent.toFixed(1)}%`;
+    const side = diff <= -0.5 ? `next quarter, down from ${now}` : diff >= 0.5 ? `next quarter, up from ${now}` : `next quarter, about the same as ${now}`;
+    rows.push({
+      kind: 'margin', label: 'Gross margin outlook', value: `${d.grossMarginGuidancePercent.toFixed(1)}%`,
+      color: diff <= -0.5 ? LOSS_TEXT : diff >= 0.5 ? GAIN_TEXT : FG, side, alt: `${d.grossMarginGuidancePercent.toFixed(1)}% ${side}`,
+    });
+  }
+
+  // Capex is shown only where it is a real share of the business: MRVL's $127M
+  // on $2.7B of revenue tripled and meant nothing. Free cash flow shows on its own.
+  const fcf = d.secondaryMetricLabel === 'Free Cash Flow' ? d.secondaryMetricValue : null;
+  const capexShare = capexShareOfRevenue(d);
+  const capex = d.capexActual != null && capexShare != null && capexShare >= 5 ? d.capexActual : null;
+  if (capex != null || fcf != null) {
+    const capexYoy = capex != null && d.capexPriorYear != null && d.capexPriorYear > 0 ? (capex / d.capexPriorYear - 1) * 100 : null;
+    rows.push({
+      kind: 'spending', label: capex != null ? 'Capital spending' : 'Free cash flow', capex, capexYoy, fcf,
+      alt: [
+        capex != null ? `capital spending ${formatUsdCompact(capex)}${capexYoy != null ? `, ${formatPercentSigned(capexYoy, 0)} vs a year ago` : ''}` : null,
+        fcf != null ? `free cash flow ${formatUsdCompact(fcf)}` : null,
+      ].filter(Boolean).join(', '),
+    });
+  }
+
+  if (d.keyMetricLabel && d.keyMetricValueText) {
+    // "Azure revenue growth: 48%" is a rise, so it carries its sign like every other growth figure here.
+    const value = /growth/i.test(d.keyMetricLabel) && /^\d/.test(d.keyMetricValueText) ? `+${d.keyMetricValueText}` : d.keyMetricValueText;
+    rows.push({
+      kind: 'metric', label: d.keyMetricLabel, value, yoy: d.keyMetricYoyPercent ?? null,
+      alt: `${value}${d.keyMetricYoyPercent != null ? `, ${formatPercentSigned(d.keyMetricYoyPercent, 0)} vs a year ago` : ''}`,
+    });
+  }
+
+  const history = d.revenueGrowthHistory ?? [];
+  if (d.revenueYoyGrowthPercent != null && history.length >= 3) {
+    const last = history[history.length - 1].yoyPercent;
+    const diff = d.revenueYoyGrowthPercent - last;
+    const word = diff >= 3 ? 'Speeding up' : diff <= -3 ? 'Slowing' : 'Steady';
+    // Spelled out because "Steady" next to bars falling from +33% read as a contradiction:
+    // the word compares with last quarter only.
+    const side = `${formatPercentSigned(d.revenueYoyGrowthPercent, 0)} now, ${formatPercentSigned(last, 0)} last quarter`;
+    const bars = [
+      ...history.map((h) => ({ label: quarterLabel(h.periodEnd), value: h.yoyPercent, current: false })),
+      { label: 'This qtr', value: d.revenueYoyGrowthPercent, current: true },
+    ];
+    rows.push({ kind: 'growth', label: 'Revenue growth vs a year earlier', word, side, bars, alt: `${word.toLowerCase()}, ${side}` });
+  }
+
+  const surprises = d.epsSurpriseHistory ?? [];
+  if (d.epsSurprisePercent != null && surprises.length >= 3) {
+    const previous = [...surprises].reverse(); // oldest first, like the growth bars
+    const bars = [
+      ...previous.map((v, i) => {
+        const ago = previous.length - i;
+        return { label: ago === 1 ? 'Last qtr' : `${ago} qtrs ago`, value: v, current: false };
+      }),
+      { label: 'This qtr', value: d.epsSurprisePercent, current: true },
+    ];
+    rows.push({
+      kind: 'beat', label: 'Profit per share vs forecast', bars,
+      alt: bars.map((b) => `${b.label} ${formatPercentSigned(b.value)}`).join(', '),
+    });
+  }
+
+  // Three short rows make two lines of the grid, and with every wide row present
+  // that overflows the canvas. The key figure goes first: it is context, not news.
+  // ponytail: fixed drop order; measure text if more row kinds arrive.
+  if (rows.filter((r) => SHORT_ROWS.has(r.kind)).length === 3) return rows.filter((r) => r.kind !== 'metric');
+  return rows;
+}
+
+/** A lead plus one row, or two rows, make a slide; less stays at summary + CTA. */
+function hasStorySlide(d: EarningsDeepDiveData): boolean {
+  return storyRows(d).length + (storyLead(d) ? 1 : 0) >= 2;
+}
+
+function storyAltText(d: EarningsDeepDiveData): string {
+  const lead = storyLead(d);
+  return [lead ? `${lead.title}. ${lead.text}` : null, ...storyRows(d).map((r) => `${r.label}: ${r.alt}.`)].filter(Boolean).join(' ');
+}
+
+const ROW_LABEL = { display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, color: MUTED } as const;
+
+function StoryValue({ value, color = FG, side }: { value: string; color?: string; side?: string | null }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', columnGap: 16, rowGap: 4, flexWrap: 'wrap' }}>
+      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 44, lineHeight: 1.05, letterSpacing: '-0.035em', color }}>{value}</span>
+      {side && <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: MUTED }}>{side}</span>}
+    </div>
+  );
+}
+
+/** Bars share one zero line; a negative value hangs below it in loss red. */
+function StoryBars({ bars, roomy }: { bars: Bar[]; roomy?: boolean }) {
+  const maxPos = Math.max(0, ...bars.map((b) => b.value));
+  const maxNeg = Math.max(0, ...bars.map((b) => -b.value));
+  const span = maxPos + maxNeg || 1;
+  const area = roomy ? 76 : 52;
+  return (
+    <div style={{ display: 'flex', gap: 16 }}>
+      {bars.map((b) => {
+        const h = Math.max(5, Math.round((Math.abs(b.value) / span) * area));
+        const fill = b.value < 0 ? LOSS_TEXT : b.current ? FG : BORDER_STRONG;
+        return (
+          <div key={b.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 8 }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: b.current ? 700 : 400, fontSize: 24, color: b.value < 0 ? LOSS_TEXT : FG }}>
+              {formatPercentSigned(b.value, Math.abs(b.value) < 10 ? 1 : 0)}
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: area + 1 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', height: Math.round((maxPos / span) * area) }}>
+                {b.value >= 0 && <div style={{ display: 'flex', width: '100%', height: h, backgroundColor: fill, borderRadius: 6 }} />}
+              </div>
+              <div style={{ display: 'flex', height: 1, backgroundColor: BORDER_STRONG }} />
+              {b.value < 0 && <div style={{ display: 'flex', width: '100%', height: h, backgroundColor: fill, borderRadius: 6 }} />}
+            </div>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: b.current ? 700 : 400, fontSize: 20, color: b.current ? FG : MUTED }}>{b.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Satori lays a fragment's children out as an overlapping row, so multi-part bodies get a real column. */
+function StoryStack({ children }: { children: React.ReactNode }) {
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>;
+}
+
+function StoryRowBody({ row, roomy }: { row: StoryRow; roomy?: boolean }) {
+  switch (row.kind) {
+    case 'outlook':
+      return (
+        <StoryStack>
+          {row.word && <StoryValue value={row.word} color={row.color} side="full-year outlook" />}
+          {/* Model-written: wraps, never cut (the extractor drops a note over 120 chars). */}
+          {row.note && <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 28, lineHeight: 1.38, color: FG }}>{row.note}</span>}
+        </StoryStack>
+      );
+    case 'margin':
+      return <StoryValue value={row.value} color={row.color} side={row.side} />;
+    case 'spending':
+      return (
+        <StoryStack>
+          {row.capex != null && <StoryValue value={formatUsdCompact(row.capex)} side={row.capexYoy != null ? `${formatPercentSigned(row.capexYoy, 0)} vs a year ago` : null} />}
+          {row.fcf != null && (row.capex != null ? (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: FG }}>Free cash flow</span>
+              <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 28, color: signColorText(row.fcf) }}>{formatUsdCompact(row.fcf)}</span>
+            </div>
+          ) : (
+            <StoryValue value={formatUsdCompact(row.fcf)} color={signColorText(row.fcf)} />
+          ))}
+        </StoryStack>
+      );
+    case 'metric':
+      return <StoryValue value={row.value} side={row.yoy != null ? `${formatPercentSigned(row.yoy, 0)} vs a year ago` : null} />;
+    case 'growth':
+      return (
+        <StoryStack>
+          <StoryValue value={row.word} side={row.side} />
+          <StoryBars bars={row.bars} roomy={roomy} />
+        </StoryStack>
+      );
+    case 'beat':
+      return <StoryBars bars={row.bars} roomy={roomy} />;
+  }
+}
+
+function StoryRowView({ row, roomy }: { row: StoryRow; roomy?: boolean }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, minWidth: 0 }}>
+      <span style={ROW_LABEL}>{row.label}</span>
+      <StoryRowBody row={row} roomy={roomy} />
+    </div>
+  );
+}
+
+/** `roomy`: three lines or fewer get more air and taller bars instead of an empty bottom third (MSFT). */
+function StoryLine({ roomy, children }: { roomy?: boolean; children: React.ReactNode }) {
+  const pad = roomy ? 30 : 18;
+  return <div style={{ display: 'flex', gap: 40, paddingTop: pad, paddingBottom: pad, borderTop: `1px solid ${BORDER}` }}>{children}</div>;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DeepDiveStorySlide({ data, slideIndex, totalSlides }: { data: EarningsDeepDiveData; slideIndex: number; totalSlides: number }): any {
+  const lead = storyLead(data);
+  const rows = storyRows(data);
+  const wide = rows.filter((r) => !SHORT_ROWS.has(r.kind));
+  const short = rows.filter((r) => SHORT_ROWS.has(r.kind));
+  const pairs: StoryRow[][] = [];
+  for (let i = 0; i < short.length; i += 2) pairs.push(short.slice(i, i + 2));
+  const outlook = wide.find((r) => r.kind === 'outlook');
+  const roomy = wide.length + pairs.length <= 3;
+  const spending = rows.find((r) => r.kind === 'spending');
+  // The footnote defines only what the slide shows.
+  const footnote = [
+    spending?.capex != null ? 'Capital spending is money put into buildings, chips and equipment.' : null,
+    spending?.fcf != null ? (spending.capex != null ? 'Free cash flow is the cash left after it.' : 'Free cash flow is the cash a business has left after paying for its operations and investments.') : null,
+  ].filter(Boolean).join(' ') || 'Each growth bar compares a quarter with the same quarter a year earlier.';
+
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 80, backgroundColor: BG, color: FG }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
+        <Wordmark />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 22, color: FG }}>{`$${data.ticker}`}</span>
+          <SlideIndicator index={slideIndex} total={totalSlides} />
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 30 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 64, lineHeight: 1.05, letterSpacing: '-0.035em', color: FG }}>
+          {lead ? lead.title : 'How the quarter compares'}
+        </span>
+        {lead && <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 30, lineHeight: 1.35, color: FG }}>{lead.text}</span>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        {outlook && <StoryLine roomy={roomy}><StoryRowView row={outlook} roomy={roomy} /></StoryLine>}
+        {pairs.map((p) => (
+          <StoryLine key={p.map((r) => r.kind).join('-')} roomy={roomy}>
+            {p.map((r) => <StoryRowView key={r.kind} row={r} roomy={roomy} />)}
+            {p.length === 1 && <div style={{ display: 'flex', flex: 1 }} />}
+          </StoryLine>
+        ))}
+        {wide.filter((r) => r.kind !== 'outlook').map((r) => <StoryLine key={r.kind} roomy={roomy}><StoryRowView row={r} roomy={roomy} /></StoryLine>)}
+      </div>
+      <SlideFooter note={footnote} />
     </div>
   );
 }

@@ -28,6 +28,7 @@ import {
   MoversCoverSlide,
   CTASlide,
   DeepDiveSummarySlide,
+  DeepDiveStorySlide,
   ScoreboardCoverSlide,
   ScoreboardListSlide,
   ScoreboardCalloutsSlide,
@@ -97,6 +98,8 @@ export async function GET(
     const d = (slides as EarningsDeepDiveSlides).data;
     element = kind === 'deepdive_summary'
       ? <DeepDiveSummarySlide data={d} />
+      : kind === 'deepdive_story'
+      ? <DeepDiveStorySlide data={d} slideIndex={slideIndex} totalSlides={total} />
       : <CTASlide slideIndex={slideIndex} totalSlides={total} variant="earnings_deep_dive" ticker={d.ticker} />;
   } else if (slides.contentType === 'picks_scoreboard') {
     if (kind === 'scoreboard_cover') {
