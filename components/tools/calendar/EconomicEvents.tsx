@@ -12,10 +12,8 @@ import { useEntitlements } from '@/hooks/use-entitlements';
 import {
   ECONOMIC_KINDS,
   BIG_FOUR_LESSON,
-  fmtReleaseTime,
   fmtReleaseTimeShort,
-  fmtReleaseTimeWithZone,
-  viewerIsOutsideET,
+  fmtReleaseTimeForViewer,
   type EconomicEvent,
   type EconomicKind,
 } from '@/lib/market-data/economic-kinds';
@@ -62,7 +60,6 @@ export function EconomicDetailRow({ event }: { event: EconomicEvent }) {
   useClock(); // re-render when the time zone or 12/24h clock changes
   const meta = ECONOMIC_KINDS[event.kind];
   const Icon = ECONOMIC_ICONS[event.kind];
-  const outsideET = viewerIsOutsideET(event.release_at);
   // Beginners get the explainer open; everyone else can expand it. Collapsed
   // by default otherwise: DESIGN.md's no-static-text-walls rule.
   const { isSimplified } = useExperienceLevel();
@@ -81,8 +78,7 @@ export function EconomicDetailRow({ event }: { event: EconomicEvent }) {
             {event.detail && <span className="font-normal text-muted-foreground"> · {event.detail}</span>}
           </p>
           <p className="text-xs tabular-nums text-muted-foreground">
-            {fmtReleaseTimeWithZone(event.release_at)}
-            {outsideET && <span> ({t('economicEtTime', { time: fmtReleaseTime(event.release_at, 'America/New_York') })})</span>}
+            {fmtReleaseTimeForViewer(event.release_at, t)}
           </p>
         </div>
         {event.has_projections && (

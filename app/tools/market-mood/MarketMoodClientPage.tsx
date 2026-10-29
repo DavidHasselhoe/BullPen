@@ -5,20 +5,21 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Gauge } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToolPage, ToolHeader, ToolSectionTitle } from '@/components/tools/ToolHeader';
 import { MoodHero, SignalCard, MoodSkeleton } from '@/components/market/MarketMoodDisplay';
 import type { MarketMoodData } from '@/app/api/market/mood/route';
 
+import { fmtClockTime } from '@/lib/dates/clock';
+import { useClock } from '@/hooks/use-clock';
 /** The composite is built from four signals; the API drops any it has no data for. */
 const TOTAL_SIGNALS = 4;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MarketMoodClientPage() {
+  const clock = useClock();
   const { t } = useTranslation('tools');
-  const locale = useIntlLocale();
 
   const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } =
     useQuery<MarketMoodData>({
@@ -37,7 +38,7 @@ export default function MarketMoodClientPage() {
   const composite = data?.composite ?? 0;
 
   const updatedLabel = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
+    ? fmtClockTime(new Date(dataUpdatedAt), clock)
     : null;
 
   return (

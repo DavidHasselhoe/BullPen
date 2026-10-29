@@ -9,6 +9,7 @@
  * bury them (DESIGN.md: terminal density is the anti-reference).
  */
 
+import type { TFunction } from 'i18next';
 import { fmtClockTime, getClock } from '@/lib/dates/clock';
 
 export type EconomicKind = 'jobs' | 'cpi' | 'ppi' | 'jolts' | 'claims' | 'fomc' | 'gdp' | 'pce';
@@ -80,9 +81,14 @@ export function fmtReleaseTimeShort(iso: string): string {
   return getClock().hour12 ? time.replace(':00 ', ' ') : time;
 }
 
-/** The same instant on the user's clock, with the zone's name ("2:30 PM GMT+2"). */
-export function fmtReleaseTimeWithZone(iso: string): string {
-  return fmtClockTime(new Date(iso), getClock(), { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+/**
+ * "19:00 your time (2:00 PM ET)", or just "2:00 PM ET" for someone on New York
+ * time. Says "your time" rather than "GMT+1": a reader shouldn't have to know
+ * their own offset to use it. Keys are namespaced so any component's t works.
+ */
+export function fmtReleaseTimeForViewer(iso: string, t: TFunction): string {
+  const et = t('tools:economicEtTime', { time: fmtReleaseTime(iso, 'America/New_York') });
+  return viewerIsOutsideET(iso) ? `${t('tools:economicYourTime', { time: fmtReleaseTime(iso) })} (${et})` : et;
 }
 
 /** True when the user's clock is not on US Eastern time, so an "ET" reference helps. */

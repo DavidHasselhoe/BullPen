@@ -2,11 +2,12 @@
 
 import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { useQuota } from '@/hooks/use-quota';
 import { cn } from '@/lib/utils';
 import type { QuotaFeature } from '@/lib/billing/quotas';
 
+import { fmtClockTime, fmtClockDate, type Clock } from '@/lib/dates/clock';
+import { useClock } from '@/hooks/use-clock';
 interface Props {
   feature: QuotaFeature;
   /** Singular/plural label for the unit, e.g. "build"/"builds". */
@@ -14,12 +15,10 @@ interface Props {
   className?: string;
 }
 
-function formatResetDate(iso: string, period: 'day' | 'month', locale: string): string {
+function formatResetDate(iso: string, period: 'day' | 'month', clock: Clock): string {
   const d = new Date(iso);
-  if (period === 'day') {
-    return d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
-  }
-  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  if (period === 'day') return fmtClockTime(d, clock);
+  return fmtClockDate(d, { month: 'short', day: 'numeric' }, clock);
 }
 
 /**
@@ -27,8 +26,8 @@ function formatResetDate(iso: string, period: 'day' | 'month', locale: string): 
  * Returns null for pro/admin users (unlimited) and while loading.
  */
 export function QuotaIndicator({ feature, unit, className }: Props) {
+  const clock = useClock();
   const { t } = useTranslation('billing');
-  const locale = useIntlLocale();
   const { data } = useQuota(feature);
 
   if (!data) return null;
@@ -61,7 +60,7 @@ export function QuotaIndicator({ feature, unit, className }: Props) {
         {noun} {periodLabel}
       </span>
       <span className="opacity-50">·</span>
-      <span className="opacity-70">{t('quotaResetsAt', { date: formatResetDate(resetsAt, period, locale) })}</span>
+      <span className="opacity-70">{t('quotaResetsAt', { date: formatResetDate(resetsAt, period, clock) })}</span>
     </div>
   );
 }

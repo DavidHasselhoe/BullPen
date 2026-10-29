@@ -28,6 +28,8 @@ import { AnalysisHistory } from './risk-analysis/AnalysisHistory';
 import { levelTier, tierTextClass } from './risk-analysis/colors';
 import { cn } from '@/lib/utils';
 
+import { fmtClockDate } from '@/lib/dates/clock';
+import { useClock } from '@/hooks/use-clock';
 type ErrorCode = 'invalid_key' | 'payment_required' | 'rate_limited' | 'parse_failed' | 'unknown';
 
 // Mirrors the server's PHASE_MARKERS in app/api/holdings/risk-analysis/route.ts —
@@ -91,6 +93,7 @@ function buildAskBullQuery(analysis: RiskAnalysis, holdings: HoldingWithPrice[],
 type State = 'idle' | 'loading' | 'loaded' | 'error';
 
 export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) {
+  const clock = useClock();
   const { t } = useTranslation('holdings');
   const locale = useIntlLocale();
   const { user } = useAuth();
@@ -290,9 +293,7 @@ export function PortfolioRiskAnalysis({ holdings }: PortfolioRiskAnalysisProps) 
   }
 
   const generatedTime = (restoredFrom ?? analysis?.generatedAt)
-    ? new Date(restoredFrom ?? analysis!.generatedAt).toLocaleString(locale, {
-        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-      })
+    ? fmtClockDate(new Date(restoredFrom ?? analysis!.generatedAt), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }, clock)
     : null;
 
   return (

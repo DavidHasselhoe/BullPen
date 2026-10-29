@@ -124,6 +124,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [language, setLanguage] = useState<string | null>(null);
   // 'auto' (the device's zone), 'market' (New York) or an IANA zone. See lib/dates/clock.ts.
   const [timeZonePref, setTimeZonePref] = useState<string>('auto');
+  const [timeFormatPref, setTimeFormatPref] = useState<string>('auto');
   const deviceTimeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
   const timeZoneOptions = useMemo(
     () => Intl.supportedValuesOf('timeZone').map((tz) => ({ value: tz, label: zoneLabel(tz) })),
@@ -261,6 +262,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setDefaultCurrency(settings.default_currency || null);
       setLanguage(settings.language || null);
       setTimeZonePref(typeof settings.time_zone === 'string' ? settings.time_zone : 'auto');
+      setTimeFormatPref(settings.time_format === '12' || settings.time_format === '24' ? settings.time_format : 'auto');
 
       // Sanitize theme — ignore any old animated themes (aurora, particles, etc.)
       const oldTheme = settings.theme || 'dark';
@@ -340,6 +342,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         theme,
         language,
         time_zone: timeZonePref,
+        time_format: timeFormatPref,
         default_homepage: defaultHomepage,
         show_welcome_text: showWelcomeText,
         round_numbers: roundNumbers,
@@ -404,7 +407,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultCurrency, theme, language, timeZonePref, defaultHomepage, showWelcomeText, roundNumbers, notifications, experienceLevel, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden]);
+  }, [defaultCurrency, theme, language, timeZonePref, timeFormatPref, defaultHomepage, showWelcomeText, roundNumbers, notifications, experienceLevel, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden]);
 
   const handleDeleteAccount = async (): Promise<string | null> => {
     if (!user) return t('errorDeleteAccount');
@@ -758,6 +761,20 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     searchPlaceholder={t('timeZoneSearch')}
                   />
                   <p className="text-xs text-muted-foreground">{t('timeZoneDescription')}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="time-format">{t('timeFormat')}</Label>
+                  <Select value={timeFormatPref} onValueChange={setTimeFormatPref}>
+                    <SelectTrigger id="time-format" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">{t('timeFormatAuto')}</SelectItem>
+                      <SelectItem value="24">{t('timeFormat24')}</SelectItem>
+                      <SelectItem value="12">{t('timeFormat12')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">

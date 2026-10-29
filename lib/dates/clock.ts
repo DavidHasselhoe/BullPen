@@ -1,8 +1,9 @@
 /**
  * The clock times of day are shown on: a time zone from the user's setting
  * (`users.settings.time_zone`: 'auto' follows the device, 'market' is New
- * York) and a 12- or 24-hour cycle from the app language (15:30 in Norwegian,
- * 3:30 PM in English). `ClockSync` keeps it current; `useClock()` subscribes.
+ * York) and a 12- or 24-hour cycle from `users.settings.time_format`, which
+ * by default follows the app language (15:30 in Norwegian, 3:30 PM in
+ * English). `ClockSync` keeps it current; `useClock()` subscribes.
  *
  * Display only. Logic that needs the exchange clock (which session a bar is
  * in, which trading day it belongs to) pins America/New_York itself, and
@@ -49,6 +50,17 @@ export function intlLocale(lang: string): string {
 export function languageUsesHour12(lang: string): boolean {
   const cycle = new Intl.DateTimeFormat(intlLocale(lang), { hour: 'numeric' }).resolvedOptions().hourCycle;
   return cycle === 'h11' || cycle === 'h12';
+}
+
+/**
+ * `users.settings.time_format`: '12' or '24' forces the cycle; anything else
+ * ('auto', unset) follows the app language. A Norwegian reading the app in
+ * English still wants 19:00, which the language alone can't tell.
+ */
+export function resolveHour12(pref: unknown, lang: string): boolean {
+  if (pref === '12') return true;
+  if (pref === '24') return false;
+  return languageUsesHour12(lang);
 }
 
 const SERVER_CLOCK: Clock = { timeZone: undefined, hour12: true, locale: 'en-US' };

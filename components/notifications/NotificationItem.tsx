@@ -14,7 +14,7 @@ import { useClock } from '@/hooks/use-clock';
 import { fmtClockDate } from '@/lib/dates/clock';
 import { intlLocale } from '@/lib/i18n/intl-locale';
 import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
-import { ECONOMIC_KINDS, fmtReleaseTimeWithZone, type EconomicEvent } from '@/lib/market-data/economic-kinds';
+import { ECONOMIC_KINDS, fmtReleaseTimeForViewer, type EconomicEvent } from '@/lib/market-data/economic-kinds';
 
 function formatRelativeTime(dateString: string, language: string): string {
   const date = new Date(dateString);
@@ -336,7 +336,8 @@ interface NotificationItemProps {
  */
 function EconomicNotification({ notification, date, onRead }: { notification: Notification; date: string; onRead: () => void }) {
   useClock(); // re-render when the time zone or 12/24h clock changes
-  const { t, i18n } = useTranslation('navigation');
+  // 'tools' for the release-time wording shared with the economic calendar.
+  const { t, i18n } = useTranslation(['navigation', 'tools']);
   const { title } = useNotificationText(notification);
   // Same picks the cron used to decide this user gets notified.
   const { prefs } = useCalendarPrefs();
@@ -378,7 +379,7 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
                     {meta.name}
                     <ArrowUpRight className="h-3 w-3" aria-hidden />
                   </a>
-                  <span className="tabular-nums">{fmtReleaseTimeWithZone(e.release_at)}</span>
+                  <span className="tabular-nums">{fmtReleaseTimeForViewer(e.release_at, t)}</span>
                   {meta.watchUrl && (
                     <a href={meta.watchUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground/85 hover:text-primary">
                       · {t('notifWatchLive')}

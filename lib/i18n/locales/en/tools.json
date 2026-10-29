@@ -701,6 +701,7 @@
   "economicWatchLive": "Watch the press conference",
   "economicProjections": "Includes new Fed projections",
   "economicEtTime": "{{time}} ET",
+  "economicYourTime": "{{time}} your time",
   "calendarScopeLabel": "Show",
   "calendarScopeAll": "All companies",
   "calendarScopeMine": "Holdings & watchlist",

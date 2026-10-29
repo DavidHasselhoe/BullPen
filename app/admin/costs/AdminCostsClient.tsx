@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, Activity } from 'lucide-react';
 import type { CostsResponse } from '@/app/api/admin/costs/route';
 
+import { fmtClockDate } from '@/lib/dates/clock';
+import { useClock } from '@/hooks/use-clock';
 const FEATURE_COLORS: Record<string, string> = {
   portfolio_builder: 'bg-primary',
   chat:              'bg-emerald-500',
@@ -20,6 +22,7 @@ function fmtUsd(n: number): string {
 }
 
 export function AdminCostsClient() {
+  const clock = useClock();
   const { data, isLoading, error } = useQuery<CostsResponse>({
     queryKey: ['admin-costs'],
     queryFn: async () => {
@@ -170,7 +173,7 @@ export function AdminCostsClient() {
                       {data.recent.map((r) => (
                         <tr key={r.id} className="border-t border-border/30">
                           <td className="py-1.5 font-mono text-muted-foreground whitespace-nowrap">
-                            {new Date(r.created_at).toLocaleString()}
+                            {fmtClockDate(new Date(r.created_at), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }, clock)}
                           </td>
                           <td className="py-1.5 font-mono">{r.feature}</td>
                           <td className="py-1.5 font-mono text-muted-foreground">{r.model}</td>

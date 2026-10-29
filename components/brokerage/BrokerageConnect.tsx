@@ -25,6 +25,8 @@ import {
 } from '@/hooks/use-brokerage';
 import { useEntitlements } from '@/hooks/use-entitlements';
 import { UpgradeCTA } from '@/components/billing/UpgradeCTA';
+import { fmtClockDate } from '@/lib/dates/clock';
+import { useClock } from '@/hooks/use-clock';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -54,12 +56,11 @@ function AccountCard({
   onDisconnect: () => void;
   syncing: boolean;
 }) {
+  const clock = useClock();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const lastSync = account.last_synced_at
-    ? new Date(account.last_synced_at).toLocaleString('en-US', {
-        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-      })
+    ? fmtClockDate(new Date(account.last_synced_at), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }, clock)
     : null;
 
   return (

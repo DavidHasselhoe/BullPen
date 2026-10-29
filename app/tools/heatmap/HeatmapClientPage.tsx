@@ -21,6 +21,8 @@ import { slugToAssetPath } from '@/lib/assets/asset-type';
 import type { HeatmapResponse, HeatmapStock, HeatmapSector } from '@/app/api/tools/heatmap/route';
 import type { Session } from '@/app/api/market/heatmap/stream/route';
 
+import { fmtClockTime } from '@/lib/dates/clock';
+import { useClock } from '@/hooks/use-clock';
 type HeatmapMode = 'sp500' | 'my-stocks';
 
 // ─── Color ramp (Signal Emerald / Signal Red — see DESIGN.md) ─────────────────
@@ -606,6 +608,7 @@ function HeatmapSkeleton() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HeatmapClientPage() {
+  const clock = useClock();
   const { t } = useTranslation('tools');
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
@@ -687,7 +690,7 @@ export default function HeatmapClientPage() {
   );
 
   const lastUpdated = data?.lastUpdated
-    ? new Date(data.lastUpdated).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    ? fmtClockTime(new Date(data.lastUpdated), clock)
     : null;
 
   const motionProps = prefersReducedMotion

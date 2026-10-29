@@ -17,6 +17,8 @@ import { ClampedText } from '@/components/ui/ClampedText';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
 import { trackEvent } from '@/lib/analytics/track';
 
+import { fmtClockTime, type Clock } from '@/lib/dates/clock';
+import { useClock } from '@/hooks/use-clock';
 interface BriefSource {
   url: string;
   title: string;
@@ -107,11 +109,11 @@ function formatShortDate(dateStr: string, locale: string): string {
   });
 }
 
-function getNextBriefLocalTime(locale: string): string {
+function getNextBriefLocalTime(clock: Clock): string {
   const target = new Date();
   target.setUTCHours(6, 30, 0, 0);
   if (Date.now() > target.getTime()) target.setUTCDate(target.getUTCDate() + 1);
-  return target.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  return fmtClockTime(target, clock);
 }
 
 function estimateReadingTime(content: string): number {
@@ -731,8 +733,8 @@ function BriefReader({
  * rest for free accounts on the server); the full read and the archive are Pro.
  */
 export function DailyBriefWidget() {
+  const clock = useClock();
   const { t } = useTranslation('discover');
-  const locale = useIntlLocale();
   const known = useKnownTickers();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -786,7 +788,7 @@ export function DailyBriefWidget() {
     return (
       <HomeSection title={t('briefWidgetLabel')}>
         <p className={cn(homePanel, 'p-5 text-sm text-muted-foreground')}>
-          {t('briefGenerating', { time: getNextBriefLocalTime(locale) })}
+          {t('briefGenerating', { time: getNextBriefLocalTime(clock) })}
         </p>
       </HomeSection>
     );
