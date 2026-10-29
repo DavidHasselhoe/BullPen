@@ -149,7 +149,8 @@ export function Navigation() {
             {/* Black mark on light theme, white mark on dark theme (theme is user-selectable, not fixed) */}
             <Image src="/BullPenLogo.png" alt="" width={26} height={26} priority aria-hidden="true" className="block dark:hidden" />
             <Image src="/BullPenLogo-dark.png" alt="" width={26} height={26} priority aria-hidden="true" className="hidden dark:block" />
-            {t('navBrandName')}
+            {/* Icon only on phones, where the wordmark ran into the search button. Still the link's name for screen readers. */}
+            <span className="sr-only sm:not-sr-only">{t('navBrandName')}</span>
           </Link>
 
           {/* Navigation - Centered */}
