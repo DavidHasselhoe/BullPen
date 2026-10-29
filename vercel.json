@@ -1,5 +1,6 @@
 {
   "regions": ["fra1"],
+  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" = main ] && exit 1; case \"$VERCEL_GIT_COMMIT_REF\" in dependabot/*) exit 0;; esac; echo \"$VERCEL_GIT_COMMIT_MESSAGE\" | grep -q '^docs(changelog)' && exit 0; exit 1",
   "crons": [
     {
       "path": "/api/cron/generate-daily-brief",
