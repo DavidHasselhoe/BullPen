@@ -205,6 +205,56 @@ export function extractTickers(message: MessageLike | undefined): string[] {
   return [...out];
 }
 
+/**
+ * Writes what the user did with a card (Yes/No, Confirm/Cancel) into that
+ * tool's result, so the next request tells Bull. Without it the result kept
+ * saying "The user now sees Yes/No buttons" forever, and after a No Bull
+ * answered every later message with "Pick Yes below" (2026-10-28). The key is
+ * BullpenChat's `${message.id}::${index}`, counted like getCompletedToolCalls.
+ * The pre-answer `note` / `confirmation` instructions are dropped: they
+ * describe a prompt that is no longer open.
+ */
+export function withUserResponse<M extends { id: string; parts: unknown[] }>(messages: M[], key: string, userResponse: string): M[] {
+  const sep = key.lastIndexOf('::');
+  const messageId = key.slice(0, sep);
+  const index = Number(key.slice(sep + 2));
+  return messages.map((message) => {
+    if (message.id !== messageId) return message;
+    let i = -1;
+    const parts = message.parts.map((p) => {
+      const part = p as ToolPart;
+      if (!toolNameFromPart(part) || part.state !== 'output-available') return p;
+      i++;
+      if (i !== index || !part.output || typeof part.output !== 'object') return p;
+      const { note: _note, confirmation: _confirmation, ...rest } = part.output as Record<string, unknown>;
+      return { ...part, output: { ...rest, userResponse } };
+    });
+    return { ...message, parts };
+  });
+}
+
+/**
+ * Every answered card as key -> the userResponse line Bull should read: Yes/No
+ * on navigation offers, Confirm/Cancel on holdings and alert cards.
+ */
+export function cardResponses(
+  navigateDecisions: Record<string, NavigateDecision>,
+  actionOutcomes: Record<string, ActionOutcome>,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, decision] of Object.entries(navigateDecisions)) {
+    out[key] = decision === 'confirmed'
+      ? 'The user pressed Yes and was taken there. This offer is closed.'
+      : "The user pressed No and stayed where they were. This offer is closed: don't offer it again or remind them of it unless they ask.";
+  }
+  for (const [key, outcome] of Object.entries(actionOutcomes)) {
+    if (outcome.status === 'success') out[key] = 'The user pressed Confirm and it was saved. It is done.';
+    else if (outcome.status === 'error') out[key] = `The user pressed Confirm but saving failed (${outcome.message ?? 'unknown error'}). Nothing changed.`;
+    else if (outcome.status === 'cancelled') out[key] = "The user pressed Cancel. Nothing was changed. Don't bring it up again unless they ask.";
+  }
+  return out;
+}
+
 export type NavigateDecision = 'confirmed' | 'declined';
 
 /**
@@ -227,5 +277,5 @@ export function useNavigateConfirmations(push: (path: string) => void) {
     setDecisions((prev) => ({ ...prev, [key]: 'declined' }));
   }, []);
 
-  return { getDecision: (key: string) => decisions[key], confirm, decline };
+  return { decisions, getDecision: (key: string) => decisions[key], confirm, decline };
 }

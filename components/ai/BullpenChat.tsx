@@ -32,7 +32,7 @@ import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvi
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { splitTickers, useKnownTickers } from '@/components/company/TickerText';
-import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, useNavigateConfirmations, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
+import { getActiveToolName, getToolStatusLabel, getCompletedToolCalls, getFollowups, extractTickers, useNavigateConfirmations, withUserResponse, cardResponses, type ClientAction, type ActionOutcome } from '@/lib/ai/tool-ux';
 import type { ChartAction, ChartSnapshot } from '@/components/stock/advanced-chart/chart-context';
 
 // Byte-identical to AISidePanel's starterPromptHealthCheck/InsiderBuying/GrowthStocks — reused rather than duplicated.
@@ -182,9 +182,12 @@ function messageText(message: UIMessage): string {
 const AssistantMessageContent = memo(function AssistantMessageContent({
   text,
   isStreaming,
+  after,
 }: {
   text: string;
   isStreaming: boolean;
+  /** Shown only once the text has fully appeared, e.g. Yes/No buttons answering its last question. */
+  after?: ReactNode;
 }) {
   // Released at a steady writing pace rather than in the bursts the model
   // streams in; keeps going briefly after the stream ends to finish the backlog.
@@ -205,9 +208,12 @@ const AssistantMessageContent = memo(function AssistantMessageContent({
   }
 
   return (
-    <div className={MARKDOWN_CLS}>
-      <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
-    </div>
+    <>
+      <div className={MARKDOWN_CLS}>
+        <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
+      </div>
+      {after}
+    </>
   );
 });
 
@@ -245,7 +251,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const [ownConversationId] = useState(() => conversationId ?? crypto.randomUUID());
   const activeConversationId = conversationId ?? ownConversationId;
   const [actionOutcomes, setActionOutcomes] = useState<Record<string, ActionOutcome>>({});
-  const { getDecision: getNavigateDecision, confirm: confirmNavigate, decline: declineNavigate } = useNavigateConfirmations(router.push);
+  const { decisions: navigateDecisions, getDecision: getNavigateDecision, confirm: confirmNavigate, decline: declineNavigate } = useNavigateConfirmations(router.push);
   // Message ids present when this chat mounted (i.e. loaded from a saved conversation) —
   // anything appended afterward is "live" and gets real pending/success/error tracking.
   const [historicalMessageIds] = useState(() => new Set((initialMessages ?? []).map((m) => m.id)));
@@ -274,6 +280,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   // render, unlike the closure captured at construction — keeps every field
   // live for the conversation's whole lifetime.
   const requestParamsRef = useRef({
+    navigateDecisions,
+    actionOutcomes,
     effectiveContext,
     experienceLevel: user?.experience_level ?? null,
     language: i18n.language,
@@ -282,6 +290,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     responseStyle: (user?.settings as Record<string, unknown> | null)?.response_style ?? null,
   });
   requestParamsRef.current = {
+    navigateDecisions,
+    actionOutcomes,
     effectiveContext,
     experienceLevel: user?.experience_level ?? null,
     language: i18n.language,
@@ -368,7 +378,13 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
         return {
           body: {
             id,
-            messages: reqMessages,
+            // What the user answered on each Yes/No or Confirm/Cancel card goes
+            // into that tool's result, so Bull's next turn, and the conversation
+            // the server saves, know the prompt is closed.
+            messages: Object.entries(cardResponses(p.navigateDecisions, p.actionOutcomes)).reduce(
+              (msgs, [key, response]) => withUserResponse(msgs, key, response),
+              reqMessages,
+            ),
             trigger,
             messageId,
             conversationId: id,
@@ -684,6 +700,14 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           // Anything that asks the user something (navigate Yes/No, confirm a
           // change to their account) goes after the text, which ends on that question.
           const isNavigate = (call: (typeof toolCalls)[number]) => !!call.clientAction;
+          // The screener's own table is that list: on the screener, or when this
+          // reply opens it straight away, a screenStocks card repeats it (2026-10-28).
+          const screenerShowsList = !!aiContext?.screener || toolCalls.some(
+            (c) => c.clientAction?.type === 'navigate' && !c.clientAction.requiresConfirmation && c.clientAction.path.startsWith('/tools/screener'),
+          );
+          const isDataCard = (call: (typeof toolCalls)[number]) =>
+            !isNavigate(call) && !(call.toolName === 'screenStocks' && screenerShowsList);
+          const promptCards = toolCalls.map((call, i) => (isNavigate(call) ? renderToolCall(call, i) : null));
 
           if (isUser) {
             return (
@@ -722,14 +746,18 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
               transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
               className="group/reply min-w-0 space-y-2 text-sm leading-relaxed text-foreground"
             >
-              {toolCalls.map((call, i) => (isNavigate(call) ? null : renderToolCall(call, i)))}
+              {toolCalls.map((call, i) => (isDataCard(call) ? renderToolCall(call, i) : null))}
               {!isAwaitingNextStep && (
                 <AssistantMessageContent
                   text={messageText(message)}
                   isStreaming={isStreaming && isLatest}
+                  // The buttons answer the question the text ends on, so on the
+                  // live reply they wait until that text has fully appeared.
+                  // Older replies keep them outside so their memo still holds.
+                  after={isLatest ? promptCards : undefined}
                 />
               )}
-              {toolCalls.map((call, i) => (isNavigate(call) ? renderToolCall(call, i) : null))}
+              {!isLatest && promptCards}
 
               {stoppedId === message.id && (
                 <p className="text-xs text-muted-foreground">{t('chatStopped')}</p>
