@@ -407,7 +407,11 @@ export async function completeEarningsDeepDiveFromFiling(
     guidanceRevenueHigh: extracted.guidanceRevenueHigh,
     outlookDirection: extracted.outlookDirection,
     outlookNote: extracted.outlookNote,
-    grossMarginGuidancePercent: extracted.grossMarginGuidancePercent,
+    // Only against an actual on the same basis: GAAP guidance next to a non-GAAP
+    // actual reads as a margin slip that is really the basis gap.
+    grossMarginGuidancePercent: extracted.grossMarginGuidanceIsNonGaap === (extracted.grossMarginActualNonGaapPercent != null)
+      ? extracted.grossMarginGuidancePercent
+      : null,
     capexActual: extracted.capexActual,
     capexPriorYear: extracted.capexPriorYear,
     keyMetricLabel: extracted.keyMetricLabel,

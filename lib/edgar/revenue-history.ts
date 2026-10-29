@@ -77,9 +77,11 @@ export function growthBefore(
   reportDate: string,
   count: number,
 ): { periodEnd: string; yoyPercent: number }[] | null {
-  // A quarter ending within ~75 days of the report is the one being reported
-  // (some companies file the 10-Q the same morning). Its growth comes from the release.
-  const ends = [...quarters.keys()].filter((e) => daysBetween(e, reportDate) >= 75).sort();
+  // A quarter ending within ~95 days of the report is the one being reported
+  // (some companies file the 10-Q the same morning, a late one up to ~90 days
+  // after quarter end). The quarter before it ends 110+ days back. Its growth
+  // comes from the release.
+  const ends = [...quarters.keys()].filter((e) => daysBetween(e, reportDate) >= 95).sort();
   const recent = ends.slice(-count);
   if (recent.length < count) return null;
 

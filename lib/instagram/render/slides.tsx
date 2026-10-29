@@ -57,7 +57,7 @@ import type {
 } from '@/lib/instagram/content/schema';
 
 import { SITE_HOST } from '@/lib/site';
-import { buildStory, capexShareOfRevenue, type StoryPoint } from '@/lib/instagram/content/deep-dive-story';
+import { buildStory, capexShareOfRevenue, guidanceVsConsensus, type StoryPoint } from '@/lib/instagram/content/deep-dive-story';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 export const SLIDE_WIDTH = 1080;
 export const SLIDE_HEIGHT = 1350;
@@ -1123,20 +1123,6 @@ interface DeepDiveSlideProps {
   data: EarningsDeepDiveData;
 }
 
-/** Derived purely for display — mirrors earnings-deep-dive.ts's own
- *  INLINE_BAND_PERCENT (0.5%) treatment of EPS/revenue, applied to the
- *  guidance midpoint vs. consensus so the metric grid can show a BEAT/MISS/
- *  IN LINE badge consistent with the other three cells. Not persisted:
- *  guidance status was never worth a schema field of its own since nothing
- *  downstream (Discord summary, headline/caption) reads it — only this card
- *  displays it. */
-function guidanceStatus(low: number | null, high: number | null, consensus: number | null): 'beat' | 'missed' | 'inline' | null {
-  if (low == null || high == null || consensus == null || consensus === 0) return null;
-  const midpoint = (low + high) / 2;
-  const diffPercent = ((midpoint - consensus) / Math.abs(consensus)) * 100;
-  if (Math.abs(diffPercent) < 0.5) return 'inline';
-  return diffPercent > 0 ? 'beat' : 'missed';
-}
 
 /** "Maintained 75.0%" / "+0.3pp QoQ" / "-1.2pp QoQ" — gross margin has no
  *  analyst consensus worth showing, so its badge-equivalent is a sequential
@@ -1248,7 +1234,8 @@ export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
         label="Next quarter's revenue outlook"
         fromValue={null}
         toValue={formatUsdRange(data.guidanceRevenueLow as number, data.guidanceRevenueHigh as number)}
-        status={guidanceStatus(data.guidanceRevenueLow, data.guidanceRevenueHigh, data.guidanceConsensus)}
+        // Same band as the caption's story points (deep-dive-story.ts); a second copy here is how AVGO's slide and caption disagreed.
+        status={guidanceVsConsensus(data)}
         footnote={data.guidanceConsensus != null ? `vs. ${formatUsdCompact(data.guidanceConsensus)} consensus` : null}
       />
     ) : null,
@@ -1393,7 +1380,7 @@ export function storyRows(d: EarningsDeepDiveData): StoryRow[] {
 
   if (d.keyMetricLabel && d.keyMetricValueText) {
     // "Azure revenue growth: 48%" is a rise, so it carries its sign like every other growth figure here.
-    const value = /growth/i.test(d.keyMetricLabel) && /^\d/.test(d.keyMetricValueText) ? `+${d.keyMetricValueText}` : d.keyMetricValueText;
+    const value = /growth/i.test(d.keyMetricLabel) && /^\d[\d.,]*%$/.test(d.keyMetricValueText) ? `+${d.keyMetricValueText}` : d.keyMetricValueText;
     rows.push({
       kind: 'metric', label: d.keyMetricLabel, value, yoy: d.keyMetricYoyPercent ?? null,
       alt: `${value}${d.keyMetricYoyPercent != null ? `, ${formatPercentSigned(d.keyMetricYoyPercent, 0)} vs a year ago` : ''}`,
@@ -1445,7 +1432,9 @@ function hasStorySlide(d: EarningsDeepDiveData): boolean {
 
 function storyAltText(d: EarningsDeepDiveData): string {
   const lead = storyLead(d);
-  return [lead ? `${lead.title}. ${lead.text}` : null, ...storyRows(d).map((r) => `${r.label}: ${r.alt}.`)].filter(Boolean).join(' ');
+  // Lead plus row names, no bar values: the other slides keep alt text short to stay under Meta's alt_text cap.
+  const shown = storyRows(d).map((r) => r.label.toLowerCase()).join(', ');
+  return `${lead ? `${lead.title}. ${lead.text}` : `How ${d.ticker}'s quarter compares.`}${shown ? ` Also shown: ${shown}.` : ''}`;
 }
 
 const ROW_LABEL = { display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, color: MUTED } as const;
