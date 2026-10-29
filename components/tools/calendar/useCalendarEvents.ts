@@ -43,8 +43,12 @@ const PARTIAL_REFETCH_MS = 1500;
  * the credit budget. When that happens this polls until it converges, so a
  * user paging back to an old month sees it fill in rather than sit empty.
  */
-export function useCalendarEvents(from: string, to: string) {
+export function useCalendarEvents(from: string, to: string, opts: { perDay?: number; enabled?: boolean } = {}) {
+  const { perDay, enabled = true } = opts;
+  // per_day raises the server's per-day cap (max 200); the day dialog asks for a single full day.
+  const cap = perDay ? `&per_day=${perDay}` : '';
   const common = {
+    enabled,
     staleTime: 60 * 60 * 1000,
     // `partial` is only ever set by the server, so the refetch stops on its own
     // as soon as every day in the range is filled.
@@ -53,29 +57,30 @@ export function useCalendarEvents(from: string, to: string) {
   } as const;
 
   const earningsQ = useQuery<CalendarResponse<EarningsItem>>({
-    queryKey: ['calendar-earnings', from, to],
-    queryFn: () => fetchCalendar<EarningsItem>(`/api/calendar/earnings?from=${from}&to=${to}`),
+    queryKey: ['calendar-earnings', from, to, perDay],
+    queryFn: () => fetchCalendar<EarningsItem>(`/api/calendar/earnings?from=${from}&to=${to}${cap}`),
     ...common,
   });
   const dividendsQ = useQuery<CalendarResponse<DividendItem>>({
-    queryKey: ['calendar-dividends', from, to],
-    queryFn: () => fetchCalendar<DividendItem>(`/api/calendar/dividends?from=${from}&to=${to}`),
+    queryKey: ['calendar-dividends', from, to, perDay],
+    queryFn: () => fetchCalendar<DividendItem>(`/api/calendar/dividends?from=${from}&to=${to}${cap}`),
     ...common,
   });
   const splitsQ = useQuery<CalendarResponse<SplitItem>>({
-    queryKey: ['calendar-splits', from, to],
-    queryFn: () => fetchCalendar<SplitItem>(`/api/calendar/splits?from=${from}&to=${to}`),
+    queryKey: ['calendar-splits', from, to, perDay],
+    queryFn: () => fetchCalendar<SplitItem>(`/api/calendar/splits?from=${from}&to=${to}${cap}`),
     ...common,
   });
   const ipoQ = useQuery<CalendarResponse<IPOItem>>({
-    queryKey: ['calendar-ipo', from, to],
-    queryFn: () => fetchCalendar<IPOItem>(`/api/calendar/ipo?from=${from}&to=${to}`),
+    queryKey: ['calendar-ipo', from, to, perDay],
+    queryFn: () => fetchCalendar<IPOItem>(`/api/calendar/ipo?from=${from}&to=${to}${cap}`),
     ...common,
   });
 
   // Our own table, no provider behind it, so never partial.
   const economicQ = useQuery<CalendarResponse<EconomicEvent>>({
     queryKey: ['calendar-economic', from, to],
+    enabled,
     queryFn: () => fetchCalendar<EconomicEvent>(`/api/calendar/economic?from=${from}&to=${to}`),
     staleTime: 60 * 60 * 1000,
   });
