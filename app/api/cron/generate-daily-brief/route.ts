@@ -20,6 +20,7 @@ import { logSecurityEvent } from '@/lib/security/security-events';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient } from '@/lib/supabase/client';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
+import { computeMarketMood } from '@/lib/market/mood';
 import { getEconomicEvents } from '@/lib/market-data/economic-calendar';
 import { ECONOMIC_KINDS } from '@/lib/market-data/economic-kinds';
 import { getCalendarDay } from '@/lib/market-data/calendar-days';
@@ -301,27 +302,21 @@ function trackStreamUsage(
 }
 
 /**
- * Fetch VIX (volatility index) and TNX (10-year Treasury yield) as supplemental
- * market-context data. Both are optional — failures are silently swallowed so
- * the cron never blocks on these quotes.
+ * Fetch TNX (10-year Treasury yield) as supplemental market-context data.
+ * Optional — failures are silently swallowed so the cron never blocks on it.
+ * VIX is not here: TwelveData doesn't serve the index (the quote comes back
+ * missing), so the model looks it up with web search instead.
  */
-async function fetchMarketContext(): Promise<{ vix: string | null; treasury10y: string | null }> {
+async function fetchMarketContext(): Promise<{ treasury10y: string | null }> {
   try {
-    // TwelveData supports VIX (CBOE) and TNX (10Y Treasury) as quotable symbols
-    const quotes = await getStockQuotes(['VIX', 'TNX']);
-    const vixQ = quotes.get('VIX');
+    const quotes = await getStockQuotes(['TNX']);
     const tnxQ = quotes.get('TNX');
-
-    const vix = vixQ
-      ? `${vixQ.c.toFixed(2)} (${vixQ.dp >= 0 ? '+' : ''}${vixQ.dp.toFixed(1)}% on day)`
-      : null;
     const treasury10y = tnxQ
       ? `${tnxQ.c.toFixed(2)}% yield (${tnxQ.d >= 0 ? '+' : ''}${tnxQ.d.toFixed(2)}bp on day)`
       : null;
-
-    return { vix, treasury10y };
+    return { treasury10y };
   } catch {
-    return { vix: null, treasury10y: null };
+    return { treasury10y: null };
   }
 }
 
@@ -379,6 +374,7 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     moversResult,
     yesterdayBrief,
     marketContextResult,
+    moodResult,
   ] = await Promise.allSettled([
     // Shared per-day cache, warmed by the 04:00 prefetch-calendar cron two
     // hours before this runs — normally three cache hits instead of 120
@@ -402,9 +398,12 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       DATA_GATHER_TIMEOUT_MS
     ),
     withTimeout<Awaited<ReturnType<typeof fetchMarketContext>>>(fetchMarketContext(), DATA_GATHER_TIMEOUT_MS),
+    // The same Fear & Greed score readers see on Market Mood, so the brief's
+    // read on sentiment matches the app's.
+    withTimeout<Awaited<ReturnType<typeof computeMarketMood>>>(computeMarketMood(), DATA_GATHER_TIMEOUT_MS),
   ]);
   console.log(
-    `[generate-daily-brief] data gathering done: ${[yesterdayEarnings, todayEarnings, tomorrowEarnings, moversResult, yesterdayBrief, marketContextResult].map((r) => r.status).join(',')}`
+    `[generate-daily-brief] data gathering done: ${[yesterdayEarnings, todayEarnings, tomorrowEarnings, moversResult, yesterdayBrief, marketContextResult, moodResult].map((r) => r.status).join(',')}`
   );
 
   // `?? []` matters: getCalendarDay resolves with null (rather than rejecting)
@@ -438,7 +437,8 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     console.warn('[generate-daily-brief] economic calendar unavailable, continuing without it', err);
   }
   const prevBrief = yesterdayBrief.status === 'fulfilled' ? yesterdayBrief.value.data : null;
-  const marketCtx = marketContextResult.status === 'fulfilled' ? marketContextResult.value : { vix: null, treasury10y: null };
+  const marketCtx = marketContextResult.status === 'fulfilled' ? marketContextResult.value : { treasury10y: null };
+  const mood = moodResult.status === 'fulfilled' ? moodResult.value : null;
 
   // ── Filter earnings to confirmed large/mid-caps only (prevent small-cap hallucination) ───
   // Only pass through tickers with EPS estimates — these are analyst-covered companies.
@@ -489,7 +489,9 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
 
   // Optional market context lines (omit block when data is unavailable)
   const marketContextLines = [
-    marketCtx.vix ? `VIX: ${marketCtx.vix}` : null,
+    mood
+      ? `BullPen Market Mood (our Fear & Greed score, 0 = extreme fear, 100 = extreme greed): ${mood.composite} (${mood.label}). ${mood.signals.map((s) => `${s.name}: ${s.detail}`).join(' ')}`
+      : null,
     marketCtx.treasury10y ? `10Y Treasury: ${marketCtx.treasury10y}` : null,
     beatRateText ? `EPS beat rate yesterday: ${beatRateText}` : null,
   ].filter(Boolean);
@@ -521,6 +523,8 @@ Hard rules:
 - Use **bold** for company names on first mention and for key metrics.
 - Target ~650 words total. Hard ceiling: 800.
 - COMPLETE EVERY SENTENCE. Never end a section or the brief mid-thought. If you are running long, cut earlier content — never trail off.
+- Write like a newsroom article, not an assistant. No first person singular anywhere: never "I", "I'm", "I'd", "me", "my". The reader should never sense a narrator.
+- Never tell the reader what data you have or lack ("no VIX reading today", "data unavailable", "I couldn't find"). If a figure is missing, leave it out and write around it.
 - Never use an em dash (—) or en dash (–) anywhere in your output, for any reason. Not to connect clauses, not for a parenthetical, not for a range. Use a period, comma, or colon instead. This is a hard rule, not a style preference: an em dash is one of the clearest tells that text was AI-written, and it will be mechanically stripped from your output before publishing regardless, so a dash you write is wasted effort at best and a mangled sentence at worst.
 
 DATA FIDELITY (critical):
@@ -544,10 +548,10 @@ Banned phrases (do not use): "investors are watching", "in a sign that", "as the
 REQUIRED STRUCTURE (in this order, exactly these headers):
 
 ## TL;DR
-2–3 punchy sentences capturing today's single most important narrative. Max 60 words. Hook the reader. Mention 1–2 $TICKERs if relevant. If VIX data is available, note whether fear is elevated or subdued.
+2–3 punchy sentences capturing today's single most important narrative. Max 60 words. Hook the reader. Mention 1–2 $TICKERs if relevant. Note whether fear is elevated or subdued, from the VIX and the BullPen Market Mood score.
 
 ## The Setup
-Overnight + premarket context. Futures, key macro data dropping today, any overseas moves that matter for US trade. Include VIX level and 10Y Treasury yield if provided. ~120 words.
+Overnight + premarket context. Futures, key macro data dropping today, any overseas moves that matter for US trade. Include the VIX level (look it up with web search: its latest close or premarket level) and the 10Y Treasury yield if provided. If BullPen Market Mood is provided, give its score and label once, e.g. "BullPen's Market Mood sits at 62, Greed". ~120 words.
 
 ## Headlines
 Top 2–3 stories driving stocks today — the *why*, not just the *what*. For each sector mentioned (+2%+), add one sentence on the specific catalyst. Skip pure mechanical movers; lead with catalysts (downgrades, product news, litigation, M&A chatter). ~140 words.
