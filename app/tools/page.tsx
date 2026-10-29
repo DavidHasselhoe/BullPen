@@ -33,7 +33,7 @@ const GROUPS: { id: string; titleKey: string; title: string; blurbKey: string; b
     title: 'Research the market',
     blurbKey: 'toolsGroupResearchBlurb',
     blurb: 'Find, compare and keep an eye on stocks.',
-    tools: ['screener', 'compare', 'calendar', 'heatmap', 'market-mood'],
+    tools: ['screener', 'compare', 'calendar', 'economy', 'heatmap', 'market-mood'],
   },
   {
     id: 'plan',

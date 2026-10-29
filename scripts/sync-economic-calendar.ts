@@ -11,5 +11,8 @@ config({ path: '.env.local' });
 (async () => {
   // Imported after dotenv so the Supabase client sees the env.
   const { syncEconomicCalendar } = await import('../lib/market-data/economic-calendar');
+  const { syncEconomicObservations } = await import('../lib/market-data/economic-results');
   console.log(JSON.stringify(await syncEconomicCalendar(), null, 2));
+  // Also the first fill of the results history (economic_observations). Needs FRED_API_KEY.
+  console.log(JSON.stringify(await syncEconomicObservations(), null, 2));
 })();

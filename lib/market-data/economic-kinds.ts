@@ -67,6 +67,23 @@ export interface EconomicEvent {
   release_at: string;
   detail: string | null;
   has_projections: boolean;
+  /** Set once the release is out (lib/market-data/economic-results.ts). The period it covers, as a date. */
+  period_label?: string | null;
+  /** First entry is the headline. */
+  results?: Array<{ key: string; actual: number; previous: number | null }> | null;
+  verdict?: 'hold' | 'raise' | 'lower' | null;
+}
+
+/** FRED's API terms require this notice, word for word, wherever its data is shown. */
+export const FRED_NOTICE = 'This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.';
+
+/** /tools/economy/<slug> for the kinds that have a results page. */
+export const ECONOMY_SLUGS: Partial<Record<EconomicKind, string>> = {
+  fomc: 'fed-rate', cpi: 'cpi', jobs: 'jobs', pce: 'pce', gdp: 'gdp', claims: 'jobless-claims',
+};
+
+export function economyHref(kind: EconomicKind): string | null {
+  return ECONOMY_SLUGS[kind] ? `/tools/economy/${ECONOMY_SLUGS[kind]}` : null;
 }
 
 /** "8:30 AM" / "14:30" on the user's clock (lib/dates/clock), or in `timeZone` when given. */

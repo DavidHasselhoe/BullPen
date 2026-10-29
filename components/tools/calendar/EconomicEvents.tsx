@@ -3,7 +3,8 @@
 import type { ElementType } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { Briefcase, ShoppingCart, Factory, ClipboardList, Users, Landmark, BarChart3, Wallet, ArrowUpRight, GraduationCap, PlayCircle } from 'lucide-react';
+import { Briefcase, ShoppingCart, Factory, ClipboardList, Users, Landmark, BarChart3, Wallet, ArrowUpRight, GraduationCap, PlayCircle, ChartLine } from 'lucide-react';
+import { CalendarResult } from '@/components/economy/CalendarResult';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useClock } from '@/hooks/use-clock';
@@ -14,6 +15,7 @@ import {
   BIG_FOUR_LESSON,
   fmtReleaseTimeShort,
   fmtReleaseTimeForViewer,
+  economyHref,
   type EconomicEvent,
   type EconomicKind,
 } from '@/lib/market-data/economic-kinds';
@@ -57,6 +59,7 @@ export function EconomicChip({ event, compact }: { event: EconomicEvent; compact
 /** Full row for the day dialog and the list view: what it is, when, why it matters, where to read or watch it. */
 export function EconomicDetailRow({ event }: { event: EconomicEvent }) {
   const { t } = useTranslation('tools');
+  const { t: tEconomy } = useTranslation('economy');
   useClock(); // re-render when the time zone or 12/24h clock changes
   const meta = ECONOMIC_KINDS[event.kind];
   const Icon = ECONOMIC_ICONS[event.kind];
@@ -86,6 +89,7 @@ export function EconomicDetailRow({ event }: { event: EconomicEvent }) {
             {t('economicProjections')}
           </span>
         )}
+        <CalendarResult event={event} />
         <p className="text-xs leading-relaxed text-muted-foreground">{t(`economicWhy_${event.kind}`)}</p>
         <Accordion type="single" collapsible defaultValue={isSimplified ? 'explain' : undefined}>
           <AccordionItem value="explain" className="border-b-0">
@@ -122,6 +126,15 @@ export function EconomicDetailRow({ event }: { event: EconomicEvent }) {
               <PlayCircle className="h-3 w-3" aria-hidden />
               {t('economicWatchLive')}
             </a>
+          )}
+          {economyHref(event.kind) && (
+            <Link
+              href={economyHref(event.kind)!}
+              className="inline-flex items-center gap-1 text-foreground/85 hover:text-primary focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ChartLine className="h-3 w-3" aria-hidden />
+              {tEconomy('calendarSeeHistory')}
+            </Link>
           )}
           <Link
             href={meta.lessonHref}

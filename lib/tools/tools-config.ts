@@ -11,6 +11,7 @@ import {
   Sparkles,
   Bell,
   Telescope,
+  ChartLine,
 } from 'lucide-react';
 
 export interface ToolConfig {
@@ -93,6 +94,14 @@ export const TOOLS: ToolConfig[] = [
     description: 'Bullish vs bearish sentiment, volatility trend, macro pulse. A fear vs greed index.',
     href: '/tools/market-mood',
     icon: Gauge,
+    status: 'available',
+  },
+  {
+    id: 'economy',
+    name: 'Economy',
+    description: 'The latest Fed rate decision, CPI, jobs report, GDP and more, with how each changed from the last one.',
+    href: '/tools/economy',
+    icon: ChartLine,
     status: 'available',
   },
   {

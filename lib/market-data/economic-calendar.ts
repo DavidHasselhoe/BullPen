@@ -246,7 +246,7 @@ export async function syncEconomicCalendar(today: string = etDateOf(new Date().t
 export async function getEconomicEvents(from: string, to: string): Promise<EconomicEventRow[]> {
   const { data, error } = await createServerClient()
     .from('economic_events')
-    .select('id, kind, date, release_at, detail, has_projections, source')
+    .select('id, kind, date, release_at, detail, has_projections, source, period_label, results, verdict')
     .gte('date', from)
     .lte('date', to)
     .order('release_at', { ascending: true });

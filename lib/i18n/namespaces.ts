@@ -9,7 +9,7 @@
  * safe (i18next just gets an empty resource) but pointless until then.
  */
 
-export const NAMESPACES = ['common', 'settings', 'languages', 'tools', 'stock', 'holdings', 'user', 'ai', 'discover', 'market', 'auth', 'academy', 'billing', 'watchlist', 'navigation', 'alerts', 'command-palette'] as const;
+export const NAMESPACES = ['common', 'settings', 'languages', 'tools', 'stock', 'holdings', 'user', 'ai', 'discover', 'market', 'auth', 'academy', 'billing', 'watchlist', 'navigation', 'alerts', 'command-palette', 'economy'] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
 /**
@@ -43,6 +43,7 @@ export const ALWAYS_LOADED: readonly Namespace[] = ['common', 'languages', 'navi
  * effectively instant.
  */
 export function namespacesForPath(pathname: string): Namespace[] {
+  if (pathname.startsWith('/tools/economy')) return ['tools', 'economy'];
   if (pathname.startsWith('/tools')) return ['tools'];
   if (pathname.startsWith('/stock') || pathname.startsWith('/asset')) return ['stock'];
   if (pathname.startsWith('/holdings')) return ['holdings'];

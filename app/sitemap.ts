@@ -42,6 +42,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/discover/indexes/sp500', priority: 0.7, changeFrequency: 'weekly' },
     { path: '/discover/indexes/nasdaq100', priority: 0.7, changeFrequency: 'weekly' },
     { path: '/discover/indexes/dow30', priority: 0.6, changeFrequency: 'weekly' },
+    { path: '/tools/economy', priority: 0.6, changeFrequency: 'weekly' },
+    ...['fed-rate', 'cpi', 'jobs', 'pce', 'gdp', 'jobless-claims'].map((slug) => ({ path: `/tools/economy/${slug}`, priority: 0.6, changeFrequency: 'weekly' as const })),
     { path: '/changelog', priority: 0.5, changeFrequency: 'weekly' },
     { path: '/roadmap', priority: 0.5, changeFrequency: 'weekly' },
     { path: '/contact', priority: 0.5, changeFrequency: 'yearly' },
