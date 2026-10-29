@@ -1,5 +1,50 @@
 [
   {
+    "date": "2026-10-29",
+    "entries": [
+      {
+        "type": "new",
+        "text": "New Economy pages show what the Fed rate decision, CPI inflation, the jobs report, PCE, GDP and jobless claims actually came in at, compared with the time before, with charts of the history"
+      },
+      {
+        "type": "new",
+        "text": "Economic releases in the Market Calendar now show their result once it is out, with a link to the full history"
+      },
+      {
+        "type": "new",
+        "text": "Pick a 12-hour or 24-hour clock in Settings, and every time of day across BullPen follows it"
+      },
+      {
+        "type": "improved",
+        "text": "Release times now read like \"19:00 your time (2:00 PM ET)\", so you don't need to know your own time zone offset"
+      },
+      {
+        "type": "improved",
+        "text": "Clicking a busy day in the Market Calendar now lists every company reporting, not just the 60 largest"
+      },
+      {
+        "type": "improved",
+        "text": "The Coming up card on Home tells you how many other companies report earnings today"
+      },
+      {
+        "type": "new",
+        "text": "A search bar at the top of Discover finds any stock"
+      },
+      {
+        "type": "improved",
+        "text": "The Daily Brief now reads like a news article and uses BullPen's own Market Mood score"
+      },
+      {
+        "type": "fixed",
+        "text": "After you press Yes, No, Confirm or Cancel on one of Bull's cards, Bull remembers your answer and stops bringing it up"
+      },
+      {
+        "type": "fixed",
+        "text": "Sorting by fund weight on the index pages now works"
+      }
+    ]
+  },
+  {
     "date": "2026-10-27",
     "entries": [
       {
