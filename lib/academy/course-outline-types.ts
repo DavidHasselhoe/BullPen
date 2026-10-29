@@ -3,13 +3,14 @@
 // app/api/cron/generate-academy-course/route.ts (automated weekly cron) —
 // moved out of the script so both callers use one definition.
 
-import type { LessonType } from '@/types/academy';
+import type { DemoContent, LessonType } from '@/types/academy';
 
-// Interactive lesson types (chart-tour, demo) are hand-authored in their own
-// migrations, never AI-drafted — see generate-course-content.ts.
+// Interactive lesson types (chart-tour, demo) are hand-authored, never
+// AI-drafted — see generate-course-content.ts. A demo can sit in an outline as
+// a DemoLessonSpec carrying its own content.
 export type GeneratableLessonType = Extract<LessonType, 'read' | 'quiz' | 'match' | 'scenario'>;
 
-export interface LessonSpec {
+export interface GeneratedLessonSpec {
   slug: string;
   title: string;
   type: GeneratableLessonType;
@@ -17,6 +18,17 @@ export interface LessonSpec {
   topic: string;
   xpReward: number;
 }
+
+/** A hand-written demo lesson: inserted as-is at its outline position, never sent to Claude. */
+export interface DemoLessonSpec {
+  slug: string;
+  title: string;
+  type: 'demo';
+  content: DemoContent;
+  xpReward: number;
+}
+
+export type LessonSpec = GeneratedLessonSpec | DemoLessonSpec;
 
 export interface CourseOutline {
   slug: string;

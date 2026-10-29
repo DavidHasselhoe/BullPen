@@ -14,9 +14,10 @@ import {
   QuizContentSchema,
   MatchContentSchema,
   ScenarioContentSchema,
+  DemoContentSchema,
 } from '@/types/academy';
 import { GLOSSARY, getGlossaryEntry } from '@/lib/finance/glossary';
-import type { CourseOutline, LessonSpec, GeneratableLessonType } from './course-outline-types';
+import type { CourseOutline, GeneratedLessonSpec, GeneratableLessonType } from './course-outline-types';
 import { logAiCall, anthropicUsage } from '@/lib/billing/log-ai-call';
 
 const MODEL = 'claude-opus-5-5';
@@ -82,7 +83,7 @@ function stripFences(s: string): string {
 }
 
 /** Generate + validate one lesson's content, retrying on schema failure. */
-async function generateLessonContent(lesson: LessonSpec): Promise<unknown> {
+async function generateLessonContent(lesson: GeneratedLessonSpec): Promise<unknown> {
   const schema = SCHEMA_BY_TYPE[lesson.type];
   let lastError = '';
 
@@ -157,7 +158,8 @@ export async function generateCourseLessons(
   const contents: unknown[] = [];
   for (const lesson of outline.lessons) {
     progress(`  • ${lesson.slug} (${lesson.type})…`);
-    contents.push(await generateLessonContent(lesson));
+    // Hand-written demos skip Claude; parse() still fails the run on a malformed one.
+    contents.push(lesson.type === 'demo' ? DemoContentSchema.parse(lesson.content) : await generateLessonContent(lesson));
   }
   return contents;
 }

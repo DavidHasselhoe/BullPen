@@ -13,8 +13,17 @@
  * (staged for review, or generation failed) so a bad run is never silent.
  *
  * Idempotent: re-running finds the same "next" entry until it exists in the
- * database, then moves to the following one. No-ops once all 10 roadmap
- * entries exist (published or still pending review).
+ * database, then moves to the following one.
+ *
+ * Once every ACADEMY_ROADMAP (v1, weekly) entry exists, it continues into
+ * ACADEMY_ROADMAP_V2 at one course a month: the next v2 entry is drafted once
+ * its targetMonth has arrived and no v2 course was created yet this calendar
+ * month (UTC), so the first Monday run of its month drafts it and the rest
+ * skip. A slipped course still drafts, just not two in one month. Hand-written demo lessons in
+ * a v2 outline go in as-is at their position. Approving at
+ * /admin/academy-roadmap moves the live courses at or after the outline's
+ * orderIndex down one (publish_academy_course, migration 184). No-ops once
+ * both roadmaps exist (published or still pending review).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -22,7 +31,7 @@ import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { generateCourseLessons } from '@/lib/academy/generate-course-content';
-import { ACADEMY_ROADMAP } from '@/lib/academy/academy-roadmap';
+import { ACADEMY_ROADMAP, ACADEMY_ROADMAP_V2 } from '@/lib/academy/academy-roadmap';
 import { postToDiscord } from '@/lib/discord/post-message';
 
 import { SITE_URL } from '@/lib/site';
@@ -42,10 +51,26 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const { data: existingCourses } = await supabase.from('academy_courses').select('slug');
-  const existingSlugs = new Set((existingCourses ?? []).map((c: { slug: string }) => c.slug));
+  const { data: existingCourses } = await supabase.from('academy_courses').select('slug, created_at');
+  const existing = (existingCourses ?? []) as { slug: string; created_at: string }[];
+  const existingSlugs = new Set(existing.map((c) => c.slug));
 
-  const nextOutline = ACADEMY_ROADMAP.find((o) => !existingSlugs.has(o.slug));
+  let nextOutline = ACADEMY_ROADMAP.find((o) => !existingSlugs.has(o.slug));
+
+  if (!nextOutline) {
+    const v2Slugs = new Set(ACADEMY_ROADMAP_V2.map((o) => o.slug));
+    const thisMonth = new Date().toISOString().slice(0, 7); // UTC "YYYY-MM"
+    const draftedThisMonth = existing.some(
+      (c) => v2Slugs.has(c.slug) && new Date(c.created_at).toISOString().slice(0, 7) === thisMonth,
+    );
+    if (draftedThisMonth) {
+      return NextResponse.json({ success: true, skipped: true, reason: 'v2_drafted_this_month' });
+    }
+    nextOutline = ACADEMY_ROADMAP_V2.find((o) => !existingSlugs.has(o.slug));
+    if (nextOutline?.targetMonth && nextOutline.targetMonth > thisMonth) {
+      return NextResponse.json({ success: true, skipped: true, reason: 'v2_not_due', next: nextOutline.slug });
+    }
+  }
 
   if (!nextOutline) {
     return NextResponse.json({ success: true, skipped: true, reason: 'roadmap_exhausted' });

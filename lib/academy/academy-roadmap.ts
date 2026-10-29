@@ -226,25 +226,28 @@ export const ACADEMY_ROADMAP: CourseOutline[] = [
   },
 ];
 
-// ─── Roadmap v2 (drafted 2026-10-20, AWAITING DAVID'S APPROVAL) ─────────────
+// ─── Roadmap v2 (drafted 2026-10-20, approved by David 2026-10-29) ──────────
 //
-// One course a month from November 2026. Deliberately a separate export: the
-// weekly generate-academy-course cron reads ACADEMY_ROADMAP only, so nothing
-// here gets drafted until it is approved and moved into the build flow
-// (content/academy-staging/ + scripts/academy-apply-staging.ts). The only
-// reader is /api/academy/next-course-countdown, which shows the first entry
-// not yet published as "Coming next" on /academy.
+// One course a month from November 2026. The generate-academy-course cron
+// moves on to this list once every ACADEMY_ROADMAP entry exists, drafting the
+// next entry on the first Monday of its targetMonth (UTC), at most one a month.
+// Drafts wait for approval at /admin/academy-roadmap like v1.
+// /api/academy/next-course-countdown shows the first entry not yet published
+// as "Coming next" on /academy.
 //
 // Conventions, matching the live catalog as of 2026-10-20:
 //  - No two reads in a row: every read is followed by a 2-question "Check:"
 //    quiz on that read alone; the last read is followed by the 3-question
 //    "Quick Check" over the whole course. Then match, then the closing scenario.
 //  - Demo / chart-tour lessons can't be AI-drafted (GeneratableLessonType), so
-//    each course names its hand-written demo candidate in a comment. It goes
-//    right before the closing scenario, and must target a surface that exists.
-//  - orderIndex is the live slot it takes as of 2026-10-20 (the catalog was
-//    renumbered 0-23 since v1, so v1's 14-23 above are stale). Applying a
-//    course shifts every live course at or after that slot by +1.
+//    each course names its hand-written demo candidate in a comment. Once
+//    written it sits in the outline as a DemoLessonSpec (type 'demo' with its
+//    own content), right before the closing scenario, and must target a
+//    surface DemoLesson supports. The generator inserts it as-is.
+//  - orderIndex is the live slot it takes once the v2 courses before it in
+//    this list are live (the catalog was renumbered 0-23 since v1, so v1's
+//    14-23 above are stale). Publishing shifts every live course at or after
+//    that slot by +1 (publish_academy_course, migration 184).
 //  - Course titles render untranslated, like every live course title.
 //  - Historical figures are closing values, sourced in the topic. Anything a
 //    later report may revise (SPIVA) says which edition it comes from.
@@ -272,10 +275,28 @@ export const ACADEMY_ROADMAP_V2: CourseOutline[] = [
       { slug: 'choosing-an-index-fund', title: 'What to Compare Before You Pick a Fund', type: 'read', topic: 'Four things to compare between index funds: (1) which index it tracks, since an S&P 500 fund, a total-market fund and a Nasdaq-100 fund own different things and the Nasdaq-100 is far more concentrated in a few large tech companies; (2) expense ratio; (3) tracking difference, how far the fund\'s return lands from its index; (4) size and trading volume, which keep the spread tight. Then the overlap trap: owning two S&P 500 funds from different providers is the same holding twice, and a Nasdaq-100 fund on top of an S&P 500 fund mostly doubles up the same largest companies. Stay fund-family neutral, no product recommendations.', xpReward: 10 },
       { slug: 'index-funds-quiz', title: 'Quick Check: Index Funds & Fees', type: 'quiz', topic: 'Test the whole course: passive vs active, why fees compound, and what to compare between two index funds (index tracked, cost, tracking difference, overlap). 3 questions.', xpReward: 20 },
       { slug: 'index-fund-terms-match', title: 'Match the Fund Terms', type: 'match', topic: 'Match vocabulary (Index Fund, Active Management, Expense Ratio, Tracking Difference, Total-Market Fund, Fund Overlap) to plain-English definitions.', xpReward: 15 },
-      // DEMO CANDIDATE (hand-written): the stock page index badges with
-      // "You already own some through VOO" (components/stock/IndexBadges.tsx),
-      // showing overlap between a fund someone holds and a stock they're
-      // eyeing. Goes here, before the scenario.
+      // Hand-written demo. The first candidate was the stock page index badges
+      // (components/stock/IndexBadges.tsx), but no demo surface mounts them, so
+      // this uses the demo-portfolio surface with the 'overlapping-funds'
+      // fixture (lib/academy/demo-portfolio-fixtures.ts): two index funds that
+      // share their top holdings, plus those same stocks held directly.
+      {
+        slug: 'fund-overlap-demo',
+        title: 'See It Live: Funds That Overlap',
+        type: 'demo',
+        xpReward: 25,
+        content: {
+          surface: 'demo-portfolio',
+          fixtureId: 'overlapping-funds',
+          steps: [
+            { id: 'intro', target: 'none', title: 'Four holdings, or fewer?', body: 'This is a sample portfolio, not yours. It holds an S&P 500 fund, a Nasdaq-100 fund, Apple and Microsoft. Four names that look nicely spread out. Let\'s check.', requiredAction: 'none' },
+            { id: 'overview', target: 'portfolio-overview', title: 'The total looks simple', body: 'BullPen adds everything up into one value and one daily move. What this total can\'t tell you is how many different companies your money is really in.', requiredAction: 'none' },
+            { id: 'allocation', target: 'allocation-chart', title: 'Most of it says "ETF"', body: 'Most of the money shows up as funds, which looks diversified. But a fund is a basket, and this chart can\'t see inside it. Both baskets hold many of the same large companies.', requiredAction: 'none' },
+            { id: 'largest', target: 'largest-position', title: 'Look inside the biggest slice', body: 'Apple and Microsoft are among the largest holdings of both the S&P 500 and the Nasdaq-100. So this investor owns them three times: through each fund, and again directly. The real bet on those two companies is bigger than their own slices show.', requiredAction: 'none' },
+            { id: 'wrap', target: 'none', title: 'Check the overlap first', body: 'Before adding a second fund, look at its top holdings next to the fund you already own. If the lists mostly match, you are paying a second fee for the same companies.', requiredAction: 'none' },
+          ],
+        },
+      },
       { slug: 'the-star-fund', title: 'The Star Fund', type: 'scenario', topic: 'A friend recommends an actively managed fund that beat the market by 6 points last year and charges 1.2% a year. The investor already holds a low-cost S&P 500 index fund. Reward reasoning about the fee they know for certain vs a past result that is unlikely to repeat (the SPIVA persistence point), and checking how much the star fund overlaps what they already own. Do not frame active funds as always wrong.', xpReward: 25 },
     ],
   },
@@ -287,7 +308,8 @@ export const ACADEMY_ROADMAP_V2: CourseOutline[] = [
     description: 'Four real market crashes, how long each took to recover, and what actually helped the investors who came through them.',
     icon: 'TrendingDown',
     color: 'blue',
-    orderIndex: 19,
+    // technical-analysis-basics is 18 today and 19 once index-funds-and-fees takes 13.
+    orderIndex: 20,
     difficulty: 'intermediate',
     requiresPro: true,
     unitLabel: 'Strategies',

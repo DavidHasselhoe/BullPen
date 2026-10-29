@@ -17,6 +17,7 @@ function demoHolding(h: {
   avgPrice: number;
   currentPrice: number;
   dayChangePercent: number;
+  assetType?: 'stock' | 'etf';
 }): HoldingWithPrice {
   const marketValue = h.quantity * h.currentPrice;
   const costBasis = h.quantity * h.avgPrice;
@@ -33,7 +34,7 @@ function demoHolding(h: {
     source: 'manual',
     brokerage_account_id: null,
     alerts_enabled: false,
-    asset_type: 'stock',
+    asset_type: h.assetType ?? 'stock',
     purchase_currency: null,
     purchase_fx_rate: null,
     trading_currency: 'USD',
@@ -75,9 +76,24 @@ const CONCENTRATED_TECH: HoldingWithPrice[] = [
   demoHolding({ symbol: 'MSFT', company_name: 'Microsoft Corporation', sector: 'Technology', quantity: 5, avgPrice: 190, currentPrice: 200, dayChangePercent: 0.5 }),
 ];
 
+/**
+ * Two index funds plus two stocks for index-funds-and-fees: the chart files 70%
+ * under "ETF" and looks spread out, but an S&P 500 fund and a Nasdaq-100 fund
+ * share their largest holdings, and those are the two stocks held on the side.
+ * The overlap is invisible here, which is the point. Round values (40/30/15/15
+ * of $10k) keep the chart legible.
+ */
+const OVERLAPPING_FUNDS: HoldingWithPrice[] = [
+  demoHolding({ symbol: 'VOO', company_name: 'Vanguard S&P 500 ETF', sector: 'ETF', assetType: 'etf', quantity: 8, avgPrice: 450, currentPrice: 500, dayChangePercent: 0.4 }),
+  demoHolding({ symbol: 'QQQ', company_name: 'Invesco QQQ Trust (Nasdaq-100)', sector: 'ETF', assetType: 'etf', quantity: 6, avgPrice: 440, currentPrice: 500, dayChangePercent: 0.7 }),
+  demoHolding({ symbol: 'AAPL', company_name: 'Apple Inc.', sector: 'Technology', quantity: 6, avgPrice: 220, currentPrice: 250, dayChangePercent: -0.4 }),
+  demoHolding({ symbol: 'MSFT', company_name: 'Microsoft Corporation', sector: 'Technology', quantity: 3, avgPrice: 450, currentPrice: 500, dayChangePercent: 0.5 }),
+];
+
 const FIXTURES: Record<string, HoldingWithPrice[]> = {
   'starter-three-stock': STARTER_THREE_STOCK,
   'concentrated-tech': CONCENTRATED_TECH,
+  'overlapping-funds': OVERLAPPING_FUNDS,
 };
 
 export function getDemoPortfolio(fixtureId: string): HoldingWithPrice[] {

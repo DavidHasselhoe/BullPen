@@ -18,12 +18,14 @@ async function approveHandler(
   const { courseId } = await context.params;
   const supabase = createServerClient();
 
-  const { data: published, error } = await supabase
-    .from('academy_courses')
-    .update({ is_published: true })
-    .eq('id', courseId)
-    .eq('is_published', false) // only ever publish a draft — never re-touch an already-live course
-    .select('slug, title, requires_pro');
+  // Publishes only a draft and, in the same statement, moves every live course
+  // at or after its order_index down one so it takes its slot (migration 184).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: published, error } = await (supabase as any)
+    .rpc('publish_academy_course', { p_course_id: courseId }) as {
+      data: { slug: string; title: string; requires_pro: boolean }[] | null;
+      error: { message: string } | null;
+    };
 
   if (error) {
     return addSecurityHeaders(NextResponse.json({ error: error.message }, { status: 500 }));
