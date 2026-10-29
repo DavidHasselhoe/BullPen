@@ -84,6 +84,22 @@ export function ComingUp() {
     refetchOnWindowFocus: false,
   });
 
+  // Everyone else reporting today, so a quiet card doesn't read as missing data.
+  // per_day=1 because only day_totals is used; same cached calendar day as the full calendar.
+  const { data: todayTotal } = useQuery({
+    queryKey: ['home-coming-up-today-total', from],
+    queryFn: async (): Promise<number> => {
+      const res = await fetch(`/api/calendar/earnings?from=${from}&to=${from}&per_day=1`);
+      const json = await res.json().catch(() => null);
+      return res.ok && json?.success ? (json.day_totals?.[from] ?? 0) : 0;
+    },
+    enabled: isAuthenticated,
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  const mineToday = (rows ?? []).filter((r) => r.kind === 'earnings' && r.date === from).length;
+  const othersToday = Math.max(0, (todayTotal ?? 0) - mineToday);
+
   const sorted = useMemo(() => {
     const order = (r: Row) =>
       r.kind === 'economic' ? new Date(r.event.release_at).getTime() % 86_400_000 : r.kind === 'earnings' ? sessionRank(r.time) : -1;
@@ -118,9 +134,11 @@ export function ComingUp() {
   // Signed out there are no stocks to be about, so the card could only ever be empty.
   if (!authLoading && !isAuthenticated) return null;
 
+  const title = symbols.length > 0 ? t('homeComingTitleMine') : t('homeComingTitle');
+
   if (homeLoading || isLoading) {
     return (
-      <HomeSection title={t('homeComingTitle')} aside={aside}>
+      <HomeSection title={title} aside={aside}>
         <div className={cn(homePanel, 'space-y-3 p-5')} aria-hidden>
           {[0, 1, 2].map((i) => <div key={i} className="h-5 w-full animate-shimmer rounded" />)}
         </div>
@@ -129,7 +147,7 @@ export function ComingUp() {
   }
 
   return (
-    <HomeSection title={t('homeComingTitle')} aside={aside}>
+    <HomeSection title={title} aside={aside}>
       {isError ? (
         <p className={cn(homePanel, 'p-5 text-sm text-muted-foreground')}>{t('homeComingError')}</p>
       ) : sorted.length === 0 ? (
@@ -166,6 +184,15 @@ export function ComingUp() {
             );
           })}
         </ul>
+      )}
+      {!isError && othersToday > 0 && (
+        <Link
+          href="/tools/calendar"
+          className="mt-2 inline-flex min-h-11 items-center gap-1 px-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {t('homeComingOthersToday', { count: othersToday })}
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
       )}
     </HomeSection>
   );
