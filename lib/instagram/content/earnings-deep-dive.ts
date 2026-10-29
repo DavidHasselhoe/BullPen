@@ -28,7 +28,7 @@ import type { ExtractedEarnings } from './earnings-deep-dive-extract';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 import { fetchRevenueGrowthHistory } from '@/lib/edgar/revenue-history';
-import { fetchNasdaqEpsSurprises } from '@/lib/market-data/nasdaq-earnings-calendar';
+import { fetchNasdaqEarningsDay, fetchNasdaqEpsSurprises } from '@/lib/market-data/nasdaq-earnings-calendar';
 import { buildStoryPoints, statusFor } from './deep-dive-story';
 
 // Lazy — see earnings-deep-dive-estimates.ts's getAnthropic() comment: a
@@ -385,8 +385,15 @@ export async function completeEarningsDeepDiveFromFiling(
       : null;
   const secondaryMetricValue = extracted.freeCashFlow ?? extracted.operatingMarginNonGaapPercent ?? null;
 
+  // Nasdaq's consensus for this report, so the EPS bars compare this quarter on
+  // the same basis as their history. One free call; a miss just hides that row.
+  const epsEstimateNasdaq = draft.epsEstimateNasdaq
+    ?? (await fetchNasdaqEarningsDay(reportDate)).find((r) => r.symbol === ticker.toUpperCase())?.epsEstimate
+    ?? null;
+
   const merged: EarningsDeepDiveData = {
     ...draft,
+    epsEstimateNasdaq,
     companyName: extracted.companyName ?? draft.companyName,
     reportTiming: extracted.reportTiming ?? draft.reportTiming,
     fiscalPeriodLabel: extracted.fiscalPeriodLabel,

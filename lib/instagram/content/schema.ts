@@ -235,6 +235,8 @@ export interface EarningsDeepDiveData {
   revenueGrowthHistory?: { periodEnd: string; yoyPercent: number }[] | null;
   /** EPS surprise %, the company's previous reported quarters, newest first (Nasdaq). */
   epsSurpriseHistory?: number[] | null;
+  /** Nasdaq's consensus EPS for this report, so this quarter's bar sits on the same basis as epsSurpriseHistory. */
+  epsEstimateNasdaq?: number | null;
   /** Deterministic, most market-moving first. Feeds the headline/caption so they don't lead with "beat". */
   storyPoints?: string[] | null;
 

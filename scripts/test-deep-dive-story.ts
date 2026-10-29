@@ -52,7 +52,7 @@ const avgo = buildStoryPoints({ ...base, capexActual: null, guidanceRevenueLow: 
 assert.ok(!avgo.some((p) => /outlook came in (above|below)/.test(p)), 'in-line guidance is not called above');
 
 // A small beat from a company that usually beats big is bad news.
-const small = buildStoryPoints({ ...base, capexActual: null, epsSurprisePercent: 3, epsSurpriseHistory: [20, 25, 30] } as EarningsDeepDiveData);
+const small = buildStoryPoints({ ...base, capexActual: null, epsActual: 1.03, epsEstimateNasdaq: 1, epsSurpriseHistory: [20, 25, 30] } as EarningsDeepDiveData);
 assert.ok(small.some((p) => /smaller than its usual 25% beat/.test(p)));
 
 // MRVL: capex tripled, but $127M on $2.7B of revenue is not the story.
@@ -65,5 +65,13 @@ assert.match(softer[0], /gross margin to slip to 58.5% from 59.4%/);
 
 // META: -13%, +9%, +8% is a typical +8% beat (median), not a "usual 1%" (mean).
 assert.equal(typicalSurprise([-13, 8.9, 8.2]), 8.2);
+
+// MRVL: our own estimate said +1.1%, Nasdaq's said a miss. Without a Nasdaq estimate there is no comparison at all, never a mixed one.
+const noNasdaq = buildStoryPoints({ ...base, capexActual: null, epsSurprisePercent: 1, epsSurpriseHistory: [20, 25, 30] } as EarningsDeepDiveData);
+assert.ok(!noNasdaq.some((p) => /usual/.test(p)), 'no Nasdaq estimate, no beat comparison');
+
+// MRVL: Nasdaq's consensus (0.65) is on a different EPS basis than ours (0.93): no comparison rather than a fake +45% beat.
+const basisGap = buildStoryPoints({ ...base, capexActual: null, epsEstimate: 0.93, epsActual: 0.94, epsEstimateNasdaq: 0.65, epsSurpriseHistory: [6.9, 6.5, -3.3] } as EarningsDeepDiveData);
+assert.ok(!basisGap.some((p) => /usual/.test(p)), 'basis mismatch hides the beat comparison');
 
 console.log('deep dive story: all checks passed');

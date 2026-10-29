@@ -50,6 +50,26 @@ export function guidanceVsConsensus(d: EarningsDeepDiveData): 'beat' | 'missed' 
   return statusFor(d.guidanceConsensus, mid);
 }
 
+/**
+ * This quarter's EPS surprise against Nasdaq's consensus, the source the
+ * history comes from. Our own estimate (web search) is a different number:
+ * MRVL's August report was +1.1% against it and a 4.6% miss against Nasdaq,
+ * so plotting it beside Nasdaq's history mixed two series. null without a
+ * Nasdaq estimate, which hides the comparison rather than mixing sources.
+ *
+ * Also null when Nasdaq's consensus and ours disagree by more than 10%: then
+ * they measure different EPS (MRVL 0.65 vs 0.93, AVGO 2.83 vs 3.22; Nasdaq
+ * excludes different items), and the release's adjusted EPS against Nasdaq's
+ * number read as a +45% beat for MRVL. META and MSFT agree within 3%.
+ * ponytail: 10% agreement band, a per-company basis map if it misfires.
+ */
+export function epsSurpriseVsHistoryBasis(d: EarningsDeepDiveData): number | null {
+  const est = d.epsEstimateNasdaq;
+  if (d.epsActual == null || est == null || Math.abs(est) < 0.05) return null;
+  if (d.epsEstimate != null && Math.abs(d.epsEstimate - est) / Math.abs(est) > 0.1) return null;
+  return ((d.epsActual - est) / Math.abs(est)) * 100;
+}
+
 export type StoryKind =
   | 'outlook' | 'capex' | 'growth' | 'margin' | 'guidance' | 'beat' | 'split';
 
@@ -101,13 +121,14 @@ export function buildStory(d: EarningsDeepDiveData): StoryPoint[] {
   if (guide === 'missed') bad.push({ kind: 'guidance', bad: true, title: 'A soft outlook', text: "Next quarter's revenue outlook came in below what analysts expected." });
   if (guide === 'beat') good.push({ kind: 'guidance', bad: false, title: 'A strong outlook', text: "Next quarter's revenue outlook came in above what analysts expected." });
 
-  if (d.epsStatus === 'beat' && d.epsSurprisePercent != null && d.epsSurpriseHistory?.length) {
+  const surprise = epsSurpriseVsHistoryBasis(d);
+  if (surprise != null && surprise > 0 && d.epsSurpriseHistory?.length) {
     const usual = typicalSurprise(d.epsSurpriseHistory);
-    if (usual >= 4 && d.epsSurprisePercent < usual / 2) {
-      bad.push({ kind: 'beat', bad: true, title: 'A smaller beat than usual', text: `Profit per share beat the forecast by ${pct(d.epsSurprisePercent)}, smaller than its usual ${pct(usual)} beat.` });
+    if (usual >= 4 && surprise < usual / 2) {
+      bad.push({ kind: 'beat', bad: true, title: 'A smaller beat than usual', text: `Profit per share beat the analyst consensus by ${pct(surprise)}, smaller than its usual ${pct(usual)} beat.` });
     }
-    if (usual > 0 && d.epsSurprisePercent >= usual * 1.5 && d.epsSurprisePercent - usual >= 3) {
-      good.push({ kind: 'beat', bad: false, title: 'A bigger beat than usual', text: `Profit per share beat the forecast by ${pct(d.epsSurprisePercent)}, bigger than its usual ${pct(usual)} beat.` });
+    if (usual > 0 && surprise >= usual * 1.5 && surprise - usual >= 3) {
+      good.push({ kind: 'beat', bad: false, title: 'A bigger beat than usual', text: `Profit per share beat the analyst consensus by ${pct(surprise)}, bigger than its usual ${pct(usual)} beat.` });
     }
   }
 

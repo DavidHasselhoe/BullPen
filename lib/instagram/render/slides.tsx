@@ -57,7 +57,7 @@ import type {
 } from '@/lib/instagram/content/schema';
 
 import { SITE_HOST } from '@/lib/site';
-import { buildStory, capexShareOfRevenue, guidanceVsConsensus, type StoryPoint } from '@/lib/instagram/content/deep-dive-story';
+import { buildStory, capexShareOfRevenue, epsSurpriseVsHistoryBasis, guidanceVsConsensus, type StoryPoint } from '@/lib/instagram/content/deep-dive-story';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 export const SLIDE_WIDTH = 1080;
 export const SLIDE_HEIGHT = 1350;
@@ -1403,17 +1403,18 @@ export function storyRows(d: EarningsDeepDiveData): StoryRow[] {
   }
 
   const surprises = d.epsSurpriseHistory ?? [];
-  if (d.epsSurprisePercent != null && surprises.length >= 3) {
+  const surprise = epsSurpriseVsHistoryBasis(d); // same source as the history bars, never our own estimate
+  if (surprise != null && surprises.length >= 3) {
     const previous = [...surprises].reverse(); // oldest first, like the growth bars
     const bars = [
       ...previous.map((v, i) => {
         const ago = previous.length - i;
         return { label: ago === 1 ? 'Last qtr' : `${ago} qtrs ago`, value: v, current: false };
       }),
-      { label: 'This qtr', value: d.epsSurprisePercent, current: true },
+      { label: 'This qtr', value: surprise, current: true },
     ];
     rows.push({
-      kind: 'beat', label: 'Profit per share vs forecast', bars,
+      kind: 'beat', label: 'Profit per share vs analyst consensus', bars,
       alt: bars.map((b) => `${b.label} ${formatPercentSigned(b.value)}`).join(', '),
     });
   }
@@ -1554,6 +1555,8 @@ export function DeepDiveStorySlide({ data, slideIndex, totalSlides }: { data: Ea
   const footnote = [
     spending?.capex != null ? 'Capital spending is money put into buildings, chips and equipment.' : null,
     spending?.fcf != null ? (spending.capex != null ? 'Free cash flow is the cash left after it.' : 'Free cash flow is the cash a business has left after paying for its operations and investments.') : null,
+    // Says where the consensus comes from, since it can differ from the estimate on slide 1.
+    !spending && rows.some((r) => r.kind === 'beat') ? 'Analyst consensus for profit per share comes from Nasdaq.' : null,
   ].filter(Boolean).join(' ') || 'Each growth bar compares a quarter with the same quarter a year earlier.';
 
   return (
