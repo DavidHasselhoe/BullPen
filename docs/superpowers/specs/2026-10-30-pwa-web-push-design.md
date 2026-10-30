@@ -23,7 +23,7 @@ It is also the test for the App Store decision. If push brings people back, that
   - Icons made from the existing bull logo. A designer can redo them later.
   - Push text in English only.
   - David adds push subscriptions to the privacy policy in Termly himself.
-- **Open (asked 10-30):** what happens to a push that comes due during quiet hours. This design assumes it **waits until 08:00** local time; see "Quiet hours" for why skipping it doesn't work.
+- **A push that comes due during quiet hours waits until 08:00 local time** (David, 10-30). See "Quiet hours" for why skipping it doesn't work.
 
 ## Goals
 
