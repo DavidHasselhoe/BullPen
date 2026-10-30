@@ -18,8 +18,10 @@ import type { TFunction } from 'i18next';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useEarningsHistory } from '@/hooks/use-earnings-history';
 import { DeltaBar } from '@/components/viz/DeltaBar';
+import { EarningsEmailSignup } from '@/components/stock/EarningsEmailSignup';
 import type { EarningsCalendar as EarningsItem } from '@/lib/finnhub/finnhub-client';
 import { fiscalLabel } from '@/lib/finance/fiscal-label';
+import { todayET } from '@/lib/dates/calendar-format';
 
 function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -34,15 +36,21 @@ function formatHour(hour: string, t: TFunction): string {
   return '';
 }
 
-function daysUntil(dateStr: string): number {
-  const target = new Date(dateStr + 'T12:00:00Z').getTime();
-  return Math.max(0, Math.ceil((target - Date.now()) / 86_400_000));
+/**
+ * Calendar days from `today` to a report date, both New York dates. Measuring
+ * from now to noon UTC and rounding up said "In 1 day" on the report morning
+ * itself until 8:00 ET (CCJ on 2026-10-30).
+ */
+function daysUntil(dateStr: string, today: string): number {
+  return Math.max(0, Math.round((Date.parse(dateStr) - Date.parse(today)) / 86_400_000));
 }
 
-export function EarningsCalendar({ ticker }: { ticker: string }) {
+/** `companyName` turns on the signed-out "results by email" signup (stock pages only). */
+export function EarningsCalendar({ ticker, companyName }: { ticker: string; companyName?: string }) {
   const { t } = useTranslation('stock');
   const { isSimplified } = useExperienceLevel();
-  const today = new Date().toISOString().split('T')[0];
+  // Report dates are New York dates; a UTC "today" turns over at 8 p.m. ET.
+  const today = todayET();
 
   const { data, isLoading } = useEarningsHistory(ticker);
 
@@ -129,7 +137,10 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
             <div className="flex items-center justify-between rounded-lg border border-border/50 bg-accent/30 px-4 py-3">
               <div>
                 <p className="text-xl font-semibold tabular-nums leading-none">
-                  {daysUntil(nextEvent.date) === 0 ? t('earningsToday') : t('earningsInDays', { count: daysUntil(nextEvent.date) })}
+                  {(() => {
+                    const days = daysUntil(nextEvent.date, today);
+                    return days === 0 ? t('earningsToday') : days === 1 ? t('earningsTomorrow') : t('earningsInDays', { count: days });
+                  })()}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1.5">
                   {formatDate(nextEvent.date)}
@@ -156,6 +167,16 @@ export function EarningsCalendar({ ticker }: { ticker: string }) {
               </div>
             </div>
           </div>
+        )}
+
+        {nextEvent && companyName && (
+          <EarningsEmailSignup
+            symbol={ticker}
+            name={companyName}
+            date={nextEvent.date}
+            estimate={nextEvent.epsEstimate}
+            last={recent[0] ? { date: recent[0].date, actual: recent[0].epsActual, estimate: recent[0].epsEstimate } : null}
+          />
         )}
 
         {/* Upcoming date not announced yet — say so instead of a silent gap */}

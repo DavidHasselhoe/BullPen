@@ -104,7 +104,8 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   // The one-click unsubscribe target is POSTed by mail providers (RFC 8058),
   // some with their own Origin; it carries a signed token, not a cookie, so
   // there is no session to forge.
-  if (isApiRoute && MUTATING_METHODS.has(request.method) && request.nextUrl.pathname !== '/api/email/unsubscribe') {
+  const ONE_CLICK_UNSUBSCRIBE = new Set(['/api/email/unsubscribe', '/api/subscribe/unsubscribe']);
+  if (isApiRoute && MUTATING_METHODS.has(request.method) && !ONE_CLICK_UNSUBSCRIBE.has(request.nextUrl.pathname)) {
     const origin = request.headers.get('origin');
     if (origin && origin !== request.nextUrl.origin) {
       return NextResponse.json({ error: 'Invalid origin' }, { status: 403 });

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { EarningsCalendar } from '@/components/stock/EarningsCalendar';
+import { EarningsEmailLanding } from '@/components/stock/EarningsEmailSignup';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -412,6 +413,7 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
                       <div className="flex flex-wrap items-center gap-2 @2xl:shrink-0 @2xl:justify-end [&_button]:max-sm:h-10 [&_a]:max-sm:h-10">
                         <AddToListPicker symbol={ticker} companyName={displayName} />
                         <AlertDialog symbol={ticker} companyName={displayName} />
+                        <EarningsEmailLanding symbol={ticker} name={displayName} />
                         {showFundamentals && (
                           <Button asChild variant="outline" size="sm" className="gap-2">
                             <Link href={`/tools/deep-dive/${ticker}?new=1`}>
@@ -497,7 +499,7 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
                 <div id="nav-earnings" className="scroll-mt-20">
                   <LazySection key={`earnings-${ticker}`} minHeight={300}>
                     <StockSectionBoundary>
-                      <EarningsCalendar ticker={ticker} />
+                      <EarningsCalendar ticker={ticker} companyName={displayName} />
                     </StockSectionBoundary>
                   </LazySection>
                 </div>
