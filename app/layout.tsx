@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+import { VercelAnalytics } from "@/components/analytics/VercelAnalytics";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 // Analytics: ERR_BLOCKED_BY_CLIENT = ad blocker (uBlock, etc.). Harmless - analytics won't run for those users.
 // Enable Web Analytics in Vercel Dashboard: Project → Analytics → Enable, then redeploy.
@@ -147,7 +147,7 @@ export default async function RootLayout({
                 <AIPanelToggle />
                 {process.env.VERCEL === '1' && (
                   <>
-                    <Analytics />
+                    <VercelAnalytics />
                     <SpeedInsights />
                   </>
                 )}
