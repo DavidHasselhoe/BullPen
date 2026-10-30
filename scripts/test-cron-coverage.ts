@@ -84,7 +84,7 @@ for (const file of workflowFiles) {
 
 // Scheduled in the Upstash QStash console, which has no file in the repo to
 // read (see CLAUDE.md "Scheduled work"). Remove an entry if its schedule is.
-const QSTASH_CRON_PATHS = ['/api/cron/check-user-alerts', '/api/cron/check-economic-results'];
+const QSTASH_CRON_PATHS = ['/api/cron/check-user-alerts', '/api/cron/check-economic-results', '/api/cron/check-sec-filings'];
 
 const allScheduledPaths = new Set([...vercelCronPaths, ...referencedByScheduledWorkflow, ...QSTASH_CRON_PATHS]);
 

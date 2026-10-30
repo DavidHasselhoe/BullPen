@@ -84,6 +84,7 @@
     "test-chat-provider": "tsx scripts/test-chat-provider.ts",
     "test-sankey-graph": "tsx scripts/test-sankey-graph.ts",
     "test-segment-selection": "tsx scripts/test-segment-selection.ts",
+    "test-sec-statements": "tsx scripts/test-sec-statements.ts",
     "capture-segment-fixtures": "tsx scripts/capture-segment-fixtures.ts",
     "test-earnings-minimum": "tsx scripts/test-earnings-minimum.ts",
     "import-institution-logo": "tsx scripts/import-institution-logo.ts",

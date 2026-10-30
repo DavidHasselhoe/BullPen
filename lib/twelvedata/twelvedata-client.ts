@@ -11,6 +11,7 @@ import { sessionDateET } from '@/lib/market-data/trading-day';
 import { classifyTradingSession, strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
 // Circular (latest-rates quotes FX through this file); both sides only call each other at runtime.
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
+import { withSecQuarters } from '@/lib/edgar/sec-statements';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
@@ -1207,6 +1208,8 @@ export interface IncomeStatementPeriod {
    * here needs no change to any existing caller.
    */
   reported_currency: string | null;
+  /** 'sec': read from the company's own 10-Q/10-K before TwelveData had the quarter (lib/edgar/sec-statements.ts). */
+  source?: 'sec';
 }
 
 interface TwelveDataIncomeItem {
@@ -1260,7 +1263,7 @@ export async function getIncomeStatement(
     throw new Error(msg);
   }
 
-  return (data.income_statement ?? []).map((item) => ({
+  const rows: IncomeStatementPeriod[] = (data.income_statement ?? []).map((item) => ({
     fiscal_date: item.fiscal_date ?? '',
     fiscal_quarter: item.quarter ?? null,
     fiscal_year: item.year ?? null,
@@ -1277,6 +1280,7 @@ export async function getIncomeStatement(
     income_tax_expense: item.income_tax ?? null,
     reported_currency: data.meta?.currency ?? null,
   }));
+  return period === 'quarterly' ? withSecQuarters(symbol, 'income', rows) : rows;
 }
 
 // -------- Balance Sheet --------
@@ -1294,6 +1298,8 @@ export interface BalanceSheetPeriod {
   goodwill_and_intangible_assets: number | null;
   /** Reporting currency from the response meta; see IncomeStatementPeriod. */
   reported_currency: string | null;
+  /** See IncomeStatementPeriod. */
+  source?: 'sec';
 }
 
 interface TwelveDataBalanceItem {
@@ -1353,7 +1359,7 @@ export async function getBalanceSheet(
     throw new Error(msg);
   }
 
-  return (data.balance_sheet ?? []).map((item) => ({
+  const rows: BalanceSheetPeriod[] = (data.balance_sheet ?? []).map((item) => ({
     fiscal_date: item.fiscal_date ?? '',
     total_assets: item.assets?.total_assets ?? null,
     total_current_assets: item.assets?.current_assets?.total_current_assets ?? null,
@@ -1368,6 +1374,7 @@ export async function getBalanceSheet(
       (item.assets?.non_current_assets?.intangible_assets ?? 0) || null,
     reported_currency: data.meta?.currency ?? null,
   }));
+  return period === 'quarterly' ? withSecQuarters(symbol, 'balance', rows) : rows;
 }
 
 // -------- Cash Flow --------
@@ -1384,6 +1391,8 @@ export interface CashFlowPeriod {
   dividends_paid: number | null;
   /** Reporting currency from the response meta; see IncomeStatementPeriod. */
   reported_currency: string | null;
+  /** See IncomeStatementPeriod. */
+  source?: 'sec';
 }
 
 interface TwelveDataCashFlowItem {
@@ -1433,7 +1442,7 @@ export async function getCashFlow(
     throw new Error(msg);
   }
 
-  return (data.cash_flow ?? []).map((item) => ({
+  const rows: CashFlowPeriod[] = (data.cash_flow ?? []).map((item) => ({
     fiscal_date: item.fiscal_date ?? '',
     net_income: item.operating_activities?.net_income ?? null,
     depreciation_and_amortization: item.operating_activities?.depreciation ?? null,
@@ -1445,6 +1454,7 @@ export async function getCashFlow(
     dividends_paid: item.financing_activities?.common_dividends ?? null,
     reported_currency: data.meta?.currency ?? null,
   }));
+  return period === 'quarterly' ? withSecQuarters(symbol, 'cashflow', rows) : rows;
 }
 
 // -------- Dividends --------

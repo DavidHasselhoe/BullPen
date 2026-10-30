@@ -15,7 +15,20 @@ function userAgent(): string {
   return process.env.SEC_EDGAR_USER_AGENT || 'BullPen contact@bullpeninvest.com';
 }
 
-async function loadMap(): Promise<Record<string, string>> {
+// The cached row is ~800KB: read it once per instance, not once per ticker
+// (the SEC filing watcher resolves dozens in one run).
+let memo: { at: number; map: Promise<Record<string, string>> } | null = null;
+const MEMO_MS = 60 * 60 * 1000;
+
+function loadMap(): Promise<Record<string, string>> {
+  if (!memo || Date.now() - memo.at > MEMO_MS) {
+    memo = { at: Date.now(), map: fetchMap() };
+    memo.map.catch(() => { memo = null; });
+  }
+  return memo.map;
+}
+
+async function fetchMap(): Promise<Record<string, string>> {
   const cached = await getCached<Record<string, string>>(MAP_KEY);
   if (cached) return cached;
 

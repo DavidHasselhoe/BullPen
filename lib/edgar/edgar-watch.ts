@@ -126,14 +126,22 @@ export async function fetchRecentFilings(cik: string | number): Promise<EdgarFil
 
 /** A company's own fiscal tag per 10-Q/10-K accession, from the cover page every filing tags. */
 export async function fetchFiscalTagsByAccession(cik: string | number): Promise<Map<string, { fy: number; fp: string }>> {
-  const res = await edgarFetch(`https://data.sec.gov/api/xbrl/companyconcept/CIK${padCik(cik)}/dei/EntityCommonStockSharesOutstanding.json`);
-  const tags = new Map<string, { fy: number; fp: string }>();
-  if (!res.ok) return tags;
-  const body = (await res.json()) as { units?: Record<string, { accn: string; fy?: number; fp?: string }[]> };
-  for (const rows of Object.values(body.units ?? {})) {
-    for (const r of rows) if (r.fy && r.fp && !tags.has(r.accn)) tags.set(r.accn, { fy: r.fy, fp: r.fp });
+  // Every fact carries its filing's fy/fp. The share count is ~10KB, but a
+  // company with several share classes tags it per class only, and the
+  // companyconcept API leaves dimensioned facts out: Alphabet and Meta got a
+  // 404 and an empty fiscal calendar, cached for a week. Total assets is on
+  // every 10-Q/10-K balance sheet with no dimension.
+  for (const concept of ['dei/EntityCommonStockSharesOutstanding', 'us-gaap/Assets']) {
+    const res = await edgarFetch(`https://data.sec.gov/api/xbrl/companyconcept/CIK${padCik(cik)}/${concept}.json`);
+    if (!res.ok) continue;
+    const body = (await res.json()) as { units?: Record<string, { accn: string; fy?: number; fp?: string }[]> };
+    const tags = new Map<string, { fy: number; fp: string }>();
+    for (const rows of Object.values(body.units ?? {})) {
+      for (const r of rows) if (r.fy && r.fp && !tags.has(r.accn)) tags.set(r.accn, { fy: r.fy, fp: r.fp });
+    }
+    if (tags.size) return tags;
   }
-  return tags;
+  return new Map();
 }
 
 /**

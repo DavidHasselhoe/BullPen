@@ -58,6 +58,14 @@ async function main() {
   assert.equal(jpm.offCalendar, false);
   assert.equal(label(periodForStatement(jpm, '2026-06-30', false), false), 'Q2 2026');
 
+  // Several share classes: the share count is tagged per class only and the
+  // concept API 404s, so the tags come from total assets. Both used to be empty.
+  for (const cik of ['1652044', '1326801']) { // Alphabet, Meta
+    const cal = await calendarFor(cik);
+    assert.ok(cal.periods.length > 8, `CIK ${cik} calendar empty`);
+    assert.equal(label(periodForStatement(cal, '2026-09-30', false), false), 'Q3 2026');
+  }
+
   // Earnings rows: matched on release date, upcoming ones count on from the newest.
   const rows = labelEarnings([
     { date: '2026-12-16', quarter: 3, year: 2026 }, // upcoming, TwelveData's guess
