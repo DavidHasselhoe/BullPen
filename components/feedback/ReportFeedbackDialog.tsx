@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Bug, Lightbulb, CheckCircle2 } from 'lucide-react';
 import {
   Dialog,
@@ -23,15 +24,19 @@ interface ReportFeedbackDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const TYPE_OPTIONS: { value: FeedbackType; label: string; icon: typeof Bug }[] = [
-  { value: 'bug', label: 'Bug', icon: Bug },
-  { value: 'feature', label: 'Idea', icon: Lightbulb },
+const TYPE_OPTIONS: { value: FeedbackType; labelKey: string; icon: typeof Bug }[] = [
+  { value: 'bug', labelKey: 'feedbackTypeBug', icon: Bug },
+  { value: 'feature', labelKey: 'feedbackTypeIdea', icon: Lightbulb },
 ];
 
+// Same limits as app/api/feedback/route.ts.
+const TITLE_MIN = 3;
 const TITLE_MAX = 150;
+const DESCRIPTION_MIN = 10;
 const DESCRIPTION_MAX = 4000;
 
 export function ReportFeedbackDialog({ open, onOpenChange }: ReportFeedbackDialogProps) {
+  const { t } = useTranslation('common');
   const pathname = usePathname();
   const submitFeedback = useSubmitFeedback();
 
@@ -40,9 +45,12 @@ export function ReportFeedbackDialog({ open, onOpenChange }: ReportFeedbackDialo
   const [description, setDescription] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const titleValid = title.trim().length >= 3;
-  const descriptionValid = description.trim().length >= 10;
+  const titleValid = title.trim().length >= TITLE_MIN;
+  const descriptionValid = description.trim().length >= DESCRIPTION_MIN;
   const canSubmit = titleValid && descriptionValid && !submitFeedback.isPending;
+  // Only once they've started: an empty form doesn't need telling it's empty.
+  const started = title.length > 0 || description.length > 0;
+  const missing = !titleValid ? t('feedbackNeedsTitle') : !descriptionValid ? t('feedbackNeedsDescription') : null;
 
   const reset = () => {
     setType('bug');
@@ -52,16 +60,15 @@ export function ReportFeedbackDialog({ open, onOpenChange }: ReportFeedbackDialo
     submitFeedback.reset();
   };
 
+  // A stray click outside or Esc used to throw the draft away. Keep it until
+  // it has been sent, so reopening picks up where they left off.
   const handleClose = () => {
     onOpenChange(false);
-    // Wait for the close transition rather than resetting mid-animation.
-    setTimeout(reset, 200);
+    if (submitted) setTimeout(reset, 200);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = async () => {
     if (!canSubmit) return;
-
     try {
       await submitFeedback.mutateAsync({
         type,
@@ -71,7 +78,7 @@ export function ReportFeedbackDialog({ open, onOpenChange }: ReportFeedbackDialo
       });
       setSubmitted(true);
     } catch {
-      // Error is surfaced inline via submitFeedback.isError below.
+      // Shown inline via submitFeedback.isError below.
     }
   };
 
@@ -81,34 +88,34 @@ export function ReportFeedbackDialog({ open, onOpenChange }: ReportFeedbackDialo
         {submitted ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <div className="rounded-full bg-primary/8 p-3.5">
-              <CheckCircle2 className="h-6 w-6 text-primary" />
+              <CheckCircle2 className="h-6 w-6 text-primary" aria-hidden />
             </div>
             <DialogHeader>
-              <DialogTitle>Thanks for the report</DialogTitle>
+              <DialogTitle>{t('feedbackThanksTitle')}</DialogTitle>
               <DialogDescription>
-                {type === 'bug'
-                  ? "We'll take a look. No need to send it again."
-                  : "We read every idea that comes in, even the ones we can't get to right away."}
+                {type === 'bug' ? t('feedbackThanksBug') : t('feedbackThanksIdea')}
               </DialogDescription>
             </DialogHeader>
             <Button onClick={handleClose} className="mt-1">
-              Close
+              {t('feedbackClose')}
             </Button>
           </div>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Report a bug or idea</DialogTitle>
-              <DialogDescription>
-                Tell us what&rsquo;s wrong or what you&rsquo;d like to see. The page you&rsquo;re on comes
-                along automatically.
-              </DialogDescription>
+              <DialogTitle>{t('feedbackTitle')}</DialogTitle>
+              <DialogDescription>{t('feedbackSubtitle')}</DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form
+              onSubmit={(e) => { e.preventDefault(); void submit(); }}
+              // Ctrl/Cmd+Enter sends from either field, as in most chat and issue forms.
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void submit(); } }}
+              className="min-w-0 space-y-5"
+            >
               <div className="space-y-2">
-                <Label>Type</Label>
-                <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Report type">
+                <Label id="feedback-type-label">{t('feedbackTypeLabel')}</Label>
+                <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="feedback-type-label">
                   {TYPE_OPTIONS.map((option) => {
                     const Icon = option.icon;
                     const active = type === option.value;
@@ -120,14 +127,14 @@ export function ReportFeedbackDialog({ open, onOpenChange }: ReportFeedbackDialo
                         aria-checked={active}
                         onClick={() => setType(option.value)}
                         className={cn(
-                          'flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-all',
+                          'flex min-h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                           active
-                            ? 'border-primary bg-primary/8 text-primary'
-                            : 'border-input text-muted-foreground hover:text-foreground hover:border-foreground/30'
+                            ? 'border-foreground bg-foreground/5 text-foreground'
+                            : 'border-input text-muted-foreground hover:border-foreground/30 hover:text-foreground'
                         )}
                       >
-                        <Icon className="h-3.5 w-3.5" />
-                        {option.label}
+                        <Icon className="h-4 w-4" aria-hidden />
+                        {t(option.labelKey)}
                       </button>
                     );
                   })}
@@ -135,10 +142,10 @@ export function ReportFeedbackDialog({ open, onOpenChange }: ReportFeedbackDialo
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="feedback-title">Title</Label>
+                <Label htmlFor="feedback-title">{t('feedbackTitleLabel')}</Label>
                 <Input
                   id="feedback-title"
-                  placeholder={type === 'bug' ? 'e.g. Chart tooltip shows wrong price' : 'e.g. Dark mode for the calendar'}
+                  placeholder={type === 'bug' ? t('feedbackTitlePlaceholderBug') : t('feedbackTitlePlaceholderIdea')}
                   value={title}
                   onChange={(e) => setTitle(e.target.value.slice(0, TITLE_MAX))}
                   maxLength={TITLE_MAX}
@@ -147,38 +154,40 @@ export function ReportFeedbackDialog({ open, onOpenChange }: ReportFeedbackDialo
 
               <div className="space-y-2">
                 <Label htmlFor="feedback-description">
-                  {type === 'bug' ? 'What happened, and what did you expect?' : 'What would this do for you?'}
+                  {type === 'bug' ? t('feedbackDescriptionLabelBug') : t('feedbackDescriptionLabelIdea')}
                 </Label>
                 <Textarea
                   id="feedback-description"
                   rows={4}
-                  placeholder={
-                    type === 'bug'
-                      ? 'Steps to reproduce help the most.'
-                      : "The more context, the better we can judge fit."
-                  }
+                  // Grows with the text up to a point, then scrolls inside the dialog.
+                  className="max-h-60 overflow-y-auto break-words"
+                  placeholder={type === 'bug' ? t('feedbackDescriptionPlaceholderBug') : t('feedbackDescriptionPlaceholderIdea')}
                   value={description}
                   onChange={(e) => setDescription(e.target.value.slice(0, DESCRIPTION_MAX))}
                   maxLength={DESCRIPTION_MAX}
                 />
-              </div>
-
-              <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={handleClose}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={!canSubmit}>
-                  {submitFeedback.isPending ? 'Sending...' : 'Send'}
-                </Button>
+                {description.length > DESCRIPTION_MAX * 0.9 && (
+                  <p className="text-right text-xs tabular-nums text-muted-foreground">
+                    {t('feedbackCharsLeft', { count: DESCRIPTION_MAX - description.length })}
+                  </p>
+                )}
               </div>
 
               {submitFeedback.isError && (
-                <div className="text-sm text-red-600 dark:text-red-400">
-                  {submitFeedback.error instanceof Error
-                    ? submitFeedback.error.message
-                    : 'Failed to submit report'}
-                </div>
+                <p role="alert" className="text-sm text-red-600 dark:text-red-400">{t('feedbackSendFailed')}</p>
               )}
+
+              <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+                {started && missing && (
+                  <p className="mr-auto text-xs text-muted-foreground" aria-live="polite">{missing}</p>
+                )}
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  {t('feedbackCancel')}
+                </Button>
+                <Button type="submit" disabled={!canSubmit}>
+                  {submitFeedback.isPending ? t('feedbackSending') : t('feedbackSend')}
+                </Button>
+              </div>
             </form>
           </>
         )}
