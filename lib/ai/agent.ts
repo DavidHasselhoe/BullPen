@@ -14,6 +14,7 @@ import { CHART_TOOLS } from './chart-tools';
 import { BULLPEN_TOOLS, createAlertTool, getMyAlertsTool, getPortfolioContextTool, getInsiderActivityTool, appContentTools } from './tools';
 import { languageName } from '@/lib/i18n/language-names';
 import { assertNoMutatingToolsWithExternalContent } from './tool-boundary';
+import { deepDiveContextPrefix, portfolioContextPrefix } from './report-context';
 import { isIndexScope } from '@/lib/screener/screener-query';
 
 interface AIContext {
@@ -37,6 +38,10 @@ interface AIContext {
     levels?: unknown;
     window?: Record<string, unknown> | null;
   };
+  /** Opened from the Deep Dive on tickers[0]: the server reads that report (lib/ai/report-context.ts). */
+  deepDive?: boolean;
+  /** Opened from a Portfolio Builder result: its portfolio_generations id. */
+  portfolioId?: string;
 }
 
 /** Describes the open fullscreen chart. Its tools are registered only while this applies. */
@@ -137,6 +142,12 @@ export async function runAgent(
     ?`[Current page context: The user is viewing "${contextLabel}" (${context.tickers.join(', ')}). Unless the user specifies a different company, answer questions about ${context.tickers.join(' and ')} first.]\n\n`
     : '';
 
+  // The report itself, read server-side from the reference the client sent.
+  const reportPrefix = !userId ? ''
+    : context?.deepDive ? await deepDiveContextPrefix(userId, context.tickers?.[0])
+    : context?.portfolioId ? await portfolioContextPrefix(userId, context.portfolioId)
+    : '';
+
   // createAlert needs userId to check the free-tier alert limit server-side —
   // it's built per-request rather than living in the static BULLPEN_TOOLS map.
   // Omitted entirely when userId is unavailable so the model never sees it.
@@ -178,7 +189,7 @@ export async function runAgent(
   // "corrects" live quotes against stale memory (called MU at $1,056 a glitch).
   const datePrefix = `[Today's date: ${new Date().toISOString().slice(0, 10)}]\n\n`;
   const perRequestPrefix =
-    datePrefix + languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix;
+    datePrefix + languagePrefix + experiencePrefix + riskPrefix + horizonPrefix + stylePrefix + contextPrefix + reportPrefix;
 
   const result = streamText({
     model: anthropic('claude-sonnet-5-5'),

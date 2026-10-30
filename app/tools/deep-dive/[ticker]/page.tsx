@@ -232,7 +232,7 @@ export default function DeepDivePage() {
 
   const askAI = useCallback(() => {
     openAIPanel({
-      context: { tickers: [symbol], label: report?.companyName ?? symbol },
+      context: { tickers: [symbol], label: report?.companyName ?? symbol, deepDive: true },
       query: `I just read the AI deep dive on $${symbol}. What's the single most important thing to watch from here, and what would change the thesis?`,
     });
   }, [openAIPanel, symbol, report]);

@@ -5,8 +5,14 @@
  * arbitrary URLs) must never be registered in the same agent as tools that
  * take a real side-effecting action (creating alerts, mutating holdings) —
  * otherwise a manipulated webpage could instruct the model to fire a
- * mutation the user never asked for, since BullpenChat.tsx auto-executes
- * tool calls with no confirmation step.
+ * mutation the user never asked for. BullpenChat.tsx now holds every
+ * account change for a Confirm on its card, which is the second line; this
+ * is the first.
+ *
+ * Model-written reports the user opens the chat from (a Deep Dive, partly
+ * written from web search) reach Bull as quoted context, not as a tool
+ * (lib/ai/report-context.ts). They rely on that Confirm card, not on this
+ * check.
  *
  * Today that separation holds by construction: runAgent (lib/ai/agent.ts)
  * registers BULLPEN_TOOLS + createAlert + getPortfolioContext, none of which

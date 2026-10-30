@@ -50,6 +50,8 @@ export interface AIContextProp {
   screener?: ScreenerAIContext;
   /** The fullscreen chart's view. Registers the chart tools server-side. */
   chart?: ChartSnapshot;
+  deepDive?: boolean;
+  portfolioId?: string;
 }
 
 interface BullpenChatProps {

@@ -277,7 +277,7 @@ export function PortfolioResult({ generationId, portfolio, logoMap, replacedTick
           <button
             onClick={() => openAIPanel({
               query: buildAskBullQuery(portfolio, thesis, t),
-              context: { tickers: portfolio.holdings.map((h) => h.ticker), label: portfolio.theme_summary },
+              context: { tickers: portfolio.holdings.map((h) => h.ticker), label: portfolio.theme_summary, portfolioId: generationId },
             })}
             className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >

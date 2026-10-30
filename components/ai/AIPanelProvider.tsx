@@ -9,6 +9,10 @@ export interface AIContext {
   label?: string;
   /** Set by the screener page: what is on screen, so Bull can answer "which of these" with screenStocks. */
   screener?: ScreenerAIContext;
+  /** Opened from the Deep Dive on tickers[0]: the server reads that report into Bull's context. */
+  deepDive?: boolean;
+  /** Opened from a Portfolio Builder result: its generation id, read server-side. */
+  portfolioId?: string;
 }
 
 export interface ScreenerAIContext {
