@@ -77,9 +77,6 @@
   "watchlistSearchAdded": "Hinzugefügt",
   "watchlistThesisBull": "Bullisch",
   "watchlistThesisBear": "Bärisch",
-  "watchlistColSymbol": "Symbol",
-  "watchlistLiveLabel": "Live",
-  "watchlistThesisNeutral": "Neutral",
   "scorecardAriaLabel": "Listenübersicht",
   "scorecardToday": "Durchschnittliche Bewegung heute",
   "scorecardUpDownFlat": "{{up}} im Plus · {{down}} im Minus · {{flat}} unverändert",
@@ -155,5 +152,10 @@
   "shareOpenPage": "Seite öffnen",
   "shareStop": "Teilen beenden",
   "shareStopHint": "Danach funktioniert dieser Link nicht mehr. Erneutes Teilen erstellt einen neuen.",
-  "shareError": "Teilen konnte nicht geändert werden. Versuch es gleich noch einmal."
+  "shareError": "Teilen konnte nicht geändert werden. Versuch es gleich noch einmal.",
+  "createListError": "Die Watchlist konnte nicht gespeichert werden. Bitte versuch es noch einmal.",
+  "createListLimitReached": "Kostenlose Konten können {{count}} Watchlists haben. Upgrade auf Pro für unbegrenzte Listen.",
+  "watchlistColSymbol": "Symbol",
+  "watchlistLiveLabel": "Live",
+  "watchlistThesisNeutral": "Neutral"
 }

@@ -26,6 +26,10 @@ It runs a methodical final pass — design-system alignment, spacing/alignment a
 
 `PRODUCT.md` and `DESIGN.md` at the repo root capture BullPen's strategic and visual design system (register: product, platform: web). Read them before non-trivial frontend work — `/impeccable` commands load them automatically, but if you're working outside that skill, check them directly. Key points: **Signal Emerald/Red** is the only meaningful color, reserved for gain/loss + the landing brand accent; Bloomberg-terminal density is the named anti-reference; Instrument Serif italic is a one-word marketing-headline accent only, never product UI.
 
+### Mutations never fail silently
+
+Every create, save or delete shows the user when it fails: an inline `role="alert"` message (as in `components/watchlist/CreateListDialog.tsx`) or an error state. Never `mutateAsync(...).catch(() => {})`, and never treat a `{ success: false }` result as "do nothing". A tier or limit gate lives in one function that both the API route and the client hook call (`canCreateWatchlist` is the example), so the button and the server can't disagree. Run `npm run smoke-writes` after touching a watchlist route or gate.
+
 ### Long pick lists get a search box
 
 A dropdown with more than ~20 options (time zones, industries, countries, currencies if the list grows) uses `<SearchableSelect>` (`components/ui/searchable-select.tsx`), not `<Select>`. A plain Select of 400 time zones ran past the Settings modal with no way to jump to Oslo. Count the real worst case, not the usual one: the screener's Industry list is ~20 inside a sector and 125 with none picked. Options like "Automatic" or "Any" go in `pinned`, which stays above the list.

@@ -9,6 +9,8 @@
   "createListCancel": "Cancel",
   "createListCreating": "Creating…",
   "createListCreate": "Create",
+  "createListError": "Could not save the watchlist. Please try again.",
+  "createListLimitReached": "Free accounts can have {{count}} watchlists. Upgrade to Pro for unlimited lists.",
   "editListTitle": "Edit list",
   "editListSave": "Save",
   "editListSaving": "Saving…",

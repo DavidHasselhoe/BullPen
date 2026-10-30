@@ -78,8 +78,6 @@
   "watchlistThesisBull": "Bullish",
   "watchlistThesisBear": "Bearish",
   "watchlistThesisNeutral": "Nøytral",
-  "watchlistColSymbol": "Symbol",
-  "watchlistTableEarningsInDays": "{{days}}d",
   "scorecardAriaLabel": "Listeoversikt",
   "scorecardToday": "Gjennomsnittlig bevegelse i dag",
   "scorecardUpDownFlat": "{{up}} opp · {{down}} ned · {{flat}} uendret",
@@ -155,5 +153,9 @@
   "shareOpenPage": "Åpne siden",
   "shareStop": "Slutt å dele",
   "shareStopHint": "Da slutter lenken å virke. Deler du igjen, lages en ny.",
-  "shareError": "Kunne ikke oppdatere delingen. Prøv igjen om litt."
+  "shareError": "Kunne ikke oppdatere delingen. Prøv igjen om litt.",
+  "createListError": "Kunne ikke lagre favorittlisten. Prøv igjen.",
+  "createListLimitReached": "Gratiskontoer kan ha {{count}} favorittlister. Oppgrader til Pro for ubegrenset antall lister.",
+  "watchlistColSymbol": "Symbol",
+  "watchlistTableEarningsInDays": "{{days}}d"
 }

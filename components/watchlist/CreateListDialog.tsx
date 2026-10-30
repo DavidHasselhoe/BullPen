@@ -8,6 +8,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useCreateWatchlistList, useUpdateWatchlistList, type WatchlistList } from '@/hooks/use-watchlist';
+import { MAX_FREE_WATCHLISTS } from '@/lib/watchlist/limits';
 import { cn } from '@/lib/utils';
 
 const PRESET_COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'];
@@ -26,25 +27,35 @@ export function CreateListDialog({ open, onOpenChange, onCreated, list }: Create
   const [color, setColor] = useState<string | null>(list?.color ?? null);
   const createList = useCreateWatchlistList();
   const updateList = useUpdateWatchlistList();
+  const [error, setError] = useState<string | null>(null);
   const pending = createList.isPending || updateList.isPending;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
+    setError(null);
 
     if (list) {
-      await updateList.mutateAsync({ listId: list.id, name: name.trim(), color }).catch(() => {});
-      onOpenChange(false);
+      try {
+        await updateList.mutateAsync({ listId: list.id, name: name.trim(), color });
+        onOpenChange(false);
+      } catch {
+        setError(t('createListError'));
+      }
       return;
     }
 
-    const result = await createList.mutateAsync({ name: name.trim(), color });
-    if (result.success && result.list) {
+    const result = await createList.mutateAsync({ name: name.trim(), color }).catch(() => null);
+    if (result?.success && result.list) {
       onCreated?.(result.list.id);
       setName('');
       setColor(null);
       onOpenChange(false);
+      return;
     }
+    setError(result?.error === 'upgrade_required'
+      ? t('createListLimitReached', { count: MAX_FREE_WATCHLISTS })
+      : t('createListError'));
   }
 
   return (
@@ -82,6 +93,8 @@ export function CreateListDialog({ open, onOpenChange, onCreated, list }: Create
               ))}
             </div>
           </div>
+
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

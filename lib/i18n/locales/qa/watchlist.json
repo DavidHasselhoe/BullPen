@@ -9,6 +9,8 @@
   "createListCancel": "«Caanceel»",
   "createListCreating": "«Creeaatiing…»",
   "createListCreate": "«Creeaatee»",
+  "createListError": "«Coouuld noot saavee thee waatchliist. Pleeaasee try aagaaiin.»",
+  "createListLimitReached": "«Freeee aaccoouunts caan haavee {{count}} waatchliists. UUpgraadee too Proo foor uunliimiiteed liists.»",
   "editListTitle": "«EEdiit liist»",
   "editListSave": "«Saavee»",
   "editListSaving": "«Saaviing…»",

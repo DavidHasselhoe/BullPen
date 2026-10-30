@@ -34,6 +34,8 @@
     "test-shorten-description": "tsx scripts/test-shorten-description.ts",
     "test-portfolio-series": "tsx scripts/test-portfolio-series.ts",
     "test-no-truncated-text": "tsx scripts/test-no-truncated-generated-text.ts",
+    "test-release-notes": "tsx scripts/test-release-notes.ts",
+    "smoke-writes": "tsx scripts/smoke-writes.ts",
     "test-age-gate": "tsx scripts/test-age-gate.ts",
     "test-email-footer": "tsx scripts/test-email-footer.ts",
     "test-og-fonts": "tsx scripts/test-og-fonts.ts",

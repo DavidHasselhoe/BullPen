@@ -78,8 +78,6 @@
   "watchlistSearchAdded": "Agregada",
   "watchlistThesisBull": "Alcista",
   "watchlistThesisBear": "Bajista",
-  "watchlistTableEarningsInDays": "{{days}}d",
-  "watchlistThesisNeutral": "Neutral",
   "scorecardAriaLabel": "Resumen de la lista",
   "scorecardToday": "Movimiento medio hoy",
   "scorecardUpDownFlat": "{{up}} suben · {{down}} bajan · {{flat}} sin cambios",
@@ -155,5 +153,9 @@
   "shareOpenPage": "Abrir la página",
   "shareStop": "Dejar de compartir",
   "shareStopHint": "El enlace dejará de funcionar. Si vuelves a compartir, se crea uno nuevo.",
-  "shareError": "No se pudo actualizar. Inténtalo de nuevo en un momento."
+  "shareError": "No se pudo actualizar. Inténtalo de nuevo en un momento.",
+  "createListError": "No se pudo guardar la lista de seguimiento. Inténtalo de nuevo.",
+  "createListLimitReached": "Las cuentas gratuitas pueden tener {{count}} listas de seguimiento. Actualiza a Pro para tener listas ilimitadas.",
+  "watchlistTableEarningsInDays": "{{days}}d",
+  "watchlistThesisNeutral": "Neutral"
 }

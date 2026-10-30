@@ -24,6 +24,12 @@ npm run lint
 ```
 Fix any errors before proceeding. Warnings are acceptable.
 
+**2b. Smoke the write paths**
+```bash
+npm run smoke-writes
+```
+Needs the dev server on :3000 (start it if it isn't running; never `npm run build` while it is). It signs in as the QA account, creates a watchlist, adds and removes a symbol, deletes the list, and asserts the watchlist tier gate for admin, Pro, bonus and Free. Lint and the code review both passed the 2026-10-30 bug where every watchlist create returned 403. A failure here blocks the merge.
+
 **3. Confirm preview is ahead of main**
 ```bash
 git log origin/main..origin/preview --oneline
