@@ -175,7 +175,8 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
             name={companyName}
             date={nextEvent.date}
             estimate={nextEvent.epsEstimate}
-            last={recent[0] ? { date: recent[0].date, actual: recent[0].epsActual, estimate: recent[0].epsEstimate } : null}
+            // An unconfirmed actual isn't counted in the streak, so it isn't the sample email either.
+            last={recent[0] && !recent[0].unconfirmed ? { date: recent[0].date, actual: recent[0].epsActual, estimate: recent[0].epsEstimate } : null}
           />
         )}
 

@@ -15,7 +15,7 @@ import { sendEmail } from '@/lib/email/resend';
 import { EMAIL_FOOTER_MARKER } from '@/lib/email/footer';
 import { isDeliverableEmail } from '@/lib/email/alert-email';
 import { getDisplayNames } from '@/lib/market-data/display-names';
-import { getCalendarRange } from '@/lib/market-data/calendar-days';
+import { getCalendarRange, isNasdaqConfirmed } from '@/lib/market-data/calendar-days';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
@@ -27,7 +27,7 @@ const UTM = 'utm_source=email&utm_medium=results&utm_campaign=earnings_results';
 const SYMBOL_RE = /^[A-Z0-9.\-]{1,12}$/;
 /** One confirm email per address and company an hour, so the form can't be used to flood an inbox. */
 const RESEND_AFTER_MS = 60 * 60 * 1000;
-/** New subscriptions per address a day. */
+/** Confirm emails (new subscriptions and re-sends) per address a day. */
 const MAX_NEW_PER_DAY = 10;
 /** Reports this many days back still go out, for a cron that missed a day or an actual that came in late. */
 const LOOKBACK_DAYS = 3;
@@ -71,6 +71,11 @@ export async function subscribe(rawEmail: string, rawSymbol: string): Promise<Su
   const row = existing as SubRow | null;
   if (row?.confirmed_at && !row.unsubscribed_at) return 'already';
 
+  // Re-sends count too (they bump created_at), so the form can't mail one address all day.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count } = await table().select('id', { count: 'exact', head: true }).eq('email', email).gte('created_at', since);
+  if ((count ?? 0) >= MAX_NEW_PER_DAY) return 'limited';
+
   let token: string;
   if (row) {
     if (Date.now() - Date.parse(row.created_at) < RESEND_AFTER_MS) return 'limited';
@@ -81,9 +86,6 @@ export async function subscribe(rawEmail: string, rawSymbol: string): Promise<Su
     if (error) throw new Error(error.message);
     token = row.token;
   } else {
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count } = await table().select('id', { count: 'exact', head: true }).eq('email', email).gte('created_at', since);
-    if ((count ?? 0) >= MAX_NEW_PER_DAY) return 'limited';
     const { data, error } = await table().insert({ email, symbol }).select('token').single();
     if (error) throw new Error(error.message);
     token = (data as { token: string }).token;
@@ -232,8 +234,14 @@ export async function sendResultsEmails(opts: { dryRun?: boolean; today?: string
   const today = opts.today ?? todayET();
   const run: ResultsRun = { reports: 0, sent: 0, failed: 0, dryRun: !!opts.dryRun };
 
-  const { data } = await table().select('*').not('confirmed_at', 'is', null).is('unsubscribed_at', null);
-  const subs = (data ?? []) as SubRow[];
+  // Paginated: PostgREST silently caps an unbounded select at 1000.
+  const subs: SubRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await table().select('*').not('confirmed_at', 'is', null).is('unsubscribed_at', null).order('id').range(from, from + 999);
+    if (error) throw new Error(error.message);
+    subs.push(...((data ?? []) as SubRow[]));
+    if (!data || data.length < 1000) break;
+  }
   if (!subs.length) return run;
 
   // Cache only: the calendar crons keep these days warm, and a send must not spend TwelveData credits.
@@ -242,7 +250,8 @@ export async function sendResultsEmails(opts: { dryRun?: boolean; today?: string
   const latest = new Map<string, EarningsCalendarItem>();
   for (const rows of byDate.values()) {
     for (const r of rows ?? []) {
-      if (!wanted.has(r.symbol) || r.eps_actual == null) continue;
+      // TD-only rows are where fabricated actuals come from; the stock page only trusts Nasdaq-listed ones too.
+      if (!wanted.has(r.symbol) || r.eps_actual == null || !isNasdaqConfirmed(r)) continue;
       const prev = latest.get(r.symbol);
       if (!prev || r.date > prev.date) latest.set(r.symbol, r);
     }

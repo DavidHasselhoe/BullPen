@@ -611,7 +611,7 @@ async function readCalendarRange<T = CalendarRow>(
 const MISDATED_WINDOW_DAYS = 4;
 
 /** Rows cached before nasdaq_confirmed existed: only Nasdaq's mapping writes BMO/AMC (TD writes "Pre Market" / "After Hours" / ""). */
-function isNasdaqConfirmed(row: EarningsCalendarItem): boolean {
+export function isNasdaqConfirmed(row: EarningsCalendarItem): boolean {
   return row.nasdaq_confirmed === true || row.time === 'BMO' || row.time === 'AMC';
 }
 
