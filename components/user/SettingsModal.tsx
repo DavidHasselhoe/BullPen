@@ -952,6 +952,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     <ToggleSetting label={t('notifWeeklyPickLabel')} description={t('notifWeeklyPickDescription')} {...notif('weekly_pick')} />
                     <ToggleSetting label={t('notifAiInsightsLabel')} description={t('notifAiInsightsDescription')} {...notif('ai_insights')} />
                     <ToggleSetting label={t('notifEconomicEventsLabel')} description={t('notifEconomicEventsDescription')} {...notif('economic_events')} />
+                    <ToggleSetting label={t('notifReleaseNotesLabel')} description={t('notifReleaseNotesDescription')} {...notif('release_notes')} />
                   </SettingsCard>
                 </SettingsGroup>
 

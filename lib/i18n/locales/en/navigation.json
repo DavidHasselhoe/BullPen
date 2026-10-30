@@ -203,5 +203,13 @@
   "notifBuildFallback": "Your AI-generated portfolio is ready. Tap to view it.",
   "notifRiskTitle": "Your portfolio risk analysis is ready",
   "notifRiskMessage": "Overall risk: {{level}} ({{score}}/100). Open it for the full breakdown.",
-  "notifRiskDone": "Your risk assessment has finished."
+  "notifRiskDone": "Your risk assessment has finished.",
+  "notifReleaseNotesTitle": "What’s new in BullPen",
+  "notifReleaseNotesMessage_one": "{{count}} highlight from the past week.",
+  "notifReleaseNotesMessage_other": "{{count}} highlights from the past week.",
+  "releaseNotesTitle": "What’s new",
+  "releaseNotesNew": "New",
+  "releaseNotesImproved": "Improved",
+  "releaseNotesFixed": "Fixed",
+  "releaseNotesSeeAll": "See every change"
 }

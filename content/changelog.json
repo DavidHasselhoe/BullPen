@@ -4,7 +4,8 @@
     "entries": [
       {
         "type": "new",
-        "text": "New Economy pages show what the Fed rate decision, CPI inflation, the jobs report, PCE, GDP and jobless claims actually came in at, compared with the time before, with charts of the history"
+        "text": "New Economy pages show what the Fed rate decision, CPI inflation, the jobs report, PCE, GDP and jobless claims actually came in at, compared with the time before, with charts of the history",
+        "highlight": true
       },
       {
         "type": "new",
@@ -28,7 +29,8 @@
       },
       {
         "type": "new",
-        "text": "A search bar at the top of Discover finds any stock"
+        "text": "A search bar at the top of Discover finds any stock",
+        "highlight": true
       },
       {
         "type": "improved",
@@ -49,7 +51,8 @@
     "entries": [
       {
         "type": "new",
-        "text": "Ask Bull whether a stock is at support or above its 150-day average and get the answer straight away, with a chart of the price, its moving averages and the key levels"
+        "text": "Ask Bull whether a stock is at support or above its 150-day average and get the answer straight away, with a chart of the price, its moving averages and the key levels",
+        "highlight": true
       },
       {
         "type": "new",
@@ -61,7 +64,8 @@
       },
       {
         "type": "fixed",
-        "text": "Companies that report in another currency, like TSMC in Taiwan dollars, now show their financials in US dollars with a note on the rate used, on the stock page, Compare, Deep Dive and in Bull"
+        "text": "Companies that report in another currency, like TSMC in Taiwan dollars, now show their financials in US dollars with a note on the rate used, on the stock page, Compare, Deep Dive and in Bull",
+        "highlight": true
       },
       {
         "type": "fixed",
@@ -90,7 +94,8 @@
       },
       {
         "type": "improved",
-        "text": "Commodity pages now show the funds and companies you can buy to own them, where the price sits in its yearly range, long-term returns against the S&P 500, the price per gram or litre in your currency, and what moves the price"
+        "text": "Commodity pages now show the funds and companies you can buy to own them, where the price sits in its yearly range, long-term returns against the S&P 500, the price per gram or litre in your currency, and what moves the price",
+        "highlight": true
       },
       {
         "type": "fixed",

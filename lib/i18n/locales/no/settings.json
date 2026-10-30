@@ -116,6 +116,8 @@
   "notifEarningsTodayLabel": "Resultat i dag",
   "notifExDividendDescription": "Få beskjed noen dager før en sporet aksje går ex-dividend",
   "notifExDividendLabel": "Påminnelser om ex-dividend",
+  "notifEmailAlertsLabel": "Morgen-e-post",
+  "notifEmailAlertsDescription": "Resultater, store kursbevegelser og utbytte-datoer (ex-dato) for aksjene dine, samlet i én e-post når noe skjer",
   "notifHealthScoreDescription": "Få beskjed når en sporet aksjes BullPen-helsescore krysser en bokstavkarakter",
   "notifHealthScoreLabel": "Endringer i helsescore",
   "notifNewCourseLabel": "Nye kurs",
@@ -235,12 +237,12 @@
   "timeZoneAuto": "Automatisk: {{zone}}",
   "timeZoneMarket": "Amerikansk børstid (New York)",
   "timeZoneSearch": "Søk etter by eller region",
-  "homeWidget_from_follows": "Fra de du følger",
-  "notifEmailAlertsLabel": "Morgen-e-post",
-  "notifEmailAlertsDescription": "Resultater, store kursbevegelser og utbytte-datoer (ex-dato) for aksjene dine, samlet i én e-post når noe skjer",
   "timeZoneDescription": "Klokkeslett i hele BullPen vises i denne sonen. Automatisk følger enheten din.",
   "timeFormat": "Tidsformat",
   "timeFormatAuto": "Automatisk (følger språket ditt)",
   "timeFormat24": "24-timers (19:00)",
-  "timeFormat12": "12-timers (7:00 PM)"
+  "timeFormat12": "12-timers (7:00 PM)",
+  "homeWidget_from_follows": "Fra de du følger",
+  "notifReleaseNotesLabel": "Hva er nytt",
+  "notifReleaseNotesDescription": "En kort oppdatering hver mandag med de største forbedringene i BullPen"
 }

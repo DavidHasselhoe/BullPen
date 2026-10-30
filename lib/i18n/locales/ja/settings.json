@@ -116,6 +116,8 @@
   "notifEarningsTodayLabel": "本日の決算",
   "notifExDividendDescription": "追跡中の銘柄の権利落ち日の数日前に通知を受け取ります",
   "notifExDividendLabel": "配当金支払日のリマインダー",
+  "notifEmailAlertsLabel": "朝のメール",
+  "notifEmailAlertsDescription": "保有銘柄の決算、大きな値動き、配当落ち日をお知らせします。該当するイベントが発生した際に、まとめて1通のメールでお届けします",
   "notifHealthScoreDescription": "追跡中の銘柄の BullPen ヘルススコアがレターグレードを越えたときに通知を受け取ります",
   "notifHealthScoreLabel": "ヘルススコアの変動",
   "notifNewCourseLabel": "新しいコース",
@@ -235,12 +237,12 @@
   "timeZoneAuto": "自動: {{zone}}",
   "timeZoneMarket": "米国市場時間（ニューヨーク）",
   "timeZoneSearch": "都市または地域で検索",
-  "homeWidget_from_follows": "フォローしている相手から",
-  "notifEmailAlertsLabel": "朝のメール",
-  "notifEmailAlertsDescription": "保有銘柄の決算、大きな値動き、配当落ち日をお知らせします。該当するイベントが発生した際に、まとめて1通のメールでお届けします",
   "timeZoneDescription": "BullPenのすべての時刻は、このタイムゾーンで表示されます。「自動」を選ぶと、お使いの端末の設定に従います。",
   "timeFormat": "時刻の表示形式",
   "timeFormatAuto": "自動（言語設定に従う）",
   "timeFormat24": "24時間表記（19:00）",
-  "timeFormat12": "12時間表記（午後7:00）"
+  "timeFormat12": "12時間表記（午後7:00）",
+  "homeWidget_from_follows": "フォローしている相手から",
+  "notifReleaseNotesLabel": "新機能",
+  "notifReleaseNotesDescription": "毎週月曜日に、BullPenの主な改善点をまとめた短いお知らせをお届けします"
 }

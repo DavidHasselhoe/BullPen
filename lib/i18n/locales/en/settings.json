@@ -242,5 +242,7 @@
   "timeFormatAuto": "Automatic (follows your language)",
   "timeFormat24": "24-hour (19:00)",
   "timeFormat12": "12-hour (7:00 PM)",
-  "homeWidget_from_follows": "From who you follow"
+  "homeWidget_from_follows": "From who you follow",
+  "notifReleaseNotesLabel": "What’s new",
+  "notifReleaseNotesDescription": "A short note each Monday with the biggest improvements to BullPen"
 }

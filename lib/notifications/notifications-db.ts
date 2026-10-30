@@ -6,7 +6,7 @@ import { createServerClient } from '@/lib/supabase/client';
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'politician_trade' | 'billing';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'politician_trade' | 'billing' | 'release_notes';
   title: string;
   message: string;
   entity_type: 'stock' | 'portfolio' | 'market' | 'user' | 'institution' | 'politician' | null;
@@ -49,7 +49,16 @@ export interface I18nParams {
   message?: NotifMsg;
 }
 
-export type NotificationParams = EarningsTodayParams | I18nParams;
+/** Weekly "What's new": the week's highlighted changelog items (lib/notifications/release-notes.ts). English, like the changelog. */
+export interface ReleaseNotesParams {
+  kind: 'release_notes';
+  /** First and last changelog day covered, YYYY-MM-DD. */
+  from: string;
+  to: string;
+  items: { type: 'new' | 'improved' | 'fixed'; text: string }[];
+}
+
+export type NotificationParams = EarningsTodayParams | I18nParams | ReleaseNotesParams;
 
 export interface NotificationDBResult<T> {
   success: boolean;
@@ -59,7 +68,7 @@ export interface NotificationDBResult<T> {
 
 export interface CreateNotificationInput {
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'politician_trade' | 'billing';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'politician_trade' | 'billing' | 'release_notes';
   title: string;
   message: string;
   entity_type?: 'stock' | 'portfolio' | 'market' | 'user' | 'institution' | 'politician' | null;

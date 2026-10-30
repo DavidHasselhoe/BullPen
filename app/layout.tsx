@@ -16,6 +16,7 @@ import { PendingOnboardingFlush } from "@/components/onboarding/PendingOnboardin
 import { AgeCheckGate } from "@/components/auth/AgeCheckGate";
 import { GoogleOneTap } from "@/components/auth/GoogleOneTap";
 import { NotificationToastListener } from "@/components/notifications/NotificationToastListener";
+import { ReleaseNotesDialogHost } from "@/components/notifications/ReleaseNotesDialog";
 import { CookieConsentBanner } from "@/components/cookie-consent/CookieConsentBanner";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { PageTransition } from "@/components/ui/PageTransition";
@@ -139,6 +140,7 @@ export default async function RootLayout({
                 <GoogleOneTap />
                 <PendingOnboardingFlush />
                 <NotificationToastListener />
+                <ReleaseNotesDialogHost />
                 <CookieConsentBanner />
                 <PostHogProvider />
                 <PageTransition>{children}</PageTransition>

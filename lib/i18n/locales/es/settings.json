@@ -116,6 +116,8 @@
   "notifEarningsTodayLabel": "Resultados de hoy",
   "notifExDividendDescription": "Recibe notificaciones unos días antes de que una acción seguida sea ex-dividendo",
   "notifExDividendLabel": "Recordatorios de ex-dividendo",
+  "notifEmailAlertsLabel": "Correo matutino",
+  "notifEmailAlertsDescription": "Resultados, grandes movimientos y fechas ex-dividendo de tus acciones, en un solo correo cuando ocurra algo",
   "notifHealthScoreDescription": "Recibe notificaciones cuando la puntuación de salud de BullPen de una acción seguida cruza una calificación de letra",
   "notifHealthScoreLabel": "Cambios en la puntuación de salud",
   "notifNewCourseLabel": "Nuevos cursos",
@@ -234,13 +236,13 @@
   "timeZoneAuto": "Automática: {{zone}}",
   "timeZoneMarket": "Hora del mercado de EE. UU. (Nueva York)",
   "timeZoneSearch": "Buscar por ciudad o región",
-  "homeWidget_from_follows": "De quienes sigues",
-  "notifEmailAlertsLabel": "Correo matutino",
-  "notifEmailAlertsDescription": "Resultados, grandes movimientos y fechas ex-dividendo de tus acciones, en un solo correo cuando ocurra algo",
-  "sectionPlanLabel": "Plan",
   "timeZoneDescription": "Las horas en BullPen se muestran en esta zona horaria. Automática sigue la configuración de tu dispositivo.",
   "timeFormat": "Formato de hora",
   "timeFormatAuto": "Automático (según tu idioma)",
   "timeFormat24": "24 horas (19:00)",
-  "timeFormat12": "12 horas (7:00 p. m.)"
+  "timeFormat12": "12 horas (7:00 p. m.)",
+  "homeWidget_from_follows": "De quienes sigues",
+  "sectionPlanLabel": "Plan",
+  "notifReleaseNotesLabel": "Novedades",
+  "notifReleaseNotesDescription": "Una breve nota cada lunes con las mejoras más importantes de BullPen"
 }

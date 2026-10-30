@@ -116,6 +116,8 @@
   "notifEarningsTodayLabel": "今日财报",
   "notifExDividendDescription": "在追踪的股票除权除息前几天获得通知",
   "notifExDividendLabel": "除息日提醒",
+  "notifEmailAlertsLabel": "晨间邮件",
+  "notifEmailAlertsDescription": "你所持股票的财报、大幅波动和除息日信息，在事件发生时汇总成一封邮件发送",
   "notifHealthScoreDescription": "当追踪的股票的 BullPen 健康评分跨越字母等级时获得通知",
   "notifHealthScoreLabel": "健康评分变化",
   "notifNewCourseLabel": "新课程",
@@ -235,12 +237,12 @@
   "timeZoneAuto": "自动：{{zone}}",
   "timeZoneMarket": "美国市场时间（纽约）",
   "timeZoneSearch": "按城市或地区搜索",
-  "homeWidget_from_follows": "来自你的关注",
-  "notifEmailAlertsLabel": "晨间邮件",
-  "notifEmailAlertsDescription": "你所持股票的财报、大幅波动和除息日信息，在事件发生时汇总成一封邮件发送",
   "timeZoneDescription": "BullPen 中的所有时间都会按此时区显示。选择“自动”则跟随你的设备。",
   "timeFormat": "时间格式",
   "timeFormatAuto": "自动（跟随你的语言）",
   "timeFormat24": "24 小时制（19:00）",
-  "timeFormat12": "12 小时制（晚上 7:00）"
+  "timeFormat12": "12 小时制（晚上 7:00）",
+  "homeWidget_from_follows": "来自你的关注",
+  "notifReleaseNotesLabel": "最新动态",
+  "notifReleaseNotesDescription": "每周一发送一条简短通知，汇总 BullPen 的重要更新"
 }

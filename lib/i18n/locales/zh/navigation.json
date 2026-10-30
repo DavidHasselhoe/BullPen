@@ -203,5 +203,13 @@
   "notifBuildFallback": "你的 AI 生成投资组合已就绪，点击即可查看。",
   "notifRiskTitle": "你的投资组合风险分析已就绪",
   "notifRiskMessage": "整体风险：{{level}}（{{score}}/100）。打开查看完整分析。",
-  "notifRiskDone": "你的风险评估已完成。"
+  "notifRiskDone": "你的风险评估已完成。",
+  "notifReleaseNotesTitle": "BullPen 有什么新变化",
+  "notifReleaseNotesMessage_one": "过去一周有 {{count}} 项亮点更新。",
+  "notifReleaseNotesMessage_other": "过去一周有 {{count}} 项亮点更新。",
+  "releaseNotesTitle": "有什么新变化",
+  "releaseNotesNew": "新增",
+  "releaseNotesImproved": "优化",
+  "releaseNotesFixed": "修复",
+  "releaseNotesSeeAll": "查看全部更改"
 }

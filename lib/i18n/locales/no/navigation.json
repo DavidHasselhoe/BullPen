@@ -203,5 +203,13 @@
   "notifBuildFallback": "Din KI-genererte portefølje er klar. Trykk for å se den.",
   "notifRiskTitle": "Risikoanalysen av porteføljen din er klar",
   "notifRiskMessage": "Samlet risiko: {{level}} ({{score}}/100). Åpne den for hele oversikten.",
-  "notifRiskDone": "Risikovurderingen din er ferdig."
+  "notifRiskDone": "Risikovurderingen din er ferdig.",
+  "notifReleaseNotesTitle": "Nytt i BullPen",
+  "notifReleaseNotesMessage_one": "{{count}} høydepunkt fra den siste uken.",
+  "notifReleaseNotesMessage_other": "{{count}} høydepunkter fra den siste uken.",
+  "releaseNotesTitle": "Nytt",
+  "releaseNotesNew": "Nytt",
+  "releaseNotesImproved": "Forbedret",
+  "releaseNotesFixed": "Rettet",
+  "releaseNotesSeeAll": "Se alle endringer"
 }

@@ -203,5 +203,13 @@
   "notifBuildFallback": "AIが生成したポートフォリオの準備ができました。タップして表示できます。",
   "notifRiskTitle": "ポートフォリオのリスク分析が完了しました",
   "notifRiskMessage": "総合リスク：{{level}}（{{score}}/100）。タップして詳細をご確認ください。",
-  "notifRiskDone": "リスク評価が完了しました。"
+  "notifRiskDone": "リスク評価が完了しました。",
+  "notifReleaseNotesTitle": "BullPenの新機能",
+  "notifReleaseNotesMessage_one": "過去1週間のハイライトが{{count}}件あります。",
+  "notifReleaseNotesMessage_other": "過去1週間のハイライトが{{count}}件あります。",
+  "releaseNotesTitle": "新機能・更新内容",
+  "releaseNotesNew": "新機能",
+  "releaseNotesImproved": "改善",
+  "releaseNotesFixed": "修正",
+  "releaseNotesSeeAll": "すべての変更を見る"
 }

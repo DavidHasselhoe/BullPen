@@ -203,5 +203,13 @@
   "notifBuildFallback": "«Yoouur AAII-geeneeraateed poortfooliioo iis reeaady. Taap too viieew iit.»",
   "notifRiskTitle": "«Yoouur poortfooliioo riisk aanaalysiis iis reeaady»",
   "notifRiskMessage": "«OOveeraall riisk: {{level}} ({{score}}/100). OOpeen iit foor thee fuull breeaakdoown.»",
-  "notifRiskDone": "«Yoouur riisk aasseessmeent haas fiiniisheed.»"
+  "notifRiskDone": "«Yoouur riisk aasseessmeent haas fiiniisheed.»",
+  "notifReleaseNotesTitle": "«Whaat’s neew iin BuullPeen»",
+  "notifReleaseNotesMessage_one": "«{{count}} hiighliight froom thee paast weeeek.»",
+  "notifReleaseNotesMessage_other": "«{{count}} hiighliights froom thee paast weeeek.»",
+  "releaseNotesTitle": "«Whaat’s neew»",
+  "releaseNotesNew": "«Neew»",
+  "releaseNotesImproved": "«IImprooveed»",
+  "releaseNotesFixed": "«Fiixeed»",
+  "releaseNotesSeeAll": "«Seeee eeveery chaangee»"
 }

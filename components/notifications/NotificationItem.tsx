@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, CreditCard, GraduationCap, HeartPulse, Landmark, Star, Newspaper, Crown, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, CreditCard, GraduationCap, HeartPulse, Landmark, Megaphone, Star, Newspaper, Crown, type LucideIcon } from 'lucide-react';
+import { openReleaseNotes } from './ReleaseNotesDialog';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics/track';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -129,6 +130,7 @@ const TYPE_ICONS: Partial<Record<Notification['type'], LucideIcon>> = {
   daily_brief: Newspaper,
   referral: Crown,
   billing: CreditCard,
+  release_notes: Megaphone,
 };
 
 function GenericIcon({ type }: { type: Notification['type'] }) {
@@ -203,6 +205,7 @@ export function useNotificationText(n: Notification): { title: string; message: 
   const extra = p?.kind === 'i18n' ? [...extraNamespaces(p.message, extraNamespaces(p.title))].sort() : [];
   const { t, i18n, ready } = useTranslation(['navigation', ...extra]);
   if (p?.kind === 'earnings_today') return earningsTodayText(p, t as TFunction<'navigation'>, i18n.language);
+  if (p?.kind === 'release_notes') return { title: t('notifReleaseNotesTitle'), message: t('notifReleaseNotesMessage', { count: p.items.length }) };
   if (p?.kind !== 'i18n' || !ready) return { title: n.title, message: n.message };
   const locale = intlLocale(i18n.language);
   const list = new Intl.ListFormat(locale, { type: 'conjunction' });
@@ -435,6 +438,8 @@ function StandardNotificationItem({ notification, onMarkRead }: NotificationItem
   const handleClick = () => {
     trackEvent('notification_clicked', { type: notification.type, was_unread: unread, has_link: !!source });
     if (unread) onMarkRead(notification.id);
+    // No page to go to: the week's changes open in a modal.
+    if (notification.params?.kind === 'release_notes') openReleaseNotes(notification.params);
   };
 
   // The title is the one interactive element; its ::after stretches over the

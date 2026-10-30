@@ -136,7 +136,6 @@
   "notifDailyBriefTitle": "Tu resumen diario está listo",
   "notifDividendOneTitle": "{{symbol}} pasa a cotizar sin dividendo el {{date}}",
   "notifDividendOneMessage": "Las acciones compradas antes del {{date}} recibirán el próximo pago.",
-  "notifDividendManyTitle_one": "{{count}} of your stocks goes ex-dividend soon",
   "notifDividendManyTitle_other": "{{count}} de tus acciones pasarán pronto a cotizar sin dividendo",
   "notifStreakTitle": "Mantén tu racha activa",
   "notifStreakMessage": "El desafío de Academy de hoy te está esperando. Solo toma un minuto.",
@@ -203,5 +202,14 @@
   "notifBuildFallback": "Tu portafolio generado por IA está listo. Toca para verlo.",
   "notifRiskTitle": "Tu análisis de riesgo del portafolio está listo",
   "notifRiskMessage": "Riesgo general: {{level}} ({{score}}/100). Ábrelo para ver el desglose completo.",
-  "notifRiskDone": "Tu evaluación de riesgo ha terminado."
+  "notifRiskDone": "Tu evaluación de riesgo ha terminado.",
+  "notifDividendManyTitle_one": "{{count}} of your stocks goes ex-dividend soon",
+  "notifReleaseNotesTitle": "Novedades en BullPen",
+  "notifReleaseNotesMessage_one": "{{count}} novedad de la última semana.",
+  "notifReleaseNotesMessage_other": "{{count}} novedades de la última semana.",
+  "releaseNotesTitle": "Novedades",
+  "releaseNotesNew": "Nuevo",
+  "releaseNotesImproved": "Mejorado",
+  "releaseNotesFixed": "Corregido",
+  "releaseNotesSeeAll": "Ver todos los cambios"
 }

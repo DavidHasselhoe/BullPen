@@ -43,6 +43,14 @@
       "schedule": "0 8 * * 1-5"
     },
     {
+      "path": "/api/cron/send-results-emails",
+      "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/notify-release-notes",
+      "schedule": "0 13 * * 1"
+    },
+    {
       "path": "/api/cron/sync-economic-calendar",
       "schedule": "15 5 * * 1"
     },
