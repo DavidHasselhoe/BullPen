@@ -33,7 +33,9 @@ const STANCE_STYLE: Record<Verdict['stance'], { key: string; cls: string }> = {
   bullish: { key: 'deepDiveStanceBullish', cls: 'text-emerald-500' },
   bearish: { key: 'deepDiveStanceBearish', cls: 'text-red-500' },
   neutral: { key: 'deepDiveStanceNeutral', cls: 'text-muted-foreground' },
-  mixed: { key: 'deepDiveStanceMixed', cls: 'text-amber-600 dark:text-amber-400' },
+  // Neutral ink, not Warn Amber: amber is for status pills (DESIGN.md), and a
+  // mixed view is a real conclusion, not a caution state.
+  mixed: { key: 'deepDiveStanceMixed', cls: 'text-foreground' },
 };
 
 const CONFIDENCE_KEY: Record<Verdict['confidence'], string> = {

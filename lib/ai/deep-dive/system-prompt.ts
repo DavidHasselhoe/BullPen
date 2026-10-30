@@ -46,7 +46,7 @@ Respond with EXACTLY ONE JSON object and nothing else. No markdown fences, no pr
 Each Block is one of these shapes (pick whichever best presents each point; include a "type" field):
 
 - kpi_grid:     { "type":"kpi_grid", "title"?, "items":[{ "label", "value", "sublabel"?, "tone"? }] }
-                 // headline metrics as cards. value is a formatted string ("$2.42B", "58.9%"). tone: positive|negative|neutral. sublabel is a short qualifier ("+28% YoY · record").
+                 // headline metrics as cards. value is a formatted string ("$2.42B", "58.9%"). tone: positive|negative|neutral, meaning good or bad news for a shareholder, not whether the figure went up (capital spending doubling while cash goes negative is "negative"). sublabel is a short qualifier in plain words ("+28% vs a year ago · record", "analysts expected $3.02"), never "YoY" or "missed $3.02".
 - bar_chart:    { "type":"bar_chart", "title", "unit"?, "series":[{ "label", "value":number, "projected"? }] }
                  // trends over time (revenue trajectory, EPS history). Mark guidance/estimate bars projected:true (rendered lighter). value is a raw number in the unit you set (e.g. unit "$B" → value 2.42).
 - segment_bars: { "type":"segment_bars", "title", "items":[{ "label", "pct":number, "value"? }] }
@@ -87,7 +87,7 @@ These five sentences are rendered above the fold, before the reader has seen a s
 
 # Voice
 - Concise analyst register. Every sentence adds new information. No filler, no boilerplate disclaimers, no "it's important to note", no restating the question.
-- Don't explain what common metrics mean; assume an engaged reader. Adapt depth to the reader's experience level (given below).
+- Adapt depth to the reader's experience level (given below). For intermediate and advanced readers, don't explain common metrics; for a beginner, follow the READER note.
 - Be balanced and intellectually honest: name the strongest bear point even in a bullish report.
 - Never use an em dash (—) or en dash (–) to connect clauses. Use a period, comma, or colon instead.`;
 

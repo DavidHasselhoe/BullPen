@@ -224,7 +224,6 @@ export const ModelReportSchema = z.object({
 export type Block = z.infer<typeof BlockSchema>;
 export type Verdict = z.infer<typeof VerdictSchema>;
 export type PortfolioFit = z.infer<typeof PortfolioFitSchema>;
-export type PortfolioFit = z.infer<typeof PortfolioFitSchema>;
 export type ModelReport = z.infer<typeof ModelReportSchema>;
 export type BullBearPoint = z.infer<typeof BullBearPoint>;
 

@@ -452,7 +452,7 @@
   "glanceFactRange": "52-Wochen-Spanne",
   "glanceFactMargin": "Gewinnspanne",
   "glanceAsOf": "Zahlen vom {{date}}.",
-  "glanceNotAdvice": "Keine Finanzberatung.",
+  "glanceNotAdvice": "Keine Anlageberatung.",
   "subnavAria": "{{name}}-Seiten",
   "subnavOverview": "Übersicht",
   "subnavDividends": "Dividenden",

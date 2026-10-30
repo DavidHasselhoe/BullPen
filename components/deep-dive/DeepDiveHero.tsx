@@ -1,9 +1,10 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { CalendarCheck, Clock } from 'lucide-react';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
+import { useEarningsHistory } from '@/hooks/use-earnings-history';
+import type { EarningsCalendar as EarningsItem } from '@/lib/finnhub/finnhub-client';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { VerdictBar } from './VerdictBar';
 import type { DeepDivePrice } from '@/hooks/use-deep-dive-price';
@@ -32,11 +33,58 @@ export function fmtAbsolute(dateStr: string, locale: string): string {
 }
 
 const STALE_DAYS = 14;
+/** A quarter is reported within ~6-10 weeks of ending. Stored statements whose
+ *  latest quarter ended longer than this before the latest report predate it. */
+const REPORT_LAG_DAYS = 75;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function daysSince(dateStr: string): number {
-  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
-  if (!y || !m || !d) return 0;
-  return (Date.now() - new Date(y, m - 1, d).getTime()) / (24 * 60 * 60 * 1000);
+  return (Date.now() - new Date(dateStr).getTime()) / DAY_MS;
+}
+
+function daysBetween(fromYmd: string, toYmd: string): number {
+  return (Date.parse(toYmd.slice(0, 10)) - Date.parse(fromYmd.slice(0, 10))) / DAY_MS;
+}
+
+/** "YYYY-MM-DD" and minutes past midnight, in New York: earnings dates are exchange dates. */
+function etParts(iso: string): { day: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(iso));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return { day: `${get('year')}-${get('month')}-${get('day')}`, minutes: Number(get('hour')) * 60 + Number(get('minute')) };
+}
+
+/** Did this earnings release come out after the report was written? */
+function releasedAfter(e: EarningsItem, written: { day: string; minutes: number }): boolean {
+  if (e.date !== written.day) return e.date > written.day;
+  // Same day: an after-the-close release lands after a report written during the session.
+  if (/after/i.test(e.hour)) return written.minutes < 16 * 60;
+  if (/before|pre/i.test(e.hour)) return written.minutes < 9 * 60 + 30;
+  return false;
+}
+
+/**
+ * The report's time story, from the company's real earnings dates.
+ *
+ * "fundamentals as of {date}" used to sit in the meta line. That date is the
+ * last quarter in BullPen's stored statements, not how fresh the report is, and
+ * on GOOGL it read Jun 30 above a Financials card about July to September.
+ * Freshness is now "does it include the latest results", and the stored-data
+ * date only appears when it actually lags those results.
+ */
+function useTimeline(report: Report, when: string) {
+  const { data: earnings } = useEarningsHistory(report.ticker);
+  const now = etParts(new Date().toISOString());
+  const written = etParts(when);
+  const released = (earnings ?? [])
+    .filter((e) => !e.estimated && !releasedAfter(e, now))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const newer = released.find((e) => releasedAfter(e, written));
+  const included = released.find((e) => !releasedAfter(e, written));
+  const storedLags = !!included && !!report.dataAsOf && daysBetween(report.dataAsOf, included.date) > REPORT_LAG_DAYS;
+  return { newer, included, storedLags };
 }
 
 interface Props {
@@ -66,11 +114,16 @@ interface Props {
 export function DeepDiveHero({ report, when, actions, price }: Props) {
   const { t } = useTranslation('tools');
   const locale = useIntlLocale();
-  const dataStale = !!report.dataAsOf && daysSince(report.dataAsOf) > STALE_DAYS;
-  // A report sitting beside today's live price reads as current. Past two
-  // weeks, or on fundamentals that old, say so where the verdict is read
-  // instead of only in the 12px meta line.
-  const stale = daysSince(when) > STALE_DAYS || dataStale;
+  const { newer, included, storedLags } = useTimeline(report, when);
+  // A report sitting beside today's live price reads as current. New results
+  // since it was written are the real reason it isn't; past two weeks, news
+  // alone is. This used to also fire on dataAsOf older than two weeks, which is
+  // every report: a quarter always ends weeks before it is reported.
+  const notice = newer
+    ? t('deepDiveNewResultsNotice', { date: fmtAbsolute(newer.date, locale) })
+    : daysSince(when) > STALE_DAYS
+      ? t('deepDiveStaleNotice', { date: fmtAbsolute(when, locale) })
+      : null;
 
   return (
     <div className="space-y-5">
@@ -85,25 +138,30 @@ export function DeepDiveHero({ report, when, actions, price }: Props) {
           {actions && <div className="flex items-center gap-1.5">{actions}</div>}
           <p className="text-xs leading-snug text-muted-foreground sm:max-w-[300px] sm:text-right">
             {t('deepDiveMetaGenerated', { when: fmtRelative(when, locale) })}
-            {report.dataAsOf && (
-              <>
-                {' · '}
-                <span className={cn(dataStale && 'text-amber-500 font-medium')}>
-                  {t('deepDiveMetaDataAsOf', { date: fmtAbsolute(report.dataAsOf, locale) })}
-                </span>
-              </>
-            )}
             {' · '}
             {t('deepDiveMetaVerify')}
           </p>
         </div>
       </div>
 
-      {stale && (
+      {notice ? (
         <p role="note" className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-xs leading-relaxed text-foreground/90">
           <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" aria-hidden />
-          {t('deepDiveStaleNotice', { date: fmtAbsolute(when, locale) })}
+          {notice}
         </p>
+      ) : included && (
+        <div className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+          <CalendarCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+          <div className="space-y-0.5">
+            <p>
+              <span className="font-medium text-foreground/90">{t('deepDiveTimelineIncludes', { date: fmtAbsolute(included.date, locale) })}</span>
+              {' '}{t('deepDiveTimelineWhy')}
+            </p>
+            {storedLags && report.dataAsOf && (
+              <p>{t('deepDiveTimelineStoredData', { date: fmtAbsolute(report.dataAsOf, locale) })}</p>
+            )}
+          </div>
+        </div>
       )}
 
       <VerdictBar ticker={report.ticker} verdict={report.verdict} price={price} />

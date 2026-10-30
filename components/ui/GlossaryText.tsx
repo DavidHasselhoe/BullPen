@@ -21,7 +21,21 @@ const JARGON_TERMS = [
   // Sorting by length below is what keeps 'P/E' from stealing the match inside
   // 'Forward P/E', so these are safe to add flat.
   'Sequential Growth', 'Hyperscaler', 'TAM', 'Beta', 'P/E',
+  // The beginner prompt spells terms out instead of abbreviating them, so the
+  // spelled-out forms need the same help. Aliased below onto existing entries.
+  'Free Cash Flow', 'Capital Spending', 'Capital Expenditures', 'CapEx', 'Earnings Per Share',
+  'Operating Profit', 'Operating Income', 'EBITDA',
 ].sort((a, b) => b.length - a.length);
+
+/** Plain-English spellings with no glossary entry of their own. 'EPS' itself is
+ *  not swept: its entry describes the trailing-12-month figure, and a report
+ *  quotes a single quarter. */
+const ALIASES: Record<string, string> = {
+  'Capital Spending': 'Capital Expenditures',
+  CapEx: 'Capital Expenditures',
+  'Earnings Per Share': 'EPS (Diluted)',
+  'Operating Profit': 'Operating Income',
+};
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -69,7 +83,7 @@ export function glossaryText(text: string, seen: Set<string>): ReactNode {
   return parts.map((part, i) => {
     if (i % 2 === 0) return part ? <span key={i}>{part}</span> : null;
     const term = canonicalTerm(part);
-    const entry = term ? getGlossaryEntry(term) : undefined;
+    const entry = term ? getGlossaryEntry(ALIASES[term] ?? term) : undefined;
     if (!term || !entry || seen.has(term)) return <span key={i}>{part}</span>;
     seen.add(term);
     return (

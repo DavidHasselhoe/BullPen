@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import {
   TrendingUp, TrendingDown, Minus, Check, X, AlertTriangle, ArrowUpRight, ArrowDownRight,
+  CircleCheck, CircleAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { tierBadgeClass, tierTextClass, type Tier } from '@/lib/ui/severity-tiers';
@@ -80,23 +81,36 @@ const SEGMENT_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '
 
 // ─── kpi_grid ───────────────────────────────────────────────────────────────
 
+// The value is a level (revenue, capital spending), not a gain or loss, so it
+// stays neutral. It used to wear the tone color, which painted $127.6B of
+// revenue emerald and $51.4B of capital spending red as if those were moves.
+// The tone is the model's good-news/bad-news call, so it is said in words.
 function KpiGrid({ block }: { block: Extract<Block, { type: 'kpi_grid' }> }) {
+  const { t } = useTranslation('tools');
   const seen = new Set<string>();
   return (
     <section>
       <SectionTitle>{block.title}</SectionTitle>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
         {block.items.map((item, i) => (
-          <div key={i} className="rounded-xl border border-border/60 bg-muted/20 p-3">
-            <p className="text-[11px] text-muted-foreground leading-tight">
+          <div key={i} className="flex flex-col rounded-xl border border-border/60 bg-muted/20 p-3">
+            <p className="text-xs text-muted-foreground leading-snug">
               {glossaryText(item.label, seen)}
             </p>
-            <p className={cn('text-xl font-bold tabular-nums mt-1 leading-none', toneText(item.tone))}>
+            <p className="mt-1.5 font-mono text-xl font-semibold tabular-nums leading-none text-foreground">
               {item.value}
             </p>
             {item.sublabel && (
-              <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
+              <p className="mt-1.5 text-xs text-muted-foreground leading-snug">
                 {glossaryText(item.sublabel, seen)}
+              </p>
+            )}
+            {(item.tone === 'positive' || item.tone === 'negative') && (
+              <p className={cn('mt-auto flex items-center gap-1 pt-2 text-xs font-medium', toneText(item.tone))}>
+                {item.tone === 'positive'
+                  ? <CircleCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  : <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+                {t(item.tone === 'positive' ? 'deepDiveToneGood' : 'deepDiveToneConcern')}
               </p>
             )}
           </div>
@@ -109,6 +123,7 @@ function KpiGrid({ block }: { block: Extract<Block, { type: 'kpi_grid' }> }) {
 // ─── bar_chart ────────────────────────────────────────────────────────────────
 
 function BarChartBlock({ block }: { block: Extract<Block, { type: 'bar_chart' }> }) {
+  const { t } = useTranslation('tools');
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const axis = isDark ? '#52525b' : '#a1a1aa';
@@ -123,9 +138,9 @@ function BarChartBlock({ block }: { block: Extract<Block, { type: 'bar_chart' }>
     <section>
       <SectionTitle>{block.title}</SectionTitle>
       <div className="flex items-center gap-4 mb-2 text-[11px] text-muted-foreground">
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[#3b82f6]" /> Actual</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[#3b82f6]" aria-hidden /> {t('deepDiveChartActual')}</span>
         {block.series.some((s) => s.projected) && (
-          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[#3b82f6]/40" /> Guidance / projected</span>
+          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[#3b82f6]/40" aria-hidden /> {t('deepDiveChartProjected')}</span>
         )}
       </div>
       <ResponsiveContainer width="100%" height={240}>

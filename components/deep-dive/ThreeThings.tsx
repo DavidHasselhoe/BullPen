@@ -31,9 +31,10 @@ import type { DeepDiveReport as Report } from '@/lib/ai/deep-dive/schema';
 interface CardSpec {
   label: string;
   icon: typeof TrendingUp;
-  /** Border + fill + icon color. Growth and risk borrow the emerald/red the
-   *  bull_bear block already uses for the same meanings; "watch" stays neutral
-   *  because it is a date to look at, not a good or bad signal. */
+  /** Border + fill + icon color. Risk borrows the red the bull_bear block uses
+   *  for the downside. Growth and "watch" stay neutral: the growth sentence is
+   *  as often "growth slowed" as "growth sped up", and emerald under a slowdown
+   *  reads as good news (GOOGL: "the core Search and ads business slowed"). */
   tint: string;
   iconColor: string;
 }
@@ -42,8 +43,8 @@ const SPECS: Record<'growth' | 'risk' | 'watch', CardSpec> = {
   growth: {
     label: 'deepDiveThingGrowth',
     icon: TrendingUp,
-    tint: 'border-emerald-500/20 bg-emerald-500/[0.04]',
-    iconColor: 'text-emerald-500',
+    tint: 'border-border/60 bg-muted/25',
+    iconColor: 'text-muted-foreground',
   },
   risk: {
     label: 'deepDiveThingRisk',

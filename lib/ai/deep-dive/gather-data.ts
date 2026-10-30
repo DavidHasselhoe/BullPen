@@ -14,6 +14,7 @@ import {
   type CashFlowPeriod, type CompanyProfile,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached } from '@/lib/cache/market-data-cache';
+import { checkAndInvalidateFundamentals } from '@/lib/cache/fundamentals-freshness';
 import { statementsInUsd } from '@/lib/currency/latest-rates';
 import type { StatementFx } from '@/lib/currency/statement-fx';
 import type { HealthScore } from '@/lib/finance/health-score';
@@ -60,6 +61,11 @@ async function cachedOrFetch<T>(key: string, fetcher: () => Promise<T>, fallback
 
 export async function gatherDeepDiveData(symbol: string): Promise<DeepDiveData> {
   const sym = symbol.toUpperCase();
+
+  // A report written the day after earnings read June's statements for GOOGL:
+  // only a stock page view ran this check. Throttled hourly, 5 credits, and it
+  // expires the statements only when TwelveData has actually updated them.
+  await checkAndInvalidateFundamentals(sym);
 
   const [stats, rawIncome, rawBalance, rawCashflow, profile, snapEarnings, fiscal] = await Promise.all([
     cachedOrFetch<CompanyStatistics | null>(`stats:${sym}`, () => getStatistics(sym), null),

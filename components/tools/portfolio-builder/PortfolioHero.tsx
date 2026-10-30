@@ -95,7 +95,7 @@ export function PortfolioHero({ portfolio, when }: Props) {
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <ConfidenceScale score={portfolio.confidence_score} />
-          <p className="text-[10px] text-muted-foreground text-right">
+          <p className="max-w-[300px] text-xs leading-snug text-muted-foreground text-right">
             {t('portfolioBuilderMetaLine', { when: formatWhen(when, t) })}
           </p>
         </div>
