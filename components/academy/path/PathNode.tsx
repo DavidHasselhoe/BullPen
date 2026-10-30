@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Check, Lock, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CourseIcon } from '../CourseIcon';
 import type { CourseWithProgress } from '@/types/academy';
 
@@ -141,23 +143,46 @@ export function PathNode({ course, isCurrent, offset, align, circleRef }: Props)
     </div>
   );
 
-  const showSkipToQuiz = isProgressionLocked && course.hasFinalQuiz;
-
+  // The order lock is a suggestion, not a wall: someone who already knows the
+  // basics can jump ahead after one confirm. Opening a lesson counts as
+  // progress, which unlocks the course for good (lib/academy/unlock.ts).
   if (!isInteractive) {
     return (
-      <div className="flex flex-col items-center gap-1.5 py-2.5">
-        <div aria-disabled="true">
-          {content}
-          <span className="sr-only">{t('pathNodeLocked')}</span>
-        </div>
-        {showSkipToQuiz && (
-          <Link
-            href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}
-            className="text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
-          >
-            {t('pathNodeSkipToQuiz')}
-          </Link>
-        )}
+      <div className="flex justify-center py-2.5">
+        <Dialog>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              {content}
+              <span className="sr-only">{t('pathNodeLocked')}</span>
+            </button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-balance">{t('pathSkipTitle', { title: course.title })}</DialogTitle>
+              <DialogDescription className="text-pretty">{t('pathSkipBody')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:items-center">
+              {course.hasFinalQuiz && (
+                <Link
+                  href={`/academy/${course.slug}/quiz?title=${encodeURIComponent(course.title)}`}
+                  className="inline-flex min-h-11 items-center justify-center text-sm text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground sm:mr-auto"
+                >
+                  {t('pathSkipQuiz')}
+                </Link>
+              )}
+              <DialogClose asChild>
+                <Button variant="outline">{t('pathSkipCancel')}</Button>
+              </DialogClose>
+              <Button asChild>
+                <Link href={`/academy/${course.slug}`}>{t('pathSkipConfirm')}</Link>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
