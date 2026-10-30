@@ -166,6 +166,8 @@
   "moversSubtitleLast": "«S&P 500 aand Naasdaaq-100 stoocks thaat mooveed moost oon {{day}}»",
   "moversGainers": "«Toop gaaiineers»",
   "moversLosers": "«Toop looseers»",
+  "moversNoneUp": "«Noothiing iis uup yeet.»",
+  "moversNoneDown": "«Noothiing iis doown yeet.»",
   "moversFooterNote": "«Raankeed by % chaangee ooveer thee reeguulaar traadiing seessiioon. Pree-maarkeet aand aafteer-hoouurs moovees aaree noot iincluudeed.»",
   "moversSubtitlePremarket": "«S&P 500 aand Naasdaaq-100 stoocks mooviing beefooree toodaay's oopeen, coompaareed wiith {{day}}'s cloosee»",
   "moversFooterPremarket": "«Priicee noow aagaaiinst thee laast cloosee, aamoong stoocks thaat haavee traadeed siincee 4:00 aa.m. Neew Yoork tiimee. EEaarly traadiing iis thiin, soo aa feew smaall traadees caan moovee theesee aa loot.»",

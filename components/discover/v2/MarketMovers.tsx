@@ -114,8 +114,8 @@ export function MarketMovers() {
       </div>
 
       <div className="grid overflow-hidden rounded-xl border border-border/50 bg-card/40 md:grid-cols-2 md:divide-x md:divide-border/50">
-        <MoverList title={t('moversGainers')} rows={lists.gainers.slice(0, SHOWN)} earningsLabel={t('moversEarnings')} />
-        <MoverList title={t('moversLosers')} rows={lists.losers.slice(0, SHOWN)} earningsLabel={t('moversEarnings')} className="border-t border-border/50 md:border-t-0" />
+        <MoverList title={t('moversGainers')} rows={lists.gainers.slice(0, SHOWN)} emptyLabel={t('moversNoneUp')} earningsLabel={t('moversEarnings')} />
+        <MoverList title={t('moversLosers')} rows={lists.losers.slice(0, SHOWN)} emptyLabel={t('moversNoneDown')} earningsLabel={t('moversEarnings')} className="border-t border-border/50 md:border-t-0" />
       </div>
 
       <p className="mt-2 text-xs text-muted-foreground">{showPre ? t('moversFooterPremarket') : t('moversFooterNote')}</p>
@@ -123,11 +123,12 @@ export function MarketMovers() {
   );
 }
 
-function MoverList({ title, rows, earningsLabel, className }: { title: string; rows: IndexMover[]; earningsLabel: string; className?: string }) {
-  if (rows.length === 0) return null;
+function MoverList({ title, rows, emptyLabel, earningsLabel, className }: { title: string; rows: IndexMover[]; emptyLabel: string; earningsLabel: string; className?: string }) {
   return (
     <div className={cn('min-w-0', className)}>
       <h3 className="px-4 pt-3 text-xs font-medium text-foreground sm:px-5">{title}</h3>
+      {/* Early pre-market, everything that has traded can be moving one way. Say so rather than drop the column. */}
+      {rows.length === 0 && <p className="px-4 py-3 text-sm text-muted-foreground sm:px-5">{emptyLabel}</p>}
       <ul className="py-1">
         {rows.map((m) => (
           <li key={m.symbol}>

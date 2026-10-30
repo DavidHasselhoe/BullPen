@@ -57,7 +57,10 @@
   "homeComingEmptyNoStocks": "次の7日間に重要な経済発表はありません。",
   "homeComingError": "今後の予定が読み込めませんでした。1分後に試してください。",
   "homeComingFullCalendar": "フルカレンダー",
+  "homeComingOthersToday_one": "本日は、他に{{count}}社が決算を発表します",
+  "homeComingOthersToday_other": "本日は、他に{{count}}社が決算を発表します",
   "homeComingTitle": "近日中",
+  "homeComingTitleMine": "あなたの銘柄の今後の予定",
   "homeComingToday": "今日",
   "homeComingTomorrow": "明日",
   "homeCustomize": "ホームをカスタマイズ",
@@ -555,7 +558,7 @@
   "pickClosed": "このポジションはクローズされました：{{reason}}。${{price}}で凍結され、その価格のままトラックレコードに残ります。",
   "pickClosedDefaultReason": "証券取引が終了した",
   "pickPriceSectionLabel": "ピック後の株価",
-  "pickFooter": "{{date}}の市場データ、当社のヘルススコアとピアベンチマーク、公開ニュースからClaudeが生成しました。これは調査であり投資アドバイスではなく、あなたの状況を考慮していません。ここに掲載されている情報は、公開後に更新されていません。これは意図的なもので、実際の主張がどのようなものだったかを見ることができます。",
+  "pickFooter": "{{date}}の市場データ、当社のヘルススコアとピアベンチマーク、公開ニュースからClaudeが生成しました。これはリサーチ情報であり投資助言ではなく、あなたの状況を考慮していません。ここに掲載されている情報は、公開後に更新されていません。これは意図的なもので、実際の主張がどのようなものだったかを見ることができます。",
   "pickFooterLink": "トラックレコードの測定方法",
   "pickCaseHeading": "主張",
   "pickEvidenceHeading": "背景にある数字",
@@ -628,7 +631,6 @@
   "indexName_sp500": "S&P 500",
   "indexName_nasdaq100": "ナスダック100",
   "indexName_dow30": "ダウ30",
-  "homeComingOthersToday_one": "本日は、他に{{count}}社が決算を発表します",
-  "homeComingOthersToday_other": "本日は、他に{{count}}社が決算を発表します",
-  "homeComingTitleMine": "あなたの銘柄の今後の予定"
+  "moversNoneUp": "まだ上昇している銘柄はありません。",
+  "moversNoneDown": "まだ下落している銘柄はありません。"
 }

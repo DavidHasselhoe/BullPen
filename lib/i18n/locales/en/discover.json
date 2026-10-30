@@ -166,6 +166,8 @@
   "moversSubtitleLast": "S&P 500 and Nasdaq-100 stocks that moved most on {{day}}",
   "moversGainers": "Top gainers",
   "moversLosers": "Top losers",
+  "moversNoneUp": "Nothing is up yet.",
+  "moversNoneDown": "Nothing is down yet.",
   "moversFooterNote": "Ranked by % change over the regular trading session. Pre-market and after-hours moves are not included.",
   "moversSubtitlePremarket": "S&P 500 and Nasdaq-100 stocks moving before today's open, compared with {{day}}'s close",
   "moversFooterPremarket": "Price now against the last close, among stocks that have traded since 4:00 a.m. New York time. Early trading is thin, so a few small trades can move these a lot.",
