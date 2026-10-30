@@ -196,8 +196,10 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     institution_filing: true,
     politician_trades: true,
     politician_trades_holdings: true,
-    // Opt-in: ~6-8 market-wide releases a month is noise for anyone not following macro.
-    economic_events: false,
+    // On by default since 2026-10-30: release results are the reason to follow them (lib/notifications/notification-creators.ts economicFollowers).
+    economic_events: true,
+    // On by default: one curated note a week at most (lib/notifications/release-notes.ts).
+    release_notes: true,
     // The morning email (lib/email/alert-email.ts) of the three stock alerts above it.
     email_alerts: true,
   });
@@ -292,7 +294,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         institution_filing: settings.notifications?.institution_filing !== false,
         politician_trades: settings.notifications?.politician_trades !== false,
         politician_trades_holdings: settings.notifications?.politician_trades_holdings !== false,
-        economic_events: settings.notifications?.economic_events === true,
+        economic_events: settings.notifications?.economic_events !== false,
+        release_notes: settings.notifications?.release_notes !== false,
         email_alerts: settings.notifications?.email_alerts !== false,
       });
       const dh = (settings.default_homepage as string) || '/dashboard';

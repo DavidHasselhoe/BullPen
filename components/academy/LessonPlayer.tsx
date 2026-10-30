@@ -13,6 +13,7 @@ import { ScenarioLesson } from '@/components/academy/lessons/ScenarioLesson';
 import { ChartTourLesson } from '@/components/academy/lessons/ChartTourLesson';
 import { DemoLesson } from '@/components/academy/lessons/DemoLesson';
 import { LessonComplete, type LessonCompleteResult, type LockedAhead } from '@/components/academy/LessonComplete';
+import { economyLinkForLesson } from '@/lib/market-data/economic-kinds';
 import { ACADEMY_STATS_QUERY_KEY } from '@/hooks/use-academy-stats';
 import { trackEvent } from '@/lib/analytics/track';
 import {
@@ -193,6 +194,7 @@ export function LessonPlayer({ lesson, courseSlug, courseTitle, nextLesson, isSa
         score={finished.score}
         carriedXp={carriedXp}
         lockedAhead={lockedAhead}
+        economyHref={economyLinkForLesson(courseSlug, lesson.slug)}
         onRetry={
           finished.score && finished.score.correct < finished.score.total
             ? () => {

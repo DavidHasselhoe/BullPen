@@ -154,6 +154,7 @@
   "lessonPlayerPosition": "第 {{current}} 课，共 {{total}} 课",
   "lessonCompleteScore": "{{correct}} 道正确，共 {{total}} 道",
   "lessonCompleteRetry": "重新做题",
+  "lessonCompleteLatestNumbers": "查看最新数据",
   "lessonCompleteStillAhead_one": "该课程还有 {{count}} 课，获得 {{xp}} XP",
   "lessonCompleteStillAhead_other": "该课程还有 {{count}} 课，获得 {{xp}} XP",
   "academyProGateDescriptionAfterSample_one": "这是免费课程。Pro 版本解锁该课程的其他 {{count}} 课，以及所有中阶和进阶课程。",

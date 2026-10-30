@@ -146,6 +146,7 @@
   "lessonPlayerPosition": "Leksjon {{current}} av {{total}}",
   "lessonCompleteScore": "{{correct}} av {{total}} riktig",
   "lessonCompleteRetry": "Prøv spørsmålene igjen",
+  "lessonCompleteLatestNumbers": "Se de nyeste tallene",
   "lessonCompleteStillAhead_one": "{{count}} leksjon til i dette kurset, {{xp}} XP",
   "lessonCompleteStillAhead_other": "{{count}} leksjoner til i dette kurset, {{xp}} XP",
   "academyProGateDescriptionAfterSample_one": "Det var gratisleksjonen. Pro låser opp den andre {{count}} leksjonen i dette kurset, pluss alle kurs på middels og avansert nivå.",

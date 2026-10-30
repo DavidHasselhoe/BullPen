@@ -153,6 +153,7 @@
   "lessonPlayerPosition": "第 {{current}} レッスン (全 {{total}} レッスン)",
   "lessonCompleteScore": "{{total}} 問中 {{correct}} 問正解",
   "lessonCompleteRetry": "もう一度問題に挑戦する",
+  "lessonCompleteLatestNumbers": "最新の数字を見る",
   "lessonCompleteStillAhead_one": "このコースに {{count}} レッスン残っています ({{xp}} XP)",
   "lessonCompleteStillAhead_other": "このコースに {{count}} レッスン残っています ({{xp}} XP)",
   "academyProGateDescriptionAfterSample_one": "これが無料のレッスンです。Pro でこのコースの残り {{count}} レッスンと、すべての中級・応用コースがアンロックされます。",

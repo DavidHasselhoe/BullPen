@@ -148,6 +148,7 @@
   "lessonPlayerPosition": "Lektion {{current}} von {{total}}",
   "lessonCompleteScore": "{{correct}} von {{total}} richtig",
   "lessonCompleteRetry": "Versuche die Fragen erneut",
+  "lessonCompleteLatestNumbers": "Die aktuellen Zahlen ansehen",
   "lessonCompleteStillAhead_one": "{{count}} weitere Lektion in diesem Kurs, {{xp}} XP",
   "lessonCompleteStillAhead_other": "{{count}} weitere Lektionen in diesem Kurs, {{xp}} XP",
   "academyProGateDescriptionAfterSample_one": "Das war die kostenlose Lektion. Pro schaltet die andere {{count}} Lektion in diesem Kurs frei, dazu alle Kurse für Fortgeschrittene und Profis.",

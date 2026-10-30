@@ -163,6 +163,7 @@
   "lessonPlayerPosition": "«Leessoon {{current}} oof {{total}}»",
   "lessonCompleteScore": "«{{correct}} oof {{total}} riight»",
   "lessonCompleteRetry": "«Try thee quueestiioons aagaaiin»",
+  "lessonCompleteLatestNumbers": "«Seeee thee laateest nuumbeers»",
   "lessonCompleteStillAhead_one": "«{{count}} mooree leessoon iin thiis coouursee, {{xp}} XP»",
   "lessonCompleteStillAhead_other": "«{{count}} mooree leessoons iin thiis coouursee, {{xp}} XP»",
   "academyProGateDescriptionAfterSample_one": "«Thaat waas thee freeee leessoon. Proo uunloocks thee ootheer {{count}} leessoon iin thiis coouursee, pluus eeveery iinteermeediiaatee aand aadvaanceed coouursee.»",

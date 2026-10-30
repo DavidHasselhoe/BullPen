@@ -14,7 +14,7 @@ import { useClock } from '@/hooks/use-clock';
 import { fmtClockDate } from '@/lib/dates/clock';
 import { intlLocale } from '@/lib/i18n/intl-locale';
 import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
-import { ECONOMIC_KINDS, fmtReleaseTimeForViewer, type EconomicEvent } from '@/lib/market-data/economic-kinds';
+import { ECONOMIC_KINDS, economyHref, fmtReleaseTimeForViewer, type EconomicEvent, type EconomicKind } from '@/lib/market-data/economic-kinds';
 
 function formatRelativeTime(dateString: string, language: string): string {
   const date = new Date(dateString);
@@ -300,6 +300,12 @@ function notificationSource(n: Notification, t: TFunction<'navigation'>): { labe
     const id = n.entity_id.split(':')[1];
     const label = INDEX_PAGE_LABELS[id];
     if (label) return { label, href: `/discover/indexes/${id}` };
+  }
+
+  // entity_id is "economic-result:<kind>:<event id>": what a release printed.
+  if (n.type === 'market' && n.entity_id?.startsWith('economic-result:')) {
+    const kind = n.entity_id.split(':')[1] as EconomicKind;
+    return { label: t('notifSourceEconomy'), href: economyHref(kind) ?? '/tools/economy' };
   }
 
   // entity_type is typed narrower than runtime — the alert cron writes 'user_alert'.

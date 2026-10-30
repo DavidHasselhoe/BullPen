@@ -86,6 +86,13 @@ export function economyHref(kind: EconomicKind): string | null {
   return ECONOMY_SLUGS[kind] ? `/tools/economy/${ECONOMY_SLUGS[kind]}` : null;
 }
 
+const LESSON_ECONOMY: Record<string, string> = { [BIG_FOUR_LESSON]: '/tools/economy', [RATES_LESSON]: '/tools/economy/fed-rate' };
+
+/** The live numbers behind a macro lesson, for its reward screen. A read and its "-check" share that screen. */
+export function economyLinkForLesson(courseSlug: string, lessonSlug: string): string | null {
+  return LESSON_ECONOMY[`/academy/${courseSlug}/${lessonSlug.replace(/-check$/, '')}`] ?? null;
+}
+
 /** "8:30 AM" / "14:30" on the user's clock (lib/dates/clock), or in `timeZone` when given. */
 export function fmtReleaseTime(iso: string, timeZone?: string): string {
   const clock = getClock();

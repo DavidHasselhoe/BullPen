@@ -50,6 +50,7 @@ import { getCachedPerformance, livePerformanceFor } from '@/lib/picks/performanc
 import { QUARTER_RE } from '@/lib/picks/quarters';
 import { toTeaser } from '@/lib/briefs/teaser';
 import { getEconomicEvents } from '@/lib/market-data/economic-calendar';
+import { economyHref } from '@/lib/market-data/economic-kinds';
 import { THEME_DISPLAY_ORDER } from '@/lib/discover/theme-config';
 import { loadFundHoldings } from '@/lib/institutions/load-holdings';
 import type { DiffableHolding, HoldingChange } from '@/lib/institutions/compute-diff';
@@ -2115,7 +2116,12 @@ export function appContentTools(userId: string | null) {
       description:
         'Scheduled US economic releases (jobs report, CPI, PCE, GDP, jobless claims, Fed decisions) in a date range, ' +
         'from the Market Events Calendar. Use for "when is the next Fed meeting", "is CPI this week". ' +
-        'Times are UTC ISO; say them in ET. Free: stored data.',
+        'Times are UTC ISO; say them in ET. Free: stored data. ' +
+        'Released events carry results (first entry is the headline; actual vs previous), period_label (the date ' +
+        'the month or quarter covered starts) and, for Fed decisions, verdict (hold, raise or lower). Units: *_yoy, ' +
+        '*_mom, unemployment, gdp and rate_* are percent; payrolls is thousands of jobs; claims is a count. For ' +
+        '"what did CPI come in at" or "what did the Fed do", pass from about 45 days back. There is no forecast or ' +
+        'consensus, so compare only with the previous release. resultsPage links that release\'s history.',
       inputSchema: jsonSchema<{ from?: string; to?: string }>({
         type: 'object',
         properties: {
@@ -2131,7 +2137,10 @@ export function appContentTools(userId: string | null) {
         if ((Date.parse(end) - Date.parse(start)) / 86_400_000 > 62) return { error: 'Range too long: 62 days at most.' };
         try {
           const rows = await getEconomicEvents(start, end);
-          return { from: start, to: end, events: rows.map(({ source: _s, id: _id, ...e }) => e), page: '/tools/calendar' };
+          return {
+            from: start, to: end, page: '/tools/calendar',
+            events: rows.map(({ source: _s, id: _id, ...e }) => ({ ...e, resultsPage: economyHref(e.kind) })),
+          };
         } catch {
           return { error: 'Could not load the economic calendar.' };
         }

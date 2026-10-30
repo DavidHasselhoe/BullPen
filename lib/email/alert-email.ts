@@ -2,7 +2,7 @@
  * The morning alert email: one email a day, only when something happened,
  * carrying the alerts a user has on: earnings, ex-dividend dates, big moves,
  * Health Score grade changes, politicians trading their stocks, index changes,
- * the day's economic releases, the Daily Brief (Pro) and Monday's Weekly Pick,
+ * the day's economic releases and their results, the Daily Brief (Pro) and Monday's Weekly Pick,
  * plus how their watchlist did (the week on Mondays, the last close otherwise),
  * which is reason enough on its own to send it.
  * The pick is the one alert nearly every account gets, so for most people it is
@@ -26,7 +26,7 @@ import { addDays, monthKeyOf, todayET } from '@/lib/dates/calendar-format';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 import { getMonthCloses, monthClosesKey } from '@/lib/market-data/month-closes';
 import { closeOnOrBefore } from '@/lib/watchlist/scorecard';
-import { BIG_FOUR_LESSON } from '@/lib/market-data/economic-kinds';
+import { BIG_FOUR_LESSON, economyHref, type EconomicKind } from '@/lib/market-data/economic-kinds';
 import { rget } from '@/lib/cache/redis-cache';
 import { whyTodayKey, isStale, type CachedWhyToday } from '@/lib/ai/why-today';
 import { logger } from '@/lib/utils/logger';
@@ -216,6 +216,16 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
       href: BIG_FOUR_LESSON,
     };
   }
+  // "economic-result:<kind>:<event id>": what a release printed (notifyEconomicResults).
+  if (n.type === 'market' && n.entity_id?.startsWith('economic-result:')) {
+    return {
+      section: 'economic',
+      headline: n.title,
+      detail: n.message,
+      cue: 'See the full history',
+      href: economyHref(n.entity_id.split(':')[1] as EconomicKind) ?? '/tools/economy',
+    };
+  }
   if (n.type === 'daily_brief') {
     // The brief lives on Home. Its title is model-written and shown whole.
     return {
@@ -401,7 +411,8 @@ const GROUP_TITLES: Record<Group, string> = {
   stocks: 'Your stocks',
   brief: "Today's Daily Brief",
   pick: "Bull's Weekly Pick",
-  economic: 'On the calendar',
+  // Both today's releases and the results that came in since yesterday.
+  economic: 'Economic releases',
 };
 
 /** What touches their money first, market-wide background last. */

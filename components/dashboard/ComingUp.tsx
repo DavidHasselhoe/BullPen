@@ -12,15 +12,16 @@ import { useHomePortfolio } from '@/hooks/use-home-portfolio';
 import { useAuth } from '@/hooks/use-auth';
 import { useIntlLocale } from '@/hooks/use-intl-locale';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
-import { fmtReleaseTimeShort, type EconomicEvent, type EconomicKind } from '@/lib/market-data/economic-kinds';
+import { economyHref, fmtReleaseTimeShort, type EconomicEvent } from '@/lib/market-data/economic-kinds';
+import { economicResultText, RESULT_KINDS_NOTIFIED } from '@/lib/market-data/economic-verdict';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { cn } from '@/lib/utils';
 
 const DAYS_AHEAD = 7;
 const MAX_ROWS = 6;
-/** Releases that move the whole market. Weekly jobless claims and the smaller
- *  BLS prints stay on the full calendar, or they'd crowd out the user's own stocks. */
-const HOME_KINDS: EconomicKind[] = ['fomc', 'cpi', 'jobs', 'pce', 'gdp'];
+/** Releases that move the whole market, the same ones that notify. Weekly jobless claims and the
+ *  smaller BLS prints stay on the full calendar, or they'd crowd out the user's own stocks. */
+const HOME_KINDS = RESULT_KINDS_NOTIFIED;
 
 type Row =
   | { kind: 'earnings'; date: string; symbol: string; name: string; logoUrl: string | null; time?: string; estimated?: boolean }
@@ -50,6 +51,7 @@ export function ComingUp() {
   const { t } = useTranslation('discover');
   useClock(); // re-render when the time zone or 12/24h clock changes
   const { t: tTools } = useTranslation('tools');
+  const { t: tNav } = useTranslation('navigation');
   const locale = useIntlLocale();
   const { symbols, isLoading: homeLoading } = useHomePortfolio();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -79,6 +81,8 @@ export function ComingUp() {
       ];
     },
     enabled: !homeLoading,
+    // A released result can show here up to an hour after its notification. Accepted:
+    // a shorter staleTime would refetch the earnings and dividend feeds too.
     staleTime: 60 * 60 * 1000,
     gcTime: 2 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -116,6 +120,10 @@ export function ComingUp() {
 
   const describe = (r: Row) => {
     if (r.kind === 'economic') {
+      // Released and filled: what came in (the notification's sentence). Until then, when.
+      const { id, kind, results, verdict } = r.event;
+      const text = results?.length ? economicResultText({ id, kind, results, verdict: verdict ?? null }) : null;
+      if (text) return tNav(text.title.key, text.title.vars);
       return t('homeComingEconomic', { name: tTools(`economicName_${r.event.kind}`), time: fmtReleaseTimeShort(r.event.release_at) });
     }
     if (r.kind === 'dividend') return t('homeComingDividend', { ticker: r.symbol });
@@ -173,13 +181,12 @@ export function ComingUp() {
             );
             return (
               <li key={key}>
-                {r.kind === 'economic' ? (
-                  <div className="flex items-center gap-3 px-5 py-3">{body}</div>
-                ) : (
-                  <Link href={slugToAssetPath(r.symbol)} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40">
-                    {body}
-                  </Link>
-                )}
+                <Link
+                  href={r.kind === 'economic' ? (economyHref(r.event.kind) ?? '/tools/economy') : slugToAssetPath(r.symbol)}
+                  className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40"
+                >
+                  {body}
+                </Link>
               </li>
             );
           })}

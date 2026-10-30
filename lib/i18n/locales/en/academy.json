@@ -163,6 +163,7 @@
   "lessonPlayerPosition": "Lesson {{current}} of {{total}}",
   "lessonCompleteScore": "{{correct}} of {{total}} right",
   "lessonCompleteRetry": "Try the questions again",
+  "lessonCompleteLatestNumbers": "See the latest numbers",
   "lessonCompleteStillAhead_one": "{{count}} more lesson in this course, {{xp}} XP",
   "lessonCompleteStillAhead_other": "{{count}} more lessons in this course, {{xp}} XP",
   "academyProGateDescriptionAfterSample_one": "That was the free lesson. Pro unlocks the other {{count}} lesson in this course, plus every intermediate and advanced course.",

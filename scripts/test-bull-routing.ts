@@ -66,6 +66,14 @@ const CASES: Case[] = [
     expectOneOf: ['getEconomicCalendar'],
   },
   {
+    // PCE, not CPI: the first stored CPI result is 11-10. Any filled kind proves the look-back.
+    name: 'latest PCE comes from stored results',
+    prompt: 'What did PCE inflation come in at last month?',
+    expectOneOf: ['getEconomicCalendar'],
+    // A number next to "PCE", so "I can't see the figures" plus some other % can't pass.
+    expectText: /PCE[^.%]{0,40}\d\.\d\s?%/,
+  },
+  {
     name: 'price question takes the 1-credit tool',
     prompt: 'What is NVDA trading at right now?',
     expectOneOf: ['getLiveQuote'],

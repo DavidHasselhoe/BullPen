@@ -9,11 +9,14 @@
  */
 
 import { createNotification, isNotificationEnabled, type CreateNotificationInput, type NotifMsg, type I18nParams } from './notifications-db';
+import i18next from 'i18next';
+import enNavigation from '@/lib/i18n/locales/en/navigation.json';
 import { createServerClient } from '@/lib/supabase/client';
 import type { NewTrade } from '@/lib/congress/ingest-trades';
 import { formatAmountRange, tradeDirection } from '@/lib/congress/types';
 import { isPro, tierFromUser } from '@/lib/billing/tier';
 import { ECONOMIC_KINDS, type EconomicKind } from '@/lib/market-data/economic-kinds';
+import { economicResultText, RESULT_KINDS_NOTIFIED, type EconomicResultEvent } from '@/lib/market-data/economic-verdict';
 import { CALENDAR_PREFS_KEY, parseCalendarPrefs } from '@/lib/market-data/calendar-prefs';
 import { indexChangeWeekOf, type IndexChangeEvent } from '@/lib/market-data/index-events';
 import { TRACKERS, type IndexId } from '@/lib/market-data/index-membership';
@@ -877,12 +880,34 @@ export interface EconomicReleaseToday {
 }
 
 /**
- * Morning-of heads-up for today's scheduled economic releases, to users who
- * opted in (settings.notifications.economic_events === true; off by default,
- * unlike the per-holding notifications, because it is market-wide).
- *
- * Each user only hears about the releases they follow: the Economic picks in
- * the Market Calendar (settings.calendar_prefs.economicKinds, all by default).
+ * Everyone who follows economic releases, with the kinds they follow: the
+ * Economic picks in the Market Calendar (settings.calendar_prefs.economicKinds,
+ * all by default). settings.notifications.economic_events switches both the
+ * heads-up and the results off; on by default since 2026-10-30 (it was opt-in,
+ * and 1 of 31 accounts had found it).
+ */
+async function economicFollowers(): Promise<Array<{ id: string; kinds: Set<EconomicKind> }>> {
+  const supabase = createServerClient();
+  const users: Array<{ id: string; kinds: Set<EconomicKind> }> = [];
+  // Paginated: PostgREST silently caps an unbounded select at 1000.
+  // ponytail: reads every account's settings to treat a missing toggle as on; filter
+  // in the query (economic_events is null or not 'false') once accounts number in the thousands.
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from('users').select('id, settings').order('id').range(from, from + 999);
+    if (error) throw error;
+    for (const u of data ?? []) {
+      const settings = (u.settings as { notifications?: Record<string, unknown> } & Record<string, unknown> | null) ?? {};
+      if (settings.notifications?.economic_events === false) continue;
+      users.push({ id: u.id as string, kinds: new Set(parseCalendarPrefs(settings[CALENDAR_PREFS_KEY]).economicKinds) });
+    }
+    if (!data || data.length < 1000) break;
+  }
+  return users;
+}
+
+/**
+ * Morning-of heads-up for today's scheduled economic releases, to each
+ * follower (economicFollowers) about the releases they follow.
  *
  * The stored title/message carry ET times as a fallback. The notification
  * list re-renders the times in the viewer's own zone and adds the read/watch
@@ -893,22 +918,7 @@ export async function notifyEconomicEventsToday(date: string, events: EconomicRe
   const supabase = createServerClient();
   const entityId = `economic:${date}`;
 
-  // Opted-in users, paginated: PostgREST silently caps an unbounded select at 1000.
-  const users: Array<{ id: string; kinds: Set<EconomicKind> }> = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, settings')
-      .eq('settings->notifications->>economic_events', 'true')
-      .order('id')
-      .range(from, from + 999);
-    if (error) throw error;
-    for (const u of data ?? []) {
-      const settings = (u.settings as Record<string, unknown> | null) ?? {};
-      users.push({ id: u.id as string, kinds: new Set(parseCalendarPrefs(settings[CALENDAR_PREFS_KEY]).economicKinds) });
-    }
-    if (!data || data.length < 1000) break;
-  }
+  const users = await economicFollowers();
   if (users.length === 0) return 0;
   const userIds = users.map((u) => u.id);
 
@@ -937,6 +947,45 @@ export async function notifyEconomicEventsToday(date: string, events: EconomicRe
       : msg('notifEconomicMany', { count: mine.length }));
     return [{ user_id, type: 'market', title, message, entity_type: 'market', entity_id: entityId, severity: 'info', params }];
   });
+  for (let i = 0; i < rows.length; i += 500) {
+    const { error } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
+    if (error) throw error;
+  }
+  return rows.length;
+}
+
+// The stored English fallback, rendered from the same keys the panel translates.
+const enNotif = i18next.createInstance();
+enNotif.init({ lng: 'en', resources: { en: { navigation: enNavigation } }, defaultNS: 'navigation', interpolation: { escapeValue: false }, initAsync: false });
+export const enText = (m: NotifMsg): string => enNotif.t(m.key, Object.fromEntries(Object.entries(m.vars ?? {}).map(([k, v]) =>
+  [k, Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : enText(x))).join(' ') : v])));
+
+/**
+ * A release's result just landed (lib/market-data/economic-results.ts): tell
+ * each follower of that kind what came in. entity_id "economic-result:<kind>:<event id>"
+ * makes it idempotent, and its own prefix keeps it clear of the morning email's
+ * "economic:<today>" filter. The card and the email link to /tools/economy/<slug>.
+ */
+export async function notifyEconomicResults(event: EconomicResultEvent): Promise<number> {
+  if (!RESULT_KINDS_NOTIFIED.includes(event.kind)) return 0;
+  const text = economicResultText(event);
+  if (!text) return 0;
+  const supabase = createServerClient();
+  const entityId = `economic-result:${event.kind}:${event.id}`;
+
+  const users = (await economicFollowers()).filter((u) => u.kinds.has(event.kind));
+  if (users.length === 0) return 0;
+  const { data: existing, error: existingError } = await supabase
+    .from('notifications').select('user_id').eq('entity_id', entityId).in('user_id', users.map((u) => u.id));
+  if (existingError) throw existingError;
+  const done = new Set((existing ?? []).map((n) => n.user_id as string));
+
+  const title = enText(text.title);
+  const message = text.message ? enText(text.message) : '';
+  const params = i18n(text.title, text.message);
+  const rows = users.filter((u) => !done.has(u.id)).map((u) => ({
+    user_id: u.id, type: 'market', title, message, entity_type: 'market', entity_id: entityId, severity: 'info', params,
+  }));
   for (let i = 0; i < rows.length; i += 500) {
     const { error } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
     if (error) throw error;

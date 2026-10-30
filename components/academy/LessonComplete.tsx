@@ -45,6 +45,8 @@ interface Props {
   /** XP from the read lesson this check was paired with. */
   carriedXp: number;
   lockedAhead: LockedAhead | null;
+  /** The live numbers behind a macro lesson (economyLinkForLesson). */
+  economyHref?: string | null;
   /** Offered when some answers were wrong. */
   onRetry?: () => void;
 }
@@ -60,7 +62,7 @@ interface Props {
  * level and streak wait for the server's numbers rather than guessing.
  */
 export function LessonComplete({
-  courseSlug, courseTitle, xpReward, nextLesson, finishedSample, before: beforeThisLesson, result, failed, score, carriedXp, lockedAhead, onRetry,
+  courseSlug, courseTitle, xpReward, nextLesson, finishedSample, before: beforeThisLesson, result, failed, score, carriedXp, lockedAhead, economyHref, onRetry,
 }: Props) {
   const { t } = useTranslation('academy');
   const reduced = useReducedMotion();
@@ -190,6 +192,11 @@ export function LessonComplete({
           <Button type="button" size="lg" variant="outline" className="w-full gap-2" onClick={onRetry}>
             <RotateCcw className="h-4 w-4" aria-hidden />
             {t('lessonCompleteRetry')}
+          </Button>
+        )}
+        {economyHref && (
+          <Button asChild size="lg" variant="outline" className="w-full">
+            <Link href={economyHref}>{t('lessonCompleteLatestNumbers')}</Link>
           </Button>
         )}
         <Button asChild size="lg" variant="ghost" className="w-full text-muted-foreground">

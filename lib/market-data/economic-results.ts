@@ -16,6 +16,7 @@
 
 import { createServerClient } from '@/lib/supabase/client';
 import { SITE_URL } from '@/lib/site';
+import { notifyEconomicResults } from '@/lib/notifications/notification-creators';
 import { etDateOf } from './economic-calendar';
 import type { EconomicKind } from './economic-kinds';
 
@@ -324,7 +325,7 @@ async function fillRelease(event: EventRow): Promise<string> {
   const period = periodsOf(kind, s)[0];
   const results = computeMetrics(kind, s, period);
   if (results.length === 0) return 'no data';
-  await saveResult(event.id, { period_label: period, results, verdict: null });
+  await saveResult(event, { period_label: period, results, verdict: null });
   return `filled ${period}`;
 }
 
@@ -352,7 +353,7 @@ async function fillFomc(event: EventRow): Promise<string> {
     { key: 'rate_upper', actual: decision.upper, previous: before },
     { key: 'rate_lower', actual: decision.lower, previous: beforeLower },
   ];
-  await saveResult(event.id, { period_label: event.date, results, verdict });
+  await saveResult(event, { period_label: event.date, results, verdict });
 
   // Chart the new range straight away instead of waiting for FRED.
   if (verdict && verdict !== 'hold') {
@@ -365,11 +366,17 @@ async function fillFomc(event: EventRow): Promise<string> {
   return `filled ${verdict ?? 'unknown'}`;
 }
 
-async function saveResult(id: string, fields: { period_label: string; results: Metric[]; verdict: Verdict | null }) {
+/**
+ * Notify first, then freeze the result: a failed notify leaves results_at
+ * empty so the next run retries, and the notifications' entity_id keeps that
+ * retry from telling anyone twice.
+ */
+async function saveResult(event: EventRow, fields: { period_label: string; results: Metric[]; verdict: Verdict | null }) {
+  await notifyEconomicResults({ id: event.id, kind: event.kind, results: fields.results, verdict: fields.verdict });
   const { error } = await createServerClient()
     .from('economic_events')
     .update({ ...fields, results_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', event.id);
   if (error) throw error;
 }
 
