@@ -11,7 +11,7 @@
  * return visit doesn't offer the form again. See lib/email/results-subscriptions.ts.
  */
 
-import { useEffect, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { useState, useSyncExternalStore, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, Loader2, Mail, MailCheck, X } from 'lucide-react';
@@ -59,50 +59,75 @@ function useSaved(symbol: string): Saved | null {
 
 // ─── Landing from the email ──────────────────────────────────────────────────
 
-type Landed = 'confirmed' | 'unsubscribed';
-function readLanded(): Landed | null {
-  const v = new URLSearchParams(window.location.search).get('email');
-  return v === 'confirmed' || v === 'unsubscribed' ? v : null;
+type LinkAction = 'confirm' | 'unsubscribe';
+type Phase = 'ask' | 'working' | 'done' | 'failed';
+interface Landed { action: LinkAction; token: string }
+
+// A string snapshot, so useSyncExternalStore sees a stable value between renders.
+function readLandedKey(): string | null {
+  const p = new URLSearchParams(window.location.search);
+  const action = p.get('email');
+  const token = p.get('token');
+  return (action === 'confirm' || action === 'unsubscribe') && token ? `${action}:${token}` : null;
 }
 const noSubscribe = () => () => {};
-function clearLandedParam() {
+function clearLandedParams() {
   const url = new URL(window.location.href);
   url.searchParams.delete('email');
+  url.searchParams.delete('token');
   window.history.replaceState(window.history.state, '', url);
 }
 
-/** Mounted at the top of the stock page: the earnings card is lazy and far down, so it can't be the one to say it worked. */
+/**
+ * Mounted at the top of the stock page, where the confirm and unsubscribe
+ * links land. The link itself changes nothing (mail scanners open every
+ * link), so the toast asks, and its button makes the POST.
+ */
 export function EarningsEmailLanding({ symbol, name }: { symbol: string; name: string }) {
   const { t } = useTranslation('stock');
   const reduced = useReducedMotion();
-  const landed = useSyncExternalStore(noSubscribe, readLanded, () => null);
+  const key = useSyncExternalStore(noSubscribe, readLandedKey, () => null);
+  const landed: Landed | null = key ? { action: key.split(':')[0] as LinkAction, token: key.slice(key.indexOf(':') + 1) } : null;
+  const [phase, setPhase] = useState<Phase>('ask');
   const [dismissed, setDismissed] = useState(false);
 
-  // Dropping ?email= when the toast goes, not when it shows: the param is what
-  // keeps it up, and afterwards a reload or a shared link shouldn't say it again.
+  // The params go with the toast, so a reload or a shared link doesn't ask again.
   const dismiss = () => {
     setDismissed(true);
-    clearLandedParam();
+    clearLandedParams();
   };
 
-  useEffect(() => {
-    if (!landed) return;
-    writeSaved(symbol, landed === 'confirmed' ? 'on' : null);
-    const timer = setTimeout(() => {
-      setDismissed(true);
-      clearLandedParam();
-    }, 8000);
-    return () => clearTimeout(timer);
-  }, [landed, symbol]);
+  async function act() {
+    if (!landed || phase === 'working') return;
+    setPhase('working');
+    try {
+      const res = await fetch(`/api/subscribe/${landed.action}?token=${encodeURIComponent(landed.token)}`, { method: 'POST' });
+      if (!res.ok) throw new Error(String(res.status));
+      writeSaved(symbol, landed.action === 'confirm' ? 'on' : null);
+      setPhase('done');
+      setTimeout(dismiss, 6000);
+    } catch {
+      setPhase('failed');
+    }
+  }
 
-  const confirmed = landed === 'confirmed';
   if (!landed) return null;
+  const confirm = landed.action === 'confirm';
+  const done = phase === 'done';
+  const title = done
+    ? confirm ? t('earningsEmailToastConfirmedTitle') : t('earningsEmailToastUnsubscribedTitle')
+    : confirm ? t('earningsEmailToastConfirmAskTitle') : t('earningsEmailToastUnsubscribeAskTitle', { name });
+  const body = done
+    ? confirm ? t('earningsEmailToastConfirmedBody', { name }) : t('earningsEmailToastUnsubscribedBody', { name })
+    : confirm ? t('earningsEmailToastConfirmAskBody', { name }) : null;
+
   // Portalled: the page header is a size container, which would pin a fixed child to it instead of the screen.
   return createPortal(
     <AnimatePresence>
-      {landed && !dismissed && (
+      {!dismissed && (
         <motion.div
-          role="status"
+          role={done ? 'status' : 'dialog'}
+          aria-label={title}
           initial={reduced ? false : { opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={reduced ? { opacity: 0 } : { opacity: 0, y: -12 }}
@@ -114,16 +139,21 @@ export function EarningsEmailLanding({ symbol, name }: { symbol: string; name: s
             <span
               className={cn(
                 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-                confirmed ? 'bg-emerald-500/15 text-emerald-400' : 'bg-muted text-muted-foreground',
+                done && confirm ? 'bg-emerald-500/15 text-emerald-400' : 'bg-muted text-muted-foreground',
               )}
             >
-              {confirmed ? <MailCheck className="h-4 w-4" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
+              {done ? (confirm ? <MailCheck className="h-4 w-4" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />) : <Mail className="h-4 w-4" aria-hidden />}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">{confirmed ? t('earningsEmailToastConfirmedTitle') : t('earningsEmailToastUnsubscribedTitle')}</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                {confirmed ? t('earningsEmailToastConfirmedBody', { name }) : t('earningsEmailToastUnsubscribedBody', { name })}
-              </p>
+              <p className="text-sm font-semibold">{title}</p>
+              {body && <p className="mt-0.5 text-sm text-muted-foreground">{body}</p>}
+              {phase === 'failed' && <p role="alert" className="mt-1 text-sm text-red-400">{t('earningsEmailToastLinkFailed')}</p>}
+              {!done && (
+                <Button size="sm" variant={confirm ? 'default' : 'outline'} className="mt-3 h-10" onClick={act} disabled={phase === 'working'}>
+                  {phase === 'working' && <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />}
+                  {confirm ? t('earningsEmailToastConfirmButton') : t('earningsEmailToastUnsubscribeButton')}
+                </Button>
+              )}
             </div>
             <Button variant="ghost" size="icon" className="-mr-1 -mt-1 h-9 w-9 shrink-0" aria-label={t('earningsEmailToastDismiss')} onClick={dismiss}>
               <X className="h-4 w-4" />

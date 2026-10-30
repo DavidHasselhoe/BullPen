@@ -105,11 +105,21 @@ export async function subscribe(rawEmail: string, rawSymbol: string): Promise<Su
   return 'sent';
 }
 
-/** The symbol confirmed, or null for an unknown token. */
+/** Read-only, for the email links: they only land on the page, and a click there does the change. */
+export async function symbolForToken(token: string): Promise<string | null> {
+  const { data } = await table().select('symbol').eq('token', token).maybeSingle();
+  return (data as { symbol: string } | null)?.symbol ?? null;
+}
+
+/**
+ * The symbol confirmed, or null for an unknown or unsubscribed token. An old
+ * confirm link doesn't undo an unsubscribe; signing up again does.
+ */
 export async function confirmSubscription(token: string): Promise<string | null> {
   const { data } = await table()
-    .update({ confirmed_at: new Date().toISOString(), unsubscribed_at: null })
+    .update({ confirmed_at: new Date().toISOString() })
     .eq('token', token)
+    .is('unsubscribed_at', null)
     .select('symbol')
     .maybeSingle();
   return (data as { symbol: string } | null)?.symbol ?? null;

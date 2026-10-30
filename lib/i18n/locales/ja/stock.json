@@ -673,7 +673,6 @@
   "earningsEmailFailed": "登録できませんでした。もう一度お試しください。",
   "earningsEmailPreviewEarned": "利益",
   "earningsEmailPreviewExpected": "予想",
-  "earningsEmailPlaceholder": "you@email.com",
   "earningsEmailSentBodyNoEmail": "届いたメールのリンクをクリックして確認してください。",
   "earningsEmailStartOver": "別のメールアドレスを使う",
   "earningsEmailOnTitle": "{{name}}の決算結果がメールで届きます",
@@ -691,5 +690,12 @@
   "earningsEmailToastConfirmedBody": "決算発表のたびに{{name}}の結果をメールでお送りします。",
   "earningsEmailToastUnsubscribedTitle": "配信を停止しました",
   "earningsEmailToastUnsubscribedBody": "{{name}}の決算結果はメールでお送りしなくなります。",
-  "earningsEmailToastDismiss": "閉じる"
+  "earningsEmailToastDismiss": "閉じる",
+  "earningsEmailPlaceholder": "you@email.com",
+  "earningsEmailToastConfirmAskTitle": "メールアドレスを確認",
+  "earningsEmailToastConfirmAskBody": "決算発表のたびに、{{name}}の結果をメールでお受け取りいただけます。",
+  "earningsEmailToastConfirmButton": "確認",
+  "earningsEmailToastUnsubscribeAskTitle": "{{name}}の結果のメール配信を停止しますか？",
+  "earningsEmailToastUnsubscribeButton": "配信を停止",
+  "earningsEmailToastLinkFailed": "このリンクは機能しませんでした。もう一度お試しいただくか、このページから再度登録してください。"
 }

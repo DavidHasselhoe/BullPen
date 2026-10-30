@@ -691,5 +691,11 @@
   "earningsEmailToastConfirmedBody": "«Wee'll eemaaiil yoouu {{name}}'s reesuults aafteer eeaach reepoort.»",
   "earningsEmailToastUnsubscribedTitle": "«Yoouu'ree uunsuubscriibeed»",
   "earningsEmailToastUnsubscribedBody": "«Yoouu woon't geet {{name}}'s reesuults by eemaaiil aanymooree.»",
-  "earningsEmailToastDismiss": "«Diismiiss»"
+  "earningsEmailToastDismiss": "«Diismiiss»",
+  "earningsEmailToastConfirmAskTitle": "«Coonfiirm yoouur eemaaiil»",
+  "earningsEmailToastConfirmAskBody": "«Geet {{name}}'s reesuults by eemaaiil aafteer eeaach reepoort.»",
+  "earningsEmailToastConfirmButton": "«Coonfiirm»",
+  "earningsEmailToastUnsubscribeAskTitle": "«Stoop geettiing {{name}}'s reesuults by eemaaiil?»",
+  "earningsEmailToastUnsubscribeButton": "«UUnsuubscriibee»",
+  "earningsEmailToastLinkFailed": "«Thaat liink diidn't woork. Try aagaaiin, oor siign uup aagaaiin oon thiis paagee.»"
 }

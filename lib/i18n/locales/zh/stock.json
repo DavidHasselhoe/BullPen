@@ -672,8 +672,6 @@
   "earningsEmailFailed": "订阅失败，请重试。",
   "earningsEmailPreviewEarned": "实际盈利",
   "earningsEmailPreviewExpected": "预期",
-  "commodityReturnsTitle": "Price change vs the S&P 500",
-  "earningsEmailPlaceholder": "you@email.com",
   "earningsEmailSentBodyNoEmail": "请点击我们发到你邮箱里的链接完成确认。",
   "earningsEmailStartOver": "换一个邮箱",
   "earningsEmailOnTitle": "你将通过邮件收到 {{name}} 的财报结果",
@@ -691,5 +689,13 @@
   "earningsEmailToastConfirmedBody": "每次财报发布后，我们都会把 {{name}} 的财报结果发到你的邮箱。",
   "earningsEmailToastUnsubscribedTitle": "已取消订阅",
   "earningsEmailToastUnsubscribedBody": "你将不再通过邮件收到 {{name}} 的财报结果。",
-  "earningsEmailToastDismiss": "关闭"
+  "earningsEmailToastDismiss": "关闭",
+  "commodityReturnsTitle": "Price change vs the S&P 500",
+  "earningsEmailPlaceholder": "you@email.com",
+  "earningsEmailToastConfirmAskTitle": "确认你的邮箱",
+  "earningsEmailToastConfirmAskBody": "每次财报发布后，通过邮件获取{{name}}的业绩结果。",
+  "earningsEmailToastConfirmButton": "确认",
+  "earningsEmailToastUnsubscribeAskTitle": "不再通过邮件接收{{name}}的业绩结果？",
+  "earningsEmailToastUnsubscribeButton": "取消订阅",
+  "earningsEmailToastLinkFailed": "该链接无法使用。请重试，或在本页面重新注册。"
 }

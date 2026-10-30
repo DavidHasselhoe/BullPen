@@ -691,5 +691,11 @@
   "earningsEmailToastConfirmedBody": "We'll email you {{name}}'s results after each report.",
   "earningsEmailToastUnsubscribedTitle": "You're unsubscribed",
   "earningsEmailToastUnsubscribedBody": "You won't get {{name}}'s results by email anymore.",
-  "earningsEmailToastDismiss": "Dismiss"
+  "earningsEmailToastDismiss": "Dismiss",
+  "earningsEmailToastConfirmAskTitle": "Confirm your email",
+  "earningsEmailToastConfirmAskBody": "Get {{name}}'s results by email after each report.",
+  "earningsEmailToastConfirmButton": "Confirm",
+  "earningsEmailToastUnsubscribeAskTitle": "Stop getting {{name}}'s results by email?",
+  "earningsEmailToastUnsubscribeButton": "Unsubscribe",
+  "earningsEmailToastLinkFailed": "That link didn't work. Try again, or sign up again on this page."
 }

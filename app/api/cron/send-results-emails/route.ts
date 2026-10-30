@@ -13,7 +13,9 @@ import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { sendResultsEmails } from '@/lib/email/results-subscriptions';
 
-export const maxDuration = 120;
+// Sends are one at a time (Resend allows a few a second, with retries). Each
+// row is marked as it goes, so a run cut short sends the rest the next day.
+export const maxDuration = 300;
 
 async function handleGET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
