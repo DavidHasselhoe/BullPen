@@ -35,11 +35,18 @@
  *   biggest contributor to the multi-thousand-credit-per-minute spikes seen
  *   on the TwelveData dashboard. Now paced like phase=stats: one guarded
  *   batch per GitHub Actions loop iteration, 65s apart.
+ *
+ * phase=reported — runs before phase=financials. Re-checks TwelveData's
+ *   last_change (5 credits each) for companies that reported in the last few
+ *   days and whose cached statements don't include the report yet, so this
+ *   morning's financials phase refetches the ones TwelveData has updated. See
+ *   checkRecentReporters in lib/cache/fundamentals-freshness.ts.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withCronReport } from '@/lib/cron/report';
 import { createServerClient } from '@/lib/supabase/client';
+import { checkRecentReporters } from '@/lib/cache/fundamentals-freshness';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import {
   batchFetch,
@@ -73,6 +80,8 @@ const STATS_BATCH_SIZE = 5;               // symbols per batch (5 × 70 credits 
  *  screener/refresh reserves against, so the two crons can't stack past the
  *  610/min plan cap if their schedules ever land in the same wall-clock minute. */
 const CREDITS_PER_SYMBOL = 70;
+/** Companies per phase=reported call: 20 x 5 last_change credits. */
+const REPORTED_BATCH_SIZE = 20;
 const FINANCIALS_BATCH_SIZE = 1;          // symbols per call — see phase=financials doc above for why this can't be 5 like stats
 /** /income_statement + /balance_sheet + /cash_flow, ~101 credits each measured
  *  live (see phase=financials doc above) — reserved worst-case per symbol
@@ -524,10 +533,10 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
   const supabase = createServerClient();
   const allSymbols = Array.from(SIGNIFICANT_TICKERS);
   const sp = request.nextUrl.searchParams;
-  const phase = sp.get('phase') === 'financials' ? 'financials' : 'stats';
+  const phase = sp.get('phase') === 'financials' || sp.get('phase') === 'reported' ? sp.get('phase') : 'stats';
   const batchIndex = parseInt(sp.get('batch') ?? '0', 10);
 
-  if (phase === 'financials') {
+  if (phase === 'financials' || phase === 'reported') {
     // This phase is the only thing in the app that fetches income/balance/
     // cash-flow across many symbols, so it has to cover everything that reads
     // those cache keys — not just SIGNIFICANT_TICKERS. lib/market-data/
@@ -537,6 +546,10 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     // phase skips is a ticker whose health score can never refresh.
     const universe = await getActiveUniverse();
     const financialsSymbols = [...new Set([...allSymbols, ...universe])];
+    if (phase === 'reported') {
+      const result = await checkRecentReporters(financialsSymbols, REPORTED_BATCH_SIZE);
+      return NextResponse.json({ success: true, phase, batch: batchIndex, ...result, done: result.remaining === 0 });
+    }
     return handleFinancials(supabase, financialsSymbols, batchIndex);
   }
 

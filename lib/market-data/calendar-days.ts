@@ -553,21 +553,13 @@ async function readCalendarRange<T = CalendarRow>(
     else missing.push(d);
   }
 
-  if (missing.length === 0 || !allowFetch) {
-    return { byDate, missingDates: missing, partial: missing.length > 0 };
+  if (missing.length === 0) {
+    return { byDate, missingDates: missing, partial: false };
   }
 
-  // Group the missing days into fetch units. Truncation-prone kinds go one day
-  // per request; the sparse ones take a whole contiguous span at once.
-  const units: Array<{ from: string; to: string }> = PER_DAY_KINDS.has(kind)
-    ? missing.slice(0, MAX_LIVE_DAYS_PER_REQUEST).map((d) => ({ from: d, to: d }))
-    : [{ from: missing[0], to: missing[missing.length - 1] }];
-
-  const reserved = await tryReserveCredits(units.length * CALENDAR_CREDITS_PER_REQUEST);
-  if (!reserved) {
-    // Budget is tight. Fall back to stale entries rather than rendering empty
-    // days — a slightly older calendar beats a blank one, and beats
-    // contributing to an account-wide rate-limit breach.
+  // Fall back to stale entries rather than rendering empty days: a slightly
+  // older calendar beats a blank one.
+  const withStale = async () => {
     const stale = await getCachedManyStale<T[]>(missing.map((d) => calendarDayKey(kind, d)));
     for (const d of missing) {
       const hit = stale.get(calendarDayKey(kind, d));
@@ -575,7 +567,23 @@ async function readCalendarRange<T = CalendarRow>(
     }
     const stillMissing = missing.filter((d) => !byDate.has(d));
     return { byDate, missingDates: stillMissing, partial: stillMissing.length > 0 };
-  }
+  };
+
+  // Cache-only readers (the stock page's Earnings card, the watchlist, Bull)
+  // take an expired day as it is. The last few days live 6h and the warm cron
+  // runs once a day, so they spent most of every day expired, and Amazon's
+  // Oct 29 report vanished from its own stock page the morning after.
+  if (!allowFetch) return withStale();
+
+  // Group the missing days into fetch units. Truncation-prone kinds go one day
+  // per request; the sparse ones take a whole contiguous span at once.
+  const units: Array<{ from: string; to: string }> = PER_DAY_KINDS.has(kind)
+    ? missing.slice(0, MAX_LIVE_DAYS_PER_REQUEST).map((d) => ({ from: d, to: d }))
+    : [{ from: missing[0], to: missing[missing.length - 1] }];
+
+  // Budget is tight: don't contribute to an account-wide rate-limit breach.
+  const reserved = await tryReserveCredits(units.length * CALENDAR_CREDITS_PER_REQUEST);
+  if (!reserved) return withStale();
 
   const results = await Promise.allSettled(
     units.map((u) => fetchAndCacheUnit(kind, u.from, u.to, today))

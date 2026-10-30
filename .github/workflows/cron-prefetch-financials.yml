@@ -46,6 +46,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
+      # Statements are cached for 7 days and only a stock page view re-checks
+      # them early, so a company nobody opened sat on the old quarter for a
+      # week after reporting. This expires the ones TwelveData has updated
+      # since the report; the loop below then refetches them. 5 credits per
+      # company, 20 per call; failures don't block the financials loop.
+      - name: Re-check statements for recent earnings reporters
+        continue-on-error: true
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpeninvest.com' }}
+        run: |
+          for batch in $(seq 0 14); do
+            RESPONSE=$(curl -fsS -X GET -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/prefetch-market-data?phase=reported&batch=${batch}") || break
+            echo "$RESPONSE"
+            [ "$(echo "$RESPONSE" | jq -r '.done // false')" = "true" ] && break
+            sleep 15
+          done
+
       - name: Refresh financials (paced batches, one symbol each)
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}

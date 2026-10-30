@@ -856,10 +856,15 @@ export function SankeyCard({ ticker }: { ticker: string }) {
 
           {noData && (
             <div
-              className="flex items-center justify-center rounded-xl border border-border/40 bg-muted/20 text-sm text-muted-foreground"
+              className="flex items-center justify-center rounded-xl border border-border/40 bg-muted/20 px-6 text-center text-sm text-muted-foreground text-balance"
               style={{ height: PLACEHOLDER_H }}
             >
-              {t('sankeyNoData')}
+              {/* A row with EPS and nothing else is the provider's stub, not
+                  a missing period: AMZN's Q2 2026 sat like this for three
+                  months after its 10-Q was on EDGAR. */}
+              {row && !row.revenue
+                ? t('sankeyStatementIncomplete', { period: labelOf(row) })
+                : t('sankeyNoData')}
             </div>
           )}
 
@@ -877,8 +882,9 @@ export function SankeyCard({ ticker }: { ticker: string }) {
           )}
         </div>
 
-        {/* ── Newest results announced, statements not filed yet (same note as Financials) ── */}
-        {!isLoading && !noData && !isPlanRestricted && pending && (
+        {/* ── Newest results announced, statements not filed yet (same note as Financials).
+            Shown over an empty period too: that is when it explains the most. ── */}
+        {!isLoading && !isPlanRestricted && pending && (
           <p className="px-6 pb-1 text-xs text-muted-foreground">
             {t('financialsReportPending', {
               period: fiscalLabel(t, pending),
