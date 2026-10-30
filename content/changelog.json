@@ -1,5 +1,61 @@
 [
   {
+    "date": "2026-10-30",
+    "entries": [
+      {
+        "type": "fixed",
+        "text": "Creating a watchlist works again, and if saving ever fails you now see why instead of nothing happening",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "When the Fed, CPI inflation, the jobs report, PCE or GDP comes out, you get a plain-words note in the app and in your morning email, with a link to the full history",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull from a Deep Dive or a Portfolio Builder result and it reads that report before it answers",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "A short What's new note each Monday with the biggest improvements. You can turn it off in Settings"
+      },
+      {
+        "type": "new",
+        "text": "Tap a locked course on the Academy path to skip ahead to it, or test out with its quiz"
+      },
+      {
+        "type": "new",
+        "text": "Not signed up yet? Get a company's earnings results by email from the earnings card on its stock page"
+      },
+      {
+        "type": "improved",
+        "text": "Financial statements update the morning after a company reports earnings, instead of up to a week later"
+      },
+      {
+        "type": "improved",
+        "text": "A Deep Dive written right after earnings uses the new quarter, marks what is actual and what is guidance on its chart, and explains terms more plainly for beginners"
+      },
+      {
+        "type": "improved",
+        "text": "The Report a bug or idea window keeps your text if you close it, tells you what is missing, and no longer stretches off the screen"
+      },
+      {
+        "type": "fixed",
+        "text": "A company's latest earnings report no longer disappears from its stock page the morning after"
+      },
+      {
+        "type": "fixed",
+        "text": "The earnings countdown says Today on report day and Tomorrow the day before"
+      },
+      {
+        "type": "fixed",
+        "text": "Pre-market movers on Discover say when nothing is up yet, instead of showing an empty column"
+      }
+    ]
+  },
+  {
     "date": "2026-10-29",
     "entries": [
       {
