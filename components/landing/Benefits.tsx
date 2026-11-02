@@ -8,8 +8,8 @@ import { SectionHeading } from './Atoms';
  * Each capture is one card of the real app, taken twice from the app's own
  * responsive layout (scripts/capture-landing-screenshots.js): a 568px-wide
  * card at 2x for the desktop bento, a 328px one at 3x for phones. Both show at
- * the app's own size, so text reads like it does in the product instead of a
- * shrunken screen, and peek in from the card's corner. `y` scrolls a tall
+ * close to the app's own size inside an inset frame, so text reads like it
+ * does in the product and no corner is cut. `y` scrolls a tall
  * capture to the moment the copy talks about. See public/screenshots/README.md.
  */
 
@@ -37,7 +37,7 @@ const BENEFITS: Benefit[] = [
     body: 'Beginner mode turns "EV/EBITDA" into "Company value vs operating profit" and says what it means for this company. Tap any label for more.',
     file: 'bento-plain-english',
     alt: "NVIDIA's company value vs operating profit, 24.39, on a scale from 0 to 30 with the typical value marked, and a plain-English line on what it means",
-    desktop: { w: 568, h: 879, y: 596 },
+    desktop: { w: 568, h: 879, y: 604 },
     phone: { w: 328, h: 995, y: 700 },
   },
   {
@@ -77,8 +77,8 @@ const BENEFITS: Benefit[] = [
     body: "A short read before the open: what moved, what's coming and what it means for the stocks you follow.",
     file: 'bento-daily-brief',
     alt: 'A Daily Brief headline and summary about Reddit and Twilio falling after earnings, market fear and the companies reporting tonight',
-    desktop: { w: 568, h: 232 },
-    phone: { w: 328, h: 252 },
+    desktop: { w: 568, h: 192 },
+    phone: { w: 328, h: 211 },
     pro: true,
   },
 ];
@@ -87,8 +87,9 @@ function Capture({ b }: { b: Benefit }) {
   const desktop = getImageProps({ src: `/screenshots/${b.file}.png`, alt: b.alt, width: b.desktop.w, height: b.desktop.h });
   const phone = getImageProps({ src: `/screenshots/${b.file}-m.png`, alt: b.alt, width: b.phone.w, height: b.phone.h });
   const vars = {
-    '--shot-w': `${b.desktop.w}px`, '--shot-y': `${-(b.desktop.y ?? 0)}px`,
-    '--shot-w-m': `${b.phone.w}px`, '--shot-y-m': `${-(b.phone.y ?? 0)}px`,
+    // Percent of the width: a top margin in % follows the frame's width, so the scroll scales with the image.
+    '--shot-w': `${b.desktop.w}px`, '--shot-y': `${(-(b.desktop.y ?? 0) / b.desktop.w) * 100}%`,
+    '--shot-w-m': `${b.phone.w}px`, '--shot-y-m': `${(-(b.phone.y ?? 0) / b.phone.w) * 100}%`,
   } as CSSProperties;
   return (
     <div className="benefit-shot" style={vars}>

@@ -155,12 +155,9 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                     letterSpacing: '0.04em',
                   }}
                 >
-                  {(() => {
-                    const monthsFree = Math.round(
-                      12 * (1 - PRICING.proAnnualPerMonth / PRICING.proMonthly)
-                    );
-                    return `${monthsFree} months free`;
-                  })()}
+                  {/* Same wording as /upgrade and the paywall. "3 months free" was the same
+                      maths, but beside the 7-day trial it read as a second free offer. */}
+                  Save {Math.round(100 * (1 - PRICING.proAnnualPerMonth / PRICING.proMonthly))}%
                 </span>
               </button>
             </div>

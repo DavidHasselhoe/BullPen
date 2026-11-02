@@ -851,35 +851,41 @@
   line-height: 1.6;
   color: var(--fg-muted);
 }
+/* An inset frame: the capture sits inside it with room on every side, scaled
+   to the frame's width so no edge or corner is ever cut, and runs off the
+   card's bottom edge when it is taller than the frame. */
 .bullpen-landing-root .benefit-shot {
   flex: 1;
-  max-height: 300px;
-  /* 18px leaves the 568px capture its full width in a half-width card. */
-  margin-left: 18px;
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  margin: 0 22px;
+  padding: 22px 22px 0;
   overflow: hidden;
-  border-top-left-radius: 12px;
   border: 1px solid var(--border);
-  border-right: 0;
   border-bottom: 0;
+  border-radius: 14px 14px 0 0;
   background: var(--bg);
-  box-shadow: 0 -12px 40px -24px oklch(0 0 0 / 0.25);
 }
-/* Shown at the capture's own CSS size (it is a 2x/3x file), scrolled by
-   --shot-y to the moment the copy is about. The phone file is a separate
-   capture of the app's phone layout, not this one shrunk. */
+/* The picture clips, not the frame: a capture scrolled up by --shot-y must not
+   show through the frame's top padding. */
+.bullpen-landing-root .benefit-shot picture { display: block; flex: 1; min-height: 0; overflow: hidden; }
+/* --shot-y is a percent of the width, so the scroll to the moment the copy is
+   about scales with the capture. Never wider than the capture's own size. The
+   phone file is a separate capture of the app's phone layout. */
 .bullpen-landing-root .benefit-shot img {
   display: block;
-  width: var(--shot-w);
-  max-width: none;
+  width: 100%;
+  max-width: var(--shot-w);
   height: auto;
-  margin-top: var(--shot-y, 0px);
+  margin: var(--shot-y, 0) auto 0;
 }
 @media (max-width: 900px) {
   .bullpen-landing-root .benefits-grid { grid-template-columns: 1fr; }
   .bullpen-landing-root .benefit-copy { padding: 22px 20px 18px; }
   .bullpen-landing-root .benefit-title { font-size: 20px; }
-  .bullpen-landing-root .benefit-shot { margin-left: 16px; max-height: 280px; }
-  .bullpen-landing-root .benefit-shot img { width: var(--shot-w-m); margin-top: var(--shot-y-m, 0px); }
+  .bullpen-landing-root .benefit-shot { margin: 0 16px; padding: 16px 16px 0; max-height: 300px; }
+  .bullpen-landing-root .benefit-shot img { max-width: var(--shot-w-m); margin-top: var(--shot-y-m, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
   .bullpen-landing-root .benefit-card,

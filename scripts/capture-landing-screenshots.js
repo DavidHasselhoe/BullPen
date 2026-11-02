@@ -33,7 +33,8 @@ async (page) => {
     },
     {
       file: 'bento-daily-brief', url: '/dashboard',
-      find: () => [...document.querySelectorAll('h2')].find((d) => d.textContent.trim() === 'Daily brief')?.closest('section'),
+      // The brief's card only: the section header carries a dated "5h ago".
+      find: () => [...document.querySelectorAll('h2')].find((d) => d.textContent.trim() === 'Daily brief')?.closest('section')?.lastElementChild,
     },
   ];
 
