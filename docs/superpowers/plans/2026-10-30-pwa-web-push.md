@@ -26,7 +26,13 @@ Every path and assumption below was re-checked against `preview` at `bb3ea299`. 
 - **CSP** is built in `next.config.ts` (~line 105), still no `worker-src`, so `/sw.js` is allowed by `script-src 'self'`. Middleware page matcher is `middleware.ts:176`.
 - Still true: `app/actions/notifications.ts` exists and nothing imports it; `isValidTimeZone` in `lib/dates/clock.ts`; `scripts/test-deliverable-email.ts`; `check-economic-results` route; `QSTASH_CRON_PATHS` in `scripts/test-cron-coverage.ts:87` (now 3 entries); `signOut()` in `lib/auth/auth.ts:498`; `getCurrentUserId()` in `lib/auth/server-session.ts`; every push kind matches an existing `settings.notifications` key; the `vercel.json` cron times in spec section 7.
 
-**Decisions taken at the start of the build** (fill in from David's answers): D1 default push types, D2 push vs morning email, D3 iOS install sheet placement, D4 icons, D5 Termly wording, execution method.
+**Decisions taken at the start of the build** (David, 2026-11-02, all as recommended):
+- **D1 default push types:** the spec's set (recap, big moves, earnings, dividends, Weekly Pick, streak reminder, new course, own price alerts). Health score stays bell and email only.
+- **D2 push vs morning email:** first channel wins. The dispatcher skips rows with `emailed_at` set, and the morning email skips rows with `pushed_at` set (the conditional steps in Task 3 apply).
+- **D3 iOS install sheet:** on Home once after onboarding, plus inside the holdings, lesson and alert prompts on iOS Safari. Never in onboarding.
+- **D4 icons:** the bull cropped from `public/BullPenLogo.png` on an opaque background; soft at 512 is accepted until a designer redoes it.
+- **D5 Termly:** David adds the push-subscription line to the privacy policy himself.
+- **Execution:** subagent-driven, on `preview` in the shared checkout (no worktree, no feature branch, per CLAUDE.md). Commit by explicit pathspec only.
 
 ## Global Constraints
 
