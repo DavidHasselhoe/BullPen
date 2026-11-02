@@ -19,6 +19,7 @@ export function OnboardingProgress({ stepIndex, totalSteps }: { stepIndex: numbe
   return (
     <div
       role="progressbar"
+      aria-label="Setup progress"
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}

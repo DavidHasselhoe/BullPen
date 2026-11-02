@@ -123,6 +123,9 @@ export function GetStartedSignupForm() {
         submitClassName="btn btn-primary"
         source="get_started"
         emailRedirectPath={CONFIRMED_TRIAL_PATH}
+        // Focusing the email field opened the phone keyboard over the live
+        // watchlist, the payoff this screen exists to show.
+        autoFocus={false}
       />
 
       <p style={{ marginTop: 16, fontSize: 13, color: 'var(--fg-dim)', textAlign: 'center' }}>

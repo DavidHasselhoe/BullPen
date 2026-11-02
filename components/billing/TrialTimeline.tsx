@@ -13,8 +13,11 @@ import { PRICING } from '@/lib/billing/entitlements';
  *
  * The reminder lands 3 days before the trial ends (Stripe's trial_will_end,
  * see app/api/billing/webhook), so the day is computed, not written in.
+ *
+ * `marketing` sets the text in the marketing ramp (DESIGN.md Two-Registers
+ * Rule) for /get-started/trial; /upgrade keeps the product size.
  */
-export function TrialTimeline({ annual, className }: { annual: boolean; className?: string }) {
+export function TrialTimeline({ annual, className, marketing = false }: { annual: boolean; className?: string; marketing?: boolean }) {
   const { t } = useTranslation('billing');
   const charge = annual ? PRICING.proAnnualPerMonth * 12 : PRICING.proMonthly;
   const reminderDay = PRICING.trialDays - 3;
@@ -38,8 +41,8 @@ export function TrialTimeline({ annual, className }: { annual: boolean; classNam
             <Icon className="h-3 w-3 text-foreground" aria-hidden />
           </span>
           <div className="min-w-0 pt-0.5">
-            <p className="text-xs font-semibold text-foreground">{when}</p>
-            <p className="text-xs leading-snug text-muted-foreground">{what}</p>
+            <p className={cn(marketing ? 'text-[15px]' : 'text-xs', 'font-semibold text-foreground')}>{when}</p>
+            <p className={cn(marketing ? 'text-[15px]' : 'text-xs', 'leading-snug text-muted-foreground')}>{what}</p>
           </div>
         </li>
       ))}

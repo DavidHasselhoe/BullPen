@@ -18,6 +18,8 @@ export interface CompanyLogoProps {
    * tile by tile as the browser gets round to each deferred request.
    */
   loading?: 'lazy' | 'eager';
+  /** Empty alt where the name is already printed beside the logo, or screen readers say it twice. */
+  decorative?: boolean;
 }
 
 function getInitialsColor(ticker: string): string {
@@ -29,7 +31,7 @@ function getInitialsColor(ticker: string): string {
   return `hsl(${hue}, 35%, 45%)`;
 }
 
-export function CompanyLogo({ name, ticker, logoUrl, size = 40, className, loading = 'lazy' }: CompanyLogoProps) {
+export function CompanyLogo({ name, ticker, logoUrl, size = 40, className, loading = 'lazy', decorative = false }: CompanyLogoProps) {
   const [imageError, setImageError] = useState(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -74,7 +76,7 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className, loadi
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={effectiveUrl}
-          alt={`${name} logo`}
+          alt={decorative ? '' : `${name} logo`}
           width={size}
           height={size}
           loading={loading}
@@ -87,6 +89,7 @@ export function CompanyLogo({ name, ticker, logoUrl, size = 40, className, loadi
 
       {showFallback && (
         <div
+          aria-hidden={decorative || undefined}
           className="flex items-center justify-center w-full h-full absolute inset-0 font-semibold text-white"
           style={{ backgroundColor: initialsColor, fontSize }}
         >

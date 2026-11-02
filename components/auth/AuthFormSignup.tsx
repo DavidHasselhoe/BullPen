@@ -43,6 +43,8 @@ interface AuthFormSignupProps {
   onConfirmationRequired?: (email: string, password: string) => void;
   /** Replaces the inline "email already in use" error with the caller's own notice. */
   onEmailInUse?: (email: string) => void;
+  /** False where the form sits under content people should see first (the setup preview). */
+  autoFocus?: boolean;
 }
 
 export function AuthFormSignup({
@@ -55,6 +57,7 @@ export function AuthFormSignup({
   emailRedirectPath,
   onConfirmationRequired,
   onEmailInUse,
+  autoFocus = true,
 }: AuthFormSignupProps) {
   const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
@@ -224,7 +227,7 @@ export function AuthFormSignup({
           disabled={isLoading}
           required
           autoComplete="email"
-          autoFocus
+          autoFocus={autoFocus}
           className="h-11"
           aria-invalid={invalid('email')}
           aria-describedby={invalid('email') ? 'signup-email-error' : undefined}
@@ -325,6 +328,7 @@ export function AuthFormSignup({
         type="submit"
         className={cn('h-11 w-full rounded-lg', submitClassName)}
         disabled={isLoading || blocked}
+        aria-busy={isLoading}
       >
         {isLoading ? (
           <>

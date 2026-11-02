@@ -163,6 +163,8 @@ This ramp existed in the code long before it was written down here, which meant 
 
 **The Tabular Numerals Rule.** Any rendered price, percentage, delta, or financial statistic uses Geist Mono with tabular figures. Proportional numerals in a price are a bug, not a style choice.
 
+**The Name-First Rule.** Where a beginner picks or meets a stock for the first time (onboarding, search results, pickers, empty-state suggestions), the company name leads in Geist Sans and the ticker follows small, dim and in mono. People know "Apple", not "AAPL", and seeing the two together is how they learn the ticker the rest of the app uses. Drop the ticker line when it only repeats the name. Dense tables, the watchlist, holdings and charts keep the ticker first, because there the reader is scanning symbols they already know. The setup flow's `StockLabel` (`components/get-started/StepShell.tsx`) is the reference.
+
 ## 4. Elevation
 
 Flat by default. Cards sit on a one-step-lighter surface with a barely-visible border (`border-border/60`, ~10% white in dark mode) and a near-invisible `shadow-sm` — depth is not painted on at rest. On hover, cards respond: the border sharpens slightly, the shadow deepens to `shadow-md`, and (where used) the card lifts `-2px`. The landing page's primary CTA is the one deliberate exception — it carries a genuine glow shadow at rest, because a single glowing CTA earns its emphasis precisely because nothing else on the page glows.

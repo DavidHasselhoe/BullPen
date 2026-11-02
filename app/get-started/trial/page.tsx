@@ -168,19 +168,21 @@ export default function TrialOfferPage() {
             </div>
 
             {/* Today, the reminder, the charge: said before they commit. */}
-            <TrialTimeline annual={cycle === 'annual'} className="mx-auto mt-6 w-fit" />
+            <TrialTimeline annual={cycle === 'annual'} className="mx-auto mt-6 w-fit" marketing />
 
             <button
               type="button"
               className="btn btn-primary"
               onClick={start}
               disabled={status === 'loading'}
+              aria-busy={status === 'loading'}
               style={{ width: '100%', justifyContent: 'center', marginTop: 20 }}
             >
               {status === 'loading' ? <><Loader2 size={16} className="animate-spin" aria-hidden /> One moment</> : 'Start my free week'}
             </button>
 
-            <p style={{ margin: '12px 0 0', textAlign: 'center', fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.6 }}>
+            {/* The auto-renewal disclosure is legally load-bearing: readable size, muted not dim. */}
+            <p style={{ margin: '12px 0 0', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
               <strong style={{ color: 'var(--fg-muted)', fontWeight: 600 }}>{terms.chargeLine}</strong>{' '}
               {terms.cancelLine}{' '}
               <Link href="/terms" style={{ textDecoration: 'underline' }}>Terms</Link>
@@ -204,7 +206,8 @@ export default function TrialOfferPage() {
               <Link
                 href="/dashboard"
                 onClick={() => trackEvent('trial_offer_skipped', {})}
-                style={{ fontSize: 14, color: 'var(--fg-dim)' }}
+                // A real tap target and readable: declining must be as easy to find as accepting.
+                style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 12px', fontSize: 15, color: 'var(--fg-muted)', textDecoration: 'underline', textUnderlineOffset: 4 }}
               >
                 Continue with Free
               </Link>

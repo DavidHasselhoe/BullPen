@@ -130,7 +130,7 @@ export function ContactForm() {
         </p>
       )}
 
-      <button type="submit" className="btn btn-primary" disabled={status === 'submitting'} style={{ alignSelf: 'flex-start' }}>
+      <button type="submit" className="btn btn-primary" disabled={status === 'submitting'} aria-busy={status === 'submitting'} style={{ alignSelf: 'flex-start' }}>
         {status === 'submitting' ? 'Sending…' : 'Send message'}
       </button>
     </form>

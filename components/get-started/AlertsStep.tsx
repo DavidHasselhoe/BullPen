@@ -26,9 +26,11 @@ export function AlertsStep({
 }) {
   return (
     <StepShell stepIndex={stepIndex} totalSteps={totalSteps} onBack={onBack}>
-      <StepHeadline text="What should we tell you" accent="about?" />
-      <p style={{ margin: '0 0 24px', textAlign: 'center', fontSize: 15, color: 'var(--fg-muted)' }}>
-        Only for the stocks you pick. They show up in BullPen, and in one short morning email when something happens. You can turn the email off anytime.
+      <StepHeadline text="What should we tell you about?" />
+      {/* The morning email leads: it is the one thing that has brought people
+          back, and it was a subordinate clause in a four-line paragraph. */}
+      <p style={{ margin: '0 0 24px', textAlign: 'center', fontSize: 15, color: 'var(--fg-muted)', textWrap: 'balance' }}>
+        When something happens to your stocks, we send one short email in the morning. Turn it off anytime.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {ROWS.map((row) => {

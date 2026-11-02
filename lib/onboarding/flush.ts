@@ -16,19 +16,21 @@ import {
  * safe to repeat (update / upsert), and the pending payload is cleared only
  * after both succeed, so a partial failure retries the whole thing.
  *
- * Never throws: this is setup, not the critical path.
+ * Never throws: this is setup, not the critical path. Resolves false when
+ * something failed (the payload stays for a retry), so the one caller a person
+ * is waiting on, "Save and continue", can say so instead of moving on.
  */
 // Both callers fire at sign-in, so without this one pick was POSTed four times.
-let inFlight: Promise<void> | null = null;
+let inFlight: Promise<boolean> | null = null;
 
-export function flushPendingOnboardingData(userId: string): Promise<void> {
+export function flushPendingOnboardingData(userId: string): Promise<boolean> {
   inFlight ??= flush(userId).finally(() => { inFlight = null; });
   return inFlight;
 }
 
-async function flush(userId: string): Promise<void> {
+async function flush(userId: string): Promise<boolean> {
   const pending = readPendingOnboarding();
-  if (!pending) return;
+  if (!pending) return true;
 
   try {
     const supabase = createBrowserClient();
@@ -49,7 +51,7 @@ async function flush(userId: string): Promise<void> {
         settings: { ...settings, notifications },
       })
       .eq('id', userId);
-    if (error) return;
+    if (error) return false;
 
     // Sequential, not parallel: /api/watchlist lazily creates the user's first
     // list, and parallel first calls would race to create it twice.
@@ -59,11 +61,13 @@ async function flush(userId: string): Promise<void> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symbol: pick.ticker, company_name: pick.name }),
       });
-      if (!res.ok) return;
+      if (!res.ok) return false;
     }
 
     clearPendingOnboarding();
+    return true;
   } catch {
     // Network blip, RLS not ready yet. Leave the payload for the next retry.
+    return false;
   }
 }

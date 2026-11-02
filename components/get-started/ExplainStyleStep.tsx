@@ -41,7 +41,7 @@ export function ExplainStyleStep({
 
   return (
     <StepShell stepIndex={stepIndex} totalSteps={totalSteps}>
-      <StepHeadline text="How should BullPen explain" accent="things?" />
+      <StepHeadline text="How should BullPen explain things?" />
       <p style={{ margin: '0 0 28px', textAlign: 'center', fontSize: 15, color: 'var(--fg-muted)' }}>
         Here is the same metric, shown both ways. Pick the one that reads right.
       </p>

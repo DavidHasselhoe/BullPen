@@ -6,7 +6,7 @@ import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { STARTER_STOCKS } from '@/lib/onboarding/starter-stocks';
 import type { StockPick } from '@/lib/onboarding/pending-onboarding';
-import { StepHeadline, StepShell } from './StepShell';
+import { StepHeadline, StepShell, StockLabel } from './StepShell';
 
 const MAX_PICKS = 20;
 
@@ -46,7 +46,7 @@ export function PickStocksStep({
 
   return (
     <StepShell stepIndex={stepIndex} totalSteps={totalSteps} onBack={onBack}>
-      <StepHeadline text="Pick stocks you own or" accent="follow" />
+      <StepHeadline text="Pick stocks you own or follow" />
       <p style={{ margin: '0 0 24px', textAlign: 'center', fontSize: 15, color: 'var(--fg-muted)' }}>
         We&apos;ll add them to your watchlist so BullPen is ready when you arrive.
       </p>
@@ -58,7 +58,7 @@ export function PickStocksStep({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name or ticker"
+          placeholder="Search for a company or fund, like Apple"
           autoComplete="off"
           style={{
             width: '100%', height: 44, padding: '0 14px 0 40px', borderRadius: 12, fontSize: 15,
@@ -71,6 +71,11 @@ export function PickStocksStep({
       {picks.length >= MAX_PICKS && (
         <p role="status" style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--fg-muted)' }}>
           That&apos;s {MAX_PICKS}, the most for now. You can add more from your watchlist later.
+        </p>
+      )}
+      {searching && list.length === 0 && (
+        <p role="status" style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--fg-muted)' }}>
+          No match for &ldquo;{query.trim()}&rdquo;. Try the company&apos;s name, like Apple or Coca-Cola.
         </p>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -90,11 +95,9 @@ export function PickStocksStep({
                 transition: 'border-color 180ms cubic-bezier(0.22,1,0.36,1), background 180ms cubic-bezier(0.22,1,0.36,1)',
               }}
             >
-              <CompanyLogo name={s.name} ticker={s.ticker} size={28} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="mono" style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>{s.ticker}</span>
-                <span style={{ display: 'block', fontSize: 13, color: 'var(--fg-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
-              </span>
+              <CompanyLogo name={s.name} ticker={s.ticker} size={28} decorative />
+              {/* Name first: beginners know Apple, not AAPL (DESIGN.md Name-First Rule). */}
+              <StockLabel name={s.name} ticker={s.ticker} />
               {isPicked
                 ? <Check size={16} aria-hidden style={{ color: 'var(--accent)' }} />
                 : <Plus size={16} aria-hidden style={{ color: 'var(--fg-dim)' }} />}

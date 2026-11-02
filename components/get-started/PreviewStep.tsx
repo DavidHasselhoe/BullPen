@@ -9,14 +9,12 @@ import { trackEvent } from '@/lib/analytics/track';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Bell, BellOff } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { STARTER_STOCKS } from '@/lib/onboarding/starter-stocks';
 import type { AlertChoices, StockPick } from '@/lib/onboarding/pending-onboarding';
 import { GetStartedSignupForm } from './GetStartedSignupForm';
-import { StepHeadline, StepShell } from './StepShell';
+import { StepHeadline, StepShell, StockLabel } from './StepShell';
 
 interface Quote { price: number; change: number; changePercent: number; stale?: boolean }
 
-const EXAMPLE_TICKERS = ['NVDA', 'AAPL', 'KO'];
 const MAX_SHOWN = 6;
 const ALERT_WORDS: Record<keyof AlertChoices, string> = {
   price_alerts: 'big price moves',
@@ -24,15 +22,11 @@ const ALERT_WORDS: Record<keyof AlertChoices, string> = {
   dividend_reminder: 'dividend dates',
 };
 
-// With no picks the rows are examples that are NOT added to the watchlist
-// (flush.ts only saves pending.picks), so the promise must not name them.
-function alertsSentence(alerts: AlertChoices, isExample: boolean): string {
+function alertsSentence(alerts: AlertChoices): string {
   const on = (Object.keys(alerts) as (keyof AlertChoices)[]).filter((k) => alerts[k]).map((k) => ALERT_WORDS[k]);
   if (on.length === 0) return 'Alerts are off. You can turn them on anytime in Settings.';
   const list = on.length === 1 ? on[0] : `${on.slice(0, -1).join(', ')} and ${on[on.length - 1]}`;
-  return isExample
-    ? `Add stocks to your watchlist and we'll notify you about ${list} for them.`
-    : `We'll notify you about ${list} for these stocks.`;
+  return `We'll email you in the morning about ${list} for these stocks.`;
 }
 
 export function PreviewStep({
@@ -51,10 +45,8 @@ export function PreviewStep({
   signedIn?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
-  const isExample = picks.length === 0;
-  const shown: StockPick[] = isExample
-    ? STARTER_STOCKS.filter((s) => EXAMPLE_TICKERS.includes(s.ticker))
-    : picks.slice(0, MAX_SHOWN);
+  // The pick step requires one stock, so picks is never empty here.
+  const shown: StockPick[] = picks.slice(0, MAX_SHOWN);
   const hiddenCount = picks.length - shown.length;
   const tickers = shown.map((s) => s.ticker);
   const AlertIcon = Object.values(alerts).some(Boolean) ? Bell : BellOff;
@@ -89,7 +81,7 @@ export function PreviewStep({
     <StepShell stepIndex={stepIndex} totalSteps={totalSteps} onBack={onBack} maxWidth={480}>
       <StepHeadline text="Your BullPen is" accent="ready." />
       <p style={{ margin: '0 0 24px', textAlign: 'center', fontSize: 15, color: 'var(--fg-muted)' }}>
-        {isExample ? 'You skipped picking stocks. Here is how a few popular ones are doing right now.' : 'Your watchlist, live.'}
+        Your watchlist, live.
       </p>
 
       {/* One container with divided rows reads as a watchlist, not a stack of
@@ -116,13 +108,9 @@ export function PreviewStep({
                 borderTop: i === 0 ? 'none' : '1px solid var(--border)',
               }}
             >
-              <CompanyLogo name={s.name} ticker={s.ticker} size={32} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="mono" style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{s.ticker}</span>
-                <span style={{ display: 'block', fontSize: 13, color: 'var(--fg-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {s.name}{hs ? ` · Health ${hs.score} (${hs.grade})` : ''}
-                </span>
-              </span>
+              <CompanyLogo name={s.name} ticker={s.ticker} size={32} decorative />
+              {/* "Health 95 (A)" read as 95 of what; the scale goes in the words. */}
+              <StockLabel name={s.name} ticker={s.ticker} detail={hs ? `Health score ${hs.score} of 100` : undefined} />
               {q ? (
                 <span style={{ textAlign: 'right' }}>
                   <span className="mono" style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>${q.price.toFixed(2)}</span>
@@ -150,7 +138,7 @@ export function PreviewStep({
           on a phone, a flex icon floats alone at the left edge. */}
       <p style={{ margin: '16px 0 0', fontSize: 14, lineHeight: 1.5, color: 'var(--fg-muted)', textAlign: 'center', textWrap: 'balance' }}>
         <AlertIcon size={15} aria-hidden style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />
-        {alertsSentence(alerts, isExample)}
+        {alertsSentence(alerts)}
       </p>
 
       {signedIn ? <SaveSetupButton /> : <GetStartedSignupForm />}
@@ -163,21 +151,42 @@ function SaveSetupButton() {
   const { user, refresh } = useAuth();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const save = async () => {
     if (!user) return;
     setSaving(true);
+    setFailed(false);
     trackEvent('get_started_completed', { signed_in: true });
-    // Never throws; on a failure the staged choices stay for PendingOnboardingFlush to retry.
-    await flushPendingOnboardingData(user.id);
+    // Never throws. On a failure the staged choices stay put, so the button
+    // simply retries them; moving on would leave an empty watchlist.
+    const ok = await flushPendingOnboardingData(user.id);
+    if (!ok) {
+      setSaving(false);
+      setFailed(true);
+      return;
+    }
     await refresh();
     router.replace('/get-started/trial');
   };
 
   return (
     <div style={{ marginTop: 32 }}>
-      <button type="button" className="btn btn-primary" onClick={save} disabled={saving || !user} style={{ width: '100%', justifyContent: 'center' }}>
-        {saving ? 'Saving…' : 'Save and continue'}
+      {failed && (
+        // Same treatment as the signup form's errors (GetStartedSignupForm).
+        <div
+          role="alert"
+          style={{
+            marginBottom: 12, padding: '10px 14px', borderRadius: 10, fontSize: 14,
+            border: '1px solid oklch(from var(--down) l c h / 0.4)',
+            background: 'oklch(from var(--down) l c h / 0.1)', color: 'var(--down)',
+          }}
+        >
+          We couldn&apos;t save your stocks. Check your connection and try again.
+        </div>
+      )}
+      <button type="button" className="btn btn-primary" onClick={save} disabled={saving || !user} aria-busy={saving} style={{ width: '100%', justifyContent: 'center' }}>
+        {saving ? 'Saving…' : failed ? 'Try again' : 'Save and continue'}
       </button>
     </div>
   );
