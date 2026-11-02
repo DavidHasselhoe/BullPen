@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import type { AlertChoices, PendingPush } from '@/lib/onboarding/pending-onboarding';
 import { isPushSupported, needsHomeScreenInstall, subscribeThisDevice } from '@/lib/push/client';
 import { StepHeadline, StepShell } from './StepShell';
@@ -11,6 +11,8 @@ const ROWS: { key: keyof AlertChoices; label: string; description: string }[] = 
   { key: 'dividend_reminder', label: 'Dividend dates', description: "Before a stock's dividend cutoff date, so you know when to own it." },
   { key: 'learning', label: 'Learning', description: 'Streak reminders and new courses.' },
 ];
+
+const noopSubscribe = () => () => {};
 
 export function AlertsStep({
   alerts,
@@ -33,8 +35,8 @@ export function AlertsStep({
 }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  // Read on the client only: this step mounts after the auth gate, never in the SSR tree.
-  const canPush = isPushSupported() && !needsHomeScreenInstall();
+  // False on the server and during hydration, then the real answer: a resumed draft renders this step while hydrating.
+  const canPush = useSyncExternalStore(noopSubscribe, () => isPushSupported() && !needsHomeScreenInstall(), () => false);
 
   async function sendToPhone() {
     setBusy(true);

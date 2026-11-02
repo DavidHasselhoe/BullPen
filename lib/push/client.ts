@@ -29,11 +29,14 @@ function keyBytes(base64Url: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+/** The person closed or refused the browser permission prompt (as opposed to push being unavailable). */
+export class PushPermissionError extends Error {}
+
 export async function subscribeThisDevice(): Promise<PushSubscriptionJSON> {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   if (!publicKey) throw new Error('Push is not configured');
   if (!isPushSupported()) throw new Error('Push is not supported on this device');
-  if ((await Notification.requestPermission()) !== 'granted') throw new Error('Notifications are blocked for BullPen');
+  if ((await Notification.requestPermission()) !== 'granted') throw new PushPermissionError('Notifications are blocked for BullPen');
   const reg = (await navigator.serviceWorker.getRegistration('/sw.js')) ?? (await navigator.serviceWorker.register('/sw.js'));
   await navigator.serviceWorker.ready;
   const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });

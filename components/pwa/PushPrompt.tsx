@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { Bell, Share } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { trackEvent } from '@/lib/analytics/track';
-import { enablePushOnThisDevice, getPermission, isPushSupported, isStandalone, needsHomeScreenInstall } from '@/lib/push/client';
+import { useAuth } from '@/hooks/use-auth';
+import { enablePushOnThisDevice, getPermission, isPushSupported, isStandalone, needsHomeScreenInstall, PushPermissionError } from '@/lib/push/client';
 
 type Context = 'holding' | 'lesson' | 'alert' | 'home';
 type Mode = 'hidden' | 'permission' | 'install' | 'done';
@@ -46,11 +47,14 @@ async function decide(context: Context): Promise<Mode> {
 /** A quiet inline ask for phone alerts, shown right after the person did something that makes alerts worth having. */
 export function PushPrompt({ context }: { context: Context }) {
   const { t } = useTranslation('navigation');
+  const { isAuthenticated } = useAuth();
   const [mode, setMode] = useState<Mode>('hidden');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    // Guests can't save a device, so they are never asked.
+    if (!isAuthenticated) return;
     let live = true;
     decide(context)
       .catch((): Mode => 'hidden')
@@ -65,11 +69,12 @@ export function PushPrompt({ context }: { context: Context }) {
         setMode(next);
       });
     return () => { live = false; };
-  }, [context]);
+  }, [context, isAuthenticated]);
 
-  function close(result: 'dismissed') {
+  function close() {
     markAsked(context);
-    trackEvent('push_prompt_answered', { context, platform: platform(), result });
+    // The install card already logged its one answer when it was shown.
+    if (mode !== 'install') trackEvent('push_prompt_answered', { context, platform: platform(), result: 'dismissed' });
     setMode('hidden');
   }
 
@@ -82,11 +87,10 @@ export function PushPrompt({ context }: { context: Context }) {
       trackEvent('push_prompt_answered', { context, platform: platform(), result: 'granted' });
       setMode('done');
     } catch (e) {
-      const permission = getPermission();
-      if (permission === 'denied' || permission === 'default') {
-        // Blocked, or the browser prompt was closed: not an error to report.
+      // Only a real answer to the browser prompt ends the ask; any other failure stays visible and retryable.
+      if (e instanceof PushPermissionError) {
         markAsked(context);
-        trackEvent('push_prompt_answered', { context, platform: platform(), result: permission === 'denied' ? 'denied' : 'dismissed' });
+        trackEvent('push_prompt_answered', { context, platform: platform(), result: getPermission() === 'denied' ? 'denied' : 'dismissed' });
         setMode('hidden');
       } else {
         console.error('[push] prompt enable:', e);
@@ -121,7 +125,7 @@ export function PushPrompt({ context }: { context: Context }) {
         </div>
       </div>
       <div className="mt-3 flex flex-wrap justify-end gap-2">
-        <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => close('dismissed')} disabled={busy}>
+        <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => close()} disabled={busy}>
           {install ? t('pushPromptGotIt') : t('pushPromptNotNow')}
         </Button>
         {!install && (
@@ -130,7 +134,7 @@ export function PushPrompt({ context }: { context: Context }) {
           </Button>
         )}
       </div>
-      {failed && <p role="alert" className="mt-2 text-sm text-destructive">{t('pushPromptError')}</p>}
+      {failed && <p role="alert" className="mt-2 text-sm text-muted-foreground">{t('pushPromptError')}</p>}
     </section>
   );
 }
