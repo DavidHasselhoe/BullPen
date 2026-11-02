@@ -120,6 +120,21 @@ export function scoreToGrade(score: number): HealthGrade {
   return GRADE_CUTOFFS.find((c) => score >= c.min)?.grade ?? 'F';
 }
 
+/** How far past a cut-off a score must land before a grade-change alert fires. */
+export const GRADE_ALERT_BUFFER = 2;
+
+/**
+ * Whether moving from `baseline` to `score` is a grade change worth an alert:
+ * a different grade that would still hold if the score slid
+ * GRADE_ALERT_BUFFER points back toward the old one. 85 -> 84 (A to B) is a
+ * wobble on the line; 85 -> 82 is a real B.
+ */
+export function crossedGradeWithBuffer(baseline: number, score: number): boolean {
+  if (scoreToGrade(score) === scoreToGrade(baseline)) return false;
+  const back = score < baseline ? score + GRADE_ALERT_BUFFER : score - GRADE_ALERT_BUFFER;
+  return scoreToGrade(back) !== scoreToGrade(baseline);
+}
+
 /**
  * Lowest score for each grade, best first. The one copy: the portfolio card's
  * grade explainer derives its ranges from this, so a future method that moves

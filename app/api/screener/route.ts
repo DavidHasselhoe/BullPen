@@ -109,6 +109,8 @@ export interface ScreenerRow {
   health_growth: number | null;
   health_market_risk: number | null;
   health_score_version: number;
+  /** Baseline for health-score grade alerts (migration 187); only the stats refresh writes it. */
+  health_alert_score?: number | null;
   updated_at: string;
   /**
    * Last-known price/change from the most recent quote — hydrated only in the

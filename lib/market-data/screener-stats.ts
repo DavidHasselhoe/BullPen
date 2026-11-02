@@ -55,13 +55,13 @@ import {
   type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedStale } from '@/lib/cache/market-data-cache';
-import { computeHealthScore, healthColumns, HEALTH_SCORE_METHOD } from '@/lib/finance/health-score';
-import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
+import { computeHealthScore, crossedGradeWithBuffer, healthColumns, scoreToGrade, HEALTH_SCORE_METHOD } from '@/lib/finance/health-score';
+import { recordHealthScoreSnapshot, findQuarterlyHealthChanges, type CurrentQuarterScore } from '@/lib/finance/health-score-history';
 import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { MARKET_CAP_PROMOTION_FLOOR, dropDelistedTickers } from '@/lib/market-data/screener-universe';
-import { notifyHealthScoreChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
+import { notifyHealthScoreChanges, notifyQuarterlyHealthChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
 /** /statistics costs ~53 credits/symbol (matches app/api/screener/refresh/
@@ -305,6 +305,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
   );
 
   const rows: ScreenerRow[] = [];
+  const quarterScores = new Map<string, CurrentQuarterScore>();
   const degradedSymbols = new Set<string>();
   // Usually a US company that was acquired, its symbol now someone else's abroad.
   const foreignListings: string[] = [];
@@ -367,6 +368,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       // computed it most recently.
       if (!degraded && !healthScore.insufficientData && income[0]?.fiscal_date) {
         void recordHealthScoreSnapshot(sym, healthScore, income[0].fiscal_date);
+        quarterScores.set(sym, { fiscalDate: income[0].fiscal_date, score: healthScore.score, categories: healthScore.categories, method: healthScore.method });
       }
 
       rows.push({
@@ -393,7 +395,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
   if (rows.length > 0) {
     const { data: priorRows } = await supabase
       .from('screener_stats')
-      .select('ticker, health_score, health_score_grade, health_profitability, health_financial_strength, health_cash_flow, health_valuation, health_growth, health_market_risk, health_score_version')
+      .select('ticker, health_score, health_score_grade, health_profitability, health_financial_strength, health_cash_flow, health_valuation, health_growth, health_market_risk, health_score_version, health_alert_score')
       .in('ticker', rows.map((r) => r.ticker));
     type PriorHealthRow = {
       health_score: number | null;
@@ -405,6 +407,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       health_growth: number | null;
       health_market_risk: number | null;
       health_score_version: number;
+      health_alert_score: number | null;
     };
     const priorMap = new Map(
       (priorRows ?? []).map((r) => [(r as { ticker: string }).ticker, r as PriorHealthRow])
@@ -431,33 +434,45 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
           row.health_market_risk = prior.health_market_risk;
           row.health_score_version = prior.health_score_version;
         }
+        row.health_alert_score = prior?.health_alert_score ?? prior?.health_score ?? null;
         continue;
       }
 
-      // A grade that moved because the scoring method changed is not news about the company.
-      if (
-        prior?.health_score_version === HEALTH_SCORE_METHOD &&
-        prior?.health_score_grade != null &&
-        row.health_score_grade != null &&
-        prior.health_score_grade !== row.health_score_grade
-      ) {
+      // Measured from the score the last alert fired at, not yesterday's, so a
+      // stock on a cut-off can't flip-flop (crossedGradeWithBuffer). The
+      // baseline moves when an alert fires, when the grade matches it again,
+      // or when the scoring method changed: a grade that moved because the
+      // method did is not news about the company.
+      const baseline = prior?.health_alert_score ?? prior?.health_score ?? null;
+      const score = row.health_score;
+      if (score == null) {
+        row.health_alert_score = baseline;
+      } else if (prior?.health_score_version !== HEALTH_SCORE_METHOD || baseline == null) {
+        row.health_alert_score = score;
+      } else if (crossedGradeWithBuffer(baseline, score)) {
         gradeChanges.push({
           symbol: row.ticker,
-          oldGrade: prior.health_score_grade,
-          newGrade: row.health_score_grade,
-          oldScore: prior.health_score ?? 0,
-          newScore: row.health_score ?? 0,
+          oldGrade: scoreToGrade(baseline),
+          newGrade: scoreToGrade(score),
+          oldScore: baseline,
+          newScore: score,
         });
+        row.health_alert_score = score;
+      } else {
+        row.health_alert_score = scoreToGrade(score) === scoreToGrade(baseline) ? score : baseline;
       }
     }
 
     // Fire-and-forget: notifying holders/watchers must never fail or slow
-    // down the screener refresh itself.
-    if (gradeChanges.length > 0) {
-      void notifyHealthScoreChanges(gradeChanges).catch((err) =>
-        console.error('[screener-stats] health-score notification fan-out failed:', err)
-      );
-    }
+    // down the screener refresh itself. A stock whose new quarter moved the
+    // score gets the quarterly alert instead of a grade alert the same day:
+    // it already says the new grade and why.
+    void (async () => {
+      const quarterly = await findQuarterlyHealthChanges(quarterScores);
+      const quarterlySymbols = new Set(quarterly.map((q) => q.symbol));
+      await notifyHealthScoreChanges(gradeChanges.filter((c) => !quarterlySymbols.has(c.symbol)));
+      await notifyQuarterlyHealthChanges(quarterly);
+    })().catch((err) => console.error('[screener-stats] health-score notification fan-out failed:', err));
   }
 
   if (rows.length > 0) {

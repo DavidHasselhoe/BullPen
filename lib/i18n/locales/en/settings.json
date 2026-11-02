@@ -118,7 +118,7 @@
   "notifExDividendLabel": "Ex-dividend reminders",
   "notifEmailAlertsLabel": "Morning email",
   "notifEmailAlertsDescription": "Earnings, big moves and ex-dividend dates for your stocks, in one email when something happens",
-  "notifHealthScoreDescription": "Get notified when a tracked stock's BullPen health score crosses a letter grade",
+  "notifHealthScoreDescription": "Get notified when a tracked stock's BullPen health score crosses a letter grade, or moves 5 points or more after a new quarterly report",
   "notifHealthScoreLabel": "Health score changes",
   "notifNewCourseLabel": "New courses",
   "notifNewCourseDescription": "Get notified when a new Academy course is published",

@@ -9,6 +9,8 @@
  */
 
 import { createNotification, isNotificationEnabled, type CreateNotificationInput, type NotifMsg, type I18nParams } from './notifications-db';
+import { scoreToGrade } from '@/lib/finance/health-score';
+import type { QuarterlyHealthChange } from '@/lib/finance/health-score-history';
 import i18next from 'i18next';
 import enNavigation from '@/lib/i18n/locales/en/navigation.json';
 import { createServerClient } from '@/lib/supabase/client';
@@ -315,8 +317,24 @@ export async function createHealthScoreChangeNotification(
  */
 export async function notifyHealthScoreChanges(changes: HealthScoreChange[]): Promise<void> {
   if (changes.length === 0) return;
+  const { userSymbols, companyNames } = await healthAlertAudience(changes.map((c) => c.symbol));
+  const changeMap = new Map(changes.map((c) => [c.symbol, c]));
+  for (const [userId, symbolSet] of userSymbols) {
+    for (const symbol of symbolSet) {
+      const change = changeMap.get(symbol);
+      if (!change) continue;
+      await createHealthScoreChangeNotification(userId, { ...change, companyName: companyNames.get(symbol) ?? change.companyName });
+    }
+  }
+}
+
+/**
+ * Who hears about a health score move: holders (open positions) and watchers
+ * of the ticker with alerts on, minus anyone who switched health_score_change
+ * off. Shared by the grade alert and the quarterly alert.
+ */
+async function healthAlertAudience(symbols: string[]): Promise<{ userSymbols: Map<string, Set<string>>; companyNames: Map<string, string> }> {
   const supabase = createServerClient();
-  const symbols = changes.map((c) => c.symbol);
 
   const [watchlistRes, holdingsRes] = await Promise.all([
     supabase.from('user_watchlist').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true) as unknown as
@@ -332,7 +350,7 @@ export async function notifyHealthScoreChanges(changes: HealthScoreChange[]): Pr
     userSymbols.get(row.user_id)!.add(row.symbol);
     if (row.company_name && !companyNames.has(row.symbol)) companyNames.set(row.symbol, row.company_name);
   }
-  if (userSymbols.size === 0) return;
+  if (userSymbols.size === 0) return { userSymbols, companyNames };
 
   const { data: users } = await supabase
     .from('users')
@@ -345,13 +363,65 @@ export async function notifyHealthScoreChanges(changes: HealthScoreChange[]): Pr
       .map((u) => u.id)
   );
 
+  for (const userId of [...userSymbols.keys()]) if (!enabledUserIds.has(userId)) userSymbols.delete(userId);
+  return { userSymbols, companyNames };
+}
+
+const HEALTH_CATEGORY_KEYS: Record<string, string> = {
+  Profitability: 'notifHealthCatProfitability',
+  'Financial Strength': 'notifHealthCatFinancialStrength',
+  'Cash Flow': 'notifHealthCatCashFlow',
+  Growth: 'notifHealthCatGrowth',
+  'Market Risk': 'notifHealthCatMarketRisk',
+  Valuation: 'notifHealthCatValuation',
+};
+
+/**
+ * One alert per holder/watcher when a newly reported quarter moved a stock's
+ * health score by 5+ points (findQuarterlyHealthChanges), even inside one
+ * grade. Once per stock per quarter, ever: the entity id carries the fiscal
+ * quarter, so the daily refresh re-finding the same move sends nothing.
+ */
+export async function notifyQuarterlyHealthChanges(changes: QuarterlyHealthChange[]): Promise<void> {
+  if (changes.length === 0) return;
+  const supabase = createServerClient();
+  const { userSymbols, companyNames } = await healthAlertAudience(changes.map((c) => c.symbol));
   const changeMap = new Map(changes.map((c) => [c.symbol, c]));
+
   for (const [userId, symbolSet] of userSymbols) {
-    if (!enabledUserIds.has(userId)) continue;
     for (const symbol of symbolSet) {
       const change = changeMap.get(symbol);
       if (!change) continue;
-      await createHealthScoreChangeNotification(userId, { ...change, companyName: companyNames.get(symbol) ?? change.companyName });
+      const entityId = `${symbol}:health_quarter:${change.fiscalDate}`;
+      const { data: sent } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('entity_id', entityId)
+        .limit(1)
+        .maybeSingle();
+      if (sent) continue;
+
+      const rose = change.newScore > change.oldScore;
+      const name = companyNames.get(symbol) ?? symbol;
+      const grade = scoreToGrade(change.newScore);
+      const driverKey = change.driver ? HEALTH_CATEGORY_KEYS[change.driver] : undefined;
+      const vars = { symbol, name, oldScore: change.oldScore, newScore: change.newScore, grade };
+      const title = msg(rose ? 'notifHealthQuarterUp' : 'notifHealthQuarterDown', vars);
+      const message = driverKey
+        ? msg('notifHealthQuarterMessage', { ...vars, category: [msg(driverKey)] })
+        : msg('notifHealthQuarterMessageNoDriver', vars);
+
+      await createNotification({
+        user_id: userId,
+        type: 'health_score',
+        title: enText(title),
+        message: enText(message),
+        entity_type: 'stock',
+        entity_id: entityId,
+        severity: rose ? 'info' : 'warning',
+        params: i18n(title, message),
+      });
     }
   }
 }

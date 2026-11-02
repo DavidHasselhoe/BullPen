@@ -6,7 +6,8 @@
  */
 
 import assert from 'node:assert/strict';
-import { computeHealthScore, healthColumns } from '../lib/finance/health-score';
+import { computeHealthScore, crossedGradeWithBuffer, healthColumns } from '../lib/finance/health-score';
+import { quarterDriver } from '../lib/finance/health-score-history';
 import type { CompanyStatistics, IncomeStatementPeriod, BalanceSheetPeriod, CashFlowPeriod } from '../lib/twelvedata/twelvedata-client';
 
 const stats = (o: Partial<CompanyStatistics> = {}): CompanyStatistics => ({
@@ -77,5 +78,24 @@ const weak = computeHealthScore(
   four(() => cf({ operating_cash_flow: -8, free_cash_flow: -20 })),
 );
 assert.equal(weak.grade, 'F', `weak company should be F, got ${weak.score}`);
+
+// Grade alerts need a 2-point margin past the cut-off (A starts at 85):
+// GOOGL sat at exactly 85, one wobble from "dropped to B" then "improved to A".
+assert.equal(crossedGradeWithBuffer(85, 84), false, 'A to B by one point is a wobble');
+assert.equal(crossedGradeWithBuffer(85, 83), false, 'still within the margin');
+assert.equal(crossedGradeWithBuffer(85, 82), true, 'three points under the line is a real B');
+assert.equal(crossedGradeWithBuffer(84, 86), false, 'B to A by a point is a wobble');
+assert.equal(crossedGradeWithBuffer(84, 87), true, 'clearly back in A');
+assert.equal(crossedGradeWithBuffer(92, 85), false, 'same grade never alerts');
+assert.equal(crossedGradeWithBuffer(90, 60), true, 'a multi-grade fall alerts');
+
+// The quarterly alert names the category that moved most with the total:
+// GOOGL Q2 -> Q3 fell 92 -> 85, Growth 15 -> 9 and Cash Flow 14 -> 13.
+const c = (name: string, score: number) => ({ name, score, max: 20, label: '' });
+const q2 = [c('Profitability', 30), c('Cash Flow', 14), c('Growth', 15), c('Market Risk', 9)];
+const q3 = [c('Profitability', 30), c('Cash Flow', 13), c('Growth', 9), c('Market Risk', 9)];
+assert.equal(quarterDriver(q2, q3, -7), 'Growth');
+assert.equal(quarterDriver(q3, q2, 7), 'Growth', 'works upward too');
+assert.equal(quarterDriver(q2, q2, -5), null, 'nothing moved, no driver');
 
 console.log('health score self-check: all passed');
