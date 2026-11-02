@@ -96,6 +96,17 @@ async function matchCompanyIndex(nameOfIssuer: string): Promise<CompanyIndexMatc
   return { symbol: normalizeShareClassSymbol(row.ticker), companyName: row.name, similarity: row.similarity };
 }
 
+async function tickerClaimedByOtherCusip(symbol: string, cusip: string, cacheMap: Map<string, string | null>): Promise<boolean> {
+  for (const [c, s] of cacheMap) if (s === symbol && c !== cusip) return true;
+  const { data } = await createServerClient()
+    .from('cusip_ticker_map')
+    .select('cusip')
+    .eq('symbol', symbol)
+    .neq('cusip', cusip)
+    .limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
 /**
  * Resolves every distinct CUSIP in a filing's parsed holdings, batched
  * against the cache first. Stops attempting new TwelveData resolutions (but
@@ -141,7 +152,14 @@ export async function resolveHoldingsForFiling(
     // e.g. an abbreviation like "ALLY FINL INC" -> "Ally Financial Inc." at
     // 0.57 -- verified live) is held as a fallback candidate but still runs
     // through the paid tier as a cross-check rather than being trusted blind.
-    const nameMatch = await matchCompanyIndex(holding.nameOfIssuer);
+    // A name says which issuer, never which of its securities: Alphabet's
+    // Class A and Class C both file as "ALPHABET INC", and so do an issuer's
+    // convertible notes and a fund family's dozens of ETFs. So a name match
+    // only stands for a share (never a PRN note) whose ticker no other CUSIP
+    // has claimed; otherwise the ISIN search decides (Class C -> GOOG, found
+    // 2026-11-02 with ~1000 CUSIPs sharing a name-matched ticker).
+    let nameMatch = holding.shareType === 'PRN' ? null : await matchCompanyIndex(holding.nameOfIssuer);
+    if (nameMatch && (await tickerClaimedByOtherCusip(nameMatch.symbol, cusip, cacheMap))) nameMatch = null;
     if (nameMatch && nameMatch.similarity >= HIGH_CONFIDENCE_SIMILARITY) {
       cacheMap.set(cusip, nameMatch.symbol);
       await supabase.from('cusip_ticker_map').upsert({
