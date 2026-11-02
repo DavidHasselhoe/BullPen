@@ -244,5 +244,15 @@
   "notifReleaseNotesLabel": "Novedades",
   "notifReleaseNotesDescription": "Una breve nota cada lunes con las mejoras más importantes de BullPen",
   "notifHealthScoreDescription": "Recibe una notificación cuando la puntuación de salud de BullPen de una acción que sigues cambie de letra, o cuando se mueva 5 puntos o más tras un nuevo informe trimestral",
-  "sectionPlanLabel": "Plan"
+  "sectionPlanLabel": "Plan",
+  "notifPushAlertsDescription": "Muestra las alertas como notificaciones en tus dispositivos, no solo dentro de la app",
+  "notifPushAlertsLabel": "Notificaciones push",
+  "pushDeviceBlocked": "Desactivadas en la configuración de tu navegador",
+  "pushDeviceDescription": "Alertas para este navegador o teléfono",
+  "pushDeviceDisable": "Desactivar",
+  "pushDeviceEnable": "Activar",
+  "pushDeviceError": "No se pudieron cambiar las notificaciones en este dispositivo. Inténtalo de nuevo.",
+  "pushDeviceInstallHint": "Añade BullPen a tu pantalla de inicio para recibir notificaciones en este dispositivo",
+  "pushDeviceLabel": "Notificaciones en este dispositivo",
+  "pushDeviceOn": "Activadas para este dispositivo"
 }

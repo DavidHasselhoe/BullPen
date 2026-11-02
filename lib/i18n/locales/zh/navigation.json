@@ -221,5 +221,19 @@
   "notifHealthCatCashFlow": "现金流",
   "notifHealthCatGrowth": "成长性",
   "notifHealthCatMarketRisk": "市场风险",
-  "notifHealthCatValuation": "估值"
+  "notifHealthCatValuation": "估值",
+  "pushPromptLabel": "手机提醒",
+  "pushPromptTitle_holding": "在手机上接收你持仓的提醒",
+  "pushPromptTitle_lesson": "在手机上接收你的连续学习提醒",
+  "pushPromptTitle_alert": "在手机上接收这条提醒",
+  "pushPromptTitle_home": "在手机上接收提醒",
+  "pushPromptBody": "BullPen 会在有事情发生时发送一条简短通知。你可以随时在设置中关闭。",
+  "pushPromptEnable": "开启",
+  "pushPromptNotNow": "暂不需要",
+  "pushPromptGotIt": "知道了",
+  "pushPromptDone": "已完成。提醒将发送到此设备。",
+  "pushPromptError": "无法开启通知，请重试。",
+  "pushPromptInstallTitle": "将 BullPen 添加到主屏幕以接收手机提醒",
+  "pushPromptInstallSteps": "在 Safari 中点按“分享”按钮，选择“添加到主屏幕”，然后从主屏幕打开 BullPen。",
+  "pushPromptSignInAgain": "届时你需要在那里再登录一次。"
 }

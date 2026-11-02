@@ -244,5 +244,15 @@
   "homeWidget_from_follows": "Fra de du følger",
   "notifReleaseNotesLabel": "Hva er nytt",
   "notifReleaseNotesDescription": "En kort oppdatering hver mandag med de største forbedringene i BullPen",
-  "notifHealthScoreDescription": "Få varsel når en fulgt aksjes BullPen-helsescore går over til en ny bokstavkarakter, eller endrer seg med 5 poeng eller mer etter en ny kvartalsrapport"
+  "notifHealthScoreDescription": "Få varsel når en fulgt aksjes BullPen-helsescore går over til en ny bokstavkarakter, eller endrer seg med 5 poeng eller mer etter en ny kvartalsrapport",
+  "notifPushAlertsDescription": "Vis varsler som push-varsler på enhetene dine, ikke bare i appen",
+  "notifPushAlertsLabel": "Push-varsler",
+  "pushDeviceBlocked": "Slått av i nettleserinnstillingene dine",
+  "pushDeviceDescription": "Varsler for denne nettleseren eller telefonen",
+  "pushDeviceDisable": "Slå av",
+  "pushDeviceEnable": "Slå på",
+  "pushDeviceError": "Kunne ikke endre varsler på denne enheten. Prøv igjen.",
+  "pushDeviceInstallHint": "Legg BullPen til på startskjermen for å få varsler på denne enheten",
+  "pushDeviceLabel": "Varsler på denne enheten",
+  "pushDeviceOn": "På for denne enheten"
 }

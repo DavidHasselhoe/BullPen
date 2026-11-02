@@ -221,5 +221,19 @@
   "notifHealthCatCashFlow": "Kontantstrøm",
   "notifHealthCatGrowth": "Vekst",
   "notifHealthCatMarketRisk": "Markedsrisiko",
-  "notifHealthCatValuation": "Verdsettelse"
+  "notifHealthCatValuation": "Verdsettelse",
+  "pushPromptLabel": "Varsler på telefon",
+  "pushPromptTitle_holding": "Få varsler om beholdningene dine på telefonen",
+  "pushPromptTitle_lesson": "Få påminnelser om streaken din på telefonen",
+  "pushPromptTitle_alert": "Få dette varselet på telefonen",
+  "pushPromptTitle_home": "Få varsler på telefonen",
+  "pushPromptBody": "BullPen sender et kort varsel når noe skjer. Du kan slå det av når som helst i Innstillinger.",
+  "pushPromptEnable": "Slå på",
+  "pushPromptNotNow": "Ikke nå",
+  "pushPromptGotIt": "Greit",
+  "pushPromptDone": "Ferdig. Varsler kommer til denne enheten.",
+  "pushPromptError": "Vi kunne ikke slå på varsler. Prøv igjen.",
+  "pushPromptInstallTitle": "Legg BullPen på hjem-skjermen for varsler på telefonen",
+  "pushPromptInstallSteps": "Trykk på Del-knappen i Safari, velg Legg til på Hjem-skjerm, og åpne deretter BullPen fra hjem-skjermen.",
+  "pushPromptSignInAgain": "Du må logge inn én gang til der."
 }

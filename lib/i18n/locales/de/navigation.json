@@ -221,5 +221,19 @@
   "notifHealthCatCashFlow": "Cashflow",
   "notifHealthCatGrowth": "Wachstum",
   "notifHealthCatMarketRisk": "Marktrisiko",
-  "notifHealthCatValuation": "Bewertung"
+  "notifHealthCatValuation": "Bewertung",
+  "pushPromptLabel": "Handy-Benachrichtigungen",
+  "pushPromptTitle_holding": "Erhalte Benachrichtigungen zu deinen Beständen auf dem Handy",
+  "pushPromptTitle_lesson": "Erhalte deine Streak-Erinnerungen auf dem Handy",
+  "pushPromptTitle_alert": "Erhalte diese Benachrichtigung auf dem Handy",
+  "pushPromptTitle_home": "Erhalte Benachrichtigungen auf dem Handy",
+  "pushPromptBody": "BullPen schickt dir eine kurze Benachrichtigung, wenn etwas passiert. Du kannst sie jederzeit in den Einstellungen ausschalten.",
+  "pushPromptEnable": "Einschalten",
+  "pushPromptNotNow": "Nicht jetzt",
+  "pushPromptGotIt": "Verstanden",
+  "pushPromptDone": "Fertig. Benachrichtigungen kommen auf dieses Gerät.",
+  "pushPromptError": "Benachrichtigungen konnten nicht eingeschaltet werden. Bitte versuche es erneut.",
+  "pushPromptInstallTitle": "Füge BullPen zu deinem Home-Bildschirm hinzu, um Benachrichtigungen aufs Handy zu bekommen",
+  "pushPromptInstallSteps": "Tippe in Safari auf die Teilen-Schaltfläche, wähle „Zum Home-Bildschirm“ und öffne BullPen dann über deinen Home-Bildschirm.",
+  "pushPromptSignInAgain": "Dort musst du dich noch einmal anmelden."
 }

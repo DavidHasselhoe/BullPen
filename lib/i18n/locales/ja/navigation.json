@@ -221,5 +221,19 @@
   "notifHealthCatCashFlow": "キャッシュフロー",
   "notifHealthCatGrowth": "成長性",
   "notifHealthCatMarketRisk": "市場リスク",
-  "notifHealthCatValuation": "バリュエーション"
+  "notifHealthCatValuation": "バリュエーション",
+  "pushPromptLabel": "スマホ通知",
+  "pushPromptTitle_holding": "保有銘柄に関する通知をスマホで受け取る",
+  "pushPromptTitle_lesson": "学習のストリーク（連続記録）リマインダーをスマホで受け取る",
+  "pushPromptTitle_alert": "このアラートをスマホで受け取る",
+  "pushPromptTitle_home": "スマホで通知を受け取る",
+  "pushPromptBody": "BullPenは、何か起きたときに短い通知をお送りします。設定からいつでもオフにできます。",
+  "pushPromptEnable": "オンにする",
+  "pushPromptNotNow": "今はしない",
+  "pushPromptGotIt": "わかりました",
+  "pushPromptDone": "完了しました。このデバイスに通知が届くようになります。",
+  "pushPromptError": "通知をオンにできませんでした。もう一度お試しください。",
+  "pushPromptInstallTitle": "スマホで通知を受け取るには、BullPenをホーム画面に追加してください",
+  "pushPromptInstallSteps": "Safariの共有ボタンをタップし、「ホーム画面に追加」を選んでから、ホーム画面のBullPenを開いてください。",
+  "pushPromptSignInAgain": "そちらで再度サインインしていただく必要があります。"
 }

@@ -221,5 +221,19 @@
   "notifHealthCatGrowth": "Crecimiento",
   "notifHealthCatMarketRisk": "Riesgo de mercado",
   "notifHealthCatValuation": "Valoración",
-  "notifDividendManyTitle_one": "{{count}} de tus acciones pasará pronto a cotizar sin dividendo"
+  "notifDividendManyTitle_one": "{{count}} de tus acciones pasará pronto a cotizar sin dividendo",
+  "pushPromptLabel": "Alertas en el teléfono",
+  "pushPromptTitle_holding": "Recibe alertas sobre tus inversiones en el teléfono",
+  "pushPromptTitle_lesson": "Recibe tus recordatorios de racha en el teléfono",
+  "pushPromptTitle_alert": "Recibe esta alerta en el teléfono",
+  "pushPromptTitle_home": "Recibe alertas en el teléfono",
+  "pushPromptBody": "BullPen envía una notificación breve cuando ocurre algo. Puedes desactivarla en cualquier momento en Ajustes.",
+  "pushPromptEnable": "Activar",
+  "pushPromptNotNow": "Ahora no",
+  "pushPromptGotIt": "Entendido",
+  "pushPromptDone": "Listo. Las alertas llegarán a este dispositivo.",
+  "pushPromptError": "No pudimos activar las notificaciones. Inténtalo de nuevo.",
+  "pushPromptInstallTitle": "Añade BullPen a tu pantalla de inicio para recibir alertas en el teléfono",
+  "pushPromptInstallSteps": "Toca el botón Compartir en Safari, elige Añadir a pantalla de inicio y, después, abre BullPen desde tu pantalla de inicio.",
+  "pushPromptSignInAgain": "Tendrás que volver a iniciar sesión allí."
 }

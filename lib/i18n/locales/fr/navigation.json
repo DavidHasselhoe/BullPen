@@ -221,5 +221,19 @@
   "notifHealthCatCashFlow": "Flux de trésorerie",
   "notifHealthCatGrowth": "Croissance",
   "notifHealthCatMarketRisk": "Risque de marché",
-  "notifHealthCatValuation": "Valorisation"
+  "notifHealthCatValuation": "Valorisation",
+  "pushPromptLabel": "Alertes sur téléphone",
+  "pushPromptTitle_holding": "Recevez des alertes sur vos positions directement sur votre téléphone",
+  "pushPromptTitle_lesson": "Recevez vos rappels de série directement sur votre téléphone",
+  "pushPromptTitle_alert": "Recevez cette alerte directement sur votre téléphone",
+  "pushPromptTitle_home": "Recevez des alertes directement sur votre téléphone",
+  "pushPromptBody": "BullPen envoie une courte notification lorsqu'il se passe quelque chose. Vous pouvez la désactiver à tout moment dans les Paramètres.",
+  "pushPromptEnable": "Activer",
+  "pushPromptNotNow": "Pas maintenant",
+  "pushPromptGotIt": "Compris",
+  "pushPromptDone": "C'est fait. Les alertes seront envoyées sur cet appareil.",
+  "pushPromptError": "Nous n'avons pas pu activer les notifications. Veuillez réessayer.",
+  "pushPromptInstallTitle": "Ajoutez BullPen à votre écran d'accueil pour recevoir des alertes sur téléphone",
+  "pushPromptInstallSteps": "Appuyez sur le bouton Partager dans Safari, choisissez Sur l'écran d'accueil, puis ouvrez BullPen depuis votre écran d'accueil.",
+  "pushPromptSignInAgain": "Vous devrez vous reconnecter une fois de plus à cet endroit."
 }

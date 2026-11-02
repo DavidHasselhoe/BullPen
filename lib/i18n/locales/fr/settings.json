@@ -244,5 +244,15 @@
   "homeWidget_from_follows": "De ceux que vous suivez",
   "notifReleaseNotesLabel": "Nouveautés",
   "notifReleaseNotesDescription": "Une courte note chaque lundi avec les principales améliorations de BullPen",
-  "notifHealthScoreDescription": "Recevez une notification lorsque le score de santé BullPen d'une action suivie change de lettre de note, ou évolue de 5 points ou plus après un nouveau rapport trimestriel"
+  "notifHealthScoreDescription": "Recevez une notification lorsque le score de santé BullPen d'une action suivie change de lettre de note, ou évolue de 5 points ou plus après un nouveau rapport trimestriel",
+  "notifPushAlertsDescription": "Afficher les alertes sous forme de notifications sur vos appareils, et pas seulement dans l'application",
+  "notifPushAlertsLabel": "Notifications push",
+  "pushDeviceBlocked": "Désactivées dans les paramètres de votre navigateur",
+  "pushDeviceDescription": "Alertes pour ce navigateur ou ce téléphone",
+  "pushDeviceDisable": "Désactiver",
+  "pushDeviceEnable": "Activer",
+  "pushDeviceError": "Impossible de modifier les notifications sur cet appareil. Réessayez.",
+  "pushDeviceInstallHint": "Ajoutez BullPen à votre écran d'accueil pour recevoir des notifications sur cet appareil",
+  "pushDeviceLabel": "Notifications sur cet appareil",
+  "pushDeviceOn": "Activées pour cet appareil"
 }
