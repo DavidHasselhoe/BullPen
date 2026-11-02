@@ -64,16 +64,16 @@ export function PushDeviceRow() {
     <div className="py-3">
       <div className="flex min-h-11 items-center justify-between gap-4">
         <div className="min-w-0 flex-1 space-y-0.5">
-          <p className="text-sm font-medium text-foreground">{t('pushDeviceLabel')}</p>
+          <p id="push-device-label" className="text-sm font-medium text-foreground">{t('pushDeviceLabel')}</p>
           <p className="text-xs leading-snug text-muted-foreground">{hint ?? (subscribed ? t('pushDeviceOn') : t('pushDeviceDescription'))}</p>
         </div>
         {!hint && subscribed !== null && (
-          <Button type="button" variant="outline" size="sm" onClick={toggle} disabled={busy} className="min-h-11 shrink-0">
+          <Button type="button" variant="outline" size="sm" onClick={toggle} disabled={busy} aria-describedby="push-device-label" className="min-h-11 shrink-0">
             {subscribed ? t('pushDeviceDisable') : t('pushDeviceEnable')}
           </Button>
         )}
       </div>
-      {failed && <p role="alert" className="mt-2 text-sm text-destructive">{t('pushDeviceError')}</p>}
+      {failed && <p role="alert" className="mt-2 text-sm text-muted-foreground">{t('pushDeviceError')}</p>}
     </div>
   );
 }
