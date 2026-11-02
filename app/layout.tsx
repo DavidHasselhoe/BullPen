@@ -79,11 +79,11 @@ const ORGANIZATION_JSON_LD = {
   logo: `${SITE_URL}/icon-light.png`,
   description:
     "Investment research and portfolio-tracking platform for everyday investors: real-time market data, AI-powered analysis, and educational tools.",
-  // Ties the bullpen.no entity to its real public profiles — one of the few
+  // Ties the BullPen entity to its real public profiles — one of the few
   // legitimate levers for a bare, one-word brand query ("bullpen") to
   // resolve to us rather than an unrelated same-name result.
   sameAs: [
-    "https://www.instagram.com/bullpen.no/",
+    "https://www.instagram.com/bullpeninvest/",
     "https://discord.gg/RkTFXyjZSY",
   ],
 };
