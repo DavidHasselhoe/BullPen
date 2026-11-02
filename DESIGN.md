@@ -206,8 +206,10 @@ Three widths, chosen by what the page is, so the header does not jump as people 
 - **Reading, `max-w-3xl` (768px):** single-column lists and prose: Feed, Notifications, Price Alerts, Market Mood, profiles, AI chat, Deep Dive.
 Form-first tools (Dividend calculator, Buy Here, Portfolio Builder at `max-w-4xl`) and Academy lessons (`max-w-2xl`, a lesson's reading measure) are deliberate exceptions. A new page picks one of the three unless it is one of those.
 
-### Signature Component: The Serif Accent Headline
-The landing page's defining move: a bold Geist Sans headline with exactly one word swapped into italic Instrument Serif, colored in Signal Emerald (`"The market, *explained.*"`). It's the single most identity-carrying detail in the whole system — worth protecting from dilution (don't add a second serif word, don't use it outside marketing headlines).
+### Signature Component: The Topic Chip Headline
+The landing hero (`components/landing/Hero.tsx`): "Finally understand" in bold Geist Sans, then one chip on its own line holding what BullPen explains ("the market", "your stocks", "earnings day"...). The chip is a soft emerald pill with an emerald dot, the word in ink Geist Sans at a lighter weight, notion.com's shape in the brand's one accent. It rotates once and rests on the first word, and nothing else on the line moves.
+
+It replaced the serif accent headline in November 2026: a 2026-11-02 critique found the italic-serif word in a tinted pill was the page's strongest generated-landing tell, worse as the moving part of a rotation. Instrument Serif stays available for a single word on secondary marketing pages (the trial and invite pages use it), under the One Serif Word Rule, but it is no longer the hero's voice.
 
 ## 6. Motion
 

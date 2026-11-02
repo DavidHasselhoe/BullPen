@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Reveal, SectionHeading } from './Atoms';
+import { SectionHeading } from './Atoms';
 import { Icon } from './Icon';
 import { PRICING, FREE_WATCHLISTS, FREE_ALERT_STOCKS } from '@/lib/billing/entitlements';
 import { QUOTAS } from '@/lib/billing/quotas';
@@ -46,14 +46,15 @@ const PLANS: Plan[] = [
     cta: 'Start for free',
     ctaStyle: 'ghost',
     features: [
-      'US stock quotes, charts & indicators',
-      'Unlimited stock, ETF & crypto pages',
+      'Unlimited stock, ETF & crypto pages, each with a health grade',
       'Full stock screener & company compare',
-      `${QUOTAS.chat.count} AI chat messages a day`,
-      `${QUOTAS.deep_dive.count} AI Deep Dive & ${QUOTAS.portfolio_builder.count} Portfolio Builder runs a month`,
-      `Holdings tracking, ${FREE_WATCHLISTS} watchlists, alerts on ${FREE_ALERT_STOCKS} stocks`,
-      'Academy beginner courses & daily challenge',
       '“Why Today?” for your biggest mover each day',
+      `${QUOTAS.chat.count} questions to Bull, the AI assistant, a day`,
+      `${QUOTAS.deep_dive.count} AI research report & ${QUOTAS.portfolio_builder.count} portfolio plans a month`,
+      `Holdings tracking, ${FREE_WATCHLISTS} watchlists with scorecards, alerts on ${FREE_ALERT_STOCKS} stocks`,
+      'Economy results, market calendar & Congress trades',
+      "Bull's Weekly Pick and its full track record",
+      'Academy beginner courses & daily challenge',
     ],
   },
   {
@@ -66,14 +67,15 @@ const PLANS: Plan[] = [
     highlight: true,
     features: [
       'Everything in Free',
-      'Daily Brief: an AI market recap every morning',
+      'Daily Brief: a short market read every morning',
       '“Why Today?” for any stock, any day',
-      'Unlimited AI chat, Portfolio Builder & Checkup',
-      "Bull's Weekly Pick, with the full thesis",
-      'Automatic brokerage sync (SnapTrade)',
+      'Unlimited Bull, portfolio plans & portfolio checkups',
+      "The full thesis behind Bull's Weekly Pick",
+      'Full holdings of famous funds like Berkshire',
+      'Your watchlist charted against the S&P 500',
+      'Automatic sync with Robinhood, Schwab, Fidelity & more',
       'Unlimited watchlists & price alerts',
-      'What 18 famous funds own, like Buffett and Dalio',
-      'Insider transactions, exports & advanced Academy',
+      'Insider trades, exports & advanced Academy courses',
     ],
   },
 ];
@@ -82,7 +84,7 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
   const [annual, setAnnual] = useState(true);
 
   return (
-    <section id="pricing" style={{ padding: '104px 0 96px', position: 'relative' }}>
+    <section id="pricing" className="landing-section">
       <div className="wrap">
         <SectionHeading
           title={
@@ -94,8 +96,6 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
           }
           sub="No card to sign up. Cancel anytime. Upgrade only when the daily brief becomes your most-opened tab."
         />
-
-        <Reveal>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
             <div
               style={{
@@ -165,17 +165,16 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
               </button>
             </div>
           </div>
-        </Reveal>
 
         <div
           className="pricing-grid"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18, maxWidth: 880, margin: '0 auto' }}
         >
-          {PLANS.map((p, i) => {
+          {PLANS.map((p) => {
             const price = annual ? p.annualMo : p.monthly;
             return (
-              <Reveal key={p.name} delay={i + 1}>
                 <div
+                  key={p.name}
                   style={{
                     position: 'relative',
                     background: p.highlight
@@ -298,12 +297,9 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                     ))}
                   </ul>
                 </div>
-              </Reveal>
             );
           })}
         </div>
-
-        <Reveal delay={3}>
           <div
             style={{
               marginTop: 36,
@@ -333,7 +329,6 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
               Cancel anytime
             </span>
           </div>
-        </Reveal>
       </div>
     </section>
   );

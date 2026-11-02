@@ -7,7 +7,7 @@ export const FAQ_ITEMS = [
     // hand — this answer previously claimed "20 AI chat messages a month"
     // against a real limit of 15 per day.
     q: 'Is BullPen actually free?',
-    a: `Yes. The Free plan stays free forever: quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day, plus an explanation for your biggest mover each day. Pro adds the Daily Brief, "Why Today?" for any stock, unlimited AI, and automatic brokerage sync.`,
+    a: `Yes. The Free plan stays free forever: quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day, plus an explanation for your biggest mover each day. Pro adds the Daily Brief, "Why Today?" for any stock, unlimited AI, full fund holdings and automatic brokerage sync.`,
   },
   {
     q: 'Do I have to connect a brokerage?',
@@ -25,7 +25,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'Is my financial data safe?',
-    a: "All connections go through bank-level OAuth, so we never see your brokerage password. Data is encrypted in transit and at rest. We don't sell data and we don't serve ads.",
+    a: "Brokerage sync is optional and goes through SnapTrade, so BullPen never sees your brokerage password. Your data is encrypted in transit and at rest. We don't sell data and we don't show ads.",
   },
   {
     q: 'Is BullPen an SEC-registered advisor?',

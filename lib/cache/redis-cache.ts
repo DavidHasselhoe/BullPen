@@ -76,6 +76,29 @@ export async function rsetnx(key: string, ttlSeconds: number): Promise<boolean> 
   }
 }
 
+/**
+ * Keys matching a glob, up to `limit`. SCAN walks the whole keyspace, so only
+ * call it behind a cache of its own. Empty on any error or without Redis.
+ */
+export async function rscan(match: string, limit = 2000): Promise<string[]> {
+  const c = client();
+  if (!c) return [];
+  const keys: string[] = [];
+  try {
+    let cursor: string | number = 0;
+    // ponytail: bounded at 50 pages; a keyspace past ~50k keys needs an index set instead.
+    for (let page = 0; page < 50; page++) {
+      const [next, batch]: [string | number, string[]] = await c.scan(cursor, { match, count: 1000 });
+      keys.push(...batch);
+      cursor = next;
+      if (String(cursor) === '0' || keys.length >= limit) break;
+    }
+  } catch {
+    // non-fatal
+  }
+  return keys.slice(0, limit);
+}
+
 /** Delete a cached value. Never throws. */
 export async function rdel(key: string): Promise<void> {
   try {

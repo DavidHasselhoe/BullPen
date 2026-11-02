@@ -1,102 +1,125 @@
-'use client';
-
-import Image from 'next/image';
+import { getImageProps } from 'next/image';
 import type { CSSProperties } from 'react';
-import { Reveal, SectionHeading } from './Atoms';
+import { SectionHeading } from './Atoms';
 
 /**
  * What a beginner gets, free first, as a bento of real light-mode captures.
  *
- * Replaces Features.tsx, whose four rows were all Pro-only and shown as dark
- * captures on this light page: a free visitor never saw the plain-language
- * labels, the health grade or the Academy that are the actual beginner path.
- * Each capture is cropped to one moment and peeks in from the card's corner,
- * so it reads at a glance instead of as a shrunken screen. See
- * public/screenshots/README.md for how they are taken.
+ * Each capture is one card of the real app, taken twice from the app's own
+ * responsive layout (scripts/capture-landing-screenshots.js): a 568px-wide
+ * card at 2x for the desktop bento, a 328px one at 3x for phones. Both show at
+ * the app's own size, so text reads like it does in the product instead of a
+ * shrunken screen, and peek in from the card's corner. `y` scrolls a tall
+ * capture to the moment the copy talks about. See public/screenshots/README.md.
  */
+
+interface Shot {
+  /** CSS size of the capture; the file is 2x (desktop) or 3x (phone). */
+  w: number;
+  h: number;
+  /** Px to scroll the capture up inside the card. */
+  y?: number;
+}
 
 interface Benefit {
   title: string;
   body: string;
   file: string;
-  width: number;
-  height: number;
   alt: string;
+  desktop: Shot;
+  phone: Shot;
   pro?: boolean;
-  /** Displayed width in px, when not the default 860. */
-  shotWidth?: number;
-  /** Negative px to pull centred content to the card's left edge. */
-  shotShift?: number;
 }
 
 const BENEFITS: Benefit[] = [
   {
     title: 'Every number, in plain English.',
-    body: 'Beginner mode turns "EV/EBITDA" into "Company value vs operating profit" and adds a line on what it means. Tap any label for more.',
-    file: 'bento-plain-english.png', width: 1024, height: 530,
-    alt: "NVIDIA's key numbers in beginner mode: price range this year, company size, annual dividend and company value vs operating profit, each with a plain-English line",
+    body: 'Beginner mode turns "EV/EBITDA" into "Company value vs operating profit" and says what it means for this company. Tap any label for more.',
+    file: 'bento-plain-english',
+    alt: "NVIDIA's company value vs operating profit, 24.39, on a scale from 0 to 30 with the typical value marked, and a plain-English line on what it means",
+    desktop: { w: 568, h: 879, y: 596 },
+    phone: { w: 328, h: 995, y: 700 },
   },
   {
     title: 'One grade for how healthy a company is.',
     body: 'Profit, debt, cash, growth and risk, scored out of 100 and graded A to F, so two companies compare at a glance.',
-    file: 'bento-health.png', width: 1024, height: 346,
+    file: 'bento-health',
     alt: "NVIDIA's financial health: 89 out of 100, grade A, with five categories such as how well it makes money and how bumpy the ride is",
+    desktop: { w: 568, h: 346 },
+    phone: { w: 328, h: 437 },
   },
   {
-    title: 'See what moved your money today.',
-    body: "Add what you own by hand or from a spreadsheet. Home shows today's change, your biggest movers and the reason behind the biggest one.",
-    file: 'bento-portfolio.png', width: 1088, height: 462, shotWidth: 940, shotShift: -380,
-    alt: "A portfolio on BullPen's Home: today's value and chart, and the biggest moves with a one-line reason for Reddit's rise",
+    title: 'A scorecard for your watchlist.',
+    body: 'How your list moved today, its best and worst stock, and how your picks have done since you added them compared with the S&P 500.',
+    file: 'bento-watchlist',
+    alt: "A watchlist scorecard: today's average move, the best and worst stock, the return since the stocks were added against the S&P 500, and the list's health grades",
+    desktop: { w: 568, h: 224 },
+    phone: { w: 328, h: 272 },
+  },
+  {
+    title: 'The economy, in plain numbers.',
+    body: 'What the Fed, inflation and the jobs report actually came in at, against last time, with a note in the app when a new number lands.',
+    file: 'bento-economy',
+    alt: 'BullPen Economy: the Fed interest rate range, CPI inflation and the jobs report, each with its latest result, the change from last time and the next release date',
+    desktop: { w: 568, h: 1054 },
+    phone: { w: 328, h: 1054 },
   },
   {
     title: 'Learn the basics as you go.',
     body: 'Short lessons and one question a day, starting from "What is a stock?". Free, with a streak to keep you coming back.',
-    file: 'tour-academy.png', width: 1280, height: 736, shotWidth: 1075, shotShift: -265,
-    alt: "BullPen Academy's daily challenge, asking the difference between owning a stock and owning a bond",
-  },
-  {
-    title: 'Know why a stock moved.',
-    body: "BullPen reads the day's news and filings and tells you why in a sentence or two. Free for your biggest mover each day, any stock with Pro.",
-    file: 'bento-why.png', width: 568, height: 316, shotWidth: 540,
-    alt: "Vistra up 2.68% today, explained: a rally in nuclear power stocks after Constellation Energy's deal with Google and a $4.2 billion Energy Department loan",
+    file: 'bento-academy',
+    alt: "BullPen Academy's daily challenge, asking which of four answers is the strongest example of a good investment thesis",
+    desktop: { w: 568, h: 394 },
+    phone: { w: 328, h: 534 },
   },
   {
     title: 'Your market in a minute, every morning.',
     body: "A short read before the open: what moved, what's coming and what it means for the stocks you follow.",
-    file: 'bento-brief.png', width: 568, height: 231, shotWidth: 540,
-    alt: "A Daily Brief headline and summary about the jobs report, chip stocks and market volatility",
+    file: 'bento-daily-brief',
+    alt: 'A Daily Brief headline and summary about Reddit and Twilio falling after earnings, market fear and the companies reporting tonight',
+    desktop: { w: 568, h: 232 },
+    phone: { w: 328, h: 252 },
     pro: true,
   },
 ];
 
+function Capture({ b }: { b: Benefit }) {
+  const desktop = getImageProps({ src: `/screenshots/${b.file}.png`, alt: b.alt, width: b.desktop.w, height: b.desktop.h });
+  const phone = getImageProps({ src: `/screenshots/${b.file}-m.png`, alt: b.alt, width: b.phone.w, height: b.phone.h });
+  const vars = {
+    '--shot-w': `${b.desktop.w}px`, '--shot-y': `${-(b.desktop.y ?? 0)}px`,
+    '--shot-w-m': `${b.phone.w}px`, '--shot-y-m': `${-(b.phone.y ?? 0)}px`,
+  } as CSSProperties;
+  return (
+    <div className="benefit-shot" style={vars}>
+      <picture>
+        <source media="(min-width: 901px)" srcSet={desktop.props.srcSet} width={b.desktop.w} height={b.desktop.h} />
+        <img {...phone.props} alt={b.alt} loading="lazy" />
+      </picture>
+    </div>
+  );
+}
+
 export function Benefits() {
   return (
-    <section id="features" style={{ position: 'relative', padding: '120px 0' }}>
+    <section id="features" className="landing-section">
       <div className="wrap">
         <SectionHeading
           title="Built for people who aren't finance people."
-          sub="The free plan covers the essentials. Pro adds a morning brief and an answer for any stock, any day."
+          sub="The free plan covers the essentials. Pro adds a morning brief, an answer for any stock, and no limits."
         />
         <div className="benefits-grid">
-          {BENEFITS.map((b, i) => (
-            <Reveal key={b.file} delay={i % 2} style={{ display: 'flex' }}>
-              <article className="benefit-card">
-                <div className="benefit-copy">
-                  <h3 className="benefit-title">
-                    {b.title}
-                    {b.pro && <span className="benefit-pro">Pro</span>}
-                  </h3>
-                  <p className="benefit-body">{b.body}</p>
-                </div>
-                <div
-                  className="benefit-shot"
-                  style={{ '--shot-width': b.shotWidth ? `${b.shotWidth}px` : undefined, '--shot-shift': b.shotShift ? `${b.shotShift}px` : undefined } as CSSProperties}
-                >
-                  {/* Phones show the capture at 1.15x its desktop width (landing-styles.css), wider than the screen: "92vw" fetched a small file and stretched it. */}
-                  <Image src={`/screenshots/${b.file}`} alt={b.alt} width={b.width} height={b.height} sizes="(max-width: 900px) 1240px, 1075px" />
-                </div>
-              </article>
-            </Reveal>
+          {BENEFITS.map((b) => (
+            <article key={b.file} className="benefit-card">
+              <div className="benefit-copy">
+                <h3 className="benefit-title">
+                  {b.title}
+                  {b.pro && <span className="benefit-pro">Pro</span>}
+                </h3>
+                <p className="benefit-body">{b.body}</p>
+              </div>
+              <Capture b={b} />
+            </article>
           ))}
         </div>
       </div>

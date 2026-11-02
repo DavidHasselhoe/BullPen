@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 // ── Brand mark ────────────────────────────────────────────────────────────────
 // The marketing landing page always renders on its own dark background
@@ -56,112 +56,12 @@ export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   );
 }
 
-// ── Reveal-on-scroll ──────────────────────────────────────────────────────────
-type RevealProps = {
-  children: ReactNode;
-  delay?: number;
-  className?: string;
-  style?: CSSProperties;
-};
-
-export function Reveal({ children, delay = 0, className, style }: RevealProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in');
-            obs.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -60px 0px' },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className={`reveal${className ? ` ${className}` : ''}`} data-delay={delay} style={style}>
-      {children}
-    </div>
-  );
-}
-
 // ── Section heading ──────────────────────────────────────────────────────────
-export function SectionHeading({
-  eyebrow,
-  title,
-  sub,
-  align = 'center',
-}: {
-  eyebrow?: string;
-  title: ReactNode;
-  sub?: string;
-  align?: 'center' | 'left';
-}) {
+export function SectionHeading({ title, sub }: { title: ReactNode; sub?: string }) {
   return (
-    <div
-      style={{
-        textAlign: align,
-        maxWidth: 760,
-        margin: align === 'center' ? '0 auto 56px' : '0 0 56px',
-      }}
-    >
-      {eyebrow && (
-        <Reveal>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 12px',
-              borderRadius: 99,
-              background: 'var(--accent-soft)',
-              color: 'var(--accent)',
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              marginBottom: 18,
-            }}
-          >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 99,
-                background: 'var(--accent)',
-                boxShadow: '0 0 0 4px var(--accent-soft)',
-              }}
-            />
-            {eyebrow}
-          </div>
-        </Reveal>
-      )}
-      <Reveal delay={1}>
-        <h2 className="headline" style={{ margin: 0, fontSize: 'clamp(34px, 4.6vw, 56px)', color: 'var(--fg)' }}>
-          {title}
-        </h2>
-      </Reveal>
-      {sub && (
-        <Reveal delay={2}>
-          <p
-            style={{
-              margin: '20px auto 0',
-              fontSize: 18,
-              lineHeight: 1.55,
-              color: 'var(--fg-muted)',
-              maxWidth: 620,
-              textWrap: 'pretty',
-            }}
-          >
-            {sub}
-          </p>
-        </Reveal>
-      )}
+    <div className="section-heading">
+      <h2 className="headline">{title}</h2>
+      {sub && <p>{sub}</p>}
     </div>
   );
 }

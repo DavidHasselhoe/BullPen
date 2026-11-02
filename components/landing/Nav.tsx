@@ -38,7 +38,7 @@ export function Nav({ onSignIn, onSignUp, isDarkLanding }: Props) {
 
   const links = [
     { label: 'Features', href: '#features' },
-    { label: 'How it works', href: '#how' },
+    { label: 'Explore', href: '#explore' },
     { label: 'Pricing', href: '#pricing' },
     { label: 'FAQ', href: '#faq' },
   ];
@@ -77,10 +77,6 @@ export function Nav({ onSignIn, onSignUp, isDarkLanding }: Props) {
             display: 'flex',
             alignItems: 'center',
             gap: 4,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            padding: 4,
-            borderRadius: 999,
           }}
         >
           {links.map((l) => (

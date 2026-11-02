@@ -1,18 +1,17 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { LandingClient } from '@/components/landing/LandingClient';
-import { getAvailableShots } from '@/lib/landing/screenshots';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 
 export const metadata: Metadata = {
   title: 'BullPen: investing, explained for you',
   description:
-    "Every stock in plain English, every move with a reason. Built for people who aren't finance people. Free forever plan, no card required.",
+    "Every stock in plain English, and the reason behind the big moves. Built for people who aren't finance people. Free plan, no card required.",
   alternates: { canonical: '/' },
   openGraph: {
     title: 'BullPen: investing, explained for you',
     description:
-      'Every stock in plain English, every move with a reason. No finance degree, no jargon, no guessing.',
+      'Every stock in plain English, and the reason behind the big moves. No finance degree, no jargon, no guessing.',
     url: '/',
     siteName: 'BullPen',
     type: 'website',
@@ -35,7 +34,5 @@ export default async function LandingPage({
     if (userId) redirect('/dashboard');
   }
 
-  // Resolved on the server so the browser never requests a screenshot that
-  // doesn't exist yet (see lib/landing/screenshots.ts).
-  return <LandingClient shots={getAvailableShots()} />;
+  return <LandingClient />;
 }

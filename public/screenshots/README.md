@@ -1,56 +1,51 @@
 # Landing page screenshots
 
 Real captures of the running app, in **light mode** to match the light landing
-page (David's call, 2026-10-02: the old dark captures read as black slabs on a
-white page and were too small to read). Two sections use them, and no capture
-is used by both:
+page. The landing page's bento (`components/landing/Benefits.tsx`) uses the
+`bento-*.png` pairs below; `/upgrade` uses the older single-size `bento-why` and
+`bento-brief` shots with their `-dark` twins.
 
-- **`Benefits.tsx`** — the bento. Each `bento-*.png` is cropped to one moment
-  (a single card or section), and peeks in from the card's corner. Referenced
-  directly; a missing file is a broken image.
-- **`Peek.tsx`** — the tour, in browser chrome with a tab strip. Reads this
-  folder through `lib/landing/screenshots.ts`, which skips missing files.
-  `tour-academy.png` is the exception: the bento uses it, so the tour leaves
-  Academy out.
+Each bento shot is one card of the real app, taken twice from the app's own
+responsive layout so neither is a shrunken desktop screen:
+
+- `bento-<name>.png`: a 600px viewport at 2x, a 568px-wide card (1136px file),
+  shown at 568px in the desktop bento.
+- `bento-<name>-m.png`: a 360px viewport at 3x, a 328px-wide card (984px file),
+  shown at 328px on phones through `<picture>`.
+
+`Benefits.tsx` holds each shot's CSS size and an optional `y` that scrolls a
+tall capture to the moment the copy talks about. A retake that changes a card's
+height needs its `h` (and maybe `y`) updated there.
 
 ## Files
 
 | File | What it shows | Used by |
 |---|---|---|
-| `bento-plain-english.png` | `/stock/NVDA` `#nav-statistics` (Key Numbers), beginner mode | Benefits |
-| `bento-health.png` | `/stock/NVDA` `#nav-health` (Financial Health) | Benefits |
-| `bento-portfolio.png` | `/dashboard` "Your portfolio" section | Benefits |
-| `bento-why.png` | `/stock/VST` price card (YTD range) down to the expanded Why reason, a recreated day (see below) | Benefits, `/upgrade` (light) |
-| `bento-why-dark.png` | Same shot in dark mode, same size and crop (568x316) | `/upgrade` (dark) |
-| `bento-brief.png` | `/dashboard` "Daily brief" section | Benefits, `/upgrade` (light) |
-| `bento-brief-dark.png` | Same shot in dark mode, same size and crop (568x231) | `/upgrade` (dark) |
-| `tour-academy.png` | `/academy`, below the nav | Benefits |
-| `tour-stock.png` | `/stock/NVDA`, below the nav | Peek |
-| `tour-discover.png` | `/discover`, below the nav | Peek |
-| `tour-screener.png` | `/tools/screener`, below the nav | Peek |
-| `tour-holdings.png` | `/holdings`, below the nav | Peek |
+| `bento-plain-english(-m).png` | `/stock/NVDA` `#nav-statistics` (Key Numbers), beginner mode | Landing |
+| `bento-health(-m).png` | `/stock/NVDA` `#nav-health` (Financial Health) | Landing |
+| `bento-watchlist(-m).png` | `/watchlist` scorecard strip | Landing |
+| `bento-economy(-m).png` | `/tools/economy` result cards | Landing |
+| `bento-academy(-m).png` | `/academy` Daily Challenge card | Landing |
+| `bento-daily-brief(-m).png` | `/dashboard` "Daily brief" section | Landing |
+| `bento-why.png` / `-dark` | `/stock/VST` price card down to the Why reason, a recreated day (see below), 568x316 | `/upgrade` |
+| `bento-brief.png` / `-dark` | `/dashboard` "Daily brief" section, 568x231 | `/upgrade` |
 
-## How to re-take them
+## How to re-take the bento
 
-Use the QA account (see memory `reference-qa-test-account`) against the dev
-server, through the Playwright browser tool.
+1. Set the QA account up (memory `reference-qa-test-account`), noting the old
+   values to restore: `settings.theme = 'light'`, `experience_level =
+   'beginner'` (so the plain labels show). Stay on the **free** plan: the page
+   sells the free plan.
+2. Sign it in on the Playwright MCP and save the session with
+   `context.storageState({ path })`.
+3. Point `STATE` in `scripts/capture-landing-screenshots.js` at that file and
+   run the script with the MCP's run_code tool (`filename` = the script). It
+   hides the dev overlay, Ask Bull, the cookie banner and the phone tab bar,
+   freezes animation, and writes all twelve files.
+4. Restore the account's settings.
 
-1. Set the account up for the shot, and note the old values to restore:
-   `settings.theme = 'light'`, `experience_level = 'beginner'` (so the plain
-   labels show). Stay on the **free** plan: the page sells the free plan, and
-   with Pro, Home generates a paid Why Today answer for every 2%+ mover.
-2. Pick a Why Today ticker that is already cached today
-   (`whytoday:v2:<date>:en:<TICKER>` in Redis), so nothing is generated.
-3. Viewport `1280 x 800` for `tour-*`. The two upgrade-page bentos (`bento-brief`, `bento-why`) are 568px wide, which is a
-   **600px-wide** viewport (600 minus the 16px gutters): `bento-brief` clips 568x231 from the Daily brief
-   `<section>`'s top-left, `bento-why` clips 568x316 from the price card's top-left (its rounded border included), down to the reason.
-   Clip a fixed size rather than shooting the element, whose fractional height rounds to 232. Take the `-dark`
-   twin with `settings.theme = 'dark'` and the exact same clip. Hide `nextjs-portal` and `button[title="Ask Bull"]`
-   with an injected style. Element shots for `bento-*`; for `tour-*` clip
-   `{ x: 0, y: 64, width: 1280, height: 736 }` to drop the app nav.
-4. Wait for live data before shooting: Holdings shows a partial total while a
-   quote is still loading ("across 9 positions" instead of 10).
-5. Restore the account's settings.
+Check every capture by eye before committing: no QA name, no half-loaded
+skeletons, no number that only makes sense for the test account.
 
 ### `bento-why`: a recreated day
 
@@ -62,9 +57,7 @@ morning before the open, when the snapshot quote is still that close, with
 Playwright `page.route` serving the old answer to `/api/stock/VST/why-today-cached`,
 `{ success: true, data: null }` to `/extended-hours` (or the pre-market move
 replaces the close and hides the answer) and aborting `/api/market/prices`.
-"Show more" clicked, then the toggle, the indicator chip row and the app header hidden: at 568x316 it just fits the landing card's 300px cap at 540 wide. Never pair an
-answer with a different day's price, and never write an answer by hand: every
-word in it should be something the app really said about that day.
-
-Check every capture by eye before committing: no QA name, no half-loaded
-skeletons, no number that only makes sense for the test account.
+Never pair an answer with a different day's price, and never write an answer
+by hand: every word in it should be something the app really said about that
+day. The landing hero no longer needs this: it shows real cached answers live
+(`/api/market/landing-why`).

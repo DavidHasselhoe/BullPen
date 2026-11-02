@@ -13,16 +13,14 @@ const AuthModal = lazy(() => import('@/components/auth/AuthModal').then((m) => (
 import { Nav } from './Nav';
 import { Hero } from './Hero';
 import { Benefits } from './Benefits';
-import { HowItWorks } from './HowItWorks';
-import { Peek } from './Peek';
+import { Explore } from './Explore';
 import { Pricing } from './Pricing';
 import { FAQ } from './FAQ';
 import { FinalCTA } from './FinalCTA';
 import { Footer } from './Footer';
-import type { Shot } from '@/lib/landing/screenshots';
 import './landing-styles.css';
 
-export function LandingClient({ shots }: { shots: Shot[] }) {
+export function LandingClient() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   // Light is the default for now (David evaluating it live, 2026-09) — see
@@ -90,15 +88,12 @@ export function LandingClient({ shots }: { shots: Shot[] }) {
     // forceDark/forceLight and AuthModal's forceLight, and the
     // .landing-force-light rule in app/globals.css.
     <div ref={rootRef} className="bullpen-landing-root landing-light-preview">
-      <div className="page-bg" aria-hidden />
-      <div className="page-noise" aria-hidden />
 
       <div className="content-layer">
         <Nav onSignIn={() => openSignIn('nav')} onSignUp={() => openSignUp('nav')} isDarkLanding={isDarkLanding} />
         <Hero onSignUp={() => openSignUp('hero')} />
         <Benefits />
-        <HowItWorks onSignUp={() => openSignUp('how_it_works')} />
-        <Peek shots={shots} />
+        <Explore />
         <Pricing onSignUp={() => openSignUp('pricing')} onSubscribe={openSubscribe} />
         <FAQ />
         <FinalCTA onSignUp={() => openSignUp('final_cta')} />

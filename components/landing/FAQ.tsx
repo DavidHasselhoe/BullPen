@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Reveal, SectionHeading } from './Atoms';
+import { SectionHeading } from './Atoms';
 import { Icon } from './Icon';
 import { FAQ_ITEMS } from './faq-data';
 
@@ -12,6 +12,7 @@ function FAQItem({ q, a, open, onToggle }: { q: string; a: string; open: boolean
       <button
         type="button"
         onClick={onToggle}
+        aria-expanded={open}
         style={{
           width: '100%',
           textAlign: 'left',
@@ -64,34 +65,21 @@ export function FAQ() {
   const [open, setOpen] = useState<number>(0);
 
   return (
-    <section id="faq" style={{ padding: '104px 0 96px' }}>
+    <section id="faq" className="landing-section">
       <div className="wrap">
-        <SectionHeading
-          title={
-            <>
-              Questions, answered{' '}
-              straight.
-            </>
-          }
-        />
-
-        <Reveal>
-          <div style={{ maxWidth: 800, margin: '0 auto' }}>
-            {FAQ_ITEMS.map((item, i) => (
-              <FAQItem key={i} q={item.q} a={item.a} open={open === i} onToggle={() => setOpen(open === i ? -1 : i)} />
-            ))}
-          </div>
-        </Reveal>
-
-        <Reveal delay={1}>
-          <div style={{ marginTop: 56, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
-            <div style={{ fontSize: 14, color: 'var(--fg-muted)' }}>Still have questions?</div>
-            <Link href="/contact" className="btn btn-ghost" style={{ fontSize: 14, padding: '11px 18px' }}>
-              <Icon name="chat" size={14} />
-              Chat with the team
-            </Link>
-          </div>
-        </Reveal>
+        <SectionHeading title="Questions people ask before signing up." />
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          {FAQ_ITEMS.map((item, i) => (
+            <FAQItem key={i} q={item.q} a={item.a} open={open === i} onToggle={() => setOpen(open === i ? -1 : i)} />
+          ))}
+        </div>
+        <div style={{ marginTop: 56, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+          <div style={{ fontSize: 14, color: 'var(--fg-muted)' }}>Still have questions?</div>
+          <Link href="/contact" className="btn btn-ghost" style={{ fontSize: 14, padding: '11px 18px' }}>
+            <Icon name="chat" size={14} />
+            Contact us
+          </Link>
+        </div>
       </div>
     </section>
   );
