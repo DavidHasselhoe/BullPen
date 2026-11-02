@@ -6,13 +6,13 @@ import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { safeTimeZone } from '@/lib/notifications/push-plan';
 
 // Our server POSTs to the endpoint, so only real push services are accepted.
-const PUSH_HOSTS = [/^fcm.googleapis.com$/, /(^|.)push.services.mozilla.com$/, /(^|.)push.apple.com$/, /(^|.)notify.windows.com$/];
+const PUSH_HOSTS = ['fcm.googleapis.com', 'push.services.mozilla.com', 'push.apple.com', 'notify.windows.com'];
 
 function isPushEndpoint(endpoint: unknown): endpoint is string {
   if (typeof endpoint !== 'string' || endpoint.length > 1000) return false;
   try {
     const u = new URL(endpoint);
-    return u.protocol === 'https:' && PUSH_HOSTS.some((re) => re.test(u.hostname));
+    return u.protocol === 'https:' && PUSH_HOSTS.some((h) => u.hostname === h || u.hostname.endsWith('.' + h));
   } catch {
     return false;
   }
