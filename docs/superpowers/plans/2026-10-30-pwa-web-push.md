@@ -10,6 +10,24 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-30-pwa-web-push-design.md`
 
+## Refreshed 2026-11-02 (before the build)
+
+Every path and assumption below was re-checked against `preview` at `bb3ea299`. What changed since 10-30:
+
+- **Migration number is 188**, not 187 (`187_health_alert_score` landed 11-02; the live DB's last migration is also 187).
+- **Supabase MCP tool name** in this setup is `mcp__fe6f9a8f-9c99-4197-837f-6795718b59d6__apply_migration` (CLAUDE.md's `mcp__claude_ai_Supabase__…` name doesn't exist here).
+- **`notification-creators.ts` grew** (1208 lines). Every producer the plan marks still exists under the same name. Bulk inserts that bypass `createNotification()` are now: `notifyNewAcademyCourse` (~line 624, the only one that gets a `push_kind`), `notifyEconomicEventsToday` (~1021), `notifyEconomicResults` (~1060), `notifyIndexMembershipChanges` (~1204). The last three stay bell-only. New since 10-30: `notifyQuarterlyHealthChanges` (~385, one `createNotification` per user, via the shared `healthAlertAudience` ~336). Health score stays bell-only per the spec unless David decides otherwise (decision D1).
+- **The morning email now overlaps push.** `lib/email/alert-email.ts` covers earnings, ex-dividend, big moves (digests and singles), health, politicians, index, economic, the Daily Brief and the Weekly Pick, and the portfolio recap rides along as the email's opening line (it gets `emailed_at` too). Spec section 7's "the email leaves out the recap" is out of date. It still leaves out Academy rows and the person's own price alerts (`entity_type: 'user_alert'`), and still only goes to verified users with `email_alerts` on. It has brought two real users back, so it must not get worse. See decision D2 and the conditional steps in Tasks 3 and 5.
+- **`NotificationItem.notificationSource` already has** the single-stock, earnings/dividend-digest and Academy cases Task 2 planned to add. User alerts link to `/tools/alerts`, not `/stock/<sym>`. Task 2 now moves the function as is.
+- **Onboarding** (`bb3ea299`, `8d6d5c96`): at least one stock pick is required, so every new account watches something and price/earnings pushes apply to everyone. `AlertsStep` now leads with "we send one short email in the morning". `sanitizeAlerts` rejects an object missing any key, so adding `learning` needs a default for drafts saved before the change.
+- **Price alerts are created from three places**, all through `CreateAlertForm`: `AlertDialog`, `app/tools/alerts/AlertsClientPage.tsx` and `components/watchlist/StockPlan.tsx`. Each closes the composer in `onCreated`, so the prompt renders in the parent.
+- **Icons:** `public/icon-light.png` / `icon-dark.png` are 180px. The biggest source is `public/BullPenLogo.png` (452px, black bull on transparent with ~50% padding). Cropped to the mark it's ~280px, too small for a sharp 512. iOS paints a transparent apple-touch-icon black, so a black bull on transparent shows as a black square. See decision D4.
+- **Rate limiter** lives in `lib/security/rate-limiter.ts` (CLAUDE.md says `rate-limit.ts`).
+- **CSP** is built in `next.config.ts` (~line 105), still no `worker-src`, so `/sw.js` is allowed by `script-src 'self'`. Middleware page matcher is `middleware.ts:176`.
+- Still true: `app/actions/notifications.ts` exists and nothing imports it; `isValidTimeZone` in `lib/dates/clock.ts`; `scripts/test-deliverable-email.ts`; `check-economic-results` route; `QSTASH_CRON_PATHS` in `scripts/test-cron-coverage.ts:87` (now 3 entries); `signOut()` in `lib/auth/auth.ts:498`; `getCurrentUserId()` in `lib/auth/server-session.ts`; every push kind matches an existing `settings.notifications` key; the `vercel.json` cron times in spec section 7.
+
+**Decisions taken at the start of the build** (fill in from David's answers): D1 default push types, D2 push vs morning email, D3 iOS install sheet placement, D4 icons, D5 Termly wording, execution method.
+
 ## Global Constraints
 
 - Quiet hours are local 22:00 to 08:00. A held push waits until 08:00; it is never skipped because of quiet hours.
@@ -89,9 +107,9 @@
 ### Task 2: Schema, push marks on producers, shared notification link
 
 **Files:**
-- Create: `supabase/migrations/187_push_notifications.sql`
+- Create: `supabase/migrations/188_push_notifications.sql`
 - Create: `lib/notifications/notification-href.ts`
-- Modify: `components/notifications/NotificationItem.tsx` (`notificationSource` builds its `href` with `notificationHref`)
+- Modify: `components/notifications/NotificationItem.tsx` (`notificationSource`, `INDEX_PAGE_LABELS` and `leadingTicker` move out; the card imports them back, `leadingTicker` is also used by the icon code)
 - Modify: `lib/notifications/notifications-db.ts` (types, insert, update path)
 - Modify: `lib/notifications/notification-creators.ts` (the producers below)
 - Delete: `app/actions/notifications.ts` (nothing imports it, and its `createNotification` server action takes any `user_id`. It must not become a way to push to someone else's phone.)
@@ -101,7 +119,7 @@
 - Produces:
   - `notifications.push_kind text null`, `notifications.pushed_at timestamptz null`, `notifications.push_opened_at timestamptz null`.
   - Table `push_subscriptions(id uuid pk default gen_random_uuid(), user_id uuid not null references users(id) on delete cascade, endpoint text not null unique, p256dh text not null, auth text not null, time_zone text, user_agent text, created_at timestamptz not null default now(), last_sent_at timestamptz)`.
-  - `export function notificationHref(n: Pick<Notification, 'type' | 'entity_type' | 'entity_id' | 'title'>): string | null` in `lib/notifications/notification-href.ts`.
+  - In `lib/notifications/notification-href.ts` (no `'use client'`, server-safe): `export function notificationSource(n, t: (key: string) => string): { label: string; href: string } | null` (moved verbatim, `TFunction` loosened to a plain function) and `export function notificationHref(n: Pick<Notification, 'type' | 'entity_type' | 'entity_id' | 'title' | 'message'>): string | null` = `notificationSource(n, (k) => k)?.href ?? null`.
   - `CreateNotificationInput.push?: PushKind`.
 
 - [ ] **Step 1: Write the migration.**
@@ -109,13 +127,13 @@
   - The `push_subscriptions` table, with an index on `user_id`.
   - RLS on, with policies so a user can select and delete rows `where user_id = auth.uid()`. No insert or update policy: writes go through the service role.
   - Additive and safe on main before the code ships (header comment, like 182).
-- [ ] **Step 2: Apply it** with `mcp__claude_ai_Supabase__apply_migration` (project `kgqpzuvhslqazurfrqya`), then check with `select column_name from information_schema.columns where table_name='notifications' and column_name like 'push%'`. Expect 3 rows.
-- [ ] **Step 3: Extract `notificationHref`.** Move the href half of `notificationSource` into it with the logic unchanged. Add the single-stock case the card uses (`/stock/<symbol>`, from `entity_id` for `entity_type === 'stock'`, or `leadingTicker(title)` for user alerts), and the Academy cases (`academy:new_course:<slug>` gives `/academy/<slug>`, `academy:streak_reminder:*` gives `/academy`). `notificationSource` keeps its labels and calls it.
+- [ ] **Step 2: Apply it** with the Supabase MCP `apply_migration` (`mcp__fe6f9a8f-9c99-4197-837f-6795718b59d6__apply_migration`, project `kgqpzuvhslqazurfrqya`), then check with `select column_name from information_schema.columns where table_name='notifications' and column_name like 'push%'`. Expect 3 rows.
+- [ ] **Step 3: Extract `notificationHref`.** Move `notificationSource` (with `INDEX_PAGE_LABELS` and `leadingTicker`) into `notification-href.ts` with the logic unchanged. It already covers single stocks, earnings/dividend digests, Academy (`/academy/<slug>` or `/academy`) and user alerts (`/tools/alerts`), so nothing is added. The card calls `notificationSource(n, t)` exactly as before.
 - [ ] **Step 4: Store `push_kind`.**
   - `createNotification()` writes `push_kind: input.push ?? null` on insert.
   - On the dedupe update it writes `push_kind` only if the existing row's `pushed_at` is null. It never touches `pushed_at` (Review Focus 4: select `pushed_at` in the dedupe lookup).
   - Add `push_kind` / `pushed_at` / `push_opened_at` to the `Notification` interface.
-- [ ] **Step 5: Mark the producers.** `createPortfolioRecapNotification` gets `portfolio_recap`; `createPriceMoveDigestNotification` and `createPriceMoveNotification` get `price_alerts`; `createEarningsUpcomingNotification` gets `upcoming_earnings`; `createDividendReminderNotification` gets `dividend_reminder`; `createDailyChallengeReminderNotification` gets `daily_challenge_reminder`; `createWeeklyPickNotification` gets `weekly_pick`; `createUserAlertNotification` gets `user_alert`. In `notifyNewAcademyCourse`, each inserted row gets `push_kind: 'new_course'`.
+- [ ] **Step 5: Mark the producers.** `createPortfolioRecapNotification` gets `portfolio_recap`; `createPriceMoveDigestNotification` and `createPriceMoveNotification` get `price_alerts`; `createEarningsUpcomingNotification` gets `upcoming_earnings`; `createDividendReminderNotification` gets `dividend_reminder`; `createDailyChallengeReminderNotification` gets `daily_challenge_reminder`; `createWeeklyPickNotification` gets `weekly_pick`; `createUserAlertNotification` gets `user_alert`. In `notifyNewAcademyCourse` (~line 612), each inserted row gets `push_kind: 'new_course'`. The other bulk inserts (`notifyEconomicEventsToday`, `notifyEconomicResults`, `notifyIndexMembershipChanges`) and `notifyQuarterlyHealthChanges` stay unmarked unless D1 says otherwise. If D1 adds health score: `createHealthScoreChangeNotification` and `notifyQuarterlyHealthChanges` get `health_score_change` (that's the settings key), and the kind joins `PushKind`, `PUSH_PRIORITY` (after `dividend_reminder`) and the 20h expiry.
 - [ ] **Step 6: Verify.**
   - `npm run lint` passes.
   - `npx tsc --noEmit -p . 2>&1 | grep -E "notification|push-plan"` shows no new errors in touched files.
@@ -127,7 +145,8 @@
 **Files:**
 - Create: `lib/notifications/push-send.ts`
 - Create: `app/api/cron/dispatch-push/route.ts`
-- Modify: `scripts/test-cron-coverage.ts` (add `'/api/cron/dispatch-push'` to `QSTASH_CRON_PATHS`)
+- Modify: `scripts/test-cron-coverage.ts` (append `'/api/cron/dispatch-push'` to `QSTASH_CRON_PATHS`, line 87)
+- Modify (only if D2 is "first channel wins"): `lib/email/alert-email.ts`
 - Modify: `docs/agent/scheduled-work.md` (QStash table row), `docs/agent/environment.md` (the 3 VAPID vars), `.env.example`
 - Modify: `package.json` (`web-push` dependency, `@types/web-push` dev dependency)
 
@@ -145,12 +164,13 @@
 - [ ] **Step 2: Implement `sendPush`.** Call `webpush.setVapidDetails` once at module scope. Send with `TTL: 4 * 3600`. The payload is the JSON of `{ title, body, url, tag }`.
 - [ ] **Step 3: Implement the route.** Copy the auth, `maxDuration` and logging shape from `app/api/cron/check-economic-results/route.ts`. Then, in order:
   1. Load subscribed user ids. If there are none, return zeros right away (this keeps CPU cost near zero).
-  2. Pending rows: `push_kind not null, pushed_at null, is_read false, created_at > now() - 24h, user_id in (subscribed)`, `.limit(1000)` (PostgREST cap).
+  2. Pending rows: `push_kind not null, pushed_at null, is_read false, created_at > now() - 24h, user_id in (subscribed)`, `.limit(1000)` (PostgREST cap). **If D2 is "first channel wins" (recommended):** also `emailed_at is null`, so a row the morning email already carried is never pushed.
   3. Already-pushed rows: `pushed_at > now() - 30h` for those users.
   4. Settings: `users.settings` for those users. Drop users with `notifications.push_alerts === false`, and drop rows whose kind setting is `false` (`user_alert` has no setting).
   5. For each user, call `planUserPush` with the newest subscription's `time_zone` and `href = notificationHref(row)`. On `send`, call `sendPush` on each subscription with `tag = rowIds[0]`. Delete `'gone'` subscriptions.
   6. If at least one device got `'sent'`, update `pushed_at = now` for `rowIds` and `last_sent_at` for those subscriptions.
   7. Count `expired` as pending rows dropped by expiry.
+  8. **If D2 is "first channel wins":** in `sendMorningAlertEmails` (`lib/email/alert-email.ts` ~line 683) add `.is('pushed_at', null)` to the notifications query, so a row already pushed isn't emailed again. The watchlist summary still sends the email on its own, so pushed users keep getting it. Run `npm run test-deliverable-email` and a one-account dry run (`sendMorningAlertEmails({ dryRun: true, userId })`) before and after.
 - [ ] **Step 4: Register the schedule.**
   - `npm run test-cron-coverage` passes.
   - Add the `scheduled-work.md` row: `*/15 * * * *`, with what the job does.
@@ -173,13 +193,14 @@
 - Produces:
   - `lib/push/client.ts`: `isPushSupported(): boolean`, `isStandalone(): boolean`, `needsHomeScreenInstall(): boolean` (iOS, push not supported in this context, not standalone), `getPermission(): NotificationPermission | 'unsupported'`, `subscribeThisDevice(): Promise<PushSubscriptionJSON>` (registers or reuses `/sw.js`, calls `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })`), `unsubscribeThisDevice(): Promise<string | null>` (returns the endpoint it removed).
   - `app/actions/push.ts` (`'use server'`; the user id always comes from `getCurrentUserId()`):
-    - `savePushSubscription(sub: PushSubscriptionJSON, timeZone: string, userAgent: string): Promise<{ success: boolean; error?: string }>`. Rejects a non-https endpoint, an endpoint over 1000 characters, or missing keys. Rate limited with `checkRateLimit('push-sub:'+userId, { windowMs: 60_000, maxRequests: 10 })`. Upserts on `endpoint` and sets `user_id` to the caller. Stores `safeTimeZone(timeZone)`.
+    - `savePushSubscription(sub: PushSubscriptionJSON, timeZone: string, userAgent: string): Promise<{ success: boolean; error?: string }>`. Rejects a non-https endpoint, an endpoint over 1000 characters, or missing keys. Rate limited with `checkRateLimit('push-sub:'+userId, { windowMs: 60_000, maxRequests: 10 })` from `lib/security/rate-limiter.ts` (it allows everything in development). Upserts on `endpoint` and sets `user_id` to the caller. Stores `safeTimeZone(timeZone)`.
     - `deletePushSubscription(endpoint: string): Promise<{ success: boolean }>`. Deletes only the caller's own row.
     - `recordPushOpen(notificationId: string): Promise<void>`. Sets `push_opened_at = now()` and `is_read = true` where `id` matches and `user_id` is the caller.
 
 - [ ] **Step 1: Manifest and icons.**
   - `app/manifest.ts` per the spec (`start_url: '/dashboard?src=pwa'`, `display: 'standalone'`, colours from DESIGN.md).
-  - Export the PNGs from the existing bull mark (`public/icon-light.png` / `icon-dark.png`). The maskable icon gets about 20% safe padding. The badge is a white silhouette on transparent.
+  - Per D4. The best source is `public/BullPenLogo.png` (452px), not the 180px `icon-light.png`. Crop to the mark, then put it on an **opaque** background for `apple-touch-icon.png` (180) and the maskable 512: iOS fills transparency with black, which would hide a black bull. The maskable icon keeps the mark inside the central 80%. The badge is a white silhouette on transparent (Android masks it to one colour, so transparency is right there).
+  - The existing `icons` block in `app/layout.tsx` (~line 60) keeps its favicons; add `apple` and `appleWebApp` beside it.
 - [ ] **Step 2: Service worker.** In `public/sw.js`:
   - `push`: parse the JSON and call `showNotification(title, { body, icon: '/icon-192.png', badge: '/badge-72.png', tag, data: { url } })`.
   - `notificationclick`: `clients.matchAll({ type: 'window', includeUncontrolled: true })`. Focus and `navigate(url)` the first same-origin client, otherwise `clients.openWindow(url)`.
@@ -212,8 +233,8 @@
 
 **Files:**
 - Create: `components/pwa/PushPrompt.tsx`
-- Modify: `components/get-started/AlertsStep.tsx`, `lib/onboarding/pending-onboarding.ts` (`AlertChoices.learning`, `DEFAULT_ALERTS.learning = true`, the pending `pushSubscription?: { sub: PushSubscriptionJSON; timeZone: string }`), `lib/onboarding/flush.ts` (writes `learning` to settings keys `daily_challenge_reminder` + `new_course`; saves a held subscription with `savePushSubscription`)
-- Modify: `app/holdings/page.tsx`, `components/academy/LessonPlayer.tsx`, `components/alerts/AlertDialog.tsx` (`onCreated`), `app/dashboard/page.tsx` (or its Home client component)
+- Modify: `components/get-started/AlertsStep.tsx`, `lib/onboarding/pending-onboarding.ts` (`AlertChoices.learning`, `DEFAULT_ALERTS.learning = true`, the pending `pushSubscription?: { sub: PushSubscriptionJSON; timeZone: string }`; `sanitizeAlerts` treats a missing `learning` as `true` instead of rejecting the object, so drafts saved before the change survive), `lib/onboarding/flush.ts` (`notificationOverrides` maps `learning: false` to `daily_challenge_reminder: false` + `new_course: false` rather than writing a `learning` key; saves a held subscription with `savePushSubscription`)
+- Modify: `app/holdings/page.tsx`, `components/academy/LessonPlayer.tsx` (`academy_lesson_completed`, ~line 149), the three `CreateAlertForm` parents (`components/alerts/AlertDialog.tsx` ~170, `app/tools/alerts/AlertsClientPage.tsx` ~121, `components/watchlist/StockPlan.tsx` ~150), `app/dashboard/DashboardClient.tsx` (`page.tsx` is a server component)
 - Modify: `lib/i18n/locales/en/navigation.json` (new `PushPrompt` keys)
 
 **Interfaces:**
@@ -236,10 +257,10 @@
 - [ ] **Step 2: Place it.**
   - Holdings page: when `holdings.length > 0`, context `holding`.
   - `LessonPlayer`: after the `academy_lesson_completed` event, on the finish screen, context `lesson`.
-  - `AlertDialog`: after `onCreated`, under the list, context `alert`.
-  - Home: for signed-in users who finished onboarding, context `home`.
+  - Price alerts: each of the three parents sets a `saved` flag in `onCreated` next to `setComposerOpen(false)` and renders the prompt under the list while it's set, context `alert`.
+  - Home (`DashboardClient`): for signed-in users who finished onboarding, context `home`. Placement per D3.
   - Copy follows the spec's drafts, through i18n.
-- [ ] **Step 3: Onboarding.** `AlertsStep` gets a fourth row, `learning`, "Learning: Streak reminders and new courses". Below the rows, a "Send these to my phone" button:
+- [ ] **Step 3: Onboarding.** `AlertsStep` (inline-styled since `bb3ea299`; match its row markup) gets a fourth row, `learning`, "Learning: Streak reminders and new courses". Its intro line promises a morning email; if D2 changes what the email carries for push users, adjust that sentence so it stays true. Below the rows, a "Send these to my phone" button:
   - Hidden when `!isPushSupported() || needsHomeScreenInstall()`.
   - On click it calls `subscribeThisDevice()` and keeps `{ sub, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }` in the pending onboarding data.
   - `flushPendingOnboardingData` saves it after signup.
