@@ -21,6 +21,7 @@ import { CookieConsentBanner } from "@/components/cookie-consent/CookieConsentBa
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { preconnect } from "react-dom";
+import { cookies } from "next/headers";
 
 import { SITE_URL } from '@/lib/site';
 const geistSans = Geist({
@@ -114,13 +115,17 @@ export default async function RootLayout({
   // already force-dynamic, and these are cheap text renders. Splitting into
   // two root layouts (marketing vs. app) via route groups would avoid this
   // and is deferred; see the i18n plan's Phase 0.2 for the full reasoning.
-  const [locale, pathname] = await Promise.all([getRequestLocale(), getRequestPathname()]);
+  const [locale, pathname, cookieStore] = await Promise.all([getRequestLocale(), getRequestPathname(), cookies()]);
+  // Guests render light, accounts dark until ThemeProvider applies their own
+  // choice (see ThemeProvider). Only the theme reads this: a cookie being there
+  // is not proof of a session, and nothing here trusts it as one.
+  const hasSessionCookie = cookieStore.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
   const resources = await loadResources(locale, pathname);
 
   return (
     <html
       lang={locale}
-      className={`dark h-full ${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
+      className={`${hasSessionCookie ? "dark " : ""}h-full ${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
     >
       <body className="antialiased h-full min-h-screen overflow-x-hidden scrollbar-hide">
         <script

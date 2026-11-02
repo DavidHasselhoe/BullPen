@@ -5,17 +5,23 @@ import { useAuth } from '@/hooks/use-auth';
 
 /**
  * ThemeProvider
- * Applies the user's theme preference ('dark' or 'light') to the HTML element.
- * Any unrecognized legacy value (e.g. a removed gradient theme still saved on
- * an old user record) falls back to dark, same as a fresh/unset preference.
+ * Applies the theme ('dark' or 'light') to the HTML element.
+ *
+ * Guests get light: they arrive from the light landing page, and a jump to a
+ * black app on their first click read as a different product. A signed-in
+ * account gets its saved preference, dark when unset; any unrecognized legacy
+ * value (e.g. a removed gradient theme on an old record) also falls back to
+ * dark. The root layout server-renders the same split from the session cookie,
+ * so neither side flashes the other theme before this runs.
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    // Get theme from user settings, default to 'dark'
-    const settings = user?.settings as Record<string, unknown>;
-    const theme = (settings?.theme as string | undefined) || 'dark';
+    // Until auth resolves, keep what the server rendered.
+    if (isLoading) return;
+    const settings = user?.settings as Record<string, unknown> | undefined;
+    const theme = user ? (settings?.theme as string | undefined) || 'dark' : 'light';
 
     const html = document.documentElement;
     if (theme === 'light') {
@@ -23,7 +29,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       html.classList.add('dark');
     }
-  }, [user]);
+  }, [user, isLoading]);
 
   return <>{children}</>;
 }
