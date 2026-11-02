@@ -5,6 +5,19 @@ import { getCurrentUserId } from '@/lib/auth/server-session';
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { safeTimeZone } from '@/lib/notifications/push-plan';
 
+// Our server POSTs to the endpoint, so only real push services are accepted.
+const PUSH_HOSTS = [/^fcm.googleapis.com$/, /(^|.)push.services.mozilla.com$/, /(^|.)push.apple.com$/, /(^|.)notify.windows.com$/];
+
+function isPushEndpoint(endpoint: unknown): endpoint is string {
+  if (typeof endpoint !== 'string' || endpoint.length > 1000) return false;
+  try {
+    const u = new URL(endpoint);
+    return u.protocol === 'https:' && PUSH_HOSTS.some((re) => re.test(u.hostname));
+  } catch {
+    return false;
+  }
+}
+
 /** Stores this device's push subscription for the signed-in user. A browser last used by someone else takes the endpoint over. */
 export async function savePushSubscription(
   sub: PushSubscriptionJSON,
@@ -17,7 +30,8 @@ export async function savePushSubscription(
   const endpoint = sub?.endpoint;
   const p256dh = sub?.keys?.p256dh;
   const auth = sub?.keys?.auth;
-  if (!endpoint || !endpoint.startsWith('https://') || endpoint.length > 1000 || !p256dh || !auth) {
+  const keyOk = (k: unknown): k is string => typeof k === 'string' && k.length > 0 && k.length <= 200;
+  if (!isPushEndpoint(endpoint) || !keyOk(p256dh) || !keyOk(auth)) {
     return { success: false, error: 'Invalid subscription' };
   }
 
@@ -61,6 +75,8 @@ export async function recordPushOpen(notificationId: string): Promise<void> {
     .from('notifications')
     .update({ push_opened_at: new Date().toISOString(), is_read: true })
     .eq('id', notificationId)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .is('push_opened_at', null)
+    .not('pushed_at', 'is', null);
   if (error) console.error('[push] record open:', error.message);
 }

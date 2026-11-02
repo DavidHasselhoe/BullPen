@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     // iOS paints transparency black, so the Home Screen icon is on opaque white.
     apple: "/apple-touch-icon.png",
   },
-  appleWebApp: { capable: true, title: "BullPen", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "BullPen", statusBarStyle: "default" },
 };
 
 const ORGANIZATION_JSON_LD = {

@@ -19,7 +19,12 @@ export function PushDeviceRow() {
     let live = true;
     navigator.serviceWorker.getRegistration('/sw.js')
       .then((reg) => reg?.pushManager.getSubscription())
-      .then((sub) => { if (live) setSubscribed(!!sub); })
+      .then((sub) => {
+        if (!live) return;
+        setSubscribed(!!sub);
+        // Idempotent upsert: repairs a lost row and moves a shared device's subscription to the current user. Failure is silent.
+        if (sub) savePushSubscription(sub.toJSON(), Intl.DateTimeFormat().resolvedOptions().timeZone, navigator.userAgent).catch(() => {});
+      })
       .catch(() => { if (live) setSubscribed(false); });
     return () => { live = false; };
   }, [permission]);
@@ -38,7 +43,11 @@ export function PushDeviceRow() {
       } else {
         const sub = await subscribeThisDevice();
         const res = await savePushSubscription(sub, Intl.DateTimeFormat().resolvedOptions().timeZone, navigator.userAgent);
-        if (!res.success) throw new Error(res.error ?? 'save failed');
+        if (!res.success) {
+          // Don't leave a browser subscription the server doesn't know about.
+          await unsubscribeThisDevice().catch(() => null);
+          throw new Error(res.error ?? 'save failed');
+        }
         setSubscribed(true);
       }
     } catch (e) {
