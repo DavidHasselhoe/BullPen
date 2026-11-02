@@ -113,13 +113,16 @@ export function PickStocksStep({
           background: 'linear-gradient(to bottom, transparent, var(--bg) 40%)',
         }}
       >
+        {/* No skip: with an empty watchlist the morning email has nothing
+            personal to say, and the email is what brings people back. */}
         <button
           type="button"
           className="btn btn-primary"
           onClick={onContinue}
+          disabled={picks.length === 0}
           style={{ width: '100%', justifyContent: 'center' }}
         >
-          {picks.length > 0 ? `Continue with ${picks.length} ${picks.length === 1 ? 'stock' : 'stocks'}` : 'Skip for now'}
+          {picks.length > 0 ? `Continue with ${picks.length} ${picks.length === 1 ? 'stock' : 'stocks'}` : 'Pick at least one stock'}
         </button>
       </div>
     </StepShell>
