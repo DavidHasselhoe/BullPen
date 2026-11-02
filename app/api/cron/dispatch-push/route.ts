@@ -116,9 +116,19 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     const stamp = now.toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any;
-    const { error: claimErr } = await db.from('notifications').update({ pushed_at: stamp }).in('id', plan.rowIds).is('pushed_at', null);
+    const { data: claimed, error: claimErr } = await db.from('notifications').update({ pushed_at: stamp })
+      .in('id', plan.rowIds).is('pushed_at', null).select('id');
     if (claimErr) {
       noteError(`claim ${userId}: ${claimErr.message}`);
+      continue;
+    }
+    // An overlapping run (QStash retry) claimed some or all rows first: it sends them, this run hands back its share.
+    if ((claimed ?? []).length !== plan.rowIds.length) {
+      if ((claimed ?? []).length > 0) {
+        const { error } = await db.from('notifications').update({ pushed_at: null })
+          .in('id', (claimed as { id: string }[]).map((c) => c.id)).eq('pushed_at', stamp);
+        if (error) noteError(`revert partial claim ${userId}: ${error.message}`);
+      }
       continue;
     }
 
