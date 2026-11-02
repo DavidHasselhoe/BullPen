@@ -103,6 +103,11 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.posthog.com
 
 # Optional: app URL for email links (default: https://bullpeninvest.com)
 # NEXT_PUBLIC_APP_URL=https://bullpeninvest.com
+
+# Optional: web push (npx web-push generate-vapid-keys). Without them no push is sent.
+# NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+# VAPID_PRIVATE_KEY=
+# VAPID_SUBJECT=mailto:contact@bullpeninvest.com
 ```
 
 ### Step 3: Get Market Data API Key(s)

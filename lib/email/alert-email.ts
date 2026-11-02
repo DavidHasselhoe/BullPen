@@ -688,7 +688,8 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
       .range(from, from + 999);
     if (opts.userId) query = query.eq('user_id', opts.userId);
     // A one-account dry run previews this morning's email even after it went out.
-    if (!(opts.dryRun && opts.userId)) query = query.is('emailed_at', null);
+    // A row already pushed to a device counts as delivered (first channel wins).
+    if (!(opts.dryRun && opts.userId)) query = query.is('emailed_at', null).is('pushed_at', null);
     const { data, error } = await query;
     if (error) {
       run.errors.push(`notifications: ${error.message}`);
