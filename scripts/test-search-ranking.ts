@@ -11,6 +11,7 @@
 
 import assert from 'node:assert';
 import { parseSearchIndex, searchSymbols } from '../lib/search/local-index';
+import { rankFromEtfName } from '../lib/search/index-rank';
 import { slugToAssetPath, fundLabel } from '../lib/assets/asset-type';
 
 const FIXTURE = [
@@ -82,6 +83,25 @@ assert.ok(vanguard.includes('VFIAX'), 'the index fund is offered alongside it');
 // A phrase that only the fund's name contains goes to the fund, not to the
 // ETF that tracks the same index: "Vanguard S&P 500 ETF" does not contain it.
 assert.equal(top('vanguard 500')[0], 'VFIAX');
+
+// The core retail funds rank above same-shaped neighbours. With ranks from
+// shape alone, every three-letter Vanguard ETF tied at 45, so "vanguard" came
+// back in catalogue order (BIV, BLV, BND) and "s&p 500" led with a value slice.
+const etf = (t: string, n: string) => `${t}\t${n}\te\t${rankFromEtfName(t, n)}`;
+const funds = parseSearchIndex([
+  etf('BIV', 'Vanguard Intermediate-Term Bond ETF'),
+  etf('BLV', 'Vanguard Long-Term Bond ETF'),
+  etf('EDV', 'Vanguard Extended Duration Treasury ETF'),
+  etf('VOO', 'Vanguard S&P 500 ETF'),
+  etf('VTI', 'Vanguard Total Stock Market ETF'),
+  etf('IVE', 'iShares S&P 500 Value ETF'),
+  etf('IVW', 'iShares S&P 500 Growth ETF'),
+  etf('IVV', 'iShares Core S&P 500 ETF'),
+  etf('SPY', 'State Street SPDR S&P 500 ETF Trust'),
+].join('\n'));
+const fundTop = (q: string, n: number) => searchSymbols(funds, q, n).map((r) => r.ticker).sort();
+assert.deepEqual(fundTop('vanguard', 2), ['VOO', 'VTI'], 'VOO and VTI lead "vanguard"');
+assert.deepEqual(fundTop('s&p 500', 3), ['IVV', 'SPY', 'VOO'], 'the big three lead "s&p 500"');
 
 // A query matching nothing returns nothing rather than filler.
 assert.deepEqual(top('zzzzz'), []);

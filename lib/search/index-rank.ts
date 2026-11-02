@@ -25,6 +25,25 @@ export function rankFromMarketCap(marketCap: number | null | undefined): number 
 const STRUCTURED_ETF = /\b(\d(\.\d)?x|inverse|ultra(short|pro)?|leveraged|daily target|weekly|covered call|buffer|defined outcome|managed|enhanced|premium income)\b/i;
 
 /**
+ * The funds most beginners actually hold, by assets under management. Shape
+ * alone gave every three-letter Vanguard ETF the same rank, so "vanguard" fell
+ * back to catalogue order (BIV, BLV, BND...) and never reached VOO or VTI, and
+ * "s&p 500" offered value and growth slices before SPY, VOO and IVV.
+ *
+ * ponytail: a hand-kept list of ~30 tickers, the stand-in for the AUM column
+ * described below. The set barely moves year to year; add a fund when a
+ * beginner can't find it by name.
+ */
+const CORE_RETAIL_ETFS = new Map<string, number>([
+  // The S&P 500, total-market and Nasdaq-100 trackers people mean first.
+  ...['SPY', 'VOO', 'IVV', 'VTI', 'QQQ'].map((t) => [t, 80] as [string, number]),
+  ...[
+    'QQQM', 'SPLG', 'VUG', 'VTV', 'VEA', 'VXUS', 'VWO', 'VT', 'IEFA', 'IEMG', 'AGG', 'BND', 'BNDX',
+    'IWM', 'IJH', 'SCHD', 'VIG', 'VYM', 'VGT', 'XLK', 'XLF', 'DIA', 'GLD', 'IAU', 'VNQ', 'ITOT', 'RSP',
+  ].map((t) => [t, 70] as [string, number]),
+]);
+
+/**
  * ETFs have no market cap in our data, so rank falls back to shape: a short
  * ticker on a plain-named fund is overwhelmingly likely to be one of the large
  * index funds people actually search for.
@@ -34,6 +53,8 @@ const STRUCTURED_ETF = /\b(\d(\.\d)?x|inverse|ultra(short|pro)?|leveraged|daily 
  * the upgrade is an AUM column from a fundamentals endpoint, not a longer regex.
  */
 export function rankFromEtfName(ticker: string, name: string): number {
+  const core = CORE_RETAIL_ETFS.get(ticker);
+  if (core) return core;
   if (STRUCTURED_ETF.test(name)) return 5;
   if (ticker.length <= 3) return 45;
   if (ticker.length === 4) return 30;
