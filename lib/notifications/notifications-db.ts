@@ -121,8 +121,8 @@ export async function createNotification(
             is_read: false, // Reset read status on update
             is_seen: false,
             created_at: new Date().toISOString(), // Update timestamp
-            // Already pushed once: leave the mark alone. pushed_at is never written here.
-            ...(existing.pushed_at ? {} : { push_kind: input.push ?? null }),
+            // Keep the existing mark unless this update brings a new one on an unpushed row. pushed_at is never written here.
+            ...(!existing.pushed_at && input.push ? { push_kind: input.push } : {}),
           })
           .eq('id', existing.id)
           .select()

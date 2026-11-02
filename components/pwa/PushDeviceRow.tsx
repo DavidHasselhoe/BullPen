@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { enablePushOnThisDevice, getPermission, needsHomeScreenInstall, unsubscribeThisDevice } from '@/lib/push/client';
-import { deletePushSubscription, savePushSubscription } from '@/app/actions/push';
+import { deletePushSubscription } from '@/app/actions/push';
 
 /** "Notifications on this device": the browser permission and subscription, separate from the per-kind toggles. */
 export function PushDeviceRow() {
@@ -22,8 +22,6 @@ export function PushDeviceRow() {
       .then((sub) => {
         if (!live) return;
         setSubscribed(!!sub);
-        // Idempotent upsert: repairs a lost row and moves a shared device's subscription to the current user. Failure is silent.
-        if (sub) savePushSubscription(sub.toJSON(), Intl.DateTimeFormat().resolvedOptions().timeZone, navigator.userAgent).catch(() => {});
       })
       .catch(() => { if (live) setSubscribed(false); });
     return () => { live = false; };

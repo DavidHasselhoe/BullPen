@@ -105,7 +105,7 @@ export function AlertsStep({
             <p role="status" style={{ margin: 0, fontSize: 14, color: 'var(--fg-muted)' }}>Done. These will come to this phone or computer.</p>
           ) : (
             <button type="button" className="btn" onClick={sendToPhone} disabled={busy}>
-              Send these to my phone
+              Send these as notifications
             </button>
           )}
           {failed && <p role="alert" style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--fg-muted)' }}>We could not turn on notifications. You can try again in Settings.</p>}

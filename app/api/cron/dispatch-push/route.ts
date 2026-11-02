@@ -39,7 +39,12 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const stats = { users: 0, pushes: 0, rows: 0, held_quiet: 0, capped: 0, expired: 0, gone: 0 };
+  const stats = { users: 0, pushes: 0, rows: 0, held_quiet: 0, capped: 0, expired: 0, gone: 0, failed: 0, errors: [] as string[] };
+  // Reaches cron health: withCronReport reports errors_count and errors_sample from this array.
+  const noteError = (msg: string) => {
+    console.error('[dispatch-push]', msg);
+    if (stats.errors.length < 10) stats.errors.push(msg);
+  };
   const supabase = createServerClient();
   const now = new Date();
 
@@ -106,6 +111,17 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       continue;
     }
 
+    // Claim first: a row stamped here can never be pushed twice, and counts toward the daily cap
+    // even if a later write fails. Nothing is sent when the claim fails.
+    const stamp = now.toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { error: claimErr } = await db.from('notifications').update({ pushed_at: stamp }).in('id', plan.rowIds).is('pushed_at', null);
+    if (claimErr) {
+      noteError(`claim ${userId}: ${claimErr.message}`);
+      continue;
+    }
+
     const payload = { title: plan.title, body: plan.body, url: plan.url, tag: plan.rowIds[0] };
     const sentIds: string[] = [];
     const goneIds: string[] = [];
@@ -113,21 +129,22 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       const result = await sendPush(sub, payload);
       if (result === 'sent') sentIds.push(sub.id);
       else if (result === 'gone') goneIds.push(sub.id);
+      else stats.failed++;
     }
     if (goneIds.length > 0) {
       const { error } = await supabase.from('push_subscriptions').delete().in('id', goneIds);
-      if (error) console.error('[dispatch-push] delete gone subscriptions:', error.message);
+      if (error) noteError(`delete gone subscriptions: ${error.message}`);
       stats.gone += goneIds.length;
     }
-    if (sentIds.length === 0) continue;
+    if (sentIds.length === 0) {
+      // Nothing reached a device: hand the rows back. If this fails they stay in the bell only, the safe direction.
+      const { error } = await db.from('notifications').update({ pushed_at: null }).in('id', plan.rowIds).eq('pushed_at', stamp);
+      if (error) noteError(`revert ${userId}: ${error.message}`);
+      continue;
+    }
 
-    const stamp = now.toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: markErr } = await (supabase as any).from('notifications').update({ pushed_at: stamp }).in('id', plan.rowIds);
-    if (markErr) console.error('[dispatch-push] mark pushed_at:', markErr.message);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: sentErr } = await (supabase as any).from('push_subscriptions').update({ last_sent_at: stamp }).in('id', sentIds);
-    if (sentErr) console.error('[dispatch-push] mark last_sent_at:', sentErr.message);
+    const { error: sentErr } = await db.from('push_subscriptions').update({ last_sent_at: stamp }).in('id', sentIds);
+    if (sentErr) noteError(`last_sent_at: ${sentErr.message}`);
     stats.users++;
     stats.pushes++;
     stats.rows += plan.rowIds.length;

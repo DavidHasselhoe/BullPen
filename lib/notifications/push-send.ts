@@ -34,7 +34,7 @@ export async function sendPush(
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
       JSON.stringify(payload),
-      { TTL: 4 * 3600 },
+      { TTL: 3600 },
     );
     return 'sent';
   } catch (err) {

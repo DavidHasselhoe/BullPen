@@ -167,7 +167,7 @@ Every path and assumption below was re-checked against `preview` at `bb3ea299`. 
   - Run `npx web-push generate-vapid-keys` and put the three vars in `.env.local`.
   - Add them to Vercel preview and production with the Vercel MCP `create_project_env` (team and project IDs: `reference_vercel` memory). `VAPID_PRIVATE_KEY` is a sensitive type.
   - Document them in `environment.md` and `.env.example`, without values.
-- [ ] **Step 2: Implement `sendPush`.** Call `webpush.setVapidDetails` once at module scope. Send with `TTL: 4 * 3600`. The payload is the JSON of `{ title, body, url, tag }`.
+- [ ] **Step 2: Implement `sendPush`.** Call `webpush.setVapidDetails` once at module scope. Send with `TTL: 3600`. The payload is the JSON of `{ title, body, url, tag }`.
 - [ ] **Step 3: Implement the route.** Copy the auth, `maxDuration` and logging shape from `app/api/cron/check-economic-results/route.ts`. Then, in order:
   1. Load subscribed user ids. If there are none, return zeros right away (this keeps CPU cost near zero).
   2. Pending rows: `push_kind not null, pushed_at null, is_read false, created_at > now() - 24h, user_id in (subscribed)`, `.limit(1000)` (PostgREST cap). **If D2 is "first channel wins" (recommended):** also `emailed_at is null`, so a row the morning email already carried is never pushed.
@@ -180,7 +180,7 @@ Every path and assumption below was re-checked against `preview` at `bb3ea299`. 
 - [ ] **Step 4: Register the schedule.**
   - `npm run test-cron-coverage` passes.
   - Add the `scheduled-work.md` row: `*/15 * * * *`, with what the job does.
-  - Create the QStash schedule in the EU region: `*/15 * * * *`, URL `https://bullpeninvest.com/api/cron/dispatch-push`, headers `Upstash-Forward-Authorization: Bearer $CRON_SECRET` and `Upstash-Method: GET`. Use the QStash API if a `QSTASH_TOKEN` is in the environment. Otherwise hand David the exact console values (`reference-qstash-console-header-forwarding` memory). Create it only after this code is on main, or every 15 minutes would hit a 404.
+  - Create the QStash schedule in the EU region: `5,20,35,50 * * * *` (clear of the 08:30 UTC morning email), URL `https://bullpeninvest.com/api/cron/dispatch-push`, headers `Upstash-Forward-Authorization: Bearer $CRON_SECRET` and `Upstash-Method: GET`. Use the QStash API if a `QSTASH_TOKEN` is in the environment. Otherwise hand David the exact console values (`reference-qstash-console-header-forwarding` memory). Create it only after this code is on main, or every 15 minutes would hit a 404.
 - [ ] **Step 5: Verify locally.** Run `curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/dispatch-push`. With no subscriptions it returns `{"users":0,…}`. The end-to-end check is Task 4, Step 7.
 - [ ] **Step 6: Commit.** Message: `feat(push): dispatcher cron + web-push sender`.
 

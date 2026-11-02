@@ -54,6 +54,14 @@ export async function savePushSubscription(
     console.error('[push] save subscription:', error.message);
     return { success: false, error: 'Could not save this device' };
   }
+  // Keep the caller's 5 newest devices. Cleanup failure is logged, not a failed save.
+  const db = createServerClient() as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const { data: mine, error: listErr } = await db.from('push_subscriptions').select('id').eq('user_id', userId).order('created_at', { ascending: false });
+  if (listErr) console.error('[push] list subscriptions:', listErr.message);
+  else if (mine && mine.length > 5) {
+    const { error: trimErr } = await db.from('push_subscriptions').delete().in('id', mine.slice(5).map((m: { id: string }) => m.id)).neq('endpoint', endpoint);
+    if (trimErr) console.error('[push] trim subscriptions:', trimErr.message);
+  }
   return { success: true };
 }
 

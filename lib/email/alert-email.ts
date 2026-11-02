@@ -12,7 +12,7 @@
  *
  * Built from the notifications the crons already wrote, plus Why Today answers
  * someone already paid for, so it adds no data or AI cost and inherits each
- * per-type toggle. `emailed_at`
+ * per-type toggle. A row already pushed on its own is left out; rows folded into a combined push stay in. `emailed_at`
  * (migration 181) keeps an alert from going out twice. English only for now:
  * the rows carry an English title/message beside their i18n params.
  */
@@ -48,6 +48,7 @@ interface AlertRow {
   title: string;
   message: string;
   created_at: string;
+  pushed_at?: string | null;
 }
 
 type Section = 'earnings' | 'move' | 'health' | 'politicians' | 'index' | 'dividend' | 'brief' | 'pick' | 'economic';
@@ -680,7 +681,7 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   for (let from = 0; ; from += 1000) {
     let query = supabase
       .from('notifications')
-      .select('id, user_id, type, entity_type, entity_id, title, message, created_at')
+      .select('id, user_id, type, entity_type, entity_id, title, message, created_at, pushed_at')
       .in('type', ['earnings', 'dividend', 'price_move', 'health_score', 'politician_trade', 'market', 'daily_brief', 'weekly_pick'])
       .gte('created_at', since)
       .order('created_at', { ascending: true })
@@ -688,8 +689,7 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
       .range(from, from + 999);
     if (opts.userId) query = query.eq('user_id', opts.userId);
     // A one-account dry run previews this morning's email even after it went out.
-    // A row already pushed to a device counts as delivered (first channel wins).
-    if (!(opts.dryRun && opts.userId)) query = query.is('emailed_at', null).is('pushed_at', null);
+    if (!(opts.dryRun && opts.userId)) query = query.is('emailed_at', null);
     const { data, error } = await query;
     if (error) {
       run.errors.push(`notifications: ${error.message}`);
@@ -699,11 +699,35 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     if (!data || data.length < 1000) break;
   }
 
+  // A row pushed alone was seen on the device (first channel wins); rows folded into a combined
+  // push ("Plus N more updates") share a pushed_at stamp and stay in the email.
+  const stamps = [...new Set(rows.map((r) => r.pushed_at).filter((v): v is string => !!v))];
+  const groupSize = new Map<string, number>();
+  if (!(opts.dryRun && opts.userId)) {
+    for (let i = 0; i < stamps.length; i += 100) {
+      const chunk = stamps.slice(i, i + 100);
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from('notifications').select('user_id, pushed_at')
+          .in('pushed_at', chunk).order('id', { ascending: true }).range(from, from + 999);
+        if (error) {
+          run.errors.push(`pushed groups: ${error.message}`);
+          return run;
+        }
+        for (const g of (data ?? []) as { user_id: string; pushed_at: string }[]) {
+          const k = `${g.user_id}|${new Date(g.pushed_at).getTime()}`;
+          groupSize.set(k, (groupSize.get(k) ?? 0) + 1);
+        }
+        if (!data || data.length < 1000) break;
+      }
+    }
+  }
+
   const byUser = new Map<string, { ids: string[]; items: EmailItem[] }>();
   const recaps = new Map<string, AlertRow>();
   const today = todayET();
   const etDay = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(iso));
   for (const row of rows) {
+    if (row.pushed_at && groupSize.get(`${row.user_id}|${new Date(row.pushed_at).getTime()}`) === 1) continue;
     // "Reports earnings today" is only true on the day it was written. The
     // 26h window would otherwise carry yesterday's row into this morning on
     // launch day or when the 08:00 cron drifts past this one.
