@@ -1,5 +1,6 @@
 'use client';
 
+import { PushPrompt } from '@/components/pwa/PushPrompt';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,7 @@ export default function AlertsClientPage() {
   const prefilledSymbol = searchParams.get('symbol')?.toUpperCase() ?? null;
   const prefilledName = searchParams.get('name') ?? prefilledSymbol ?? null;
   const [composerOpen, setComposerOpen] = useState(() => !!prefilledSymbol);
+  const [saved, setSaved] = useState(false);
   // Which stock the composer's ticker field is locked to — either from the URL
   // (command palette flow) or from clicking "Add condition" on an existing group.
   const [lockedTicker, setLockedTicker] = useState<{ ticker: string; name: string } | null>(
@@ -118,7 +120,7 @@ export default function AlertsClientPage() {
           <div ref={composerRef}>
             <CreateAlertForm
               key={lockedTicker?.ticker ?? 'blank'}
-              onCreated={() => setComposerOpen(false)}
+              onCreated={() => { setComposerOpen(false); setSaved(true); }}
               onCancel={() => setComposerOpen(false)}
               onCreate={create}
               initialTicker={lockedTicker ?? undefined}
@@ -127,6 +129,7 @@ export default function AlertsClientPage() {
             />
           </div>
         )}
+        {saved && <PushPrompt context="alert" />}
 
         {/* Body */}
         {isLoading ? (

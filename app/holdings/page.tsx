@@ -3,6 +3,7 @@
 import { useState, useMemo, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthGate } from '@/components/ui/AuthGate';
+import { PushPrompt } from '@/components/pwa/PushPrompt';
 import { HoldingsPreview } from '@/components/billing/HoldingsPreview';
 import { HoldingsTable } from '@/components/holdings/HoldingsTable';
 import { AddHoldingModal } from '@/components/holdings/AddHoldingModal';
@@ -409,6 +410,7 @@ export default function HoldingsPage() {
         cashValue={cashBalance ? cashValue : null}
         onCashClick={() => setIsCashDialogOpen(true)}
       />
+      {throttledHoldings.length > 0 && <PushPrompt context="holding" />}
 
 
       {/* Performance chart + Allocation side-by-side */}

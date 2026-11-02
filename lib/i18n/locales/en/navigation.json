@@ -221,5 +221,19 @@
   "releaseNotesNew": "New",
   "releaseNotesImproved": "Improved",
   "releaseNotesFixed": "Fixed",
-  "releaseNotesSeeAll": "See every change"
+  "releaseNotesSeeAll": "See every change",
+  "pushPromptLabel": "Phone alerts",
+  "pushPromptTitle_holding": "Get alerts about your holdings on your phone",
+  "pushPromptTitle_lesson": "Get your streak reminders on your phone",
+  "pushPromptTitle_alert": "Get this alert on your phone",
+  "pushPromptTitle_home": "Get alerts on your phone",
+  "pushPromptBody": "BullPen sends a short notification when something happens. You can turn it off anytime in Settings.",
+  "pushPromptEnable": "Turn on",
+  "pushPromptNotNow": "Not now",
+  "pushPromptGotIt": "Got it",
+  "pushPromptDone": "Done. Alerts will come to this device.",
+  "pushPromptError": "We could not turn on notifications. Please try again.",
+  "pushPromptInstallTitle": "Add BullPen to your Home Screen for phone alerts",
+  "pushPromptInstallSteps": "Tap the Share button in Safari, choose Add to Home Screen, then open BullPen from your Home Screen.",
+  "pushPromptSignInAgain": "You will sign in once more there."
 }

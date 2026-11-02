@@ -16,6 +16,7 @@ import { LessonComplete, type LessonCompleteResult, type LockedAhead } from '@/c
 import { economyLinkForLesson } from '@/lib/market-data/economic-kinds';
 import { ACADEMY_STATS_QUERY_KEY } from '@/hooks/use-academy-stats';
 import { trackEvent } from '@/lib/analytics/track';
+import { PushPrompt } from '@/components/pwa/PushPrompt';
 import {
   ReadContentSchema,
   QuizContentSchema,
@@ -182,6 +183,7 @@ export function LessonPlayer({ lesson, courseSlug, courseTitle, nextLesson, isSa
 
   if (finished) {
     return (
+      <>
       <LessonComplete
         courseSlug={courseSlug}
         courseTitle={courseTitle}
@@ -205,6 +207,8 @@ export function LessonPlayer({ lesson, courseSlug, courseTitle, nextLesson, isSa
             : undefined
         }
       />
+      <PushPrompt context="lesson" />
+      </>
     );
   }
 

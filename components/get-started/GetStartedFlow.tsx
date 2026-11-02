@@ -40,7 +40,7 @@ export function GetStartedFlow({ signedIn = false }: { signedIn?: boolean }) {
   // post-signup flush and drop the draft.
   useEffect(() => {
     if (step !== 3 || !draft.style) return;
-    savePendingOnboarding({ style: draft.style, picks: draft.picks, alerts: draft.alerts });
+    savePendingOnboarding({ style: draft.style, picks: draft.picks, alerts: draft.alerts, pushSubscription: draft.pushSubscription });
     clearDraft();
   }, [step, draft]);
 
@@ -94,6 +94,8 @@ export function GetStartedFlow({ signedIn = false }: { signedIn?: boolean }) {
             <AlertsStep
               key="alerts"
               alerts={draft.alerts}
+              pushSubscription={draft.pushSubscription}
+              onPushSubscription={(pushSubscription) => setDraft((d) => ({ ...d, pushSubscription }))}
               stepIndex={2}
               totalSteps={TOTAL_STEPS}
               onChange={(alerts) => setDraft((d) => ({ ...d, alerts }))}

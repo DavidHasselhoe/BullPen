@@ -1,4 +1,5 @@
 // Browser side of web push. Call only from the client.
+import { savePushSubscription } from '@/app/actions/push';
 
 export function isPushSupported(): boolean {
   return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -48,4 +49,14 @@ export async function unsubscribeThisDevice(): Promise<string | null> {
   const endpoint = sub.endpoint;
   await sub.unsubscribe();
   return endpoint;
+}
+
+/** Subscribes this device and saves it for the signed-in user. Throws if either step fails; a failed save leaves no browser subscription behind. */
+export async function enablePushOnThisDevice(): Promise<void> {
+  const sub = await subscribeThisDevice();
+  const res = await savePushSubscription(sub, Intl.DateTimeFormat().resolvedOptions().timeZone, navigator.userAgent);
+  if (!res.success) {
+    await unsubscribeThisDevice().catch(() => null);
+    throw new Error(res.error ?? 'save failed');
+  }
 }

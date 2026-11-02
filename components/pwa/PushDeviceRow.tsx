@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { getPermission, needsHomeScreenInstall, subscribeThisDevice, unsubscribeThisDevice } from '@/lib/push/client';
+import { enablePushOnThisDevice, getPermission, needsHomeScreenInstall, unsubscribeThisDevice } from '@/lib/push/client';
 import { deletePushSubscription, savePushSubscription } from '@/app/actions/push';
 
 /** "Notifications on this device": the browser permission and subscription, separate from the per-kind toggles. */
@@ -41,13 +41,7 @@ export function PushDeviceRow() {
         }
         setSubscribed(false);
       } else {
-        const sub = await subscribeThisDevice();
-        const res = await savePushSubscription(sub, Intl.DateTimeFormat().resolvedOptions().timeZone, navigator.userAgent);
-        if (!res.success) {
-          // Don't leave a browser subscription the server doesn't know about.
-          await unsubscribeThisDevice().catch(() => null);
-          throw new Error(res.error ?? 'save failed');
-        }
+        await enablePushOnThisDevice();
         setSubscribed(true);
       }
     } catch (e) {

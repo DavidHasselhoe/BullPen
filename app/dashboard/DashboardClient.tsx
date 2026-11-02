@@ -11,6 +11,7 @@ import { useBackground } from '@/hooks/use-background';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { useHomePortfolio } from '@/hooks/use-home-portfolio';
 import { useAuth } from '@/hooks/use-auth';
+import { PushPrompt } from '@/components/pwa/PushPrompt';
 import { HomeHeader } from '@/components/dashboard/HomeHeader';
 import { PortfolioHero } from '@/components/dashboard/PortfolioHero';
 import { ComingUp } from '@/components/dashboard/ComingUp';
@@ -82,6 +83,7 @@ export default function DashboardClient({
             ) : (
               <PortfolioHero />
             )}
+            {isAuthenticated && !isNew && !picking && <PushPrompt context="home" />}
             {order.map((id) => (
               <WidgetSlot key={id} id={id} />
             ))}

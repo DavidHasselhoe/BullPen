@@ -14,19 +14,29 @@ export interface AlertChoices {
   price_alerts: boolean;
   upcoming_earnings: boolean;
   dividend_reminder: boolean;
+  /** Streak reminders and new courses. Maps to two notification kinds, never a key of its own. */
+  learning: boolean;
 }
 
 export const DEFAULT_ALERTS: AlertChoices = {
   price_alerts: true,
   upcoming_earnings: true,
   dividend_reminder: true,
+  learning: true,
 };
+
+/** A device subscribed before signup, saved to the account once it exists. */
+export interface PendingPush {
+  sub: PushSubscriptionJSON;
+  timeZone: string;
+}
 
 /** Everything chosen before signup, ready to be written. */
 export interface PendingOnboarding {
   style: ExplainStyle;
   picks: StockPick[];
   alerts: AlertChoices;
+  pushSubscription?: PendingPush;
 }
 
 /** In-progress flow state (style is unset until screen 1 is answered). */
@@ -34,6 +44,7 @@ export interface OnboardingDraft {
   style?: ExplainStyle;
   picks: StockPick[];
   alerts: AlertChoices;
+  pushSubscription?: PendingPush;
 }
 
 const PENDING_KEY = 'bp.pendingOnboarding.v2';
@@ -57,7 +68,10 @@ export function experienceLevelFor(style: ExplainStyle): 'beginner' | 'intermedi
 /** Only the switches turned OFF are written: an unset notification key already means enabled. */
 export function notificationOverrides(alerts: AlertChoices): Record<string, boolean> {
   const out: Record<string, boolean> = {};
-  for (const [key, on] of Object.entries(alerts)) if (!on) out[key] = false;
+  for (const [key, on] of Object.entries(alerts)) {
+    if (on) continue;
+    if (key === 'learning') { out.daily_challenge_reminder = false; out.new_course = false; } else out[key] = false;
+  }
   return out;
 }
 
@@ -88,7 +102,14 @@ function sanitizeAlerts(value: unknown): AlertChoices | null {
   ) {
     return null;
   }
-  return { price_alerts: v.price_alerts, upcoming_earnings: v.upcoming_earnings, dividend_reminder: v.dividend_reminder };
+  // Drafts saved before the learning row existed have no value: default it on.
+  return { price_alerts: v.price_alerts, upcoming_earnings: v.upcoming_earnings, dividend_reminder: v.dividend_reminder, learning: v.learning !== false };
+}
+
+function pushField(value: unknown): { pushSubscription?: PendingPush } {
+  const v = value as Partial<PendingPush> | null;
+  if (!v || typeof v.timeZone !== 'string' || typeof v.sub?.endpoint !== 'string') return {};
+  return { pushSubscription: { sub: v.sub, timeZone: v.timeZone } };
 }
 
 /** Pure parser (no storage access) so it can be tested. */
@@ -102,7 +123,7 @@ export function parsePendingOnboarding(raw: string | null, now: number): Pending
     if (parsed.style !== 'plain' && parsed.style !== 'market') return null;
     const alerts = sanitizeAlerts(parsed.alerts);
     if (!alerts) return null;
-    return { style: parsed.style, picks: sanitizePicks(parsed.picks), alerts };
+    return { style: parsed.style, picks: sanitizePicks(parsed.picks), alerts, ...pushField(parsed.pushSubscription) };
   } catch {
     return null;
   }
@@ -174,6 +195,7 @@ export function readDraft(): { step: number; draft: OnboardingDraft } | null {
         style,
         picks: sanitizePicks(parsed.draft.picks),
         alerts: sanitizeAlerts(parsed.draft.alerts) ?? DEFAULT_ALERTS,
+        ...pushField(parsed.draft.pushSubscription),
       },
     };
   } catch {

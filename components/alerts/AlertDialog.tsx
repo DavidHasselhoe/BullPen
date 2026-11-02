@@ -1,5 +1,6 @@
 'use client';
 
+import { PushPrompt } from '@/components/pwa/PushPrompt';
 import { useState } from 'react';
 import { Bell, Plus, ExternalLink, Pause, Play, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -33,6 +34,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
   const openGate = useSignupGate();
   const { alerts, isLoading, create, toggle, remove } = useAlerts();
   const [composerOpen, setComposerOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [open, setOpen] = useState(false);
   // Signed up from this button: open the alert form they were reaching for.
   useResumeAction('alert', (value) => {
@@ -167,7 +169,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
               <CreateAlertForm
                 initialTicker={{ ticker: symbol, name: companyName ?? symbol }}
                 onCreate={create}
-                onCreated={() => setComposerOpen(false)}
+                onCreated={() => { setComposerOpen(false); setSaved(true); }}
                 onCancel={() => setComposerOpen(false)}
               />
             ) : (
@@ -181,6 +183,7 @@ export function AlertDialog({ symbol, companyName, trigger }: Props) {
                 {tickerAlerts.length === 0 ? t('createAlertButton') : t('addAnotherAlertButton')}
               </Button>
             )}
+            {saved && <PushPrompt context="alert" />}
 
             {/* Link to full alerts page */}
             {tickerAlerts.length > 0 && (

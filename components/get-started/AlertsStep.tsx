@@ -1,16 +1,21 @@
 'use client';
 
-import type { AlertChoices } from '@/lib/onboarding/pending-onboarding';
+import { useState } from 'react';
+import type { AlertChoices, PendingPush } from '@/lib/onboarding/pending-onboarding';
+import { isPushSupported, needsHomeScreenInstall, subscribeThisDevice } from '@/lib/push/client';
 import { StepHeadline, StepShell } from './StepShell';
 
 const ROWS: { key: keyof AlertChoices; label: string; description: string }[] = [
   { key: 'price_alerts', label: 'Big price moves', description: 'When one of your stocks moves 5% or more in a day.' },
   { key: 'upcoming_earnings', label: 'Earnings coming up', description: 'A heads-up before a company reports results.' },
   { key: 'dividend_reminder', label: 'Dividend dates', description: "Before a stock's dividend cutoff date, so you know when to own it." },
+  { key: 'learning', label: 'Learning', description: 'Streak reminders and new courses.' },
 ];
 
 export function AlertsStep({
   alerts,
+  pushSubscription,
+  onPushSubscription,
   onChange,
   onContinue,
   onBack,
@@ -18,12 +23,33 @@ export function AlertsStep({
   totalSteps,
 }: {
   alerts: AlertChoices;
+  pushSubscription?: PendingPush;
+  onPushSubscription: (p: PendingPush) => void;
   onChange: (alerts: AlertChoices) => void;
   onContinue: () => void;
   onBack: () => void;
   stepIndex: number;
   totalSteps: number;
 }) {
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  // Read on the client only: this step mounts after the auth gate, never in the SSR tree.
+  const canPush = isPushSupported() && !needsHomeScreenInstall();
+
+  async function sendToPhone() {
+    setBusy(true);
+    setFailed(false);
+    try {
+      // Held until signup: there is no account to save the device to yet.
+      onPushSubscription({ sub: await subscribeThisDevice(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    } catch (e) {
+      console.error('[push] onboarding subscribe:', e);
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <StepShell stepIndex={stepIndex} totalSteps={totalSteps} onBack={onBack}>
       <StepHeadline text="What should we tell you about?" />
@@ -71,6 +97,18 @@ export function AlertsStep({
           );
         })}
       </div>
+      {canPush && (
+        <div style={{ marginTop: 16, textAlign: 'center' }}>
+          {pushSubscription ? (
+            <p role="status" style={{ margin: 0, fontSize: 14, color: 'var(--fg-muted)' }}>Done. These will come to this phone or computer.</p>
+          ) : (
+            <button type="button" className="btn" onClick={sendToPhone} disabled={busy}>
+              Send these to my phone
+            </button>
+          )}
+          {failed && <p role="alert" style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--fg-muted)' }}>We could not turn on notifications. You can try again in Settings.</p>}
+        </div>
+      )}
       <button type="button" className="btn btn-primary" onClick={onContinue} style={{ width: '100%', justifyContent: 'center', marginTop: 24 }}>
         Continue
       </button>

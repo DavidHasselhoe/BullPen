@@ -1,5 +1,6 @@
 'use client';
 
+import { PushPrompt } from '@/components/pwa/PushPrompt';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
@@ -83,6 +84,7 @@ export function StockPlanDialog({ symbol, companyName, price, week52Low, week52H
   const locale = useIntlLocale();
   const { alerts, create, remove } = useAlerts();
   const [composerOpen, setComposerOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [removing, setRemoving] = useState(false);
 
   const alert = buyBelowAlert(alerts, symbol);
@@ -147,7 +149,7 @@ export function StockPlanDialog({ symbol, companyName, price, week52Low, week52H
                 initialAlertType="price_below"
                 lockAlertType
                 onCreate={create}
-                onCreated={() => setComposerOpen(false)}
+                onCreated={() => { setComposerOpen(false); setSaved(true); }}
                 onCancel={() => setComposerOpen(false)}
               />
             ) : (
@@ -159,6 +161,7 @@ export function StockPlanDialog({ symbol, companyName, price, week52Low, week52H
                 </Button>
               </>
             )}
+            {saved && <PushPrompt context="alert" />}
           </section>
 
           {rangePct != null && (

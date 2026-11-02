@@ -102,8 +102,14 @@ const good = JSON.stringify({
 assert.deepEqual(parsePendingOnboarding(good, now), {
   style: 'plain',
   picks: [{ ticker: 'NVDA', name: 'NVIDIA' }],
-  alerts: { price_alerts: true, upcoming_earnings: false, dividend_reminder: true },
+  alerts: { price_alerts: true, upcoming_earnings: false, dividend_reminder: true, learning: true },
 });
+const withPush = { sub: { endpoint: 'https://fcm.googleapis.com/x', keys: { p256dh: 'a', auth: 'b' } }, timeZone: 'Europe/Oslo' };
+assert.deepEqual(
+  parsePendingOnboarding(JSON.stringify({ ...JSON.parse(good), pushSubscription: withPush }), now)?.pushSubscription,
+  withPush,
+  'a held push subscription survives parsing'
+);
 assert.equal(parsePendingOnboarding(null, now), null);
 assert.equal(parsePendingOnboarding('not json', now), null);
 assert.equal(
@@ -134,8 +140,13 @@ assert.equal(experienceLevelFor('market'), 'intermediate');
 
 assert.deepEqual(notificationOverrides(DEFAULT_ALERTS), {}, 'all on writes nothing, since unset already means on');
 assert.deepEqual(
-  notificationOverrides({ price_alerts: true, upcoming_earnings: false, dividend_reminder: false }),
+  notificationOverrides({ price_alerts: true, upcoming_earnings: false, dividend_reminder: false, learning: true }),
   { upcoming_earnings: false, dividend_reminder: false }
+);
+assert.deepEqual(
+  notificationOverrides({ ...DEFAULT_ALERTS, learning: false }),
+  { daily_challenge_reminder: false, new_course: false },
+  'learning off maps to its two kinds, never a learning key'
 );
 
 assert.equal(STARTER_STOCKS.length, 11);
