@@ -118,7 +118,7 @@ The palette is almost entirely achromatic — a grayscale ramp doing the structu
 ### Neutral
 - **Ink** (`oklch(0.985 0 0)` dark / `oklch(0.145 0 0)` light): primary text.
 - **Muted Ink** (`oklch(0.708 0 0)` dark / `oklch(0.556 0 0)` light): secondary text, captions, descriptions.
-- **Background** (`oklch(0.145 0.008 162)` dark / `oklch(1 0 0)` light): page canvas. Dark is the default and primary experience — the app sets `dark` on `<html>` unless a user explicitly chooses light.
+- **Background** (`oklch(0.145 0.008 162)` dark / `oklch(1 0 0)` light): page canvas. Signed-in accounts default to dark (the app sets `dark` on `<html>` unless they choose light); signed-out visitors get light, matching the light landing page they arrive from (`app/layout.tsx` + `components/theme/ThemeProvider.tsx`).
 - **Surface** (`oklch(0.205 0.007 162)` dark / `oklch(0.97 0 0)` light): cards, popovers, dropdowns — one step off the page background.
 - **Border** (`oklch(1 0 0 / 10%)` dark / `oklch(0.922 0 0)` light): the quietest possible separator; borders should almost disappear at rest and only sharpen slightly on hover.
 
