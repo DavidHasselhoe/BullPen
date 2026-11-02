@@ -26,17 +26,15 @@ export function StockNavSidebar({ sections, links = [] }: { sections: StockNavSe
     const lastId = sections[sections.length - 1].id;
 
     // A short final section can never reach the reading line below: the
-    // page runs out of room to scroll first. So once the last section's
-    // bottom is on screen, it wins.
+    // page runs out of room to scroll first. So once the page is scrolled
+    // to the bottom, the last section wins.
     //
-    // The "at bottom" check itself is deliberately NOT window.scrollY vs
-    // document.documentElement.scrollHeight — this app's shared shell
-    // (AIPanelProvider) scrolls an inner flex container, not the window,
-    // so those two are permanently 0 and innerHeight here and the check
-    // would be true from the very first render. getBoundingClientRect is
-    // always viewport-relative regardless of which ancestor actually owns
-    // the scrollbar, so checking whether the last section's own bottom
-    // edge has scrolled into view works no matter which element scrolls.
+    // "Bottom" is measured on whichever element fired the scroll and holds
+    // the sections, NOT window.scrollY: this app's shared shell
+    // (AIPanelProvider) scrolls an inner flex container, so the window
+    // never moves. It used to be "the last section's bottom edge is on
+    // screen", but a short Community card (no theses yet) is fully visible
+    // while Profile is still being read, so Profile never lit up.
     //
     // The section being read is the last one whose top has passed a reading
     // line a quarter of the way down the viewport. This replaced an
@@ -44,9 +42,14 @@ export function StockNavSidebar({ sections, links = [] }: { sections: StockNavSe
     // while some section's box overlapped the band: scrolling through a part
     // of the page the nav doesn't list (Washington activity) left it empty,
     // so the highlight stuck on an earlier section.
-    function computeActive() {
+    function computeActive(e?: Event) {
       const lastEl = document.getElementById(lastId);
-      if (lastEl && lastEl.getBoundingClientRect().bottom <= window.innerHeight + 4) {
+      const target = e?.target;
+      const scroller = target instanceof Element ? target : target ? document.scrollingElement : null;
+      if (
+        lastEl && scroller && scroller.contains(lastEl) &&
+        scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4
+      ) {
         setActiveId(lastId);
         return;
       }
