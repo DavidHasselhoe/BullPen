@@ -10,7 +10,7 @@ export interface FundTeaser {
 }
 
 export type FundTeaserResult =
-  | { ok: true; teaser: FundTeaser; fund: { slug: string; displayName: string }; filing: { periodOfReport: string; filedDate: string } }
+  | { ok: true; teaser: FundTeaser; fund: { slug: string; displayName: string; logoUrl: string | null }; filing: { periodOfReport: string; filedDate: string } }
   | Extract<LoadHoldingsResult, { ok: false }>;
 
 /**
@@ -30,7 +30,7 @@ export async function buildFundTeaser(slug: string, lang: string): Promise<FundT
 
   return {
     ok: true,
-    fund: { slug: fund.slug, displayName: fund.displayName },
+    fund: { slug: fund.slug, displayName: fund.displayName, logoUrl: fund.logoUrl ?? null },
     filing: { periodOfReport: filing.periodOfReport, filedDate: filing.filedDate },
     teaser: {
       headline: quarterHeadline(diff, allocation, sharesHistory, tr) ?? allocationHeadline(allocation, tr),

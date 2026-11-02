@@ -113,7 +113,7 @@ function MemberAddRow({ item, t, when }: { item: Extract<FeedItem, { kind: 'memb
 function FundFilingRow({ item, t, when }: { item: Extract<FeedItem, { kind: 'fund_filing' }>; t: TFunction; when: string }) {
   const href = `/discover/institutions/${item.fund.slug}`;
   return (
-    <Row avatar={<FundAvatar displayName={item.fund.displayName} size={36} />} when={when}>
+    <Row avatar={<FundAvatar displayName={item.fund.displayName} logoUrl={item.fund.logoUrl} size={36} />} when={when}>
       <div className="text-muted-foreground">
         <Trans
           i18nKey="feedFundFiled"

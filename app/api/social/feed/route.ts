@@ -37,7 +37,7 @@ export type FeedItem =
       kind: 'fund_filing';
       id: string;
       date: string;
-      fund: { slug: string; displayName: string };
+      fund: { slug: string; displayName: string; logoUrl: string | null };
       periodOfReport: string;
       teaser: FundTeaser;
     }

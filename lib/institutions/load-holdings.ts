@@ -31,7 +31,7 @@ interface FilingRow {
 }
 
 export interface HoldingsResponse {
-  fund: { slug: string; displayName: string; managerName: string | null; description: string | null };
+  fund: { slug: string; displayName: string; managerName: string | null; description: string | null; logoUrl: string | null };
   filing: { periodOfReport: string; filedDate: string; totalValueUsd: number | null; totalPositions: number | null };
   holdings: DiffableHolding[];
   diff: HoldingsDiff | null;
@@ -233,17 +233,17 @@ export type LoadHoldingsResult =
   | { ok: false; status: number; error: string };
 
 export async function loadFundHoldings(slug: string, requestedQuarter: string | null): Promise<LoadHoldingsResult> {
-  // v2: holdings carry catalogue names (companyName, isFund).
-  const cacheKey = `institutions:holdings:v2:${slug}:${requestedQuarter ?? 'latest'}`;
+  // v2: holdings carry catalogue names (companyName, isFund). v3: fund.logoUrl.
+  const cacheKey = `institutions:holdings:v3:${slug}:${requestedQuarter ?? 'latest'}`;
   const cached = await getCached<HoldingsResponse>(cacheKey);
   if (cached) return { ok: true, data: cached };
 
   const supabase = createServerClient();
   const { data: investor, error: investorError } = await supabase
     .from('institutional_investors')
-    .select('id, slug, display_name, manager_name, description')
+    .select('id, slug, display_name, manager_name, description, logo_url')
     .eq('slug', slug)
-    .maybeSingle<{ id: string; slug: string; display_name: string; manager_name: string | null; description: string | null }>();
+    .maybeSingle<{ id: string; slug: string; display_name: string; manager_name: string | null; description: string | null; logo_url: string | null }>();
 
   if (investorError || !investor) return { ok: false, status: 404, error: 'not_found' };
 
@@ -284,6 +284,7 @@ export async function loadFundHoldings(slug: string, requestedQuarter: string | 
       displayName: investor.display_name,
       managerName: investor.manager_name,
       description: investor.description,
+      logoUrl: investor.logo_url,
     },
     filing: {
       periodOfReport: currentFiling.period_of_report,
