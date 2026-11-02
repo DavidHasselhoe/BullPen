@@ -4,6 +4,8 @@
 import { createBrowserClient } from '../supabase/client';
 import { maybeClaimShareAttribution } from './share-attribution';
 import { setLastUsedAuthMethod } from './last-used-method';
+import { unsubscribeThisDevice } from '../push/client';
+import { deletePushSubscription } from '@/app/actions/push';
 
 export interface AuthUser {
   id: string;
@@ -497,6 +499,15 @@ function clearSupabaseAuthStorage(): void {
  */
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
   const supabase = createBrowserClient();
+
+  // Before the session goes: the server action needs it. A shared browser must not keep pushing the last user's alerts.
+  // Never blocks sign-out; unsubscribeThisDevice only touches the local PushManager.
+  try {
+    const endpoint = await unsubscribeThisDevice();
+    if (endpoint) await deletePushSubscription(endpoint);
+  } catch (e) {
+    console.error('[auth] push cleanup on sign-out:', e);
+  }
 
   try {
     const { error } = await supabase.auth.signOut({ scope: 'local' });

@@ -19,8 +19,10 @@ import { NotificationToastListener } from "@/components/notifications/Notificati
 import { ReleaseNotesDialogHost } from "@/components/notifications/ReleaseNotesDialog";
 import { CookieConsentBanner } from "@/components/cookie-consent/CookieConsentBanner";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
+import { PwaBoot } from "@/components/pwa/PwaBoot";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { preconnect } from "react-dom";
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 
 import { SITE_URL } from '@/lib/site';
@@ -68,7 +70,10 @@ export const metadata: Metadata = {
       { url: "/icon-light.png", media: "(prefers-color-scheme: light)" },
       { url: "/icon-dark.png", media: "(prefers-color-scheme: dark)" },
     ],
+    // iOS paints transparency black, so the Home Screen icon is on opaque white.
+    apple: "/apple-touch-icon.png",
   },
+  appleWebApp: { capable: true, title: "BullPen", statusBarStyle: "black-translucent" },
 };
 
 const ORGANIZATION_JSON_LD = {
@@ -148,6 +153,7 @@ export default async function RootLayout({
                 <ReleaseNotesDialogHost />
                 <CookieConsentBanner />
                 <PostHogProvider />
+                <Suspense fallback={null}><PwaBoot /></Suspense>
                 <PageTransition>{children}</PageTransition>
                 <AIPanelToggle />
                 {process.env.VERCEL === '1' && (

@@ -60,6 +60,7 @@ import { signOut } from '@/lib/auth/auth';
 import { useRouter } from 'next/navigation';
 import { deleteAccount, exportUserData } from '@/app/actions/account';
 import { DeleteAccountDialog } from '@/components/user/DeleteAccountDialog';
+import { PushDeviceRow } from '@/components/pwa/PushDeviceRow';
 
 interface SettingsModalProps {
   open: boolean;
@@ -202,6 +203,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     release_notes: true,
     // The morning email (lib/email/alert-email.ts) of the three stock alerts above it.
     email_alerts: true,
+    // Push for the alerts above, on the devices that turned it on (lib/notifications/push-plan.ts).
+    push_alerts: true,
   });
   type NotificationKey = keyof typeof notifications;
   const notif = (key: NotificationKey) => ({
@@ -297,6 +300,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         economic_events: settings.notifications?.economic_events !== false,
         release_notes: settings.notifications?.release_notes !== false,
         email_alerts: settings.notifications?.email_alerts !== false,
+        push_alerts: settings.notifications?.push_alerts !== false,
       });
       const dh = (settings.default_homepage as string) || '/dashboard';
       setDefaultHomepage(dh);
@@ -931,6 +935,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     <ToggleSetting label={t('notifPortfolioRecapLabel')} description={t('notifPortfolioRecapDescription')} {...notif('portfolio_recap')} />
                     <ToggleSetting label={t('notifExDividendLabel')} description={t('notifExDividendDescription')} {...notif('dividend_reminder')} />
                     <ToggleSetting label={t('notifEmailAlertsLabel')} description={t('notifEmailAlertsDescription')} {...notif('email_alerts')} />
+                    <ToggleSetting label={t('notifPushAlertsLabel')} description={t('notifPushAlertsDescription')} {...notif('push_alerts')} />
+                    <PushDeviceRow />
                     <ToggleSetting label={t('notifHealthScoreLabel')} description={t('notifHealthScoreDescription')} {...notif('health_score_change')} />
                     <ToggleSetting label={t('notifIndexChangesLabel')} description={t('notifIndexChangesDescription')} {...notif('index_changes')} />
                     {/* Pro-only: a Free user saw this "on" and could flip it,

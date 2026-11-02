@@ -173,7 +173,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
 export const config = {
   matcher: [
     // Pages: everything except API routes and static files.
-    '/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)).*)',
+    '/((?!api/|_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)).*)',
     // API: only requests with an Origin header, which is all the CSRF check
     // needs. Browsers send Origin on every POST/PUT/PATCH/DELETE but not on
     // the app's own same-origin GETs, so the GET calls behind each page view

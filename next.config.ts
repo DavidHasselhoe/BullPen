@@ -93,7 +93,11 @@ const nextConfig: NextConfig = {
   // invocation on every API call just for this, 27% of the project's Fluid
   // Active CPU (Sep 21 - Oct 21, 2026).
   async headers() {
-    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      // The service worker must never be served stale, or a fix can't reach installed devices.
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }] },
+    ];
   },
 };
 
