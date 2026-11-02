@@ -211,5 +211,15 @@
   "releaseNotesNew": "新機能",
   "releaseNotesImproved": "改善",
   "releaseNotesFixed": "修正",
-  "releaseNotesSeeAll": "すべての変更を見る"
+  "releaseNotesSeeAll": "すべての変更を見る",
+  "notifHealthQuarterUp": "{{symbol}}のヘルススコアが最新の決算発表後に{{newScore}}へ上昇しました",
+  "notifHealthQuarterDown": "{{symbol}}のヘルススコアが最新の決算発表後に{{newScore}}へ低下しました",
+  "notifHealthQuarterMessage": "{{name}}のスコアは前四半期の{{oldScore}}から{{newScore}}（グレード{{grade}}）に変わりました。最も大きく動いたのは{{category}}です。",
+  "notifHealthQuarterMessageNoDriver": "{{name}}のスコアは前四半期の{{oldScore}}から{{newScore}}（グレード{{grade}}）に変わりました。",
+  "notifHealthCatProfitability": "収益性",
+  "notifHealthCatFinancialStrength": "財務の健全性",
+  "notifHealthCatCashFlow": "キャッシュフロー",
+  "notifHealthCatGrowth": "成長性",
+  "notifHealthCatMarketRisk": "市場リスク",
+  "notifHealthCatValuation": "バリュエーション"
 }

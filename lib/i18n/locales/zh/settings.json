@@ -118,7 +118,6 @@
   "notifExDividendLabel": "除息日提醒",
   "notifEmailAlertsLabel": "晨间邮件",
   "notifEmailAlertsDescription": "你所持股票的财报、大幅波动和除息日信息，在事件发生时汇总成一封邮件发送",
-  "notifHealthScoreDescription": "当追踪的股票的 BullPen 健康评分跨越字母等级时获得通知",
   "notifHealthScoreLabel": "健康评分变化",
   "notifNewCourseLabel": "新课程",
   "notifNewCourseDescription": "新的 Academy 课程上线时通知我",
@@ -244,5 +243,6 @@
   "timeFormat12": "12 小时制（晚上 7:00）",
   "homeWidget_from_follows": "来自你的关注",
   "notifReleaseNotesLabel": "最新动态",
-  "notifReleaseNotesDescription": "每周一发送一条简短通知，汇总 BullPen 的重要更新"
+  "notifReleaseNotesDescription": "每周一发送一条简短通知，汇总 BullPen 的重要更新",
+  "notifHealthScoreDescription": "当你关注的股票的 BullPen 健康评分跨越字母等级，或在新的季度财报发布后变动 5 分或以上时，通知你"
 }

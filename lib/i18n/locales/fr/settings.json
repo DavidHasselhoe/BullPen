@@ -118,7 +118,6 @@
   "notifExDividendLabel": "Rappels ex-dividende",
   "notifEmailAlertsLabel": "E-mail du matin",
   "notifEmailAlertsDescription": "Résultats, mouvements importants et dates de détachement de dividende de vos actions, regroupés dans un seul e-mail quand quelque chose se produit",
-  "notifHealthScoreDescription": "Recevez une notification lorsque le score de santé BullPen d'une action suivie franchit une note alphabétique",
   "notifHealthScoreLabel": "Changements du Score de santé",
   "notifNewCourseLabel": "Nouveaux cours",
   "notifNewCourseDescription": "Recevez une notification lorsqu'un nouveau cours de l'Academy est publié",
@@ -244,5 +243,6 @@
   "timeFormat12": "12 heures (7:00 PM)",
   "homeWidget_from_follows": "De ceux que vous suivez",
   "notifReleaseNotesLabel": "Nouveautés",
-  "notifReleaseNotesDescription": "Une courte note chaque lundi avec les principales améliorations de BullPen"
+  "notifReleaseNotesDescription": "Une courte note chaque lundi avec les principales améliorations de BullPen",
+  "notifHealthScoreDescription": "Recevez une notification lorsque le score de santé BullPen d'une action suivie change de lettre de note, ou évolue de 5 points ou plus après un nouveau rapport trimestriel"
 }

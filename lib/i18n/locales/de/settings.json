@@ -118,7 +118,6 @@
   "notifExDividendLabel": "Exdividend-Benachrichtigungen",
   "notifEmailAlertsLabel": "Morgen-E-Mail",
   "notifEmailAlertsDescription": "Quartalszahlen, starke Kursbewegungen und Ex-Dividenden-Termine für deine Aktien, gesammelt in einer E-Mail, wenn etwas passiert",
-  "notifHealthScoreDescription": "Benachrichtigung erhalten, wenn die BullPen-Gesundheitsnote einer überwachten Aktie eine Notengrenze überschreitet",
   "notifHealthScoreLabel": "Änderungen des Gesundheitsscores",
   "notifNewCourseLabel": "Neue Kurse",
   "notifNewCourseDescription": "Benachrichtige mich, sobald ein neuer Academy-Kurs veröffentlicht wird",
@@ -242,7 +241,8 @@
   "timeFormat24": "24-Stunden-Format (19:00)",
   "timeFormat12": "12-Stunden-Format (7:00 PM)",
   "homeWidget_from_follows": "Von denen, denen du folgst",
-  "sectionPlanLabel": "Plan",
   "notifReleaseNotesLabel": "Was ist neu",
-  "notifReleaseNotesDescription": "Jeden Montag eine kurze Nachricht mit den wichtigsten Verbesserungen bei BullPen"
+  "notifReleaseNotesDescription": "Jeden Montag eine kurze Nachricht mit den wichtigsten Verbesserungen bei BullPen",
+  "notifHealthScoreDescription": "Werde benachrichtigt, wenn der BullPen-Gesundheitsscore einer beobachteten Aktie in eine neue Buchstabenbewertung wechselt oder nach einem neuen Quartalsbericht um 5 Punkte oder mehr steigt oder fällt.",
+  "sectionPlanLabel": "Plan"
 }

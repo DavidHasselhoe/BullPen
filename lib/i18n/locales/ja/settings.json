@@ -118,7 +118,6 @@
   "notifExDividendLabel": "配当金支払日のリマインダー",
   "notifEmailAlertsLabel": "朝のメール",
   "notifEmailAlertsDescription": "保有銘柄の決算、大きな値動き、配当落ち日をお知らせします。該当するイベントが発生した際に、まとめて1通のメールでお届けします",
-  "notifHealthScoreDescription": "追跡中の銘柄の BullPen ヘルススコアがレターグレードを越えたときに通知を受け取ります",
   "notifHealthScoreLabel": "ヘルススコアの変動",
   "notifNewCourseLabel": "新しいコース",
   "notifNewCourseDescription": "BullPenアカデミーで新しいコースが公開されたときに通知を受け取ります",
@@ -244,5 +243,6 @@
   "timeFormat12": "12時間表記（午後7:00）",
   "homeWidget_from_follows": "フォローしている相手から",
   "notifReleaseNotesLabel": "新機能",
-  "notifReleaseNotesDescription": "毎週月曜日に、BullPenの主な改善点をまとめた短いお知らせをお届けします"
+  "notifReleaseNotesDescription": "毎週月曜日に、BullPenの主な改善点をまとめた短いお知らせをお届けします",
+  "notifHealthScoreDescription": "追跡中の銘柄のBullPenヘルススコアがアルファベット評価の境界を超えた場合、または新しい四半期決算の発表後に5ポイント以上変動した場合に通知を受け取ります"
 }

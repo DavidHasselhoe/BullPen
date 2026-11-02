@@ -118,7 +118,6 @@
   "notifExDividendLabel": "Påminnelser om ex-dividend",
   "notifEmailAlertsLabel": "Morgen-e-post",
   "notifEmailAlertsDescription": "Resultater, store kursbevegelser og utbytte-datoer (ex-dato) for aksjene dine, samlet i én e-post når noe skjer",
-  "notifHealthScoreDescription": "Få beskjed når en sporet aksjes BullPen-helsescore krysser en bokstavkarakter",
   "notifHealthScoreLabel": "Endringer i helsescore",
   "notifNewCourseLabel": "Nye kurs",
   "notifNewCourseDescription": "Få beskjed når et nytt Academy-kurs publiseres",
@@ -244,5 +243,6 @@
   "timeFormat12": "12-timers (7:00 PM)",
   "homeWidget_from_follows": "Fra de du følger",
   "notifReleaseNotesLabel": "Hva er nytt",
-  "notifReleaseNotesDescription": "En kort oppdatering hver mandag med de største forbedringene i BullPen"
+  "notifReleaseNotesDescription": "En kort oppdatering hver mandag med de største forbedringene i BullPen",
+  "notifHealthScoreDescription": "Få varsel når en fulgt aksjes BullPen-helsescore går over til en ny bokstavkarakter, eller endrer seg med 5 poeng eller mer etter en ny kvartalsrapport"
 }

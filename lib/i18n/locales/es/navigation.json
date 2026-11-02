@@ -203,7 +203,6 @@
   "notifRiskTitle": "Tu análisis de riesgo del portafolio está listo",
   "notifRiskMessage": "Riesgo general: {{level}} ({{score}}/100). Ábrelo para ver el desglose completo.",
   "notifRiskDone": "Tu evaluación de riesgo ha terminado.",
-  "notifDividendManyTitle_one": "{{count}} of your stocks goes ex-dividend soon",
   "notifReleaseNotesTitle": "Novedades en BullPen",
   "notifReleaseNotesMessage_one": "{{count}} novedad de la última semana.",
   "notifReleaseNotesMessage_other": "{{count}} novedades de la última semana.",
@@ -211,5 +210,16 @@
   "releaseNotesNew": "Nuevo",
   "releaseNotesImproved": "Mejorado",
   "releaseNotesFixed": "Corregido",
-  "releaseNotesSeeAll": "Ver todos los cambios"
+  "releaseNotesSeeAll": "Ver todos los cambios",
+  "notifHealthQuarterUp": "La puntuación de salud de {{symbol}} subió a {{newScore}} tras su último informe",
+  "notifHealthQuarterDown": "La puntuación de salud de {{symbol}} bajó a {{newScore}} tras su último informe",
+  "notifHealthQuarterMessage": "{{name}} pasó de {{oldScore}} a {{newScore}} (calificación {{grade}}) en comparación con el trimestre anterior. {{category}} fue lo que más cambió.",
+  "notifHealthQuarterMessageNoDriver": "{{name}} pasó de {{oldScore}} a {{newScore}} (calificación {{grade}}) en comparación con el trimestre anterior.",
+  "notifHealthCatProfitability": "Rentabilidad",
+  "notifHealthCatFinancialStrength": "Solidez financiera",
+  "notifHealthCatCashFlow": "Flujo de caja",
+  "notifHealthCatGrowth": "Crecimiento",
+  "notifHealthCatMarketRisk": "Riesgo de mercado",
+  "notifHealthCatValuation": "Valoración",
+  "notifDividendManyTitle_one": "{{count}} de tus acciones pasará pronto a cotizar sin dividendo"
 }

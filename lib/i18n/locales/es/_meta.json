@@ -1323,7 +1323,7 @@
   "settings.notifDailyChallengeDescription": "fe4fe7f137d6e9b9221040b8f23143cca019d09dccac929c65ed3fbe3e4505a2",
   "settings.notifEarningsTodayDescription": "e2f5598a9d37907abef1ba9bee54c90b3ecc641e58081878d4fc1be988e199ca",
   "settings.notifExDividendDescription": "e4b259574d28798be08d0e5248e453843c00ccf569a2fe43154f7f74d2b3796e",
-  "settings.notifHealthScoreDescription": "30dfc90d9dbabe2de2808e3f39521543032925eb46b03a463a89a74d09cf4ad7",
+  "settings.notifHealthScoreDescription": "4b6ed3a37b9e1874e831387efc79d5af3b130f38ea20099fe28b5932c333e053",
   "settings.notifPortfolioRecapDescription": "0e48755cca9d8e78edf65fc75146bc2bd9023acee0fcbd46ce449e52fc7ce6e9",
   "settings.notifWeeklyPickDescription": "c07d23d2de3b0ce9b0471e7d0e7abe6a2aa074ed262a4d06ff21c7f6db620d12",
   "settings.planFreeDescription": "86802f4694c3a5cd14e1151a1bee161bacf62a3ee257dcc57e332087a4a9a505",
@@ -4214,5 +4214,16 @@
   "stock.earningsEmailToastConfirmButton": "eebdd24a77d9ad32222660c07777163bf5f6732df2b172351f3f8d5783e4f529",
   "stock.earningsEmailToastUnsubscribeAskTitle": "aca648aaffdcfca7d56bf3e71434bea17a0b3c3aef85f992a9f6978bb17a6c42",
   "stock.earningsEmailToastUnsubscribeButton": "3e92efb7664f0255ffce2ed60d7eb423059101cbca4b2e2d55e3871aba70ae63",
-  "stock.earningsEmailToastLinkFailed": "c0fcbc9ea5541f13799a56d1e7c7e8674bf3ad90bb769601e143738e21835ac6"
+  "stock.earningsEmailToastLinkFailed": "c0fcbc9ea5541f13799a56d1e7c7e8674bf3ad90bb769601e143738e21835ac6",
+  "navigation.notifHealthQuarterUp": "000eba62f8412d6f3331ece57c067bb1962a18e66bc50be56494e6ca91050e61",
+  "navigation.notifHealthQuarterDown": "a106ca56c4a8c98290b1f8cae9f8de82b7e507bcadd3b4d2b0b689667081417e",
+  "navigation.notifHealthQuarterMessage": "205415f3045cb2c02dd36a8c89bb9a453b2216291166c47ed9266d02eb70101b",
+  "navigation.notifHealthQuarterMessageNoDriver": "ba877b42ed3823b5dc5d270457208c9b42b69170c1400cc24ffdaf9cb4205e5f",
+  "navigation.notifHealthCatProfitability": "c93edfb100079c7dc5141de8312739e762741e13d0649daacfbcff521b375e2b",
+  "navigation.notifHealthCatFinancialStrength": "0d2fdcf93c63f6f209302441bbf3172778eecc056128b911c39e5e78039399f1",
+  "navigation.notifHealthCatCashFlow": "1309d46fc24e0ae645ccf857da27fe17e7be9af2660d2f73e90ab6abf6adeeb9",
+  "navigation.notifHealthCatGrowth": "66b06e996553a4e70d0f3a5a50c6b6877d23fb448cad524fef307399ebe36d5e",
+  "navigation.notifHealthCatMarketRisk": "848dbce29910bb86848e39e6371537d7335e1451cc35105d6d3c7d9d7dd4b44e",
+  "navigation.notifHealthCatValuation": "c49d9c4f45726af8ad911e7d51534840224d1dce52ef3048aa31147d1c3cee45",
+  "navigation.notifDividendManyTitle_one": "fe2ab774029477d1a66a043b0a786cb10166ccf8da1d41e1da814e2f81bd86a4"
 }

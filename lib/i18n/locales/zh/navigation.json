@@ -211,5 +211,15 @@
   "releaseNotesNew": "新增",
   "releaseNotesImproved": "优化",
   "releaseNotesFixed": "修复",
-  "releaseNotesSeeAll": "查看全部更改"
+  "releaseNotesSeeAll": "查看全部更改",
+  "notifHealthQuarterUp": "{{symbol}} 的健康评分在最新财报后升至 {{newScore}}",
+  "notifHealthQuarterDown": "{{symbol}} 的健康评分在最新财报后降至 {{newScore}}",
+  "notifHealthQuarterMessage": "与上一季度相比，{{name}} 的评分从 {{oldScore}} 变为 {{newScore}}（等级 {{grade}}）。{{category}} 的变化最大。",
+  "notifHealthQuarterMessageNoDriver": "与上一季度相比，{{name}} 的评分从 {{oldScore}} 变为 {{newScore}}（等级 {{grade}}）。",
+  "notifHealthCatProfitability": "盈利能力",
+  "notifHealthCatFinancialStrength": "财务实力",
+  "notifHealthCatCashFlow": "现金流",
+  "notifHealthCatGrowth": "成长性",
+  "notifHealthCatMarketRisk": "市场风险",
+  "notifHealthCatValuation": "估值"
 }

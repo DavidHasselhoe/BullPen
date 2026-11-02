@@ -211,5 +211,15 @@
   "releaseNotesNew": "Nytt",
   "releaseNotesImproved": "Forbedret",
   "releaseNotesFixed": "Rettet",
-  "releaseNotesSeeAll": "Se alle endringer"
+  "releaseNotesSeeAll": "Se alle endringer",
+  "notifHealthQuarterUp": "Helsescoren til {{symbol}} steg til {{newScore}} etter siste rapport",
+  "notifHealthQuarterDown": "Helsescoren til {{symbol}} falt til {{newScore}} etter siste rapport",
+  "notifHealthQuarterMessage": "{{name}} gikk fra {{oldScore}} til {{newScore}} (karakter {{grade}}) sammenlignet med kvartalet før. {{category}} endret seg mest.",
+  "notifHealthQuarterMessageNoDriver": "{{name}} gikk fra {{oldScore}} til {{newScore}} (karakter {{grade}}) sammenlignet med kvartalet før.",
+  "notifHealthCatProfitability": "Lønnsomhet",
+  "notifHealthCatFinancialStrength": "Finansiell styrke",
+  "notifHealthCatCashFlow": "Kontantstrøm",
+  "notifHealthCatGrowth": "Vekst",
+  "notifHealthCatMarketRisk": "Markedsrisiko",
+  "notifHealthCatValuation": "Verdsettelse"
 }
