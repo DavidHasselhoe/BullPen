@@ -1,5 +1,44 @@
 [
   {
+    "date": "2026-11-02",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Get your price alerts, earnings results and other updates as notifications on your phone or computer. Turn them on in Settings, or add BullPen to your iPhone Home Screen first",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "Health score alerts: hear when a company's new quarterly results move its score up or down",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Searching for a fund by name now shows the popular funds beginners hold first"
+      },
+      {
+        "type": "improved",
+        "text": "Setting up your account is clearer, and asks you to pick at least one stock so Home has something to show"
+      },
+      {
+        "type": "improved",
+        "text": "Before you sign up, the app shows in light mode, like the page you came from"
+      },
+      {
+        "type": "fixed",
+        "text": "The section menu on a stock page now highlights Profile while you read it"
+      },
+      {
+        "type": "fixed",
+        "text": "Funds you follow show their logo in the Feed"
+      },
+      {
+        "type": "fixed",
+        "text": "Fund holdings no longer show a stock under another company's ticker"
+      }
+    ]
+  },
+  {
     "date": "2026-10-30",
     "entries": [
       {
