@@ -2,6 +2,7 @@
 // Server-side database operations for notifications
 
 import { createServerClient } from '@/lib/supabase/client';
+import type { PushKind } from '@/lib/notifications/push-plan';
 
 export interface Notification {
   id: string;
@@ -18,6 +19,10 @@ export interface Notification {
   created_at: string;
   /** Structured data the client words in the reader's language; title/message are the English fallback. */
   params?: NotificationParams | null;
+  /** Set by producers whose rows may be pushed to a phone; null = in-app only. */
+  push_kind?: PushKind | null;
+  pushed_at?: string | null;
+  push_opened_at?: string | null;
 }
 
 /** Earnings-today digest: which reporting tickers the user holds and which they only watch. */
@@ -75,6 +80,8 @@ export interface CreateNotificationInput {
   entity_id?: string | null;
   severity?: 'info' | 'warning' | 'critical';
   params?: NotificationParams | null;
+  /** Marks the row as pushable; see lib/notifications/push-plan.ts. */
+  push?: PushKind;
 }
 
 /**
@@ -93,7 +100,7 @@ export async function createNotification(
       
       const { data: existing } = await supabase
         .from('notifications')
-        .select('id')
+        .select('id, pushed_at')
         .eq('user_id', input.user_id)
         .eq('type', input.type)
         .eq('entity_id', input.entity_id)
@@ -114,6 +121,8 @@ export async function createNotification(
             is_read: false, // Reset read status on update
             is_seen: false,
             created_at: new Date().toISOString(), // Update timestamp
+            // Already pushed once: leave the mark alone. pushed_at is never written here.
+            ...(existing.pushed_at ? {} : { push_kind: input.push ?? null }),
           })
           .eq('id', existing.id)
           .select()
@@ -139,6 +148,7 @@ export async function createNotification(
         entity_id: input.entity_id || null,
         severity: input.severity || 'info',
         params: input.params ?? null,
+        push_kind: input.push ?? null,
         is_read: false,
       })
       .select()

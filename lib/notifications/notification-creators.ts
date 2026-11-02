@@ -113,6 +113,8 @@ export async function createPriceMoveNotification(
     message: `${name} closed at ${price} (${change})`,
     entity_type: 'stock',
     entity_id: dedupeId,
+
+    push: 'price_alerts',
     severity,
     params: i18n(msg('notifPriceMoveTitle', { symbol: mover.symbol, pct: pctStr }), msg('notifPriceMoveMessage', { name, price, change })),
   };
@@ -149,6 +151,8 @@ export async function createPriceMoveDigestNotification(
         message: lines.slice(0, 5).join(', ') + suffix,
         entity_type: 'portfolio',
         entity_id: dedupeId,
+
+        push: 'price_alerts',
         severity: 'info',
         params: i18n(msg('notifDigestUp', { count: gainers.length, top: lines[0] }), msg('notifList', { items: capped(lines) })),
       });
@@ -168,6 +172,8 @@ export async function createPriceMoveDigestNotification(
         message: lines.slice(0, 5).join(', ') + suffix,
         entity_type: 'portfolio',
         entity_id: dedupeId,
+
+        push: 'price_alerts',
         severity: losers.some((m) => Math.abs(m.changePercent) >= 10) ? 'warning' : 'info',
         params: i18n(msg('notifDigestDown', { count: losers.length, top: lines[0] }), msg('notifList', { items: capped(lines) })),
       });
@@ -213,6 +219,8 @@ export async function createPortfolioRecapNotification(
     message: `${recap.holdingsCount} holding${recap.holdingsCount === 1 ? '' : 's'} · ${recap.topSymbol} ${topPct} led`,
     entity_type: 'portfolio',
     entity_id: dedupeId,
+
+    push: 'portfolio_recap',
     severity: 'info',
     params: i18n(msg('notifRecapTitle', { pct }), msg('notifRecapMessage', { count: recap.holdingsCount, symbol: recap.topSymbol, pct: topPct })),
   };
@@ -251,6 +259,8 @@ export async function createUserAlertNotification(
     message: `Your "${describeAlert(alert)}" alert on ${name} was triggered.`,
     entity_type: 'user_alert',
     entity_id: dedupeId,
+
+    push: 'user_alert',
     severity: 'info',
     params: i18n(
       msg('notifAlertHitTitle', { symbol: alert.symbol, price: priceStr }),
@@ -448,6 +458,8 @@ export async function createWeeklyPickNotification(
     message: pick.headline,
     entity_type: 'stock',
     entity_id: dedupeId,
+
+    push: 'weekly_pick',
     severity: 'info',
     params: i18n(msg('notifWeeklyPickTitle', { symbol: pick.symbol })),
   });
@@ -525,6 +537,8 @@ export async function createDividendReminderNotification(
       : `${tickerList}${suffix}. Shares bought before ${shortDate(items[0].exDate)} get the next payout.`,
     entity_type: 'portfolio',
     entity_id: dedupeId,
+
+    push: 'dividend_reminder',
     severity: 'info',
     params: count === 1
       ? i18n(
@@ -567,6 +581,8 @@ export async function createDailyChallengeReminderNotification(
     message: "Today's Academy challenge is still waiting. It takes about a minute.",
     entity_type: 'market',
     entity_id: dedupeId,
+
+    push: 'daily_challenge_reminder',
     severity: 'info',
     params: i18n(msg('notifStreakTitle'), msg('notifStreakMessage')),
   });
@@ -611,6 +627,7 @@ export async function notifyNewAcademyCourse(course: { slug: string; title: stri
   const rows = userIds.filter((id) => !skip.has(id)).map((user_id) => ({
     user_id,
     type: 'academy',
+    push_kind: 'new_course',
     title: `New course: ${course.title}`,
     message: course.requiresPro
       ? 'A new Pro course just opened in Academy.'
@@ -664,6 +681,8 @@ export async function createEarningsUpcomingNotification(
     message,
     entity_type: 'portfolio',
     entity_id: dedupeId,
+
+    push: 'upcoming_earnings',
     severity: 'info',
     params: { kind: 'earnings_today', owned, watched, ...(name ? { name } : {}) },
   };
