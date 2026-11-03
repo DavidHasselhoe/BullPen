@@ -217,8 +217,9 @@
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(105deg, transparent 35%, oklch(1 0 0 / 0.22) 50%, transparent 65%);
-  /* Twice, then still: an endless sweep is motion nobody can stop (WCAG 2.2.2). */
-  animation: bp-shimmer 2.8s ease-in-out 1s 2;
+  /* Endless on purpose (David, 11-03). Reduced-motion readers get it stopped
+     by the global prefers-reduced-motion block at the end of this file. */
+  animation: bp-shimmer 2.8s ease-in-out infinite;
   pointer-events: none;
 }
 .bullpen-landing-root .btn-primary:hover {
