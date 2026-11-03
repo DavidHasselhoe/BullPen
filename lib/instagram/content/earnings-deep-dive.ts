@@ -291,22 +291,25 @@ export async function writeHeadlineAndCaption(data: EarningsDeepDiveData): Promi
 
   const facts = [
     data.fiscalPeriodLabel ? `Fiscal period: ${data.fiscalPeriodLabel}` : null,
-    `EPS: ${data.epsActual ?? 'N/A'} actual vs ${data.epsEstimate ?? 'N/A'} estimate (${data.epsStatus ?? 'unconfirmed'})`,
-    data.epsAdjustmentNote ? `EPS note (mention this in the caption): the EPS actual ${data.epsAdjustmentNote}` : null,
-    `Revenue: ${data.revenueActual ?? 'N/A'} actual vs ${data.revenueEstimate ?? 'N/A'} estimate (${data.revenueStatus ?? 'unconfirmed'}), YoY growth ${data.revenueYoyGrowthPercent ?? 'N/A'}%`,
-    data.segmentLabel ? `${data.segmentLabel} revenue: ${data.segmentRevenueActual ?? 'N/A'}` : null,
-    `Gross margin: ${data.grossMarginActualPercent ?? 'N/A'}% vs prior quarter ${data.grossMarginPriorQuarterPercent ?? 'N/A'}%`,
+    // Only what the slides show, plus the ranked story points. With gross margin and
+    // the key metric in here too, SMCI's caption (11-03) pointed readers at a
+    // "gross margin worth a closer look" that no slide had.
+    `Profit per share: ${data.epsActual ?? 'N/A'} actual vs ${data.epsEstimate ?? 'N/A'} estimate (${data.epsStatus ?? 'unconfirmed'})`,
+    data.epsAdjustmentNote ? `Profit per share note (mention this in the caption): the actual ${data.epsAdjustmentNote}` : null,
+    `Revenue: ${data.revenueActual ?? 'N/A'} actual vs ${data.revenueEstimate ?? 'N/A'} estimate (${data.revenueStatus ?? 'unconfirmed'})`,
+    data.segmentLabel && data.segmentRevenueActual != null && data.segmentRevenueEstimate != null
+      ? `${data.segmentLabel} revenue: ${data.segmentRevenueActual} actual vs ${data.segmentRevenueEstimate} estimate (${statusFor(data.segmentRevenueEstimate, data.segmentRevenueActual) ?? 'unconfirmed'})`
+      : null,
     data.guidanceRevenueLow != null && data.guidanceRevenueHigh != null
       ? `Next-quarter guidance: ${data.guidanceRevenueLow} to ${data.guidanceRevenueHigh}${data.guidanceConsensus != null ? ` vs ${data.guidanceConsensus} consensus` : ''}`
       : null,
     data.outlookNote ? `Full-year outlook${data.outlookDirection ? ` (${data.outlookDirection})` : ''}: ${data.outlookNote}` : null,
-    data.keyMetricLabel ? `${data.keyMetricLabel}: ${data.keyMetricValueText}${data.keyMetricYoyPercent != null ? `, ${data.keyMetricYoyPercent}% YoY` : ''}` : null,
     data.storyPoints?.length ? `WHAT CHANGED, most market-moving first:\n${data.storyPoints.map((p) => `- ${p}`).join('\n')}` : null,
   ].filter(Boolean).join('\n');
 
   const systemPrompt = `You write short, punchy Instagram copy for BullPen, a financial app for beginner-to-intermediate investors.
 
-Voice: confident, clear, never hype-y. No emoji spam (0-1 max, only if it genuinely fits). Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.
+Voice: confident, clear, never hype-y. No emoji spam (0-1 max, only if it genuinely fits). Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead. Say "profit per share", never "EPS" or "earnings per share": the slides use those words, and beginners don't know the abbreviation. Mention only the figures and facts listed below; never point readers at a number that isn't given.
 
 DATA FIDELITY (critical): you are given a real, fixed set of figures for one company's just-released earnings report. Use ONLY these figures and their already-computed beat/missed/in-line labels. Do not add, invent, or imply any other figure, and do not restate exact dollar numbers or percentages beyond what's given, since the slide images already show the exact figures.
 
