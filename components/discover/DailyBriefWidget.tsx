@@ -507,7 +507,13 @@ function BriefReader({
     // Use getBoundingClientRect so positions are always relative to the
     // actual viewport, not the fixed modal ancestor (which offsetTop would be).
     const containerTop = el.getBoundingClientRect().top;
-    const triggerOffset = 140; // px from container top edge to consider "active"
+    // A section is active once its top passes this line. Short final sections
+    // never reach a fixed 140px line before scrolling runs out, so over the
+    // last screenful the line slides down to the container's bottom edge: every
+    // section gets crossed in order, and the last one wins at the very bottom.
+    const baseOffset = 140;
+    const ramp = Math.min(1, Math.max(0, 1 - (max - el.scrollTop) / Math.min(el.clientHeight, max)));
+    const triggerOffset = baseOffset + Math.max(0, el.clientHeight - baseOffset) * ramp;
 
     let active = sections[0]?.slug ?? null;
     for (const section of sections) {
@@ -516,13 +522,6 @@ function BriefReader({
       if (ref.getBoundingClientRect().top - containerTop <= triggerOffset) {
         active = section.slug;
       }
-    }
-    // A short final section can end before its top ever crosses
-    // triggerOffset, leaving an earlier section highlighted even once
-    // there's nothing left to scroll to. At the very bottom, force the
-    // last section active so the nav always agrees with what's on screen.
-    if (el.scrollTop >= max - 2 && sections.length > 0) {
-      active = sections[sections.length - 1].slug;
     }
     setActiveSlug(active);
   }
@@ -543,6 +542,26 @@ function BriefReader({
 
   // TL;DR detection — first section whose slug starts with "tl"
   const tldrSlug = sections.find((s) => s.slug.startsWith('tl'))?.slug ?? null;
+
+  // Memoized so a scroll that moves the TOC highlight re-renders only the TOC.
+  // Re-rendering the body (40-odd ticker links, each a Radix Popover) cost a
+  // 25-30ms frame at every section boundary, which read as scroll lag.
+  const articleBody = useMemo(
+    () =>
+      sections.map((section, i) => (
+        <SectionBlock
+          key={section.slug || i}
+          section={section}
+          index={i}
+          isTldr={section.slug === tldrSlug}
+          sectionRef={(el) => {
+            sectionRefs.current[section.slug] = el;
+          }}
+          known={known}
+        />
+      )),
+    [sections, tldrSlug, known]
+  );
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -704,18 +723,7 @@ function BriefReader({
               className="overflow-y-auto flex-1 brief-scroll px-6 md:px-10 py-7"
             >
               <article className="max-w-[640px] mx-auto md:mx-0">
-                {sections.map((section, i) => (
-                  <SectionBlock
-                    key={section.slug || i}
-                    section={section}
-                    index={i}
-                    isTldr={section.slug === tldrSlug}
-                    sectionRef={(el) => {
-                      sectionRefs.current[section.slug] = el;
-                    }}
-                    known={known}
-                  />
-                ))}
+                {articleBody}
                 <BriefSourcesFooter key={displayedBrief.id} sources={displayedBrief.sources ?? []} />
               </article>
             </div>
