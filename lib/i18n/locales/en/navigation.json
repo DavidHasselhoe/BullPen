@@ -234,6 +234,5 @@
   "pushPromptDone": "Done. Alerts will come to this device.",
   "pushPromptError": "We could not turn on notifications. Please try again.",
   "pushPromptInstallTitle": "Add BullPen to your Home Screen for phone alerts",
-  "pushPromptInstallSteps": "Tap the Share button in Safari, choose Add to Home Screen, then open BullPen from your Home Screen.",
-  "pushPromptSignInAgain": "You will sign in once more there."
+  "pushPromptInstallSteps": "Tap the Share button in Safari, choose Add to Home Screen, then open BullPen from your Home Screen."
 }

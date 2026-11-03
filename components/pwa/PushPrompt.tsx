@@ -121,7 +121,6 @@ export function PushPrompt({ context }: { context: Context }) {
           <p className="text-xs leading-snug text-muted-foreground">
             {install ? t('pushPromptInstallSteps') : t('pushPromptBody')}
           </p>
-          {install && <p className="text-xs leading-snug text-muted-foreground">{t('pushPromptSignInAgain')}</p>}
         </div>
       </div>
       <div className="mt-3 flex flex-wrap justify-end gap-2">
