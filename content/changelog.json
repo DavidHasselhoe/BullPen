@@ -1,5 +1,32 @@
 [
   {
+    "date": "2026-11-03",
+    "entries": [
+      {
+        "type": "fixed",
+        "text": "The Daily Brief scrolls smoothly again, and its section menu highlights every section as you read, including Watch Today",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Ask Bull now has a daily limit on every plan: 5 questions a day on Free and 150 on Pro. When you reach it, Bull tells you when it resets"
+      },
+      {
+        "type": "fixed",
+        "text": "Holdings bought on a foreign exchange keep their real trading currency instead of being treated as US dollars",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Financial statements for companies that report in euros and other currencies are converted correctly"
+      },
+      {
+        "type": "fixed",
+        "text": "A few stock pages no longer show another company's numbers under the same ticker"
+      }
+    ]
+  },
+  {
     "date": "2026-11-02",
     "entries": [
       {
