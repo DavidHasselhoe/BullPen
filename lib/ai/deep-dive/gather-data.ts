@@ -158,7 +158,7 @@ export function formatDataBlock(d: DeepDiveData): string {
 
   lines.push(`COMPANY: ${p?.name ?? d.symbol} (${d.symbol})`);
   if (p) {
-    lines.push(`Sector: ${p.sector ?? '—'} / ${p.industry ?? '—'} · Exchange: ${p.exchange ?? '—'} · Currency: ${p.currency ?? 'USD'}`);
+    lines.push(`Sector: ${p.sector ?? '—'} / ${p.industry ?? '—'} · Exchange: ${p.exchange ?? '—'}`);
     if (p.employees) lines.push(`Employees: ${p.employees.toLocaleString()}`);
     if (p.description) lines.push(`Profile: ${p.description.slice(0, 480)}`);
   }

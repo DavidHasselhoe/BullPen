@@ -19,6 +19,10 @@
  *    country/exchange/mic_code filter tried all come back empty or 404.
  *  - K (Kellanova, NYSE, spun off from Kellogg in 2023) collides with
  *    Kinross Gold Corporation (TSX, Canada). Same — no US listing under "K".
+ *  - X (United States Steel, NYSE, delisted 2025 after the Nippon Steel
+ *    acquisition) now resolves to TMX Group (TSX, Canada): profile, statistics,
+ *    statements and earnings were all TMX's. /stocks has no US listing for X,
+ *    which is why the screener universe already drops it.
  *
  * If a future check finds TwelveData *does* have the correct listing behind
  * a country/exchange/mic_code filter, replace `unavailable` with a
@@ -34,8 +38,19 @@ export interface TickerOverride {
 export const TICKER_OVERRIDES: Record<string, TickerOverride> = {
   CTRA: { collidesWith: 'Ciputra Development Tbk PT (IDX, Indonesia)', unavailable: true },
   K: { collidesWith: 'Kinross Gold Corporation (TSX, Canada)', unavailable: true },
+  X: { collidesWith: 'TMX Group Limited (TSX, Canada)', unavailable: true },
 };
 
 export function getTickerOverride(symbol: string): TickerOverride | undefined {
   return TICKER_OVERRIDES[symbol.toUpperCase()];
+}
+
+/** Throws before a fetch that would return the colliding company's data (and spend credits on it). */
+export function assertNoTickerCollision(symbol: string): void {
+  const override = getTickerOverride(symbol);
+  if (override?.unavailable) {
+    throw new Error(
+      `No reliable data for ${symbol} — Twelve Data resolves this symbol to ${override.collidesWith}, not the intended company`
+    );
+  }
 }

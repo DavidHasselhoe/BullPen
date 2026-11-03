@@ -4,20 +4,27 @@
 import { createServerClient } from '@/lib/supabase/client';
 import type { UserHolding, InsertUserHolding, UpdateUserHolding, HoldingSale, InsertHoldingSale, HoldingPurchase, InsertHoldingPurchase } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
-import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
+import { getQuoteMeta } from '@/lib/import/quote-verify';
+import { listingMic } from '@/lib/assets/asset-type';
 import { recordPortfolioActivity } from '@/lib/holdings/portfolio-activity';
 import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 
-/** Cap how many profiles we resolve per fetch so a fresh portfolio doesn't burst the API. */
+/** Cap how many listing quotes we resolve per fetch so a fresh portfolio doesn't burst the API. */
 const MAX_CURRENCY_BACKFILL = 25;
 
 /**
  * Fills in `trading_currency` for holdings that don't have it yet (legacy rows,
- * brokerage-synced positions, or any add path that didn't capture it). Resolves
- * the asset's listing currency from the TwelveData profile, persists it so this
- * only runs once per holding, and returns the holdings enriched for immediate display.
+ * brokerage-synced positions, or any add path that didn't capture it), persists
+ * it so this only runs once per holding, and returns the holdings enriched for
+ * immediate display.
+ *
+ * A holding pinned to a foreign listing (mic_code) asks that listing's /quote,
+ * which carries the currency (1 credit). Everything else is quoted as a US
+ * listing, where a non-USD quote is rejected as a symbol collision, so it
+ * trades in USD. /profile has no currency field: it always came back as our
+ * USD default, which is why it must not be used here.
  *
  * Never throws — on any failure the holding keeps a null currency (UI falls back to
  * USD) and we retry on a later fetch.
@@ -28,16 +35,22 @@ async function backfillTradingCurrencies(
   userId: string,
   holdings: UserHolding[]
 ): Promise<UserHolding[]> {
-  const missing = [
-    ...new Set(holdings.filter((h) => !h.trading_currency).map((h) => h.symbol.toUpperCase())),
-  ].slice(0, MAX_CURRENCY_BACKFILL);
-  if (missing.length === 0) return holdings;
+  const missing = new Map<string, string | null>();
+  for (const h of holdings) {
+    if (!h.trading_currency) missing.set(h.symbol.toUpperCase(), listingMic(h.mic_code));
+  }
+  if (missing.size === 0) return holdings;
 
   const resolved = new Map<string, string>();
+  const foreign: [string, string][] = [];
+  for (const [sym, mic] of missing) {
+    if (mic) foreign.push([sym, mic]);
+    else resolved.set(sym, 'USD');
+  }
   await Promise.allSettled(
-    missing.map(async (sym) => {
-      const profile = await getCompanyProfile(sym);
-      if (profile?.currency) resolved.set(sym, profile.currency);
+    foreign.slice(0, MAX_CURRENCY_BACKFILL).map(async ([sym, mic]) => {
+      const quote = await getQuoteMeta(sym, mic);
+      if (quote?.currency) resolved.set(sym, quote.currency);
     })
   );
   if (resolved.size === 0) return holdings;
@@ -50,6 +63,7 @@ async function backfillTradingCurrencies(
         .update({ trading_currency: cur })
         .eq('user_id', userId)
         .eq('symbol', sym)
+        .is('trading_currency', null)
     )
   );
 

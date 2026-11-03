@@ -7,6 +7,7 @@ import { addDays, todayET } from '@/lib/dates/calendar-format';
 import type { EarningsCalendar } from '@/lib/finnhub/finnhub-client';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 import { logger } from '@/lib/utils/logger';
+import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 import { getFiscalCalendar, labelEarnings } from '@/lib/finance/fiscal-calendar';
 
 const HISTORY_TTL_SECONDS = 12 * 60 * 60;
@@ -21,6 +22,8 @@ const CALENDAR_DAYS_AHEAD = 45;
  * latest 8 rows), so one entry per ticker serves every caller.
  */
 async function getHistory(ticker: string): Promise<EarningsCalendar[]> {
+  // TwelveData's history for this symbol is another company's (ticker-overrides.ts).
+  if (getTickerOverride(ticker)?.unavailable) return [];
   const cacheKey = `earnings-calendar:${ticker}`;
   const cached = await getCached<EarningsCalendar[]>(cacheKey);
   if (cached) return cached;

@@ -5,7 +5,7 @@
  */
 
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
-import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
+import { assertNoTickerCollision } from '@/lib/market-data/ticker-overrides';
 import { fetchNasdaqEarningsDay } from '@/lib/market-data/nasdaq-earnings-calendar';
 import { sessionDateET } from '@/lib/market-data/trading-day';
 import { classifyTradingSession, strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
@@ -980,6 +980,7 @@ export async function getCompanyEarnings(
   symbol: string,
   limit: number = 4
 ): Promise<CompanyEarnings[]> {
+  assertNoTickerCollision(symbol);
   const url = buildUrl('/earnings', { symbol: symbol.toUpperCase() });
   const response = await tdFetch(url);
   logCreditHeaders(response, 'earnings');
@@ -1130,12 +1131,7 @@ export function sanitizeDividendYield(d: {
 }
 
 export async function getStatistics(symbol: string): Promise<CompanyStatistics> {
-  const override = getTickerOverride(symbol);
-  if (override?.unavailable) {
-    throw new Error(
-      `No reliable data for ${symbol} — Twelve Data resolves this symbol to ${override.collidesWith}, not the intended company`
-    );
-  }
+  assertNoTickerCollision(symbol);
   logUsage('statistics', symbol);
   const url = buildUrl('/statistics', { symbol: symbol.toUpperCase() });
   const response = await tdFetch(url);
@@ -1247,6 +1243,7 @@ export async function getIncomeStatement(
   period: 'quarterly' | 'annual' = 'quarterly',
   outputsize = 4
 ): Promise<IncomeStatementPeriod[]> {
+  assertNoTickerCollision(symbol);
   logUsage('income_statement', symbol);
   const url = buildUrl('/income_statement', {
     symbol: symbol.toUpperCase(),
@@ -1343,6 +1340,7 @@ export async function getBalanceSheet(
   period: 'quarterly' | 'annual' = 'quarterly',
   outputsize = 4
 ): Promise<BalanceSheetPeriod[]> {
+  assertNoTickerCollision(symbol);
   logUsage('balance_sheet', symbol);
   const url = buildUrl('/balance_sheet', {
     symbol: symbol.toUpperCase(),
@@ -1426,6 +1424,7 @@ export async function getCashFlow(
   period: 'quarterly' | 'annual' = 'quarterly',
   outputsize = 4
 ): Promise<CashFlowPeriod[]> {
+  assertNoTickerCollision(symbol);
   logUsage('cash_flow', symbol);
   const url = buildUrl('/cash_flow', {
     symbol: symbol.toUpperCase(),
@@ -1531,11 +1530,11 @@ export async function getDividends(symbol: string): Promise<DividendItem[]> {
 
 // -------- Company Profile --------
 
+/** No `currency`: /profile has none. A listing's currency comes from its /quote. */
 export interface CompanyProfile {
   symbol: string;
   name: string;
   exchange: string;
-  currency: string;
   sector: string | null;
   industry: string | null;
   description: string | null;
@@ -1556,7 +1555,6 @@ interface TwelveDataProfileResponse {
   symbol?: string;
   name?: string;
   exchange?: string;
-  currency?: string;
   sector?: string;
   industry?: string;
   description?: string;
@@ -1577,12 +1575,7 @@ interface TwelveDataProfileResponse {
 }
 
 export async function getCompanyProfile(symbol: string): Promise<CompanyProfile> {
-  const override = getTickerOverride(symbol);
-  if (override?.unavailable) {
-    throw new Error(
-      `No reliable data for ${symbol} — Twelve Data resolves this symbol to ${override.collidesWith}, not the intended company`
-    );
-  }
+  assertNoTickerCollision(symbol);
   logUsage('profile', symbol);
   const url = buildUrl('/profile', { symbol: symbol.toUpperCase() });
   const response = await tdFetch(url);
@@ -1599,7 +1592,6 @@ export async function getCompanyProfile(symbol: string): Promise<CompanyProfile>
     symbol: data.symbol ?? symbol,
     name: data.name ?? symbol,
     exchange: data.exchange ?? '',
-    currency: data.currency ?? 'USD',
     sector: data.sector ?? null,
     industry: data.industry ?? null,
     description: data.description ?? null,

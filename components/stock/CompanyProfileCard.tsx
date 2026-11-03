@@ -130,7 +130,7 @@ export function CompanyProfileCard({ ticker }: { ticker: string }) {
             <InfoRow icon={Calendar} label={t('ipoDateLabel')} value={fmtDate(profile.ipo_date)} />
           )}
           {profile.exchange && (
-            <InfoRow icon={Building2} label={t('exchangeLabel')} value={`${profile.exchange} · ${profile.currency}`} />
+            <InfoRow icon={Building2} label={t('exchangeLabel')} value={profile.exchange} />
           )}
           {profile.website && (
             <InfoRow

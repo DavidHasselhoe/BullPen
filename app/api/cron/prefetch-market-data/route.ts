@@ -60,6 +60,7 @@ import {
   sanitizeDividendYield,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached, COMPANY_PROFILE_TTL_SECONDS } from '@/lib/cache/market-data-cache';
+import { rget, rset } from '@/lib/cache/redis-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { getActiveUniverse } from '@/lib/market-data/screener-universe';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
@@ -87,6 +88,13 @@ const FINANCIALS_BATCH_SIZE = 1;          // symbols per call — see phase=fina
  *  live (see phase=financials doc above) — reserved worst-case per symbol
  *  before firing, against the same shared budget as the stats phase. */
 const CREDITS_PER_FINANCIALS_SYMBOL = 303;
+/** Symbols whose statements fetch just failed, skipped for a day. Each call
+ *  takes the head of the queue and a failure caches nothing, so one symbol that
+ *  always fails was retried by every call of the run: 236 of 300 calls on
+ *  2026-11-02 refreshed nothing, and statements cached before 2026-09 never
+ *  came back round to be refetched. */
+const FINANCIALS_FAILED_KEY = 'prefetch:financials:failed';
+const FINANCIALS_FAILED_SKIP_SECONDS = 24 * 60 * 60;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -438,7 +446,10 @@ async function handleFinancials(
     if (!page || page.length < PAGE) break;
   }
 
-  const needsFinancials = allSymbols.filter(sym => !cachedFinSymbols.has(sym));
+  const failedAt = (await rget<Record<string, number>>(FINANCIALS_FAILED_KEY)) ?? {};
+  const skipBefore = Date.now() - FINANCIALS_FAILED_SKIP_SECONDS * 1000;
+  for (const [sym, at] of Object.entries(failedAt)) if (at < skipBefore) delete failedAt[sym];
+  const needsFinancials = allSymbols.filter(sym => !cachedFinSymbols.has(sym) && !(sym in failedAt));
   const remaining = needsFinancials.length;
 
   if (remaining === 0) {
@@ -492,7 +503,12 @@ async function handleFinancials(
         if (!/enterprise plan|higher plan|not available/i.test(msg)) {
           errors.push(`financials:${syms[i]}: ${msg}`);
         }
+        // A rate limit says nothing about the symbol: leave it at the head.
+        if (!(r.reason instanceof TwelveDataRateLimitError)) failedAt[syms[i]] = Date.now();
       }
+    }
+    if (results.some((r) => r.status === 'rejected')) {
+      await rset(FINANCIALS_FAILED_KEY, failedAt, FINANCIALS_FAILED_SKIP_SECONDS);
     }
 
     return NextResponse.json({

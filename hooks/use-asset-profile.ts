@@ -8,7 +8,6 @@ export interface AssetProfile {
   assetType: AssetType;
   logoUrl: string | null;
   exchange: string | null;
-  currency: string | null;
   sector: string | null;
   country: string | null;
   description: string | null;

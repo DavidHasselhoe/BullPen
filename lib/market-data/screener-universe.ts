@@ -23,18 +23,30 @@ interface TickerRow { ticker: string }
  * The actively-refreshed universe (tier 1), ordered by market cap so the most
  * significant names are refreshed first if a cron run is cut short. Falls back
  * to the static S&P 500 list when the table is empty or the query fails.
+ *
+ * Paged: PostgREST returns at most 1000 rows per request. Unpaged, the
+ * 1,362-ticker universe came back as its top 1000, so the refresh cron said
+ * `done` at batch 200 every night and the smallest ~360 names went weeks
+ * without a refresh.
  */
 export async function getActiveUniverse(): Promise<string[]> {
+  const PAGE = 1000;
   try {
     const supabase = createServerClient();
-    const { data, error } = await supabase
-      .from('screener_universe')
-      .select('ticker')
-      .eq('tier', 1)
-      .order('market_cap', { ascending: false, nullsFirst: false })
-      .order('ticker', { ascending: true });
-    if (error || !data || data.length === 0) return [...SP500_TICKERS];
-    return (data as TickerRow[]).map((r) => r.ticker);
+    const tickers: string[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('screener_universe')
+        .select('ticker')
+        .eq('tier', 1)
+        .order('market_cap', { ascending: false, nullsFirst: false })
+        .order('ticker', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error || !data) return [...SP500_TICKERS];
+      tickers.push(...(data as TickerRow[]).map((r) => r.ticker));
+      if (data.length < PAGE) break;
+    }
+    return tickers.length > 0 ? tickers : [...SP500_TICKERS];
   } catch {
     return [...SP500_TICKERS];
   }

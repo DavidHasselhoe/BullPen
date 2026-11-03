@@ -15,6 +15,7 @@ import { rget, rset, candleTtlSeconds } from '@/lib/cache/redis-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { slugToSymbol, inferAssetType, hasEarnings } from '@/lib/assets/asset-type';
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
+import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 
 const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 
@@ -111,8 +112,11 @@ export async function buildSnapshot(tickerParam: string): Promise<StockSnapshot>
     // reservation means this ticker's stats/earnings fall back to the last known
     // cached value below, even past its normal TTL, rather than firing unreserved
     // and risking the account-wide 610/min cap on a burst of concurrent cold tickers.
-    const wantsStats = !cachedStats;
-    const wantsEarnings = !cachedEarnings && hasEarnings(assetType);
+    // A ticker TwelveData resolves to another company (ticker-overrides.ts) gets
+    // no stats or earnings: they would be the other company's.
+    const reliable = !getTickerOverride(sym)?.unavailable;
+    const wantsStats = reliable && !cachedStats;
+    const wantsEarnings = reliable && !cachedEarnings && hasEarnings(assetType);
     const expensiveCost = (wantsStats ? 50 : 0) + (wantsEarnings ? 20 : 0);
     const budgetOk = expensiveCost === 0 || (await tryReserveOrganicCredits(expensiveCost));
 
