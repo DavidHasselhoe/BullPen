@@ -195,7 +195,9 @@ async function main() {
       console.log('[watch-earnings] Extracted:', JSON.stringify(extracted, null, 2));
 
       console.log('[watch-earnings] Computing beat/miss and writing headline/caption...');
-      const final = await completeEarningsDeepDiveFromFiling(ticker, reportDate, extracted);
+      // SEC acceptance time (true UTC, checked against AMZN/AAPL/GOOGL), else now: when the price slide counts trades from.
+      const releasedAt = Math.floor((filing.acceptanceDateTime ? Date.parse(filing.acceptanceDateTime) : Date.now()) / 1000);
+      const final = await completeEarningsDeepDiveFromFiling(ticker, reportDate, extracted, releasedAt);
 
       console.log(`[watch-earnings] Done. Post ${postId} is now 'ready'.`);
       console.log(`  EPS: ${final.epsActual} vs ${final.epsEstimate} (${final.epsStatus})`);

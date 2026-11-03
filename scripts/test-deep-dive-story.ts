@@ -7,7 +7,9 @@
 import assert from 'node:assert/strict';
 import { quarterlySeries, growthBefore } from '../lib/edgar/revenue-history';
 import { buildStoryPoints, typicalSurprise } from '../lib/instagram/content/deep-dive-story';
-import type { EarningsDeepDiveData } from '../lib/instagram/content/schema';
+import { reactionCaptionLine } from '../lib/instagram/content/price-reaction';
+import { scoreboardRows } from '../lib/instagram/render/slides';
+import type { EarningsDeepDiveData, PriceReaction } from '../lib/instagram/content/schema';
 
 const q = (start: string, end: string, val: number, filed = '2026-01-01') => ({ start, end, val, filed });
 
@@ -73,5 +75,19 @@ assert.ok(!noNasdaq.some((p) => /usual/.test(p)), 'no Nasdaq estimate, no beat c
 // MRVL: Nasdaq's consensus (0.65) is on a different EPS basis than ours (0.93): no comparison rather than a fake +45% beat.
 const basisGap = buildStoryPoints({ ...base, capexActual: null, epsEstimate: 0.93, epsActual: 0.94, epsEstimateNasdaq: 0.65, epsSurpriseHistory: [6.9, 6.5, -3.3] } as EarningsDeepDiveData);
 assert.ok(!basisGap.some((p) => /usual/.test(p)), 'basis mismatch hides the beat comparison');
+
+// A miss on both is the news, and it leads.
+const both = buildStoryPoints({ ...base, capexActual: null, epsStatus: 'missed', revenueStatus: 'missed' } as EarningsDeepDiveData);
+assert.match(both[0], /both came in below/);
+
+// Scoreboard row 3: the segment when it has an estimate, else next quarter's outlook, never a half row.
+const row3 = (d: Partial<EarningsDeepDiveData>) => scoreboardRows({ ...base, epsActual: 1.2, epsEstimate: 1.1, ...d } as EarningsDeepDiveData)[2]?.label;
+assert.equal(row3({ segmentLabel: 'Google Cloud', segmentRevenueActual: 15e9, segmentRevenueEstimate: 14e9 }), 'Google Cloud revenue');
+assert.equal(row3({ segmentLabel: 'Automotive', segmentRevenueActual: 20e9, segmentRevenueEstimate: null }), "Next quarter's revenue outlook");
+assert.equal(row3({ guidanceConsensus: null }), undefined, 'outlook without consensus is no row');
+
+// The caption's price line says the direction in words and the ET time.
+const reaction = { baseline: 100, closeAt: 0, releasedAt: 0, asOf: Date.UTC(2026, 9, 29, 20, 8) / 1000, session: 'post', points: [], changePercent: -6.54 } as PriceReaction;
+assert.equal(reactionCaptionLine(reaction), 'Shares were down 6.5% in early after-hours trading as of 4:08 PM ET.');
 
 console.log('deep dive story: all checks passed');

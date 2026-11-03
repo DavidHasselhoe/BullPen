@@ -30,6 +30,7 @@ import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 import { fetchRevenueGrowthHistory } from '@/lib/edgar/revenue-history';
 import { fetchNasdaqEarningsDay, fetchNasdaqEpsSurprises } from '@/lib/market-data/nasdaq-earnings-calendar';
 import { buildStoryPoints, statusFor } from './deep-dive-story';
+import { readPriceReaction, reactionCaptionLine } from './price-reaction';
 
 // Lazy — see earnings-deep-dive-estimates.ts's getAnthropic() comment: a
 // module-scope client breaks when this is imported from a plain tsx script
@@ -142,6 +143,8 @@ export async function seedEarningsDeepDiveDraft(params: {
     revenueStatus: null,
     revenueYoyGrowthPercent: null,
     segmentLabel: params.segmentLabel ?? null,
+    // Searched for whenever --segment is given; was dropped here until the scoreboard needed it.
+    segmentRevenueEstimate: estimates.segmentRevenueEstimate,
     segmentRevenueActual: null,
     segmentYoyGrowthPercent: null,
     grossMarginActualPercent: null,
@@ -256,6 +259,10 @@ export async function refreshDraftEstimates(params: {
     merged.grossMarginPriorQuarterPercent = fresh.grossMarginPriorQuarterPercent;
     filled.push('grossMarginPriorQuarterPercent');
   }
+  if (merged.segmentLabel && merged.segmentRevenueEstimate == null && fresh.segmentRevenueEstimate != null) {
+    merged.segmentRevenueEstimate = fresh.segmentRevenueEstimate;
+    filled.push('segmentRevenueEstimate');
+  }
   // The seed falls back to the bare ticker when the name search came up empty.
   if (merged.companyName === ticker && fresh.companyName) merged.companyName = fresh.companyName;
 
@@ -352,7 +359,9 @@ Output ONLY a JSON object with exactly two fields, nothing else, no markdown fen
 export async function completeEarningsDeepDiveFromFiling(
   ticker: string,
   reportDate: string,
-  extracted: ExtractedEarnings
+  extracted: ExtractedEarnings,
+  /** Unix seconds the SEC accepted the 8-K; with it the post carries the first price reaction. */
+  releasedAt?: number
 ): Promise<EarningsDeepDiveData> {
   const periodKey = periodKeyFor(ticker, reportDate);
   const supabase = createServerClient();
@@ -429,7 +438,14 @@ export async function completeEarningsDeepDiveFromFiling(
   merged.storyPoints = buildStoryPoints(merged);
   merged.whyThisMatters = merged.storyPoints.length > 0 ? merged.storyPoints.slice(0, 2).join(' ') : null;
 
-  const { headline, caption } = await writeHeadlineAndCaption(merged);
+  const { headline, caption: written } = await writeHeadlineAndCaption(merged);
+  // Read after the caption on purpose: the model call is time for more trades to print.
+  const reaction = releasedAt != null ? await readPriceReaction(ticker, releasedAt) : null;
+  merged.priceReaction = reaction;
+  merged.afterHoursChangePercent = reaction?.changePercent ?? null;
+  const caption = reaction
+    ? written.replace(`\n\n${DEEP_DIVE_DISCLAIMER}`, `\n\n${reactionCaptionLine(reaction)}\n\n${DEEP_DIVE_DISCLAIMER}`)
+    : written;
   merged.headline = headline;
   merged.caption = caption;
 
@@ -459,13 +475,13 @@ export async function completeEarningsDeepDiveFromFiling(
     // several images into one Discord post), not just a text link list.
     const summaryEmbed = {
       title: `${merged.ticker} earnings deep-dive ready for review`,
-      description: `EPS ${merged.epsStatus ?? 'N/A'} · Revenue ${merged.revenueStatus ?? 'N/A'}\n\n**Caption:**\n${caption}`,
+      description: `EPS ${merged.epsStatus ?? 'N/A'} · Revenue ${merged.revenueStatus ?? 'N/A'} · ${reaction ? `First reaction ${reaction.changePercent.toFixed(1)}%` : 'No price slide (too few trades yet)'}\n\n**Caption:**\n${caption}`,
       color: merged.epsStatus === 'missed' ? 0xf87171 : 0x34d399,
       fields: [{ name: 'Publish', value: `\`npm run instagram-publish -- --id=${row.id}\`` }],
       timestamp: new Date().toISOString(),
     };
-    // Summary card, the story slide when there's enough for one, then the
-    // shared CTA slide (lib/instagram/render/slides.tsx) — 2 or 3, so loop.
+    // Scoreboard, story, the price reaction when there were enough trades,
+    // then the shared CTA slide (lib/instagram/render/slides.tsx): 3 or 4, so loop.
     const slideEmbeds = Array.from({ length: slideCount }, (_, i) => ({
       image: { url: `${appUrl}/api/instagram/render/${row.id}/${i}` },
     }));

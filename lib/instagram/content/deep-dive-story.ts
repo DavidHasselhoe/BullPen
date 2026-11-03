@@ -71,7 +71,7 @@ export function epsSurpriseVsHistoryBasis(d: EarningsDeepDiveData): number | nul
 }
 
 export type StoryKind =
-  | 'outlook' | 'capex' | 'growth' | 'margin' | 'guidance' | 'beat' | 'split';
+  | 'outlook' | 'capex' | 'growth' | 'margin' | 'guidance' | 'beat' | 'split' | 'miss';
 
 export interface StoryPoint {
   kind: StoryKind;
@@ -130,6 +130,11 @@ export function buildStory(d: EarningsDeepDiveData): StoryPoint[] {
     if (usual > 0 && surprise >= usual * 1.5 && surprise - usual >= 3) {
       good.push({ kind: 'beat', bad: false, title: 'A bigger beat than usual', text: `Profit per share beat the analyst consensus by ${pct(surprise)}, bigger than its usual ${pct(usual)} beat.` });
     }
+  }
+
+  // A miss on both is rare enough to be the news by itself.
+  if (d.epsStatus === 'missed' && d.revenueStatus === 'missed') {
+    bad.push({ kind: 'miss', bad: true, title: 'Missed on both', text: 'Profit per share and revenue both came in below what analysts expected.' });
   }
 
   if (d.epsStatus && d.revenueStatus && d.epsStatus !== d.revenueStatus) {

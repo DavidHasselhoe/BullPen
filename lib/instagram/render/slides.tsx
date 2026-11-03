@@ -53,11 +53,13 @@ import type {
   InstagramPostSlides,
   EarningsDeepDiveData,
   PicksScoreboardSlides,
+  PriceReaction,
   ScoreboardCallout,
 } from '@/lib/instagram/content/schema';
 
 import { SITE_HOST } from '@/lib/site';
-import { buildStory, capexShareOfRevenue, epsSurpriseVsHistoryBasis, guidanceVsConsensus, type StoryPoint } from '@/lib/instagram/content/deep-dive-story';
+import { buildStory, epsSurpriseVsHistoryBasis, guidanceVsConsensus, statusFor, type StoryPoint } from '@/lib/instagram/content/deep-dive-story';
+import { reactionCaptionLine, reactionTimeLabel } from '@/lib/instagram/content/price-reaction';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 export const SLIDE_WIDTH = 1080;
 export const SLIDE_HEIGHT = 1350;
@@ -83,7 +85,6 @@ const AMC_TEXT = '#b45309'; // amber-700
 // doesn't dissolve into Instagram's own white UI. Data slides stay white:
 // that is where the logos need it (see the header comment).
 const INK = '#0c100e'; // DESIGN.md bg-dark, oklch(0.145 0.008 162)
-const INK_SURFACE = '#181d1b'; // surface-dark
 const INK_BORDER = 'rgba(255,255,255,0.10)';
 const ON_INK = '#fafafa';
 const ON_INK_MUTED = '#a3a8a6';
@@ -107,7 +108,7 @@ export function companiesPerListSlide(companyCount: number): number {
 
 export type SlideKind =
   | 'hook' | 'list' | 'cta' | 'movers_cover' | 'winners' | 'losers'
-  | 'deepdive_summary' | 'deepdive_story'
+  | 'deepdive_scoreboard' | 'deepdive_story' | 'deepdive_reaction'
   | 'scoreboard_cover' | 'scoreboard_list' | 'scoreboard_callouts';
 
 /** Picks per scoreboard list page. Every pick is shown; past this the list paginates. */
@@ -123,13 +124,13 @@ function listSlideCount(companyCount: number): number {
 
 /** Total slide count for a given post. market_movers is always a fixed 4
  *  slides (ink cover, winners, losers, cta); earnings_deep_dive is the
- *  info-dense summary card, then the story slide when there is enough for one
- *  (see storyRows), then the shared conversion CTA slide every other content
- *  type ends on; earnings_calendar/earnings_results paginate their company
+ *  scoreboard, the lead story, the price reaction when there is one, then the
+ *  shared conversion CTA slide every other content type ends on (see
+ *  deepDiveKinds); earnings_calendar/earnings_results paginate their company
  *  list across a hook, 1+ list slides, and a CTA. */
 export function totalSlideCount(slides: InstagramPostSlides): number {
   if (slides.contentType === 'market_movers') return 4;
-  if (slides.contentType === 'earnings_deep_dive') return hasStorySlide(slides.data) ? 3 : 2;
+  if (slides.contentType === 'earnings_deep_dive') return deepDiveKinds(slides.data).length;
   if (slides.contentType === 'picks_scoreboard') return 1 + scoreboardPageCount(slides.picks.length) + 2;
   return 1 + listSlideCount(slides.companies.length) + 1;
 }
@@ -142,10 +143,7 @@ export function slideKindAt(index: number, slides: InstagramPostSlides): SlideKi
     if (index === 2) return 'losers';
     return 'cta';
   }
-  if (slides.contentType === 'earnings_deep_dive') {
-    if (index === 0) return 'deepdive_summary';
-    return index === 1 && hasStorySlide(slides.data) ? 'deepdive_story' : 'cta';
-  }
+  if (slides.contentType === 'earnings_deep_dive') return deepDiveKinds(slides.data)[index] ?? 'cta';
   if (slides.contentType === 'picks_scoreboard') {
     const pages = scoreboardPageCount(slides.picks.length);
     if (index === 0) return 'scoreboard_cover';
@@ -195,10 +193,12 @@ export function altTextForSlide(
   if (content.contentType === 'earnings_deep_dive') {
     const kind = slideKindAt(slideIndex, content);
     const d = content.data;
-    if (kind === 'deepdive_summary') {
-      return `${d.ticker} (${d.companyName}) earnings: EPS ${d.epsActual != null ? d.epsActual : 'pending'} vs estimate ${d.epsEstimate ?? 'N/A'}, revenue ${d.revenueActual != null ? d.revenueActual : 'pending'} vs estimate ${d.revenueEstimate ?? 'N/A'}. Track ${d.ticker} free on BullPen.`;
+    if (kind === 'deepdive_scoreboard') {
+      const rows = scoreboardRows(d).map((r) => `${r.label} ${r.actual}${r.estimate ? ` vs ${r.estimate} expected` : ''}${r.status ? ` (${r.status === 'inline' ? 'in line' : r.status})` : ''}`);
+      return `${d.companyName} (${d.ticker}) earnings: ${rows.join(', ')}. Track ${d.ticker} free on BullPen.`;
     }
     if (kind === 'deepdive_story') return storyAltText(d);
+    if (kind === 'deepdive_reaction' && d.priceReaction) return `${d.companyName} (${d.ticker}): ${reactionCaptionLine(d.priceReaction)} Chart of the share price around the results.`;
     return 'Open the BullPen app to track earnings, prices, and your whole portfolio in one place.';
   }
   const kind = slideKindAt(slideIndex, content);
@@ -1027,9 +1027,8 @@ export function MoversCoverSlide({ when, dateLabel, gainer, loser, slideIndex, t
 // Reuses this file's existing tokens/atoms (Wordmark, SlideIndicator,
 // CompanyBadge, BRAND/MISSED_COLOR, formatEps) instead of a parallel style
 // system — a one-off post still has to read as the same brand as every
-// other carousel. Fixed 2-slide shape — summary card, then the shared
-// CTASlide (see totalSlideCount/slideKindAt below) — no pagination since
-// there's only ever one company.
+// other carousel. 3 or 4 slides (see deepDiveKinds below), no pagination
+// since there's only ever one company.
 
 const INLINE_COLOR = AMC_COLOR; // amber — neutral "in line with estimates" state, no gain/loss direction to signal
 
@@ -1121,210 +1120,114 @@ function CompanyIdentity({ data, badgeSize = 72 }: { data: EarningsDeepDiveData;
 
 interface DeepDiveSlideProps {
   data: EarningsDeepDiveData;
+  slideIndex: number;
+  totalSlides: number;
 }
 
+// One idea per slide (2026-11-03, after Yahoo Finance's pacing): scoreboard,
+// the lead story, the first price reaction, CTA. The 10-29 version put about
+// a dozen figures on two slides, and a beginner scrolling past at feed size
+// read none of them. Every direction is a word (Beat, Down), never color
+// alone (DESIGN.md).
 
-/** "Maintained 75.0%" / "+0.3pp QoQ" / "-1.2pp QoQ" — gross margin has no
- *  analyst consensus worth showing, so its badge-equivalent is a sequential
- *  comparison instead (percentage POINTS, not percent, since a margin move
- *  is already a percentage — "+0.3pp" avoids the "+0.3%" ambiguity). A
- *  near-zero move reads as "Maintained X%" rather than "Flat QoQ": holding
- *  a margin steady while revenue scales is itself the beat, not a non-event
- *  worth a shrug-word. */
-function marginQoqLabel(prior: number | null, actual: number | null): string | null {
-  if (prior == null || actual == null) return null;
-  const diff = actual - prior;
-  if (Math.abs(diff) < 0.3) return `Maintained ${actual.toFixed(1)}%`;
-  return `${diff > 0 ? '+' : ''}${diff.toFixed(1)}pp QoQ`;
+function deepDiveKinds(d: EarningsDeepDiveData): SlideKind[] {
+  return ['deepdive_scoreboard', 'deepdive_story', ...(d.priceReaction ? ['deepdive_reaction' as const] : []), 'cta'];
 }
 
-/** One metric tile in the summary grid — label, an optional "vs. estimate"
- *  context line, the headline number (Signal Emerald on a beat, black
- *  otherwise — the number itself carries the result, not just its badge),
- *  and an optional status badge + footnote. No arrow glyph between estimate
- *  and actual: Satori renders "→" noticeably off the text baseline at this
- *  weight/size, which read as a misaligned bug rather than a connector, so
- *  the estimate sits as its own small line above the number instead. Same
- *  surface/border/radius language as the segment callouts the old per-topic
- *  slides used, just sized to share a 2x2 grid instead of owning a whole
- *  slide. */
-function MetricCell({
-  label, fromValue, toValue, status, footnote,
-}: {
-  label: string; fromValue: string | null; toValue: string; status?: 'beat' | 'missed' | 'inline' | null; footnote?: string | null;
-}) {
-  const toColor = status === 'beat' ? BRAND : status === 'missed' ? LOSS : ON_INK;
+function DeepDiveHeader({ ticker, slideIndex, totalSlides }: { ticker: string; slideIndex: number; totalSlides: number }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, padding: 40, borderRadius: 28, backgroundColor: INK_SURFACE, border: `1px solid ${INK_BORDER}` }}>
-      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, color: ON_INK }}>
-        {label}
-      </span>
-      {fromValue && (
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: ON_INK_MUTED }}>{fromValue}</span>
-      )}
-      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 64, letterSpacing: '-0.04em', color: toColor }}>{toValue}</span>
-      {(status || footnote) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-          {status && <DeepDiveStatusBadge status={status} size="sm" />}
-          {footnote && (
-            <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: ON_INK_MUTED }}>{footnote}</span>
-          )}
-        </div>
-      )}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Wordmark />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 22, color: FG }}>{`$${ticker}`}</span>
+        <SlideIndicator index={slideIndex} total={totalSlides} />
+      </div>
     </div>
   );
 }
 
-/**
- * Single info-dense summary card — replaces the old fixed 5-slide carousel
- * (hero/revenue/profitability/guidance/reaction). Brief: no hook, no
- * narrative pacing across slides, just every headline number in one place
- * plus a bottom CTA — "let the data speak." A 2x2 metric grid instead of one
- * number per screen means EPS, revenue, margin, and guidance are all visible
- * at once, which is also just a more useful single feed post than a 5-tap
- * carousel for a fact someone wants to check in passing.
- */
+// ── Slide 1: scoreboard ─────────────────────────────────────────────────────
+
+interface ScoreRow { label: string; actual: string; estimate: string | null; status: 'beat' | 'missed' | 'inline' | null }
+
+/** Revenue, profit per share, then the segment the market watches, or next
+ *  quarter's outlook when there's no segment estimate. A row needs its actual
+ *  and is left out without one, never shown as N/A. */
+export function scoreboardRows(d: EarningsDeepDiveData): ScoreRow[] {
+  const rows: ScoreRow[] = [];
+  if (d.revenueActual != null) {
+    rows.push({ label: 'Revenue', actual: formatUsdCompact(d.revenueActual), estimate: d.revenueEstimate != null ? formatUsdCompact(d.revenueEstimate) : null, status: d.revenueStatus });
+  }
+  if (d.epsActual != null) {
+    rows.push({ label: 'Profit per share', actual: formatEps(d.epsActual), estimate: d.epsEstimate != null ? formatEps(d.epsEstimate) : null, status: d.epsStatus });
+  }
+  if (d.segmentLabel && d.segmentRevenueActual != null && d.segmentRevenueEstimate != null) {
+    rows.push({
+      label: /revenue/i.test(d.segmentLabel) ? d.segmentLabel : `${d.segmentLabel} revenue`,
+      actual: formatUsdCompact(d.segmentRevenueActual),
+      estimate: formatUsdCompact(d.segmentRevenueEstimate),
+      status: statusFor(d.segmentRevenueEstimate, d.segmentRevenueActual),
+    });
+  } else if (d.guidanceRevenueLow != null && d.guidanceRevenueHigh != null && d.guidanceConsensus != null) {
+    rows.push({
+      label: "Next quarter's revenue outlook",
+      actual: formatUsdRange(d.guidanceRevenueLow, d.guidanceRevenueHigh),
+      estimate: formatUsdCompact(d.guidanceConsensus),
+      // Same band as the caption's story points (deep-dive-story.ts); a second copy here is how AVGO's slide and caption disagreed.
+      status: guidanceVsConsensus(d),
+    });
+  }
+  return rows;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function DeepDiveSummarySlide({ data }: DeepDiveSlideProps): any {
-  const marginFootnote = marginQoqLabel(data.grossMarginPriorQuarterPercent, data.grossMarginActualPercent);
-  const hasGuidanceRange = data.guidanceRevenueLow != null && data.guidanceRevenueHigh != null;
-
-  /**
-   * The second row is built from whatever we actually have, rather than being
-   * two fixed cards that fall back to "N/A".
-   *
-   * A card reading GROSS MARGIN / Prior 89.2% / N/A shipped on the Adobe post:
-   * it occupies a quarter of the image to announce a number we don't know,
-   * while showing a prior-quarter figure right above the hole, which reads as
-   * a rendering fault rather than missing data. Better to drop the card and
-   * let its neighbour take the row.
-   *
-   * secondaryMetricValue (free cash flow, or operating margin) is computed in
-   * earnings-deep-dive.ts and was never rendered anywhere. It stands in when
-   * gross margin is missing, so a company that reports one but not the other
-   * still fills the row. It also takes guidance's slot when the company gives
-   * no revenue range (Tesla), so its free cash flow isn't dropped.
-   */
-  const hasMargin = data.grossMarginActualPercent != null;
-  const secondRow = [
-    hasMargin ? (
-      <MetricCell
-        key="margin"
-        label="Gross Margin"
-        fromValue={data.grossMarginPriorQuarterPercent != null ? `Prior ${data.grossMarginPriorQuarterPercent.toFixed(1)}%` : null}
-        toValue={`${(data.grossMarginActualPercent as number).toFixed(1)}%`}
-        footnote={marginFootnote}
-      />
-    ) : null,
-    (!hasMargin || !hasGuidanceRange) && data.secondaryMetricValue != null && data.secondaryMetricLabel ? (
-      <MetricCell
-        key="secondary"
-        label={data.secondaryMetricLabel}
-        fromValue={null}
-        toValue={
-          data.secondaryMetricIsCurrency
-            ? formatUsdCompact(data.secondaryMetricValue)
-            : `${data.secondaryMetricValue.toFixed(1)}%`
-        }
-      />
-    ) : null,
-    hasGuidanceRange ? (
-      <MetricCell
-        key="guidance"
-        label="Next quarter's revenue outlook"
-        fromValue={null}
-        toValue={formatUsdRange(data.guidanceRevenueLow as number, data.guidanceRevenueHigh as number)}
-        // Same band as the caption's story points (deep-dive-story.ts); a second copy here is how AVGO's slide and caption disagreed.
-        status={guidanceVsConsensus(data)}
-        footnote={data.guidanceConsensus != null ? `vs. ${formatUsdCompact(data.guidanceConsensus)} consensus` : null}
-      />
-    ) : null,
-  ].filter(Boolean);
-
+export function DeepDiveScoreboardSlide({ data, slideIndex, totalSlides }: DeepDiveSlideProps): any {
+  const rows = scoreboardRows(data);
+  const note = `Est. is what analysts expected, on average.${data.epsAdjustmentNote ? ' Profit per share leaves out one-time items.' : ''}`;
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 88, backgroundColor: INK, backgroundImage: INK_GLOW, color: ON_INK }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-        <div style={{ display: 'flex', zIndex: 1 }}>
-          <Wordmark onInk />
+    <InkCover slideIndex={slideIndex} totalSlides={totalSlides}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <CompanyIdentity data={data} badgeSize={88} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED }}>
+            {`${data.fiscalPeriodLabel ? `${data.fiscalPeriodLabel} results` : 'Results'} · ${formatDateHeader(data.reportDate)}`}
+          </span>
+          <ReportTimingBadge timing={data.reportTiming} />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <CompanyIdentity data={data} badgeSize={80} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, color: ON_INK_MUTED }}>
-              {data.fiscalPeriodLabel ? `${data.fiscalPeriodLabel} · ` : ''}{formatDateHeader(data.reportDate)}
-            </span>
-            <ReportTimingBadge timing={data.reportTiming} />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {rows.map((r) => (
+          <div key={r.label} style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 30, paddingBottom: 30, borderTop: `1px solid ${INK_BORDER}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+              <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 30, color: ON_INK_MUTED }}>{r.label}</span>
+              {r.status && <DeepDiveStatusBadge status={r.status} size="sm" />}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 28 }}>
+              <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: r.actual.length > 9 ? 76 : 104, lineHeight: 1, letterSpacing: '-0.04em', color: ON_INK }}>
+                {r.actual}
+              </span>
+              {r.estimate && (
+                <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 32, color: ON_INK_MUTED }}>{`Est. ${r.estimate}`}</span>
+              )}
+            </div>
           </div>
-        </div>
+        ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-        <div style={{ display: 'flex', gap: 20 }}>
-          <MetricCell
-            label="Profit per share (EPS)"
-            fromValue={data.epsEstimate != null ? `Est. ${formatEps(data.epsEstimate)}` : null}
-            toValue={data.epsActual != null ? formatEps(data.epsActual) : 'N/A'}
-            status={data.epsStatus}
-            footnote={data.epsSurprisePercent != null ? formatPercentSigned(data.epsSurprisePercent) : null}
-          />
-          <MetricCell
-            label="Revenue"
-            fromValue={data.revenueEstimate != null ? `Est. ${formatUsdCompact(data.revenueEstimate)}` : null}
-            toValue={data.revenueActual != null ? formatUsdCompact(data.revenueActual) : 'N/A'}
-            status={data.revenueStatus}
-            footnote={data.revenueYoyGrowthPercent != null ? `${formatPercentSigned(data.revenueYoyGrowthPercent)} YoY` : null}
-          />
-        </div>
-        {secondRow.length > 0 && (
-          <div style={{ display: 'flex', gap: 20 }}>{secondRow}</div>
-        )}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 40 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, lineHeight: 1.45, color: ON_INK_MUTED, maxWidth: 640 }}>{note}</span>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, color: ON_INK, flexShrink: 0 }}>Link in bio</span>
       </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED }}>
-          {`Track $${data.ticker} free on BullPen. Link in bio.`}
-        </span>
-        <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, fontWeight: 700, color: BRAND_INK, backgroundColor: BRAND, padding: '18px 44px', borderRadius: 999 }}>
-          {SITE_HOST}
-        </div>
-      </div>
-    </div>
+    </InkCover>
   );
 }
 
-// ── Earnings Deep Dive story slide ──────────────────────────────────────────
-// What tends to move a stock more than the beat itself: the outlook, the
-// spending, the growth trend, the beat against the company's own habit, and
-// the one operating figure the release leads with. Added after a review found
-// 9 of 14 "beat" posts fell the next day (META on capex, MRVL on its margin
-// outlook). White, like every data slide after an ink cover.
-//
-// The headline is the lead story, ranked by the same buildStory() the caption
-// writer uses, so slide and caption always open on the same fact. A fixed
-// stack of equal cards (the first version) put MRVL's green "Raised" above
-// the margin slip that was the actual news. Rows below the lead are hairline
-// separated, exist only when their figures do, and never read N/A. Every
-// direction is said in words, not by color alone (DESIGN.md).
-
-type StoryRow =
-  | { kind: 'outlook'; label: string; alt: string; word: string | null; color: string; note: string | null }
-  | { kind: 'margin'; label: string; alt: string; value: string; color: string; side: string }
-  | { kind: 'spending'; label: string; alt: string; capex: number | null; capexYoy: number | null; fcf: number | null }
-  | { kind: 'metric'; label: string; alt: string; value: string; yoy: number | null }
-  | { kind: 'growth'; label: string; alt: string; word: string; side: string; bars: Bar[] }
-  | { kind: 'beat'; label: string; alt: string; bars: Bar[] };
+// ── Slide 2: the lead story ─────────────────────────────────────────────────
+// The first item of buildStory(), the same ranking the caption writer leads
+// with, so slide and caption always open on the same fact.
 
 interface Bar { label: string; value: number; current: boolean }
-
-const SHORT_ROWS = new Set<StoryRow['kind']>(['margin', 'spending', 'metric']);
-
-const OUTLOOK_WORD: Record<string, { word: string; color: string }> = {
-  raised: { word: 'Raised', color: GAIN_TEXT },
-  lowered: { word: 'Cut', color: LOSS_TEXT },
-  maintained: { word: 'Kept', color: FG },
-  initiated: { word: 'First outlook', color: FG },
-  mixed: { word: 'Mixed', color: FG },
-};
 
 /** "Sep '25" for a quarter-end date. */
 function quarterLabel(periodEnd: string): string {
@@ -1332,147 +1235,92 @@ function quarterLabel(periodEnd: string): string {
   return `${d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })} '${String(d.getUTCFullYear()).slice(2)}`;
 }
 
-const signColorText = (v: number) => (v > 0 ? GAIN_TEXT : v < 0 ? LOSS_TEXT : FG);
-
-/** The lead story: the headline and first sentence of the slide. */
-function storyLead(d: EarningsDeepDiveData): StoryPoint | null {
-  return buildStory(d)[0] ?? null;
+interface StoryCard {
+  title: string;
+  text: string;
+  /** The release's own words, under the sentence (the outlook change). Model-written, so it wraps and is never cut. */
+  detail: string | null;
+  bars: Bar[] | null;
+  note: string;
 }
 
-export function storyRows(d: EarningsDeepDiveData): StoryRow[] {
-  const lead = storyLead(d);
-  const rows: StoryRow[] = [];
+const STORY_NOTE: Partial<Record<StoryPoint['kind'], string>> = {
+  capex: 'Capital spending is money put into buildings, chips and equipment.',
+  margin: 'Gross margin is the share of revenue left after the direct cost of what was sold.',
+  guidance: "The outlook is the revenue range the company expects for next quarter. Analysts' figure is their average forecast.",
+  outlook: 'The full-year outlook is what the company expects to earn or sell this year.',
+};
 
-  if (d.outlookNote || d.outlookDirection) {
-    const o = d.outlookDirection ? OUTLOOK_WORD[d.outlookDirection] : null;
-    rows.push({
-      kind: 'outlook', label: 'Outlook', alt: [o ? `${o.word} full-year outlook` : null, d.outlookNote].filter(Boolean).join(': '),
-      word: o?.word ?? null, color: o?.color ?? FG, note: d.outlookNote ?? null,
-    });
+/** What slide 2 says. With nothing beyond the result to report, it teaches why a beat alone is not news. */
+function storyCard(d: EarningsDeepDiveData): StoryCard {
+  const lead = buildStory(d)[0];
+  const generic = 'Estimates are the average analyst forecast before the report.';
+  if (!lead) {
+    if (d.epsStatus === 'inline' && d.revenueStatus === 'inline') {
+      return { title: 'Right on forecast', text: 'Profit per share and revenue both landed close to what analysts expected.', detail: null, bars: null, note: generic };
+    }
+    return {
+      title: 'A beat is the normal result',
+      text: 'In a typical quarter, about 4 in 5 S&P 500 companies beat the profit forecast. A beat on its own rarely moves a stock.',
+      detail: null, bars: null, note: 'What moves a stock is usually what changed: the outlook, spending, or growth.',
+    };
   }
 
-  // The lead sentence already states both margins, so a margin lead has no row of its own.
-  if (d.grossMarginGuidancePercent != null && d.grossMarginActualPercent != null && lead?.kind !== 'margin') {
-    const diff = d.grossMarginGuidancePercent - d.grossMarginActualPercent;
-    const now = `${d.grossMarginActualPercent.toFixed(1)}%`;
-    const side = diff <= -0.5 ? `next quarter, down from ${now}` : diff >= 0.5 ? `next quarter, up from ${now}` : `next quarter, about the same as ${now}`;
-    rows.push({
-      kind: 'margin', label: 'Gross margin outlook', value: `${d.grossMarginGuidancePercent.toFixed(1)}%`,
-      color: diff <= -0.5 ? LOSS_TEXT : diff >= 0.5 ? GAIN_TEXT : FG, side, alt: `${d.grossMarginGuidancePercent.toFixed(1)}% ${side}`,
-    });
-  }
-
-  // Capex is shown only where it is a real share of the business: MRVL's $127M
-  // on $2.7B of revenue tripled and meant nothing. Free cash flow shows on its own.
-  const fcf = d.secondaryMetricLabel === 'Free Cash Flow' ? d.secondaryMetricValue : null;
-  const capexShare = capexShareOfRevenue(d);
-  const capex = d.capexActual != null && capexShare != null && capexShare >= 5 ? d.capexActual : null;
-  if (capex != null || fcf != null) {
-    const capexYoy = capex != null && d.capexPriorYear != null && d.capexPriorYear > 0 ? (capex / d.capexPriorYear - 1) * 100 : null;
-    rows.push({
-      kind: 'spending', label: capex != null ? 'Capital spending' : 'Free cash flow', capex, capexYoy, fcf,
-      alt: [
-        capex != null ? `capital spending ${formatUsdCompact(capex)}${capexYoy != null ? `, ${formatPercentSigned(capexYoy, 0)} vs a year ago` : ''}` : null,
-        fcf != null ? `free cash flow ${formatUsdCompact(fcf)}` : null,
-      ].filter(Boolean).join(', '),
-    });
-  }
-
-  if (d.keyMetricLabel && d.keyMetricValueText) {
-    // "Azure revenue growth: 48%" is a rise, so it carries its sign like every other growth figure here.
-    const value = /growth/i.test(d.keyMetricLabel) && /^\d[\d.,]*%$/.test(d.keyMetricValueText) ? `+${d.keyMetricValueText}` : d.keyMetricValueText;
-    rows.push({
-      kind: 'metric', label: d.keyMetricLabel, value, yoy: d.keyMetricYoyPercent ?? null,
-      alt: `${value}${d.keyMetricYoyPercent != null ? `, ${formatPercentSigned(d.keyMetricYoyPercent, 0)} vs a year ago` : ''}`,
-    });
-  }
-
+  let bars: Bar[] | null = null;
+  let note = STORY_NOTE[lead.kind] ?? generic;
   const history = d.revenueGrowthHistory ?? [];
-  if (d.revenueYoyGrowthPercent != null && history.length >= 3) {
-    const last = history[history.length - 1].yoyPercent;
-    const diff = d.revenueYoyGrowthPercent - last;
-    const word = diff >= 3 ? 'Speeding up' : diff <= -3 ? 'Slowing' : 'Steady';
-    // Spelled out because "Steady" next to bars falling from +33% read as a contradiction:
-    // the word compares with last quarter only.
-    const side = `${formatPercentSigned(d.revenueYoyGrowthPercent, 0)} now, ${formatPercentSigned(last, 0)} last quarter`;
-    const bars = [
+  if (lead.kind === 'growth' && d.revenueYoyGrowthPercent != null && history.length >= 3) {
+    bars = [
       ...history.map((h) => ({ label: quarterLabel(h.periodEnd), value: h.yoyPercent, current: false })),
       { label: 'This qtr', value: d.revenueYoyGrowthPercent, current: true },
     ];
-    rows.push({ kind: 'growth', label: 'Revenue growth vs a year earlier', word, side, bars, alt: `${word.toLowerCase()}, ${side}` });
+    note = 'Each bar is revenue growth against the same quarter a year earlier.';
   }
-
   const surprises = d.epsSurpriseHistory ?? [];
   const surprise = epsSurpriseVsHistoryBasis(d); // same source as the history bars, never our own estimate
-  if (surprise != null && surprises.length >= 3) {
+  if (lead.kind === 'beat' && surprise != null && surprises.length >= 3) {
     const previous = [...surprises].reverse(); // oldest first, like the growth bars
-    const bars = [
+    bars = [
       ...previous.map((v, i) => {
         const ago = previous.length - i;
         return { label: ago === 1 ? 'Last qtr' : `${ago} qtrs ago`, value: v, current: false };
       }),
       { label: 'This qtr', value: surprise, current: true },
     ];
-    rows.push({
-      kind: 'beat', label: 'Profit per share vs analyst consensus', bars,
-      alt: bars.map((b) => `${b.label} ${formatPercentSigned(b.value)}`).join(', '),
-    });
+    note = 'Each bar is how far profit per share beat or missed the analyst consensus, from Nasdaq.';
   }
 
-  // Three short rows make two lines of the grid, and with every wide row present
-  // that overflows the canvas. The key figure goes first: it is context, not news.
-  // ponytail: fixed drop order; measure text if more row kinds arrive.
-  if (rows.filter((r) => SHORT_ROWS.has(r.kind)).length === 3) return rows.filter((r) => r.kind !== 'metric');
-  return rows;
+  return {
+    title: lead.title, text: lead.text,
+    detail: lead.kind === 'outlook' ? d.outlookNote ?? null : null,
+    bars, note,
+  };
 }
 
-/** A lead plus one row, or two rows, make a slide; less stays at summary + CTA. */
-function hasStorySlide(d: EarningsDeepDiveData): boolean {
-  return storyRows(d).length + (storyLead(d) ? 1 : 0) >= 2;
-}
-
-function storyAltText(d: EarningsDeepDiveData): string {
-  const lead = storyLead(d);
-  // Lead plus row names, no bar values: the other slides keep alt text short to stay under Meta's alt_text cap.
-  const shown = storyRows(d).map((r) => r.label.toLowerCase()).join(', ');
-  return `${lead ? `${lead.title}. ${lead.text}` : `How ${d.ticker}'s quarter compares.`}${shown ? ` Also shown: ${shown}.` : ''}`;
-}
-
-const ROW_LABEL = { display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, color: MUTED } as const;
-
-function StoryValue({ value, color = FG, side }: { value: string; color?: string; side?: string | null }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', columnGap: 16, rowGap: 4, flexWrap: 'wrap' }}>
-      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 44, lineHeight: 1.05, letterSpacing: '-0.035em', color }}>{value}</span>
-      {side && <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: MUTED }}>{side}</span>}
-    </div>
-  );
-}
-
-/** Bars share one zero line; a negative value hangs below it in loss red. */
-function StoryBars({ bars, roomy }: { bars: Bar[]; roomy?: boolean }) {
+/** Bars share one zero line; a negative value hangs below it in loss red, with its minus sign. */
+function StoryBars({ bars }: { bars: Bar[] }) {
   const maxPos = Math.max(0, ...bars.map((b) => b.value));
   const maxNeg = Math.max(0, ...bars.map((b) => -b.value));
   const span = maxPos + maxNeg || 1;
-  const area = roomy ? 76 : 52;
+  const area = 230;
   return (
-    <div style={{ display: 'flex', gap: 16 }}>
+    <div style={{ display: 'flex', width: '100%', gap: 20 }}>
       {bars.map((b) => {
-        const h = Math.max(5, Math.round((Math.abs(b.value) / span) * area));
+        const h = Math.max(6, Math.round((Math.abs(b.value) / span) * area));
         const fill = b.value < 0 ? LOSS_TEXT : b.current ? FG : BORDER_STRONG;
         return (
-          <div key={b.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 8 }}>
-            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: b.current ? 700 : 400, fontSize: 24, color: b.value < 0 ? LOSS_TEXT : FG }}>
+          <div key={b.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 12 }}>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: b.current ? 700 : 400, fontSize: 32, color: b.value < 0 ? LOSS_TEXT : FG }}>
               {formatPercentSigned(b.value, Math.abs(b.value) < 10 ? 1 : 0)}
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: area + 1 }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', height: Math.round((maxPos / span) * area) }}>
-                {b.value >= 0 && <div style={{ display: 'flex', width: '100%', height: h, backgroundColor: fill, borderRadius: 6 }} />}
+                {b.value >= 0 && <div style={{ display: 'flex', width: '100%', height: h, backgroundColor: fill, borderRadius: 8 }} />}
               </div>
               <div style={{ display: 'flex', height: 1, backgroundColor: BORDER_STRONG }} />
-              {b.value < 0 && <div style={{ display: 'flex', width: '100%', height: h, backgroundColor: fill, borderRadius: 6 }} />}
+              {b.value < 0 && <div style={{ display: 'flex', width: '100%', height: h, backgroundColor: fill, borderRadius: 8 }} />}
             </div>
-            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: b.current ? 700 : 400, fontSize: 20, color: b.current ? FG : MUTED }}>{b.label}</span>
+            <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: b.current ? 700 : 400, fontSize: 24, color: b.current ? FG : MUTED }}>{b.label}</span>
           </div>
         );
       })}
@@ -1480,111 +1328,92 @@ function StoryBars({ bars, roomy }: { bars: Bar[]; roomy?: boolean }) {
   );
 }
 
-/** Satori lays a fragment's children out as an overlapping row, so multi-part bodies get a real column. */
-function StoryStack({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>;
-}
-
-function StoryRowBody({ row, roomy }: { row: StoryRow; roomy?: boolean }) {
-  switch (row.kind) {
-    case 'outlook':
-      return (
-        <StoryStack>
-          {row.word && <StoryValue value={row.word} color={row.color} side="full-year outlook" />}
-          {/* Model-written: wraps, never cut (the extractor drops a note over 120 chars). */}
-          {row.note && <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 28, lineHeight: 1.38, color: FG }}>{row.note}</span>}
-        </StoryStack>
-      );
-    case 'margin':
-      return <StoryValue value={row.value} color={row.color} side={row.side} />;
-    case 'spending':
-      return (
-        <StoryStack>
-          {row.capex != null && <StoryValue value={formatUsdCompact(row.capex)} side={row.capexYoy != null ? `${formatPercentSigned(row.capexYoy, 0)} vs a year ago` : null} />}
-          {row.fcf != null && (row.capex != null ? (
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: FG }}>Free cash flow</span>
-              <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 28, color: signColorText(row.fcf) }}>{formatUsdCompact(row.fcf)}</span>
-            </div>
-          ) : (
-            <StoryValue value={formatUsdCompact(row.fcf)} color={signColorText(row.fcf)} />
-          ))}
-        </StoryStack>
-      );
-    case 'metric':
-      return <StoryValue value={row.value} side={row.yoy != null ? `${formatPercentSigned(row.yoy, 0)} vs a year ago` : null} />;
-    case 'growth':
-      return (
-        <StoryStack>
-          <StoryValue value={row.word} side={row.side} />
-          <StoryBars bars={row.bars} roomy={roomy} />
-        </StoryStack>
-      );
-    case 'beat':
-      return <StoryBars bars={row.bars} roomy={roomy} />;
-  }
-}
-
-function StoryRowView({ row, roomy }: { row: StoryRow; roomy?: boolean }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DeepDiveStorySlide({ data, slideIndex, totalSlides }: DeepDiveSlideProps): any {
+  const card = storyCard(data);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, minWidth: 0 }}>
-      <span style={ROW_LABEL}>{row.label}</span>
-      <StoryRowBody row={row} roomy={roomy} />
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 80, backgroundColor: BG, color: FG }}>
+      <DeepDiveHeader ticker={data.ticker} slideIndex={slideIndex} totalSlides={totalSlides} />
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, gap: 28 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 104, lineHeight: 1.0, letterSpacing: '-0.04em', color: FG }}>{card.title}</span>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 42, lineHeight: 1.3, color: FG }}>{card.text}</span>
+        {card.detail && <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 34, lineHeight: 1.35, color: MUTED }}>{card.detail}</span>}
+        {card.bars && <div style={{ display: 'flex', width: '100%', marginTop: 28 }}><StoryBars bars={card.bars} /></div>}
+      </div>
+      <SlideFooter note={card.note} />
     </div>
   );
 }
 
-/** `roomy`: three lines or fewer get more air and taller bars instead of an empty bottom third (MSFT). */
-function StoryLine({ roomy, children }: { roomy?: boolean; children: React.ReactNode }) {
-  const pad = roomy ? 30 : 18;
-  return <div style={{ display: 'flex', gap: 40, paddingTop: pad, paddingBottom: pad, borderTop: `1px solid ${BORDER}` }}>{children}</div>;
+function storyAltText(d: EarningsDeepDiveData): string {
+  const card = storyCard(d);
+  return `${card.title}. ${card.text}${card.detail ? ` ${card.detail}` : ''}`;
+}
+
+// ── Slide 3: the first price reaction ───────────────────────────────────────
+// Only on posts that had enough trades by publish time (price-reaction.ts).
+// The hour before the close takes the left half and everything since the
+// right half, so a reaction of a few minutes is not a sliver at the edge.
+
+const CHART_W = 920;
+const CHART_H = 470;
+
+const etClock = (t: number) => new Date(t * 1000).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+
+function ReactionChart({ r, color }: { r: PriceReaction; color: string }) {
+  const prices = [...r.points.map((p) => p.c), r.baseline];
+  const lo = Math.min(...prices);
+  const hi = Math.max(...prices);
+  const pad = (hi - lo) * 0.12 || hi * 0.005;
+  const y = (c: number) => ((hi + pad - c) / (hi - lo + 2 * pad)) * CHART_H;
+  const start = r.points[0].t;
+  const half = CHART_W / 2;
+  const x = (t: number) => (t <= r.closeAt
+    ? (start < r.closeAt ? ((t - start) / (r.closeAt - start)) * half : half)
+    : half + ((t - r.closeAt) / Math.max(1, r.asOf - r.closeAt)) * half);
+  const path = (ps: { t: number; c: number }[]) => ps.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)} ${y(p.c).toFixed(1)}`).join(' ');
+
+  const before = r.points.filter((p) => p.t <= r.closeAt);
+  const after = r.points.filter((p) => p.t > r.closeAt);
+  const last = r.points[r.points.length - 1];
+  const label = { display: 'flex', position: 'absolute', top: CHART_H + 20, fontFamily: 'Geist', fontSize: 24, color: MUTED } as const;
+
+  // No "results out" marker: the press release crosses the wire minutes before
+  // the 8-K we time it by (AMZN fell at 4:01, the filing came at 4:05), so a
+  // marker at the filing sat after the drop it caused.
+  return (
+    <div style={{ display: 'flex', position: 'relative', width: CHART_W, height: CHART_H + 56 }}>
+      <svg width={CHART_W} height={CHART_H} viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
+        <line x1={0} y1={y(r.baseline)} x2={CHART_W} y2={y(r.baseline)} stroke={BORDER_STRONG} strokeWidth={2} strokeDasharray="8 8" />
+        <line x1={half} y1={0} x2={half} y2={CHART_H} stroke={BORDER_STRONG} strokeWidth={2} />
+        <path d={path(before)} fill="none" stroke={MUTED} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
+        <path d={path([before[before.length - 1] ?? after[0], ...after])} fill="none" stroke={color} strokeWidth={6} strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={x(last.t)} cy={y(last.c)} r={10} fill={color} />
+      </svg>
+      <span style={{ ...label, left: 0 }}>{etClock(start)}</span>
+      {/* Bars are stamped with the minute they open, so the 3:59 bar ends at the 4:00 close. */}
+      <span style={{ ...label, left: half - 120, width: 240, justifyContent: 'center' }}>{`${etClock(r.closeAt + 60)} close`}</span>
+      <span style={{ ...label, right: 0, fontWeight: 700, color: FG }}>{etClock(r.asOf)}</span>
+    </div>
+  );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function DeepDiveStorySlide({ data, slideIndex, totalSlides }: { data: EarningsDeepDiveData; slideIndex: number; totalSlides: number }): any {
-  const lead = storyLead(data);
-  const rows = storyRows(data);
-  const wide = rows.filter((r) => !SHORT_ROWS.has(r.kind));
-  const short = rows.filter((r) => SHORT_ROWS.has(r.kind));
-  const pairs: StoryRow[][] = [];
-  for (let i = 0; i < short.length; i += 2) pairs.push(short.slice(i, i + 2));
-  const outlook = wide.find((r) => r.kind === 'outlook');
-  const roomy = wide.length + pairs.length <= 3;
-  const spending = rows.find((r) => r.kind === 'spending');
-  // The footnote defines only what the slide shows.
-  const footnote = [
-    spending?.capex != null ? 'Capital spending is money put into buildings, chips and equipment.' : null,
-    spending?.fcf != null ? (spending.capex != null ? 'Free cash flow is the cash left after it.' : 'Free cash flow is the cash a business has left after paying for its operations and investments.') : null,
-    // Says where the consensus comes from, since it can differ from the estimate on slide 1.
-    !spending && rows.some((r) => r.kind === 'beat') ? 'Analyst consensus for profit per share comes from Nasdaq.' : null,
-  ].filter(Boolean).join(' ') || 'Each growth bar compares a quarter with the same quarter a year earlier.';
-
+export function DeepDiveReactionSlide({ data, slideIndex, totalSlides }: DeepDiveSlideProps): any {
+  const r = data.priceReaction as PriceReaction;
+  const flat = Math.abs(r.changePercent) < 0.05;
+  const color = flat ? FG : r.changePercent > 0 ? GAIN_TEXT : LOSS_TEXT;
+  const word = flat ? 'About flat' : `${r.changePercent > 0 ? 'Up' : 'Down'} ${Math.abs(r.changePercent).toFixed(1)}%`;
+  const session = r.session === 'post' ? 'after-hours' : 'pre-market';
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 80, backgroundColor: BG, color: FG }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
-        <Wordmark />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 22, color: FG }}>{`$${data.ticker}`}</span>
-          <SlideIndicator index={slideIndex} total={totalSlides} />
-        </div>
+      <DeepDiveHeader ticker={data.ticker} slideIndex={slideIndex} totalSlides={totalSlides} />
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center', gap: 14 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 120, lineHeight: 1, letterSpacing: '-0.04em', color }}>{word}</span>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 36, lineHeight: 1.3, color: FG }}>{`in early ${session} trading, as of ${reactionTimeLabel(r)} ET`}</span>
+        <div style={{ display: 'flex', marginTop: 40 }}><ReactionChart r={r} color={color} /></div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 30 }}>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 64, lineHeight: 1.05, letterSpacing: '-0.035em', color: FG }}>
-          {lead ? lead.title : 'How the quarter compares'}
-        </span>
-        {lead && <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 30, lineHeight: 1.35, color: FG }}>{lead.text}</span>}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-        {outlook && <StoryLine roomy={roomy}><StoryRowView row={outlook} roomy={roomy} /></StoryLine>}
-        {pairs.map((p) => (
-          <StoryLine key={p.map((r) => r.kind).join('-')} roomy={roomy}>
-            {p.map((r) => <StoryRowView key={r.kind} row={r} roomy={roomy} />)}
-            {p.length === 1 && <div style={{ display: 'flex', flex: 1 }} />}
-          </StoryLine>
-        ))}
-        {wide.filter((r) => r.kind !== 'outlook').map((r) => <StoryLine key={r.kind} roomy={roomy}><StoryRowView row={r} roomy={roomy} /></StoryLine>)}
-      </div>
-      <SlideFooter note={footnote} />
+      <SlideFooter note={`The dashed line is the $${r.baseline.toFixed(2)} close. ${session === 'after-hours' ? 'After-hours' : 'Pre-market'} trading is thin, and the first move often changes by the next day's close.`} />
     </div>
   );
 }

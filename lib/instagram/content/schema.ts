@@ -197,6 +197,8 @@ export interface EarningsDeepDiveData {
   revenueStatus: 'beat' | 'missed' | 'inline' | null;
   revenueYoyGrowthPercent: number | null;
   segmentLabel: string | null; // e.g. "Data Center"
+  /** Consensus for segmentLabel's revenue; the scoreboard's third row needs both halves. */
+  segmentRevenueEstimate?: number | null;
   segmentRevenueActual: number | null;
   segmentYoyGrowthPercent: number | null;
 
@@ -213,8 +215,10 @@ export interface EarningsDeepDiveData {
   guidanceConsensus: number | null;
   whyThisMatters: string | null; // one-liner, Claude-written, grounded in the resolved fields
 
-  // Market reaction (optional — filled in later once after-hours data settles)
+  // Market reaction: the first minutes of trading after the release, read at
+  // publish time (price-reaction.ts). Both null when there weren't enough prints yet.
   afterHoursChangePercent: number | null;
+  priceReaction?: PriceReaction | null;
 
   // The story slide: what tends to move the stock more than the beat itself
   // (2026-10-29 review: 9 of 14 "beat" posts fell the next day, META on
@@ -242,6 +246,20 @@ export interface EarningsDeepDiveData {
 
   headline: string | null;
   caption: string | null;
+}
+
+/** 1-minute prices around an earnings release, for the deep dive's reaction slide. Times are unix seconds. */
+export interface PriceReaction {
+  /** The last regular-session close before the release, what the move is measured from. */
+  baseline: number;
+  closeAt: number;
+  /** When the 8-K was accepted by the SEC. */
+  releasedAt: number;
+  asOf: number;
+  session: 'pre' | 'post';
+  /** The last hour of the session before, then everything since the close, oldest first. */
+  points: { t: number; c: number }[];
+  changePercent: number;
 }
 
 export interface EarningsDeepDiveSlides {
