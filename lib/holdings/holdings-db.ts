@@ -21,10 +21,11 @@ const MAX_CURRENCY_BACKFILL = 25;
  * immediate display.
  *
  * A holding pinned to a foreign listing (mic_code) asks that listing's /quote,
- * which carries the currency (1 credit). Everything else is quoted as a US
- * listing, where a non-USD quote is rejected as a symbol collision, so it
- * trades in USD. /profile has no currency field: it always came back as our
- * USD default, which is why it must not be used here.
+ * which carries the currency (1 credit). Everything else is left null rather
+ * than stored as an assumed USD: the UI already reads null as USD, and a
+ * mic-less row may still be a foreign listing that a later fix can resolve.
+ * /profile has no currency field: it always came back as our USD default,
+ * which is why it must not be used here.
  *
  * Never throws — on any failure the holding keeps a null currency (UI falls back to
  * USD) and we retry on a later fetch.
@@ -35,18 +36,15 @@ async function backfillTradingCurrencies(
   userId: string,
   holdings: UserHolding[]
 ): Promise<UserHolding[]> {
-  const missing = new Map<string, string | null>();
+  const missing = new Map<string, string>();
   for (const h of holdings) {
-    if (!h.trading_currency) missing.set(h.symbol.toUpperCase(), listingMic(h.mic_code));
+    const mic = listingMic(h.mic_code);
+    if (!h.trading_currency && mic) missing.set(h.symbol.toUpperCase(), mic);
   }
   if (missing.size === 0) return holdings;
 
   const resolved = new Map<string, string>();
-  const foreign: [string, string][] = [];
-  for (const [sym, mic] of missing) {
-    if (mic) foreign.push([sym, mic]);
-    else resolved.set(sym, 'USD');
-  }
+  const foreign = [...missing];
   await Promise.allSettled(
     foreign.slice(0, MAX_CURRENCY_BACKFILL).map(async ([sym, mic]) => {
       const quote = await getQuoteMeta(sym, mic);

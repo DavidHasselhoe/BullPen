@@ -60,7 +60,7 @@ import {
   sanitizeDividendYield,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached, COMPANY_PROFILE_TTL_SECONDS } from '@/lib/cache/market-data-cache';
-import { rget, rset } from '@/lib/cache/redis-cache';
+import { rmget, rset } from '@/lib/cache/redis-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { getActiveUniverse } from '@/lib/market-data/screener-universe';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
@@ -92,8 +92,9 @@ const CREDITS_PER_FINANCIALS_SYMBOL = 303;
  *  takes the head of the queue and a failure caches nothing, so one symbol that
  *  always fails was retried by every call of the run: 236 of 300 calls on
  *  2026-11-02 refreshed nothing, and statements cached before 2026-09 never
- *  came back round to be refetched. */
-const FINANCIALS_FAILED_KEY = 'prefetch:financials:failed';
+ *  came back round to be refetched. One key per symbol, not a shared map, so
+ *  overlapping calls never write over each other's failures. */
+const financialsFailedKey = (sym: string) => `prefetch:financials:failed:${sym}`;
 const FINANCIALS_FAILED_SKIP_SECONDS = 24 * 60 * 60;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -446,10 +447,9 @@ async function handleFinancials(
     if (!page || page.length < PAGE) break;
   }
 
-  const failedAt = (await rget<Record<string, number>>(FINANCIALS_FAILED_KEY)) ?? {};
-  const skipBefore = Date.now() - FINANCIALS_FAILED_SKIP_SECONDS * 1000;
-  for (const [sym, at] of Object.entries(failedAt)) if (at < skipBefore) delete failedAt[sym];
-  const needsFinancials = allSymbols.filter(sym => !cachedFinSymbols.has(sym) && !(sym in failedAt));
+  const uncached = allSymbols.filter(sym => !cachedFinSymbols.has(sym));
+  const failed = await rmget<number>(uncached.map(financialsFailedKey));
+  const needsFinancials = uncached.filter(sym => !failed.has(financialsFailedKey(sym)));
   const remaining = needsFinancials.length;
 
   if (remaining === 0) {
@@ -504,11 +504,10 @@ async function handleFinancials(
           errors.push(`financials:${syms[i]}: ${msg}`);
         }
         // A rate limit says nothing about the symbol: leave it at the head.
-        if (!(r.reason instanceof TwelveDataRateLimitError)) failedAt[syms[i]] = Date.now();
+        if (!(r.reason instanceof TwelveDataRateLimitError)) {
+          await rset(financialsFailedKey(syms[i]), Date.now(), FINANCIALS_FAILED_SKIP_SECONDS);
+        }
       }
-    }
-    if (results.some((r) => r.status === 'rejected')) {
-      await rset(FINANCIALS_FAILED_KEY, failedAt, FINANCIALS_FAILED_SKIP_SECONDS);
     }
 
     return NextResponse.json({

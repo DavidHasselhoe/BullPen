@@ -3,9 +3,8 @@
 import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuota } from '@/hooks/use-quota';
-import { useEntitlements } from '@/hooks/use-entitlements';
 import { cn } from '@/lib/utils';
-import type { QuotaFeature } from '@/lib/billing/quotas';
+import { QUOTAS, type QuotaFeature } from '@/lib/billing/quotas';
 
 import { fmtClockTime, fmtClockDate, type Clock } from '@/lib/dates/clock';
 import { useClock } from '@/hooks/use-clock';
@@ -33,13 +32,14 @@ export function QuotaIndicator({ feature, unit, className }: Props) {
   const clock = useClock();
   const { t } = useTranslation('billing');
   const { data } = useQuota(feature);
-  const { isPro } = useEntitlements();
 
   if (!data) return null;
   // Pro/admin → unlimited; don't show the pill
   if (data.limit === 'unlimited') return null;
   // A cap far above normal use: a meter from the first message reads as rationing what they paid for.
-  if (isPro && data.used < data.limit * PRO_SHOW_FROM) return null;
+  // Pro is read from the server's own limit (its proCap), so there is no free-style flash while the user loads.
+  const isProCap = data.limit === QUOTAS[feature].proCap;
+  if (isProCap && data.used < data.limit * PRO_SHOW_FROM) return null;
 
   const { used, limit, period, resetsAt } = data;
   const remaining = Math.max(0, (limit as number) - used);
