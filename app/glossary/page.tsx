@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
 import { GLOSSARY, canonicalGlossaryTerms, glossarySlug } from '@/lib/finance/glossary';
-import { PageMascot } from '@/components/legal/PageMascot';
 import '@/components/landing/landing-styles.css';
 
 export const metadata: Metadata = {
@@ -32,7 +31,6 @@ export default function GlossaryPage() {
 
         <main className="wrap" style={{ paddingTop: 56, paddingBottom: 96 }}>
           <div className="legal-doc">
-            <PageMascot pose="search" className="mb-3" />
             <h1>Glossary</h1>
             <p>
               Plain-English explanations of the financial terms you&apos;ll see throughout BullPen.

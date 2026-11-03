@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
-import { PageMascot } from '@/components/legal/PageMascot';
 import {
   GLOSSARY,
   canonicalGlossaryTerms,
@@ -77,7 +76,6 @@ export default async function GlossaryTermPage({
 
         <main className="wrap" style={{ paddingTop: 56, paddingBottom: 96 }}>
           <div className="legal-doc">
-            <PageMascot pose="search" className="mb-3" />
             <h1>{term}</h1>
             <p style={{ color: 'var(--fg-dim)', marginTop: -8 }}>Also called: {entry.plainLabel}</p>
             <p>{entry.description}</p>

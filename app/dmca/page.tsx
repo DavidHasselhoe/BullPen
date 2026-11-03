@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Logo } from '@/components/landing/Atoms';
 import { Footer } from '@/components/landing/Footer';
-import { PageMascot } from '@/components/legal/PageMascot';
 import { DMCA_FALLBACK_CONTACT_PATH, dmcaAgent } from '@/lib/legal/dmca-agent';
 import '@/components/landing/landing-styles.css';
 
@@ -31,7 +30,6 @@ export default function DmcaPage() {
 
         <main className="wrap" style={{ paddingTop: 56, paddingBottom: 96 }}>
           <div className="legal-doc">
-            <PageMascot pose="thinking" className="mb-3" />
             <h1>Copyright and DMCA</h1>
             <p>
               BullPen respects copyright. Parts of the app hold content people write themselves, such as
