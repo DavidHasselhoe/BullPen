@@ -163,7 +163,7 @@
   "upgradeProBenefitWhy": "Why Today? explains what moved {{ticker}}, the day it moves",
   "upgradeProBenefitWhyGeneric": "Why Today? explains what moved a stock, the day it moves",
   "upgradeProBenefitBrief": "A Daily Brief every morning",
-  "upgradeProBenefitAsk": "Unlimited Ask Bull, alerts and watchlists",
+  "upgradeProBenefitAsk": "Up to {{limit}} Ask Bull questions a day, plus unlimited alerts and watchlists",
   "upgradeProBenefitDeepDive": "Deep Dive reports on any company, in plain language",
   "upgradeFreeNote": "Staying on Free? You keep research, the screener, alerts and the beginner Academy.",
   "upgradeWhatProAdds": "What Pro adds",

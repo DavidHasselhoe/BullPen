@@ -211,7 +211,7 @@ function UpgradeContent() {
   const benefits = [
     lead ? t('upgradeProBenefitWhy', { ticker: lead }) : t('upgradeProBenefitWhyGeneric'),
     t('upgradeProBenefitBrief'),
-    t('upgradeProBenefitAsk'),
+    t('upgradeProBenefitAsk', { limit: QUOTAS.chat.proCap }),
     t('upgradeProBenefitDeepDive'),
   ];
 

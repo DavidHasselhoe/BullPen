@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCompanyEarnings, TwelveDataRateLimitError } from '@/lib/market-data';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
+import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 
 // Matches every other per-symbol endpoint's cache window — earnings history
 // (last 8 quarters) doesn't change intraday. Previously this route had no
@@ -23,6 +24,12 @@ export async function GET(
         { success: false, error: 'Ticker parameter required' },
         { status: 400 }
       );
+    }
+
+    // TwelveData resolves this symbol to another company (ticker-overrides.ts):
+    // no history, and no credits spent finding that out.
+    if (getTickerOverride(ticker)?.unavailable) {
+      return NextResponse.json({ success: true, earnings: [] });
     }
 
     const cacheKey = `earnings-history:${ticker}`;
