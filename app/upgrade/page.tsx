@@ -17,6 +17,7 @@ import { useEntitlements } from '@/hooks/use-entitlements';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { FREE_ALERT_STOCKS, FREE_WATCHLISTS, PRICING, PLAN_COMPARISON, type ComparisonRow } from '@/lib/billing/entitlements';
 import { planCopyKey } from '@/lib/billing/plan-copy';
+import { QUOTAS } from '@/lib/billing/quotas';
 import { startCheckout } from '@/lib/billing/checkout';
 import { renewalTerms } from '@/lib/billing/trial-copy';
 import { trackEvent } from '@/lib/analytics/track';
@@ -375,7 +376,7 @@ function UpgradeContent() {
               <Beat time={t('upgradeBeatWhyTime')} title={t('upgradeBeatWhyTitleGeneric')} desc={t('upgradeBeatWhyDesc')}>
                 <Shot src="/screenshots/bento-why.png" darkSrc="/screenshots/bento-why-dark.png" alt={t('upgradeBeatWhyAlt')} width={568} height={316} />
               </Beat>
-              <Beat time={t('upgradeBeatAskTime')} title={t('upgradeBeatAskTitle')} desc={t('upgradeBeatAskDesc')}>
+              <Beat time={t('upgradeBeatAskTime')} title={t('upgradeBeatAskTitle')} desc={t('upgradeBeatAskDesc', { limit: QUOTAS.chat.proCap })}>
                 {/* Questions only: an invented answer would be a fake product shot. */}
                 <div className="flex items-end gap-3 rounded-xl border bg-card/50 p-4">
                   <BullAiIcon pose="wave" size={56} className="shrink-0" />

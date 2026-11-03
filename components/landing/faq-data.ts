@@ -7,7 +7,7 @@ export const FAQ_ITEMS = [
     // hand — this answer previously claimed "20 AI chat messages a month"
     // against a real limit of 15 per day.
     q: 'Is BullPen actually free?',
-    a: `Yes. The Free plan stays free forever: quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day, plus an explanation for your biggest mover each day. Pro adds the Daily Brief, "Why Today?" for any stock, unlimited AI, full fund holdings and automatic brokerage sync.`,
+    a: `Yes. The Free plan stays free forever: quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day, plus an explanation for your biggest mover each day. Pro adds the Daily Brief, "Why Today?" for any stock, up to ${QUOTAS.chat.proCap} Bull messages a day, full fund holdings and automatic brokerage sync.`,
   },
   {
     q: 'Do I have to connect a brokerage?',

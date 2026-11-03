@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Logo } from '@/components/landing/Atoms';
 import { Icon } from '@/components/landing/Icon';
 import { rememberInviteCode } from '@/lib/auth/invite-cookie';
+import { QUOTAS } from '@/lib/billing/quotas';
 import '@/components/landing/landing-styles.css';
 
 const loadAuthModal = () => import('@/components/auth/AuthModal');
@@ -118,7 +119,7 @@ export function InviteLanding({ state, code, inviterName, url }: { state: Invite
                     {(['inviteProBull', 'inviteProWhy', 'inviteProBrief'] as const).map((key) => (
                       <li key={key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 15, lineHeight: 1.45, color: 'var(--fg)' }}>
                         <Icon name="plus" size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
-                        <span>{t(`auth:${key}`)}</span>
+                        <span>{t(`auth:${key}`, { limit: QUOTAS.chat.proCap })}</span>
                       </li>
                     ))}
                   </ul>

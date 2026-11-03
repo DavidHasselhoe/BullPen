@@ -23,6 +23,7 @@ import assert from 'node:assert/strict';
 import { config } from 'dotenv';
 import { createServerClient } from '@supabase/ssr';
 import { canCreateWatchlist, MAX_FREE_WATCHLISTS } from '@/lib/watchlist/limits';
+import { quotaDecision, QUOTAS } from '@/lib/billing/quotas';
 
 config({ path: '.env.local' });
 
@@ -34,6 +35,14 @@ assert.equal(canCreateWatchlist(MAX_FREE_WATCHLISTS, 1, 'user', later), true, 'p
 assert.equal(canCreateWatchlist(MAX_FREE_WATCHLISTS - 1, 1, 'user'), true, 'Free under the cap can create');
 assert.equal(canCreateWatchlist(MAX_FREE_WATCHLISTS, 1, 'user'), false, 'Free at the cap is blocked');
 console.log('ok  watchlist gate');
+
+// The chat limit both POST /api/ai/chat (via checkQuota) and BullpenChat's pre-send check call.
+const { count: freeChat, proCap: proChat = 0 } = QUOTAS.chat;
+assert.equal(quotaDecision('chat', false, freeChat - 1).allowed, true, 'Free under the chat limit can send');
+assert.equal(quotaDecision('chat', false, freeChat).reason, 'free_quota_exceeded', 'Free at the chat limit is blocked');
+assert.equal(quotaDecision('chat', true, freeChat).allowed, true, 'Pro is not held to the free chat limit');
+assert.equal(quotaDecision('chat', true, proChat).reason, 'pro_cap_reached', 'Pro at the soft cap is blocked, with no upsell reason');
+console.log('ok  chat quota gate');
 
 const base = (process.env.SMOKE_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 

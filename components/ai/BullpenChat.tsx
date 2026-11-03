@@ -22,12 +22,15 @@ import { trackEvent } from '@/lib/analytics/track';
 import type { AuthUser } from '@/lib/auth/auth';
 import { useStickToBottom } from '@/hooks/use-stick-to-bottom';
 import { useSmoothText } from '@/hooks/use-smooth-text';
-import type { QuotaState } from '@/lib/billing/quotas';
+import { quotaDecision, type QuotaState } from '@/lib/billing/quotas';
 import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymbol } from '@/hooks/use-holdings';
 import { useAlerts } from '@/hooks/use-alerts';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
-import { useInvalidateQuota } from '@/hooks/use-quota';
+import { useInvalidateQuota, useQuota } from '@/hooks/use-quota';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { useClock } from '@/hooks/use-clock';
+import { fmtClockTime } from '@/lib/dates/clock';
 import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvider';
 import { ToolResultCard } from '@/components/ai/ToolResultCard';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
@@ -248,6 +251,21 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   const inputRef = useRef('');
   const lastSentInitialQueryRef = useRef<string | null>(null);
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+  // Stays on screen after the paywall closes, so the reason sending stopped never disappears.
+  const [limitQuota, setLimitQuota] = useState<QuotaState | null>(null);
+  const { data: chatQuota } = useQuota('chat');
+  const { isPro: userIsPro } = useEntitlements();
+  const clock = useClock();
+  const hitLimit = (q: QuotaState | null) => {
+    setPaywallQuota(q);
+    setLimitQuota(q);
+  };
+  /** Same rule the route enforces (quotaDecision); a count from before the reset no longer applies. */
+  const blockedQuota = (): QuotaState | null => {
+    if (!chatQuota || Date.now() >= Date.parse(chatQuota.resetsAt)) return null;
+    const decision = quotaDecision('chat', userIsPro, chatQuota.used);
+    return decision.allowed ? null : { ...chatQuota, ...decision };
+  };
   // Stable for the lifetime of this mount — callers that want a switchable
   // history (AISidePanel) pass conversationId explicitly and remount via `key`.
   const [ownConversationId] = useState(() => conversationId ?? crypto.randomUUID());
@@ -411,10 +429,11 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
         try {
           const match = msg.match(/\{[\s\S]*\}/);
           const parsed = match ? JSON.parse(match[0]) : null;
-          setPaywallQuota(parsed?.quota ?? null);
+          hitLimit(parsed?.quota ?? null);
         } catch {
-          setPaywallQuota(null);
+          hitLimit(null);
         }
+        invalidateQuota('chat');
       }
     },
     onFinish: async ({ message }) => {
@@ -477,12 +496,19 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     });
 
   /** Sending always brings the reader back to the conversation's end. */
-  const send = (text: string, source: 'typed' | 'suggestion' | 'followup') => {
+  const send = (text: string, source: 'typed' | 'suggestion' | 'followup'): boolean => {
+    const blocked = blockedQuota();
+    if (blocked) {
+      hitLimit(blocked);
+      return false;
+    }
+    setLimitQuota(null);
     trackAskBull(source);
     setStoppedId(null);
     sendMessage({ parts: [{ type: 'text', text }] });
     requestAnimationFrame(() => scrollToBottom('smooth'));
     refocusInput();
+    return true;
   };
 
   const copyReply = async (message: UIMessage) => {
@@ -496,6 +522,11 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
   };
 
   const regenerateReply = () => {
+    const blocked = blockedQuota();
+    if (blocked) {
+      hitLimit(blocked);
+      return;
+    }
     setStoppedId(null);
     clearError();
     void regenerate();
@@ -559,7 +590,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     const text = inputRef.current.trim();
     if (!text || isStreaming) return;
 
-    send(text, 'typed');
+    // Blocked by the limit: keep what they typed for after the reset.
+    if (!send(text, 'typed')) return;
 
     inputRef.current = '';
     setHasInput(false);
@@ -604,12 +636,12 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     // stagger) honour prefers-reduced-motion like the CSS ones already do.
     <MotionConfig reducedMotion="user">
     <div className={cn('flex flex-col h-full', compact ? '' : 'min-h-[460px]')}>
-      {/* Quota indicator (free users only — invisible for Pro) */}
+      {/* Quota indicator (free users, and Pro against its daily soft cap) */}
       <div className="shrink-0 px-4 pt-3 flex justify-center">
         <QuotaIndicator feature="chat" unit={{ singular: t('chatUnitMessage'), plural: t('chatUnitMessages') }} />
       </div>
 
-      {/* Quota wall (free user hit 15/day → upgrade prompt) */}
+      {/* Quota wall: free users get the upgrade prompt, Pro at the cap a plain notice */}
       <AiPaywallDialog
         open={paywallQuota !== null}
         onOpenChange={(o) => !o && setPaywallQuota(null)}
@@ -851,8 +883,30 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
         </AnimatePresence>
       </div>
 
-      {/* Error bar */}
-      {error && (
+      {/* Daily limit reached. Free gets the way past it; Pro already has it, so no upsell. */}
+      {limitQuota && (
+        <div role="alert" className="mx-3 mb-1 px-3 py-2 rounded-lg bg-muted text-foreground text-xs flex items-center justify-between gap-2">
+          <span>
+            {t(limitQuota.reason === 'pro_cap_reached' ? 'chatLimitReachedPro' : 'chatLimitReachedFree', {
+              limit: limitQuota.limit,
+              time: fmtClockTime(new Date(limitQuota.resetsAt), clock),
+            })}
+          </span>
+          <div className="flex items-center gap-3 shrink-0">
+            {limitQuota.reason !== 'pro_cap_reached' && (
+              <Link href="/upgrade" className="shrink-0 font-medium underline">
+                {t('chatLimitUpgrade')}
+              </Link>
+            )}
+            <button type="button" onClick={() => { setLimitQuota(null); clearError(); }} className="shrink-0 underline">
+              {t('chatDismiss')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error bar (a limit hit shows the notice above instead) */}
+      {error && !limitQuota && (
         <div role="alert" className="mx-3 mb-1 px-3 py-2 rounded-lg bg-destructive/10 text-destructive text-xs flex items-center justify-between gap-2">
           <span>{friendlyChatError(error.message, t)}</span>
           <div className="flex items-center gap-3 shrink-0">

@@ -129,6 +129,7 @@
   "toolStatus_getLiveQuote": "正在获取实时价格…",
   "toolStatus_getTechnicals": "正在读取图表…",
   "toolStatus_getEarningsData": "正在检查历史收益…",
+  "toolStatus_getUpcomingEarnings": "正在查询财报日期…",
   "toolStatus_getCompanyProfile": "正在查找公司信息…",
   "toolStatus_getLiveCompanyProfile": "正在查找公司信息…",
   "toolStatus_getCompanyMetrics": "正在提取历史指标…",
@@ -176,8 +177,6 @@
   "receiptQtySharesOf_other": "{{count}} 股 ",
   "receiptSharesCount_one": "{{count}} 股",
   "receiptSharesCount_other": "{{count}} 股",
-  "statisticsEvEbitda": "EV/EBITDA",
-  "toolStatus_getUpcomingEarnings": "正在查询财报日期…",
   "technicalsCardTitle": "技术面",
   "technicalsChartAria": "{{ticker}} 过去一年走势，含50日和200日均线及支撑位与阻力位",
   "technicalsLegend50": "50日",
@@ -187,5 +186,9 @@
   "technicalsRsi": "RSI 14",
   "technicalsFromHigh": "距52周高点",
   "technicalsShowOnChart": "在图表中查看",
-  "toolStatus_drawLevels": "正在绘制价位线…"
+  "toolStatus_drawLevels": "正在绘制价位线…",
+  "chatLimitReachedFree": "你今天的 {{limit}} 条免费 Bull 消息已经用完了。将在 {{time}} 重置。",
+  "chatLimitReachedPro": "你今天的 {{limit}} 条 Bull 消息已全部用完。将在 {{time}} 重置。",
+  "chatLimitUpgrade": "升级到 Pro",
+  "statisticsEvEbitda": "EV/EBITDA"
 }

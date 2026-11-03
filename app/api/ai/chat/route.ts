@@ -1,6 +1,6 @@
 /**
  * AI Chat API — POST handler for BullPen chatbot.
- * Auth + per-user daily quota (15/day free, unlimited Pro). Also rate-limited
+ * Auth + per-user daily quota (QUOTAS.chat: free count, Pro soft cap). Also rate-limited
  * to 20 req/min as spam protection.
  */
 
@@ -30,7 +30,7 @@ async function handler(
     return NextResponse.json({ error: 'Rate limit exceeded. Please try again in a minute.' }, { status: 429 });
   }
 
-  // Daily quota (15/day free, unlimited Pro)
+  // Daily quota, both tiers (see QUOTAS.chat)
   const quota = await checkQuota(session.userId, 'chat');
   if (!quota.allowed) {
     return NextResponse.json({ error: 'quota_exceeded', quota }, { status: 402 });
@@ -68,7 +68,7 @@ async function handler(
     // dispatched at this point) so checkQuota counts it even if the client
     // aborts before the stream finishes — the post-completion .then() below
     // never runs on abort, and quota only counts status='success' rows, so
-    // this used to be an easy way to bypass the 15/day free limit entirely.
+    // this used to be an easy way to bypass the daily limit entirely.
     const usageRowId = await logAiCallPending({ userId: session.userId, feature: 'chat', model: 'claude-sonnet-5-5' });
 
     // Backfill real token counts + cost when the stream finishes (non-blocking).

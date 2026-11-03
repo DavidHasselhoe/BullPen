@@ -69,7 +69,7 @@ const PLANS: Plan[] = [
       'Everything in Free',
       'Daily Brief: a short market read every morning',
       '“Why Today?” for any stock, any day',
-      'Unlimited Bull, portfolio plans & portfolio checkups',
+      `${QUOTAS.chat.proCap} questions to Bull a day, unlimited portfolio plans & checkups`,
       "The full thesis behind Bull's Weekly Pick",
       'Full holdings of famous funds like Berkshire',
       'Your watchlist charted against the S&P 500',

@@ -4,6 +4,7 @@ import {
   ShieldAlert, Zap, Sparkles, MessageCircle, Wand2, FileSearch, Landmark, BellRing,
 } from 'lucide-react';
 import type { PaywallBenefit } from './AiPaywallContent';
+import { QUOTAS } from '@/lib/billing/quotas';
 import { RiskAnalysisPaywallPreview } from './RiskAnalysisPaywallPreview';
 import { WhyTodayPaywallPreview } from './WhyTodayPaywallPreview';
 import { AskBullPaywallPreview } from './AskBullPaywallPreview';
@@ -75,7 +76,7 @@ export function getAiPaywallConfig(t: TFunction, context?: PaywallPreviewContext
     },
     'Ask Bull': {
       benefits: [
-        { icon: MessageCircle, text: t('paywallBenefitAskBullChat') },
+        { icon: MessageCircle, text: t('paywallBenefitAskBullChat', { limit: QUOTAS.chat.proCap }) },
         { icon: Sparkles, text: t('paywallBenefitWhyToday') },
         { icon: Zap, text: t('paywallBenefitDailyBrief') },
       ],

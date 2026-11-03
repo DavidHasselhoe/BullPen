@@ -44,7 +44,7 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previe
   const isProCap = quota?.reason === 'pro_cap_reached';
 
   const headline = headlineOverride ?? (isProCap
-    ? t('aiPaywallHeadlineCap', { featureName })
+    ? (quota?.period === 'day' ? t('aiPaywallHeadlineCapToday', { featureName }) : t('aiPaywallHeadlineCap', { featureName }))
     : isProOnly
     ? t('aiPaywallHeadlineProOnly', { featureName })
     : quota?.limit === 1
@@ -76,7 +76,9 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previe
   }
 
   let body: string;
-  if (isProCap && quota) {
+  if (isProCap && quota?.period === 'day') {
+    body = t('aiPaywallBodyCapTodayWithReset', { limit: quota.limit, featureName, reset: formatReset(quota.resetsAt, quota.period, clock) });
+  } else if (isProCap && quota) {
     body = t('aiPaywallBodyCapWithReset', { limit: quota.limit, featureName, reset: formatReset(quota.resetsAt, quota.period, clock) });
   } else if (isProCap) {
     body = t('aiPaywallBodyCapNoReset', { limit: 0, featureName });

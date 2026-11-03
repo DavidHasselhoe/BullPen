@@ -2,7 +2,7 @@
  * Per-feature quota enforcement for free-tier users.
  *
  * Quotas are checked by counting successful `ai_usage` rows in the current
- * period window. Pro/admin users always have `allowed: true` with `limit: 'unlimited'`.
+ * period window. Pro/admin users get `limit: 'unlimited'` unless the feature sets `proCap`.
  *
  * Keep this list narrow — only features with real marginal cost belong here.
  * Per-minute rate limiting is separate (lib/security/rate-limiter.ts).
@@ -28,8 +28,8 @@ export interface QuotaConfig {
  */
 export const QUOTAS = {
   portfolio_builder: { count: 3,  period: 'month' } as QuotaConfig,
-  chat:              { count: 15, period: 'day'   } as QuotaConfig,
-compare_explain:   { count: 5,  period: 'day'   } as QuotaConfig,
+  chat:              { count: 5,  period: 'day', proCap: 150 } as QuotaConfig,  // ~$0.017/message; Pro capped so one heavy user can't cost more than the plan earns
+  compare_explain:   { count: 5,  period: 'day'   } as QuotaConfig,
   risk_analysis:     { count: 1,  period: 'month' } as QuotaConfig,
   academy_explain:   { count: 30, period: 'day'   } as QuotaConfig,  // free for all; glossary cache absorbs repeats
   deep_dive:         { count: 1,  period: 'month', proCap: 25 } as QuotaConfig,  // free teaser 1/mo; Pro soft-capped to bound cost
@@ -77,7 +77,7 @@ export function currentPeriodStart(period: 'day' | 'month'): Date {
 }
 
 /**
- * Returns quota state for a feature. Pro users always get `allowed: true, limit: 'unlimited'`.
+ * Returns quota state for a feature. Pro users get `limit: 'unlimited'` unless the feature sets `proCap`.
  * Free users get the count + remaining window.
  */
 export async function checkQuota(
@@ -102,49 +102,33 @@ export async function checkQuota(
     return count ?? 0;
   };
 
-  if (isPro(tier)) {
+  const pro = isPro(tier);
+  // Unlimited Pro never needs the count, so skip the query.
+  const used = pro && config.proCap == null ? 0 : await countUsed();
+  return { ...quotaDecision(feature, pro, used), used, period: config.period, resetsAt };
+}
+
+/**
+ * The limit rule itself, with no I/O. checkQuota (server) and client gates
+ * (BullpenChat's pre-send check) both call it, so the button and the route
+ * can't disagree. `used` is the count of successful calls in the window.
+ */
+export function quotaDecision(
+  feature: QuotaFeature,
+  pro: boolean,
+  used: number
+): Pick<QuotaState, 'allowed' | 'limit' | 'reason'> {
+  const config = QUOTAS[feature];
+  if (pro) {
     // Pro is unlimited unless the feature defines a soft cap to bound cost.
-    if (config.proCap == null) {
-      return { allowed: true, used: 0, limit: 'unlimited', period: config.period, resetsAt };
-    }
-    const used = await countUsed();
-    if (used >= config.proCap) {
-      return { allowed: false, used, limit: config.proCap, period: config.period, resetsAt, reason: 'pro_cap_reached' };
-    }
-    return { allowed: true, used, limit: config.proCap, period: config.period, resetsAt };
+    if (config.proCap == null) return { allowed: true, limit: 'unlimited' };
+    return used >= config.proCap
+      ? { allowed: false, limit: config.proCap, reason: 'pro_cap_reached' }
+      : { allowed: true, limit: config.proCap };
   }
-
-  // Free users: count successful calls in the current window
-  const used = await countUsed();
-
   // Pro-only features (limit 0) bail out with a distinct reason
-  if (config.count === 0) {
-    return {
-      allowed: false,
-      used,
-      limit: 0,
-      period: config.period,
-      resetsAt,
-      reason: 'pro_only',
-    };
-  }
-
-  if (used >= config.count) {
-    return {
-      allowed: false,
-      used,
-      limit: config.count,
-      period: config.period,
-      resetsAt,
-      reason: 'free_quota_exceeded',
-    };
-  }
-
-  return {
-    allowed: true,
-    used,
-    limit: config.count,
-    period: config.period,
-    resetsAt,
-  };
+  if (config.count === 0) return { allowed: false, limit: 0, reason: 'pro_only' };
+  return used >= config.count
+    ? { allowed: false, limit: config.count, reason: 'free_quota_exceeded' }
+    : { allowed: true, limit: config.count };
 }
