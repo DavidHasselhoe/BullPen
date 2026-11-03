@@ -17,6 +17,10 @@ import type { PriceReaction } from './schema';
 
 /** Fewer trades than this since the release is too thin to draw a move from. */
 const MIN_PRINTS = 3;
+/** Trades this long before the 8-K still count: the press release crosses the
+ *  wire first. ANET (2026-11-03) jumped at 4:06 PM, its 8-K was accepted at
+ *  4:10, and counting only from 4:10 found one bar and dropped the slide. */
+const WIRE_LEAD_S = 600;
 const ATTEMPTS = 3;
 const RETRY_MS = 60_000;
 
@@ -40,7 +44,7 @@ export async function readPriceReactionAsOf(ticker: string, releasedAt: number, 
 
   const close = bars.filter((b) => b.regular && b.t < releasedAt).pop();
   if (!close) return null;
-  if (bars.filter((b) => b.t >= releasedAt).length < MIN_PRINTS) return null;
+  if (bars.filter((b) => b.t > close.t && b.t >= releasedAt - WIRE_LEAD_S).length < MIN_PRINTS) return null;
 
   // Split at the close, not the release: the press release can cross the wire
   // a few minutes before the 8-K we time it by, and its jump belongs after the line.
