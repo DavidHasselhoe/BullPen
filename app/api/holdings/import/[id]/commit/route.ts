@@ -113,11 +113,37 @@ async function handler(request: NextRequest, context: unknown, session: { userId
     // Only ever clears a MANUAL holding in a symbol this import actually
     // touches — a SnapTrade-synced position is never deleted by an import,
     // same guard plan-replay already applies to selling against one.
-    // Deleting cascades to holding_purchases (its lots) but only detaches
-    // holding_sales.original_holding_id, so past realized sales stay intact.
+    // "Rebuilt from this file alone" means the history goes too: deleting
+    // the holding cascades to holding_purchases (its lots), but
+    // holding_sales only detaches, so the old sales would sit next to the
+    // file's own sells and double the realized P/L. Sales are cleared by
+    // symbol so orphans from an earlier replace or a deleted holding go
+    // as well, and the old activity events go so the feed doesn't show
+    // the position opening twice.
     const importedSymbols = new Set([...bySecurityKey.values()].map((v) => v.symbol));
     const toReplace = [...existingHoldings.values()].filter((h) => h.source === 'manual' && importedSymbols.has(h.symbol));
     if (toReplace.length > 0) {
+      const replacedSymbols = toReplace.map((h) => h.symbol);
+      const { error: salesError } = await supabase
+        .from('holding_sales')
+        .delete()
+        .eq('user_id', session.userId)
+        .in('symbol', replacedSymbols);
+      if (salesError) {
+        return addSecurityHeaders(
+          NextResponse.json({ error: 'Failed to clear your existing sales history before replacing it.' }, { status: 500 })
+        );
+      }
+      const { error: activityError } = await supabase
+        .from('portfolio_activity')
+        .delete()
+        .eq('user_id', session.userId)
+        .in('symbol', replacedSymbols);
+      if (activityError) {
+        return addSecurityHeaders(
+          NextResponse.json({ error: 'Failed to clear your existing activity before replacing it.' }, { status: 500 })
+        );
+      }
       const { error: deleteError } = await supabase
         .from('user_holdings')
         .delete()
