@@ -285,6 +285,9 @@ export function ImportReviewClient({ importId }: { importId: string }) {
 
       queryClient.invalidateQueries({ queryKey: ['holdings'] });
       queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+      // Replace mode deletes sales and the import adds its own sells.
+      queryClient.invalidateQueries({ queryKey: ['holding-sales'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-performance'], exact: false });
       router.push('/holdings');
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : t('importReviewErrorGeneric'));

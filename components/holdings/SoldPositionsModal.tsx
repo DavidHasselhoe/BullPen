@@ -157,7 +157,7 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
           </p>
         )}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => setConfirmingRemove(false)} disabled={removeSale.isPending}>
+          <Button type="button" variant="outline" size="sm" onClick={() => { removeSale.reset(); setConfirmingRemove(false); }} disabled={removeSale.isPending}>
             {t('soldPositionsCancel')}
           </Button>
           <Button type="button" variant="destructive" size="sm" onClick={handleRemove} disabled={removeSale.isPending}>
@@ -198,7 +198,7 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setConfirmingRemove(true)}
+              onClick={() => { removeSale.reset(); setConfirmingRemove(true); }}
               title={t('soldPositionsRemoveTitle')}
               aria-label={t('soldPositionsRemoveTitle')}
             >

@@ -89,6 +89,8 @@ export function ImportUndoBanner() {
       queryClient.invalidateQueries({ queryKey: ['holdings'] });
       queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
       queryClient.invalidateQueries({ queryKey: ['recent-import'] });
+      queryClient.invalidateQueries({ queryKey: ['holding-sales'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-performance'], exact: false });
       setUndoneCount(body.revertedCount ?? 0);
     } catch {
       setError(t('importUndoFailed'));

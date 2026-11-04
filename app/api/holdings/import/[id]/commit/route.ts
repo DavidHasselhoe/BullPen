@@ -124,6 +124,20 @@ async function handler(request: NextRequest, context: unknown, session: { userId
     const toReplace = [...existingHoldings.values()].filter((h) => h.source === 'manual' && importedSymbols.has(h.symbol));
     if (toReplace.length > 0) {
       const replacedSymbols = toReplace.map((h) => h.symbol);
+      // Holdings first: if that fails nothing is lost. If a later delete
+      // fails, the leftover sales are detached and the user can remove
+      // them from History, which beats losing history for an import that
+      // never ran.
+      const { error: deleteError } = await supabase
+        .from('user_holdings')
+        .delete()
+        .eq('user_id', session.userId)
+        .in('id', toReplace.map((h) => h.id));
+      if (deleteError) {
+        return addSecurityHeaders(
+          NextResponse.json({ error: 'Failed to clear your existing holdings before replacing them.' }, { status: 500 })
+        );
+      }
       const { error: salesError } = await supabase
         .from('holding_sales')
         .delete()
@@ -142,16 +156,6 @@ async function handler(request: NextRequest, context: unknown, session: { userId
       if (activityError) {
         return addSecurityHeaders(
           NextResponse.json({ error: 'Failed to clear your existing activity before replacing it.' }, { status: 500 })
-        );
-      }
-      const { error: deleteError } = await supabase
-        .from('user_holdings')
-        .delete()
-        .eq('user_id', session.userId)
-        .in('id', toReplace.map((h) => h.id));
-      if (deleteError) {
-        return addSecurityHeaders(
-          NextResponse.json({ error: 'Failed to clear your existing holdings before replacing them.' }, { status: 500 })
         );
       }
       for (const h of toReplace) existingHoldings.delete(h.symbol);
