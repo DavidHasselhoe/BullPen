@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-11-04",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Import your trades from a PDF statement or trade confirmation, not just a CSV file. You review every transaction before it is saved",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Replacing a holding during an import now replaces its sales history too, so realized gains are no longer counted twice",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "A sale whose holding has been removed can now be removed from your sales history, and an undo that fails tells you why"
+      }
+    ]
+  },
+  {
     "date": "2026-11-03",
     "entries": [
       {
