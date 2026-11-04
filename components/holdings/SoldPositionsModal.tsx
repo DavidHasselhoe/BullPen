@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, History, Loader2, Pencil, Undo2 } from 'lucide-react';
+import { Check, History, Loader2, Pencil, Trash2, Undo2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
-import { useHoldingSales, useDeleteHoldingSale, useUpdateHoldingSale } from '@/hooks/use-holdings';
+import { useHoldingSales, useDeleteHoldingSale, useRemoveDetachedHoldingSale, useUpdateHoldingSale } from '@/hooks/use-holdings';
 import type { HoldingSale } from '@/lib/types/database';
 import { logger } from '@/lib/utils/logger';
 import { displayCompanyName } from '@/lib/market-data/company-name';
@@ -22,11 +22,17 @@ import { displayCompanyName } from '@/lib/market-data/company-name';
 function SoldPositionRow({ sale }: { sale: HoldingSale }) {
   const { t } = useTranslation('holdings');
   const [editing, setEditing] = useState(false);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [quantity, setQuantity] = useState(String(sale.quantity_sold));
   const [salePrice, setSalePrice] = useState(String(sale.sale_price));
   const [saleDate, setSaleDate] = useState(sale.sale_date.slice(0, 10));
 
   const deleteSale = useDeleteHoldingSale();
+  const removeSale = useRemoveDetachedHoldingSale();
+  // The holding this sale came from was deleted (by hand, or by a replace
+  // import), so Undo has nowhere to put the shares back. Removing the record
+  // is the only thing that can be done with it.
+  const detached = !sale.original_holding_id;
   const updateSale = useUpdateHoldingSale();
 
   const startEdit = () => {
@@ -60,6 +66,16 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
       logger.error('Error undoing sale', error);
     }
   };
+
+  const handleRemove = async () => {
+    try {
+      await removeSale.mutateAsync(sale.id);
+    } catch (error) {
+      logger.error('Error removing sale', error);
+    }
+  };
+
+  const actionError = deleteSale.error ?? removeSale.error;
 
   if (editing) {
     return (
@@ -128,34 +144,86 @@ function SoldPositionRow({ sale }: { sale: HoldingSale }) {
 
   const isPos = sale.realized_pl >= 0;
 
+  if (confirmingRemove) {
+    return (
+      <div className="space-y-3 rounded-xl border bg-card px-4 py-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">{t('soldPositionsRemoveConfirmTitle', { symbol: sale.symbol })}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('soldPositionsRemoveConfirmBody')}</p>
+        </div>
+        {removeSale.isError && (
+          <p role="alert" className="text-xs text-red-500">
+            {removeSale.error instanceof Error ? removeSale.error.message : t('soldPositionsRemoveError')}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => setConfirmingRemove(false)} disabled={removeSale.isPending}>
+            {t('soldPositionsCancel')}
+          </Button>
+          <Button type="button" variant="destructive" size="sm" onClick={handleRemove} disabled={removeSale.isPending}>
+            {removeSale.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            {t('soldPositionsRemoveConfirm')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-semibold text-foreground" title={sale.company_name ?? undefined}>
-            {displayCompanyName(sale.company_name || sale.symbol, sale.symbol)}
+    <div className="rounded-xl border bg-card px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-semibold text-foreground" title={sale.company_name ?? undefined}>
+              {displayCompanyName(sale.company_name || sale.symbol, sale.symbol)}
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">{sale.symbol}</span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {t('soldPositionsSummary', {
+              quantity: sale.quantity_sold,
+              price: sale.sale_price.toFixed(2),
+              date: new Date(sale.sale_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            })}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <span className={`text-sm font-semibold tabular-nums ${isPos ? 'text-emerald-500' : 'text-red-500'}`}>
+            {isPos ? '+' : ''}${sale.realized_pl.toFixed(2)}
           </span>
-          <span className="shrink-0 text-xs text-muted-foreground">{sale.symbol}</span>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {t('soldPositionsSummary', {
-            quantity: sale.quantity_sold,
-            price: sale.sale_price.toFixed(2),
-            date: new Date(sale.sale_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          })}
+          <Button variant="ghost" size="sm" onClick={startEdit} title={t('soldPositionsEditTitle')}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          {detached ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmingRemove(true)}
+              title={t('soldPositionsRemoveTitle')}
+              aria-label={t('soldPositionsRemoveTitle')}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleUndo}
+              disabled={deleteSale.isPending}
+              title={t('soldPositionsUndoTitle')}
+              aria-label={t('soldPositionsUndoTitle')}
+            >
+              {deleteSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+            </Button>
+          )}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <span className={`text-sm font-semibold tabular-nums ${isPos ? 'text-emerald-500' : 'text-red-500'}`}>
-          {isPos ? '+' : ''}${sale.realized_pl.toFixed(2)}
-        </span>
-        <Button variant="ghost" size="sm" onClick={startEdit} title={t('soldPositionsEditTitle')}>
-          <Pencil className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={handleUndo} disabled={deleteSale.isPending} title={t('soldPositionsUndoTitle')}>
-          {deleteSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
-        </Button>
-      </div>
+      {detached && <p className="mt-1 text-xs text-muted-foreground">{t('soldPositionsDetachedNote')}</p>}
+      {actionError && (
+        <p role="alert" className="mt-1 text-xs text-red-500">
+          {actionError instanceof Error ? actionError.message : t('soldPositionsUndoError')}
+        </p>
+      )}
     </div>
   );
 }

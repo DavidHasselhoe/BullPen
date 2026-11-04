@@ -711,7 +711,7 @@ export async function sellHolding(
       return { success: false, error: 'Selling is only available for manually-entered holdings' };
     }
     if (holding.avg_price == null) {
-      return { success: false, error: 'This holding has no average cost — edit it to add one before selling' };
+      return { success: false, error: 'This holding has no average cost. Edit it to add one before selling.' };
     }
     const currentQty = holding.quantity ?? 0;
     if (input.quantitySold > currentQty + SELL_EPSILON) {
@@ -820,7 +820,7 @@ export async function deleteHoldingSale(
       return { success: false, error: 'Sale not found or access denied' };
     }
     if (!sale.original_holding_id) {
-      return { success: false, error: 'The original holding no longer exists — re-add it before undoing this sale' };
+      return { success: false, error: DETACHED_SALE_ERROR };
     }
 
     const { data: holding, error: holdingErr } = await supabase
@@ -831,7 +831,7 @@ export async function deleteHoldingSale(
       .maybeSingle();
 
     if (holdingErr || !holding) {
-      return { success: false, error: 'The original holding no longer exists — re-add it before undoing this sale' };
+      return { success: false, error: DETACHED_SALE_ERROR };
     }
 
     const { error: updateErr } = await supabase
@@ -856,6 +856,48 @@ export async function deleteHoldingSale(
     return { success: true };
   } catch (error) {
     logger.error('Error in deleteHoldingSale:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Internal server error' };
+  }
+}
+
+const DETACHED_SALE_ERROR = "The holding this sale came from no longer exists, so its shares can't be put back. Remove it from history instead.";
+
+/**
+ * Deletes a sale record whose holding is gone (removed by hand, or cleared
+ * by a replace import before replace also cleared sales). Undo can't work
+ * for these, since there's no holding to put the shares back into, so this
+ * is the only way to get rid of one. Refuses a sale that still has its
+ * holding: dropping that record without restoring the shares would leave
+ * the holding short, and Undo already handles it correctly.
+ */
+export async function removeDetachedHoldingSale(userId: string, saleId: string): Promise<RemoveHoldingResult> {
+  try {
+    const supabase = createServerClient();
+    const { data: sale, error: lookupErr } = await supabase
+      .from('holding_sales')
+      .select('id, original_holding_id')
+      .eq('id', saleId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (lookupErr || !sale) {
+      return { success: false, error: 'Sale not found or access denied' };
+    }
+    if (sale.original_holding_id) {
+      const { data: holding } = await supabase
+        .from('user_holdings')
+        .select('id')
+        .eq('id', sale.original_holding_id)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (holding) {
+        return { success: false, error: 'This sale still belongs to a holding. Use Undo to put the shares back.' };
+      }
+    }
+    const { error: deleteErr } = await supabase.from('holding_sales').delete().eq('id', saleId).eq('user_id', userId);
+    if (deleteErr) return { success: false, error: deleteErr.message };
+    return { success: true };
+  } catch (error) {
+    logger.error('Error in removeDetachedHoldingSale:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Internal server error' };
   }
 }
@@ -904,7 +946,7 @@ export async function updateHoldingSale(
 
     if (Math.abs(qtyDelta) > SELL_EPSILON) {
       if (!sale.original_holding_id) {
-        return { success: false, error: 'The original holding no longer exists — changing the quantity sold requires re-adding the holding first' };
+        return { success: false, error: "The holding this sale came from no longer exists, so the shares sold can't be changed. You can still change the price and date." };
       }
 
       const { data: holding, error: holdingErr } = await supabase
@@ -915,7 +957,7 @@ export async function updateHoldingSale(
         .maybeSingle();
 
       if (holdingErr || !holding) {
-        return { success: false, error: 'The original holding no longer exists — changing the quantity sold requires re-adding the holding first' };
+        return { success: false, error: "The holding this sale came from no longer exists, so the shares sold can't be changed. You can still change the price and date." };
       }
 
       const newHoldingQty = (holding.quantity ?? 0) - qtyDelta;

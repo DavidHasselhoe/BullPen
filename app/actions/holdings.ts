@@ -4,7 +4,7 @@
 // Server-side mutations for user holdings with authentication
 
 import { getCurrentUserId } from '@/lib/auth/server-session';
-import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol, sellHolding, getHoldingSales, deleteHoldingSale, updateHoldingSale, getHoldingPurchases } from '@/lib/holdings/holdings-db';
+import { getHoldings, addHolding, addOrUpdateHolding, updateHolding, removeHolding, updateHoldingBySymbol, removeHoldingBySymbol, sellHolding, getHoldingSales, deleteHoldingSale, removeDetachedHoldingSale, updateHoldingSale, getHoldingPurchases } from '@/lib/holdings/holdings-db';
 import type { UserHolding, HoldingSale, HoldingPurchase } from '@/lib/types/database';
 
 export interface AddHoldingInput {
@@ -297,6 +297,16 @@ export async function deleteHoldingSaleAction(
   if (!userId) return { success: false, error: 'Authentication required' };
   if (!saleId) return { success: false, error: 'Sale ID is required' };
   return await deleteHoldingSale(userId, saleId);
+}
+
+/**
+ * Server Action: Remove a sale whose holding no longer exists from history.
+ */
+export async function removeDetachedHoldingSaleAction(saleId: string): Promise<{ success: boolean; error?: string }> {
+  const userId = await getCurrentUserId();
+  if (!userId) return { success: false, error: 'Authentication required' };
+  if (!saleId) return { success: false, error: 'Sale ID is required' };
+  return await removeDetachedHoldingSale(userId, saleId);
 }
 
 /**

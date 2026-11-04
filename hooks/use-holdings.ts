@@ -13,6 +13,7 @@ import {
   sellHoldingAction,
   getHoldingSalesAction,
   deleteHoldingSaleAction,
+  removeDetachedHoldingSaleAction,
   updateHoldingSaleAction,
   getHoldingPurchasesAction,
   type AddHoldingInput,
@@ -295,6 +296,27 @@ export function useDeleteHoldingSale() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['holdings', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['holdings-quotes'] });
+      queryClient.invalidateQueries({ queryKey: ['holding-sales', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-performance'], exact: false });
+    },
+  });
+}
+
+/**
+ * Removes a sale whose holding no longer exists. Holdings don't change, only
+ * the sales history and the performance chart that reads it.
+ */
+export function useRemoveDetachedHoldingSale() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (saleId: string): Promise<void> => {
+      if (!user?.id) throw new Error('Authentication required');
+      const result = await removeDetachedHoldingSaleAction(saleId);
+      if (!result.success) throw new Error(result.error || 'Failed to remove sale');
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['holding-sales', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['portfolio-performance'], exact: false });
     },
