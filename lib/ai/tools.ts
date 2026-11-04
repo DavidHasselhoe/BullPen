@@ -23,6 +23,7 @@ import {
   getCompanyProfile as getTwelveDataProfile,
   getInsiderTransactions,
   TwelveDataRateLimitError,
+  impliedCapex,
   type IncomeStatementPeriod,
   type BalanceSheetPeriod,
   type CashFlowPeriod,
@@ -35,6 +36,7 @@ import { statementsInUsd } from '@/lib/currency/latest-rates';
 import { coalesce } from '@/lib/cache/request-coalesce';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
+import type { CategoryScore } from '@/lib/finance/health-score';
 import { computeTechnicals, etDate } from '@/lib/finance/technicals';
 import { sma } from '@/lib/finance/indicators';
 import { getTier, isPro } from '@/lib/billing/tier';
@@ -174,7 +176,8 @@ const BALANCE_SHEET_METRICS: Record<string, (r: BalanceSheetPeriod) => number | 
 const CASH_FLOW_METRICS: Record<string, (r: CashFlowPeriod) => number | null> = {
   operating_cash_flow: (r) => r.operating_cash_flow,
   free_cash_flow: (r) => r.free_cash_flow,
-  capital_expenditures: (r) => r.capital_expenditures,
+  // Rows cached before the client derived missing capex still carry null.
+  capital_expenditures: (r) => impliedCapex(r.capital_expenditures, r.free_cash_flow, r.operating_cash_flow),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1608,7 +1611,7 @@ const getCompanyFinancials = tool({
           operatingCashFlow: money(r.operating_cash_flow),
           investingCashFlow: money(r.investing_activities_cash_flow),
           financingCashFlow: money(r.financing_activities_cash_flow),
-          capitalExpenditures: money(r.capital_expenditures),
+          capitalExpenditures: money(CASH_FLOW_METRICS.capital_expenditures(r)),
           freeCashFlow: money(r.free_cash_flow),
           dividendsPaid: money(r.dividends_paid),
         }));
@@ -1887,7 +1890,8 @@ const getHealthScore = tool({
     'Cash Flow, Growth, and Market Risk. It measures business quality and safety, not price: a healthy company ' +
     'can still be expensive. Use this whenever the user asks about a company\'s "financial health", ' +
     '"financial strength", overall quality/fundamentals, or asks for a health score/grade. ' +
-    'Works for any ticker globally. Costs ~250 API credits on a cold cache (free once cached for the day).',
+    'Works for any ticker globally. Costs ~250 API credits on a cold cache (free once cached for the day). ' +
+    'For why the score changed since an earlier quarter, use getHealthScoreHistory.',
   inputSchema: jsonSchema<{ ticker: string }>({
     type: 'object',
     properties: {
@@ -1922,6 +1926,71 @@ const getHealthScore = tool({
   },
 });
 
+const getHealthScoreHistory = tool({
+  description:
+    'BullPen Financial Health score history for one stock: one snapshot per reported quarter, oldest first, each ' +
+    'with the five pillar scores and the change from the previous quarter in total and per pillar. Use it whenever ' +
+    'the user asks why the score went up or down, what changed after a report, or how the score has trended: the ' +
+    'per-pillar `change` says which pillar moved, so never guess the cause from raw financials. Free (database ' +
+    'read, no API credits). `fiscalDate` is the quarter-end of the report the score came from; the latest snapshot ' +
+    'keeps updating until the next report. Each pillar may carry `inputs` (the figures it was scored from, ratios ' +
+    'as decimals) and `inputChanges` (before and after for each figure); snapshots from before Nov 4, 2026 have no ' +
+    'inputs, so explain a move there from what the pillar measures, checking getEarningsData or getCompanyMetrics ' +
+    'for the quarters involved. What each pillar measures: Profitability (30) a profitable year, net margin, return ' +
+    'on assets; Financial Strength (25) interest coverage, net debt over EBITDA, current ratio (banks: equity over ' +
+    'assets); Cash Flow (20) positive operating and free cash flow, cash covering earnings, free cash flow margin, ' +
+    'all over the last four quarters; Growth (15) the latest quarter\'s revenue (9 pts) and EPS (6 pts) growth ' +
+    'against the same quarter a year earlier; Market Risk (10) beta and profitable quarters. Snapshots scored by ' +
+    'an older method have comparable=false: a move across them is the method changing, not the company, so do ' +
+    'not explain it as news.',
+  inputSchema: jsonSchema<{ ticker: string }>({
+    type: 'object',
+    properties: { ticker: { type: 'string', description: 'Stock ticker symbol, e.g. GOOGL' } },
+    required: ['ticker'],
+  }),
+  execute: async ({ ticker }) => {
+    const symbol = ticker.toUpperCase();
+    const { data, error } = await createServerClient()
+      .from('health_score_history')
+      .select('fiscal_date, snapshot_date, score, grade, categories, method')
+      .eq('ticker', symbol)
+      .order('fiscal_date', { ascending: false })
+      .limit(8);
+    if (error) return { error: `Could not load health score history for ${symbol}: ${error.message}` };
+    const rows = ((data ?? []) as { fiscal_date: string; snapshot_date: string; score: number; grade: string; categories: CategoryScore[]; method: number }[]).reverse();
+    if (rows.length === 0) return { ticker: symbol, snapshots: [], note: 'No score history recorded for this stock yet.' };
+
+    return {
+      ticker: symbol,
+      snapshots: rows.map((r, i) => {
+        const prev = rows[i - 1];
+        const comparable = prev ? prev.method === r.method : null;
+        return {
+          fiscalDate: r.fiscal_date,
+          lastUpdated: r.snapshot_date,
+          score: r.score,
+          grade: r.grade,
+          ...(prev ? { comparable, change: comparable ? r.score - prev.score : null } : {}),
+          pillars: r.categories.map((c) => {
+            const before = comparable ? prev.categories.find((p) => p.name === c.name) : undefined;
+            const inputChanges = before?.inputs && c.inputs
+              ? Object.fromEntries(Object.keys(c.inputs).map((k) => [k, { before: before.inputs![k] ?? null, after: c.inputs![k] }]))
+              : undefined;
+            return {
+              name: c.name,
+              score: c.dataAvailable === false ? null : c.score,
+              max: c.max,
+              ...(before ? { change: c.score - before.score } : {}),
+              ...(c.inputs ? { inputs: c.inputs } : {}),
+              ...(inputChanges ? { inputChanges } : {}),
+            };
+          }),
+        };
+      }),
+    };
+  },
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Data-only tools — no navigation or portfolio mutation. Shared by any AI
 // surface that needs company/financial data lookups (main chat, chart
@@ -1940,6 +2009,7 @@ export const COMPANY_DATA_TOOLS = {
   getEarningsData,
   getUpcomingEarnings,
   getHealthScore,
+  getHealthScoreHistory,
   getLiveCompanyProfile,
 };
 
@@ -2259,6 +2329,7 @@ export const BULLPEN_TOOLS = {
   getEarningsData,
   getUpcomingEarnings,
   getHealthScore,
+  getHealthScoreHistory,
   getLiveCompanyProfile,
 };
 

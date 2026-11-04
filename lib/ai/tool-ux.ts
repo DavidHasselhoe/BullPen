@@ -52,6 +52,7 @@ export interface ActionOutcome {
 const STATUS_LABELS: Record<string, string> = {
   // Company data tools
   getHealthScore: 'Checking financial health…',
+  getHealthScoreHistory: 'Checking score history…',
   getKeyStatistics: 'Pulling valuation metrics…',
   getCompanyFinancials: 'Reading financial statements…',
   getLiveQuote: 'Fetching live price…',

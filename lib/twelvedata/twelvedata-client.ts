@@ -1419,6 +1419,15 @@ interface TwelveDataCashFlowResponse {
   message?: string;
 }
 
+/** Reported capex, else free cash flow minus operating cash flow (negative, like TD's capex). */
+export function impliedCapex(
+  capex: number | null | undefined,
+  fcf: number | null | undefined,
+  ocf: number | null | undefined,
+): number | null {
+  return capex ?? (fcf != null && ocf != null ? fcf - ocf : null);
+}
+
 export async function getCashFlow(
   symbol: string,
   period: 'quarterly' | 'annual' = 'quarterly',
@@ -1446,7 +1455,9 @@ export async function getCashFlow(
     net_income: item.operating_activities?.net_income ?? null,
     depreciation_and_amortization: item.operating_activities?.depreciation ?? null,
     operating_cash_flow: item.operating_activities?.operating_cash_flow ?? null,
-    capital_expenditures: item.investing_activities?.capital_expenditures ?? null,
+    // TD leaves capex null for most 2025+ quarters (GOOGL included) while still
+    // reporting free cash flow, so its own FCF minus OCF recovers the figure.
+    capital_expenditures: impliedCapex(item.investing_activities?.capital_expenditures, item.free_cash_flow, item.operating_activities?.operating_cash_flow),
     free_cash_flow: item.free_cash_flow ?? null,
     investing_activities_cash_flow: item.investing_activities?.investing_cash_flow ?? null,
     financing_activities_cash_flow: item.financing_activities?.financing_cash_flow ?? null,

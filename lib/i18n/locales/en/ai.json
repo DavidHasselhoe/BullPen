@@ -128,6 +128,7 @@
   "whyTodayGuestContext": "Why Today explains a price move in plain English. It's part of Pro: create a free account, then try Pro free for {{trialDays}} days.",
   "toolStatus_default": "Working…",
   "toolStatus_getHealthScore": "Checking financial health…",
+  "toolStatus_getHealthScoreHistory": "Checking score history…",
   "toolStatus_getKeyStatistics": "Pulling valuation metrics…",
   "toolStatus_getCompanyFinancials": "Reading financial statements…",
   "toolStatus_getLiveQuote": "Fetching live price…",

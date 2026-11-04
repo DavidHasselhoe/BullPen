@@ -66,6 +66,12 @@ export interface CategoryScore {
   label: string;
   /** False when the underlying data was unavailable: the pillar is left out of the total. */
   dataAvailable?: boolean;
+  /**
+   * The figures this pillar was scored from (ratios as decimals, money in the
+   * statement currency). Kept in history snapshots so a change between
+   * quarters can be explained; snapshots before 2026-11-04 have none.
+   */
+  inputs?: Record<string, number | null>;
 }
 
 export type HealthGrade = 'A' | 'B' | 'C' | 'D' | 'F';
@@ -393,6 +399,41 @@ function scoreMarketRisk(stats: CompanyStatistics, f: Fundamentals, signals: Sig
   return t;
 }
 
+/** The figures behind each pillar, mirroring the scoring functions above. */
+function pillarInputs(stats: CompanyStatistics, f: Fundamentals): Record<string, Record<string, number | null>> {
+  const b = f.b;
+  const ratio = (a: number | null | undefined, d: number | null | undefined) =>
+    a != null && d != null && d !== 0 ? Math.round((a / d) * 10_000) / 10_000 : null;
+  return {
+    Profitability: {
+      netIncomeTTM: f.netIncome,
+      netMargin: f.revenue != null && f.revenue > 0 ? ratio(f.netIncome, f.revenue) : stats.profitMargin ?? null,
+      returnOnAssets: ratio(f.netIncome, b?.total_assets),
+    },
+    'Financial Strength': f.bankLike
+      ? { equityToAssets: ratio(b?.total_stockholders_equity, b?.total_assets) }
+      : {
+          interestCoverage: f.interest != null ? ratio(f.ebit, Math.abs(f.interest)) : null,
+          netDebtToEbitda: b?.long_term_debt != null ? ratio(b.long_term_debt - (b.cash_and_equivalents ?? 0), f.ebitda) : null,
+          currentRatio: ratio(b?.total_current_assets, b?.total_current_liabilities),
+        },
+    'Cash Flow': {
+      operatingCashFlowTTM: f.ocf,
+      freeCashFlowTTM: f.fcf,
+      netIncomeTTM: f.netIncome,
+      freeCashFlowMargin: ratio(f.fcf, f.revenue),
+    },
+    Growth: {
+      revenueGrowthYoY: stats.revenueGrowthTTM ?? null,
+      epsGrowthYoY: stats.epsGrowthTTM ?? null,
+    },
+    'Market Risk': {
+      beta: stats.beta ?? null,
+      profitableQuarterShare: f.profitableQuarters,
+    },
+  };
+}
+
 /** How cheap the stock looks, 0-20. Informational only, never part of the score. */
 function valuationScore(stats: CompanyStatistics): number {
   let score = 0;
@@ -500,9 +541,10 @@ export function computeHealthScore(
     ['Market Risk', 10, scoreMarketRisk(stats, f, signals)],
   ];
 
+  const inputs = pillarInputs(stats, f);
   const categories: CategoryScore[] = pillars.map(([name, max, t]) => {
     const score = t.scaled(max);
-    return { name, score, max, label: t.available ? catLabel(score, max) : 'No data', dataAvailable: t.available };
+    return { name, score, max, label: t.available ? catLabel(score, max) : 'No data', dataAvailable: t.available, inputs: inputs[name] };
   });
 
   // Re-weight over the pillars that had data.
