@@ -15,6 +15,14 @@
       {
         "type": "improved",
         "text": "A sale whose holding has been removed can now be removed from your sales history, and an undo that fails tells you why"
+      },
+      {
+        "type": "improved",
+        "text": "Ask Bull why a company's health score changed and it shows which parts of the score moved since the last report"
+      },
+      {
+        "type": "fixed",
+        "text": "Bull and the financials now show capital spending for every recent quarter, not only the latest one"
       }
     ]
   },
