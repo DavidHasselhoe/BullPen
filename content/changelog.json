@@ -18,11 +18,13 @@
       },
       {
         "type": "improved",
-        "text": "Ask Bull why a company's health score changed and it shows which parts of the score moved since the last report"
+        "text": "Ask Bull why a company's health score changed and it shows which parts of the score moved since the last report",
+        "highlight": true
       },
       {
         "type": "fixed",
-        "text": "Bull and the financials now show capital spending for every recent quarter, not only the latest one"
+        "text": "Bull and the financials now show capital spending for every recent quarter, not only the latest one",
+        "highlight": true
       }
     ]
   },
