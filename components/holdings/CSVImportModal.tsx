@@ -53,6 +53,8 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
   const [summary, setSummary] = useState<ParseSummary | null>(null);
   const [importId, setImportId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // A PDF is read by AI before the normal pipeline runs, so it takes longer.
+  const [isPdf, setIsPdf] = useState(false);
   // True for a brief hold once the request has actually resolved, before
   // swapping to the success screen — lets the progress bar visibly finish
   // its run to 100% instead of jumping from ~91% straight to the result.
@@ -92,6 +94,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
   }, [step, completing]);
 
   const processFile = useCallback(async (file: File) => {
+    setIsPdf(/\.pdf$/i.test(file.name));
     setStep('processing');
     setPhaseIndex(0);
     setErrorMessage(null);
@@ -184,7 +187,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.txt,text/csv,text/plain"
+                  accept=".csv,.txt,.pdf,text/csv,text/plain,application/pdf"
                   className="hidden"
                   onChange={handleFileChange}
                 />
@@ -210,7 +213,7 @@ export function CSVImportModal({ open, onOpenChange }: Props) {
           <div className="px-6 py-4">
             <ProcessingScreen
               phase={{ index: phaseIndex, total: PHASE_COUNT, label: phaseLabels[phaseIndex] }}
-              subtext={t('csvImportProcessingSubtext')}
+              subtext={isPdf ? t('csvImportProcessingSubtextPdf') : t('csvImportProcessingSubtext')}
               complete={completing}
               completeMessage={t('csvImportProcessingComplete')}
             />

@@ -1046,8 +1046,8 @@
   "holdings.holdingsTableFieldDay": "8f2364e11b8be3ff008f32b3dedb54e659362429bcc9e3eb6acb6070de4ffbff",
   "holdings.holdingsTableFieldPrice": "93c91c851e7acc17d881c9b89ea954be1183070254014be03a93d169cf52dbbd",
   "holdings.holdingsTableFieldValue": "8e37953d23daca5ff01b8282c33f4e0a2152f1d1885f94c06418617e3ee1d24e",
-  "holdings.holdingsTableImportCsv": "9982ac26053cd1b706b9d8146346fe29b4e8dc2d2ae23cd6442c4d88078f1196",
-  "holdings.holdingsTableImportFromCsv": "9b1685f5ca1263e2f60989d01d61320b2a464b4bc1832bafcdba951d20661f0e",
+  "holdings.holdingsTableImportCsv": "c4d540e136ebd2343643b18335d3308e037134da3d72636058d13aa0c3b0fc69",
+  "holdings.holdingsTableImportFromCsv": "2603b826fc113bad922b024498d8ae7a2571b15a52b4e4cec6108261daa7dae3",
   "holdings.holdingsTableNoMatch": "0c8a54549e0dd340466b312047ab2adb3203cc274910aa1eb9cf7826d58ac7d5",
   "holdings.holdingsTableRemoveHolding": "0d1eb2a7899a7800f5acfae99f8db603c6edc2244b34c36af9dded2e84452047",
   "holdings.holdingsTableRemoving": "d4b09919ec929f15c19802296a06e97a0d0862e29e23c453d638fc0c3b87c641",
@@ -2058,7 +2058,7 @@
   "command-palette.closeLabel": "7d9eb7acb13e24625c404401d8e88b2350e32162455885f18276cf802f7701ed",
   "tools.calendarOwnedBadge": "17b760c41cd2093315bba1008eaae9c4c05e3aa0fbbcf7477abfb775e62d6c5c",
   "tools.calendarWatchingBadge": "fbc594054d512e5d877fd840baa6f8742d5891de3f488306a6b915de395f5707",
-  "holdings.csvImportBrowseHint": "37abfda8d7ffbca435ca542b51aeeb22d0835e5602568a2a8afd10a14d6d60ef",
+  "holdings.csvImportBrowseHint": "5efe240c7186610a69312700c4e31f8a6d5f8bb7fbce553055ea18e9ce5e0e18",
   "holdings.csvImportClose": "7d9eb7acb13e24625c404401d8e88b2350e32162455885f18276cf802f7701ed",
   "holdings.csvImportContinueToReview": "7569aa60c40fa1b62f39dc113db2aae558b75b56fa32df7cdec7f264952fbc29",
   "holdings.csvImportErrorTitle": "3ed278bfa72ab61ca7cfee4ace04dee636a8488c0ec9825508eb2bf500a5b6b7",
@@ -4297,5 +4297,6 @@
   "auth.loginRateLimited": "76d7a82c8b1d50e8692d1a1bc352f7b146932513f546cb8a967c184ee3c1fbfa",
   "ai.chatLimitReachedFree": "e1dc452ad5d169f733a37572363bb8de7a6a1cbf67becd556891b34ffa5b75e0",
   "ai.chatLimitReachedPro": "841828043189d23c0721d0b339ece1e7799db1ecb50524c3ea1e70ef583fda70",
-  "ai.chatLimitUpgrade": "acb320d7f3e39b168369bc9ebde8101b79852ffb8fd01133c2d4e113a6fa5a8c"
+  "ai.chatLimitUpgrade": "acb320d7f3e39b168369bc9ebde8101b79852ffb8fd01133c2d4e113a6fa5a8c",
+  "holdings.csvImportProcessingSubtextPdf": "6f78b07e5013b8fc365d7d76d9eaa0162622a7196f90ab03f433d04bff37328a"
 }

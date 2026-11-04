@@ -19,6 +19,7 @@ import { logAiCall } from '@/lib/billing/log-ai-call';
 import { classifyAiError } from '@/lib/ai/provider-error';
 import { createServerClient } from '@/lib/supabase/client';
 import { parseImportFile, ImportParseError } from '@/lib/import/parse-file';
+import { PdfExtractionError } from '@/lib/import/pdf-to-csv';
 import { resolveSecurity } from '@/lib/import/resolve-security';
 import type { RawTransaction } from '@/lib/import/types';
 
@@ -54,8 +55,8 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
   }
   // Matches the file picker's own accept list (CSVImportModal.tsx) — the picker is
   // just a UI hint, so anything hitting this route directly still needs enforcing.
-  if (!/\.(csv|txt)$/i.test(body.fileName)) {
-    return addSecurityHeaders(NextResponse.json({ error: 'Only .csv or .txt files are supported.' }, { status: 400 }));
+  if (!/\.(csv|txt|pdf)$/i.test(body.fileName)) {
+    return addSecurityHeaders(NextResponse.json({ error: 'Only .csv, .txt or .pdf files are supported.' }, { status: 400 }));
   }
 
   let bytes: Uint8Array;
@@ -72,6 +73,20 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
   try {
     parsed = await parseImportFile(bytes, body.fileName);
   } catch (err) {
+    if (err instanceof PdfExtractionError) {
+      if (err.usage.inputTokens > 0) {
+        void logAiCall({
+          userId: session.userId,
+          feature: 'csv_import',
+          model: err.usage.model,
+          inputTokens: err.usage.inputTokens,
+          outputTokens: err.usage.outputTokens,
+          status: 'error',
+          metadata: { fileName: body.fileName, step: 'pdf_extract' },
+        });
+      }
+      return addSecurityHeaders(NextResponse.json({ error: err.message }, { status: 422 }));
+    }
     if (err instanceof ImportParseError) {
       return addSecurityHeaders(NextResponse.json({ error: err.message }, { status: 422 }));
     }
@@ -81,6 +96,16 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
     return addSecurityHeaders(NextResponse.json({ error: classified.message }, { status: classified.status }));
   }
 
+  if (parsed.pdfExtraction) {
+    void logAiCall({
+      userId: session.userId,
+      feature: 'csv_import',
+      model: parsed.pdfExtraction.model,
+      inputTokens: parsed.pdfExtraction.inputTokens,
+      outputTokens: parsed.pdfExtraction.outputTokens,
+      metadata: { fileName: body.fileName, step: 'pdf_extract' },
+    });
+  }
   void logAiCall({
     userId: session.userId,
     feature: 'csv_import',

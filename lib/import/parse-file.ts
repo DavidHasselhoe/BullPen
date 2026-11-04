@@ -5,6 +5,7 @@ import { parseGrid } from './grid';
 import { profileGrid } from './profile-grid';
 import { inferMappingSpec } from './infer-mapping';
 import { applyMapping } from './apply-mapping';
+import { pdfToCsv } from './pdf-to-csv';
 import type { Grid, RawTransaction, IgnoredRow, RowError, ConsistencyReport } from './types';
 import type { MappingSpec } from './mapping-schema';
 
@@ -23,6 +24,8 @@ export interface ParsedImport {
   rowErrors: RowError[];
   consistency: ConsistencyReport;
   contentHash: string;
+  /** Set when the upload was a PDF: the transcription call's own model and tokens, logged separately from the mapping call. */
+  pdfExtraction: { model: string; inputTokens: number; outputTokens: number } | null;
 }
 
 const MAX_FILE_ROWS = 5000;
@@ -41,6 +44,15 @@ export async function parseImportFile(
   opts?: { useAi?: boolean }
 ): Promise<ParsedImport> {
   const contentHash = createHash('sha256').update(bytes).digest('hex');
+
+  // A PDF is transcribed to CSV first, then goes through exactly the same
+  // steps as an uploaded CSV. Checked by magic bytes, not the file name.
+  let pdfExtraction: ParsedImport['pdfExtraction'] = null;
+  if (isPdf(bytes)) {
+    const { csv, ...usage } = await pdfToCsv(bytes);
+    pdfExtraction = usage;
+    bytes = new TextEncoder().encode(csv);
+  }
 
   const decode = decodeBytes(bytes);
   const delim = sniffDelimiter(decode.text);
@@ -100,5 +112,11 @@ export async function parseImportFile(
     rowErrors: applied.rowErrors,
     consistency: applied.consistency,
     contentHash,
+    pdfExtraction,
   };
+}
+
+function isPdf(bytes: Uint8Array): boolean {
+  // "%PDF-"
+  return bytes.length >= 5 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2d;
 }

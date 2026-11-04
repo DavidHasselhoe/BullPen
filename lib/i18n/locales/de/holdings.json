@@ -54,7 +54,6 @@
   "addPurchaseSharesLabel": "Gekaufte Aktien",
   "addPurchaseSubmit": "Kauf hinzufügen",
   "addPurchaseTitle": "Kauf für {{symbol}} hinzufügen",
-  "csvImportBrowseHint": "oder klick zum Durchsuchen, jeder Broker, jede Sprache",
   "csvImportCancel": "Abbrechen",
   "csvImportChooseFile": "Datei auswählen",
   "csvImportClose": "Schließen",
@@ -123,8 +122,6 @@
   "holdingsTableFieldPl": "Gewinn/Verlust",
   "holdingsTableFieldPrice": "Kurs",
   "holdingsTableFieldValue": "Wert",
-  "holdingsTableImportCsv": "CSV importieren",
-  "holdingsTableImportFromCsv": "Aus CSV importieren",
   "holdingsTableNoMatch": "Keine Positionen passen zu \"{{search}}\"",
   "holdingsTableRemoveHolding": "Position entfernen",
   "holdingsTableRemoving": "Wird entfernt…",
@@ -376,7 +373,11 @@
   "portfolioDashboardPricedOf": "{{count}} von {{total}} Positionen bislang bewertet",
   "holdingsPreviewValue": "Portfoliowert",
   "analysisHistoryTrendLabel": "Trend",
+  "csvImportBrowseHint": "oder klick zum Durchsuchen. CSV oder PDF, jeder Broker, jede Sprache.",
+  "csvImportProcessingSubtextPdf": "PDFs brauchen etwas länger zum Einlesen, meist unter einer Minute.",
   "holdingsTableColSymbol": "Symbol",
+  "holdingsTableImportCsv": "CSV oder PDF importieren",
+  "holdingsTableImportFromCsv": "Aus CSV oder PDF importieren",
   "portfolioChartTooltipPortfolio": "Portfolio",
   "holdingsBadgeLive": "Live"
 }
