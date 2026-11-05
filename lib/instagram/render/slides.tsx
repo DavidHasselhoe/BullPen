@@ -76,9 +76,6 @@ const BRAND = '#34d399'; // Signal Emerald (emerald-400) — same hex used elsew
 const BRAND_INK = '#0a0a0a'; // text/icon color on top of BRAND — dark reads better on emerald-400 than white does
 const BMO_COLOR = '#0ea5e9'; // Tailwind sky-500 — matches EarningsCalendarWidget's BMO tag
 const AMC_COLOR = '#f59e0b'; // Tailwind amber-500 — matches EarningsCalendarWidget's AMC tag
-// Text on the BMO/AMC tints: the 500s themselves are ~2:1 on their own tint.
-const BMO_TEXT = '#0369a1'; // sky-700
-const AMC_TEXT = '#b45309'; // amber-700
 
 // Covers (the first slide, which is all most people see) are ink, in the
 // landing page's identity, so a BullPen post is recognisable in the grid and
@@ -109,7 +106,7 @@ export function companiesPerListSlide(companyCount: number): number {
 export type SlideKind =
   | 'hook' | 'list' | 'cta' | 'movers_cover' | 'winners' | 'losers'
   | 'deepdive_scoreboard' | 'deepdive_story' | 'deepdive_reaction'
-  | 'scoreboard_cover' | 'scoreboard_list' | 'scoreboard_callouts';
+  | 'scoreboard_cover' | 'scoreboard_list' | 'scoreboard_callouts' | 'calendar_grid';
 
 /** Picks per scoreboard list page. Every pick is shown; past this the list paginates. */
 export const SCOREBOARD_PER_PAGE = 16;
@@ -126,12 +123,14 @@ function listSlideCount(companyCount: number): number {
  *  slides (ink cover, winners, losers, cta); earnings_deep_dive is the
  *  scoreboard, 1-3 story slides, the price reaction when there is one, then the
  *  shared conversion CTA slide every other content type ends on (see
- *  deepDiveKinds); earnings_calendar/earnings_results paginate their company
- *  list across a hook, 1+ list slides, and a CTA. */
+ *  deepDiveKinds); earnings_calendar is the logo grid and the CTA;
+ *  earnings_results paginates its company list across a hook, 1+ list
+ *  slides, and a CTA. */
 export function totalSlideCount(slides: InstagramPostSlides): number {
   if (slides.contentType === 'market_movers') return 4;
   if (slides.contentType === 'earnings_deep_dive') return deepDiveKinds(slides.data).length;
   if (slides.contentType === 'picks_scoreboard') return 1 + scoreboardPageCount(slides.picks.length) + 2;
+  if (slides.contentType === 'earnings_calendar') return 2;
   return 1 + listSlideCount(slides.companies.length) + 1;
 }
 
@@ -150,6 +149,7 @@ export function slideKindAt(index: number, slides: InstagramPostSlides): SlideKi
     if (index <= pages) return 'scoreboard_list';
     return index === pages + 1 ? 'scoreboard_callouts' : 'cta';
   }
+  if (slides.contentType === 'earnings_calendar') return index === 0 ? 'calendar_grid' : 'cta';
   const lists = listSlideCount(slides.companies.length);
   if (index === 0) return 'hook';
   if (index === lists + 1) return 'cta';
@@ -203,6 +203,10 @@ export function altTextForSlide(
   }
   const kind = slideKindAt(slideIndex, content);
   const isResults = content.contentType === 'earnings_results';
+  if (kind === 'calendar_grid') {
+    const byDay = groupByDate(content.companies).map((g) => `${gridDayHeader(g.date).toLowerCase()}: ${g.items.map((c) => c.symbol).join(', ')}`);
+    return `Earnings to watch this week, ${content.weekLabel}, on BullPen. ${byDay.join('; ')}.`;
+  }
   if (kind === 'hook') {
     return isResults
       ? `${content.headline} Earnings results for the week of ${content.weekLabel} on BullPen.`
@@ -479,42 +483,6 @@ function CompanyBadge({ symbol, logoUrl, size }: { symbol: string; logoUrl: stri
   );
 }
 
-function TimeBadge({ time, fontSize, paddingV, paddingH }: { time: 'BMO' | 'AMC' | null; fontSize: number; paddingV: number; paddingH: number }) {
-  if (!time) return null;
-  const color = time === 'BMO' ? BMO_COLOR : AMC_COLOR;
-  return (
-    <div
-      style={{
-        display: 'flex', fontSize, fontWeight: 700, color: time === 'BMO' ? BMO_TEXT : AMC_TEXT,
-        fontFamily: 'Geist', padding: `${paddingV}px ${paddingH}px`, borderRadius: 999,
-        backgroundColor: `${color}1a`,
-      }}
-    >
-      {time === 'BMO' ? 'Before Open' : 'After Close'}
-    </div>
-  );
-}
-
-/** Its own visual element rather than buried inline with the date — EPS is
- *  the second most important number on the slide after the ticker. Always
- *  rendered, even when unconfirmed ("N/A"), so a missing estimate reads as
- *  a real state, not a layout gap that looks like a bug. */
-function EpsStat({ value, labelFontSize, valueFontSize }: { value: number | null; labelFontSize: number; valueFontSize: number }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: labelFontSize, color: MUTED }}>
-        EPS est.
-      </span>
-      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: valueFontSize, letterSpacing: '-0.02em', color: value != null ? FG : MUTED }}>
-        {value != null ? formatEps(value) : 'N/A'}
-      </span>
-    </div>
-  );
-}
-
-/** Company name (bold) over its ticker (muted): the app's list convention
- *  (see lib/market-data/display-names.ts), since several tickers mean nothing
- *  to a beginner on their own ("IT" is Gartner, "P" is Everpure). */
 function NameStack({ name, ticker, nameSize, tickerSize, onInk = false }: { name: string; ticker: string; nameSize: number; tickerSize: number; onInk?: boolean }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
@@ -617,86 +585,105 @@ export function HookSlide({ headline, weekLabel, companies, slideIndex, totalSli
   );
 }
 
-interface EarningsListSlideProps {
-  companies: EarningsSlideCompany[];
-  /** Only shown when the real week had more companies than fit on this slide. */
-  overflowCount?: number;
-  slideIndex: number;
-  totalSlides: number;
+// ── Weekly calendar: one grid of logos, a column per day ────────────────────
+// 2026-11-05, David: the list slides (name, time, EPS estimate per row) shrank
+// to fit a 24-company week and were hard to read. The week ahead is about WHO
+// reports WHEN; estimates mean something only next to a result, which the
+// Saturday results post shows. So: logo and ticker only, the whole week on
+// the cover.
+
+const GRID_MAX_ROWS = 6;
+
+/** "MON · NOV 2" */
+function gridDayHeader(date: string): string {
+  const d = new Date(date + 'T12:00:00Z');
+  const day = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+  const md = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return `${day} · ${md}`.toUpperCase();
 }
 
+export function CalendarGridSlide({ companies, overflowCount, weekLabel, slideIndex, totalSlides }: {
+  companies: EarningsSlideCompany[]; overflowCount: number; weekLabel: string; slideIndex: number; totalSlides: number;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function EarningsListSlide({ companies, overflowCount = 0, slideIndex, totalSlides }: EarningsListSlideProps): any {
-  const m = rowMetrics(companies.length);
-  const footerNote = 'EPS est. is the profit per share analysts expect. Times are US market hours.';
-  const groups = groupByDate(companies);
+}): any {
+  const days = groupByDate(companies).map((g) => ({ ...g, items: [...g.items].sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0)) }));
+  const cols = days.length;
+  // Fewer days, more logos per row, so a quiet week fills the slide instead of a thin strip.
+  const busiest = Math.max(...days.map((g) => g.items.length));
+  const perRow = Math.min(busiest, cols >= 3 ? 2 : cols === 2 ? 3 : 4);
+  const cap = perRow * GRID_MAX_ROWS;
+  const rows = Math.min(GRID_MAX_ROWS, Math.max(1, ...days.map((g) => Math.ceil(g.items.length / perRow))));
+  const colW = (1080 - 2 * 60) / cols;
+  const rowH = Math.min(190, Math.floor(720 / rows));
+  const logo = Math.min(rows <= 2 ? 168 : 132, Math.floor((colW - 12) / perRow) - 18, rowH - 60);
+  const tickerSize = Math.max(22, Math.min(30, Math.round(logo * 0.3)));
+
   return (
-    <div
-      style={{
-        width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
-        padding: 80, backgroundColor: BG, color: FG, position: 'relative', overflow: 'hidden',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom, zIndex: 1 }}>
-        <Wordmark />
-        <SlideIndicator index={slideIndex} total={totalSlides} />
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', paddingTop: 72, paddingBottom: 72, paddingLeft: 60, paddingRight: 60, backgroundColor: INK, backgroundImage: INK_GLOW, color: ON_INK }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Wordmark onInk />
+        <SlideIndicator index={slideIndex} total={totalSlides} onInk />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: m.rowGap, zIndex: 1 }}>
-        {companies.length === 0 ? (
-          <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-            <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 44, color: FG, marginBottom: 20 }}>
-              No confirmed reports yet
-            </div>
-            <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, color: MUTED, maxWidth: 640 }}>
-              Big companies usually confirm their earnings date 3 to 6 weeks ahead. Check back on BullPen as the week gets closer.
-            </div>
-          </div>
-        ) : (
-          groups.map((group) => (
-            <div key={group.date} style={{ display: 'flex', flexDirection: 'column', gap: m.rowGap }}>
-              <DateHeader dateStr={group.date} fontSize={m.dateHeaderFontSize} />
-              {group.items.map((c) => (
-                <div
-                  key={c.symbol}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: `${m.rowPaddingV}px ${m.rowPaddingH}px`, borderRadius: m.rowRadius,
-                    backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}`,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
-                    <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
-                    <NameStack
-                      name={earningsRowName(c.name, Math.round(m.symbolFontSize * 0.82))}
-                      ticker={c.symbol}
-                      nameSize={Math.round(m.symbolFontSize * 0.82)}
-                      tickerSize={Math.round(m.nameFontSize * 0.85)}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexShrink: 0, marginLeft: 20 }}>
-                    <EpsStat value={c.epsEstimate} labelFontSize={m.epsLabelFontSize} valueFontSize={m.epsValueFontSize} />
-                    <TimeBadge time={c.time} fontSize={m.timeFontSize} paddingV={m.timePaddingV} paddingH={m.timePaddingH} />
-                  </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 52 }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 100, lineHeight: 1, letterSpacing: '-0.04em', color: ON_INK }}>Earnings to watch</span>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 32, color: ON_INK_MUTED }}>{`This week · ${weekLabel}`}</span>
+      </div>
+
+      {/* Centered in the space left, so a quiet week is not one strip under the title. */}
+      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center', paddingTop: 40, paddingBottom: 40 }}>
+      <div style={{ display: 'flex' }}>
+        {days.map((g, ci) => {
+          const over = g.items.length > cap ? g.items.length - (cap - 1) : 0;
+          const shown = over ? g.items.slice(0, cap - 1) : g.items;
+          const rowList: (EarningsSlideCompany | null)[][] = [];
+          for (let i = 0; i < shown.length; i += perRow) rowList.push(shown.slice(i, i + perRow));
+          if (over) {
+            const last = rowList[rowList.length - 1];
+            if (last && last.length < perRow) last.push(null); else rowList.push([null]);
+          }
+          return (
+            <div key={g.date} style={{ display: 'flex', flexDirection: 'column', width: colW, paddingLeft: 6, paddingRight: 6, borderLeft: ci ? `1px solid ${INK_BORDER}` : 'none' }}>
+              <span style={{ display: 'flex', justifyContent: 'center', fontFamily: 'Geist', fontWeight: 700, fontSize: 22, letterSpacing: '0.04em', color: ON_INK_MUTED, paddingBottom: 18, marginBottom: 12, borderBottom: `1px solid ${INK_BORDER}` }}>
+                {gridDayHeader(g.date)}
+              </span>
+              {rowList.map((row, ri) => (
+                // Every other row on a faint band, so the eye can follow a row across the week.
+                <div key={ri} style={{ display: 'flex', justifyContent: 'center', height: rowH, borderRadius: 18, backgroundColor: ri % 2 ? 'rgba(255,255,255,0.045)' : 'transparent' }}>
+                  {row.map((c, k) => (
+                    <div key={c?.symbol ?? `more-${k}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, width: Math.floor((colW - 12) / perRow) }}>
+                      {/* No fragment here: Satori lays a fragment's children out in a row. */}
+                      {c && <InkLogo symbol={c.symbol} logoUrl={c.logoUrl} size={logo} />}
+                      {c && <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: tickerSize, letterSpacing: '-0.01em', color: ON_INK }}>{c.symbol}</span>}
+                      {!c && (
+                        <div style={{ display: 'flex', width: logo, height: logo, borderRadius: 999, border: `2px solid ${INK_BORDER}`, alignItems: 'center', justifyContent: 'center', fontFamily: 'Geist', fontWeight: 700, fontSize: tickerSize + 4, color: ON_INK }}>
+                          {`+${over}`}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
-          ))
-        )}
+          );
+        })}
+      </div>
       </div>
 
-      {overflowCount > 0 && (
-        <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED, marginTop: 24 }}>
-          {`+${overflowCount} more this week on BullPen`}
-        </div>
-      )}
-      {companies.length > 0 && companies.length <= FOOTER_MAX_ROWS && <SlideFooter note={footerNote} />}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 40, paddingTop: 28, borderTop: `1px solid ${INK_BORDER}` }}>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, lineHeight: 1.4, color: ON_INK_MUTED, maxWidth: 700 }}>
+          {overflowCount > 0
+            ? `${companies.length} of this week's reports, plus ${overflowCount} more. See who beat on Saturday.`
+            : `${companies.length} ${companies.length === 1 ? 'company reports' : 'companies report'} this week. See who beat on Saturday.`}
+        </span>
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, color: ON_INK, flexShrink: 0 }}>Link in bio</span>
+      </div>
     </div>
   );
 }
 
 // ── Earnings-results (the Saturday recap) row elements ─────────────────────
-// Reuses EarningsListSlide's shared color/font tokens and Wordmark/
+// Reuses this file's shared color/font tokens and Wordmark/
 // CompanyBadge/DateHeader — only the right-hand side of each row differs:
 // Est -> Actual EPS plus a BEAT/MISSED pill instead of a single EST. EPS
 // stat plus a BMO/AMC time badge (the "when" no longer matters once the

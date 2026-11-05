@@ -22,7 +22,7 @@ import {
   slideKindAt,
   totalSlideCount,
   HookSlide,
-  EarningsListSlide,
+  CalendarGridSlide,
   EarningsResultsListSlide,
   MoversListSlide,
   MoversCoverSlide,
@@ -169,7 +169,10 @@ export async function GET(
   } else {
     const isResults = slides.contentType === 'earnings_results';
 
-    if (kind === 'hook') {
+    if (kind === 'calendar_grid') {
+      const cal = slides as EarningsCalendarSlides;
+      element = <CalendarGridSlide companies={cal.companies} overflowCount={cal.overflowCount} weekLabel={cal.weekLabel} slideIndex={slideIndex} totalSlides={total} />;
+    } else if (kind === 'hook') {
       element = (
         <HookSlide
           headline={slides.headline}
@@ -198,16 +201,10 @@ export async function GET(
       const pageCompanies = slides.companies.slice(listSlideIdx * perPage, (listSlideIdx + 1) * perPage);
       // "+N more" belongs after the last row, not on every page.
       const overflowCount = slideIndex === total - 2 ? slides.overflowCount : 0;
-      element = isResults ? (
+      // Only the results recap has list slides; the calendar is one grid (calendar_grid above).
+      element = (
         <EarningsResultsListSlide
           companies={pageCompanies as EarningsResultsSlides['companies']}
-          overflowCount={overflowCount}
-          slideIndex={slideIndex}
-          totalSlides={total}
-        />
-      ) : (
-        <EarningsListSlide
-          companies={pageCompanies as EarningsCalendarSlides['companies']}
           overflowCount={overflowCount}
           slideIndex={slideIndex}
           totalSlides={total}
