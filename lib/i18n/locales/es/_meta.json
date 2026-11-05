@@ -4268,5 +4268,12 @@
   "ai.chatLimitReachedFree": "e1dc452ad5d169f733a37572363bb8de7a6a1cbf67becd556891b34ffa5b75e0",
   "ai.chatLimitReachedPro": "841828043189d23c0721d0b339ece1e7799db1ecb50524c3ea1e70ef583fda70",
   "ai.chatLimitUpgrade": "acb320d7f3e39b168369bc9ebde8101b79852ffb8fd01133c2d4e113a6fa5a8c",
-  "holdings.csvImportProcessingSubtextPdf": "6f78b07e5013b8fc365d7d76d9eaa0162622a7196f90ab03f433d04bff37328a"
+  "holdings.csvImportProcessingSubtextPdf": "6f78b07e5013b8fc365d7d76d9eaa0162622a7196f90ab03f433d04bff37328a",
+  "holdings.soldPositionsDetachedNote": "ea8aff2b7f23de5d4f3fb8775b5400d038804095fd0a6f80ee3059e8e37a61c6",
+  "holdings.soldPositionsRemoveConfirm": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282",
+  "holdings.soldPositionsRemoveConfirmBody": "26eb36d93c45fb65fea1f2ba32a2f905edcdc192b542fd96e89c3653529359ce",
+  "holdings.soldPositionsRemoveConfirmTitle": "e1cf4333d4f70d7719bb37ec13e72cb4c2815bdd1cfa9a6b76de7b44fe1077ed",
+  "holdings.soldPositionsRemoveError": "29c46eaee14aba115093283fbdf72686a03d25a2d2cd8b1101bbe2d57c4489c5",
+  "holdings.soldPositionsRemoveTitle": "bea267e377e7bbf4b57922b0811d372559b257081394d407a5e915101b9db103",
+  "holdings.soldPositionsUndoError": "113e0c88eba5864d935d9d9694cdc2404e15b85cf280436f2f103bca12e24f9d"
 }
