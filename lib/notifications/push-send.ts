@@ -44,6 +44,8 @@ export async function sendPush(
     if (status === 404 || status === 410) return 'gone';
     const detail = status ? `${status} ${String((err as { body?: string }).body ?? '').slice(0, 120)}` : err instanceof Error ? err.message : String(err);
     console.error('[push-send] send failed:', detail);
-    return { error: `send failed (${new URL(sub.endpoint).host}): ${detail}` };
+    // Never new URL() here: a malformed endpoint would throw out of the never-throws path.
+    const host = sub.endpoint.split('/')[2] ?? 'unknown host';
+    return { error: `send failed (${host}): ${detail}` };
   }
 }

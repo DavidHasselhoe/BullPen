@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { fetchAllPages } from '@/lib/screener/screener-query';
 
 async function getHandler(
   _request: NextRequest,
@@ -36,13 +37,15 @@ async function getHandler(
   // The user's recorded trades, so the review grid can flag file rows that
   // are already in the portfolio (re-importing the same file). Matched on
   // the client because a ticker fixed in the grid changes the symbol.
-  // ponytail: PostgREST caps each list at 1000 rows; past that, older
-  // trades just go unflagged. Filter by the draft's symbols if that bites.
+  // Paged: PostgREST returns at most 1000 rows, and the trades past that are
+  // exactly the old ones a full-history re-import would double.
   let existingTrades: { symbol: string; action: 'BUY' | 'SELL'; date: string; quantity: number; price: number }[] = [];
   if (row.status === 'draft') {
-    const [{ data: lots }, { data: sales }] = await Promise.all([
-      supabase.from('holding_purchases').select('symbol, purchase_date, quantity, price').eq('user_id', session.userId),
-      supabase.from('holding_sales').select('symbol, sale_date, quantity_sold, sale_price').eq('user_id', session.userId),
+    type Lot = { symbol: string; purchase_date: string; quantity: number; price: number };
+    type Sale = { symbol: string; sale_date: string; quantity_sold: number; sale_price: number };
+    const [{ rows: lots }, { rows: sales }] = await Promise.all([
+      fetchAllPages<Lot>(() => supabase.from('holding_purchases').select('symbol, purchase_date, quantity, price').eq('user_id', session.userId).order('id')),
+      fetchAllPages<Sale>(() => supabase.from('holding_sales').select('symbol, sale_date, quantity_sold, sale_price').eq('user_id', session.userId).order('id')),
     ]);
     existingTrades = [
       ...(lots ?? []).map((l) => ({ symbol: l.symbol, action: 'BUY' as const, date: l.purchase_date, quantity: Number(l.quantity), price: Number(l.price) })),

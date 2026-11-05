@@ -263,7 +263,10 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   // What "Start from scratch" would clear. Recorded sales count too: a sold
   // position leaves no open holding but still sits in History.
   const manualHoldingCount = (existingHoldings ?? []).filter((h) => h.source === 'manual' && (h.quantity ?? 0) > 0).length;
-  const canReplaceAll = manualHoldingCount > 0 || (data?.existingTrades ?? []).some((tr) => tr.action === 'SELL');
+  // Sales of a SnapTrade-synced symbol don't count: the clear never touches them.
+  const syncedSymbols = new Set((existingHoldings ?? []).filter((h) => h.source !== 'manual').map((h) => h.symbol));
+  const canReplaceAll =
+    manualHoldingCount > 0 || (data?.existingTrades ?? []).some((tr) => tr.action === 'SELL' && !syncedSymbols.has(tr.symbol));
 
   const securityLabel = (tx: RawTransaction) => tx.name ?? tx.rawSymbol ?? tx.isin ?? t('importReviewUnknownSecurity');
 

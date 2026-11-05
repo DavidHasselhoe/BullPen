@@ -96,6 +96,8 @@ export function screenerStaleCutoffIso(now = Date.now()): string {
  *    from dual-class dedup, since a user may hold the non-canonical class.
  *  - 'sp500' / 'nasdaq100' / 'dow30': the real index constituents, whatever
  *    their tier, so a member outside the actively-tracked universe still shows.
+ *    Same 30-day cutoff (CTRA, an override that is never refetched, sat in
+ *    the S&P 500 view on July numbers).
  *  - 'all': every row in screener_stats refreshed in the last 30 days.
  *  - 'active': the tier-1 actively-tracked universe via screener_active_rows(),
  *    so the on-demand/discovery long tail never bloats the default screen.
@@ -121,6 +123,7 @@ export async function loadScreenerUniverse(
       .from('screener_stats')
       .select('*')
       .in('ticker', INDEX_TICKERS[opts.scope])
+      .gte('updated_at', cutoff)
       .order('market_cap', { ascending: false, nullsFirst: false });
     result = { rows: (data ?? []) as ScreenerRow[], error: error?.message ?? null };
   } else if (opts.scope === 'all') {
