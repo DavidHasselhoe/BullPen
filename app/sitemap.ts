@@ -53,11 +53,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/dmca', priority: 0.3, changeFrequency: 'yearly' },
   ];
 
-  const lastModified = new Date();
+  // No lastModified: it was new Date() on every URL, and Google ignores a lastmod that is always today.
 
   const staticEntries = routes.map((route) => ({
     url: `${BASE_URL}${route.path}`,
-    lastModified,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }));
@@ -67,7 +66,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // it's safe to fully index unlike /stock and /asset (see robots.ts).
   const glossaryEntries = canonicalGlossaryTerms().map((term) => ({
     url: `${BASE_URL}/glossary/${glossarySlug(term)}`,
-    lastModified,
     changeFrequency: 'yearly' as const,
     priority: 0.4,
   }));
@@ -81,7 +79,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .order('pick_date', { ascending: false });
   const pickEntries = (pickRows ?? []).map((row) => ({
     url: `${BASE_URL}/picks/${(row as { pick_date: string }).pick_date}`,
-    lastModified,
     changeFrequency: 'weekly' as const,
     priority: 0.5,
   }));
@@ -92,7 +89,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // content pages above, which change far less often but matter more).
   const stockEntries = [...SIGNIFICANT_TICKERS].map((ticker) => ({
     url: `${BASE_URL}/stock/${ticker}`,
-    lastModified,
     changeFrequency: 'daily' as const,
     priority: 0.6,
   }));
@@ -109,7 +105,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ...((coverage.funds.get(ticker) ?? 0) >= MIN_FUND_HOLDERS ? [`/stock/${ticker}/fund-holders`] : []),
       ]).map((path) => ({
         url: `${BASE_URL}${path}`,
-        lastModified,
         changeFrequency: 'weekly' as const,
         priority: 0.5,
       }))
@@ -129,7 +124,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...funds.filter((f) => f.lastFiledDate).map((f) => `/discover/institutions/${f.slug}`),
   ].map((path) => ({
     url: `${BASE_URL}${path}`,
-    lastModified,
     changeFrequency: 'weekly' as const,
     priority: 0.6,
   }));
