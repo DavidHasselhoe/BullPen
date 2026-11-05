@@ -3,6 +3,7 @@
 // and offline backfill scripts, so the two never drift.
 
 import { getLogoUrl } from '@/lib/twelvedata/twelvedata-client';
+import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 import { uploadLogoToStorage } from './logos-storage';
 import { updateCompanyLogo } from './logos-db';
 
@@ -57,6 +58,8 @@ export async function downloadAndValidateLogo(url: string): Promise<ResolvedLogo
 }
 
 export async function resolveFromTwelveData(sym: string): Promise<ResolvedLogoImage | null> {
+  // An override ticker's /logo is the colliding company's (BLD -> British Land); let logo.dev answer.
+  if (getTickerOverride(sym)?.unavailable) return null;
   let cdnUrl: string | null = null;
   try {
     cdnUrl = await getLogoUrl(sym);

@@ -23,6 +23,10 @@
  *    acquisition) now resolves to TMX Group (TSX, Canada): profile, statistics,
  *    statements and earnings were all TMX's. /stocks has no US listing for X,
  *    which is why the screener universe already drops it.
+ *  - BLD (TopBuild, NYSE), NDX and ETF (checked 2026-11-05, /symbol_search):
+ *    TwelveData has no US listing under these symbols. BLD resolves to British
+ *    Land (UK REIT, GBP statements), NDX to the Nordex SE ADR (EUR statements),
+ *    ETF to Eastfield Resources (TSXV, zero revenue).
  *
  * If a future check finds TwelveData *does* have the correct listing behind
  * a country/exchange/mic_code filter, replace `unavailable` with a
@@ -39,6 +43,9 @@ export const TICKER_OVERRIDES: Record<string, TickerOverride> = {
   CTRA: { collidesWith: 'Ciputra Development Tbk PT (IDX, Indonesia)', unavailable: true },
   K: { collidesWith: 'Kinross Gold Corporation (TSX, Canada)', unavailable: true },
   X: { collidesWith: 'TMX Group Limited (TSX, Canada)', unavailable: true },
+  BLD: { collidesWith: 'British Land Company PLC (UK REIT; Frankfurt listing, EUR)', unavailable: true },
+  NDX: { collidesWith: 'Nordex SE - Unsponsored ADR (Frankfurt, Germany, EUR)', unavailable: true },
+  ETF: { collidesWith: 'Eastfield Resources Ltd. (TSXV, Canada)', unavailable: true },
 };
 
 export function getTickerOverride(symbol: string): TickerOverride | undefined {
