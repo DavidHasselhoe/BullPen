@@ -57,7 +57,8 @@ export function AIPanelToggle() {
   const { t } = useTranslation('ai');
   const { isOpen, toggle } = useAIPanel();
   const pathname = usePathname();
-  const hiddenForRoute = isStandalonePage(pathname) || isAcademyLessonRoute(pathname);
+  // The import review has its own sticky Save bar in the corner the button sits in.
+  const hiddenForRoute = isStandalonePage(pathname) || isAcademyLessonRoute(pathname) || pathname.startsWith('/holdings/import/');
   const visible = !hiddenForRoute && !isOpen;
 
   // Reserve room for the button at the end of the page on phones, the same

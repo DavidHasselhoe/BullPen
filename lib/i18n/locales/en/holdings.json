@@ -386,5 +386,21 @@
   "portfolioHealthUnscoredMore": "and {{count}} more",
   "portfolioHealthExplainUnscored": "Crypto, most funds and companies without published financial statements have no health score, so they are left out of the average.",
   "portfolioDashboardPricedOf": "{{count}} of {{total}} positions priced so far",
-  "holdingsPreviewValue": "Portfolio value"
+  "holdingsPreviewValue": "Portfolio value",
+  "importReviewModeTitle": "Add to your portfolio, or start over?",
+  "importReviewModeDescription": "You already have holdings you added by hand. Choose how this file should be saved.",
+  "importReviewModeReplaceAllTitle": "Start from scratch",
+  "importReviewModeReplaceAllDescription": "Clears every holding you added by hand, with its sales and activity, then rebuilds your portfolio from this file. Synced holdings stay.",
+  "importReviewDuplicateBadge": "Already in your portfolio",
+  "importReviewDuplicateInclude": "Include anyway",
+  "importReviewDuplicatesLeftOut_one": "{{count}} row is already in your portfolio, so it is left out.",
+  "importReviewDuplicatesLeftOut_other": "{{count}} rows are already in your portfolio, so they are left out.",
+  "importReviewReplaceAllSave": "Replace portfolio",
+  "importReviewReplaceAllConfirmTitle": "Replace your whole portfolio?",
+  "importReviewReplaceAllConfirmBody_zero": "This deletes the sales and activity of every holding you added by hand, then rebuilds your portfolio from this file. Holdings synced from your broker are not touched.",
+  "importReviewReplaceAllConfirmBody_one": "This deletes the {{count}} holding you added by hand, with all its sales and activity, then rebuilds your portfolio from this file. Holdings synced from your broker are not touched.",
+  "importReviewReplaceAllConfirmBody_other": "This deletes the {{count}} holdings you added by hand, with all their sales and activity, then rebuilds your portfolio from this file. Holdings synced from your broker are not touched.",
+  "importReviewReplaceAllConfirmSafety": "If saving fails, your portfolio stays exactly as it is now. You can also undo this from the Holdings page for 24 hours.",
+  "importReviewReplaceAllConfirmCancel": "Cancel",
+  "importReviewReplaceAllConfirmAction": "Replace portfolio"
 }

@@ -33,7 +33,24 @@ async function getHandler(
     return addSecurityHeaders(NextResponse.json({ error: 'Import not found' }, { status: 404 }));
   }
 
-  return addSecurityHeaders(NextResponse.json({ success: true, import: row }));
+  // The user's recorded trades, so the review grid can flag file rows that
+  // are already in the portfolio (re-importing the same file). Matched on
+  // the client because a ticker fixed in the grid changes the symbol.
+  // ponytail: PostgREST caps each list at 1000 rows; past that, older
+  // trades just go unflagged. Filter by the draft's symbols if that bites.
+  let existingTrades: { symbol: string; action: 'BUY' | 'SELL'; date: string; quantity: number; price: number }[] = [];
+  if (row.status === 'draft') {
+    const [{ data: lots }, { data: sales }] = await Promise.all([
+      supabase.from('holding_purchases').select('symbol, purchase_date, quantity, price').eq('user_id', session.userId),
+      supabase.from('holding_sales').select('symbol, sale_date, quantity_sold, sale_price').eq('user_id', session.userId),
+    ]);
+    existingTrades = [
+      ...(lots ?? []).map((l) => ({ symbol: l.symbol, action: 'BUY' as const, date: l.purchase_date, quantity: Number(l.quantity), price: Number(l.price) })),
+      ...(sales ?? []).map((s) => ({ symbol: s.symbol, action: 'SELL' as const, date: s.sale_date, quantity: Number(s.quantity_sold), price: Number(s.sale_price) })),
+    ];
+  }
+
+  return addSecurityHeaders(NextResponse.json({ success: true, import: row, existingTrades }));
 }
 
 async function patchHandler(

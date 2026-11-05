@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { TickerFixPopover, type FixedResolution } from './TickerFixPopover';
 import { DatePicker } from '@/components/ui/date-picker';
 import type { DateFormat } from '@/lib/import/dates';
-import { AlertCircle, CheckCircle2, X, RotateCcw, ChevronLeft, Loader2, GraduationCap, PlusCircle, RefreshCcw } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X, RotateCcw, ChevronLeft, Loader2, GraduationCap, PlusCircle, RefreshCcw, Eraser } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -112,6 +112,19 @@ function rowIssue(values: RowValues): 'date' | 'quantity' | 'price' | null {
 const CELL_INPUT_CLASS =
   'w-full rounded border border-transparent bg-transparent px-1 py-0.5 font-mono text-xs tabular-nums transition-colors hover:border-border/60 focus:border-primary focus:outline-none';
 
+interface ExistingTrade {
+  symbol: string;
+  action: 'BUY' | 'SELL';
+  date: string;
+  quantity: number;
+  price: number;
+}
+
+/** Rounded so a price stored as numeric still matches the file's float. */
+function tradeKey(symbol: string, action: string, date: string, quantity: number, price: number): string {
+  return `${symbol}|${action}|${date}|${quantity.toFixed(6)}|${price.toFixed(4)}`;
+}
+
 function collapseRanges(lines: number[]): string {
   if (lines.length === 0) return '';
   const sorted = [...lines].sort((a, b) => a - b);
@@ -139,7 +152,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   const rowRefs = useRef<Map<number, HTMLTableRowElement>>(new Map());
   const [flashLine, setFlashLine] = useState<number | null>(null);
 
-  const { data, isLoading, error } = useQuery<{ import: ImportRow }>({
+  const { data, isLoading, error } = useQuery<{ import: ImportRow; existingTrades?: ExistingTrade[] }>({
     queryKey: ['holdings-import', importId],
     queryFn: async () => {
       const res = await fetch(`/api/holdings/import/${importId}`);
@@ -166,7 +179,12 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   // Whether a re-imported ticker should stack on top of what's already
   // there, or replace it outright. Defaults to 'add' — the existing
   // behavior — so nothing changes for anyone who doesn't touch this.
-  const [importMode, setImportMode] = useState<'add' | 'replace'>('add');
+  // 'replace_all' clears every manual holding, sale and activity row first.
+  const [importMode, setImportMode] = useState<'add' | 'replace' | 'replace_all'>('add');
+  const [showReplaceAllConfirm, setShowReplaceAllConfirm] = useState(false);
+  // Rows that match an existing trade are left out in Add mode until the
+  // user includes them one by one.
+  const [includedDuplicates, setIncludedDuplicates] = useState<Set<number>>(new Set());
 
   const { data: existingHoldings } = useHoldings();
 
@@ -187,8 +205,41 @@ export function ImportReviewClient({ importId }: { importId: string }) {
     return merged;
   }, [draft, overrides]);
 
-  const rows = draft?.transactions ?? [];
-  const activeRows = rows.filter((r) => !removed.has(r.sourceLine));
+  const rows = useMemo(() => draft?.transactions ?? [], [draft]);
+
+  // File rows already recorded as a purchase or sale (same ticker, side,
+  // date, shares, price). Matched one for one, so a file with two identical
+  // buys against one recorded buy flags only one of them.
+  const duplicateLines = useMemo(() => {
+    const remaining = new Map<string, number>();
+    for (const tr of data?.existingTrades ?? []) {
+      const key = tradeKey(tr.symbol, tr.action, tr.date, tr.quantity, tr.price);
+      remaining.set(key, (remaining.get(key) ?? 0) + 1);
+    }
+    const lines = new Set<number>();
+    if (remaining.size === 0) return lines;
+    for (const tx of rows) {
+      if (removed.has(tx.sourceLine)) continue;
+      const r = resolutions[tx.securityKey];
+      const v = effectiveRow(tx, edits[tx.sourceLine]);
+      if (r?.status !== 'resolved' || !v.date || v.quantity == null || v.price == null) continue;
+      const key = tradeKey(r.candidate.symbol, tx.action, v.date, v.quantity, v.price);
+      const left = remaining.get(key) ?? 0;
+      if (left > 0) {
+        lines.add(tx.sourceLine);
+        remaining.set(key, left - 1);
+      }
+    }
+    return lines;
+  }, [data?.existingTrades, rows, removed, resolutions, edits]);
+
+  // Duplicates only matter when stacking on top: both replace modes clear
+  // the old trades first.
+  const isDuplicateExcluded = (line: number) =>
+    importMode === 'add' && duplicateLines.has(line) && !includedDuplicates.has(line);
+  const excludedDuplicateCount = importMode === 'add' ? [...duplicateLines].filter((l) => !includedDuplicates.has(l)).length : 0;
+  const isLeftOut = (line: number) => removed.has(line) || isDuplicateExcluded(line);
+  const activeRows = rows.filter((r) => !isLeftOut(r.sourceLine));
   const isRowBroken = (r: RawTransaction) =>
     resolutions[r.securityKey]?.status !== 'resolved' ||
     replayFlags.has(r.sourceLine) ||
@@ -208,6 +259,11 @@ export function ImportReviewClient({ importId }: { importId: string }) {
     }
     return existingHoldings.filter((h) => h.source === 'manual' && importSymbols.has(h.symbol));
   }, [existingHoldings, activeRows, resolutions]);
+
+  // What "Start from scratch" would clear. Recorded sales count too: a sold
+  // position leaves no open holding but still sits in History.
+  const manualHoldingCount = (existingHoldings ?? []).filter((h) => h.source === 'manual' && (h.quantity ?? 0) > 0).length;
+  const canReplaceAll = manualHoldingCount > 0 || (data?.existingTrades ?? []).some((tr) => tr.action === 'SELL');
 
   const securityLabel = (tx: RawTransaction) => tx.name ?? tx.rawSymbol ?? tx.isin ?? t('importReviewUnknownSecurity');
 
@@ -257,7 +313,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
           return edit ? { ...tx, ...effectiveRow(tx, edit) } : tx;
         }),
         resolutions,
-        removedSourceLines: [...removed],
+        removedSourceLines: rows.filter((r) => isLeftOut(r.sourceLine)).map((r) => r.sourceLine),
       };
       const patchRes = await fetch(`/api/holdings/import/${importId}`, {
         method: 'PATCH',
@@ -288,6 +344,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
       // Replace mode deletes sales and the import adds its own sells.
       queryClient.invalidateQueries({ queryKey: ['holding-sales'] });
       queryClient.invalidateQueries({ queryKey: ['portfolio-performance'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['recent-import'] });
       router.push('/holdings');
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : t('importReviewErrorGeneric'));
@@ -363,51 +420,54 @@ export function ImportReviewClient({ importId }: { importId: string }) {
           </Accordion>
         )}
 
-        {overlappingHoldings.length > 0 && (
+        {(overlappingHoldings.length > 0 || canReplaceAll) && (
           <div className="mb-4 rounded-xl border border-border/40 p-4">
             <p className="text-xs font-medium text-foreground/80 mb-1">
-              {overlappingHoldings.length === 1
-                ? t('importReviewOverlapTitleOne', { symbol: overlappingHoldings[0].symbol })
-                : t('importReviewOverlapTitleMany', { count: overlappingHoldings.length })}
+              {overlappingHoldings.length === 0
+                ? t('importReviewModeTitle')
+                : overlappingHoldings.length === 1
+                  ? t('importReviewOverlapTitleOne', { symbol: overlappingHoldings[0].symbol })
+                  : t('importReviewOverlapTitleMany', { count: overlappingHoldings.length })}
             </p>
             <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
-              {t('importReviewOverlapDescription')}
+              {overlappingHoldings.length === 0 ? t('importReviewModeDescription') : t('importReviewOverlapDescription')}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setImportMode('add')}
-                className={cn(
-                  'flex items-start gap-2 rounded-lg border p-3 text-left transition-colors',
-                  importMode === 'add' ? 'border-primary bg-primary/5' : 'border-border/40 hover:bg-muted/30'
-                )}
-              >
-                <PlusCircle className={cn('h-4 w-4 mt-0.5 shrink-0', importMode === 'add' ? 'text-primary' : 'text-muted-foreground')} />
-                <span className="min-w-0">
-                  <span className="block text-xs font-medium text-foreground">{t('importReviewModeAddTitle')}</span>
-                  <span className="block text-[11px] text-muted-foreground mt-0.5">
-                    {t('importReviewModeAddDescription')}
-                  </span>
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setImportMode('replace')}
-                className={cn(
-                  'flex items-start gap-2 rounded-lg border p-3 text-left transition-colors',
-                  importMode === 'replace' ? 'border-primary bg-primary/5' : 'border-border/40 hover:bg-muted/30'
-                )}
-              >
-                <RefreshCcw className={cn('h-4 w-4 mt-0.5 shrink-0', importMode === 'replace' ? 'text-primary' : 'text-muted-foreground')} />
-                <span className="min-w-0">
-                  <span className="block text-xs font-medium text-foreground">{t('importReviewModeReplaceTitle')}</span>
-                  <span className="block text-[11px] text-muted-foreground mt-0.5">
-                    {overlappingHoldings.length === 1
-                      ? t('importReviewModeReplaceDescriptionOne', { symbol: overlappingHoldings[0].symbol })
-                      : t('importReviewModeReplaceDescriptionMany')}
-                  </span>
-                </span>
-              </button>
+            <div className={cn('grid grid-cols-1 gap-2', overlappingHoldings.length > 0 && canReplaceAll ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+              {(
+                [
+                  { mode: 'add', Icon: PlusCircle, title: t('importReviewModeAddTitle'), description: t('importReviewModeAddDescription'), show: true },
+                  {
+                    mode: 'replace',
+                    Icon: RefreshCcw,
+                    title: t('importReviewModeReplaceTitle'),
+                    description:
+                      overlappingHoldings.length === 1
+                        ? t('importReviewModeReplaceDescriptionOne', { symbol: overlappingHoldings[0].symbol })
+                        : t('importReviewModeReplaceDescriptionMany'),
+                    show: overlappingHoldings.length > 0,
+                  },
+                  { mode: 'replace_all', Icon: Eraser, title: t('importReviewModeReplaceAllTitle'), description: t('importReviewModeReplaceAllDescription'), show: canReplaceAll },
+                ] as const
+              )
+                .filter((o) => o.show)
+                .map(({ mode, Icon, title, description }) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-pressed={importMode === mode}
+                    onClick={() => setImportMode(mode)}
+                    className={cn(
+                      'flex items-start gap-2 rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      importMode === mode ? 'border-primary bg-primary/5' : 'border-border/40 hover:bg-muted/30'
+                    )}
+                  >
+                    <Icon className={cn('h-4 w-4 mt-0.5 shrink-0', importMode === mode ? 'text-primary' : 'text-muted-foreground')} />
+                    <span className="min-w-0">
+                      <span className="block text-xs font-medium text-foreground">{title}</span>
+                      <span className="block text-[11px] text-muted-foreground mt-0.5">{description}</span>
+                    </span>
+                  </button>
+                ))}
             </div>
           </div>
         )}
@@ -428,7 +488,9 @@ export function ImportReviewClient({ importId }: { importId: string }) {
             </TableHeader>
             <TableBody>
               {rows.map((tx, idx) => {
-                const isRemoved = removed.has(tx.sourceLine);
+                const isRemoved = isLeftOut(tx.sourceLine);
+                const isDupExcluded = !removed.has(tx.sourceLine) && isDuplicateExcluded(tx.sourceLine);
+                const isDuplicate = importMode === 'add' && duplicateLines.has(tx.sourceLine) && !removed.has(tx.sourceLine);
                 const resolution = resolutions[tx.securityKey];
                 const replayFlagDetail = replayFlags.get(tx.sourceLine);
                 const isUnresolved = !isRemoved && resolution?.status !== 'resolved';
@@ -444,7 +506,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                     ref={(el) => { if (el) rowRefs.current.set(tx.sourceLine, el); }}
                     className={cn(
                       'transition-colors',
-                      isRemoved && 'opacity-40',
+                      isRemoved && (isDupExcluded ? 'opacity-60' : 'opacity-40'),
                       isBroken && 'bg-amber-500/[0.06]',
                       flashLine === tx.sourceLine && 'ring-2 ring-inset ring-amber-500/60'
                     )}
@@ -490,6 +552,11 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                       >
                         {tx.action === 'BUY' ? t('importReviewActionBuy') : t('importReviewActionSell')}
                       </span>
+                      {isDuplicate && (
+                        <span className="mt-1 block whitespace-nowrap text-[11px] text-muted-foreground">
+                          {t('importReviewDuplicateBadge')}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <DatePicker
@@ -538,17 +605,31 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                       {totalCost != null ? totalCost.toFixed(2) : '—'}
                     </TableCell>
                     <TableCell>
-                      {isRemoved ? (
+                      {isDupExcluded ? (
+                        <button
+                          type="button"
+                          onClick={() => setIncludedDuplicates((s) => new Set(s).add(tx.sourceLine))}
+                          className="-my-1.5 whitespace-nowrap rounded px-1 py-1.5 text-[11px] font-medium text-foreground/80 underline underline-offset-2 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {t('importReviewDuplicateInclude')}
+                        </button>
+                      ) : isRemoved ? (
                         <button
                           onClick={() => setRemoved((s) => { const next = new Set(s); next.delete(tx.sourceLine); return next; })}
                           className="text-muted-foreground hover:text-foreground transition-colors"
                           title={t('importReviewUndoRemove')}
+                          aria-label={t('importReviewUndoRemove')}
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
                         </button>
                       ) : (
                         <button
-                          onClick={() => setRemoved((s) => new Set(s).add(tx.sourceLine))}
+                          aria-label={t('importReviewRemoveRow')}
+                          onClick={() =>
+                            isDuplicate
+                              ? setIncludedDuplicates((s) => { const next = new Set(s); next.delete(tx.sourceLine); return next; })
+                              : setRemoved((s) => new Set(s).add(tx.sourceLine))
+                          }
                           className="text-muted-foreground hover:text-red-400 transition-colors"
                           title={t('importReviewRemoveRow')}
                         >
@@ -591,18 +672,53 @@ export function ImportReviewClient({ importId }: { importId: string }) {
                 {t('importReviewReadyCount', { ready: readyRows.length, total: activeRows.length })}
               </p>
             )}
-            {saveError && <p className="mt-1 text-red-400">{saveError}</p>}
+            {excludedDuplicateCount > 0 && (
+              <p className="mt-1 text-muted-foreground">{t('importReviewDuplicatesLeftOut', { count: excludedDuplicateCount })}</p>
+            )}
+            {saveError && <p role="alert" className="mt-1 text-red-400">{saveError}</p>}
           </div>
           <Button
-            onClick={handleSave}
+            onClick={() => (importMode === 'replace_all' ? setShowReplaceAllConfirm(true) : handleSave())}
             disabled={brokenRows.length > 0 || activeRows.length === 0 || saving}
+            variant={importMode === 'replace_all' ? 'destructive' : 'default'}
             className="shrink-0 gap-1.5"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-            {saving ? t('importReviewSaving') : t('importReviewSave', { count: readyRows.length })}
+            {saving
+              ? t('importReviewSaving')
+              : importMode === 'replace_all'
+                ? t('importReviewReplaceAllSave')
+                : t('importReviewSave', { count: readyRows.length })}
           </Button>
         </div>
       </div>
+
+      <Dialog open={showReplaceAllConfirm} onOpenChange={setShowReplaceAllConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold">{t('importReviewReplaceAllConfirmTitle')}</DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              {t('importReviewReplaceAllConfirmBody', { count: manualHoldingCount, transactions: readyRows.length })}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-xs leading-relaxed text-muted-foreground">{t('importReviewReplaceAllConfirmSafety')}</p>
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setShowReplaceAllConfirm(false)}>
+              {t('importReviewReplaceAllConfirmCancel')}
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => {
+                setShowReplaceAllConfirm(false);
+                void handleSave();
+              }}
+            >
+              {t('importReviewReplaceAllConfirmAction')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
         <DialogContent className="sm:max-w-sm">

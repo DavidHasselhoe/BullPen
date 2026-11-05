@@ -22,6 +22,9 @@ import { logger } from '@/lib/utils/logger';
 /** Matches SELL_EPSILON in holdings-db — a quantity this small is zero. */
 const QTY_EPSILON = 1e-9;
 
+/** Comfortably past the commit route's maxDuration (300s). */
+export const STUCK_COMMIT_MS = 6 * 60 * 1000;
+
 export interface UndoImportResult {
   success: boolean;
   revertedCount?: number;
@@ -71,7 +74,7 @@ export async function undoImport(userId: string, importId: string): Promise<Undo
 
     const { data: importRow, error: importErr } = await supabase
       .from('holdings_imports')
-      .select('id, status, created_at, committed_at')
+      .select('id, status, created_at, committed_at, has_snapshot:replaced_snapshot->holdings')
       .eq('id', importId)
       .eq('user_id', userId)
       .maybeSingle();
@@ -79,6 +82,39 @@ export async function undoImport(userId: string, importId: string): Promise<Undo
     if (importErr || !importRow) {
       return { success: false, blocked: true, error: 'Import not found' };
     }
+
+    // A whole-portfolio replace undoes by putting the cleared portfolio
+    // back, in one transaction (migration 189), rather than walking the
+    // journal: before it ran, there was nothing of the file's to unwind.
+    // 'committing' qualifies only once the replay is clearly dead (past the
+    // commit route's 300s limit), so a running import isn't pulled out
+    // from under itself.
+    if (importRow.has_snapshot != null) {
+      const stuck =
+        importRow.status === 'committing' &&
+        Date.now() - new Date(importRow.committed_at as string).getTime() > STUCK_COMMIT_MS;
+      if (importRow.status !== 'done' && importRow.status !== 'failed' && !stuck) {
+        return { success: false, blocked: true, error: `This import can't be undone (it is "${importRow.status}").` };
+      }
+      const { data: reverted, error: restoreErr } = await supabase.rpc('import_restore_manual_portfolio', {
+        p_user_id: userId,
+        p_import_id: importId,
+        p_reset_to_draft: false,
+      });
+      if (restoreErr) {
+        if (restoreErr.message.includes('changed_since_import')) {
+          return {
+            success: false,
+            blocked: true,
+            error: "You've added or sold holdings since this import, so undoing it would delete those too. Nothing was changed.",
+          };
+        }
+        logger.error('import_restore_manual_portfolio failed:', restoreErr);
+        return { success: false, error: 'Could not restore your previous portfolio. Nothing was changed.' };
+      }
+      return { success: true, revertedCount: (reverted as number) ?? 0 };
+    }
+
     // 'failed' is undoable on purpose: a run that died partway applied
     // everything up to the failure, and that half-import is exactly the
     // mess worth reversing.

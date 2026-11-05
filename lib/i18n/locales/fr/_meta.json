@@ -4234,5 +4234,21 @@
   "holdings.soldPositionsRemoveConfirmTitle": "e1cf4333d4f70d7719bb37ec13e72cb4c2815bdd1cfa9a6b76de7b44fe1077ed",
   "holdings.soldPositionsRemoveError": "29c46eaee14aba115093283fbdf72686a03d25a2d2cd8b1101bbe2d57c4489c5",
   "holdings.soldPositionsRemoveTitle": "bea267e377e7bbf4b57922b0811d372559b257081394d407a5e915101b9db103",
-  "holdings.soldPositionsUndoError": "113e0c88eba5864d935d9d9694cdc2404e15b85cf280436f2f103bca12e24f9d"
+  "holdings.soldPositionsUndoError": "113e0c88eba5864d935d9d9694cdc2404e15b85cf280436f2f103bca12e24f9d",
+  "holdings.importReviewModeTitle": "df88a4c732ce466fc114292eca7d5231dfdbe4adfa8e1340f07de1ed671db027",
+  "holdings.importReviewModeDescription": "800886a1b98e385760ef1a2cea499f4883cb6777f1b640a363d532fc4091b419",
+  "holdings.importReviewModeReplaceAllTitle": "a4822ffed15b5e7d8a2f431357780e8c3e683a68b8b8d3896b605ce4540b1655",
+  "holdings.importReviewModeReplaceAllDescription": "11846556f0a01073429684023178ef174f4e2b3738b7aae0335aab6e30a6ef85",
+  "holdings.importReviewDuplicateBadge": "5cf466177ab646c074be98390725a8383ceb062a5b1a85c3f67c6e5e434c40d0",
+  "holdings.importReviewDuplicateInclude": "6af7a161dc67fb7aa0530f855dfd891d96dc249ff4b5f8ba6166c297d474ed62",
+  "holdings.importReviewDuplicatesLeftOut_one": "26d2f0525bfef6f39ed12732b25963d3c019813c12f9dbacea58d981ddbbcdcb",
+  "holdings.importReviewDuplicatesLeftOut_other": "1ac9141d0485e85f3ff1dae008cce2d88db4138626c0a6aa3f64161700d788f8",
+  "holdings.importReviewReplaceAllSave": "87d3ad87e36ecf1dc2f0a98b305ec51b2d296c55603029854ade8d4d6634e611",
+  "holdings.importReviewReplaceAllConfirmTitle": "9fc06ec9eb4f3f557d693326043ddc0dd0923142c866251840627289473053e7",
+  "holdings.importReviewReplaceAllConfirmBody_zero": "eafcec500860cffb901e1214bc1c718603ee3d4204b2a8558285376462f6c438",
+  "holdings.importReviewReplaceAllConfirmBody_one": "1b575426666d5d349c8feccb9bcccb0075d4e2b5c74b20ba08d7a76f115068d1",
+  "holdings.importReviewReplaceAllConfirmBody_other": "831427900623ffbc6376ce42cd7beb5041bb98d4fafc94c6944d0d4e0fcfb488",
+  "holdings.importReviewReplaceAllConfirmSafety": "a60a5f36e38607bfd8b000283fb7d137e3ebad349184b5c5bfc0459c036caeb5",
+  "holdings.importReviewReplaceAllConfirmCancel": "19766ed6ccb2f4a32778eed80d1928d2c87a18d7c275ccb163ec6709d3eb2e27",
+  "holdings.importReviewReplaceAllConfirmAction": "87d3ad87e36ecf1dc2f0a98b305ec51b2d296c55603029854ade8d4d6634e611"
 }

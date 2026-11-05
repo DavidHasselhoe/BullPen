@@ -32,10 +32,11 @@ async function handler(request: NextRequest, context: unknown, session: { userId
   // this import touches before replaying, instead of stacking imported
   // buys/sells on top of what's already there. Defaults to 'add' (the
   // original behavior) for any caller that doesn't send a mode.
-  let mode: 'add' | 'replace' = 'add';
+  // 'replace_all' clears the whole manual portfolio first (see below).
+  let mode: 'add' | 'replace' | 'replace_all' = 'add';
   try {
     const body = await request.json();
-    if (body?.mode === 'replace') mode = 'replace';
+    if (body?.mode === 'replace' || body?.mode === 'replace_all') mode = body.mode;
   } catch {
     // no body / not JSON — keep the 'add' default
   }
@@ -162,6 +163,13 @@ async function handler(request: NextRequest, context: unknown, session: { userId
     }
   }
 
+  // 'replace_all' plans against the synced holdings alone, since every
+  // manual one is about to go. Planning first means a blocked file never
+  // clears anything.
+  if (mode === 'replace_all') {
+    for (const h of [...existingHoldings.values()]) if (h.source === 'manual') existingHoldings.delete(h.symbol);
+  }
+
   const plan = planReplay(activeTransactions, bySecurityKey, existingHoldings);
   if (plan.blocked) {
     return addSecurityHeaders(NextResponse.json({ error: 'Some transactions need attention before saving.', flags: plan.flags }, { status: 422 }));
@@ -171,7 +179,49 @@ async function handler(request: NextRequest, context: unknown, session: { userId
   const settings = (userRow?.settings as Record<string, unknown>) ?? {};
   const homeCurrency = typeof settings.default_currency === 'string' && settings.default_currency !== 'exchange' ? settings.default_currency : 'USD';
 
-  const result = await executeReplay(session.userId, id, plan, resolvedInfo, homeCurrency);
+  if (mode === 'replace_all') {
+    // One transaction: snapshot every manual holding, lot, sale and activity
+    // row onto the import, then delete them (migration 189).
+    const { error: clearError } = await supabase.rpc('import_clear_manual_portfolio', {
+      p_user_id: session.userId,
+      p_import_id: id,
+    });
+    if (clearError) {
+      const notDraft = clearError.message.includes('import_not_draft');
+      return addSecurityHeaders(
+        NextResponse.json(
+          { error: notDraft ? 'This import is already being saved.' : 'Could not clear your portfolio, so nothing was changed.' },
+          { status: notDraft ? 409 : 500 }
+        )
+      );
+    }
+  }
+
+  // A throw (an FX lookup, a dropped connection) must reach the rollback
+  // below too, not skip it with the portfolio already cleared.
+  const result = await executeReplay(session.userId, id, plan, resolvedInfo, homeCurrency).catch(
+    (err: unknown) => ({ success: false, appliedCount: 0, totalCount: plan.ops.length, error: err instanceof Error ? err.message : 'Import failed' })
+  );
+
+  if (!result.success && mode === 'replace_all') {
+    // Put the old portfolio back and hand the draft back to the review grid,
+    // so a failed import never leaves an empty portfolio behind.
+    const { error: restoreError } = await supabase.rpc('import_restore_manual_portfolio', {
+      p_user_id: session.userId,
+      p_import_id: id,
+      p_reset_to_draft: true,
+    });
+    return addSecurityHeaders(
+      NextResponse.json(
+        {
+          error: restoreError
+            ? 'The import failed partway. Your previous portfolio is saved. Use Undo on the Holdings page to restore it.'
+            : 'The import failed, so your portfolio was left as it was. You can try saving again.',
+        },
+        { status: 500 }
+      )
+    );
+  }
 
   if (!result.success) {
     return addSecurityHeaders(
