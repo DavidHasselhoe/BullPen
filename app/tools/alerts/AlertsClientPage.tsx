@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/hooks/use-auth';
+import { useEntitlements } from '@/hooks/use-entitlements';
 import { humanizeError } from '@/lib/errors/humanize';
 import { cn } from '@/lib/utils';
 import { CreateAlertForm } from '@/components/alerts/CreateAlertForm';
@@ -22,6 +23,8 @@ export default function AlertsClientPage() {
   const { t } = useTranslation('tools');
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  // Pro and admin have no cap, so the "x/5" meter is free-only (the server, app/api/alerts/route.ts, gates on the same tier).
+  const { maxAlertStocks } = useEntitlements();
 
   // When arriving from the command palette (?symbol=NVDA&name=NVIDIA+Corporation),
   // open the composer immediately. useState initializer runs once so this is safe.
@@ -93,7 +96,7 @@ export default function AlertsClientPage() {
                 {t('alertsNewAlert', 'New alert')}
               </Button>
             )}
-            {!isLoading && (
+            {!isLoading && maxAlertStocks !== 'unlimited' && (
               <div className="hidden items-center gap-1.5 whitespace-nowrap sm:flex">
                 <div className="h-1 w-14 overflow-hidden rounded-full bg-muted/60">
                   <div
