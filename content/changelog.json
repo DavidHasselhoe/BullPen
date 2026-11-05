@@ -1,5 +1,45 @@
 [
   {
+    "date": "2026-11-05",
+    "entries": [
+      {
+        "type": "fixed",
+        "text": "Push notifications on your phone and computer now arrive. A setup problem on our side had stopped every one of them from being sent",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "Start from scratch when importing: replace your whole manual portfolio with the file in one step. Connected brokers are left alone, and Undo puts your old portfolio back",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Importing the same trades twice no longer doubles them. Trades already in your portfolio are left out, and you can include any of them if you need to"
+      },
+      {
+        "type": "improved",
+        "text": "Ask Bull why a stock is up or down today and it tells you what the news says",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "When Bull looks at your holdings, it weighs each one by what it is worth today, not by what you paid"
+      },
+      {
+        "type": "fixed",
+        "text": "The screener no longer shows numbers that are months old. Smaller companies are refreshed far more often, and about 45 that were being skipped every night are back"
+      },
+      {
+        "type": "fixed",
+        "text": "Company logos now fit inside their circles, so marks like Apple, Microsoft and Google are no longer cut off at the edges"
+      },
+      {
+        "type": "fixed",
+        "text": "If part of an import fails to save, the holding it was saving is put back as it was instead of being left half done"
+      }
+    ]
+  },
+  {
     "date": "2026-11-04",
     "entries": [
       {
