@@ -1,35 +1,37 @@
 /**
- * Web Push sender. Never throws: a missing VAPID config or a failed send is reported as 'error'
- * so one bad device cannot stop the dispatch run.
+ * Web Push sender. Never throws: a missing or malformed VAPID config or a failed send comes back
+ * as `{ error }` so one bad device cannot stop the dispatch run, and the caller can report why.
  */
 import webpush from 'web-push';
 
 export interface StoredSubscription { id: string; endpoint: string; p256dh: string; auth: string }
 
-let configured: boolean | null = null;
+// null = not tried yet, '' = configured, otherwise why it failed.
+let configError: string | null = null;
 
 // Configured lazily so a missing env var only affects sending, not importing this module.
-function configure(): boolean {
-  if (configured !== null) return configured;
+function configure(): string {
+  if (configError !== null) return configError;
   const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const priv = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT;
   try {
     if (!pub || !priv || !subject) throw new Error('VAPID env vars are not set');
     webpush.setVapidDetails(subject, pub, priv);
-    configured = true;
+    configError = '';
   } catch (err) {
-    console.error('[push-send] VAPID not configured:', err instanceof Error ? err.message : err);
-    configured = false;
+    configError = `VAPID not configured: ${err instanceof Error ? err.message : String(err)}`;
+    console.error('[push-send]', configError);
   }
-  return configured;
+  return configError;
 }
 
 export async function sendPush(
   sub: StoredSubscription,
   payload: { title: string; body: string; url: string; tag: string },
-): Promise<'sent' | 'gone' | 'error'> {
-  if (!configure()) return 'error';
+): Promise<'sent' | 'gone' | { error: string }> {
+  const configErr = configure();
+  if (configErr) return { error: configErr };
   try {
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
@@ -38,9 +40,10 @@ export async function sendPush(
     );
     return 'sent';
   } catch (err) {
-    const status = (err as { statusCode?: number }).statusCode;
+    const status = (err as { statusCode?: number; body?: string }).statusCode;
     if (status === 404 || status === 410) return 'gone';
-    console.error('[push-send] send failed:', status ?? (err instanceof Error ? err.message : err));
-    return 'error';
+    const detail = status ? `${status} ${String((err as { body?: string }).body ?? '').slice(0, 120)}` : err instanceof Error ? err.message : String(err);
+    console.error('[push-send] send failed:', detail);
+    return { error: `send failed (${new URL(sub.endpoint).host}): ${detail}` };
   }
 }

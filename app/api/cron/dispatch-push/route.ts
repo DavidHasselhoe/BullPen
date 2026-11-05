@@ -139,7 +139,11 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       const result = await sendPush(sub, payload);
       if (result === 'sent') sentIds.push(sub.id);
       else if (result === 'gone') goneIds.push(sub.id);
-      else stats.failed++;
+      else {
+        // Into errors, not just a count: errors_count is what the cron alert fires on.
+        stats.failed++;
+        noteError(result.error);
+      }
     }
     if (goneIds.length > 0) {
       const { error } = await supabase.from('push_subscriptions').delete().in('id', goneIds);
