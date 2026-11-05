@@ -11,7 +11,7 @@
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 
 const BUCKET = 'company-logos';
 const BACKUP = '.playwright-mcp/logo-backup';
@@ -27,6 +27,9 @@ async function selfCheck(fit: typeof import('../lib/logos/fit-logo-to-circle').f
   assert.equal(await fit(bleed, 'image/png'), null, 'full-bleed colour untouched');
   const disc = await sharp(Buffer.from('<svg width="104" height="104"><rect width="104" height="104" fill="#fff"/><circle cx="52" cy="52" r="52" fill="#0092bb"/></svg>')).png().toBuffer();
   assert.equal(await fit(disc, 'image/png'), null, 'disc logo untouched');
+  // Microsoft: four colours reach round the rim. That is a mark, not a one-colour badge, so it fits.
+  const quad = await sharp(Buffer.from('<svg width="104" height="104"><rect width="104" height="104" fill="#fff"/><rect x="1" y="1" width="50" height="50" fill="#f25022"/><rect x="53" y="1" width="50" height="50" fill="#7fba00"/><rect x="1" y="53" width="50" height="50" fill="#00a4ef"/><rect x="53" y="53" width="50" height="50" fill="#ffb900"/></svg>')).png().toBuffer();
+  assert.ok(await fit(quad, 'image/png'), 'multicolour mark reaching round the rim is fitted');
   // A small mark already inside the circle is left alone.
   const small = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#000' } })
     .extend({ top: 32, bottom: 32, left: 32, right: 32, background: '#fff' }).png().toBuffer();
@@ -67,13 +70,17 @@ async function main() {
     try {
       const { data, error } = await db.storage.from(BUCKET).download(name);
       if (error || !data) throw error ?? new Error('empty download');
-      const buf = Buffer.from(await data.arrayBuffer());
+      const stored = Buffer.from(await data.arrayBuffer());
       const mime = /png$/i.test(name) ? 'image/png' : 'image/jpeg';
-      const out = await fitLogoToCircle(buf, mime);
+      if (!(await fitLogoToCircle(stored, mime))) return; // already fits
+      // Refit from the saved original when there is one, never from an already-shrunk copy.
+      const backup = `${BACKUP}/${name}`;
+      const original = existsSync(backup) ? readFileSync(backup) : stored;
+      const out = await fitLogoToCircle(original, mime);
       if (!out) return;
       changed++;
       if (dry) { console.log(`would fit ${name}`); return; }
-      writeFileSync(`${BACKUP}/${name}`, buf);
+      if (!existsSync(backup)) writeFileSync(backup, stored); // the first original is the one to keep
       const up = await db.storage.from(BUCKET).upload(name, out, { contentType: mime, upsert: true, cacheControl: 'public, max-age=31536000' });
       if (up.error) throw up.error;
       console.log(`fitted ${name}`);
