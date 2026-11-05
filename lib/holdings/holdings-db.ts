@@ -182,8 +182,9 @@ export async function getHoldings(
  * Records one purchase lot for a holding — inserted by both addHolding (the
  * initial buy) and addOrUpdateHolding (every subsequent top-up), so every
  * discrete buy event gets its own row for accurate multi-dot chart markers.
- * Best-effort: logs and swallows errors rather than failing the parent
- * mutation, same fire-and-forget pattern as recordPortfolioActivity.
+ * Never throws: logs and returns `{ error }`. Fire-and-forget callers ignore
+ * it; awaitLots callers must fail the parent mutation and undo its holding
+ * write, or the import's rollback never runs.
  */
 async function recordHoldingPurchase(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -199,7 +200,7 @@ async function recordHoldingPurchase(
     asset_type?: string | null;
   },
   lot: { quantity: number; price: number; purchaseDate: string }
-): Promise<{ id: string } | null> {
+): Promise<{ id: string; error?: never } | { id?: never; error: string }> {
   const insert: Omit<InsertHoldingPurchase, 'id'> = {
     user_id: userId,
     holding_id: holding.id,
@@ -216,7 +217,7 @@ async function recordHoldingPurchase(
   const { data, error } = await supabase.from('holding_purchases').insert(insert).select('id').single();
   if (error) {
     logger.error('Error recording holding purchase lot:', error);
-    return null;
+    return { error: error.message || 'Failed to record purchase lot' };
   }
   return { id: data.id as string };
 }
@@ -293,10 +294,6 @@ export async function addHolding(
       };
     }
 
-    if (recordActivity) {
-      void recordPortfolioActivity(userId, newHolding.symbol, newHolding.company_name, 'opened');
-    }
-
     let purchaseLotId: string | undefined;
     if (newHolding.quantity != null && newHolding.quantity > 0 && newHolding.avg_price != null && newHolding.avg_price > 0) {
       const lot = {
@@ -306,10 +303,20 @@ export async function addHolding(
       };
       if (awaitLots) {
         const inserted = await recordHoldingPurchase(supabase, userId, newHolding as UserHolding, lot);
-        purchaseLotId = inserted?.id;
+        if (inserted.error) {
+          // A holding with no lot is the state the import must never leave behind.
+          const { error: undoErr } = await supabase.from('user_holdings').delete().eq('id', newHolding.id).eq('user_id', userId);
+          if (undoErr) logger.error('Failed to remove holding after lot insert failed:', undoErr);
+          return { success: false, error: inserted.error };
+        }
+        purchaseLotId = inserted.id;
       } else {
         void recordHoldingPurchase(supabase, userId, newHolding as UserHolding, lot);
       }
+    }
+
+    if (recordActivity) {
+      void recordPortfolioActivity(userId, newHolding.symbol, newHolding.company_name, 'opened');
     }
 
     return {
@@ -348,7 +355,7 @@ export async function addOrUpdateHolding(
 
     const { data: existing } = await supabase
       .from('user_holdings')
-      .select('id, quantity, avg_price, date_purchased, purchase_currency, purchase_fx_rate, trading_currency, asset_type, mic_code, exchange')
+      .select('id, company_name, quantity, avg_price, date_purchased, purchase_currency, purchase_fx_rate, trading_currency, asset_type, mic_code, exchange')
       .eq('user_id', userId)
       .eq('symbol', holding.symbol.toUpperCase())
       .maybeSingle();
@@ -396,6 +403,32 @@ export async function addOrUpdateHolding(
       }
 
       let purchaseLotId: string | undefined;
+      let backfillLotId: string | undefined;
+      // awaitLots only: a lot write failed, so put the holding back exactly as
+      // it was (and drop a backfill lot this call made) before reporting it.
+      const failAndRestore = async (lotError: string): Promise<AddHoldingResult> => {
+        if (backfillLotId) {
+          const { error: e } = await supabase.from('holding_purchases').delete().eq('id', backfillLotId).eq('user_id', userId);
+          if (e) logger.error('Failed to remove backfill lot after lot insert failed:', e);
+        }
+        const { error: e } = await supabase
+          .from('user_holdings')
+          .update({
+            quantity: existing.quantity,
+            avg_price: existing.avg_price,
+            company_name: existing.company_name,
+            trading_currency: existing.trading_currency,
+            purchase_currency: existing.purchase_currency,
+            purchase_fx_rate: existing.purchase_fx_rate,
+            asset_type: existing.asset_type,
+            mic_code: existing.mic_code,
+            exchange: existing.exchange,
+          })
+          .eq('id', existing.id)
+          .eq('user_id', userId);
+        if (e) logger.error('Failed to restore holding after lot insert failed:', e);
+        return { success: false, error: lotError };
+      };
       if (addQty > 0 && holding.avg_price != null && holding.avg_price > 0) {
         const { count: existingLotCount, error: lotCountErr } = await supabase
           .from('holding_purchases')
@@ -423,7 +456,13 @@ export async function addOrUpdateHolding(
             },
             { quantity: existingQty, price: existing.avg_price, purchaseDate: existing.date_purchased }
           );
-          if (awaitLots) await backfillLot; else void backfillLot;
+          if (awaitLots) {
+            const backfilled = await backfillLot;
+            if (backfilled.error) return failAndRestore(backfilled.error);
+            backfillLotId = backfilled.id;
+          } else {
+            void backfillLot;
+          }
         }
 
         const newLot = recordHoldingPurchase(
@@ -442,7 +481,8 @@ export async function addOrUpdateHolding(
         );
         if (awaitLots) {
           const inserted = await newLot;
-          purchaseLotId = inserted?.id;
+          if (inserted.error) return failAndRestore(inserted.error);
+          purchaseLotId = inserted.id;
         } else {
           void newLot;
         }
