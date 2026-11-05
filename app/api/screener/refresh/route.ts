@@ -128,7 +128,15 @@ async function handler(request: NextRequest): Promise<NextResponse> {
   if (mode === 'discovery') {
     symbols = await getDiscoveryBatch(BATCH_SIZE);
   } else {
-    const universe = await getActiveUniverse();
+    // Paged by ticker, not by market cap. Every call writes fresh market caps
+    // back to screener_universe, so a cap-ordered list shifted under the
+    // crons' batch index between calls: a stock whose cap fell moved behind
+    // the cursor and everything after it slid up one place, so the next batch
+    // skipped one name. A skipped name kept its old cap and sat at the same
+    // spot night after night: ~45 of the smallest active stocks (AMBA, ASO,
+    // DBD...) had not been refreshed since June. Promotions mid-run can still
+    // shift the list by one, but at random rather than the same stock forever.
+    const universe = (await getActiveUniverse()).sort();
     totalBatches = Math.ceil(universe.length / BATCH_SIZE);
     const start = batchIndex * BATCH_SIZE;
     symbols = universe.slice(start, start + BATCH_SIZE);

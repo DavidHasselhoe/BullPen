@@ -712,7 +712,7 @@ export const screenStocks = tool({
       scope: {
         type: 'string',
         enum: ['sp500', 'nasdaq100', 'dow30', 'all'],
-        description: 'sp500 = the S&P 500, the screener\'s default view (default). nasdaq100 = the Nasdaq-100. dow30 = the Dow Jones Industrial Average. all = every stock BullPen tracks, about 3,000 including smaller companies. Ignored when tickers is set.',
+        description: 'sp500 = the S&P 500, the screener\'s default view (default). nasdaq100 = the Nasdaq-100. dow30 = the Dow Jones Industrial Average. all = every stock BullPen tracks with stats from the last 30 days, including smaller companies. Ignored when tickers is set.',
       },
       tickers: {
         type: 'array',

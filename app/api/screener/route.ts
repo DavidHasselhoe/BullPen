@@ -4,7 +4,7 @@ import { withRateLimit } from '@/lib/security/api-security';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
 import { TwelveDataRateLimitError, getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
-import { fetchAllPages, isIndexScope, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
+import { screenerStaleCutoffIso, fetchAllPages, isIndexScope, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
 import { getLastPrices, cacheLastPrice, type LastPriceSeed } from '@/lib/market-data/last-price-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
@@ -155,7 +155,11 @@ async function handler(request: NextRequest) {
     // Needs the ticker strings rather than a head count, because duplicate
     // share classes are filtered in JS below.
     const { rows, error } = await fetchAllPages<{ ticker: string }>(() =>
-      supabase.from('screener_stats').select('ticker').order('ticker', { ascending: true })
+      supabase
+        .from('screener_stats')
+        .select('ticker')
+        .gte('updated_at', screenerStaleCutoffIso())
+        .order('ticker', { ascending: true })
     );
     if (error) {
       return NextResponse.json({ success: false, error }, { status: 500 });

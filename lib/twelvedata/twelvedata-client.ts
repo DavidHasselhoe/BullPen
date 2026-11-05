@@ -59,7 +59,7 @@ export class TwelveDataInvalidSymbolError extends Error {
 }
 
 /** Matches Twelve Data's own wording for "this symbol does not exist," not a transient failure. */
-function isInvalidSymbolMessage(msg: string): boolean {
+export function isInvalidSymbolMessage(msg: string): boolean {
   return /symbol.*(missing or invalid|is invalid|not found)|invalid symbol/i.test(msg);
 }
 
@@ -376,7 +376,9 @@ interface BatchResponse<T> {
  * Credits consumed = sum of individual endpoint costs.
  */
 export async function batchFetch<T>(
-  requests: Record<string, string>
+  requests: Record<string, string>,
+  /** Filled with each failed sub-request's error message, when the caller wants to know why. */
+  errors?: Record<string, string>
 ): Promise<Record<string, T>> {
   const apiKey = getApiKey();
   const body = Object.fromEntries(
@@ -399,6 +401,10 @@ export async function batchFetch<T>(
   const out: Record<string, T> = {};
   for (const [id, result] of Object.entries(data.data ?? {})) {
     if (result.status === 'success') out[id] = result.response;
+    else if (errors) {
+      const r = result.response as { code?: number; message?: string } | undefined;
+      errors[id] = `${r?.code ?? '?'} ${r?.message ?? 'no message'}`;
+    }
   }
   return out;
 }

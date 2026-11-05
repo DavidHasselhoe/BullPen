@@ -77,14 +77,29 @@ export function isIndexScope(scope: string | null | undefined): scope is IndexId
 }
 
 /**
+ * The "all" and default views hide rows older than this. The tier-0 long tail
+ * is only refreshed by the rotating discovery sweep, and before it was sped up
+ * small caps sat in "View all" with P/E and yield up to 5 months old and no
+ * date. The sweep laps the tail in ~16 days (cron-refresh-screener-discovery.yml).
+ * Tier 1 is refreshed nightly, so an old active row is a stock TwelveData
+ * stopped answering for (usually acquired), not one waiting its turn.
+ */
+const STALE_ROW_MAX_AGE_DAYS = 30;
+
+export function screenerStaleCutoffIso(now = Date.now()): string {
+  return new Date(now - STALE_ROW_MAX_AGE_DAYS * 86_400_000).toISOString();
+}
+
+/**
  * Base rows for one screener view, ordered by market cap:
  *  - symbols: just those tickers (holdings / watchlist / custom views). Exempt
  *    from dual-class dedup, since a user may hold the non-canonical class.
  *  - 'sp500' / 'nasdaq100' / 'dow30': the real index constituents, whatever
  *    their tier, so a member outside the actively-tracked universe still shows.
- *  - 'all': every row in screener_stats.
+ *  - 'all': every row in screener_stats refreshed in the last 30 days.
  *  - 'active': the tier-1 actively-tracked universe via screener_active_rows(),
  *    so the on-demand/discovery long tail never bloats the default screen.
+ *    Same 30-day cutoff.
  */
 export async function loadScreenerUniverse(
   supabase: SupabaseClient,
@@ -100,6 +115,7 @@ export async function loadScreenerUniverse(
   }
 
   let result: { rows: ScreenerRow[]; error: string | null };
+  const cutoff = screenerStaleCutoffIso();
   if (isIndexScope(opts.scope)) {
     const { data, error } = await supabase
       .from('screener_stats')
@@ -112,6 +128,7 @@ export async function loadScreenerUniverse(
       supabase
         .from('screener_stats')
         .select('*')
+        .gte('updated_at', cutoff)
         .order('market_cap', { ascending: false, nullsFirst: false })
         .order('ticker', { ascending: true })
     );
@@ -119,6 +136,7 @@ export async function loadScreenerUniverse(
     result = await fetchAllPages<ScreenerRow>(() =>
       supabase
         .rpc('screener_active_rows')
+        .gte('updated_at', cutoff)
         .order('market_cap', { ascending: false, nullsFirst: false })
         .order('ticker', { ascending: true })
     );

@@ -1,0 +1,53 @@
+name: Cron — Refresh Screener (Discovery)
+
+# Daily at 01:00 UTC, scheduled between the 22:00 and 03:00 screener jobs.
+# GitHub often starts scheduled runs hours late (on 2026-11-05 the 03:00 job
+# was still running at 12:30), so overlap happens anyway; every call reserves
+# against the shared credit budget (lib/twelvedata/credit-budget.ts), which is
+# what actually keeps them under the per-minute limit.
+# Sweeps the on-demand (tier-0) long tail, least recently refreshed
+# first, so newly significant names get stats and are promoted to the active
+# set when they clear the market-cap floor.
+#
+# 60 calls x 5 tickers = ~300 a day. At 15 calls (75 a day) the 4,725-ticker
+# tail took two months per lap and small caps in "View all" carried P/E and
+# yield up to 5 months old. ~300 a day is a lap in about 16 days. The screener's
+# "all" scope hides rows older than 30 days (lib/screener/screener-query.ts),
+# so this rate has to stay comfortably under that.
+# Each call = 5 stocks x up to 53 credits, paced 65s apart to stay under the
+# TwelveData 610 credits/min limit.
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    # 60 calls at ~70s each is ~70 min.
+    timeout-minutes: 90
+    steps:
+      - name: Discovery sweep over the long tail (tier-0)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://bullpeninvest.com' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not configured in repo settings"
+            exit 1
+          fi
+          echo "Discovery sweep…"
+          for i in $(seq 1 60); do
+            echo "→ Discovery $i"
+            RESPONSE=$(curl -fsS -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?mode=discovery") || {
+              echo "Discovery $i failed (rate limit or network) — stopping"
+              break
+            }
+            echo "$RESPONSE"
+            DONE=$(echo "$RESPONSE" | jq -r '.done // false')
+            if [ "$DONE" = "true" ]; then
+              echo "Discovery exhausted (no tier-0 tickers left)."
+              break
+            fi
+            sleep 65
+          done

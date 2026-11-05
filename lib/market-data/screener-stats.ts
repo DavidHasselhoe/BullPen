@@ -47,6 +47,7 @@
 import { createServerClient } from '@/lib/supabase/client';
 import {
   batchFetch,
+  isInvalidSymbolMessage,
   sanitizeDividendYield,
   plausiblePriceToBook,
   type CompanyStatistics,
@@ -61,6 +62,7 @@ import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { MARKET_CAP_PROMOTION_FLOOR, dropDelistedTickers } from '@/lib/market-data/screener-universe';
+import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 import { notifyHealthScoreChanges, notifyQuarterlyHealthChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
 import type { ScreenerRow } from '@/app/api/screener/route';
 
@@ -278,7 +280,10 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
     .in('ticker', uniqueSymbols)
     .gt('updated_at', twelveHoursAgo);
   const freshSet = new Set((freshStatsRows ?? []).map((r) => (r as { ticker: string }).ticker));
-  const symbolsToFetch = uniqueSymbols.filter((s) => !freshSet.has(s));
+  // A known collision (K, CTRA, X) has no US listing at TwelveData, so its
+  // /statistics is always another company's. Fetching it bought nothing,
+  // every night, for every caller.
+  const symbolsToFetch = uniqueSymbols.filter((s) => !freshSet.has(s) && !getTickerOverride(s));
   if (symbolsToFetch.length === 0) return [];
 
   // Company metadata (name / sector / industry / logo) for all symbols.
@@ -308,7 +313,9 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
   const rows: ScreenerRow[] = [];
   const quarterScores = new Map<string, CurrentQuarterScore>();
   const degradedSymbols = new Set<string>();
-  // Usually a US company that was acquired, its symbol now someone else's abroad.
+  // Usually a US company that was acquired: its symbol now someone else's
+  // abroad, or no longer a symbol at all. dropDelistedTickers checks each one
+  // against /stocks before removing anything.
   const foreignListings: string[] = [];
 
   for (const group of chunk(symbolsToFetch, CHUNK_SIZE)) {
@@ -318,7 +325,14 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
     for (const sym of group) {
       requests[sym] = `/statistics?symbol=${encodeURIComponent(sym)}&apikey=${apiKey}`;
     }
-    const raw = await batchFetch<TwelveDataStatisticsRaw>(requests);
+    const failed: Record<string, string> = {};
+    const raw = await batchFetch<TwelveDataStatisticsRaw>(requests, failed);
+    // Used to vanish here: ~12 active stocks came back empty every night for
+    // months and nothing said why.
+    for (const [sym, why] of Object.entries(failed)) {
+      console.warn(`[screener-stats] /statistics failed for ${sym}: ${why}`);
+      if (isInvalidSymbolMessage(why)) foreignListings.push(sym);
+    }
 
     // Pure cache reads (see readCachedFinancials) — zero TwelveData credits,
     // so these can safely fan out. The sequential loop this replaced existed

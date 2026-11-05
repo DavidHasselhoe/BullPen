@@ -1,8 +1,8 @@
 name: Cron — Refresh Screener Financial Data
 
 # Daily at 22:00 UTC (after US market close + price-moves cron). Covers
-# roughly the top half of the active universe by market cap; the 03:00 UTC
-# "Refresh Screener (Extended + Discovery)" job picks up from where this one
+# roughly the first half of the active universe (paged A-Z by ticker); the 03:00 UTC
+# "Refresh Screener (Extended)" job picks up from where this one
 # leaves off. Chains through batches with 65s delays to stay within
 # TwelveData's 610 credits/min rate limit (each batch = 5 stocks × up to 53
 # credits — halved from the original 10-stock/530-credit batch so a single
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 160
     steps:
-      - name: Chain through screener refresh batches (top half of universe)
+      - name: Chain through screener refresh batches (first half of universe)
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://bullpeninvest.com' }}
