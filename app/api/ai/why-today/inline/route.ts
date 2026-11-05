@@ -19,19 +19,11 @@ import { withAuth, addSecurityHeaders, rejectIfTooLarge } from '@/lib/security/a
 import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isPro } from '@/lib/billing/tier';
-import { logAiCall } from '@/lib/billing/log-ai-call';
-import { rdel, rget, rset, rsetnx } from '@/lib/cache/redis-cache';
 import { getStockQuotes, isOutsideRegularSessionET, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import {
-  WHY_TODAY_CACHE_TTL,
-  WHY_TODAY_MIN_MOVE,
-  WHY_TODAY_MODEL,
-  generateWhyToday,
-  needsRewrite,
-  whyTodayKey,
+  WHY_TODAY_DAILY_GENERATIONS,
+  resolveWhyToday,
   whyTodayLanguage,
-  whyTodayLockKey,
-  type CachedWhyToday,
   type InlineWhy,
 } from '@/lib/ai/why-today';
 import { listingMic } from '@/lib/assets/asset-type';
@@ -39,8 +31,6 @@ import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 
 // A generation with web search takes 10-25 s.
 export const maxDuration = 60;
-
-const DAILY_GENERATIONS = { free: 2, pro: 20 };
 
 const TICKER_RE = /^[A-Z0-9.\-/]{1,12}$/;
 
@@ -98,54 +88,16 @@ async function handler(request: NextRequest, _ctx: unknown, session: { userId: s
 
   await Promise.all(
     tickers.map(async (ticker) => {
-      const q = quotes.get(ticker);
-      if (!q || !Number.isFinite(q.dp) || !(q.c > 0) || Math.abs(q.dp) < WHY_TODAY_MIN_MOVE) return;
-
-      const key = whyTodayKey(ticker, language, mics.get(ticker));
-      const cached = await rget<CachedWhyToday>(key);
-      const ready = (c: CachedWhyToday): InlineWhy => ({ status: 'ready', text: c.text, changePct: c.changePct });
-      if (cached && !(await needsRewrite(ticker, cached, q.dp, mics.get(ticker)))) {
-        explanations[ticker] = ready(cached);
-        return;
-      }
-
-      const lock = whyTodayLockKey(key);
-      if (!(await rsetnx(lock, 90))) {
-        // Someone else is writing it right now; the client asks again shortly.
-        explanations[ticker] = cached ? ready(cached) : { status: 'pending' };
-        return;
-      }
-      try {
-        const cap = await checkRateLimit(`why-today-gen:${session.userId}`, {
-          windowMs: 24 * 60 * 60 * 1000,
-          maxRequests: pro ? DAILY_GENERATIONS.pro : DAILY_GENERATIONS.free,
-        });
-        if (!cap.allowed) {
-          if (cached) explanations[ticker] = ready(cached);
-          return;
-        }
-
-        const move = { ticker, price: q.c, change: q.d, changePct: q.dp };
-        const { text, inputTokens, outputTokens, webSearches } = await generateWhyToday(move, language);
-        void logAiCall({
-          userId: session.userId,
-          feature: 'why_today',
-          model: WHY_TODAY_MODEL,
-          inputTokens,
-          outputTokens,
-          webSearches,
-          metadata: { ticker, inline: true },
-        });
-        if (!text) return;
-        const fresh: CachedWhyToday = { text, changePct: q.dp, generatedAt: new Date().toISOString() };
-        await rset(key, fresh, WHY_TODAY_CACHE_TTL);
-        explanations[ticker] = ready(fresh);
-      } catch (err) {
-        console.error('[why-today/inline] generation failed:', ticker, err);
-        if (cached) explanations[ticker] = ready(cached);
-      } finally {
-        void rdel(lock);
-      }
+      explanations[ticker] = await resolveWhyToday({
+        userId: session.userId,
+        ticker,
+        quote: quotes.get(ticker),
+        language,
+        mic: mics.get(ticker),
+        mayGenerate: true,
+        dailyCap: pro ? WHY_TODAY_DAILY_GENERATIONS.pro : WHY_TODAY_DAILY_GENERATIONS.free,
+        source: 'inline',
+      });
     }),
   );
 

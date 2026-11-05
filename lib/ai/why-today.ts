@@ -16,7 +16,10 @@ import Anthropic from '@anthropic-ai/sdk';
 import { languageName, isSupportedLanguage } from '@/lib/i18n/language-names';
 import { WHY_TODAY_MIN_MOVE } from '@/lib/ai/why-today-shared';
 import { sessionDateET } from '@/lib/market-data/trading-day';
-import { rget, rset } from '@/lib/cache/redis-cache';
+import { rdel, rget, rset, rsetnx } from '@/lib/cache/redis-cache';
+import { checkRateLimit } from '@/lib/security/rate-limiter';
+import { logAiCall } from '@/lib/billing/log-ai-call';
+import type { InlineWhy } from '@/lib/ai/why-today-shared';
 import { resolveCik } from '@/lib/segments/cik';
 import { fetchRecentFilings } from '@/lib/edgar/edgar-watch';
 
@@ -209,3 +212,67 @@ export async function generateWhyToday(move: WhyTodayMove, language: string) {
   };
 }
 
+
+/** Generations one account may trigger per day. Cache hits are free and uncapped. */
+export const WHY_TODAY_DAILY_GENERATIONS = { free: 2, pro: 20 };
+
+/**
+ * One stock's explanation: today's cached answer if it still fits the move,
+ * otherwise a fresh one when the caller may generate. Shared by Home's inline
+ * explanations and Bull's getWhyToday tool so both spend under one lock and
+ * one per-account daily cap.
+ *
+ * `quote` must be the server's own: whatever is generated here is cached and
+ * shown to everyone.
+ */
+export async function resolveWhyToday(opts: {
+  userId: string;
+  ticker: string;
+  quote: { c: number; d: number; dp: number } | undefined;
+  language: string;
+  mic?: string | null;
+  /** False: read the cache only. */
+  mayGenerate: boolean;
+  dailyCap: number;
+  source: 'inline' | 'bull';
+}): Promise<InlineWhy> {
+  const { userId, ticker, quote: q, language, mic } = opts;
+  if (!q || !Number.isFinite(q.dp) || !(q.c > 0) || Math.abs(q.dp) < WHY_TODAY_MIN_MOVE) return { status: 'skipped' };
+
+  const key = whyTodayKey(ticker, language, mic);
+  const cached = await rget<CachedWhyToday>(key);
+  const ready = (c: CachedWhyToday): InlineWhy => ({ status: 'ready', text: c.text, changePct: c.changePct });
+  if (cached && !(await needsRewrite(ticker, cached, q.dp, mic))) return ready(cached);
+  // Cache-only callers get nothing rather than a stale story, as the stock
+  // page's cached route does: "shares are rebounding" on a stock now down 3%.
+  if (!opts.mayGenerate) return { status: 'skipped' };
+
+  const lock = whyTodayLockKey(key);
+  // Someone else is writing it right now.
+  if (!(await rsetnx(lock, 90))) return cached ? ready(cached) : { status: 'pending' };
+  try {
+    const cap = await checkRateLimit(`why-today-gen:${userId}`, { windowMs: 24 * 60 * 60 * 1000, maxRequests: opts.dailyCap });
+    if (!cap.allowed) return cached ? ready(cached) : { status: 'skipped' };
+
+    const move = { ticker, price: q.c, change: q.d, changePct: q.dp };
+    const { text, inputTokens, outputTokens, webSearches } = await generateWhyToday(move, language);
+    void logAiCall({
+      userId,
+      feature: 'why_today',
+      model: WHY_TODAY_MODEL,
+      inputTokens,
+      outputTokens,
+      webSearches,
+      metadata: { ticker, [opts.source]: true },
+    });
+    if (!text) return cached ? ready(cached) : { status: 'skipped' };
+    const fresh: CachedWhyToday = { text, changePct: q.dp, generatedAt: new Date().toISOString() };
+    await rset(key, fresh, WHY_TODAY_CACHE_TTL);
+    return ready(fresh);
+  } catch (err) {
+    console.error(`[why-today/${opts.source}] generation failed:`, ticker, err);
+    return cached ? ready(cached) : { status: 'skipped' };
+  } finally {
+    void rdel(lock);
+  }
+}

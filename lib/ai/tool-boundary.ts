@@ -12,7 +12,9 @@
  * Model-written reports the user opens the chat from (a Deep Dive, partly
  * written from web search) reach Bull as quoted context, not as a tool
  * (lib/ai/report-context.ts). They rely on that Confirm card, not on this
- * check.
+ * check. So does getWhyToday: its text is model-written from a web search
+ * (capped at 35 words by its prompt) rather than raw page content, which is
+ * why it is not on the external-content list below.
  *
  * Today that separation holds by construction: runAgent (lib/ai/agent.ts)
  * registers BULLPEN_TOOLS + createAlert + getPortfolioContext, none of which

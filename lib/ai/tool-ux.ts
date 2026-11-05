@@ -63,6 +63,7 @@ const STATUS_LABELS: Record<string, string> = {
   getLiveCompanyProfile: 'Looking up company profile…',
   getCompanyMetrics: 'Pulling historical metrics…',
   getInsiderActivity: 'Checking insider activity…',
+  getWhyToday: "Checking today's news…",
   searchCompanies: 'Searching companies…',
   compareCompanies: 'Comparing companies…',
   // Navigation / portfolio

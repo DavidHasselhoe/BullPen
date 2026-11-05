@@ -139,6 +139,7 @@
   "toolStatus_getLiveCompanyProfile": "Looking up company profile…",
   "toolStatus_getCompanyMetrics": "Pulling historical metrics…",
   "toolStatus_getInsiderActivity": "Checking insider activity…",
+  "toolStatus_getWhyToday": "Checking today's news…",
   "toolStatus_searchCompanies": "Searching companies…",
   "toolStatus_compareCompanies": "Comparing companies…",
   "toolStatus_navigateTo": "Opening that page…",

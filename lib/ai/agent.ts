@@ -11,7 +11,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import type { UIMessage } from 'ai';
 import { SYSTEM_PROMPT } from './systemPrompt';
 import { CHART_TOOLS } from './chart-tools';
-import { BULLPEN_TOOLS, createAlertTool, getMyAlertsTool, getPortfolioContextTool, getInsiderActivityTool, appContentTools } from './tools';
+import { BULLPEN_TOOLS, createAlertTool, getMyAlertsTool, getPortfolioContextTool, getInsiderActivityTool, getWhyTodayTool, appContentTools } from './tools';
 import { languageName } from '@/lib/i18n/language-names';
 import { assertNoMutatingToolsWithExternalContent } from './tool-boundary';
 import { deepDiveContextPrefix, portfolioContextPrefix } from './report-context';
@@ -163,6 +163,8 @@ export async function runAgent(
     // Pro-gated (see /api/stock/[ticker]/insider-transactions) — needs userId
     // to check tier server-side, so it can't live in the static tool map.
     ...(userId ? { getInsiderActivity: getInsiderActivityTool(userId) } : {}),
+    // Reads the shared Why Today cache; Pro may generate (lib/ai/why-today.ts).
+    ...(userId ? { getWhyToday: getWhyTodayTool(userId, language) } : {}),
     // Last, so every other page keeps the same cached tools prefix.
     ...(chartSymbol ? CHART_TOOLS : {}),
   };
