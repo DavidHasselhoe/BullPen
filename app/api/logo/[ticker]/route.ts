@@ -5,6 +5,7 @@ import { addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { slugToSymbol } from '@/lib/assets/asset-type';
+import { withLogoVersion } from '@/lib/logos/logo-version';
 
 /**
  * GET /api/logo/[ticker]
@@ -46,7 +47,7 @@ interface LogoCacheEntry {
 function redirectTo(url: string): NextResponse {
   // 302 (Found) — Next.js image optimizer follows. `Cache-Control` is honored
   // by browsers caching the redirect itself; the optimizer caches the final image.
-  const res = NextResponse.redirect(url, 302);
+  const res = NextResponse.redirect(withLogoVersion(url), 302);
   res.headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
   return addSecurityHeaders(res);
 }

@@ -2,6 +2,7 @@
 // Handles uploading logos to Supabase Storage
 
 import { createServerClient } from '../supabase/client';
+import { fitLogoToCircle } from './fit-logo-to-circle';
 
 export interface StorageUploadResult {
   success: boolean;
@@ -74,6 +75,13 @@ export async function uploadLogoToStorage(
     }
 
     const fileName = `${ticker.toLowerCase()}.${extension}`;
+
+    // Every surface clips logos to a circle; fit edge-to-edge marks inside it once, here.
+    try {
+      imageBuffer = (await fitLogoToCircle(imageBuffer, mimeType)) ?? imageBuffer;
+    } catch (e) {
+      console.warn(`[Logo Storage] Could not fit ${ticker} to the circle, storing as is:`, e instanceof Error ? e.message : e);
+    }
 
     // Convert Buffer to Blob for Supabase Storage
     // Supabase Storage accepts Blob, File, ArrayBuffer, or Buffer
