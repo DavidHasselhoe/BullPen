@@ -124,7 +124,7 @@ function listSlideCount(companyCount: number): number {
 
 /** Total slide count for a given post. market_movers is always a fixed 4
  *  slides (ink cover, winners, losers, cta); earnings_deep_dive is the
- *  scoreboard, the lead story, the price reaction when there is one, then the
+ *  scoreboard, 1-3 story slides, the price reaction when there is one, then the
  *  shared conversion CTA slide every other content type ends on (see
  *  deepDiveKinds); earnings_calendar/earnings_results paginate their company
  *  list across a hook, 1+ list slides, and a CTA. */
@@ -197,7 +197,7 @@ export function altTextForSlide(
       const rows = scoreboardRows(d).map((r) => `${r.label} ${r.actual}${r.estimate ? ` vs ${r.estimate} expected` : ''}${r.status ? ` (${r.status === 'inline' ? 'in line' : r.status})` : ''}`);
       return `${d.companyName} (${d.ticker}) earnings: ${rows.join(', ')}. Track ${d.ticker} free on BullPen.`;
     }
-    if (kind === 'deepdive_story') return storyAltText(d);
+    if (kind === 'deepdive_story') return storyAltText(d, slideIndex - 1);
     if (kind === 'deepdive_reaction' && d.priceReaction) return `${d.companyName} (${d.ticker}): ${reactionCaptionLine(d.priceReaction)} Chart of the share price around the results.`;
     return 'Open the BullPen app to track earnings, prices, and your whole portfolio in one place.';
   }
@@ -1027,7 +1027,7 @@ export function MoversCoverSlide({ when, dateLabel, gainer, loser, slideIndex, t
 // Reuses this file's existing tokens/atoms (Wordmark, SlideIndicator,
 // CompanyBadge, BRAND/MISSED_COLOR, formatEps) instead of a parallel style
 // system — a one-off post still has to read as the same brand as every
-// other carousel. 3 or 4 slides (see deepDiveKinds below), no pagination
+// other carousel. 3 to 6 slides (see deepDiveKinds below), no pagination
 // since there's only ever one company.
 
 const INLINE_COLOR = AMC_COLOR; // amber — neutral "in line with estimates" state, no gain/loss direction to signal
@@ -1125,13 +1125,23 @@ interface DeepDiveSlideProps {
 }
 
 // One idea per slide (2026-11-03, after Yahoo Finance's pacing): scoreboard,
-// the lead story, the first price reaction, CTA. The 10-29 version put about
+// one slide per story point (11-05: points 2 and 3 used to live only in the
+// caption), the first price reaction, CTA. The 10-29 version put about
 // a dozen figures on two slides, and a beginner scrolling past at feed size
 // read none of them. Every direction is a word (Beat, Down), never color
 // alone (DESIGN.md).
 
+/** Past three the carousel turns back into the wall of facts it replaced. */
+const MAX_STORY_SLIDES = 3;
+
+/** At least one: with no story, the single story slide is the "a beat is normal" lesson. */
+function storySlideCount(d: EarningsDeepDiveData): number {
+  return Math.min(MAX_STORY_SLIDES, Math.max(1, buildStory(d).length));
+}
+
 function deepDiveKinds(d: EarningsDeepDiveData): SlideKind[] {
-  return ['deepdive_scoreboard', 'deepdive_story', ...(d.priceReaction ? ['deepdive_reaction' as const] : []), 'cta'];
+  const stories = Array<SlideKind>(storySlideCount(d)).fill('deepdive_story');
+  return ['deepdive_scoreboard', ...stories, ...(d.priceReaction ? ['deepdive_reaction' as const] : []), 'cta'];
 }
 
 function DeepDiveHeader({ ticker, slideIndex, totalSlides }: { ticker: string; slideIndex: number; totalSlides: number }) {
@@ -1147,6 +1157,8 @@ function DeepDiveHeader({ ticker, slideIndex, totalSlides }: { ticker: string; s
 }
 
 // ── Slide 1: scoreboard ─────────────────────────────────────────────────────
+
+const OUTLOOK_ROW_LABEL = "Next quarter's revenue outlook";
 
 interface ScoreRow { label: string; actual: string; estimate: string | null; status: 'beat' | 'missed' | 'inline' | null }
 
@@ -1170,7 +1182,7 @@ export function scoreboardRows(d: EarningsDeepDiveData): ScoreRow[] {
     });
   } else if (d.guidanceRevenueLow != null && d.guidanceRevenueHigh != null && d.guidanceConsensus != null) {
     rows.push({
-      label: "Next quarter's revenue outlook",
+      label: OUTLOOK_ROW_LABEL,
       actual: formatUsdRange(d.guidanceRevenueLow, d.guidanceRevenueHigh),
       estimate: formatUsdCompact(d.guidanceConsensus),
       // Same band as the caption's story points (deep-dive-story.ts); a second copy here is how AVGO's slide and caption disagreed.
@@ -1223,11 +1235,13 @@ export function DeepDiveScoreboardSlide({ data, slideIndex, totalSlides }: DeepD
   );
 }
 
-// ── Slide 2: the lead story ─────────────────────────────────────────────────
-// The first item of buildStory(), the same ranking the caption writer leads
-// with, so slide and caption always open on the same fact.
+// ── Slides 2-4: the story, one point per slide ──────────────────────────────
+// buildStory() in order, the same ranking the caption writer is given, so
+// slide 2 and the caption always open on the same fact. Story slides sit
+// right after the scoreboard, so story i is slide i + 1.
 
-interface Bar { label: string; value: number; current: boolean }
+/** display overrides the signed-percent label (dollars, a margin level). */
+interface Bar { label: string; value: number; current: boolean; display?: string }
 
 /** "Sep '25" for a quarter-end date. */
 function quarterLabel(periodEnd: string): string {
@@ -1251,9 +1265,9 @@ const STORY_NOTE: Partial<Record<StoryPoint['kind'], string>> = {
   outlook: 'The full-year outlook is what the company expects to earn or sell this year.',
 };
 
-/** What slide 2 says. With nothing beyond the result to report, it teaches why a beat alone is not news. */
-function storyCard(d: EarningsDeepDiveData): StoryCard {
-  const lead = buildStory(d)[0];
+/** What story slide i says. With nothing beyond the result to report, slide 2 teaches why a beat alone is not news. */
+function storyCard(d: EarningsDeepDiveData, i: number): StoryCard {
+  const lead = buildStory(d)[i];
   const generic = 'Estimates are the average analyst forecast before the report.';
   if (!lead) {
     if (d.epsStatus === 'inline' && d.revenueStatus === 'inline') {
@@ -1289,12 +1303,26 @@ function storyCard(d: EarningsDeepDiveData): StoryCard {
     ];
     note = 'Each bar is how far profit per share beat or missed the analyst consensus, from Nasdaq.';
   }
+  // The same figures buildStory() compared, so the bars can't disagree with the sentence.
+  // No margin bars: 56% vs 55% from a zero line look identical under a "slip" headline, and the sentence has both figures.
+  if (lead.kind === 'capex' && d.capexActual != null && d.capexPriorYear != null) {
+    bars = [
+      { label: 'A year ago', value: d.capexPriorYear, current: false, display: formatUsdCompact(d.capexPriorYear) },
+      { label: 'This qtr', value: d.capexActual, current: true, display: formatUsdCompact(d.capexActual) },
+    ];
+  }
 
-  return {
-    title: lead.title, text: lead.text,
-    detail: lead.kind === 'outlook' ? d.outlookNote ?? null : null,
-    bars, note,
-  };
+  let detail: string | null = lead.kind === 'outlook' ? d.outlookNote ?? null : null;
+  // The outlook's figures, unless the scoreboard's third row already shows them (it gives way to a segment row).
+  if (lead.kind === 'guidance' && d.guidanceRevenueHigh != null && d.guidanceConsensus != null
+    && !scoreboardRows(d).some((r) => r.label === OUTLOOK_ROW_LABEL)) {
+    const range = d.guidanceRevenueLow != null
+      ? formatUsdRange(d.guidanceRevenueLow, d.guidanceRevenueHigh).replace('–', ' to ')
+      : formatUsdCompact(d.guidanceRevenueHigh);
+    detail = `Outlook ${range}. Analysts expected ${formatUsdCompact(d.guidanceConsensus)}.`;
+  }
+
+  return { title: lead.title, text: lead.text, detail, bars, note };
 }
 
 /** Bars share one zero line; a negative value hangs below it in loss red, with its minus sign. */
@@ -1303,15 +1331,16 @@ function StoryBars({ bars }: { bars: Bar[] }) {
   const maxNeg = Math.max(0, ...bars.map((b) => -b.value));
   const span = maxPos + maxNeg || 1;
   const area = 230;
+  // Two bars at full width read as slabs, not a comparison.
   return (
-    <div style={{ display: 'flex', width: '100%', gap: 20 }}>
+    <div style={{ display: 'flex', width: bars.length <= 2 ? 600 : '100%', gap: bars.length <= 2 ? 48 : 20 }}>
       {bars.map((b) => {
         const h = Math.max(6, Math.round((Math.abs(b.value) / span) * area));
         const fill = b.value < 0 ? LOSS_TEXT : b.current ? FG : BORDER_STRONG;
         return (
           <div key={b.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 12 }}>
             <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: b.current ? 700 : 400, fontSize: 32, color: b.value < 0 ? LOSS_TEXT : FG }}>
-              {formatPercentSigned(b.value, Math.abs(b.value) < 10 ? 1 : 0)}
+              {b.display ?? formatPercentSigned(b.value, Math.abs(b.value) < 10 ? 1 : 0)}
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: area + 1 }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', height: Math.round((maxPos / span) * area) }}>
@@ -1330,7 +1359,7 @@ function StoryBars({ bars }: { bars: Bar[] }) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function DeepDiveStorySlide({ data, slideIndex, totalSlides }: DeepDiveSlideProps): any {
-  const card = storyCard(data);
+  const card = storyCard(data, slideIndex - 1);
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 80, backgroundColor: BG, color: FG }}>
       <DeepDiveHeader ticker={data.ticker} slideIndex={slideIndex} totalSlides={totalSlides} />
@@ -1345,8 +1374,8 @@ export function DeepDiveStorySlide({ data, slideIndex, totalSlides }: DeepDiveSl
   );
 }
 
-function storyAltText(d: EarningsDeepDiveData): string {
-  const card = storyCard(d);
+function storyAltText(d: EarningsDeepDiveData, i: number): string {
+  const card = storyCard(d, i);
   return `${card.title}. ${card.text}${card.detail ? ` ${card.detail}` : ''}`;
 }
 

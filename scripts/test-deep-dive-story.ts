@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { quarterlySeries, growthBefore } from '../lib/edgar/revenue-history';
 import { buildStoryPoints, typicalSurprise } from '../lib/instagram/content/deep-dive-story';
 import { reactionCaptionLine } from '../lib/instagram/content/price-reaction';
-import { scoreboardRows } from '../lib/instagram/render/slides';
+import { scoreboardRows, totalSlideCount, slideKindAt } from '../lib/instagram/render/slides';
 import type { EarningsDeepDiveData, PriceReaction } from '../lib/instagram/content/schema';
 
 const q = (start: string, end: string, val: number, filed = '2026-01-01') => ({ start, end, val, filed });
@@ -89,5 +89,10 @@ assert.equal(row3({ guidanceConsensus: null }), undefined, 'outlook without cons
 // The caption's price line says the direction in words and the ET time.
 const reaction = { baseline: 100, closeAt: 0, releasedAt: 0, asOf: Date.UTC(2026, 9, 29, 20, 8) / 1000, session: 'post', points: [], changePercent: -6.54 } as PriceReaction;
 assert.equal(reactionCaptionLine(reaction), 'Shares were down 6.5% in early after-hours trading as of 4:08 PM ET.');
+
+// One slide per story point, capped at 3; no story still gets the one lesson slide.
+const kinds = (d: EarningsDeepDiveData) => { const s = { contentType: 'earnings_deep_dive', data: d } as const; return Array.from({ length: totalSlideCount(s) }, (_, i) => slideKindAt(i, s)); };
+assert.equal(kinds(base).filter((k) => k === 'deepdive_story').length, Math.min(3, points.length), 'story slides follow the story');
+assert.deepEqual(kinds({ ...base, capexActual: null, guidanceConsensus: null, revenueGrowthHistory: [], epsSurpriseHistory: [] } as EarningsDeepDiveData), ['deepdive_scoreboard', 'deepdive_story', 'cta'], 'no story: one lesson slide');
 
 console.log('deep dive story: all checks passed');

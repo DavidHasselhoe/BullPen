@@ -483,8 +483,8 @@ export async function completeEarningsDeepDiveFromFiling(
       fields: [{ name: 'Publish', value: `\`npm run instagram-publish -- --id=${row.id}\`` }],
       timestamp: new Date().toISOString(),
     };
-    // Scoreboard, story, the price reaction when there were enough trades,
-    // then the shared CTA slide (lib/instagram/render/slides.tsx): 3 or 4, so loop.
+    // Scoreboard, 1-3 story slides, the price reaction when there were enough trades,
+    // then the shared CTA slide (lib/instagram/render/slides.tsx): 3 to 6, so loop.
     const slideEmbeds = Array.from({ length: slideCount }, (_, i) => ({
       image: { url: `${appUrl}/api/instagram/render/${row.id}/${i}` },
     }));
