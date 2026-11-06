@@ -110,64 +110,16 @@ async function handler(request: NextRequest, context: unknown, session: { userId
     ])
   );
 
-  if (mode === 'replace') {
-    // Only ever clears a MANUAL holding in a symbol this import actually
-    // touches — a SnapTrade-synced position is never deleted by an import,
-    // same guard plan-replay already applies to selling against one.
-    // "Rebuilt from this file alone" means the history goes too: deleting
-    // the holding cascades to holding_purchases (its lots), but
-    // holding_sales only detaches, so the old sales would sit next to the
-    // file's own sells and double the realized P/L. Sales are cleared by
-    // symbol so orphans from an earlier replace or a deleted holding go
-    // as well, and the old activity events go so the feed doesn't show
-    // the position opening twice.
-    const importedSymbols = new Set([...bySecurityKey.values()].map((v) => v.symbol));
-    const toReplace = [...existingHoldings.values()].filter((h) => h.source === 'manual' && importedSymbols.has(h.symbol));
-    if (toReplace.length > 0) {
-      const replacedSymbols = toReplace.map((h) => h.symbol);
-      // Holdings first: if that fails nothing is lost. If a later delete
-      // fails, the leftover sales are detached and the user can remove
-      // them from History, which beats losing history for an import that
-      // never ran.
-      const { error: deleteError } = await supabase
-        .from('user_holdings')
-        .delete()
-        .eq('user_id', session.userId)
-        .in('id', toReplace.map((h) => h.id));
-      if (deleteError) {
-        return addSecurityHeaders(
-          NextResponse.json({ error: 'Failed to clear your existing holdings before replacing them.' }, { status: 500 })
-        );
-      }
-      const { error: salesError } = await supabase
-        .from('holding_sales')
-        .delete()
-        .eq('user_id', session.userId)
-        .in('symbol', replacedSymbols);
-      if (salesError) {
-        return addSecurityHeaders(
-          NextResponse.json({ error: 'Failed to clear your existing sales history before replacing it.' }, { status: 500 })
-        );
-      }
-      const { error: activityError } = await supabase
-        .from('portfolio_activity')
-        .delete()
-        .eq('user_id', session.userId)
-        .in('symbol', replacedSymbols);
-      if (activityError) {
-        return addSecurityHeaders(
-          NextResponse.json({ error: 'Failed to clear your existing activity before replacing it.' }, { status: 500 })
-        );
-      }
-      for (const h of toReplace) existingHoldings.delete(h.symbol);
-    }
-  }
-
-  // 'replace_all' plans against the synced holdings alone, since every
-  // manual one is about to go. Planning first means a blocked file never
-  // clears anything.
-  if (mode === 'replace_all') {
-    for (const h of [...existingHoldings.values()]) if (h.source === 'manual') existingHoldings.delete(h.symbol);
+  // 'replace' clears the user's manual position, sales and activity in every
+  // ticker this import touches ("rebuilt from this file alone": old sales
+  // left next to the file's own sells would double the realized P/L).
+  // SnapTrade-synced positions are never touched. 'replace_all' clears every
+  // manual holding. Either way the plan runs against what will be left, and
+  // runs first, so a blocked file never clears anything.
+  const replacedSymbols = mode === 'replace' ? [...new Set([...bySecurityKey.values()].map((v) => v.symbol))] : null;
+  for (const h of [...existingHoldings.values()]) {
+    if (h.source !== 'manual') continue;
+    if (mode === 'replace_all' || (replacedSymbols && replacedSymbols.includes(h.symbol))) existingHoldings.delete(h.symbol);
   }
 
   const plan = planReplay(activeTransactions, bySecurityKey, existingHoldings);
@@ -179,12 +131,15 @@ async function handler(request: NextRequest, context: unknown, session: { userId
   const settings = (userRow?.settings as Record<string, unknown>) ?? {};
   const homeCurrency = typeof settings.default_currency === 'string' && settings.default_currency !== 'exchange' ? settings.default_currency : 'USD';
 
-  if (mode === 'replace_all') {
-    // One transaction: snapshot every manual holding, lot, sale and activity
-    // row onto the import, then delete them (migration 189).
+  const replacing = mode === 'replace' || mode === 'replace_all';
+  if (replacing) {
+    // One transaction: snapshot the manual holdings, lots, sales and activity
+    // being replaced onto the import, then delete them (migrations 189, 195).
+    // Undo and a failed replay restore that snapshot.
     const { error: clearError } = await supabase.rpc('import_clear_manual_portfolio', {
       p_user_id: session.userId,
       p_import_id: id,
+      p_symbols: replacedSymbols,
     });
     if (clearError) {
       const notDraft = clearError.message.includes('import_not_draft');
@@ -203,9 +158,9 @@ async function handler(request: NextRequest, context: unknown, session: { userId
     (err: unknown) => ({ success: false, appliedCount: 0, totalCount: plan.ops.length, error: err instanceof Error ? err.message : 'Import failed' })
   );
 
-  if (!result.success && mode === 'replace_all') {
-    // Put the old portfolio back and hand the draft back to the review grid,
-    // so a failed import never leaves an empty portfolio behind.
+  if (!result.success && replacing) {
+    // Put the replaced holdings back and hand the draft back to the review
+    // grid, so a failed import never leaves them deleted.
     const { error: restoreError } = await supabase.rpc('import_restore_manual_portfolio', {
       p_user_id: session.userId,
       p_import_id: id,

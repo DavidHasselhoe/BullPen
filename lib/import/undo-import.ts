@@ -83,8 +83,8 @@ export async function undoImport(userId: string, importId: string): Promise<Undo
       return { success: false, blocked: true, error: 'Import not found' };
     }
 
-    // A whole-portfolio replace undoes by putting the cleared portfolio
-    // back, in one transaction (migration 189), rather than walking the
+    // A replace (whole portfolio or just the imported tickers) undoes by
+    // putting what it cleared back, in one transaction (migrations 189, 195), rather than walking the
     // journal: before it ran, there was nothing of the file's to unwind.
     // 'committing' qualifies only once the replay is clearly dead (past the
     // commit route's 300s limit), so a running import isn't pulled out

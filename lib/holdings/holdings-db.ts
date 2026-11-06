@@ -82,25 +82,22 @@ export interface AddHoldingResult {
   success: boolean;
   holding?: UserHolding;
   error?: string;
-  /** id of the holding_purchases lot this call created, when awaitLots is set. */
+  /** id of the holding_purchases lot this call created, if it made one. */
   purchaseLotId?: string;
 }
 
 /**
- * Shared opt-in behavior overrides for the bulk-import replay path.
- * Both default to today's existing behavior, so no existing caller changes:
- *  - recordActivity: whether to fire the social-feed 'opened'/'increased'
- *    event. A 54-transaction import would otherwise spam ~54 feed events;
- *    the caller emits its own single summary event per security instead.
- *  - awaitLots: recordHoldingPurchase is normally fire-and-forget (`void`)
- *    and swallows its own errors — fine for one interactive add, but a
- *    replay of many transactions in quick succession risks a race between
- *    the lot insert and the next quantity update. Import awaits and
- *    surfaces failures instead.
+ * Override for the bulk-import replay path. recordActivity: whether to fire
+ * the social-feed 'opened'/'increased' event. A 54-transaction import would
+ * otherwise spam ~54 feed events; the caller emits its own single summary
+ * event per security instead.
+ *
+ * Purchase lots are always awaited: a failed lot insert fails the mutation and
+ * undoes its holding write, for interactive adds as much as for import. A
+ * holding with no lot is missing from sales matching and the chart markers.
  */
 export interface HoldingMutationOpts {
   recordActivity?: boolean;
-  awaitLots?: boolean;
 }
 
 export interface UpdateHoldingResult {
@@ -182,9 +179,8 @@ export async function getHoldings(
  * Records one purchase lot for a holding — inserted by both addHolding (the
  * initial buy) and addOrUpdateHolding (every subsequent top-up), so every
  * discrete buy event gets its own row for accurate multi-dot chart markers.
- * Never throws: logs and returns `{ error }`. Fire-and-forget callers ignore
- * it; awaitLots callers must fail the parent mutation and undo its holding
- * write, or the import's rollback never runs.
+ * Never throws: logs and returns `{ error }`. Callers must fail the parent
+ * mutation and undo its holding write, or the import's rollback never runs.
  */
 async function recordHoldingPurchase(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -230,7 +226,7 @@ export async function addHolding(
   holding: Omit<InsertUserHolding, 'user_id'>,
   opts: HoldingMutationOpts = {}
 ): Promise<AddHoldingResult> {
-  const { recordActivity = true, awaitLots = false } = opts;
+  const { recordActivity = true } = opts;
   try {
     const supabase = createServerClient();
 
@@ -301,18 +297,14 @@ export async function addHolding(
         price: newHolding.avg_price,
         purchaseDate: newHolding.date_purchased ?? new Date().toISOString().slice(0, 10),
       };
-      if (awaitLots) {
-        const inserted = await recordHoldingPurchase(supabase, userId, newHolding as UserHolding, lot);
-        if (inserted.error) {
-          // A holding with no lot is the state the import must never leave behind.
-          const { error: undoErr } = await supabase.from('user_holdings').delete().eq('id', newHolding.id).eq('user_id', userId);
-          if (undoErr) logger.error('Failed to remove holding after lot insert failed:', undoErr);
-          return { success: false, error: inserted.error };
-        }
-        purchaseLotId = inserted.id;
-      } else {
-        void recordHoldingPurchase(supabase, userId, newHolding as UserHolding, lot);
+      const inserted = await recordHoldingPurchase(supabase, userId, newHolding as UserHolding, lot);
+      if (inserted.error) {
+        // A holding with no lot is the state no add may leave behind.
+        const { error: undoErr } = await supabase.from('user_holdings').delete().eq('id', newHolding.id).eq('user_id', userId);
+        if (undoErr) logger.error('Failed to remove holding after lot insert failed:', undoErr);
+        return { success: false, error: inserted.error };
       }
+      purchaseLotId = inserted.id;
     }
 
     if (recordActivity) {
@@ -342,7 +334,7 @@ export async function addOrUpdateHolding(
   holding: Omit<InsertUserHolding, 'user_id'>,
   opts: HoldingMutationOpts = {}
 ): Promise<AddHoldingResult> {
-  const { recordActivity = true, awaitLots = false } = opts;
+  const { recordActivity = true } = opts;
   try {
     const supabase = createServerClient();
 
@@ -404,7 +396,7 @@ export async function addOrUpdateHolding(
 
       let purchaseLotId: string | undefined;
       let backfillLotId: string | undefined;
-      // awaitLots only: a lot write failed, so put the holding back exactly as
+      // A lot write failed, so put the holding back exactly as
       // it was (and drop a backfill lot this call made) before reporting it.
       const failAndRestore = async (lotError: string): Promise<AddHoldingResult> => {
         if (backfillLotId) {
@@ -442,7 +434,7 @@ export async function addOrUpdateHolding(
         // has no date to backfill at — see "Lazy backfill" in
         // docs/superpowers/specs/2026-08-21-holding-purchase-lots-design.md.
         if (!lotCountErr && !existingLotCount && existingQty > 0 && existing.avg_price != null && existing.date_purchased) {
-          const backfillLot = recordHoldingPurchase(
+          const backfilled = await recordHoldingPurchase(
             supabase,
             userId,
             {
@@ -456,16 +448,11 @@ export async function addOrUpdateHolding(
             },
             { quantity: existingQty, price: existing.avg_price, purchaseDate: existing.date_purchased }
           );
-          if (awaitLots) {
-            const backfilled = await backfillLot;
-            if (backfilled.error) return failAndRestore(backfilled.error);
-            backfillLotId = backfilled.id;
-          } else {
-            void backfillLot;
-          }
+          if (backfilled.error) return failAndRestore(backfilled.error);
+          backfillLotId = backfilled.id;
         }
 
-        const newLot = recordHoldingPurchase(
+        const inserted = await recordHoldingPurchase(
           supabase,
           userId,
           {
@@ -479,13 +466,8 @@ export async function addOrUpdateHolding(
           },
           { quantity: addQty, price: holding.avg_price, purchaseDate: holding.date_purchased ?? new Date().toISOString().slice(0, 10) }
         );
-        if (awaitLots) {
-          const inserted = await newLot;
-          if (inserted.error) return failAndRestore(inserted.error);
-          purchaseLotId = inserted.id;
-        } else {
-          void newLot;
-        }
+        if (inserted.error) return failAndRestore(inserted.error);
+        purchaseLotId = inserted.id;
       }
 
       if (recordActivity) {

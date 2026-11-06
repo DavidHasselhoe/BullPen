@@ -98,7 +98,7 @@ export async function executeReplay(
             brokerage_account_id: null,
             alerts_enabled: true,
           },
-          { recordActivity: false, awaitLots: true }
+          { recordActivity: false }
         );
         if (!result.success || !result.holding) {
           throw new Error(result.error ?? `Failed to record buy for ${op.symbol}`);

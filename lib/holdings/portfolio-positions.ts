@@ -2,6 +2,7 @@ import { getHoldings } from '@/lib/holdings/holdings-db';
 import { createServerClient } from '@/lib/supabase/client';
 import { getLastPrices, cacheLastPrice } from '@/lib/market-data/last-price-cache';
 import { getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 
 /**
  * The investor's book, loaded once and shaped for a model prompt.
@@ -116,7 +117,7 @@ export async function loadPositions(
  * Redis first (`last-price-cache` is shared with the screener, holdings and
  * watchlist, so a reader who just looked at their portfolio pays nothing),
  * then one batched `/quote` for whatever is left — 1 credit per symbol,
- * capped at MAX_POSITIONS, on a path that is already spending a model call.
+ * capped at MAX_POSITIONS and reserved against the credit budget.
  *
  * All-or-nothing on purpose: partial coverage would silently mean partial
  * truth, and crypto, delisted tickers and foreign listings are exactly the
@@ -131,6 +132,10 @@ async function priceEveryPosition(tickers: string[]): Promise<Map<string, number
 
   const missing = tickers.filter((t) => !prices.has(t));
   if (missing.length > 0) {
+    // Up to MAX_POSITIONS credits, so it reserves against the shared
+    // per-minute budget like any other fan-out. Denied = cost basis, which is
+    // a complete answer, rather than tipping the account over its cap.
+    if (!(await tryReserveOrganicCredits(missing.length))) return null;
     try {
       const quotes = await withRateLimitRetry(() => getStockQuotes(missing));
       for (const [symbol, quote] of quotes) {
