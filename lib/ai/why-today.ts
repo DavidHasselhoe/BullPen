@@ -234,7 +234,7 @@ export async function resolveWhyToday(opts: {
   /** False: read the cache only. */
   mayGenerate: boolean;
   dailyCap: number;
-  source: 'inline' | 'bull';
+  source: 'inline' | 'bull' | 'recap';
 }): Promise<InlineWhy> {
   const { userId, ticker, quote: q, language, mic } = opts;
   if (!q || !Number.isFinite(q.dp) || !(q.c > 0) || Math.abs(q.dp) < WHY_TODAY_MIN_MOVE) return { status: 'skipped' };
