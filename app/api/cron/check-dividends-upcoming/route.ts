@@ -33,6 +33,7 @@ import {
   createDividendReminderNotification,
   type DividendItem,
 } from '@/lib/notifications/notification-creators';
+import { runDividendPaydays } from '@/lib/dividends/payday-notifications';
 
 export const maxDuration = 120;
 
@@ -147,4 +148,23 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json(summary);
 }
 
-export const GET = withCronReport('check-dividends-upcoming', handleGET);
+/**
+ * Pro payday notifications ride along after the reminders, whatever those
+ * returned early on (lib/dividends/payday-notifications.ts). Their errors join
+ * `errors` so the cron report sees them. Costs 1 TwelveData credit per held
+ * symbol not already cached (shared 2-day cache, reserved against the cron budget).
+ */
+async function handleWithPaydays(request: NextRequest): Promise<NextResponse> {
+  const res = await handleGET(request);
+  if (res.status !== 200) return res;
+  const body = await res.json() as { errors?: string[] };
+  let paydays;
+  try {
+    paydays = await runDividendPaydays(todayET());
+  } catch (err) {
+    paydays = { errors: [String(err)] };
+  }
+  return NextResponse.json({ ...body, paydays, errors: [...(body.errors ?? []), ...paydays.errors.map((e) => `paydays: ${e}`)] });
+}
+
+export const GET = withCronReport('check-dividends-upcoming', handleWithPaydays);

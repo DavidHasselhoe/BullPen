@@ -1501,12 +1501,14 @@ interface TwelveDataDividendsResponse {
   message?: string;
 }
 
-export async function getDividends(symbol: string): Promise<DividendItem[]> {
+export async function getDividends(symbol: string, endDate: Date = new Date()): Promise<DividendItem[]> {
   logUsage('dividends', symbol);
   // /dividends defaults to a single (most recent) record and does NOT honour
   // `outputsize`; a date range is required to get real history. Fetch ~6y so
-  // TTM yield and the dividend-history table both have enough data.
-  const end = new Date();
+  // TTM yield and the dividend-history table both have enough data. An end
+  // date in the future also returns declared, not yet paid, dividends
+  // (verified 2026-11-06: AAPL's Nov 12 ex-date came back). 1 credit either way.
+  const end = new Date(endDate);
   const start = new Date(end);
   start.setFullYear(start.getFullYear() - 6);
   const url = buildUrl('/dividends', {

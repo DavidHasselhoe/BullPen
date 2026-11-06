@@ -15,6 +15,7 @@ import { PortfolioHealthCard } from '@/components/holdings/PortfolioHealthCard';
 import { PortfolioRiskAnalysis } from '@/components/holdings/PortfolioRiskAnalysis';
 import { PortfolioPerformanceChart } from '@/components/holdings/PortfolioPerformanceChart';
 import { PerformanceCalendarCard } from '@/components/holdings/performance-calendar/PerformanceCalendarCard';
+import { DividendIncomeCard } from '@/components/holdings/DividendIncomeCard';
 import { liveDay } from '@/lib/holdings/daily-performance';
 import { todayET } from '@/lib/dates/calendar-format';
 import { useHoldings, useHoldingSales } from '@/hooks/use-holdings';
@@ -434,6 +435,9 @@ export default function HoldingsPage() {
       {throttledHoldings.length > 0 && (
         <PerformanceCalendarCard currency={userCurrency} fxRate={currentFxRate} liveToday={liveToday} />
       )}
+
+      {/* Dividend hub: next payment per holding; Pro adds the 12-month income calendar */}
+      {holdings.length > 0 && <DividendIncomeCard symbols={holdingSymbols} />}
 
       {/* AI risk analysis */}
       {throttledHoldings.length > 0 && (
