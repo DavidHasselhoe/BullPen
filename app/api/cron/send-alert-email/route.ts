@@ -2,17 +2,19 @@
  * Morning alert email cron
  * GET /api/cron/send-alert-email
  *
- * Runs daily at 08:30 UTC (vercel.json): after the 08:00 earnings and
- * ex-dividend crons, and picking up the previous close's big moves from the
- * 21:30 run. Before 05:00 in New York, so it is waiting when US users wake.
- * See lib/email/alert-email.ts. `?dryRun=1` builds without sending;
+ * Runs twice a day (vercel.json), each run for the readers whose morning it is
+ * (emailSlot): 08:30 UTC for Europe and the rest of the world, 12:00 UTC
+ * (7-8 AM in New York) for the Americas. Both come after the 08:00 earnings and
+ * ex-dividend crons and the previous close's 21:30 big-move run. The run picks
+ * its slot from the UTC hour (Hobby fires anywhere in the hour); `?slot=early|americas|all`
+ * overrides. See lib/email/alert-email.ts. `?dryRun=1` builds without sending;
  * `?userId=` limits the run to one account.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
-import { sendMorningAlertEmails } from '@/lib/email/alert-email';
+import { sendMorningAlertEmails, type EmailSlot } from '@/lib/email/alert-email';
 
 export const maxDuration = 120;
 
@@ -24,9 +26,15 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
   }
 
   const params = request.nextUrl.searchParams;
+  const slotParam = params.get('slot');
+  const slot: EmailSlot | undefined =
+    slotParam === 'early' || slotParam === 'americas' ? slotParam
+    : slotParam === 'all' ? undefined
+    : new Date().getUTCHours() < 11 ? 'early' : 'americas';
   const run = await sendMorningAlertEmails({
     dryRun: params.get('dryRun') === '1',
     userId: params.get('userId') ?? undefined,
+    slot,
   });
   // Previews are for local scripts; a cron response doesn't need the HTML.
   const { previews, ...summary } = run;
