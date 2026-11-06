@@ -23,6 +23,7 @@ import { WatchlistTemplatesDialog } from '@/components/watchlist/WatchlistTempla
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthGate } from '@/components/ui/AuthGate';
+import { WatchlistPreview } from '@/components/billing/GatePreviews';
 import Link from 'next/link';
 import { Bookmark, Search, Plus, Radio, TrendingUp, LayoutGrid, List, Sparkles, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -223,6 +224,7 @@ export default function WatchlistPage() {
     return (
       <AuthGate
         source="watchlist"
+        preview={<WatchlistPreview />}
         icon={<Bookmark className="h-7 w-7" />}
         title={t('watchlistSignInTitle')}
         description={t('watchlistSignInDescription')}

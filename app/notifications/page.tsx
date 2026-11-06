@@ -14,6 +14,7 @@ import { NotificationItem } from '@/components/notifications/NotificationItem';
 import { NotificationsError } from '@/components/notifications/NotificationsError';
 import { NOTIFICATION_CATEGORIES, categoryOf, groupByRecency, type NotificationCategory } from '@/components/notifications/notification-groups';
 import { AuthGate } from '@/components/ui/AuthGate';
+import { NotificationsPreview } from '@/components/billing/GatePreviews';
 
 export default function NotificationsPage() {
   const { t } = useTranslation('navigation');
@@ -57,6 +58,7 @@ export default function NotificationsPage() {
     return (
       <AuthGate
         source="notifications"
+        preview={<NotificationsPreview />}
         icon={<Bell className="h-7 w-7" />}
         title={t('notifGateTitle')}
         description={t('notifGateDescription')}

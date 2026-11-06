@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { CreateAlertForm } from '@/components/alerts/CreateAlertForm';
 import { AlertList } from '@/components/alerts/AlertList';
 import { AuthGate } from '@/components/ui/AuthGate';
+import { AlertsPreview } from '@/components/billing/GatePreviews';
 import { FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 import { useAlerts } from '@/hooks/use-alerts';
 
@@ -70,6 +71,7 @@ export default function AlertsClientPage() {
     return (
       <AuthGate
         source="alerts"
+        preview={<AlertsPreview />}
         icon={<Bell className="h-7 w-7" />}
         title={t('alertsSignInTitle', 'Get an alert when a stock hits your price')}
         description={t('alertsSignInDescription', 'Create personal alerts when a stock hits a price, % move, or all-time high.')}
