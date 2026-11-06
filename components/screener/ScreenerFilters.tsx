@@ -1,6 +1,5 @@
 'use client';
 
-import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/button';
@@ -14,13 +13,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { RotateCcw, HelpCircle, Plus, X, Loader2 } from 'lucide-react';
+import { RotateCcw, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import {
-  useScreenerFilterPresets,
-  useCreateScreenerFilterPreset,
-  useDeleteScreenerFilterPreset,
-} from '@/hooks/use-screener-filter-presets';
+import { SavedScreens } from '@/components/screener/SavedScreens';
+import type { SavedScreenScope } from '@/lib/screener/saved-screen-limits';
 
 export interface ScreenerFilterValues {
   sector: string;
@@ -107,56 +103,6 @@ function activePreset(filters: ScreenerFilterValues, presets: Preset[]): string 
   return '';
 }
 
-/** Inline "+ Save current filters" affordance — toggles to a name input on
- *  click rather than a full dialog, matching ScreenerViewBar's RenamePill
- *  pattern for the same kind of lightweight, one-field save. */
-function SaveFilterPresetControl({ filters }: { filters: ScreenerFilterValues }) {
-  const { t } = useTranslation('tools');
-  const [naming, setNaming] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const createPreset = useCreateScreenerFilterPreset();
-
-  const save = async () => {
-    const name = (inputRef.current?.value ?? '').trim();
-    setNaming(false);
-    if (!name) return;
-    const activeFilters = Object.fromEntries(
-      Object.entries(filters).filter(([, v]) => v !== '')
-    ) as Partial<ScreenerFilterValues>;
-    await createPreset.mutateAsync({ name, filters: activeFilters }).catch(() => {});
-  };
-
-  if (naming) {
-    return (
-      <input
-        ref={inputRef}
-        autoFocus
-        defaultValue=""
-        placeholder={t('screenerFilterPresetNamePlaceholder')}
-        maxLength={60}
-        onBlur={save}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') { e.currentTarget.blur(); }
-          if (e.key === 'Escape') { setNaming(false); }
-        }}
-        className="h-[22px] w-32 rounded-full border border-primary bg-transparent px-2.5 text-[11px] font-medium text-foreground outline-none"
-      />
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => setNaming(true)}
-      disabled={createPreset.isPending}
-      className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
-    >
-      {createPreset.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-      {t('screenerSaveFilterPreset')}
-    </button>
-  );
-}
-
 interface ScreenerFiltersProps {
   filters: ScreenerFilterValues;
   sectors: string[];
@@ -165,6 +111,8 @@ interface ScreenerFiltersProps {
   onReset: () => void;
   /** A built-in preset was clicked: bring its columns into view and sort by its metric. */
   onPresetApply?: (view: PresetView) => void;
+  /** The universe a screen saved now will be alerted on (the active view). */
+  saveScope?: SavedScreenScope;
 }
 
 function RangeFilter({
@@ -220,14 +168,12 @@ function RangeFilter({
   );
 }
 
-export function ScreenerFilters({ filters, sectors, industries, onChange, onReset, onPresetApply }: ScreenerFiltersProps) {
+export function ScreenerFilters({ filters, sectors, industries, onChange, onReset, onPresetApply, saveScope = 'sp500' }: ScreenerFiltersProps) {
   const { t } = useTranslation('tools');
   const { isAuthenticated } = useAuth();
   const presets = getPresets(t);
   const hasFilters = Object.values(filters).some((v) => v !== '');
   const current = activePreset(filters, presets);
-  const { data: myPresets } = useScreenerFilterPresets();
-  const deletePreset = useDeleteScreenerFilterPreset();
 
   const applyPreset = (preset: Preset) => {
     onChange({ ...EMPTY_FILTERS, ...preset.filters });
@@ -267,39 +213,17 @@ export function ScreenerFilters({ filters, sectors, industries, onChange, onRese
         </div>
       </div>
 
-      {/* My presets — saved custom filter combinations, orthogonal to screener
-         views (which select tickers, not criteria). Signed-in only. */}
-      {/* Hidden until there is a preset to show or a filter to save: an empty
-          heading on its own read as a broken section. */}
-      {isAuthenticated && ((myPresets?.length ?? 0) > 0 || hasFilters) && (
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-foreground">{t('screenerMyPresetsHeading')}</p>
-          <div className="flex flex-wrap items-center gap-1">
-            {(myPresets ?? []).map((preset) => (
-              <span key={preset.id} className="group/preset relative inline-flex items-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange({ ...EMPTY_FILTERS, ...preset.filters });
-                    onPresetApply?.({ columns: [] });
-                  }}
-                  className="rounded-full border border-border bg-transparent py-0.5 pl-2.5 pr-6 text-[11px] font-medium text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
-                >
-                  {preset.name}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => deletePreset.mutate(preset.id)}
-                  aria-label={t('screenerDeleteFilterPreset', { name: preset.name })}
-                  className="absolute right-1 flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/preset:opacity-100"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-            {hasFilters && <SaveFilterPresetControl filters={filters} />}
-          </div>
-        </div>
+      {/* Saved screens: named filter sets, orthogonal to screener views
+          (which pick tickers, not criteria). Signed-in only. */}
+      {isAuthenticated && (
+        <SavedScreens
+          filters={filters}
+          saveScope={saveScope}
+          onOpen={(preset) => {
+            onChange({ ...EMPTY_FILTERS, ...preset.filters });
+            onPresetApply?.({ columns: [] });
+          }}
+        />
       )}
 
       {/* Sector & Industry */}

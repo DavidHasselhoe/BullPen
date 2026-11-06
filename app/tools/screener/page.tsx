@@ -29,6 +29,8 @@ import { useWatchlist, useWatchlistItems } from '@/hooks/use-watchlist';
 import { useHoldings } from '@/hooks/use-holdings';
 import { isOpenPosition } from '@/lib/holdings/open-position';
 import { useScreenerViews, useUpdateScreenerView, type ScreenerView } from '@/hooks/use-screener-views';
+import { useScreenerFilterPresets } from '@/hooks/use-screener-filter-presets';
+import type { SavedScreenScope } from '@/lib/screener/saved-screen-limits';
 import { useAuth } from '@/hooks/use-auth';
 import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvider';
 import { isAdmin, tierFromUser } from '@/lib/billing/tier';
@@ -130,6 +132,26 @@ function ScreenerContent() {
     if (viewParam) setActiveView(paramToView(viewParam, customViews));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customViews.length]);
+
+  // ?screen=<id> (a saved-screen alert's link): open that screen's filters on
+  // the universe its alert checks, once the saved screens have loaded.
+  const { data: savedScreens } = useScreenerFilterPresets();
+  const openedScreen = useRef<string | null>(null);
+  useEffect(() => {
+    const id = searchParams.get('screen');
+    if (!id || openedScreen.current === id || !savedScreens) return;
+    openedScreen.current = id;
+    const screen = savedScreens.find((s) => s.id === id);
+    if (!screen) return;
+    const next = { ...EMPTY_FILTERS, ...screen.filters };
+    setFilters(next);
+    setActiveView({ type: screen.scope });
+    setPage(1);
+    const params = new URLSearchParams();
+    if (screen.scope !== 'sp500') params.set('view', screen.scope);
+    for (const key of FILTER_KEYS) if (next[key]) params.set(key, next[key]);
+    router.replace(params.toString() ? `?${params.toString()}` : window.location.pathname, { scroll: false });
+  }, [searchParams, savedScreens, router]);
 
   // Sync active view object when views list updates (e.g. after rename)
   useEffect(() => {
@@ -410,6 +432,8 @@ function ScreenerContent() {
   const { prices: livePrices, session: marketSession, connected } = useHeatmapStream();
 
   const isCustomView = activeView.type === 'custom';
+  // A screen saved on a ticker-list view (holdings, watchlist, custom) is alerted on the S&P 500.
+  const saveScope: SavedScreenScope = activeView.type === 'all' || isIndexScope(activeView.type) ? activeView.type : 'sp500';
   const customViewEmpty = isCustomView && symbolsFilter === '__none__';
 
   return (
@@ -532,6 +556,7 @@ function ScreenerContent() {
                 onChange={handleFilterChange}
                 onReset={handleReset}
                 onPresetApply={applyPresetView}
+                saveScope={saveScope}
               />
             )}
           </CardContent>
@@ -560,6 +585,7 @@ function ScreenerContent() {
                       onChange={handleFilterChange}
                       onReset={handleReset}
                       onPresetApply={applyPresetView}
+                      saveScope={saveScope}
                     />
                   </div>
                 </details>
