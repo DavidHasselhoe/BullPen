@@ -34,7 +34,8 @@ async function patchHandler(
   const db = supabase as any;
   const { error } = await db
     .from('user_alerts')
-    .update({ is_active: payload.isActive })
+    // Resuming re-arms a level alert, so it can fire on the next check if the price is already past the level.
+    .update(payload.isActive ? { is_active: true, armed: true } : { is_active: false })
     .eq('id', id)
     .eq('user_id', session.userId);
 

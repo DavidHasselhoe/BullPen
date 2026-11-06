@@ -4,13 +4,19 @@
  */
 import { isValidTimeZone } from '@/lib/dates/clock';
 
-export type PushKind = 'user_alert' | 'portfolio_recap' | 'price_alerts' | 'upcoming_earnings'
-  | 'dividend_reminder' | 'weekly_pick' | 'daily_challenge_reminder' | 'new_course';
+export type PushKind = 'user_alert' | 'portfolio_open' | 'portfolio_recap' | 'price_alerts' | 'upcoming_earnings'
+  | 'dividend_reminder' | 'weekly_pick' | 'daily_challenge_reminder' | 'new_course' | 'saved_screen' | 'earnings_recap';
 
-/** Highest priority first: the lead row supplies the push title and URL. */
+/**
+ * Highest priority first: the lead row supplies the push title and URL.
+ * saved_screen (Pro new-match alert, once a weekday per screen) sits under the
+ * held/watched-stock kinds and above the ones nobody set up by hand. It counts
+ * toward the daily cap: it is a discovery, not about money already in.
+ */
 export const PUSH_PRIORITY: PushKind[] = [
-  'user_alert', 'portfolio_recap', 'price_alerts', 'upcoming_earnings',
-  'dividend_reminder', 'weekly_pick', 'daily_challenge_reminder', 'new_course',
+  // earnings_recap (Pro, a held or watched stock's results) leads the capped kinds.
+  'user_alert', 'portfolio_recap', 'portfolio_open', 'earnings_recap', 'price_alerts', 'upcoming_earnings',
+  'saved_screen', 'dividend_reminder', 'weekly_pick', 'daily_challenge_reminder', 'new_course',
 ];
 
 export interface PendingPushRow {
@@ -24,6 +30,10 @@ export type PushPlan =
 
 const HOUR_MS = 3_600_000;
 const DAILY_CAP = 3;
+/** Pushes the user asked for by name (their own alerts, the open and close moves): never counted toward the cap, never held by it. */
+const UNCAPPED = new Set<PushKind>(['user_alert', 'portfolio_open', 'portfolio_recap']);
+/** 23:00, not 22:00: the US close is 22:00 in Oslo all year, and the close push is the one people wait for. */
+const QUIET_START = 23;
 
 export function safeTimeZone(tz: string | null | undefined): string {
   return tz && isValidTimeZone(tz) ? tz : 'UTC';
@@ -40,7 +50,7 @@ function localParts(d: Date, tz: string): { date: string; hour: number } {
 
 export function isQuietHour(now: Date, tz: string): boolean {
   const { hour } = localParts(now, tz);
-  return hour >= 22 || hour < 8;
+  return hour >= QUIET_START || hour < 8;
 }
 
 export function isExpired(row: Pick<PendingPushRow, 'push_kind' | 'created_at'>, now: Date): boolean {
@@ -49,16 +59,17 @@ export function isExpired(row: Pick<PendingPushRow, 'push_kind' | 'created_at'>,
     // Expires at the first instant whose New York date is later than the creation date.
     return localParts(now, 'America/New_York').date > localParts(created, 'America/New_York').date;
   }
-  const ttl = row.push_kind === 'user_alert' ? 12 : 20;
+  // "At the open" is stale by the afternoon, so it does not wait out a night of quiet hours.
+  const ttl = row.push_kind === 'portfolio_open' ? 6 : row.push_kind === 'user_alert' ? 12 : 20;
   return now.getTime() - created.getTime() > ttl * HOUR_MS;
 }
 
-/** Pushes already made on the user's local day. Rows sharing a `pushed_at` are one push; user-alert-only pushes don't count. */
+/** Pushes already made on the user's local day. Rows sharing a `pushed_at` are one push; pushes made only of uncapped kinds don't count. */
 export function pushesTodayCount(pushed: PushedRow[], now: Date, tz: string): number {
   const today = localParts(now, tz).date;
   const counted = new Set<string>();
   for (const r of pushed) {
-    if (r.push_kind !== 'user_alert' && localParts(new Date(r.pushed_at), tz).date === today) counted.add(r.pushed_at);
+    if (!UNCAPPED.has(r.push_kind) && localParts(new Date(r.pushed_at), tz).date === today) counted.add(r.pushed_at);
   }
   return counted.size;
 }
@@ -75,9 +86,9 @@ export function planUserPush(input: {
   let rows = input.pending.filter((r) => !r.is_read && !isExpired(r, now));
   if (rows.length === 0) return { action: 'hold', reason: 'nothing' };
   if (isQuietHour(now, tz)) return { action: 'hold', reason: 'quiet' };
-  // At the cap only user alerts still go out.
+  // At the cap only the uncapped kinds still go out.
   if (pushesTodayCount(input.pushed, now, tz) >= DAILY_CAP) {
-    rows = rows.filter((r) => r.push_kind === 'user_alert');
+    rows = rows.filter((r) => UNCAPPED.has(r.push_kind));
     if (rows.length === 0) return { action: 'hold', reason: 'cap' };
   }
   rows.sort((a, b) => PUSH_PRIORITY.indexOf(a.push_kind) - PUSH_PRIORITY.indexOf(b.push_kind));

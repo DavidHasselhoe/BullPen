@@ -2,16 +2,24 @@
  * Price-Move Alert Cron Job
  * GET /api/cron/check-price-moves
  *
- * Runs after US market close (9:30 PM UTC / 4:30 PM ET + buffer), Mon–Fri.
- * Drives two independently-toggleable notifications — price_alerts (movers) and
- * portfolio_recap (daily P/L) — for every user who has at least one enabled:
+ * QStash, New York time, Mon-Fri: 16:05 (the close run) and 9:35 with `?at=open`.
+ * Both return at once on a weekend or full-day US holiday (tradingMinutesET); half
+ * days still run at 16:05, three hours after the early close, on final prices.
+ * `?force=1` runs on a closed day too (manual checks).
+ *
+ * The open run (`?at=open`) only sends the portfolio move so far
+ * ("Your portfolio -0.8% at the open", toggle portfolio_open), from held symbols.
+ *
+ * The close run drives two independently-toggleable notifications, price_alerts
+ * (movers) and portfolio_recap (daily P/L), for every user who has at least one enabled:
  *   1. Collects all their tracked stocks (watchlist + holdings) with alerts_enabled = true
  *   2. Batch-fetches quotes for all unique symbols (shared across all users — very credit-efficient)
- *   3. If portfolio_recap is on: creates the daily portfolio recap notification
+ *   3. If portfolio_recap is on: creates the daily portfolio recap notification. For Pro
+ *      it carries the top mover's Why Today answer (lib/ai/recap-why.ts, shared, capped).
  *   4. If price_alerts is on: creates a grouped or individual notification for stocks that moved ≥5%
+ *   5. Pushes to the users it notified right away (pushNow), not at the next 15-minute dispatch
  *
- * Credit cost: ~1 credit per 20 unique symbols across ALL users combined.
- * For 500 unique symbols: 25 batch calls = 25 credits per day.
+ * Credit cost: 1 credit per unique symbol across ALL users combined, per run.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -20,17 +28,26 @@ import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { getStockCandles, getStockQuotes } from '@/lib/market-data';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
+import { tradingMinutesET } from '@/lib/market-data/trading-day';
+import { pushNow } from '@/lib/notifications/push-dispatch';
 import {
   createPriceMoveNotification,
   createPriceMoveDigestNotification,
   createPortfolioRecapNotification,
+  type PortfolioRecap,
   type PriceMover,
 } from '@/lib/notifications/notification-creators';
+import { isPro, tierFromUser } from '@/lib/billing/tier';
+import { recapWhys } from '@/lib/ai/recap-why';
+import { WHY_TODAY_MIN_MOVE } from '@/lib/ai/why-today-shared';
 
 export const maxDuration = 300;
 
 // Minimum absolute % change to qualify as a significant move
 const MOVE_THRESHOLD_PCT = 5;
+
+// The recap whys (Pro) may use up to this much of maxDuration; a cold answer is ~15-30s.
+const WHY_BUDGET_MS = 150_000;
 
 // Live /quote snapshots can occasionally return a stale or wrong previous_close
 // (observed: TwelveData briefly reported a stock at -30% intraday when the real
@@ -73,8 +90,19 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const at = request.nextUrl.searchParams.get('at') === 'open' ? 'open' : 'close';
+  if (tradingMinutesET() === null && request.nextUrl.searchParams.get('force') !== '1') {
+    return NextResponse.json({ skipped: true, at, message: 'US market closed today' });
+  }
+  // The open run is the portfolio move only, under its own toggle.
+  const recapKey = at === 'open' ? 'portfolio_open' : 'portfolio_recap';
+
+  const startedAt = Date.now();
   const supabase = createServerClient();
+  const notifiedUsers = new Set<string>();
   const summary = {
+    at,
+    recapWhys: 0,
     usersChecked: 0,
     usersNotified: 0,
     symbolsChecked: 0,
@@ -90,26 +118,30 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     // gate below decides which of the two notifications they actually get.
     const { data: users, error: usersErr } = await supabase
       .from('users')
-      .select('id, settings')
+      .select('id, settings, account_tier, role, pro_bonus_until')
       .or(
-        'settings->notifications->price_alerts.is.null,settings->notifications->price_alerts.eq.true,' +
-        'settings->notifications->portfolio_recap.is.null,settings->notifications->portfolio_recap.eq.true'
+        at === 'open'
+          ? 'settings->notifications->portfolio_open.is.null,settings->notifications->portfolio_open.eq.true'
+          : 'settings->notifications->price_alerts.is.null,settings->notifications->price_alerts.eq.true,' +
+            'settings->notifications->portfolio_recap.is.null,settings->notifications->portfolio_recap.eq.true'
       ) as unknown as
-      { data: Array<{ id: string; settings: Record<string, unknown> | null }> | null; error: unknown };
+      { data: Array<{ id: string; settings: Record<string, unknown> | null; account_tier: number | null; role: string | null; pro_bonus_until: string | null }> | null; error: unknown };
 
     if (usersErr || !users?.length) {
       return NextResponse.json({ ...summary, error: 'No eligible users or query failed' });
     }
 
     const userSettings = new Map(users.map((u) => [u.id, u.settings]));
+    const proUsers = new Set(users.filter((u) => isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until))).map((u) => u.id));
     const wantsPriceAlerts = (userId: string) =>
-      (userSettings.get(userId) as { notifications?: Record<string, boolean> } | null)?.notifications?.price_alerts !== false;
+      at === 'close' && (userSettings.get(userId) as { notifications?: Record<string, boolean> } | null)?.notifications?.price_alerts !== false;
     const wantsPortfolioRecap = (userId: string) =>
-      (userSettings.get(userId) as { notifications?: Record<string, boolean> } | null)?.notifications?.portfolio_recap !== false;
+      (userSettings.get(userId) as { notifications?: Record<string, boolean> } | null)?.notifications?.[recapKey] !== false;
 
     // ── 2. Collect (userId → symbol[]) from watchlist + holdings ──────────
     const [watchlistRes, holdingsRes] = await Promise.all([
-      supabase
+      // The open run quotes held symbols only: watchlists feed the close run's movers.
+      at === 'open' ? { data: [] } : supabase
         .from('user_watchlist')
         .select('user_id, symbol, company_name')
         .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string }> | null }>,
@@ -196,7 +228,48 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       })
     );
 
-    // ── 4. For each user — find movers and create notifications ───────────
+    // ── 4a. Daily portfolio recaps (regardless of the 5% mover threshold) ──
+    const recaps = new Map<string, PortfolioRecap>();
+    for (const userId of userSymbols.keys()) {
+      const holdings = wantsPortfolioRecap(userId) ? userHoldings.get(userId) : undefined;
+      if (!holdings?.length) continue;
+      let prevValue = 0;
+      let dayChange = 0;
+      let counted = 0;
+      let top: { symbol: string; pct: number; contrib: number } | null = null;
+      for (const h of holdings) {
+        const q = quoteMap.get(h.symbol);
+        if (!q || untrustedSymbols.has(h.symbol)) continue;
+        const prevPrice = q.price - q.change;
+        if (prevPrice <= 0) continue;
+        prevValue += prevPrice * h.quantity;
+        const contrib = q.change * h.quantity;
+        dayChange += contrib;
+        counted++;
+        if (!top || Math.abs(contrib) > Math.abs(top.contrib)) {
+          top = { symbol: h.symbol, pct: q.changePercent, contrib };
+        }
+      }
+      if (prevValue > 0 && top && counted > 0) {
+        recaps.set(userId, { dayPct: (dayChange / prevValue) * 100, topSymbol: top.symbol, topPct: top.pct, holdingsCount: counted });
+      }
+    }
+
+    // ── 4b. Pro, close: the top mover's Why Today, shared and capped (lib/ai/recap-why.ts) ──
+    if (at === 'close') {
+      const asks = [...recaps].flatMap(([userId, r]) => {
+        const q = quoteMap.get(r.topSymbol);
+        return proUsers.has(userId) && q && Math.abs(r.topPct) >= WHY_TODAY_MIN_MOVE
+          ? [{ userId, symbol: r.topSymbol, quote: { c: q.price, d: q.change, dp: q.changePercent } }]
+          : [];
+      });
+      // Leaves the rest of maxDuration for notifications and pushes.
+      const whys = asks.length ? await recapWhys(asks, startedAt + WHY_BUDGET_MS) : new Map<string, string>();
+      summary.recapWhys = whys.size;
+      for (const [userId, r] of recaps) if (proUsers.has(userId)) r.why = whys.get(r.topSymbol) ?? null;
+    }
+
+    // ── 4c. For each user — create the recap, find movers, create notifications ──
     summary.usersChecked = userSymbols.size;
 
     for (const [userId, symbolMap] of userSymbols.entries()) {
@@ -210,34 +283,12 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
         }
       }
 
-      // ── Daily portfolio recap (runs regardless of the 5% mover threshold) ──
-      const holdings = wantsPortfolioRecap(userId) ? userHoldings.get(userId) : undefined;
-      if (holdings?.length) {
-        let prevValue = 0;
-        let dayChange = 0;
-        let counted = 0;
-        let top: { symbol: string; pct: number; contrib: number } | null = null;
-        for (const h of holdings) {
-          const q = quoteMap.get(h.symbol);
-          if (!q || untrustedSymbols.has(h.symbol)) continue;
-          const prevPrice = q.price - q.change;
-          if (prevPrice <= 0) continue;
-          prevValue += prevPrice * h.quantity;
-          const contrib = q.change * h.quantity;
-          dayChange += contrib;
-          counted++;
-          if (!top || Math.abs(contrib) > Math.abs(top.contrib)) {
-            top = { symbol: h.symbol, pct: q.changePercent, contrib };
-          }
-        }
-        if (prevValue > 0 && top && counted > 0) {
-          const ok = await createPortfolioRecapNotification(userId, {
-            dayPct: (dayChange / prevValue) * 100,
-            topSymbol: top.symbol,
-            topPct: top.pct,
-            holdingsCount: counted,
-          });
-          if (ok) summary.notificationsCreated++;
+      const recap = recaps.get(userId);
+      if (recap) {
+        const ok = await createPortfolioRecapNotification(userId, recap, at);
+        if (ok) {
+          summary.notificationsCreated++;
+          notifiedUsers.add(userId);
         }
       }
 
@@ -256,6 +307,7 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       }
 
       if (created) {
+        notifiedUsers.add(userId);
         summary.usersNotified++;
         summary.notificationsCreated += movers.length >= 3 ? 1 : movers.length;
       }
@@ -264,7 +316,9 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     summary.errors.push(String(err));
   }
 
-  return NextResponse.json(summary);
+  const { pushed, pushErrors } = await pushNow(notifiedUsers);
+  summary.errors.push(...pushErrors);
+  return NextResponse.json({ ...summary, pushed });
 }
 
 export const GET = withCronReport('check-price-moves', handleGET);

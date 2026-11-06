@@ -5,7 +5,7 @@
  *   npm run test-trading-day
  */
 import assert from 'node:assert/strict';
-import { usMarketHolidays, sessionDateET, isPreMarketET, secondsUntilNextOpenET } from '../lib/market-data/trading-day';
+import { usMarketHolidays, sessionDateET, isPreMarketET, secondsUntilNextOpenET, tradingMinutesET } from '../lib/market-data/trading-day';
 
 // SELECT date FROM exchange_holidays WHERE exchange_code='NYSE' AND type='closed', 2026-10-07.
 const VERIFIED = '2026-01-01,2026-01-19,2026-02-16,2026-04-03,2026-05-25,2026-06-19,2026-07-03,2026-09-07,2026-11-26,2026-12-25,2027-01-01,2027-01-18,2027-02-15,2027-03-26,2027-05-31,2027-06-18,2027-07-05,2027-09-06,2027-11-25,2027-12-24,2028-01-17,2028-02-21,2028-04-14,2028-05-29,2028-06-19,2028-07-04,2028-09-04,2028-11-23,2028-12-25';
@@ -43,5 +43,12 @@ assert.equal(secondsUntilNextOpenET(at('2026-11-25T22:00:00Z')), 40.5 * 3600);
 // Sat is never pre-market; DST: Fri 2026-10-30 17:00 EDT to Mon 2026-11-02 9:30 EST = 65.5h.
 assert.equal(isPreMarketET(at('2026-10-10T12:00:00Z')), false);
 assert.equal(secondsUntilNextOpenET(at('2026-10-30T21:00:00Z')), 65.5 * 3600);
+
+// Session clock for the alert crons: 9:35 EST on a Monday, null on Thanksgiving and a Saturday.
+assert.equal(tradingMinutesET(at('2026-11-09T14:35:00Z')), 575);
+assert.equal(tradingMinutesET(at('2026-11-26T15:00:00Z')), null);
+assert.equal(tradingMinutesET(at('2026-11-07T15:00:00Z')), null);
+// Summer: 9:35 EDT is 13:35Z.
+assert.equal(tradingMinutesET(at('2026-07-15T13:35:00Z')), 575);
 
 console.log('trading day: ok');

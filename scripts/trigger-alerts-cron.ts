@@ -18,7 +18,8 @@ async function main() {
     process.exit(1);
   }
 
-  const url = `${base}/api/cron/check-user-alerts`;
+  // force=1: run even outside 9:35-16:05 New York, which the scheduled fires stick to.
+  const url = `${base}/api/cron/check-user-alerts?force=1`;
   console.log('Calling', url, '...\n');
 
   const res = await fetch(url, {

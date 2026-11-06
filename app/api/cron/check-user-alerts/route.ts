@@ -2,27 +2,44 @@
  * User-Defined Alerts Cron
  *  GET /api/cron/check-user-alerts
  *
- * Schedule: 30 14-21 * * 1-5 UTC  → 9:30 AM → 4:30 PM ET, hourly, Mon-Fri.
+ * Schedule: QStash, every 5 minutes, 9:00-16:55 New York, Mon-Fri (docs/agent/scheduled-work.md). Only runs
+ *           9:35-16:05 New York on a trading day (tradingMinutesET); other fires return at once.
+ *           `?force=1` runs outside those hours (manual checks). `?dryRun=1` evaluates and lists
+ *           what would fire or re-arm without writing, notifying or pushing (still quotes misses).
  * Auth:     Bearer CRON_SECRET header.
  *
- * For every active alert that hasn't fired in 24h:
- *   1. Batch-fetch quote + (when needed) statistics for the union of symbols.
- *   2. Evaluate each alert's condition against the latest data.
- *   3. Write a notification row + bump last_triggered_at on triggered alerts.
- *      For all_time_high alerts we also update baseline_value to the new max.
+ * For every active alert:
+ *   1. Prices from the shared last-price cache (3 min old at most in session), and one batch
+ *      quote for the symbols it doesn't have. 52-week high/low from screener_stats (nightly).
+ *   2. Evaluate each alert's condition.
+ *   3. Write a notification + bump last_triggered_at on triggered alerts, then push to those
+ *      users right away (pushNow) instead of waiting for the 15-minute dispatcher.
  *
- * Cost: ~2 credits per unique symbol per run.
+ * Firing rules: at most once per 24h per alert. Level alerts (price above/below, near the
+ * 52-week high/low) also fire once per crossing: `armed` goes false when they fire and true
+ * again once the condition is false (migration 193). all_time_high raises its baseline.
+ *
+ * Cost: 1 credit per alert symbol the cache misses, at most one batch per run. No /statistics.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
-import { getStockQuotes, getStatistics } from '@/lib/twelvedata/twelvedata-client';
+import { getStockQuotes } from '@/lib/twelvedata/twelvedata-client';
+import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
+import { getLastPrices, cacheLastPrice } from '@/lib/market-data/last-price-cache';
+import { tradingMinutesET } from '@/lib/market-data/trading-day';
 import { createUserAlertNotification } from '@/lib/notifications/notification-creators';
+import { pushNow } from '@/lib/notifications/push-dispatch';
+import { evaluateAlert, alertAction, isLevelAlert, type AlertQuote, type AlertRange } from '@/lib/alerts/evaluate-alert';
 import type { AlertType, UserAlert } from '@/types/alerts';
 
 export const maxDuration = 120;
+
+/** 9:35 to 16:05 New York: skips the opening minutes, when a quote can still carry yesterday's change. */
+const SESSION_FROM = 9 * 60 + 35;
+const SESSION_TO = 16 * 60 + 5;
 
 interface AlertRow {
   id: string;
@@ -34,51 +51,7 @@ interface AlertRow {
   baseline_value: number | string | null;
   last_triggered_at: string | null;
   trigger_count: number;
-}
-
-interface EvalResult {
-  triggered: boolean;
-  /** For ATH alerts: the new baseline to persist when triggered. */
-  newBaseline?: number;
-}
-
-function evaluate(
-  alert: AlertRow,
-  quote: { c: number; dp: number } | null,
-  stats: { week52High: number | null; week52Low: number | null } | null
-): EvalResult {
-  if (!quote || !isFinite(quote.c) || quote.c <= 0) return { triggered: false };
-  const threshold = Number(alert.threshold);
-  const price = quote.c;
-  const pctDay = quote.dp;
-
-  switch (alert.alert_type) {
-    case 'price_above':
-      return { triggered: price >= threshold };
-    case 'price_below':
-      return { triggered: price <= threshold };
-    case 'pct_change_up':
-      return { triggered: pctDay >= threshold * 100 };
-    case 'pct_change_down':
-      return { triggered: pctDay <= -threshold * 100 };
-    case 'near_52w_high': {
-      const high = stats?.week52High;
-      if (!high || high <= 0) return { triggered: false };
-      return { triggered: price >= high * (1 - threshold) };
-    }
-    case 'near_52w_low': {
-      const low = stats?.week52Low;
-      if (!low || low <= 0) return { triggered: false };
-      return { triggered: price <= low * (1 + threshold) };
-    }
-    case 'all_time_high': {
-      const baseline = alert.baseline_value === null ? 0 : Number(alert.baseline_value);
-      if (price > baseline) {
-        return { triggered: true, newBaseline: price };
-      }
-      return { triggered: false };
-    }
-  }
+  armed: boolean;
 }
 
 async function handleGET(request: NextRequest): Promise<NextResponse> {
@@ -89,15 +62,22 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = createServerClient();
+  const mins = tradingMinutesET();
+  const force = request.nextUrl.searchParams.get('force') === '1';
+  const dryRun = request.nextUrl.searchParams.get('dryRun') === '1';
+  if (!force && (mins === null || mins < SESSION_FROM || mins > SESSION_TO)) {
+    return NextResponse.json({ success: true, skipped: true, evaluated: 0, fired: 0 });
+  }
 
-  // 1. Load every alert that COULD fire this run (active, not triggered in 24h)
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { data: alertsData, error } = await supabase
+  const supabase = createServerClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+
+  // 1. Every active alert: the ones in cooldown are still needed to re-arm.
+  const { data: alertsData, error } = await db
     .from('user_alerts')
-    .select('id, user_id, symbol, company_name, alert_type, threshold, baseline_value, last_triggered_at, trigger_count')
-    .eq('is_active', true)
-    .or(`last_triggered_at.is.null,last_triggered_at.lt.${cutoff}`);
+    .select('id, user_id, symbol, company_name, alert_type, threshold, baseline_value, last_triggered_at, trigger_count, armed')
+    .eq('is_active', true);
 
   if (error) {
     console.error('[check-user-alerts] load failed:', error);
@@ -109,54 +89,64 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true, evaluated: 0, fired: 0 });
   }
 
-  // 2. Batch-fetch market data for the union of symbols
+  // 2. Prices: the shared cache first, one budgeted batch quote for the misses.
   const symbols = [...new Set(alerts.map((a) => a.symbol.toUpperCase()))];
-  const needsStats = alerts.some(
-    (a) => a.alert_type === 'near_52w_high' || a.alert_type === 'near_52w_low'
-  );
-
-  let quoteMap: Awaited<ReturnType<typeof getStockQuotes>> = new Map();
-  const statsMap: Map<string, { week52High: number | null; week52Low: number | null }> = new Map();
-
-  try {
-    quoteMap = await getStockQuotes(symbols);
-  } catch (err) {
-    console.error('[check-user-alerts] quote fetch failed:', err);
+  const quoteMap = new Map<string, AlertQuote>();
+  for (const [sym, hit] of await getLastPrices(symbols)) {
+    if (hit.price > 0 && hit.changePercent !== null) quoteMap.set(sym, { c: hit.price, dp: hit.changePercent });
   }
-
-  if (needsStats) {
-    // getStatistics is per-symbol. Despite this comment's previous claim of
-    // "a small concurrency cap," this used to fire every symbol's request via
-    // Promise.allSettled(symbols.map(...)) with no cap at all — the exact
-    // same unbounded-fan-out shape that caused the TwelveData credit-spike
-    // investigation elsewhere this session. Fetching one symbol at a time
-    // means a slow/degraded TwelveData response only ever blocks on one
-    // request instead of dozens piling up concurrently and compounding the
-    // account-wide load that caused them to be slow in the first place.
-    for (const s of symbols) {
-      try {
-        const stats = await getStatistics(s);
-        statsMap.set(s, { week52High: stats.week52High, week52Low: stats.week52Low });
-      } catch (err) {
-        console.error(`[check-user-alerts] statistics fetch failed for ${s}:`, err);
+  const cacheHits = quoteMap.size;
+  const misses = symbols.filter((s) => !quoteMap.has(s));
+  const errors: string[] = [];
+  if (misses.length > 0) {
+    try {
+      await waitForCronCreditBudget(misses.length);
+      for (const [sym, q] of await getStockQuotes(misses)) {
+        if (!(q.c > 0)) continue;
+        quoteMap.set(sym, { c: q.c, dp: q.dp });
+        cacheLastPrice(sym, { price: q.c, changePercent: q.dp });
       }
+    } catch (err) {
+      errors.push(`quote fetch failed: ${String(err)}`);
     }
   }
 
-  // 3. Evaluate + trigger
+  // 52-week range from the nightly screener refresh: no /statistics call (~50 credits a symbol).
+  // ponytail: a symbol outside the screener universe has no row, so its 52w alerts never fire; fetch /statistics for those if one shows up
+  const rangeMap = new Map<string, AlertRange>();
+  const rangeSymbols = [...new Set(alerts
+    .filter((a) => a.alert_type === 'near_52w_high' || a.alert_type === 'near_52w_low')
+    .map((a) => a.symbol.toUpperCase()))];
+  if (rangeSymbols.length > 0) {
+    const { data: ranges, error: rangeErr } = await db
+      .from('screener_stats')
+      .select('ticker, week52_high, week52_low')
+      .in('ticker', rangeSymbols);
+    if (rangeErr) errors.push(`screener_stats: ${rangeErr.message}`);
+    for (const r of (ranges ?? []) as { ticker: string; week52_high: number | null; week52_low: number | null }[]) {
+      rangeMap.set(r.ticker.toUpperCase(), { week52High: r.week52_high, week52Low: r.week52_low });
+    }
+  }
+
+  // 3. Evaluate, fire, re-arm.
   let fired = 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
+  const rearm: string[] = [];
+  const notifiedUsers = new Set<string>();
+  const wouldFire: string[] = [];
+  const now = Date.now();
 
   for (const alert of alerts) {
     const symUp = alert.symbol.toUpperCase();
     const quote = quoteMap.get(symUp) ?? null;
-    const stats = statsMap.get(symUp) ?? null;
+    const { triggered, newBaseline } = evaluateAlert(alert, quote, rangeMap.get(symUp) ?? null);
+    const action = alertAction(alert, triggered, now);
+    if (action === 'rearm') rearm.push(alert.id);
+    if (action !== 'fire' || !quote) continue;
+    if (dryRun) {
+      wouldFire.push(`${alert.alert_type} ${symUp} at ${quote.c}`);
+      continue;
+    }
 
-    const { triggered, newBaseline } = evaluate(alert, quote, stats);
-    if (!triggered || !quote) continue;
-
-    // Build the lightweight UserAlert shape needed by the notification creator
     const dto: Pick<UserAlert, 'id' | 'symbol' | 'companyName' | 'alertType' | 'threshold'> = {
       id: alert.id,
       symbol: alert.symbol,
@@ -168,25 +158,40 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     const notified = await createUserAlertNotification(alert.user_id, dto, quote.c);
     if (!notified) continue;
 
-    // Persist trigger state. For ATH alerts, raise the baseline so subsequent
-    // runs only fire on a new high — not the same one repeatedly.
     const update: Record<string, unknown> = {
       last_triggered_at: new Date().toISOString(),
       trigger_count: alert.trigger_count + 1,
     };
-    if (newBaseline !== undefined) {
-      update.baseline_value = newBaseline;
-    }
+    if (isLevelAlert(alert.alert_type)) update.armed = false;
+    if (newBaseline !== undefined) update.baseline_value = newBaseline;
 
-    await db.from('user_alerts').update(update).eq('id', alert.id);
+    const { error: updErr } = await db.from('user_alerts').update(update).eq('id', alert.id);
+    if (updErr) errors.push(`update ${alert.id}: ${updErr.message}`);
+    notifiedUsers.add(alert.user_id);
     fired++;
   }
+
+  if (dryRun) {
+    return NextResponse.json({ success: true, dryRun: true, evaluated: alerts.length, wouldFire, wouldRearm: rearm.length, uniqueSymbols: symbols.length, cacheHits, quoted: misses.length, errors });
+  }
+
+  if (rearm.length > 0) {
+    const { error: rearmErr } = await db.from('user_alerts').update({ armed: true }).in('id', rearm);
+    if (rearmErr) errors.push(`re-arm: ${rearmErr.message}`);
+  }
+
+  const { pushed, pushErrors } = await pushNow(notifiedUsers);
 
   return NextResponse.json({
     success: true,
     evaluated: alerts.length,
     fired,
+    rearmed: rearm.length,
     uniqueSymbols: symbols.length,
+    cacheHits,
+    quoted: misses.length,
+    pushed,
+    errors: [...errors, ...pushErrors],
   });
 }
 

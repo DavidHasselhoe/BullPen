@@ -29,6 +29,7 @@
     "test-navigate-dedupe": "tsx scripts/test-navigate-dedupe.ts",
     "test-deliverable-email": "tsx scripts/test-deliverable-email.ts",
     "test-push-plan": "tsx scripts/test-push-plan.ts",
+    "test-alert-eval": "tsx scripts/test-alert-eval.ts",
     "test-cron-coverage": "tsx scripts/test-cron-coverage.ts",
     "test-daily-challenges": "tsx scripts/test-daily-challenges.ts",
     "test-ai-error-classification": "tsx scripts/test-ai-error-classification.ts",

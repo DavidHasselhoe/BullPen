@@ -99,6 +99,20 @@ export function isPreMarketET(now = new Date()): boolean {
 }
 
 /**
+ * New York minutes past midnight (9:30 = 570) when today is a US trading day,
+ * or null on a weekend or full-day holiday. For crons that QStash fires every
+ * weekday and that must stay quiet when the market is shut. Half days (13:00
+ * close) count as trading days: their quotes just stop moving early.
+ */
+export function tradingMinutesET(now = new Date()): number | null {
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = et.getDay();
+  if (day === 0 || day === 6) return null;
+  if (usMarketHolidays(et.getFullYear()).has(iso(et.getFullYear(), et.getMonth() + 1, et.getDate()))) return null;
+  return et.getHours() * 60 + et.getMinutes();
+}
+
+/**
  * Seconds until the next regular-session open (9:30 New York on a trading
  * day). For data that cannot change while the market is shut, like the last
  * session's movers, so a cache can hold it until it can. Pass `hh`/`mm` = 4, 0

@@ -12,8 +12,10 @@ assert.equal(safeTimeZone('Not/AZone'), 'UTC');
 assert.equal(safeTimeZone(null), 'UTC');
 assert.equal(safeTimeZone('Europe/Oslo'), 'Europe/Oslo');
 
-assert.equal(isQuietHour(new Date('2026-10-30T20:59:00Z'), 'Europe/Oslo'), false);
-assert.equal(isQuietHour(new Date('2026-10-30T21:00:00Z'), 'Europe/Oslo'), true);
+// 22:05 Oslo (the US close plus five minutes) still pushes; 23:00 is quiet.
+assert.equal(isQuietHour(new Date('2026-10-30T20:05:00Z'), 'Europe/Oslo'), false);
+assert.equal(isQuietHour(new Date('2026-10-30T21:59:00Z'), 'Europe/Oslo'), false);
+assert.equal(isQuietHour(new Date('2026-10-30T22:00:00Z'), 'Europe/Oslo'), true);
 assert.equal(isQuietHour(new Date('2026-10-30T07:00:00Z'), 'Europe/Oslo'), false);
 // The days clocks go forward and back
 assert.equal(isQuietHour(new Date('2026-03-29T06:30:00Z'), 'Europe/Oslo'), false);
@@ -24,6 +26,8 @@ const now = new Date('2026-10-30T12:00:00Z');
 const ago = (h: number, m: number) => new Date(now.getTime() - (h * 60 + m) * 60_000).toISOString();
 assert.equal(isExpired({ push_kind: 'user_alert', created_at: ago(11, 59) }, now), false);
 assert.equal(isExpired({ push_kind: 'user_alert', created_at: ago(12, 1) }, now), true);
+assert.equal(isExpired({ push_kind: 'portfolio_open', created_at: ago(5, 59) }, now), false);
+assert.equal(isExpired({ push_kind: 'portfolio_open', created_at: ago(6, 1) }, now), true);
 assert.equal(isExpired({ push_kind: 'weekly_pick', created_at: ago(19, 59) }, now), false);
 assert.equal(isExpired({ push_kind: 'weekly_pick', created_at: ago(20, 1) }, now), true);
 const challenge = { push_kind: 'daily_challenge_reminder' as const, created_at: '2026-10-30T01:00:00Z' };
@@ -34,6 +38,7 @@ const NY = 'America/New_York';
 const p = (pushed_at: string, push_kind: PushKind) => ({ pushed_at, push_kind });
 assert.equal(pushesTodayCount([p('2026-10-30T10:00:00Z', 'new_course'), p('2026-10-30T10:00:00Z', 'weekly_pick'), p('2026-10-30T10:00:00Z', 'price_alerts')], now, NY), 1);
 assert.equal(pushesTodayCount([p('2026-10-30T10:00:00Z', 'user_alert')], now, NY), 0);
+assert.equal(pushesTodayCount([p('2026-10-30T10:00:00Z', 'portfolio_open'), p('2026-10-30T11:00:00Z', 'portfolio_recap')], now, NY), 0);
 assert.equal(pushesTodayCount([p('2026-10-29T10:00:00Z', 'new_course')], now, NY), 0);
 
 assert.equal(withPushParams('/stock/AAPL', 'x'), '/stock/AAPL?src=push&n=x');
@@ -61,6 +66,7 @@ const onlyAlert = plan([row('w', 'weekly_pick'), row('u', 'user_alert')], capped
 assert.equal(onlyAlert.action, 'send');
 assert.deepEqual((onlyAlert as { rowIds: string[] }).rowIds, ['u']);
 assert.deepEqual(plan([row('w', 'weekly_pick')], capped), { action: 'hold', reason: 'cap' });
+assert.deepEqual((plan([row('w', 'weekly_pick'), row('o', 'portfolio_open')], capped) as { rowIds: string[] }).rowIds, ['o']);
 
 assert.deepEqual(plan([row('w', 'weekly_pick', { created_at: ago(21, 0) })]), { action: 'hold', reason: 'nothing' });
 const dropped = plan([row('w', 'weekly_pick', { created_at: ago(21, 0) }), row('c', 'new_course')]);
