@@ -7,6 +7,8 @@
  * every future content-type generator."
  */
 
+import { displayCompanyName } from '@/lib/market-data/company-name';
+
 export const FIXED_DISCLAIMER = 'Not financial advice. Report dates gathered from public sources as of posting. Dates can change; always confirm before the market moves.';
 
 /**
@@ -74,4 +76,22 @@ export const MARKET_DATA_DISCLAIMER_PRE_MARKET = 'Not financial advice. Prices a
 export function formatDateLabel(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00Z');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+
+/**
+ * One company, one tile: GOOG and GOOGL ("Alphabet Inc. Class C" / "Alphabet
+ * Inc.") both showed on the Oct 26-30 2026 posts. Same short display name on
+ * the same report date counts as one company; the bigger listing wins, in the
+ * first one's place. Expects names and market caps already attached.
+ */
+export function dropShareClassTwins<T extends { symbol: string; name?: string; date: string; market_cap: number | null }>(items: T[]): T[] {
+  const out: T[] = [];
+  const at = new Map<string, number>();
+  for (const item of items) {
+    const key = `${item.date}|${displayCompanyName(item.name ?? item.symbol, item.symbol).toLowerCase()}`;
+    const i = at.get(key);
+    if (i == null) { at.set(key, out.length); out.push(item); }
+    else if ((item.market_cap ?? 0) > (out[i].market_cap ?? 0)) out[i] = item;
+  }
+  return out;
 }

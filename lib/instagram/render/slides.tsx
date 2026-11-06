@@ -47,8 +47,6 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { loadOgFont } from '@/lib/render/og-fonts';
 import type {
-  EarningsSlideCompany,
-  EarningsResultCompany,
   MarketMoverEntry,
   InstagramPostSlides,
   EarningsDeepDiveData,
@@ -91,20 +89,8 @@ const LOSS = '#f87171'; // red-400, the mirror of BRAND; dark text on it, like B
 const GAIN_TEXT = '#059669'; // emerald-600
 const LOSS_TEXT = '#dc2626'; // red-600
 
-/**
- * Most rows one list slide holds: rowMetrics' sizing bottoms out at 15. Was a
- * flat 30 per page ("always one slide"), which nothing ever rendered at: the
- * first 24-company week (W42 2026) ran rows off the bottom of the slide.
- */
-const MAX_ROWS_PER_LIST_SLIDE = 15;
-
-/** Pages split evenly, so 16 companies read as 8 + 8, never 15 + a lonely 1. */
-export function companiesPerListSlide(companyCount: number): number {
-  return Math.max(1, Math.ceil(companyCount / listSlideCount(companyCount)));
-}
-
 export type SlideKind =
-  | 'hook' | 'list' | 'cta' | 'movers_cover' | 'winners' | 'losers'
+  | 'cta' | 'movers_cover' | 'winners' | 'losers'
   | 'deepdive_scoreboard' | 'deepdive_story' | 'deepdive_reaction'
   | 'scoreboard_cover' | 'scoreboard_list' | 'scoreboard_callouts' | 'calendar_grid';
 
@@ -115,23 +101,17 @@ function scoreboardPageCount(n: number): number {
   return Math.max(1, Math.ceil(n / SCOREBOARD_PER_PAGE));
 }
 
-function listSlideCount(companyCount: number): number {
-  return Math.max(1, Math.ceil(companyCount / MAX_ROWS_PER_LIST_SLIDE));
-}
-
 /** Total slide count for a given post. market_movers is always a fixed 4
  *  slides (ink cover, winners, losers, cta); earnings_deep_dive is the
  *  scoreboard, 1-3 story slides, the price reaction when there is one, then the
  *  shared conversion CTA slide every other content type ends on (see
- *  deepDiveKinds); earnings_calendar is the logo grid and the CTA;
- *  earnings_results paginates its company list across a hook, 1+ list
- *  slides, and a CTA. */
+ *  deepDiveKinds); earnings_calendar and earnings_results are each one logo
+ *  grid and the CTA. */
 export function totalSlideCount(slides: InstagramPostSlides): number {
   if (slides.contentType === 'market_movers') return 4;
   if (slides.contentType === 'earnings_deep_dive') return deepDiveKinds(slides.data).length;
   if (slides.contentType === 'picks_scoreboard') return 1 + scoreboardPageCount(slides.picks.length) + 2;
-  if (slides.contentType === 'earnings_calendar') return 2;
-  return 1 + listSlideCount(slides.companies.length) + 1;
+  return 2;
 }
 
 /** Which kind of slide a given 0-indexed slide position is, for a given post. */
@@ -149,11 +129,7 @@ export function slideKindAt(index: number, slides: InstagramPostSlides): SlideKi
     if (index <= pages) return 'scoreboard_list';
     return index === pages + 1 ? 'scoreboard_callouts' : 'cta';
   }
-  if (slides.contentType === 'earnings_calendar') return index === 0 ? 'calendar_grid' : 'cta';
-  const lists = listSlideCount(slides.companies.length);
-  if (index === 0) return 'hook';
-  if (index === lists + 1) return 'cta';
-  return 'list';
+  return index === 0 ? 'calendar_grid' : 'cta';
 }
 
 /**
@@ -203,24 +179,18 @@ export function altTextForSlide(
   }
   const kind = slideKindAt(slideIndex, content);
   const isResults = content.contentType === 'earnings_results';
-  if (kind === 'calendar_grid') {
-    const byDay = groupByDate(content.companies).map((g) => `${gridDayHeader(g.date).toLowerCase()}: ${g.items.map((c) => c.symbol).join(', ')}`);
-    return `Earnings to watch this week, ${content.weekLabel}, on BullPen. ${byDay.join('; ')}.`;
-  }
-  if (kind === 'hook') {
-    return isResults
-      ? `${content.headline} Earnings results for the week of ${content.weekLabel} on BullPen.`
-      : `${content.headline} Earnings calendar for the week of ${content.weekLabel} on BullPen.`;
-  }
   if (kind === 'cta') {
     return isResults
       ? 'Open the BullPen app to see the full earnings results recap and track these stocks.'
       : 'Open the BullPen app to see the full earnings calendar and set alerts for these stocks.';
   }
-  const tickers = content.companies.map((c) => c.symbol).join(', ');
-  return isResults
-    ? `Earnings results for the week of ${content.weekLabel}: ${tickers}.`
-    : `Companies reporting earnings the week of ${content.weekLabel}: ${tickers}.`;
+  if (isResults) {
+    const list = (s: 'beat' | 'missed') => content.companies.filter((c) => c.status === s).map((c) => c.symbol).join(', ');
+    const missed = list('missed');
+    return `${content.beatCount} of ${content.companies.length} companies beat analyst profit estimates the week of ${content.weekLabel}, on BullPen. Beat: ${list('beat') || 'none'}.${missed ? ` Missed: ${missed}.` : ''}`;
+  }
+  const byDay = groupByDate(content.companies).map((g) => `${gridDayHeader(g.date).toLowerCase()}: ${g.items.map((c) => c.symbol).join(', ')}`);
+  return `Earnings to watch this week, ${content.weekLabel}, on BullPen. ${byDay.join('; ')}.`;
 }
 
 /** All fonts every slide kind might need — fetched once per render, cached across warm invocations by loadOgFont itself. */
@@ -356,98 +326,15 @@ function InkLogo({ symbol, logoUrl, size, ring }: { symbol: string; logoUrl: str
     <div style={{ display: 'flex', padding: ring ? 6 : 0, borderRadius: 999, backgroundColor: ring ?? 'transparent' }}>
       <div style={{ display: 'flex', width: size, height: size, borderRadius: 999, backgroundColor: BG, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: ring ? `4px solid ${INK}` : 'none' }}>
         {logoUrl ? (
+          // The ring's 4px ink border is inside `size`, so the image is 8px smaller or it clips off-centre.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoUrl} alt={`${symbol} logo`} width={size} height={size} style={{ objectFit: 'cover' }} />
+          <img src={logoUrl} alt={`${symbol} logo`} width={ring ? size - 8 : size} height={ring ? size - 8 : size} style={{ objectFit: 'cover' }} />
         ) : (
           <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: Math.round(size * 0.3), color: FG }}>{symbol.slice(0, 4)}</span>
         )}
       </div>
     </div>
   );
-}
-
-interface RowMetrics {
-  badgeSize: number;
-  rowPaddingV: number;
-  rowPaddingH: number;
-  rowGap: number;
-  rowRadius: number;
-  symbolFontSize: number;
-  nameFontSize: number;
-  dateFontSize: number;
-  timeFontSize: number;
-  timePaddingV: number;
-  timePaddingH: number;
-  epsLabelFontSize: number;
-  epsValueFontSize: number;
-  headerMarginBottom: number;
-  dateHeaderFontSize: number;
-}
-
-/** Linear interpolation from a "spacious" value (<=6 companies, today's
- *  typical week) down to a "compact" value (>=15, a busy peak-earnings
- *  week), clamped outside that range. */
-function lerp(n: number, spacious: number, compact: number): number {
-  const t = Math.min(1, Math.max(0, (n - 6) / (15 - 6)));
-  return spacious + (compact - spacious) * t;
-}
-
-/** Above lerp's spacious end: a 3-company week used to render 3 rows and leave
- *  over half the slide blank. At 3 or fewer rows grow to `roomy`, easing back
- *  to `spacious` by 6. */
-function fit(n: number, roomy: number, spacious: number, compact: number): number {
-  if (n >= 6) return Math.round(lerp(n, spacious, compact));
-  const t = Math.min(1, Math.max(0, (n - 3) / 3));
-  return Math.round(roomy + (spacious - roomy) * t);
-}
-
-/** Busy weeks are height-budgeted to the pixel (see rowMetrics); the footer
- *  key only fits while the list leaves room for it. */
-const FOOTER_MAX_ROWS = 10;
-
-/**
- * Row sizing scales down smoothly as the week's company count grows, so
- * every week fits on ONE list slide (see MAX_ROWS_PER_LIST_SLIDE above)
- * instead of spilling a single leftover company onto an awkward
- * near-empty second page.
- *
- * The original "compact" endpoint (n>=18) was hand-picked and never
- * actually verified against real content — the first real week to reach
- * this range (12 companies, 2026-08-17, once the hybrid Nasdaq+Claude
- * source started finding more companies than the old Claude-only search
- * ever did) overflowed the 1350px canvas, cutting off the last 1-2 rows
- * with the mascot crowding into the row above them. Retuned from an actual
- * height budget (SLIDE_HEIGHT minus padding, header, and footer) rather
- * than eyeballing it, and the saturation point moved from 18 to 15 so a
- * realistic 12-company week already gets most of the compaction instead of
- * sitting at the spacious half of the curve. Verified live against the
- * 12-company case this was found on before shipping.
- */
-function rowMetrics(n: number): RowMetrics {
-  return {
-    // NOT bumped alongside the logo fill-fix (2026-08-17) — tried 62/40 and
-    // it ate into the overflow-fix's height margin enough that the last
-    // row's card started touching the mascot's fixed-position corner
-    // illustration (verified via a cropped full-res render). The `cover`
-    // fill change alone already makes logos read as bigger since they now
-    // fill the whole circle instead of floating small inside it — that's
-    // the fix "bigger logos" actually needed, not a larger circle.
-    badgeSize: fit(n, 88, 56, 34),
-    rowPaddingV: fit(n, 30, 20, 6),
-    rowPaddingH: fit(n, 34, 28, 16),
-    rowGap: fit(n, 24, 20, 6),
-    rowRadius: fit(n, 26, 20, 12),
-    symbolFontSize: fit(n, 50, 34, 19),
-    nameFontSize: fit(n, 28, 22, 13),
-    dateFontSize: fit(n, 24, 20, 12),
-    timeFontSize: fit(n, 24, 20, 11),
-    timePaddingV: fit(n, 8, 6, 3),
-    timePaddingH: fit(n, 18, 16, 8),
-    epsLabelFontSize: fit(n, 18, 15, 10),
-    epsValueFontSize: fit(n, 40, 28, 16),
-    headerMarginBottom: fit(n, 48, 40, 16),
-    dateHeaderFontSize: fit(n, 22, 20, 12),
-  };
 }
 
 /** Circular company mark for a list row. Real logo when logoUrl resolved
@@ -495,102 +382,20 @@ function NameStack({ name, ticker, nameSize, tickerSize, onInk = false }: { name
   );
 }
 
-/** "TUE, AUG 18 ────" — groups the list by report day (see groupByDate)
- *  instead of one undifferentiated stack, which read as random when a
- *  Nasdaq-100 name from Wednesday could sort ahead of an S&P name from
- *  Tuesday. No color accent — a plain rule line stays inside the
- *  restrained color system (see file header). */
-function DateHeader({ dateStr, fontSize }: { dateStr: string; fontSize: number }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize, letterSpacing: '0.08em', color: MUTED }}>
-        {formatDateHeader(dateStr)}
-      </span>
-      <div style={{ display: 'flex', flex: 1, height: 1, backgroundColor: BORDER }} />
-    </div>
-  );
-}
-
-interface HookSlideProps {
-  headline: string;
-  weekLabel: string;
-  /** The week's companies, in the post's own order. Their logos are the
-   *  cover: the names are the news, so they no longer wait on slide 2. */
-  companies: { symbol: string; logoUrl: string | null; status?: 'beat' | 'missed' }[];
-  slideIndex: number;
-  totalSlides: number;
-  /** Results recap only: how many beat, which switches the cover's fact line
-   *  and rings each logo in its result color. */
-  beatCount?: number;
-}
-
-const COVER_LOGO_MAX = 8;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function HookSlide({ headline, weekLabel, companies, slideIndex, totalSlides, beatCount }: HookSlideProps): any {
-  const isResults = beatCount != null;
-  const n = companies.length;
-  const overflow = n > COVER_LOGO_MAX ? n - (COVER_LOGO_MAX - 1) : 0;
-  const shown = overflow ? companies.slice(0, COVER_LOGO_MAX - 1) : companies;
-  const tiles = shown.length + (overflow ? 1 : 0);
-  // Balanced rows (7 → 4 + 3, not 6 + 1), and bigger logos when there are few.
-  const perRow = tiles <= 5 ? tiles : Math.ceil(tiles / 2);
-  const logo = tiles <= 3 ? 168 : tiles <= 5 ? 136 : 120;
-  const rows: typeof shown[] = [];
-  for (let i = 0; i < shown.length; i += perRow) rows.push(shown.slice(i, i + perRow));
-  const lastRowHasRoom = rows.length === 0 || rows[rows.length - 1].length < perRow;
-
-  return (
-    <InkCover slideIndex={slideIndex} totalSlides={totalSlides}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 64 }}>
-        <div style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 80, lineHeight: 1.04, letterSpacing: '-0.035em', color: ON_INK, maxWidth: 900 }}>
-          {headline}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
-          {rows.map((row, r) => (
-          <div key={r} style={{ display: 'flex', gap: 40 }}>
-          {row.map((c) => (
-            <div key={c.symbol} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-              <InkLogo symbol={c.symbol} logoUrl={c.logoUrl} size={logo} ring={c.status ? (c.status === 'beat' ? BRAND : LOSS) : undefined} />
-              <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 28, color: ON_INK }}>{c.symbol}</span>
-              {c.status && (
-                <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 22, color: c.status === 'beat' ? BRAND : LOSS }}>
-                  {c.status === 'beat' ? 'Beat' : 'Missed'}
-                </span>
-              )}
-            </div>
-          ))}
-          {overflow > 0 && r === rows.length - 1 && lastRowHasRoom && (
-            <div style={{ display: 'flex', width: logo, height: logo, borderRadius: 999, border: `2px solid ${INK_BORDER}`, alignItems: 'center', justifyContent: 'center', fontFamily: 'Geist', fontWeight: 700, fontSize: 36, color: ON_INK }}>
-              {`+${overflow}`}
-            </div>
-          )}
-          </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 40 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 36, letterSpacing: '-0.02em', color: ON_INK }}>
-            {isResults
-              ? `${beatCount} of ${n} beat what analysts expected`
-              : `${n} ${n === 1 ? 'company reports' : 'companies report'} earnings`}
-          </span>
-          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 26, color: ON_INK_MUTED }}>{weekLabel}</span>
-        </div>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 26, color: BRAND, flexShrink: 0 }}>Swipe for details</span>
-      </div>
-    </InkCover>
-  );
-}
-
-// ── Weekly calendar: one grid of logos, a column per day ────────────────────
+// ── Weekly earnings grid: one grid of logos, a column per day ───────────────
 // 2026-11-05, David: the list slides (name, time, EPS estimate per row) shrank
 // to fit a 24-company week and were hard to read. The week ahead is about WHO
-// reports WHEN; estimates mean something only next to a result, which the
-// Saturday results post shows. So: logo and ticker only, the whole week on
-// the cover.
+// reports WHEN; estimates mean something only next to a result. So: logo and
+// ticker only, the whole week on the cover.
+// 2026-11-06, David: the Saturday results post (ink hook, then two white
+// 12-row lists of names, EPS pairs and pills) was "too visually boring, hard
+// to read the small text, very overwhelming". It is now this same grid, so
+// Sunday's calendar and Saturday's results read as a pair: each logo is
+// ringed and marked in its result (a check or a cross, so the read does not
+// rest on color alone), and the title is the tally. EPS figures live in the app.
+
+// Red side of the gain/loss signal, mirroring BRAND (emerald-400).
+const MISSED_COLOR = '#f87171'; // red-400, same hex app/api/og/share/[id]/route.tsx uses
 
 const GRID_MAX_ROWS = 6;
 
@@ -602,10 +407,33 @@ function gridDayHeader(date: string): string {
   return `${day} · ${md}`.toUpperCase();
 }
 
-export function CalendarGridSlide({ companies, overflowCount, weekLabel, slideIndex, totalSlides }: {
-  companies: EarningsSlideCompany[]; overflowCount: number; weekLabel: string; slideIndex: number; totalSlides: number;
+/** A check (beat) or cross (missed) on a disc of the result color, ink glyph on top like BRAND_INK. */
+function ResultMark({ status, size }: { status: 'beat' | 'missed'; size: number }) {
+  const beat = status === 'beat';
+  return (
+    <div style={{ display: 'flex', width: size, height: size, borderRadius: 999, backgroundColor: beat ? BRAND : MISSED_COLOR, alignItems: 'center', justifyContent: 'center' }}>
+      <svg width={Math.round(size * 0.62)} height={Math.round(size * 0.62)} viewBox="0 0 24 24">
+        <path d={beat ? 'M5 12.5l4.5 4.5L19 7.5' : 'M7 7l10 10M17 7L7 17'} stroke={INK} strokeWidth={3.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+type GridCompany = { symbol: string; logoUrl: string | null; date: string; marketCap: number | null; status?: 'beat' | 'missed' };
+
+interface CalendarGridSlideProps {
+  companies: GridCompany[];
+  overflowCount: number;
+  weekLabel: string;
+  slideIndex: number;
+  totalSlides: number;
+  /** Results recap: the tally becomes the title and every logo shows its result. */
+  beatCount?: number;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}): any {
+export function CalendarGridSlide({ companies, overflowCount, weekLabel, slideIndex, totalSlides, beatCount }: CalendarGridSlideProps): any {
+  const isResults = beatCount != null;
   const days = groupByDate(companies).map((g) => ({ ...g, items: [...g.items].sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0)) }));
   const cols = days.length;
   // Fewer days, more logos per row, so a quiet week fills the slide instead of a thin strip.
@@ -617,6 +445,14 @@ export function CalendarGridSlide({ companies, overflowCount, weekLabel, slideIn
   const rowH = Math.min(190, Math.floor(720 / rows));
   const logo = Math.min(rows <= 2 ? 168 : 132, Math.floor((colW - 12) / perRow) - 18, rowH - 60);
   const tickerSize = Math.max(22, Math.min(30, Math.round(logo * 0.3)));
+  // A result ring (6px of color) sits inside the calendar's logo footprint: logo - 12 below.
+  const n = companies.length;
+
+  const footer = isResults
+    ? `Profit per share (EPS) vs analyst forecasts.${overflowCount > 0 ? ` ${n} of ${n + overflowCount} reports.` : ''}`
+    : overflowCount > 0
+      ? `${n} of this week's reports, plus ${overflowCount} more. See who beat on Saturday.`
+      : `${n} ${n === 1 ? 'company reports' : 'companies report'} this week. See who beat on Saturday.`;
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', paddingTop: 72, paddingBottom: 72, paddingLeft: 60, paddingRight: 60, backgroundColor: INK, backgroundImage: INK_GLOW, color: ON_INK }}>
@@ -626,8 +462,17 @@ export function CalendarGridSlide({ companies, overflowCount, weekLabel, slideIn
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 52 }}>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 100, lineHeight: 1, letterSpacing: '-0.04em', color: ON_INK }}>Earnings to watch</span>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 32, color: ON_INK_MUTED }}>{`This week · ${weekLabel}`}</span>
+        {isResults ? (
+          <div style={{ display: 'flex', gap: 26, fontFamily: 'Geist', fontWeight: 700, fontSize: 100, lineHeight: 1, letterSpacing: '-0.04em', color: ON_INK }}>
+            <span style={{ display: 'flex', color: BRAND }}>{String(beatCount)}</span>
+            <span style={{ display: 'flex' }}>{`of ${n} beat`}</span>
+          </div>
+        ) : (
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 100, lineHeight: 1, letterSpacing: '-0.04em', color: ON_INK }}>Earnings to watch</span>
+        )}
+        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 32, color: ON_INK_MUTED }}>
+          {isResults ? `what analysts expected · ${weekLabel}` : `This week · ${weekLabel}`}
+        </span>
       </div>
 
       {/* Centered in the space left, so a quiet week is not one strip under the title. */}
@@ -636,7 +481,7 @@ export function CalendarGridSlide({ companies, overflowCount, weekLabel, slideIn
         {days.map((g, ci) => {
           const over = g.items.length > cap ? g.items.length - (cap - 1) : 0;
           const shown = over ? g.items.slice(0, cap - 1) : g.items;
-          const rowList: (EarningsSlideCompany | null)[][] = [];
+          const rowList: (GridCompany | null)[][] = [];
           for (let i = 0; i < shown.length; i += perRow) rowList.push(shown.slice(i, i + perRow));
           if (over) {
             const last = rowList[rowList.length - 1];
@@ -653,8 +498,13 @@ export function CalendarGridSlide({ companies, overflowCount, weekLabel, slideIn
                   {row.map((c, k) => (
                     <div key={c?.symbol ?? `more-${k}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, width: Math.floor((colW - 12) / perRow) }}>
                       {/* No fragment here: Satori lays a fragment's children out in a row. */}
-                      {c && <InkLogo symbol={c.symbol} logoUrl={c.logoUrl} size={logo} />}
-                      {c && <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: tickerSize, letterSpacing: '-0.01em', color: ON_INK }}>{c.symbol}</span>}
+                      {c && <InkLogo symbol={c.symbol} logoUrl={c.logoUrl} size={c.status ? logo - 12 : logo} ring={c.status ? (c.status === 'beat' ? BRAND : MISSED_COLOR) : undefined} />}
+                      {c && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {c.status && <ResultMark status={c.status} size={tickerSize} />}
+                          <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: tickerSize, letterSpacing: '-0.01em', color: ON_INK }}>{c.symbol}</span>
+                        </div>
+                      )}
                       {!c && (
                         <div style={{ display: 'flex', width: logo, height: logo, borderRadius: 999, border: `2px solid ${INK_BORDER}`, alignItems: 'center', justifyContent: 'center', fontFamily: 'Geist', fontWeight: 700, fontSize: tickerSize + 4, color: ON_INK }}>
                           {`+${over}`}
@@ -671,123 +521,21 @@ export function CalendarGridSlide({ companies, overflowCount, weekLabel, slideIn
       </div>
 
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 40, paddingTop: 28, borderTop: `1px solid ${INK_BORDER}` }}>
-        <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, lineHeight: 1.4, color: ON_INK_MUTED, maxWidth: 700 }}>
-          {overflowCount > 0
-            ? `${companies.length} of this week's reports, plus ${overflowCount} more. See who beat on Saturday.`
-            : `${companies.length} ${companies.length === 1 ? 'company reports' : 'companies report'} this week. See who beat on Saturday.`}
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: isResults ? 780 : 700 }}>
+          {isResults && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 36 }}>
+              {(['beat', 'missed'] as const).map((s) => (
+                <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <ResultMark status={s} size={34} />
+                  <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 26, color: ON_INK }}>{s === 'beat' ? 'Beat' : 'Missed'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: 24, lineHeight: 1.4, color: ON_INK_MUTED }}>{footer}</span>
+        </div>
         <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: 24, color: ON_INK, flexShrink: 0 }}>Link in bio</span>
       </div>
-    </div>
-  );
-}
-
-// ── Earnings-results (the Saturday recap) row elements ─────────────────────
-// Reuses this file's shared color/font tokens and Wordmark/
-// CompanyBadge/DateHeader — only the right-hand side of each row differs:
-// Est -> Actual EPS plus a BEAT/MISSED pill instead of a single EST. EPS
-// stat plus a BMO/AMC time badge (the "when" no longer matters once the
-// report already happened).
-const MISSED_COLOR = '#f87171'; // red-400 — same negative-direction hex app/api/og/share/[id]/route.tsx already uses, matching this file's BRAND (emerald-400) for the positive side.
-
-/** BEAT (emerald) / MISSED (red) — the one place this template uses red at
- *  all, reserved for the loss-side financial-direction signal per
- *  DESIGN.md's One Signal Rule, same as BRAND is reserved for the gain side
- *  elsewhere in this file. */
-function ResultBadge({ status, fontSize, paddingV, paddingH }: { status: 'beat' | 'missed'; fontSize: number; paddingV: number; paddingH: number }) {
-  const isBeat = status === 'beat';
-  return (
-    <div
-      style={{
-        display: 'flex', fontSize, fontWeight: 700, letterSpacing: '0.04em',
-        color: BRAND_INK,
-        fontFamily: 'Geist', padding: `${paddingV}px ${paddingH}px`, borderRadius: 999,
-        backgroundColor: isBeat ? BRAND : MISSED_COLOR,
-      }}
-    >
-      {isBeat ? 'BEAT' : 'MISSED'}
-    </div>
-  );
-}
-
-/** "EST $1.20 -> ACT $1.35" stacked as two lines, mirroring EpsStat's
- *  column layout. Always both non-null here — earnings-results.ts only
- *  ever includes a company once both are confirmed (see schema.ts). */
-function EpsCompareStat({ estimate, actual, labelFontSize, valueFontSize }: { estimate: number; actual: number; labelFontSize: number; valueFontSize: number }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-      <span style={{ display: 'flex', fontFamily: 'Geist', fontSize: labelFontSize, color: MUTED }}>
-        {`Expected ${formatEps(estimate)}`}
-      </span>
-      <span style={{ display: 'flex', fontFamily: 'Geist', fontWeight: 700, fontSize: valueFontSize, letterSpacing: '-0.02em', color: FG }}>
-        {formatEps(actual)}
-      </span>
-    </div>
-  );
-}
-
-interface EarningsResultsListSlideProps {
-  companies: EarningsResultCompany[];
-  overflowCount?: number;
-  slideIndex: number;
-  totalSlides: number;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function EarningsResultsListSlide({ companies, overflowCount = 0, slideIndex, totalSlides }: EarningsResultsListSlideProps): any {
-  const m = rowMetrics(companies.length);
-  const footerNote = 'Beat means profit per share (EPS) came in above what analysts expected.';
-  const groups = groupByDate(companies);
-  return (
-    <div
-      style={{
-        width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
-        padding: 80, backgroundColor: BG, color: FG, position: 'relative', overflow: 'hidden',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: m.headerMarginBottom, zIndex: 1 }}>
-        <Wordmark />
-        <SlideIndicator index={slideIndex} total={totalSlides} />
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: m.rowGap, zIndex: 1 }}>
-        {groups.map((group) => (
-          <div key={group.date} style={{ display: 'flex', flexDirection: 'column', gap: m.rowGap }}>
-            <DateHeader dateStr={group.date} fontSize={m.dateHeaderFontSize} />
-            {group.items.map((c) => (
-              <div
-                key={c.symbol}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: `${m.rowPaddingV}px ${m.rowPaddingH}px`, borderRadius: m.rowRadius,
-                  backgroundColor: SURFACE, border: `1px solid ${BORDER_STRONG}`,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
-                  <CompanyBadge symbol={c.symbol} logoUrl={c.logoUrl} size={m.badgeSize} />
-                  <NameStack
-                    name={earningsRowName(c.name, Math.round(m.symbolFontSize * 0.82))}
-                    ticker={c.symbol}
-                    nameSize={Math.round(m.symbolFontSize * 0.82)}
-                    tickerSize={Math.round(m.nameFontSize * 0.85)}
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexShrink: 0, marginLeft: 20 }}>
-                  <EpsCompareStat estimate={c.epsEstimate} actual={c.epsActual} labelFontSize={m.epsLabelFontSize} valueFontSize={m.epsValueFontSize} />
-                  <ResultBadge status={c.status} fontSize={m.timeFontSize} paddingV={m.timePaddingV} paddingH={m.timePaddingH} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {overflowCount > 0 && (
-        <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 22, color: MUTED, marginTop: 24 }}>
-          {`+${overflowCount} more this week on BullPen`}
-        </div>
-      )}
-      {companies.length > 0 && companies.length <= FOOTER_MAX_ROWS && <SlideFooter note={footerNote} />}
     </div>
   );
 }
@@ -859,19 +607,6 @@ function MoverBar({ changePercent, maxAbs, positive }: { changePercent: number; 
  *  real "..." in the text content itself, not a CSS property. */
 function truncateName(name: string, maxChars = 26): string {
   return name.length > maxChars ? `${name.slice(0, maxChars).trimEnd()}...` : name;
-}
-
-/** Earnings-row company name: the app's short display name (no share-class
- *  or legal suffixes), then capped. MKC's full legal name once pushed the EPS
- *  stat and time badge off the canvas. The row's flex guard is the second
- *  line of defence if a name still runs long. */
-function earningsRowName(name: string, fontSize: number): string {
-  // The row's room for the name is roughly fixed, so a bigger font (short
-  // weeks) fits fewer characters: STZ clipped mid-letter at 28px on 32.
-  // Capped at 40, not 32: a busy week's small font fits "Taiwan Semiconductor
-  // Manufacturing" (34), which used to end in "Manufacturi…".
-  const maxChars = Math.max(16, Math.min(40, Math.floor(900 / fontSize)));
-  return truncateName(displayCompanyName(name), maxChars);
 }
 
 interface MoversListSlideProps {

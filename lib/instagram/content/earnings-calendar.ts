@@ -46,7 +46,7 @@ import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { parseHookAndCaption } from './schema';
 import { INSTAGRAM_ALLOWLIST, NASDAQ100_SET } from './allowlist';
-import { FIXED_DISCLAIMER, FIXED_HASHTAGS, formatWeekLabel, resolveLogoUrl } from './shared';
+import { FIXED_DISCLAIMER, FIXED_HASHTAGS, dropShareClassTwins, formatWeekLabel, resolveLogoUrl } from './shared';
 import type { EarningsCalendarSlides, EarningsSlideCompany } from './schema';
 import type { WebSearchEarningsHit } from './earnings-web-search';
 import { tooFewCompanies, type TooFewCompanies } from './earnings-minimum';
@@ -160,10 +160,10 @@ export async function generateEarningsCalendarContent(
       return a.symbol.localeCompare(b.symbol);
     });
 
-  const tooFew = await tooFewCompanies(filtered);
+  const withMeta = dropShareClassTwins(await attachCalendarMeta(filtered));
+  const tooFew = await tooFewCompanies(withMeta);
   if (tooFew) return tooFew;
 
-  const withMeta = await attachCalendarMeta(filtered);
   const shown = withMeta.slice(0, MAX_COMPANIES);
   const overflowCount = Math.max(0, withMeta.length - shown.length);
 

@@ -17,13 +17,10 @@ import { createServerClient } from '@/lib/supabase/client';
 import {
   SLIDE_WIDTH,
   SLIDE_HEIGHT,
-  companiesPerListSlide,
   loadSlideFonts,
   slideKindAt,
   totalSlideCount,
-  HookSlide,
   CalendarGridSlide,
-  EarningsResultsListSlide,
   MoversListSlide,
   MoversCoverSlide,
   CTASlide,
@@ -35,7 +32,7 @@ import {
   ScoreboardCalloutsSlide,
 } from '@/lib/instagram/render/slides';
 import { SCOREBOARD_DISCLAIMER } from '@/lib/instagram/content/picks-scoreboard';
-import type { EarningsCalendarSlides, EarningsResultsSlides, EarningsDeepDiveSlides, InstagramPostSlides } from '@/lib/instagram/content/schema';
+import type { EarningsDeepDiveSlides, InstagramPostSlides } from '@/lib/instagram/content/schema';
 
 export const runtime = 'nodejs';
 
@@ -167,50 +164,11 @@ export async function GET(
       element = <CTASlide slideIndex={slideIndex} totalSlides={total} variant="market_movers" />;
     }
   } else {
+    // earnings_calendar and earnings_results: one logo grid, then the CTA.
     const isResults = slides.contentType === 'earnings_results';
-
-    if (kind === 'calendar_grid') {
-      const cal = slides as EarningsCalendarSlides;
-      element = <CalendarGridSlide companies={cal.companies} overflowCount={cal.overflowCount} weekLabel={cal.weekLabel} slideIndex={slideIndex} totalSlides={total} />;
-    } else if (kind === 'hook') {
-      element = (
-        <HookSlide
-          headline={slides.headline}
-          weekLabel={slides.weekLabel}
-          companies={slides.companies.map((c) => ({
-            symbol: c.symbol,
-            logoUrl: c.logoUrl,
-            status: isResults ? (c as EarningsResultsSlides['companies'][number]).status : undefined,
-          }))}
-          beatCount={isResults ? (slides as EarningsResultsSlides).beatCount : undefined}
-          slideIndex={slideIndex}
-          totalSlides={total}
-        />
-      );
-    } else if (kind === 'cta') {
-      element = (
-        <CTASlide
-          slideIndex={slideIndex}
-          totalSlides={total}
-          variant={isResults ? 'earnings_results' : 'earnings_calendar'}
-        />
-      );
-    } else {
-      const listSlideIdx = slideIndex - 1;
-      const perPage = companiesPerListSlide(slides.companies.length);
-      const pageCompanies = slides.companies.slice(listSlideIdx * perPage, (listSlideIdx + 1) * perPage);
-      // "+N more" belongs after the last row, not on every page.
-      const overflowCount = slideIndex === total - 2 ? slides.overflowCount : 0;
-      // Only the results recap has list slides; the calendar is one grid (calendar_grid above).
-      element = (
-        <EarningsResultsListSlide
-          companies={pageCompanies as EarningsResultsSlides['companies']}
-          overflowCount={overflowCount}
-          slideIndex={slideIndex}
-          totalSlides={total}
-        />
-      );
-    }
+    element = kind === 'calendar_grid'
+      ? <CalendarGridSlide companies={slides.companies} overflowCount={slides.overflowCount} weekLabel={slides.weekLabel} beatCount={isResults ? slides.beatCount : undefined} slideIndex={slideIndex} totalSlides={total} />
+      : <CTASlide slideIndex={slideIndex} totalSlides={total} variant={isResults ? 'earnings_results' : 'earnings_calendar'} />;
   }
 
   return new ImageResponse(element, {

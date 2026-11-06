@@ -44,7 +44,7 @@ import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { parseHookAndCaption } from './schema';
 import { INSTAGRAM_ALLOWLIST, NASDAQ100_SET } from './allowlist';
-import { FIXED_DISCLAIMER, FIXED_HASHTAGS, formatWeekLabel, resolveLogoUrl } from './shared';
+import { FIXED_DISCLAIMER, FIXED_HASHTAGS, dropShareClassTwins, formatWeekLabel, resolveLogoUrl } from './shared';
 import type { EarningsResultsSlides, EarningsResultCompany } from './schema';
 import type { WebSearchEarningsHit } from './earnings-web-search';
 import { tooFewCompanies, type TooFewCompanies } from './earnings-minimum';
@@ -219,11 +219,12 @@ export async function generateEarningsResultsContent(
     });
   }
 
-  // Some confirmed reporters can still drop out for a missing figure.
-  const tooFew = await tooFewCompanies(resolved);
+  // Some confirmed reporters can still drop out for a missing figure, or as a share-class twin.
+  const deduped = dropShareClassTwins(await attachCalendarMeta(resolved));
+  const tooFew = await tooFewCompanies(deduped);
   if (tooFew) return tooFew;
 
-  const sorted = resolved.sort((a, b) => {
+  const sorted = deduped.sort((a, b) => {
     const aTier = NASDAQ100_SET.has(a.symbol) ? 0 : 1;
     const bTier = NASDAQ100_SET.has(b.symbol) ? 0 : 1;
     if (aTier !== bTier) return aTier - bTier;
@@ -240,11 +241,10 @@ export async function generateEarningsResultsContent(
   const weekLabel = formatWeekLabel(weekStart, weekEnd);
   const { headline, caption } = await writeHookAndCaption(shown, weekLabel, beatCount, missedCount);
 
-  const withMeta = await attachCalendarMeta(shown);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
-  const logoUrls = await Promise.all(withMeta.map((c) => resolveLogoUrl(appUrl, c.symbol)));
+  const logoUrls = await Promise.all(shown.map((c) => resolveLogoUrl(appUrl, c.symbol)));
 
-  const companies: EarningsResultCompany[] = withMeta.map((c, i) => ({
+  const companies: EarningsResultCompany[] = shown.map((c, i) => ({
     symbol: c.symbol,
     name: c.name ?? c.symbol,
     date: c.date,
