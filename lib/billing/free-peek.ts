@@ -22,11 +22,15 @@ export type PeekState =
   | { state: 'available' }
   | { state: 'used' };
 
-/** Pure rule: the newest redemption this month, if any, decides the state. */
-export function peekFrom(redeemedAt: string | null, now = new Date()): PeekState {
+/**
+ * Pure rule: the newest redemption decides the state. Still inside its window
+ * = open, even across the 1st; otherwise used only if it was this month's.
+ */
+export function peekFrom(redeemedAt: string | null, now = new Date(), monthStart = currentPeriodStart('month')): PeekState {
   if (!redeemedAt) return { state: 'available' };
   const until = new Date(Date.parse(redeemedAt) + PEEK_HOURS * 3_600_000);
-  return until > now ? { state: 'open', until: until.toISOString() } : { state: 'used' };
+  if (until > now) return { state: 'open', until: until.toISOString() };
+  return Date.parse(redeemedAt) >= monthStart.getTime() ? { state: 'used' } : { state: 'available' };
 }
 
 /** Free accounts only: callers check isPro first. */
@@ -37,7 +41,8 @@ export async function getPeek(userId: string): Promise<PeekState> {
     .eq('user_id', userId)
     .eq('feature', PEEK_FEATURE)
     .eq('status', 'success')
-    .gte('created_at', currentPeriodStart('month').toISOString())
+    // A look redeemed late last month may still be open.
+    .gte('created_at', new Date(currentPeriodStart('month').getTime() - PEEK_HOURS * 3_600_000).toISOString())
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle<{ created_at: string }>();
@@ -59,9 +64,13 @@ export async function redeemPeek(userId: string): Promise<PeekState> {
 if (process.argv[1]?.endsWith('free-peek.ts')) {
   const now = new Date('2026-11-06T12:00:00Z');
   const assert = (ok: boolean, msg: string) => { if (!ok) throw new Error(msg); };
-  assert(peekFrom(null, now).state === 'available', 'no redemption is available');
-  const open = peekFrom('2026-11-06T01:00:00Z', now);
+  const nov = new Date('2026-11-01T00:00:00Z');
+  assert(peekFrom(null, now, nov).state === 'available', 'no redemption is available');
+  const open = peekFrom('2026-11-06T01:00:00Z', now, nov);
   assert(open.state === 'open' && open.until === '2026-11-07T01:00:00.000Z', 'redeemed 11h ago is open until +24h');
-  assert(peekFrom('2026-11-05T11:59:00Z', now).state === 'used', 'redeemed 24h+ ago is used');
+  assert(peekFrom('2026-11-05T11:59:00Z', now, nov).state === 'used', 'redeemed 24h+ ago is used');
+  const dec = new Date('2026-12-01T00:00:00Z');
+  assert(peekFrom('2026-11-30T20:00:00Z', new Date('2026-12-01T01:00:00Z'), dec).state === 'open', 'last month\'s look stays open past the 1st');
+  assert(peekFrom('2026-11-30T20:00:00Z', new Date('2026-12-02T00:00:00Z'), dec).state === 'available', 'then December\'s look is still unspent');
   console.log('free-peek ok');
 }
