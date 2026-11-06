@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowLeftRight, ArrowUp, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { ProBadge } from '@/components/billing/ProBadge';
+import { PeekButton, PeekNotice } from '@/components/billing/FreePeek';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { PoliticianAvatar } from '@/components/congress/PoliticianAvatar';
 import { formatAmountRange, tradeDirection } from '@/lib/congress/types';
@@ -51,6 +52,10 @@ interface OverlapResponse {
   newSince?: string | null;
   /** Free: how many of their stocks have new trades. */
   newStocks?: number;
+  /** Free, locked: whether this month's free look is still unspent. */
+  peek?: 'available' | 'used';
+  /** Free, inside the monthly look: when it closes. */
+  peekUntil?: string | null;
 }
 
 const INITIAL_STOCKS = 5;
@@ -213,12 +218,15 @@ export function YourStocksInWashington() {
               <p className="mt-1 text-sm text-muted-foreground">{t('congOverlapLockedBody', { count: people.length })}</p>
             )}
           </div>
-          <Link
-            href="/upgrade"
-            className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg border border-primary/30 bg-primary/5 px-3 text-xs font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {t('congOverlapSeeWho')}
-          </Link>
+          <div className="flex shrink-0 flex-wrap items-start gap-1">
+            {data.peek === 'available' && <PeekButton />}
+            <Link
+              href="/upgrade"
+              className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg border border-primary/30 bg-primary/5 px-3 text-xs font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {t('congOverlapSeeWho')}
+            </Link>
+          </div>
         </div>
         {filter && <div className="mt-3">{filter}</div>}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -280,6 +288,7 @@ export function YourStocksInWashington() {
     <section ref={observe} aria-labelledby="overlap-heading" className="mb-6 rounded-xl border border-border/50 bg-card/40">
       <div className="px-4 pt-4 sm:px-5">
         <h3 id="overlap-heading" className="text-sm font-semibold text-foreground">{title}</h3>
+        {data.peekUntil && <PeekNotice until={data.peekUntil} />}
         {newTrades > 0 && (
           <NewLine>
             {visitToday ? t('congOverlapNewSinceToday', { count: newTrades }) : t('congOverlapNewSince', { count: newTrades, date: lastVisit })}

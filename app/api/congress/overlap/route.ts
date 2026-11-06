@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isPro } from '@/lib/billing/tier';
+import { getPeek } from '@/lib/billing/free-peek';
 import { getTradesForSymbols } from '@/lib/congress/insights';
 import { isNewTrade, overlapVisit } from '@/lib/congress/overlap-groups';
 import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
@@ -65,12 +66,14 @@ async function get(_request: NextRequest, _context: unknown, session: { userId: 
     const names = Object.fromEntries(((rows ?? []) as { ticker: string; name: string }[]).map((r) => [r.ticker, r.name]));
     const base = { success: true, symbolCount: symbols.length, windowDays: WINDOW_DAYS, held: symbols.filter((s) => held.has(s)), names, newSince };
 
-    if (!isPro(tier)) {
+    // A free account inside its monthly look gets the Pro view, with when it closes.
+    const peek = isPro(tier) ? null : await getPeek(session.userId);
+    if (peek && peek.state !== 'open') {
       const people = [...new Map(trades.map((t) => [t.slug, { slug: t.slug, displayName: t.displayName }])).values()];
       // How many of their stocks have news, not which: that is the Pro view.
-      return addSecurityHeaders(NextResponse.json({ ...base, locked: true, symbols, people, newStocks: newSymbols.size }));
+      return addSecurityHeaders(NextResponse.json({ ...base, locked: true, symbols, people, newStocks: newSymbols.size, peek: peek.state }));
     }
-    return addSecurityHeaders(NextResponse.json({ ...base, locked: false, trades }));
+    return addSecurityHeaders(NextResponse.json({ ...base, locked: false, trades, peekUntil: peek?.state === 'open' ? peek.until : null }));
   } catch {
     return addSecurityHeaders(NextResponse.json({ success: false, error: 'Failed to load' }, { status: 500 }));
   }

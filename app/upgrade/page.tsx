@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Fragment, Suspense, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -35,7 +35,12 @@ const ALL_ROWS = PLAN_COMPARISON.flatMap((g) => g.rows.map((row) => ({ ...row, g
 // table reads as the proof of the pitch rather than a separate list.
 const PITCH = ['Why Today? move explanations', 'Daily Brief (AI market recap)', 'Ask Bull', 'AI Deep Dive reports'];
 const pitchRank = (label: string) => (PITCH.includes(label) ? PITCH.indexOf(label) : PITCH.length);
-const PRO_ROWS = ALL_ROWS.filter((r) => r.free !== r.pro).sort((a, b) => pitchRank(a.label) - pitchRank(b.label));
+// 24 Pro rows read as a wall in one list, so they stay under their groups; the
+// pitch's group (AI analyst) leads, and the pitch rows lead it.
+const groupRank = (group: string) =>
+  ALL_ROWS.findIndex((r) => r.group === group && PITCH.includes(r.label)) >= 0 ? -1 : PLAN_COMPARISON.findIndex((g) => g.title === group);
+const PRO_ROWS = ALL_ROWS.filter((r) => r.free !== r.pro)
+  .sort((a, b) => groupRank(a.group) - groupRank(b.group) || pitchRank(a.label) - pitchRank(b.label));
 const SHARED_ROWS = ALL_ROWS.filter((r) => r.free === r.pro);
 // What Free keeps, read off the same table so the FAQ can never claim more than it.
 const FREE_CAPPED_ROWS = PRO_ROWS.filter((r): r is typeof r & { free: string } => typeof r.free === 'string');
@@ -65,7 +70,7 @@ function PlanCell({ value, pro, t }: { value: ComparisonRow['free']; pro?: boole
   );
 }
 
-function PlanTable({ rows, t }: { rows: Array<ComparisonRow & { group: string }>; t: TFunction }) {
+function PlanTable({ rows, t, grouped }: { rows: Array<ComparisonRow & { group: string }>; t: TFunction; grouped?: boolean }) {
   return (
     <table className="w-full text-left">
       <thead>
@@ -76,8 +81,16 @@ function PlanTable({ rows, t }: { rows: Array<ComparisonRow & { group: string }>
         </tr>
       </thead>
       <tbody>
-        {rows.map((row) => (
-          <tr key={row.label} className="border-b border-border/50 last:border-0">
+        {rows.map((row, i) => (
+          <Fragment key={row.label}>
+          {grouped && row.group !== rows[i - 1]?.group && (
+            <tr>
+              <th scope="colgroup" colSpan={3} className={cn('pb-1 text-xs font-medium text-muted-foreground', i === 0 ? 'pt-4' : 'pt-7')}>
+                {planText(t, 'group', row.group)}
+              </th>
+            </tr>
+          )}
+          <tr className="border-b border-border/50 last:border-0">
             <th scope="row" className="py-3 pr-3 font-normal">
               <span className="block text-sm text-foreground">{planText(t, 'row', row.label)}</span>
               {row.hint && <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">{planText(t, 'hint', row.hint)}</span>}
@@ -85,6 +98,7 @@ function PlanTable({ rows, t }: { rows: Array<ComparisonRow & { group: string }>
             <td className="py-3 text-center"><PlanCell value={row.free} t={t} /></td>
             <td className="py-3 text-center"><PlanCell value={row.pro} pro t={t} /></td>
           </tr>
+          </Fragment>
         ))}
       </tbody>
     </table>
@@ -395,7 +409,7 @@ function UpgradeContent() {
         <section aria-labelledby="compare-heading" id="compare" className="mt-24 max-w-3xl scroll-mt-24">
           <h2 id="compare-heading" className="text-2xl font-bold tracking-tight">{t('upgradeWhatProAdds')}</h2>
           <div className="mt-5 rounded-2xl border bg-card/40 px-4 sm:px-5">
-            <PlanTable rows={PRO_ROWS} t={t} />
+            <PlanTable rows={PRO_ROWS} t={t} grouped />
           </div>
           <Accordion type="single" collapsible className="mt-3">
             <AccordionItem value="shared" className="rounded-2xl border bg-card/20 px-4 sm:px-5">

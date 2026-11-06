@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { ProBadge } from '@/components/billing/ProBadge';
+import { PeekButton, PeekNotice } from '@/components/billing/FreePeek';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { OwnershipFilter, byOwnership, type Ownership } from '@/components/discover/OwnershipFilter';
 import { displayCompanyName } from '@/lib/market-data/company-name';
@@ -42,6 +43,10 @@ interface OverlapResponse {
   /** Free. */
   symbols?: string[];
   funds?: Fund[];
+  /** Free, locked: whether this month's free look is still unspent. */
+  peek?: 'available' | 'used';
+  /** Free, inside the monthly look: when it closes. */
+  peekUntil?: string | null;
 }
 
 interface StockGroup {
@@ -101,12 +106,15 @@ export function YourStocksInFunds() {
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">{t('instOverlapLockedBody', { count: funds.length })}</p>
           </div>
-          <Link
-            href="/upgrade"
-            className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg border border-primary/30 bg-primary/5 px-3 text-xs font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {t('instOverlapSeeWho')}
-          </Link>
+          <div className="flex shrink-0 flex-wrap items-start gap-1">
+            {data.peek === 'available' && <PeekButton />}
+            <Link
+              href="/upgrade"
+              className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg border border-primary/30 bg-primary/5 px-3 text-xs font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {t('instOverlapSeeWho')}
+            </Link>
+          </div>
         </div>
         {filter && <div className="mt-3">{filter}</div>}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -168,6 +176,7 @@ export function YourStocksInFunds() {
           {t('instOverlapTitle', { count: groups.length, quarter })}
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">{t('instOverlapSub', { count: fundCount })}</p>
+        {data.peekUntil && <PeekNotice until={data.peekUntil} />}
         {filter && <div className="mt-3">{filter}</div>}
       </div>
 

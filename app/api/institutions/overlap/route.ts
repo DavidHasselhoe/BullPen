@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
 import { getTier, isPro } from '@/lib/billing/tier';
+import { getPeek } from '@/lib/billing/free-peek';
 import { getFundMovesForSymbols } from '@/lib/institutions/fund-overlap';
 import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 
@@ -35,11 +36,13 @@ async function get(_request: NextRequest, _context: unknown, session: { userId: 
     const names = Object.fromEntries(((rows ?? []) as { ticker: string; name: string }[]).map((r) => [r.ticker, r.name]));
     const base = { success: true, symbolCount: symbols.length, held: symbols.filter((s) => held.has(s)), names };
 
-    if (!isPro(tier)) {
+    // A free account inside its monthly look gets the Pro view, with when it closes.
+    const peek = isPro(tier) ? null : await getPeek(session.userId);
+    if (peek && peek.state !== 'open') {
       const funds = [...new Map(moves.map((m) => [m.fund.slug, m.fund])).values()];
-      return addSecurityHeaders(NextResponse.json({ ...base, locked: true, symbols, funds }));
+      return addSecurityHeaders(NextResponse.json({ ...base, locked: true, symbols, funds, peek: peek.state }));
     }
-    return addSecurityHeaders(NextResponse.json({ ...base, locked: false, moves }));
+    return addSecurityHeaders(NextResponse.json({ ...base, locked: false, moves, peekUntil: peek?.state === 'open' ? peek.until : null }));
   } catch (err) {
     console.error('[institutions/overlap] failed:', err instanceof Error ? err.message : err);
     return addSecurityHeaders(NextResponse.json({ success: false, error: 'Failed to load' }, { status: 500 }));
