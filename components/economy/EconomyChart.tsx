@@ -48,17 +48,20 @@ export function EconomyChart({
     () => window.matchMedia(reducedMotionQuery).matches,
     () => true,
   );
-  const data = rows.map((r) => ({ period: r.period, ...r.values }));
+  // The Fed's changes are uneven in time (seven years without one after 2008),
+  // so its step chart spaces points by date, not by index.
+  const timed = type === 'step';
+  const data = rows.map((r) => ({ period: r.period, t: Date.parse(`${r.period}T00:00:00Z`), ...r.values }));
+  const year = (t: number) => String(new Date(t).getUTCFullYear());
   const headline = series[0].key;
   const animation = { isAnimationActive: !reducedMotion, animationDuration: 400 };
   const axis = { tickLine: false, axisLine: false, tick: { fontSize: 12, fill: 'var(--muted-foreground)' } };
   const xAxis = (
-    <XAxis
-      dataKey="period"
-      {...axis}
-      minTickGap={32}
-      tickFormatter={(p: string) => fmtPeriod(kind, p, locale, true)}
-    />
+    timed ? (
+      <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} {...axis} minTickGap={32} tickFormatter={year} />
+    ) : (
+      <XAxis dataKey="period" {...axis} minTickGap={32} tickFormatter={(p: string) => fmtPeriod(kind, p, locale, true)} />
+    )
   );
   // With a target line, start at zero so the line sits inside the chart rather than on the axis.
   const yAxis = <YAxis {...axis} width={52} tickFormatter={(v: number) => fmtAxis(headline, v, locale)} domain={referenceLine ? [0, 'auto'] : ['auto', 'auto']} />;
@@ -68,7 +71,7 @@ export function EconomyChart({
       contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12 }}
       labelStyle={{ color: 'var(--muted-foreground)' }}
       itemStyle={{ color: 'var(--popover-foreground)' }}
-      labelFormatter={(p) => fmtPeriod(kind, String(p), locale)}
+      labelFormatter={(p) => fmtPeriod(kind, timed ? new Date(Number(p)).toISOString().slice(0, 10) : String(p), locale)}
       formatter={(value, name, item) => [fmtMetric(String(item.dataKey), Number(value), locale), name]}
     />
   );

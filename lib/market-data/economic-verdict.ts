@@ -1,6 +1,8 @@
 // Client-safe: Home renders the same sentence the notification stores.
 import type { NotifMsg } from '@/lib/notifications/notifications-db';
 import type { EconomicKind } from './economic-kinds';
+import type { Extreme } from './economy-hub';
+import { fmtPeriod } from '@/components/economy/format';
 
 const msg = (key: string, vars?: NotifMsg['vars']): NotifMsg => (vars ? { key, vars } : { key });
 
@@ -12,6 +14,22 @@ export interface EconomicResultEvent {
   kind: EconomicKind;
   results: Array<{ key: string; actual: number; previous: number | null }>;
   verdict: 'hold' | 'raise' | 'lower' | null;
+  /** How unusual the headline is against its own history (economy-hub.ts). Set when the result lands. */
+  extreme?: Extreme | null;
+  /** One model-written sentence on what the release means (lib/ai/economy-summary.ts). English. */
+  takeaway?: string | null;
+}
+
+/**
+ * "The highest since May 2026." The period goes in pre-worded in English.
+ * ponytail: every account reads English today (2026-11-06); pass the period as data once one doesn't.
+ */
+function extremeMsg(kind: EconomicKind, ex: Extreme | null | undefined): NotifMsg[] {
+  if (!ex) return [];
+  const dir = ex.dir === 'high' ? 'High' : 'Low';
+  return 'since' in ex
+    ? [msg(`notifEcon${dir}Since`, { period: fmtPeriod(kind, ex.since, 'en-US', kind !== 'claims') })]
+    : [msg(`notifEcon${dir}Years`, { years: ex.years })];
 }
 
 /**
@@ -25,7 +43,10 @@ export function economicResultText(e: EconomicResultEvent): { title: NotifMsg; m
   const vs = (r: { actual: number; previous: number | null } | undefined, per: 'Month' | 'Quarter'): NotifMsg[] =>
     r?.previous == null ? []
       : [msg(r.actual > r.previous ? `notifEconUp${per}` : r.actual < r.previous ? `notifEconDown${per}` : `notifEconSame${per}`, { previous: r.previous })];
-  const sentences = (...parts: NotifMsg[]) => msg('notifSentences', { sentences: parts });
+  const sentences = (...parts: Array<NotifMsg | string>) => msg('notifSentences', { sentences: parts });
+  const ex = extremeMsg(e.kind, e.extreme);
+  // The model's sentence says what it means, so it replaces the stock explanation where there is one.
+  const take = e.takeaway ? [e.takeaway] : null;
 
   switch (e.kind) {
     case 'fomc': {
@@ -33,12 +54,13 @@ export function economicResultText(e: EconomicResultEvent): { title: NotifMsg; m
       const lower = get('rate_lower');
       if (!upper || !lower) return null;
       const range = { lower: lower.actual, upper: upper.actual };
-      if (e.verdict === 'hold') return { title: msg('notifEconFedHold', range), message: msg('notifEconFedHoldMeaning') };
-      if (!e.verdict || upper.previous == null) return { title: msg('notifEconFedSet', range) };
+      const meaning = (key: string) => (take ? sentences(...take) : msg(key));
+      if (e.verdict === 'hold') return { title: msg('notifEconFedHold', range), message: meaning('notifEconFedHoldMeaning') };
+      if (!e.verdict || upper.previous == null) return { title: msg('notifEconFedSet', range), message: take ? sentences(...take) : undefined };
       const change = Math.round(Math.abs(upper.actual - upper.previous) * 100) / 100;
       return e.verdict === 'raise'
-        ? { title: msg('notifEconFedRaise', { ...range, change }), message: msg('notifEconFedRaiseMeaning') }
-        : { title: msg('notifEconFedLower', { ...range, change }), message: msg('notifEconFedLowerMeaning') };
+        ? { title: msg('notifEconFedRaise', { ...range, change }), message: meaning('notifEconFedRaiseMeaning') }
+        : { title: msg('notifEconFedLower', { ...range, change }), message: meaning('notifEconFedLowerMeaning') };
     }
     case 'cpi':
     case 'pce': {
@@ -49,8 +71,11 @@ export function economicResultText(e: EconomicResultEvent): { title: NotifMsg; m
         title: msg(e.kind === 'cpi' ? 'notifEconCpi' : 'notifEconPce', { value: head.actual }),
         message: sentences(
           ...vs(head, 'Month'),
-          ...(core ? [msg(e.kind === 'cpi' ? 'notifEconCoreCpi' : 'notifEconCorePce', { value: core.actual })] : []),
-          msg('notifEconFedTarget'),
+          ...ex,
+          ...(take ?? [
+            ...(core ? [msg(e.kind === 'cpi' ? 'notifEconCoreCpi' : 'notifEconCorePce', { value: core.actual })] : []),
+            msg('notifEconFedTarget'),
+          ]),
         ),
       };
     }
@@ -61,7 +86,9 @@ export function economicResultText(e: EconomicResultEvent): { title: NotifMsg; m
       return {
         // FRED counts payrolls in thousands.
         title: msg(payrolls.actual < 0 ? 'notifEconJobsLost' : 'notifEconJobsAdded', { value: Math.abs(payrolls.actual) * 1000 }),
-        message: rate ? sentences(msg('notifEconUnemployment', { value: rate.actual }), ...vs(rate, 'Month')) : undefined,
+        message: rate || ex.length || take
+          ? sentences(...(rate ? [msg('notifEconUnemployment', { value: rate.actual }), ...vs(rate, 'Month')] : []), ...ex, ...(take ?? []))
+          : undefined,
       };
     }
     case 'gdp': {
@@ -69,7 +96,7 @@ export function economicResultText(e: EconomicResultEvent): { title: NotifMsg; m
       if (!gdp) return null;
       return {
         title: msg(gdp.actual < 0 ? 'notifEconGdpShrank' : 'notifEconGdpGrew', { value: Math.abs(gdp.actual) }),
-        message: sentences(...vs(gdp, 'Quarter'), msg('notifEconGdpPace')),
+        message: sentences(...vs(gdp, 'Quarter'), ...ex, ...(take ?? [msg('notifEconGdpPace')])),
       };
     }
     default:

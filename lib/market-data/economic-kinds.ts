@@ -105,12 +105,22 @@ export function fmtReleaseTimeShort(iso: string): string {
   return getClock().hour12 ? time.replace(':00 ', ' ') : time;
 }
 
+// IANA zones inside the 50 states (plus the legacy US/* aliases).
+const US_ZONE = /^(US\/.+|Pacific\/Honolulu|America\/(New_York|Detroit|Chicago|Menominee|Denver|Boise|Phoenix|Los_Angeles|Anchorage|Juneau|Sitka|Metlakatla|Yakutat|Nome|Adak|Indianapolis|Louisville|Fort_Wayne|Knox_IN|Indiana\/.+|Kentucky\/.+|North_Dakota\/.+))$/;
+
+/** True when the user's clock is on a US zone, where their own time needs no ET beside it. */
+function viewerInUS(): boolean {
+  return US_ZONE.test(getClock().timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
+}
+
 /**
- * "19:00 your time (2:00 PM ET)", or just "2:00 PM ET" for someone on New York
- * time. Says "your time" rather than "GMT+1": a reader shouldn't have to know
- * their own offset to use it. Keys are namespaced so any component's t works.
+ * "19:00 your time (2:00 PM ET)" outside the US, just "7:30 AM" inside it
+ * (most users: their own clock is all they need). Says "your time" rather than
+ * "GMT+1": a reader shouldn't have to know their own offset to use it. Keys
+ * are namespaced so any component's t works.
  */
 export function fmtReleaseTimeForViewer(iso: string, t: TFunction): string {
+  if (viewerInUS()) return fmtReleaseTime(iso);
   const et = t('tools:economicEtTime', { time: fmtReleaseTime(iso, 'America/New_York') });
   return viewerIsOutsideET(iso) ? `${t('tools:economicYourTime', { time: fmtReleaseTime(iso) })} (${et})` : et;
 }

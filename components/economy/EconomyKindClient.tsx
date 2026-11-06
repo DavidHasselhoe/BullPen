@@ -13,7 +13,7 @@ import type { EconomyPageData, Metric, MetricKey, ResultKind } from '@/lib/marke
 import { EconomyChart, type ChartSeries } from './EconomyChart';
 import { Change } from './Change';
 import { EconomyFooter } from './EconomyFooter';
-import { fmtDay, fmtMetric, fmtPeriod, fmtRange } from './format';
+import { fmtDay, fmtMetric, fmtPeriod } from './format';
 
 interface View {
   chart: { type: 'line' | 'bar' | 'step'; series: MetricKey[]; take?: number; target?: number };
@@ -62,7 +62,7 @@ export function EconomyKindClient({ data }: { data: EconomyPageData }) {
               <ToolSectionTitle meta={fmtPeriod(kind, latest.period, locale)}>
                 <span id="economy-latest">{t('latestHeading')}</span>
               </ToolSectionTitle>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {latest.metrics.map((m, i) => <MetricTile key={m.key} metric={m} label={label(m.key)} headline={i === 0} />)}
               </div>
             </section>
@@ -95,7 +95,7 @@ export function EconomyKindClient({ data }: { data: EconomyPageData }) {
         <section aria-labelledby="economy-learn" className="border-t border-border/40 pt-6">
           <ToolSectionTitle><span id="economy-learn">{t('learnHeading')}</span></ToolSectionTitle>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <Link href={ECONOMIC_KINDS[kind].lessonHref} className="inline-flex min-h-11 items-center gap-1.5 text-foreground underline-offset-4 hover:underline">
+            <Link href={ECONOMIC_KINDS[kind].lessonHref} className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring inline-flex min-h-11 items-center gap-1.5 text-foreground underline-offset-4 hover:underline">
               <GraduationCap className="h-4 w-4 text-muted-foreground" aria-hidden />
               {t('lessonLink')}
             </Link>
@@ -103,7 +103,7 @@ export function EconomyKindClient({ data }: { data: EconomyPageData }) {
               href={ECONOMIC_KINDS[kind].sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-4 hover:underline"
+              className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-4 hover:underline"
             >
               {t('readRelease', { source: ECONOMIC_KINDS[kind].sourceName })}
               <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
@@ -128,9 +128,9 @@ export function EconomyKindClient({ data }: { data: EconomyPageData }) {
 function MetricTile({ metric, label, headline }: { metric: Metric; label: string; headline: boolean }) {
   const locale = useIntlLocale();
   return (
-    <div className="rounded-xl border border-border/60 bg-card px-5 py-4">
+    <div className="rounded-xl border border-border/60 bg-card px-4 py-3.5 sm:px-5 sm:py-4">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className={`mt-1 font-mono tabular-nums text-foreground ${headline ? 'text-3xl font-semibold' : 'text-2xl font-medium'}`}>
+      <p className={`mt-1 font-mono tabular-nums text-foreground ${headline ? 'text-2xl font-semibold sm:text-3xl' : 'text-xl font-medium sm:text-2xl'}`}>
         {fmtMetric(metric.key, metric.actual, locale)}
       </p>
       <div className="mt-1"><Change metric={metric} /></div>
@@ -150,8 +150,10 @@ function FedLatest({ data }: { data: EconomyPageData }) {
   return (
     <section aria-labelledby="economy-latest" className="rounded-xl border border-border/60 bg-card px-5 py-5">
       <p id="economy-latest" className="text-xs font-medium text-muted-foreground">{t('fedRangeLabel')}</p>
-      <p className="mt-1 font-mono text-3xl font-semibold tabular-nums text-foreground">
-        {fmtRange(lower.actual, upper.actual, locale, t('rangeTo'))}
+      <p className="mt-1 text-3xl font-semibold text-foreground">
+        <span className="font-mono tabular-nums">{fmtMetric('rate_lower', lower.actual, locale)}</span>
+        {' '}<span className="text-lg font-normal text-muted-foreground">{t('rangeTo')}</span>{' '}
+        <span className="font-mono tabular-nums">{fmtMetric('rate_upper', upper.actual, locale)}</span>
       </p>
       <dl className="mt-3 space-y-1 text-sm">
         {last?.verdict && (
@@ -220,7 +222,7 @@ function Projections({ data }: { data: EconomyPageData }) {
             ['https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html', 'CME FedWatch'],
             ['https://www.atlantafed.org/research-and-data/data/market-probability-tracker', t('atlantaFedTracker')],
           ].map(([href, name]) => (
-            <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-4 hover:underline">
+            <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring inline-flex min-h-11 items-center gap-1 text-foreground underline-offset-4 hover:underline">
               {name}
               <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
             </a>
@@ -261,8 +263,10 @@ function History({ data, view, label }: { data: EconomyPageData; view: View; lab
               return (
                 <tr key={r.period} className="border-b border-border/40 last:border-0">
                   <td className="py-2.5 pr-4 text-muted-foreground">{fmtPeriod('fomc', r.period, locale)}</td>
-                  <td className="py-2.5 pr-4 font-mono tabular-nums">
-                    {fmtRange(r.values.rate_lower ?? 0, r.values.rate_upper ?? 0, locale, t('rangeTo'))}
+                  <td className="py-2.5 pr-4">
+                    <span className="font-mono tabular-nums">{fmtMetric('rate_lower', r.values.rate_lower ?? 0, locale)}</span>
+                    {' '}<span className="text-muted-foreground">{t('rangeTo')}</span>{' '}
+                    <span className="font-mono tabular-nums">{fmtMetric('rate_upper', r.values.rate_upper ?? 0, locale)}</span>
                   </td>
                   <td className="py-2.5 text-right font-mono tabular-nums">
                     {`${bp > 0 ? '+' : '−'}${(Math.abs(bp) / 100).toLocaleString(locale, { minimumFractionDigits: 2 })}`}
@@ -278,11 +282,12 @@ function History({ data, view, label }: { data: EconomyPageData; view: View; lab
 
   const rows = [...data.history].reverse().slice(0, HISTORY_ROWS);
   if (rows.length === 0) return null;
+  const hasGap = rows.some((r) => view.table.some((key) => r.values[key] == null));
   return (
     <section aria-labelledby="economy-history">
       <ToolSectionTitle><span id="economy-history">{t('historyHeading')}</span></ToolSectionTitle>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[28rem] text-sm">
+        <table className={`w-full text-sm ${view.table.length > 2 ? 'min-w-[28rem]' : ''}`}>
           <thead>
             <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
               <th scope="col" className="py-2 pr-4 font-medium">{t('colPeriod')}</th>
@@ -294,7 +299,7 @@ function History({ data, view, label }: { data: EconomyPageData; view: View; lab
           <tbody>
             {rows.map((r) => (
               <tr key={r.period} className="border-b border-border/40 last:border-0">
-                <td className="py-2.5 pr-4 text-muted-foreground">{fmtPeriod(kind, r.period, locale)}</td>
+                <td className="whitespace-nowrap py-2.5 pr-4 text-muted-foreground">{fmtPeriod(kind, r.period, locale, true)}</td>
                 {view.table.map((key) => (
                   <td key={key} className="py-2.5 pl-4 text-right font-mono tabular-nums">
                     {r.values[key] == null ? '–' : fmtMetric(key, r.values[key]!, locale)}
@@ -305,6 +310,7 @@ function History({ data, view, label }: { data: EconomyPageData; view: View; lab
           </tbody>
         </table>
       </div>
+      {hasGap && <p className="mt-2 text-xs text-muted-foreground">{t('historyGapNote')}</p>}
     </section>
   );
 }

@@ -17,6 +17,8 @@
 import { createServerClient } from '@/lib/supabase/client';
 import { SITE_URL } from '@/lib/site';
 import { notifyEconomicResults } from '@/lib/notifications/notification-creators';
+import { RESULT_KINDS_NOTIFIED } from './economic-verdict';
+import { EXTREME_MIN_BACK, extremeSince } from './economy-hub';
 import { etDateOf } from './economic-calendar';
 import type { EconomicKind } from './economic-kinds';
 
@@ -353,9 +355,9 @@ async function fillFomc(event: EventRow): Promise<string> {
     { key: 'rate_upper', actual: decision.upper, previous: before },
     { key: 'rate_lower', actual: decision.lower, previous: beforeLower },
   ];
-  await saveResult(event, { period_label: event.date, results, verdict });
-
-  // Chart the new range straight away instead of waiting for FRED.
+  // Chart the new range straight away instead of waiting for FRED. Before the
+  // save, so the takeaway written there reads the new range. A retry rewrites
+  // the same rows, and rangeBefore never looks past the decision day.
   if (verdict && verdict !== 'hold') {
     const nextDay = new Date(Date.parse(`${event.date}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
     await supabase.from('economic_observations').upsert([
@@ -363,6 +365,7 @@ async function fillFomc(event: EventRow): Promise<string> {
       { series_id: 'DFEDTARL', period: nextDay, value: decision.lower },
     ], { onConflict: 'series_id,period' });
   }
+  await saveResult(event, { period_label: event.date, results, verdict });
   return `filled ${verdict ?? 'unknown'}`;
 }
 
@@ -372,7 +375,19 @@ async function fillFomc(event: EventRow): Promise<string> {
  * retry from telling anyone twice.
  */
 async function saveResult(event: EventRow, fields: { period_label: string; results: Metric[]; verdict: Verdict | null }) {
-  await notifyEconomicResults({ id: event.id, kind: event.kind, results: fields.results, verdict: fields.verdict });
+  let extreme = null;
+  let takeaway = null;
+  if (RESULT_KINDS_NOTIFIED.includes(event.kind)) {
+    // Context for the notification, from the history just synced: how unusual the
+    // headline is, and one model-written sentence on what it means. Both optional.
+    const page = await getEconomyPage(event.kind);
+    const head = fields.results[0]?.key;
+    extreme = event.kind !== 'fomc' && head ? extremeSince(page.history, head, EXTREME_MIN_BACK[event.kind]) : null;
+    // Imported here: economy-summary reads this module's page data.
+    const { releaseTakeaway } = await import('@/lib/ai/economy-summary');
+    takeaway = await releaseTakeaway(event.id, page, fields.verdict ? `Decision today: the Fed ${fields.verdict === 'hold' ? 'held' : fields.verdict === 'raise' ? 'raised' : 'lowered'} rates.` : undefined);
+  }
+  await notifyEconomicResults({ id: event.id, kind: event.kind, results: fields.results, verdict: fields.verdict, extreme, takeaway });
   const { error } = await createServerClient()
     .from('economic_events')
     .update({ ...fields, results_at: new Date().toISOString() })
@@ -401,7 +416,8 @@ export interface EconomyPageData {
   /** Oldest first. */
   history: HistoryRow[];
   nextRelease: ScheduledRelease | null;
-  lastRelease: (ScheduledRelease & { verdict: Verdict | null }) | null;
+  /** results_at: when its result was filled; null in the minutes between the release and the fill. */
+  lastRelease: (ScheduledRelease & { verdict: Verdict | null; results_at: string | null }) | null;
   /** FOMC only: officials' median projection for the federal funds rate at the end of each year. */
   projections: Array<{ year: number; value: number }>;
   /** Date of the meeting that published `projections`. */
@@ -419,7 +435,7 @@ export async function getEconomyPage(kind: ResultKind, today = etDateOf(new Date
     supabase.from('economic_observations').select('series_id, period, value, fetched_at').in('series_id', seriesFor(kind)).order('period', { ascending: false }).limit(1000), // newest first: the 1000-row cap drops the oldest
     supabase.from('economic_events').select('date, release_at, detail').eq('kind', kind).gt('release_at', new Date().toISOString())
       .order('release_at').limit(1),
-    supabase.from('economic_events').select('date, release_at, detail, verdict').eq('kind', kind).lte('release_at', new Date().toISOString())
+    supabase.from('economic_events').select('date, release_at, detail, verdict, results_at').eq('kind', kind).lte('release_at', new Date().toISOString())
       .order('release_at', { ascending: false }).limit(1),
   ]);
   if (error) throw error;
@@ -462,7 +478,8 @@ export async function getEconomyPage(kind: ResultKind, today = etDateOf(new Date
       : null;
     const projections = [...(s[PROJECTION_SERIES]?.entries() ?? [])]
       .map(([period, value]) => ({ year: Number(period.slice(0, 4)), value }))
-      .filter((p) => p.year >= Number(today.slice(0, 4)));
+      .filter((p) => p.year >= Number(today.slice(0, 4)))
+      .sort((a, b) => a.year - b.year); // rows come newest first
     // The meeting that published them: the latest one with projections.
     const { data: sep } = await supabase.from('economic_events').select('date').eq('kind', 'fomc').eq('has_projections', true)
       .lte('release_at', new Date().toISOString()).order('release_at', { ascending: false }).limit(1);

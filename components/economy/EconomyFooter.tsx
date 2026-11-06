@@ -18,7 +18,7 @@ export function EconomyFooter({ sources, updatedAt }: { sources: string[]; updat
       <p>
         {/* The notice is required word for word, so it is not translated. */}
         {FRED_NOTICE}{' '}
-        <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
+        <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer" className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring underline underline-offset-2 hover:text-foreground">
           {t('fredTerms')}
         </a>
       </p>
