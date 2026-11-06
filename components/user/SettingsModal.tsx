@@ -186,6 +186,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     upcoming_earnings: true,
     price_alerts: true,
     portfolio_recap: true,
+    portfolio_open: true,
     ai_insights: true,
     health_score_change: true,
     index_changes: true,
@@ -197,6 +198,8 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     institution_filing: true,
     politician_trades: true,
     politician_trades_holdings: true,
+    // Pro: new matches on saved screens with the bell on (lib/screener/saved-screen-alerts.ts). Also the push toggle for push_kind 'saved_screen'.
+    saved_screen: true,
     // On by default since 2026-10-30: release results are the reason to follow them (lib/notifications/notification-creators.ts economicFollowers).
     economic_events: true,
     // On by default: one curated note a week at most (lib/notifications/release-notes.ts).
@@ -286,6 +289,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         upcoming_earnings: settings.notifications?.upcoming_earnings !== false,
         price_alerts: settings.notifications?.price_alerts !== false,
         portfolio_recap: settings.notifications?.portfolio_recap !== false,
+        portfolio_open: settings.notifications?.portfolio_open !== false,
         ai_insights: settings.notifications?.ai_insights !== false,
         health_score_change: settings.notifications?.health_score_change !== false,
         index_changes: settings.notifications?.index_changes !== false,
@@ -297,6 +301,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         institution_filing: settings.notifications?.institution_filing !== false,
         politician_trades: settings.notifications?.politician_trades !== false,
         politician_trades_holdings: settings.notifications?.politician_trades_holdings !== false,
+        saved_screen: settings.notifications?.saved_screen !== false,
         economic_events: settings.notifications?.economic_events !== false,
         release_notes: settings.notifications?.release_notes !== false,
         email_alerts: settings.notifications?.email_alerts !== false,
@@ -933,6 +938,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                     <ToggleSetting label={t('notifEarningsTodayLabel')} description={t('notifEarningsTodayDescription')} {...notif('upcoming_earnings')} />
                     <ToggleSetting label={t('notifBigPriceMovesLabel')} description={t('notifBigPriceMovesDescription')} {...notif('price_alerts')} />
                     <ToggleSetting label={t('notifPortfolioRecapLabel')} description={t('notifPortfolioRecapDescription')} {...notif('portfolio_recap')} />
+                    <ToggleSetting label={t('notifPortfolioOpenLabel')} description={t('notifPortfolioOpenDescription')} {...notif('portfolio_open')} />
                     <ToggleSetting label={t('notifExDividendLabel')} description={t('notifExDividendDescription')} {...notif('dividend_reminder')} />
                     <ToggleSetting label={t('notifEmailAlertsLabel')} description={t('notifEmailAlertsDescription')} {...notif('email_alerts')} />
                     <ToggleSetting label={t('notifPushAlertsLabel')} description={t('notifPushAlertsDescription')} {...notif('push_alerts')} />
@@ -948,6 +954,14 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       disabled={!ent.isPro}
                       checked={ent.isPro && notifications.politician_trades_holdings}
                       onCheckedChange={notif('politician_trades_holdings').onCheckedChange}
+                    />
+                    <ToggleSetting
+                      label={t('notifSavedScreenLabel')}
+                      description={t('notifSavedScreenDescription')}
+                      badge={ent.isPro ? undefined : t('notifProBadge')}
+                      disabled={!ent.isPro}
+                      checked={ent.isPro && notifications.saved_screen}
+                      onCheckedChange={notif('saved_screen').onCheckedChange}
                     />
                   </SettingsCard>
                 </SettingsGroup>

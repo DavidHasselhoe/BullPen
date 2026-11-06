@@ -697,5 +697,10 @@
   "earningsEmailToastConfirmButton": "Confirm",
   "earningsEmailToastUnsubscribeAskTitle": "Stop getting {{name}}'s results by email?",
   "earningsEmailToastUnsubscribeButton": "Unsubscribe",
-  "earningsEmailToastLinkFailed": "That link didn't work. Try again, or sign up again on this page."
+  "earningsEmailToastLinkFailed": "That link didn't work. Try again, or sign up again on this page.",
+  "earningsRecapLabel": "Latest results in plain English · {{date}}",
+  "earningsRecapSource": "Written by AI from the company's press release.",
+  "earningsRecapReadRelease": "Read the release",
+  "earningsRecapLocked": "Pro reads the press release for you and sums up these results in three plain-English points.",
+  "earningsRecapUnlock": "Unlock with Pro"
 }

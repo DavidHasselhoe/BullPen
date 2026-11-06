@@ -21,6 +21,7 @@ export function categoryOf(n: Notification): NotificationCategory | null {
     case 'earnings':
     case 'dividend':
     case 'health_score':
+    case 'saved_screen':
       return 'stocks';
     case 'weekly_pick':
     case 'daily_brief':

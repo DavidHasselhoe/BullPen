@@ -697,5 +697,10 @@
   "earningsEmailToastConfirmButton": "Bekreft",
   "earningsEmailToastUnsubscribeAskTitle": "Slutte å få {{name}} sitt resultat på e-post?",
   "earningsEmailToastUnsubscribeButton": "Avslutt abonnement",
-  "earningsEmailToastLinkFailed": "Lenken fungerte ikke. Prøv igjen, eller registrer deg på nytt på denne siden."
+  "earningsEmailToastLinkFailed": "Lenken fungerte ikke. Prøv igjen, eller registrer deg på nytt på denne siden.",
+  "earningsRecapLabel": "Siste resultater på vanlig språk · {{date}}",
+  "earningsRecapSource": "Skrevet av KI ut fra selskapets pressemelding.",
+  "earningsRecapReadRelease": "Les pressemeldingen",
+  "earningsRecapLocked": "Pro leser pressemeldingen for deg og oppsummerer resultatene i tre punkter på vanlig språk.",
+  "earningsRecapUnlock": "Lås opp med Pro"
 }

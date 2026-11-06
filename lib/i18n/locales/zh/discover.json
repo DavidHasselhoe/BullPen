@@ -632,5 +632,10 @@
   "indexName_dow30": "道琼斯30",
   "moversNoneUp": "目前还没有上涨的股票。",
   "moversNoneDown": "目前还没有下跌的股票。",
-  "indexColWeightTip_sp500": "How much of SPY, a fund that tracks the S&P 500, is in this company, as of {{date}}. Bigger companies count for more."
+  "indexColWeightTip_sp500": "How much of SPY, a fund that tracks the S&P 500, is in this company, as of {{date}}. Bigger companies count for more.",
+  "peekTryFree": "免费试用一天",
+  "peekError": "无法开启免费查看，请重试。",
+  "peekOpenUntilToday": "免费查看中，开放至 {{time}}。",
+  "peekOpenUntilTomorrow": "免费查看中，开放至明天 {{time}}。",
+  "peekKeepWithPro": "用 Pro 保留"
 }

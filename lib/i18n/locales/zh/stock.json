@@ -697,5 +697,10 @@
   "earningsEmailToastConfirmButton": "确认",
   "earningsEmailToastUnsubscribeAskTitle": "不再通过邮件接收{{name}}的业绩结果？",
   "earningsEmailToastUnsubscribeButton": "取消订阅",
-  "earningsEmailToastLinkFailed": "该链接无法使用。请重试，或在本页面重新注册。"
+  "earningsEmailToastLinkFailed": "该链接无法使用。请重试，或在本页面重新注册。",
+  "earningsRecapLabel": "最新财报通俗解读 · {{date}}",
+  "earningsRecapSource": "由 AI 根据公司新闻稿撰写。",
+  "earningsRecapReadRelease": "阅读新闻稿",
+  "earningsRecapLocked": "Pro 会替你阅读新闻稿，用三个通俗要点总结这份财报。",
+  "earningsRecapUnlock": "升级 Pro 解锁"
 }

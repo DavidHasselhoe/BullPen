@@ -29,8 +29,11 @@ import { closeOnOrBefore } from '@/lib/watchlist/scorecard';
 import { BIG_FOUR_LESSON, economyHref, type EconomicKind } from '@/lib/market-data/economic-kinds';
 import { rget } from '@/lib/cache/redis-cache';
 import { whyTodayKey, isStale, type CachedWhyToday } from '@/lib/ai/why-today';
+import { WHY_TODAY_MIN_MOVE } from '@/lib/ai/why-today-shared';
+import { isPro, tierFromUser } from '@/lib/billing/tier';
 import { logger } from '@/lib/utils/logger';
 import { SITE_URL } from '@/lib/site';
+import { resolveTimeZone } from '@/lib/dates/clock';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 /** The crons write at 08:00 and 21:30 UTC; 26h covers both with slack for drift. */
@@ -171,6 +174,18 @@ export function toEmailItem(n: AlertRow): EmailItem | null {
   const one = leadingTicker(n.title);
   // Every card says where it leads: a card without a cue reads as inert next to one with.
   const openCue = one ? `See ${one} in BullPen` : 'Open BullPen';
+  // Pro results recap, "<SYM>:earnings_recap:<date>" (lib/earnings/recap-run.ts): the message is the model's bullets.
+  const recapSym = n.type === 'earnings' && n.entity_id?.match(/^([A-Z0-9.\-]+):earnings_recap:/)?.[1];
+  if (recapSym) {
+    return {
+      section: 'earnings',
+      headline: n.title.startsWith(`${recapSym} `) ? n.title : n.title.replace(/ reported its results$/, ` (${recapSym}) reported its results`),
+      detail: '',
+      why: n.message.replace(/\$([A-Z]{1,6})\b/g, '$1'),
+      cue: `See ${recapSym} in BullPen`,
+      href: slugToAssetPath(recapSym),
+    };
+  }
   if (n.type === 'earnings' && n.entity_type === 'portfolio') {
     // "VZ reports earnings today" + "Verizon Communications Inc.": a beginner knows the name, not the ticker.
     const name = one && n.message ? displayCompanyName(n.message, one) : null;
@@ -286,19 +301,34 @@ async function cachedWhy(symbol: string, movePct: number): Promise<string | null
  * the close, as the email's headline for the next morning: `lead` is the h1,
  * `rest` the line under it. One decimal, like every other figure in the email.
  * Null when the row doesn't match, so a reworded recap drops out instead of
- * reading oddly.
+ * reading oddly. A Pro recap carries the top mover's Why Today after "led. "
+ * (createPortfolioRecapNotification): that is `why`, shown whole.
  */
-export function recapLine(n: Pick<AlertRow, 'title' | 'message'>): { lead: string; rest: string | null } | null {
+export interface RecapLine {
+  lead: string;
+  rest: string | null;
+  why: string | null;
+  top: { symbol: string; pct: number } | null;
+}
+export function recapLine(n: Pick<AlertRow, 'title' | 'message'>): RecapLine | null {
   const day = n.title.match(/^Your portfolio ([+-]?)(\d+(?:\.\d+)?)% today$/);
   if (!day) return null;
   const pct = Number(day[2]).toFixed(1);
-  const top = n.message.match(/· (\S+) ([+-]?)(\d+(?:\.\d+)?)% led$/);
+  const top = n.message.match(/· (\S+) ([+-]?)(\d+(?:\.\d+)?)% led(?:\. ([\s\S]+))?$/);
   return {
     lead: pct === '0.0'
       ? 'Your stocks were flat at the last close.'
       : `Your stocks ${day[1] === '-' ? 'fell' : 'rose'} ${pct}% at the last close.`,
     rest: top ? `${top[1]} moved most, ${top[2] === '-' ? 'down' : 'up'} ${Number(top[3]).toFixed(1)}%.` : null,
+    why: top?.[4]?.trim() || null,
+    top: top ? { symbol: top[1], pct: Number(`${top[2]}${top[3]}`) } : null,
   };
+}
+
+/** Free readers: the line under the recap that Pro fills with the why. Only for a move worth explaining. */
+export function recapProCue(recap: RecapLine | null, pro: boolean): string | null {
+  if (pro || !recap?.top || recap.why || Math.abs(recap.top.pct) < WHY_TODAY_MIN_MOVE) return null;
+  return `Pro tells you why ${recap.top.symbol} moved`;
 }
 
 /** Markdown the model writes, as plain email text: no bold markers, link syntax or $TICKER chips. */
@@ -562,7 +592,9 @@ export function buildAlertEmailHtml(
   opts: {
     first: boolean;
     joinedBeforeLaunch: boolean;
-    recap?: { lead: string; rest: string | null } | null;
+    recap?: RecapLine | null;
+    /** Free readers with a big enough top mover (recapProCue): a link to /upgrade under the recap. */
+    proCue?: string | null;
     watchlist?: { moves: WatchMove[]; total: number; period: WatchPeriod } | null;
     /** True when the reader follows nothing: the one action that makes tomorrow's email worth opening. */
     invite?: boolean;
@@ -625,7 +657,9 @@ export function buildAlertEmailHtml(
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;font-family:${FONT};">
         <tr><td style="padding:0 0 20px;font-size:17px;font-weight:700;letter-spacing:-0.02em;color:${C.ink};">bullpen</td></tr>
         <tr><td><h1 style="margin:0;font-size:24px;line-height:1.25;font-weight:700;letter-spacing:-0.02em;color:${C.ink};">${escapeHtml(title)}</h1></td></tr>${sub ? `
-        <tr><td style="padding:8px 0 0;font-size:15px;line-height:1.55;color:${C.muted};">${escapeHtml(sub)}</td></tr>` : ''}${intro ? `
+        <tr><td style="padding:8px 0 0;font-size:15px;line-height:1.55;color:${C.muted};">${escapeHtml(sub)}</td></tr>` : ''}${opts.recap?.why ? `
+        <tr><td style="padding:10px 0 0;font-size:15px;line-height:1.55;color:${C.ink};">${escapeHtml(opts.recap.why)}</td></tr>` : ''}${opts.proCue ? `
+        <tr><td style="padding:2px 0 0;"><a href="${escapeHtml(withUtm('/upgrade?from=email_recap_why'))}" style="display:inline-block;padding:10px 0;font-size:14px;line-height:1.4;font-weight:600;color:${C.ink};text-decoration:none;">${escapeHtml(opts.proCue)}${arrowRight}</a></td></tr>` : ''}${intro ? `
         <tr><td style="padding:8px 0 0;font-size:15px;line-height:1.55;color:${C.muted};">${escapeHtml(intro)}</td></tr>` : ''}${sections}${cta.lead ? `
         <tr><td style="padding:24px 0 0;font-size:15px;line-height:1.55;color:${C.ink};">${escapeHtml(cta.lead)}</td></tr>` : ''}
         <tr><td style="padding:${cta.lead ? 12 : 16}px 0 0;">
@@ -664,12 +698,25 @@ export interface AlertEmailRun {
 }
 
 /**
+ * Which morning run emails a user: 'americas' at 12:00 UTC (7-8 AM in New
+ * York), also for anyone whose zone we don't know yet since most users are in
+ * the US; 'early' at 08:30 UTC (morning in Europe, afternoon in Asia) for the rest.
+ */
+export type EmailSlot = 'early' | 'americas';
+
+export function emailSlot(settingsTimeZone: unknown, deviceTimeZone: string | null): EmailSlot {
+  const tz = resolveTimeZone(settingsTimeZone) ?? deviceTimeZone;
+  return !tz || /^(America|US|Canada|Brazil|Mexico|Chile)\/|^Pacific\/Honolulu$/.test(tz) ? 'americas' : 'early';
+}
+
+/**
  * Emails every verified, opted-in user their unsent alerts from the last 26h,
  * plus how their watchlist did. Someone with a watchlist and no alerts still
  * gets the email on a morning their stocks moved. `dryRun` builds the emails
- * without sending or marking anything; `userId` limits the run to one account.
+ * without sending or marking anything; `userId` limits the run to one account;
+ * `slot` to the users that run is for (emailSlot), all of them when omitted.
  */
-export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: string } = {}): Promise<AlertEmailRun> {
+export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: string; slot?: EmailSlot } = {}): Promise<AlertEmailRun> {
   const supabase = createServerClient();
   const run: AlertEmailRun = { candidates: 0, sent: 0, skippedUnverified: 0, skippedUndeliverable: 0, skippedOptedOut: 0, watchlistOnly: 0, errors: [] };
   if (opts.dryRun) run.previews = [];
@@ -731,7 +778,8 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     // "Reports earnings today" is only true on the day it was written. The
     // 26h window would otherwise carry yesterday's row into this morning on
     // launch day or when the 08:00 cron drifts past this one.
-    if (row.type === 'earnings' && etDay(row.created_at) !== today) continue;
+    // A results recap (":earnings_recap:") was true when written, and an after-close report lands the evening before.
+    if (row.type === 'earnings' && !row.entity_id?.includes(':earnings_recap:') && etDay(row.created_at) !== today) continue;
     // Same for "CPI today at 8:30 AM ET": the entity id carries the release day.
     if (row.entity_id?.startsWith('economic:') && row.entity_id !== `economic:${today}`) continue;
     // Briefs land at ~07:05 UTC, so the 26h window also holds yesterday's.
@@ -824,17 +872,23 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
 
   const { data: users } = await supabase
     .from('users')
-    .select('id, email, email_verified_at, settings, created_at, alert_email_sent_at')
+    .select('id, email, email_verified_at, settings, created_at, alert_email_sent_at, device_time_zone, account_tier, role, pro_bonus_until')
     .in('id', candidates);
 
   for (const u of (users ?? []) as Array<{
     id: string;
+    account_tier: number | null;
+    role: string | null;
+    pro_bonus_until: string | null;
     email: string | null;
     email_verified_at: string | null;
     created_at: string;
     alert_email_sent_at: string | null;
-    settings: { notifications?: Record<string, boolean> } | null;
+    device_time_zone: string | null;
+    settings: { notifications?: Record<string, boolean>; time_zone?: unknown } | null;
   }>) {
+    // The other run's reader: their rows stay unemailed until it comes.
+    if (opts.slot && emailSlot(u.settings?.time_zone, u.device_time_zone) !== opts.slot) continue;
     const entry = byUser.get(u.id) ?? { ids: [], items: [] };
     const watchlist = watchlistFor(u.id);
     // Alerts are marked once sent, so a rerun can't repeat them. A watchlist-only
@@ -862,11 +916,13 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     const subject = alertEmailSubject(entry.items, watchlist ? watchlistInboxLine(watchlist) : null);
     const recap = recaps.get(u.id);
     if (recap) entry.ids.push(recap.id);
+    const line = recap ? recapLine(recap) : null;
     const html = buildAlertEmailHtml(entry.items, {
       // The first email explains why it is arriving.
       first: !u.alert_email_sent_at,
       joinedBeforeLaunch: new Date(u.created_at) < new Date(EMAIL_LAUNCH),
-      recap: recap ? recapLine(recap) : null,
+      recap: line,
+      proCue: recapProCue(line, isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until))),
       watchlist,
       invite: !watchBy.has(u.id),
     });

@@ -138,6 +138,8 @@
   "notifInstitutionFilingLabel": "ファンドの届出",
   "notifPortfolioRecapDescription": "保有銘柄がどのように変動したか、そしてそれを駆動したものについての毎日のまとめ",
   "notifPortfolioRecapLabel": "ポートフォリオの日次サマリー",
+  "notifPortfolioOpenDescription": "米国市場の取引開始から5分後の保有銘柄の状況",
+  "notifPortfolioOpenLabel": "寄り付き時のポートフォリオ",
   "notifWeeklyPickDescription": "Bull が週の注目銘柄を公開したときに通知を受け取ります",
   "notifWeeklyPickLabel": "週間ピック",
   "notifications": "通知",
@@ -254,5 +256,7 @@
   "homeWidget_from_follows": "フォローしている相手から",
   "notifReleaseNotesLabel": "新機能",
   "notifReleaseNotesDescription": "毎週月曜日に、BullPenの主な改善点をまとめた短いお知らせをお届けします",
-  "planUnlockAiChat": "AIチャットとDeep Diveをさらに利用でき、ポートフォリオビルダーも無制限でお使いいただけます"
+  "planUnlockAiChat": "AIチャットとDeep Diveをさらに利用でき、ポートフォリオビルダーも無制限でお使いいただけます",
+  "notifSavedScreenLabel": "保存したスクリーンの該当銘柄",
+  "notifSavedScreenDescription": "ベルがオンの保存スクリーンに新しい銘柄が該当したとき"
 }

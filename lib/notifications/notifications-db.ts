@@ -7,7 +7,7 @@ import type { PushKind } from '@/lib/notifications/push-plan';
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'politician_trade' | 'billing' | 'release_notes';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'politician_trade' | 'billing' | 'release_notes' | 'saved_screen';
   title: string;
   message: string;
   entity_type: 'stock' | 'portfolio' | 'market' | 'user' | 'institution' | 'politician' | null;
@@ -73,7 +73,7 @@ export interface NotificationDBResult<T> {
 
 export interface CreateNotificationInput {
   user_id: string;
-  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'politician_trade' | 'billing' | 'release_notes';
+  type: 'price_move' | 'earnings' | 'ai_insight' | 'market' | 'dividend' | 'academy' | 'health_score' | 'weekly_pick' | 'daily_brief' | 'referral' | 'institution_filing' | 'politician_trade' | 'billing' | 'release_notes' | 'saved_screen';
   title: string;
   message: string;
   entity_type?: 'stock' | 'portfolio' | 'market' | 'user' | 'institution' | 'politician' | null;

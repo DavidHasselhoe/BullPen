@@ -138,6 +138,8 @@
   "notifInstitutionFilingLabel": "Fondsregistreringer",
   "notifPortfolioRecapDescription": "En daglig sammenfatning av hvordan beholdningen din har bevegd seg og hva som drev det",
   "notifPortfolioRecapLabel": "Daglig porteføljesammendrag",
+  "notifPortfolioOpenDescription": "Hvordan beholdningen din står fem minutter etter at det amerikanske markedet åpner",
+  "notifPortfolioOpenLabel": "Porteføljen ved åpning",
   "notifWeeklyPickDescription": "Få beskjed når Bull publiserer ukens anbefalte aksjevalg",
   "notifWeeklyPickLabel": "Ukens valg",
   "notifications": "Varsler",
@@ -254,5 +256,7 @@
   "homeWidget_from_follows": "Fra de du følger",
   "notifReleaseNotesLabel": "Hva er nytt",
   "notifReleaseNotesDescription": "En kort oppdatering hver mandag med de største forbedringene i BullPen",
-  "planUnlockAiChat": "Mer AI-chat og Deep Dives, pluss ubegrenset Portfolio Builder"
+  "planUnlockAiChat": "Mer AI-chat og Deep Dives, pluss ubegrenset Portfolio Builder",
+  "notifSavedScreenLabel": "Treff i lagrede filtre",
+  "notifSavedScreenDescription": "Når en ny aksje passer til et lagret filter med bjellen på"
 }

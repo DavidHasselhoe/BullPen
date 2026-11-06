@@ -632,5 +632,10 @@
   "pickChartPortfolio": "Portfolio",
   "pickCatalystTurnaround": "Turnaround",
   "indexName_nasdaq100": "Nasdaq-100",
-  "indexName_dow30": "Dow 30"
+  "indexName_dow30": "Dow 30",
+  "peekTryFree": "Einen Tag kostenlos testen",
+  "peekError": "Dein kostenloser Einblick konnte nicht geöffnet werden. Versuch es noch einmal.",
+  "peekOpenUntilToday": "Kostenloser Einblick, offen bis {{time}}.",
+  "peekOpenUntilTomorrow": "Kostenloser Einblick, offen bis morgen {{time}}.",
+  "peekKeepWithPro": "Mit Pro behalten"
 }

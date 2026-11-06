@@ -46,6 +46,10 @@ export function notificationSource(n: Notification, t: (key: string) => string):
   if (n.type === 'billing') {
     return { label: t('notifSourceBilling'), href: '/upgrade' };
   }
+  // entity_id is "saved-screen:<preset id>:<date>"; the screener reopens that screen.
+  if (n.type === 'saved_screen' && n.entity_id?.startsWith('saved-screen:')) {
+    return { label: t('notifSourceScreener'), href: `/tools/screener?screen=${n.entity_id.split(':')[1]}` };
+  }
   // entity_id is "institution:<slug>:<accession>" — the slug is the route.
   if (n.type === 'institution_filing' && n.entity_id?.startsWith('institution:')) {
     const slug = n.entity_id.split(':')[1];
@@ -80,6 +84,10 @@ export function notificationSource(n: Notification, t: (key: string) => string):
   // link to My holdings, even for a stock you only watch. One stock goes to
   // its page (ticker at the start of the title, or the whole message on rows
   // written before 2026-10-19); several go to the calendar.
+  // Pro payday / locked-in notes (lib/dividends/payday-notifications.ts) open the dividend hub.
+  if (n.type === 'dividend' && n.entity_id?.startsWith('portfolio:dividend_income')) {
+    return { label: t('notifSourceHoldings'), href: '/holdings#dividends' };
+  }
   if ((n.type === 'earnings' || n.type === 'dividend') && et === 'portfolio') {
     const one = leadingTicker(n.title) ?? (/^[A-Z]{1,6}$/.test(n.message?.trim() ?? '') ? n.message.trim() : null);
     return one ? { label: one, href: `/stock/${one}` } : { label: t('notifSourceCalendar'), href: '/tools/calendar' };

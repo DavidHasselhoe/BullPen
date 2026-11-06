@@ -10,6 +10,7 @@
 import { QUOTAS } from './quotas';
 import { isPro, type Tier } from './tier';
 import { FREE_ACTIVE_ALERT_LIMIT } from '@/types/alerts';
+import { FREE_SAVED_SCREENS } from '@/lib/screener/saved-screen-limits';
 
 // ── Non-AI free-tier limits ──────────────────────────────────────────────────
 export const FREE_WATCHLISTS = 3;              // bumped from 1 — beats Koyfin's 2
@@ -32,7 +33,7 @@ export type ProFeature =
   | 'why_today'
   | 'unlimited_alerts'
   | 'unlimited_watchlists'
-  | 'dividend_hub'          // future flagship
+  | 'dividend_hub'          // dividend hub on /holdings: 12-month income calendar + payday notifications
   | 'portfolio_checkup'     // future flagship
   | 'brokerage'             // SnapTrade brokerage connection — costs us per connected user
   | 'academy_pro'           // intermediate/advanced Academy courses
@@ -85,6 +86,19 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
       { label: 'Financials, statistics & health score', free: true, pro: true },
       { label: 'Compare companies side-by-side', free: true, pro: true },
       { label: 'Insider transactions', free: false, pro: true },
+      {
+        label: 'Politician trades in your stocks',
+        free: '1 look/month',
+        pro: true,
+        hint: 'Which members of Congress traded the stocks you own or watch, what they did and when.',
+      },
+      {
+        label: 'Fund moves in your stocks',
+        free: '1 look/month',
+        pro: true,
+        hint: 'What the big funds bought and sold of your stocks in their latest 13F filings.',
+      },
+      { label: 'Politician scorecards & full fund portfolios', free: false, pro: true },
     ],
   },
   {
@@ -94,7 +108,8 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
       { label: 'AI Deep Dive reports', free: `${QUOTAS.deep_dive.count}/month`, pro: `${QUOTAS.deep_dive.proCap}/month` },
       { label: 'AI Portfolio Builder', free: `${QUOTAS.portfolio_builder.count}/month`, pro: 'Unlimited' },
       { label: 'AI Portfolio Checkup', free: `${QUOTAS.risk_analysis.count}/month`, pro: 'Unlimited' },
-      { label: 'Why Today? move explanations', free: false, pro: true },
+      { label: 'AI explanations in Compare', free: `${QUOTAS.compare_explain.count}/day`, pro: 'Unlimited' },
+      { label: 'Why Today? move explanations', free: 'Your top mover', pro: 'Every stock' },
       { label: 'Daily Brief (AI market recap)', free: false, pro: true },
       {
         label: "Bull's Weekly Pick",
@@ -109,7 +124,28 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
     rows: [
       { label: 'Price alerts', free: `${FREE_ALERT_STOCKS} stocks`, pro: 'Unlimited' },
       { label: 'Watchlists', free: `${FREE_WATCHLISTS}`, pro: 'Unlimited' },
+      { label: 'Watchlist performance vs the S&P 500', free: false, pro: true },
+      { label: 'Saved screener screens', free: `${FREE_SAVED_SCREENS}`, pro: 'Unlimited' },
+      {
+        label: 'Alerts when a stock newly matches your screen',
+        free: false,
+        pro: true,
+        hint: 'Ring the bell on a saved screen and hear each weekday morning which stocks just started to match it.',
+      },
+      { label: 'Alerts when politicians trade your stocks', free: false, pro: true },
+      {
+        label: 'Earnings recaps for your stocks',
+        free: false,
+        pro: true,
+        hint: 'When a stock you own or watch reports, three plain-English points from its press release, sent to you and in the morning email.',
+      },
       { label: 'Holdings tracking & CSV import', free: true, pro: true },
+      {
+        label: 'Dividend income calendar & payday alerts',
+        free: 'Next payment',
+        pro: '12-month calendar',
+        hint: "Adds up the next 12 months from your holdings' real payments and tells you on payday.",
+      },
       { label: 'Automatic brokerage sync', free: false, pro: true, hint: 'Connect Robinhood, Schwab, Fidelity, IBKR, and 100+ more' },
       { label: 'In-app notifications & daily recap', free: true, pro: true },
     ],

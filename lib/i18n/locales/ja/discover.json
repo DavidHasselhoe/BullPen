@@ -632,5 +632,10 @@
   "indexName_nasdaq100": "ナスダック100",
   "indexName_dow30": "ダウ30",
   "moversNoneUp": "まだ上昇している銘柄はありません。",
-  "moversNoneDown": "まだ下落している銘柄はありません。"
+  "moversNoneDown": "まだ下落している銘柄はありません。",
+  "peekTryFree": "1日無料で試す",
+  "peekError": "無料閲覧を開けませんでした。もう一度お試しください。",
+  "peekOpenUntilToday": "無料閲覧中、{{time}}まで。",
+  "peekOpenUntilTomorrow": "無料閲覧中、明日{{time}}まで。",
+  "peekKeepWithPro": "Proで使い続ける"
 }

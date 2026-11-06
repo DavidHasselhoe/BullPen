@@ -697,5 +697,10 @@
   "earningsEmailToastConfirmButton": "«Coonfiirm»",
   "earningsEmailToastUnsubscribeAskTitle": "«Stoop geettiing {{name}}'s reesuults by eemaaiil?»",
   "earningsEmailToastUnsubscribeButton": "«UUnsuubscriibee»",
-  "earningsEmailToastLinkFailed": "«Thaat liink diidn't woork. Try aagaaiin, oor siign uup aagaaiin oon thiis paagee.»"
+  "earningsEmailToastLinkFailed": "«Thaat liink diidn't woork. Try aagaaiin, oor siign uup aagaaiin oon thiis paagee.»",
+  "earningsRecapLabel": "«Laateest reesuults iin plaaiin EEngliish · {{date}}»",
+  "earningsRecapSource": "«Wriitteen by AAII froom thee coompaany's preess reeleeaasee.»",
+  "earningsRecapReadRelease": "«Reeaad thee reeleeaasee»",
+  "earningsRecapLocked": "«Proo reeaads thee preess reeleeaasee foor yoouu aand suums uup theesee reesuults iin threeee plaaiin-EEngliish pooiints.»",
+  "earningsRecapUnlock": "«UUnloock wiith Proo»"
 }

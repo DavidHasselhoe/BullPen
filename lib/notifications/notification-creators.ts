@@ -190,35 +190,47 @@ export interface PortfolioRecap {
   topSymbol: string;
   topPct: number;
   holdingsCount: number;
+  /** Pro, close only: the top mover's Why Today answer, plain text. */
+  why?: string | null;
 }
 
 /**
- * A once-per-trading-day pulse of the user's actual holdings:
- * "Your portfolio +1.2% today — 8 holdings · NVDA +4.1% led".
- * Rendered as a portfolio price_move so the existing logo/direction UI applies.
+ * A pulse of the user's actual holdings, at the close ("Your portfolio +1.2% today",
+ * 8 holdings · NVDA +4.1% led) and five minutes after the open ("Your portfolio -0.8% at
+ * the open"). Rendered as a portfolio price_move so the existing logo/direction UI applies.
+ * The close title's wording is parsed by the morning email (recapLine in lib/email/alert-email.ts);
+ * the open row's entity id (`portfolio:open:`) keeps it out of that email, where it would be stale.
  */
 export async function createPortfolioRecapNotification(
   userId: string,
-  recap: PortfolioRecap
+  recap: PortfolioRecap,
+  at: 'open' | 'close' = 'close'
 ): Promise<boolean> {
   const todayStr = new Date().toISOString().slice(0, 10);
-  const dedupeId = `portfolio:daily_recap:${todayStr}`;
+  const dedupeId = at === 'open' ? `portfolio:open:${todayStr}` : `portfolio:daily_recap:${todayStr}`;
   if (await alreadyNotifiedToday(userId, 'price_move', dedupeId)) return false;
 
   const sign = recap.dayPct >= 0 ? '+' : '';
   const topSign = recap.topPct >= 0 ? '+' : '';
   const pct = `${sign}${recap.dayPct.toFixed(2)}%`;
   const topPct = `${topSign}${recap.topPct.toFixed(1)}%`;
+  const why = at === 'close' ? recap.why?.trim() : null;
+  const vars = { count: recap.holdingsCount, symbol: recap.topSymbol, pct: topPct };
+  const led = `${recap.holdingsCount} holding${recap.holdingsCount === 1 ? '' : 's'} · ${recap.topSymbol} ${topPct} led`;
   const input: CreateNotificationInput = {
     user_id: userId,
     type: 'price_move',
-    title: `Your portfolio ${pct} today`,
-    message: `${recap.holdingsCount} holding${recap.holdingsCount === 1 ? '' : 's'} · ${recap.topSymbol} ${topPct} led`,
+    title: at === 'open' ? `Your portfolio ${pct} at the open` : `Your portfolio ${pct} today`,
+    // The why rides in the message, so the push body and the morning email (recapLine) carry it too.
+    message: why ? `${led}. ${why}` : led,
     entity_type: 'portfolio',
     entity_id: dedupeId,
-    push: 'portfolio_recap',
+    push: at === 'open' ? 'portfolio_open' : 'portfolio_recap',
     severity: 'info',
-    params: i18n(msg('notifRecapTitle', { pct }), msg('notifRecapMessage', { count: recap.holdingsCount, symbol: recap.topSymbol, pct: topPct })),
+    params: i18n(
+      msg(at === 'open' ? 'notifOpenTitle' : 'notifRecapTitle', { pct }),
+      why ? msg('notifRecapWhyMessage', { ...vars, why }) : msg('notifRecapMessage', vars),
+    ),
   };
 
   const result = await createNotification(input);

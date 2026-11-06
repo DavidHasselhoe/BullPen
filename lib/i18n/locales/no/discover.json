@@ -632,5 +632,10 @@
   "pickChartMedian": "Median",
   "pickOver": "over {{duration}}",
   "indexName_nasdaq100": "Nasdaq-100",
-  "indexName_dow30": "Dow 30"
+  "indexName_dow30": "Dow 30",
+  "peekTryFree": "Prøv gratis i én dag",
+  "peekError": "Kunne ikke åpne gratistitten. Prøv igjen.",
+  "peekOpenUntilToday": "Gratis titt, åpen til {{time}}.",
+  "peekOpenUntilTomorrow": "Gratis titt, åpen til {{time}} i morgen.",
+  "peekKeepWithPro": "Behold det med Pro"
 }

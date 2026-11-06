@@ -138,6 +138,8 @@
   "notifInstitutionFilingLabel": "基金申报",
   "notifPortfolioRecapDescription": "您的持仓涨跌及其驱动因素的每日总结",
   "notifPortfolioRecapLabel": "每日投资组合总结",
+  "notifPortfolioOpenDescription": "美国市场开盘五分钟后您持仓的表现",
+  "notifPortfolioOpenLabel": "开盘时的投资组合",
   "notifWeeklyPickDescription": "当 Bull 发布本周特色股票精选时获得通知",
   "notifWeeklyPickLabel": "每周精选",
   "notifications": "通知",
@@ -254,5 +256,7 @@
   "homeWidget_from_follows": "来自你的关注",
   "notifReleaseNotesLabel": "最新动态",
   "notifReleaseNotesDescription": "每周一发送一条简短通知，汇总 BullPen 的重要更新",
-  "planUnlockAiChat": "更多 AI 对话和深度分析，外加无限次的投资组合生成器"
+  "planUnlockAiChat": "更多 AI 对话和深度分析，外加无限次的投资组合生成器",
+  "notifSavedScreenLabel": "已保存筛选的新匹配",
+  "notifSavedScreenDescription": "当有新股票符合开启铃铛的已保存筛选时"
 }

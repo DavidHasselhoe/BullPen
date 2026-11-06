@@ -138,6 +138,8 @@
   "notifInstitutionFilingLabel": "Fondsveröffentlichungen",
   "notifPortfolioRecapDescription": "Eine tägliche Zusammenfassung, wie sich deine Bestände entwickelt haben und was sie beeinflusst hat",
   "notifPortfolioRecapLabel": "Tägliche Portfolio-Zusammenfassung",
+  "notifPortfolioOpenDescription": "Wie deine Bestände fünf Minuten nach Eröffnung des US-Markts stehen",
+  "notifPortfolioOpenLabel": "Portfolio zur Börseneröffnung",
   "notifWeeklyPickDescription": "Benachrichtigung erhalten, wenn Bull die ausgewählte Aktie der Woche veröffentlicht",
   "notifWeeklyPickLabel": "Wöchentliche Auswahl",
   "notifications": "Benachrichtigungen",
@@ -254,5 +256,7 @@
   "notifReleaseNotesLabel": "Was ist neu",
   "notifReleaseNotesDescription": "Jeden Montag eine kurze Nachricht mit den wichtigsten Verbesserungen bei BullPen",
   "planUnlockAiChat": "Mehr KI-Chat und Deep Dives sowie unbegrenzter Portfolio Builder",
-  "sectionPlanLabel": "Plan"
+  "sectionPlanLabel": "Plan",
+  "notifSavedScreenLabel": "Treffer gespeicherter Screens",
+  "notifSavedScreenDescription": "Wenn eine neue Aktie zu einem gespeicherten Screen mit aktiver Glocke passt"
 }

@@ -632,5 +632,10 @@
   "indexColWeightTip_dow30": "How much of DIA, a fund that tracks the Dow, is in this company, as of {{date}}. The Dow counts companies by share price, not size, so a pricier stock counts for more.",
   "indexName_sp500": "S&P 500",
   "indexName_nasdaq100": "Nasdaq-100",
-  "indexName_dow30": "Dow 30"
+  "indexName_dow30": "Dow 30",
+  "peekTryFree": "Try free for a day",
+  "peekError": "Couldn't open your free look. Try again.",
+  "peekOpenUntilToday": "Free look, open until {{time}}.",
+  "peekOpenUntilTomorrow": "Free look, open until {{time}} tomorrow.",
+  "peekKeepWithPro": "Keep it with Pro"
 }

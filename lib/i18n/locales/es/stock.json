@@ -697,5 +697,10 @@
   "earningsEmailToastConfirmButton": "Confirmar",
   "earningsEmailToastUnsubscribeAskTitle": "¿Dejar de recibir por correo los resultados de {{name}}?",
   "earningsEmailToastUnsubscribeButton": "Cancelar suscripción",
-  "earningsEmailToastLinkFailed": "Ese enlace no funcionó. Inténtalo de nuevo o vuelve a registrarte en esta página."
+  "earningsEmailToastLinkFailed": "Ese enlace no funcionó. Inténtalo de nuevo o vuelve a registrarte en esta página.",
+  "earningsRecapLabel": "Últimos resultados en lenguaje claro · {{date}}",
+  "earningsRecapSource": "Redactado por IA a partir del comunicado de la empresa.",
+  "earningsRecapReadRelease": "Leer el comunicado",
+  "earningsRecapLocked": "Pro lee el comunicado por ti y resume estos resultados en tres puntos en lenguaje claro.",
+  "earningsRecapUnlock": "Desbloquear con Pro"
 }

@@ -138,6 +138,8 @@
   "notifInstitutionFilingLabel": "Dépôts de fonds",
   "notifPortfolioRecapDescription": "Un résumé quotidien de l'évolution de vos positions et des facteurs qui l'ont influencée",
   "notifPortfolioRecapLabel": "Récapitulatif quotidien du portefeuille",
+  "notifPortfolioOpenDescription": "L'évolution de vos positions cinq minutes après l'ouverture du marché américain",
+  "notifPortfolioOpenLabel": "Portefeuille à l'ouverture",
   "notifWeeklyPickDescription": "Recevez une notification lorsque Bull publie le choix d'action en vedette de la semaine",
   "notifWeeklyPickLabel": "Sélection hebdomadaire",
   "notifications": "Notifications",
@@ -254,5 +256,7 @@
   "homeWidget_from_follows": "De ceux que vous suivez",
   "notifReleaseNotesLabel": "Nouveautés",
   "notifReleaseNotesDescription": "Une courte note chaque lundi avec les principales améliorations de BullPen",
-  "planUnlockAiChat": "Plus de discussions IA et d'analyses approfondies, ainsi qu'un Portfolio Builder illimité"
+  "planUnlockAiChat": "Plus de discussions IA et d'analyses approfondies, ainsi qu'un Portfolio Builder illimité",
+  "notifSavedScreenLabel": "Correspondances des filtres enregistrés",
+  "notifSavedScreenDescription": "Quand une nouvelle action correspond à un filtre enregistré dont la cloche est activée"
 }

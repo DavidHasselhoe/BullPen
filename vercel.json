@@ -35,6 +35,10 @@
       "schedule": "30 8 * * *"
     },
     {
+      "path": "/api/cron/send-alert-email",
+      "schedule": "0 12 * * *"
+    },
+    {
       "path": "/api/cron/send-verify-reminder",
       "schedule": "0 9 * * *"
     },
@@ -59,10 +63,6 @@
       "schedule": "0 14 * * 2"
     },
     {
-      "path": "/api/cron/check-price-moves",
-      "schedule": "30 21 * * 1-5"
-    },
-    {
       "path": "/api/cron/instagram-earnings-results",
       "schedule": "0 14 * * 6"
     },
@@ -85,6 +85,10 @@
     {
       "path": "/api/cron/sync-institutional-holdings",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/check-saved-screens",
+      "schedule": "0 11 * * 1-5"
     }
   ]
 }

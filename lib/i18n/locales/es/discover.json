@@ -632,5 +632,10 @@
   "barCall": "Call",
   "pickVsSp500": "vs S&P 500",
   "indexName_nasdaq100": "Nasdaq-100",
-  "indexName_dow30": "Dow 30"
+  "indexName_dow30": "Dow 30",
+  "peekTryFree": "Prueba gratis un día",
+  "peekError": "No se pudo abrir tu vistazo gratis. Inténtalo de nuevo.",
+  "peekOpenUntilToday": "Vistazo gratis, abierto hasta las {{time}}.",
+  "peekOpenUntilTomorrow": "Vistazo gratis, abierto hasta mañana a las {{time}}.",
+  "peekKeepWithPro": "Consérvalo con Pro"
 }

@@ -697,5 +697,10 @@
   "earningsEmailToastConfirmButton": "確認",
   "earningsEmailToastUnsubscribeAskTitle": "{{name}}の結果のメール配信を停止しますか？",
   "earningsEmailToastUnsubscribeButton": "配信を停止",
-  "earningsEmailToastLinkFailed": "このリンクは機能しませんでした。もう一度お試しいただくか、このページから再度登録してください。"
+  "earningsEmailToastLinkFailed": "このリンクは機能しませんでした。もう一度お試しいただくか、このページから再度登録してください。",
+  "earningsRecapLabel": "最新決算をやさしく解説 · {{date}}",
+  "earningsRecapSource": "企業のプレスリリースをもとにAIが作成しました。",
+  "earningsRecapReadRelease": "リリースを読む",
+  "earningsRecapLocked": "Proならプレスリリースを読み、この決算を分かりやすい3つのポイントにまとめます。",
+  "earningsRecapUnlock": "Proで見る"
 }

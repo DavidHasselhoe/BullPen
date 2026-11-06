@@ -138,6 +138,8 @@
   "notifInstitutionFilingLabel": "Fund filings",
   "notifPortfolioRecapDescription": "A daily summary of how your holdings moved and what drove it",
   "notifPortfolioRecapLabel": "Daily portfolio recap",
+  "notifPortfolioOpenDescription": "How your holdings are doing five minutes after the US market opens",
+  "notifPortfolioOpenLabel": "Portfolio at the open",
   "notifWeeklyPickDescription": "Get notified when Bull publishes the week's featured stock pick",
   "notifWeeklyPickLabel": "Weekly Pick",
   "notifications": "Notifications",
@@ -254,5 +256,7 @@
   "timeFormat12": "12-hour (7:00 PM)",
   "homeWidget_from_follows": "From who you follow",
   "notifReleaseNotesLabel": "What’s new",
-  "notifReleaseNotesDescription": "A short note each Monday with the biggest improvements to BullPen"
+  "notifReleaseNotesDescription": "A short note each Monday with the biggest improvements to BullPen",
+  "notifSavedScreenLabel": "Saved screen matches",
+  "notifSavedScreenDescription": "When a new stock matches a saved screen with its bell on"
 }

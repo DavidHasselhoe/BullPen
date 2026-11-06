@@ -632,5 +632,10 @@
   "pickColAngle": "Angle",
   "pickVsSp500": "vs S&P 500",
   "indexName_nasdaq100": "Nasdaq-100",
-  "indexName_dow30": "Dow 30"
+  "indexName_dow30": "Dow 30",
+  "peekTryFree": "Essayer gratuitement un jour",
+  "peekError": "Impossible d’ouvrir votre aperçu gratuit. Réessayez.",
+  "peekOpenUntilToday": "Aperçu gratuit, ouvert jusqu’à {{time}}.",
+  "peekOpenUntilTomorrow": "Aperçu gratuit, ouvert jusqu’à demain {{time}}.",
+  "peekKeepWithPro": "Le garder avec Pro"
 }

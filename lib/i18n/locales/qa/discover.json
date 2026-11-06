@@ -632,5 +632,10 @@
   "indexColWeightTip_dow30": "«Hoow muuch oof DIIAA, aa fuund thaat traacks thee Doow, iis iin thiis coompaany, aas oof {{date}}. Thee Doow coouunts coompaaniiees by shaaree priicee, noot siizee, soo aa priiciieer stoock coouunts foor mooree.»",
   "indexName_sp500": "«S&P 500»",
   "indexName_nasdaq100": "«Naasdaaq-100»",
-  "indexName_dow30": "«Doow 30»"
+  "indexName_dow30": "«Doow 30»",
+  "peekTryFree": "«Try freeee foor aa daay»",
+  "peekError": "«Coouuldn't oopeen yoouur freeee looook. Try aagaaiin.»",
+  "peekOpenUntilToday": "«Freeee looook, oopeen uuntiil {{time}}.»",
+  "peekOpenUntilTomorrow": "«Freeee looook, oopeen uuntiil {{time}} toomoorroow.»",
+  "peekKeepWithPro": "«Keeeep iit wiith Proo»"
 }

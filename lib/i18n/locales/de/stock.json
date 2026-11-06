@@ -697,5 +697,10 @@
   "earningsEmailToastConfirmButton": "Bestätigen",
   "earningsEmailToastUnsubscribeAskTitle": "Keine E-Mails mehr mit den Ergebnissen von {{name}} erhalten?",
   "earningsEmailToastUnsubscribeButton": "Abmelden",
-  "earningsEmailToastLinkFailed": "Dieser Link hat nicht funktioniert. Versuch es noch einmal oder melde dich auf dieser Seite erneut an."
+  "earningsEmailToastLinkFailed": "Dieser Link hat nicht funktioniert. Versuch es noch einmal oder melde dich auf dieser Seite erneut an.",
+  "earningsRecapLabel": "Neueste Zahlen verständlich erklärt · {{date}}",
+  "earningsRecapSource": "Von KI aus der Pressemitteilung des Unternehmens erstellt.",
+  "earningsRecapReadRelease": "Pressemitteilung lesen",
+  "earningsRecapLocked": "Pro liest die Pressemitteilung für dich und fasst diese Zahlen in drei verständlichen Punkten zusammen.",
+  "earningsRecapUnlock": "Mit Pro freischalten"
 }

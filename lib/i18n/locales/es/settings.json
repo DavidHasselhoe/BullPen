@@ -138,6 +138,8 @@
   "notifInstitutionFilingLabel": "Presentaciones de fondos",
   "notifPortfolioRecapDescription": "Un resumen diario de cómo se movieron tus posiciones y qué lo impulsó",
   "notifPortfolioRecapLabel": "Resumen diario de cartera",
+  "notifPortfolioOpenDescription": "Cómo van tus posiciones cinco minutos después de que abra el mercado de EE. UU.",
+  "notifPortfolioOpenLabel": "Cartera en la apertura",
   "notifWeeklyPickDescription": "Recibe notificaciones cuando Bull publica la recomendación de acciones destacada de la semana",
   "notifWeeklyPickLabel": "Selección Semanal",
   "notifications": "Notificaciones",
@@ -254,5 +256,7 @@
   "notifReleaseNotesLabel": "Novedades",
   "notifReleaseNotesDescription": "Una breve nota cada lunes con las mejoras más importantes de BullPen",
   "planUnlockAiChat": "Más chat con IA y Análisis a fondo, además de Portfolio Builder sin límite",
-  "sectionPlanLabel": "Plan"
+  "sectionPlanLabel": "Plan",
+  "notifSavedScreenLabel": "Coincidencias de filtros guardados",
+  "notifSavedScreenDescription": "Cuando una acción nueva cumple un filtro guardado con la campana activada"
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, CreditCard, GraduationCap, HeartPulse, Landmark, Megaphone, Star, Newspaper, Crown, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, BarChart2, Sparkles, Bell, ChevronRight, Coins, CreditCard, Filter, GraduationCap, HeartPulse, Landmark, Megaphone, Star, Newspaper, Crown, type LucideIcon } from 'lucide-react';
 import { openReleaseNotes } from './ReleaseNotesDialog';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics/track';
@@ -15,7 +15,7 @@ import { useClock } from '@/hooks/use-clock';
 import { fmtClockDate } from '@/lib/dates/clock';
 import { intlLocale } from '@/lib/i18n/intl-locale';
 import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
-import { ECONOMIC_KINDS, fmtReleaseTimeForViewer, type EconomicEvent } from '@/lib/market-data/economic-kinds';
+import { ECONOMIC_KINDS, economyHref, fmtReleaseTimeForViewer, type EconomicEvent } from '@/lib/market-data/economic-kinds';
 import { leadingTicker, notificationSource } from '@/lib/notifications/notification-href';
 
 function formatRelativeTime(dateString: string, language: string): string {
@@ -127,6 +127,7 @@ const TYPE_ICONS: Partial<Record<Notification['type'], LucideIcon>> = {
   referral: Crown,
   billing: CreditCard,
   release_notes: Megaphone,
+  saved_screen: Filter,
 };
 
 function GenericIcon({ type }: { type: Notification['type'] }) {
@@ -225,6 +226,11 @@ function NotificationIcon({ n }: { n: Notification }) {
     if (tickers.length > 1) return <LogoStack tickers={tickers} direction={null} />;
   }
 
+  // Pro results recap: "SYM:earnings_recap:DATE" (lib/earnings/recap-run.ts).
+  if (n.type === 'earnings' && n.entity_type === 'stock' && n.entity_id) {
+    return <MoveLogo ticker={n.entity_id.split(':')[0]} direction={null} />;
+  }
+
   if (n.type === 'price_move' && n.entity_type === 'portfolio') {
     const tickers = parseTickersFromMessage(n.message ?? '');
     return tickers.length > 0
@@ -248,8 +254,8 @@ interface NotificationItemProps {
 
 /**
  * Morning-of economic releases. Not a single Link like the other cards: each
- * release links out to where it is published, so the card holds several
- * links instead of being one. Times re-render in the reader's own zone; the
+ * release links to its /tools/economy page (or out to where it is published,
+ * for kinds without one), so the card holds several links instead of being one. Times re-render in the reader's own zone; the
  * stored message (ET times) shows until the day's events load.
  */
 function EconomicNotification({ notification, date, onRead }: { notification: Notification; date: string; onRead: () => void }) {
@@ -291,12 +297,18 @@ function EconomicNotification({ notification, date, onRead }: { notification: No
           <ul className="space-y-0.5">
             {events.filter((e) => prefs.economicKinds.includes(e.kind)).map((e) => {
               const meta = ECONOMIC_KINDS[e.kind];
+              const page = economyHref(e.kind);
+              const linkClass = 'inline-flex items-center gap-0.5 font-medium text-foreground/85 hover:text-primary';
               return (
                 <li key={e.id} className="flex flex-wrap items-center gap-x-1.5 text-sm leading-snug text-muted-foreground">
-                  <a href={meta.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-medium text-foreground/85 hover:text-primary">
-                    {meta.name}
-                    <ArrowUpRight className="h-3 w-3" aria-hidden />
-                  </a>
+                  {page ? (
+                    <Link href={page} className={linkClass}>{meta.name}</Link>
+                  ) : (
+                    <a href={meta.sourceUrl} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                      {meta.name}
+                      <ArrowUpRight className="h-3 w-3" aria-hidden />
+                    </a>
+                  )}
                   <span className="tabular-nums">{fmtReleaseTimeForViewer(e.release_at, t)}</span>
                   {meta.watchUrl && (
                     <a href={meta.watchUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground/85 hover:text-primary">
