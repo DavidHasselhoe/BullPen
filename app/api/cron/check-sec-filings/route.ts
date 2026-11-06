@@ -9,7 +9,12 @@
  * statements (lib/edgar/sec-statements.ts). A 10-Q reached EDGAR a median
  * 4.1h after the release for the Nasdaq-100's Q3 2026; TwelveData took days.
  *
- * Free: EDGAR only, no TwelveData credits, no AI. Nothing due costs three
+ * Then the earnings-recap step (lib/earnings/recap-run.ts): tracked stocks
+ * that reported today or yesterday get one shared AI recap of their 8-K press
+ * release, sent to the Pro readers who track them. It is the only step that
+ * spends (AI, once per report); `?dryRun=1` stops it before the spend.
+ *
+ * 10-Q step: EDGAR only, no TwelveData credits, no AI. Nothing due costs three
  * cache reads. Each due company is one ~25KB submissions request until its
  * filing lands, then one companyfacts request. Requests are sequential and
  * paced well under SEC's 10/s limit.
@@ -25,8 +30,11 @@ import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
 import { findPeriodicFiling, storeSecStatements, secStatementsKey, type SecStatements } from '@/lib/edgar/sec-statements';
 import type { EarningsCalendarItem, IncomeStatementPeriod } from '@/lib/twelvedata/twelvedata-client';
 import { sleep } from '@/lib/utils';
+import { runEarningsRecaps } from '@/lib/earnings/recap-run';
 
-export const maxDuration = 60;
+// The 10-Q step keeps its 45s budget; the recaps follow, and a release read takes 10-25s.
+export const maxDuration = 180;
+const RECAP_DEADLINE_MS = 150_000;
 
 const LOOKBACK_DAYS = 10;
 /** A quarter ending this close before a report is the one it reported; the quarter before ends 100+ days back. */
@@ -89,9 +97,15 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     }
   }
 
+  const recaps = await runEarningsRecaps({ dryRun, deadline: started + RECAP_DEADLINE_MS }).catch((err) => {
+    errors.push(`recaps: ${err instanceof Error ? err.message : String(err)}`);
+    return null;
+  });
+  if (recaps?.errors.length) errors.push(...recaps.errors.map((e) => `recap ${e}`));
+
   if (errors.length) console.error('[check-sec-filings]', errors);
   // withCronReport turns each array into a `<key>_count` property.
-  return NextResponse.json({ reported: symbols.length, due: due.length, ...(dryRun && { dryRun: true }), stored, waiting, found, errors });
+  return NextResponse.json({ reported: symbols.length, due: due.length, ...(dryRun && { dryRun: true }), stored, waiting, found, recaps, errors });
 }
 
 export const GET = withCronReport('check-sec-filings', handleGET);

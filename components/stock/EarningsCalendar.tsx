@@ -19,6 +19,7 @@ import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useEarningsHistory } from '@/hooks/use-earnings-history';
 import { DeltaBar } from '@/components/viz/DeltaBar';
 import { EarningsEmailSignup } from '@/components/stock/EarningsEmailSignup';
+import { EarningsRecap, useEarningsRecap } from '@/components/stock/EarningsRecap';
 import type { EarningsCalendar as EarningsItem } from '@/lib/finnhub/finnhub-client';
 import { fiscalLabel } from '@/lib/finance/fiscal-label';
 import { todayET } from '@/lib/dates/calendar-format';
@@ -53,6 +54,8 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
   const today = todayET();
 
   const { data, isLoading } = useEarningsHistory(ticker);
+  // Started here, beside the history, so the recap arrives with the card instead of after it.
+  const { data: recap } = useEarningsRecap(ticker);
 
   if (isLoading) {
     return (
@@ -186,6 +189,8 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
             {t('earningsDateNotAnnounced')}
           </p>
         )}
+
+        <EarningsRecap data={recap} />
 
         {/* Past earnings — actual vs estimate bars */}
         {recent.length > 0 && (
