@@ -1,5 +1,69 @@
 [
   {
+    "date": "2026-11-06",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Get a push a few minutes after the US market opens with how your portfolio is doing, and another at the close. Turn either one off in Settings",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Price alerts now check every few minutes while the market is open instead of once an hour, and a price level alert fires once when the price crosses it instead of every day after"
+      },
+      {
+        "type": "new",
+        "text": "Pro: when a stock you hold or watch reports earnings, get a three point recap of the results in plain words, written from the company release",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "Dividends on Holdings: see each holding's next payment. Pro adds a 12 month income calendar, your projected yearly income and a note on payday"
+      },
+      {
+        "type": "new",
+        "text": "Save a screener search and come back to it later. Pro saves as many as you like and gets told when a new stock matches",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Pro: the market close push and the morning email now say in one line why your biggest mover moved"
+      },
+      {
+        "type": "improved",
+        "text": "The Economy page is rebuilt: what comes out this week, small charts of the recent trend for each release, and a short summary of where the US economy stands"
+      },
+      {
+        "type": "improved",
+        "text": "Economic release alerts now say what the number means, like the highest reading in a year, and link to that release's page on BullPen"
+      },
+      {
+        "type": "improved",
+        "text": "Economic release times show only your local time if you are in the US, and your local time plus New York time everywhere else"
+      },
+      {
+        "type": "improved",
+        "text": "The morning email now arrives in the morning wherever you are, including the US"
+      },
+      {
+        "type": "improved",
+        "text": "The upgrade page now lists everything Pro includes, and free accounts get a look at some Pro panels before deciding"
+      },
+      {
+        "type": "improved",
+        "text": "Watchlist, Alerts and Notifications show a preview of what you get before you sign in"
+      },
+      {
+        "type": "fixed",
+        "text": "Undo after a Replace existing import now brings back the holdings it replaced"
+      },
+      {
+        "type": "fixed",
+        "text": "Adding a holding now tells you if part of it failed to save, instead of saving it without its purchase record"
+      }
+    ]
+  },
+  {
     "date": "2026-11-05",
     "entries": [
       {
@@ -36,6 +100,10 @@
       {
         "type": "fixed",
         "text": "If part of an import fails to save, the holding it was saving is put back as it was instead of being left half done"
+      },
+      {
+        "type": "fixed",
+        "text": "Pro members no longer see a 5 alert limit on the Alerts page. That limit only applies to free accounts"
       }
     ]
   },
