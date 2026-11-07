@@ -12,9 +12,9 @@
  *
  * The instance lives in `globalThis` so it survives across warm Vercel invocations
  * on the same process / Node.js instance.
+ *
+ * Uses Node's built-in WebSocket (global since Node 22; Vercel runs 24.x).
  */
-
-import WebSocket from 'ws';
 
 const WS_URL = 'wss://ws.twelvedata.com/v1/quotes/price';
 
@@ -187,7 +187,7 @@ function connect(state: ManagerState): void {
   const ws = new WebSocket(`${WS_URL}?apikey=${encodeURIComponent(apiKey)}`);
   state.ws = ws;
 
-  ws.on('open', () => {
+  ws.addEventListener('open', () => {
     // Subscribe to all currently-wanted symbols
     const wanted = computeWantedSymbols(state);
     if (wanted.size > 0) {
@@ -204,9 +204,11 @@ function connect(state: ManagerState): void {
     }, HEARTBEAT_MS);
   });
 
-  ws.on('message', (data: Buffer | string) => {
+  ws.addEventListener('message', (event) => {
     try {
-      const raw = JSON.parse(typeof data === 'string' ? data : data.toString('utf8')) as TwelveDataPriceEvent;
+      // TwelveData sends text frames; anything else is not a price event.
+      if (typeof event.data !== 'string') return;
+      const raw = JSON.parse(event.data) as TwelveDataPriceEvent;
       // Only forward actual price events
       if (!raw.symbol || raw.event === 'subscribe-status' || raw.event === 'unsubscribe-status') return;
 
@@ -228,12 +230,12 @@ function connect(state: ManagerState): void {
     }
   });
 
-  ws.on('error', (err) => {
-    console.error('[WsManager] WebSocket error', err);
+  ws.addEventListener('error', (event) => {
+    console.error('[WsManager] WebSocket error', (event as ErrorEvent).message ?? event.type);
   });
 
-  ws.on('close', (code, reason) => {
-    console.warn(`[WsManager] Connection closed (${code} ${reason.toString()})`);
+  ws.addEventListener('close', ({ code, reason }) => {
+    console.warn(`[WsManager] Connection closed (${code} ${reason})`);
     if (state.heartbeatTimer) {
       clearInterval(state.heartbeatTimer);
       state.heartbeatTimer = null;
