@@ -57,7 +57,7 @@
   "paywallContentUpgradeCta": "Actualizar a Pro · ${{price}}/mes",
   "paywallContentMaybeLater": "Quizás después",
   "upgradeSuccessTitle": "¡Bienvenido a Pro!",
-  "upgradeSuccessDescription": "Gracias por actualizar. Tu prueba de {{trialDays}} días está activa, y aquí está todo lo que desbloqueaste.",
+  "upgradeSuccessDescription": "Gracias por actualizar. Tu prueba gratuita ya está activa, y aquí tienes todo lo que acabas de desbloquear.",
   "upgradeSuccessStartExploring": "Comienza a explorar",
   "upgradeBackHome": "Inicio",
   "upgradeFaqTrialQ": "¿Hay una prueba gratuita?",

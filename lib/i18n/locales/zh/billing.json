@@ -57,7 +57,7 @@
   "paywallContentUpgradeCta": "升级到 Pro · ${{price}}/月",
   "paywallContentMaybeLater": "稍后再说",
   "upgradeSuccessTitle": "欢迎来到 Pro！",
-  "upgradeSuccessDescription": "感谢你的升级。你的 {{trialDays}} 天试用期已开启，以下是你刚解锁的所有功能。",
+  "upgradeSuccessDescription": "感谢您的升级。您的免费试用已开始，以下是您刚刚解锁的全部功能。",
   "upgradeSuccessStartExploring": "开始探索",
   "upgradeBackHome": "首页",
   "upgradeFaqTrialQ": "有免费试用吗？",

@@ -57,7 +57,7 @@
   "paywallContentUpgradeCta": "Oppgrader til Pro · ${{price}}/mnd",
   "paywallContentMaybeLater": "Kanskje senere",
   "upgradeSuccessTitle": "Velkommen til Pro!",
-  "upgradeSuccessDescription": "Takk for at du oppgraderer. Din {{trialDays}}-dagers prøveperiode er aktiv, og her er alt du nettopp låste opp.",
+  "upgradeSuccessDescription": "Takk for at du oppgraderte. Prøveperioden din er nå aktiv, og her er alt du nettopp har låst opp.",
   "upgradeSuccessStartExploring": "Begynn å utforske",
   "upgradeBackHome": "Hjem",
   "upgradeFaqTrialQ": "Finnes det en gratis prøveperiode?",

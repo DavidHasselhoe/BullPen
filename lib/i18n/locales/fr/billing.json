@@ -57,7 +57,7 @@
   "paywallContentUpgradeCta": "Passer à Pro · ${{price}}/mois",
   "paywallContentMaybeLater": "Peut-être plus tard",
   "upgradeSuccessTitle": "Bienvenue à Pro !",
-  "upgradeSuccessDescription": "Merci de votre abonnement. Votre essai de {{trialDays}} jours est actif, et voici tout ce que vous venez de déverrouiller.",
+  "upgradeSuccessDescription": "Merci pour votre passage à la version supérieure. Votre essai gratuit est actif, et voici tout ce que vous venez de débloquer.",
   "upgradeSuccessStartExploring": "Commencer l'exploration",
   "upgradeBackHome": "Accueil",
   "upgradeFaqTrialQ": "Y a-t-il un essai gratuit ?",

@@ -57,7 +57,7 @@
   "paywallContentUpgradeCta": "Pro にアップグレード · ${{price}}/月",
   "paywallContentMaybeLater": "また後で",
   "upgradeSuccessTitle": "Pro へようこそ！",
-  "upgradeSuccessDescription": "アップグレードありがとうございます。{{trialDays}} 日間の無料トライアルが開始されました。以下がアンロックされた機能です。",
+  "upgradeSuccessDescription": "アップグレードありがとうございます。無料トライアルが開始されました。今回解放された機能をご紹介します。",
   "upgradeSuccessStartExploring": "探索を開始",
   "upgradeBackHome": "ホーム",
   "upgradeFaqTrialQ": "無料トライアルはありますか？",
