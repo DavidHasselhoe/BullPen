@@ -30,6 +30,7 @@ import { logAiCall } from '@/lib/billing/log-ai-call';
 import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 import { createDailyBriefReadyNotification } from '@/lib/notifications/notification-creators';
 import { isPro, tierFromUser } from '@/lib/billing/tier';
+import { fetchAllPages } from '@/lib/supabase/paging';
 
 // 300s is Vercel's ceiling and the hard limit this route lives inside. Under
 // web_search_20250305 the whole invocation historically finished well within
@@ -802,12 +803,16 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
   after(async () => {
     try {
       // Invite/referral Pro lives in pro_bonus_until, not account_tier.
-      const { data: candidates } = await supabase
-        .from('users')
-        .select('id, account_tier, role, pro_bonus_until')
-        .or(`role.eq.admin,account_tier.gte.3,pro_bonus_until.gt.${new Date().toISOString()}`) as unknown as
-        { data: Array<{ id: string; account_tier: number | null; role: string | null; pro_bonus_until: string | null }> | null };
-      const proUsers = (candidates ?? []).filter((u) => isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until)));
+      const nowIso = new Date().toISOString();
+      const { rows: candidates, error: candidatesError } = await fetchAllPages<{ id: string; account_tier: number | null; role: string | null; pro_bonus_until: string | null }>(() =>
+        supabase
+          .from('users')
+          .select('id, account_tier, role, pro_bonus_until')
+          .or(`role.eq.admin,account_tier.gte.3,pro_bonus_until.gt.${nowIso}`)
+          .order('id'),
+      );
+      if (candidatesError) console.error('[generate-daily-brief] pro user read failed:', candidatesError);
+      const proUsers = candidates.filter((u) => isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until)));
       for (const u of proUsers) {
         await createDailyBriefReadyNotification(u.id, { title: titleLine, publishedDate: todayET });
       }

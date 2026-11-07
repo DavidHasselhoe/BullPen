@@ -603,7 +603,7 @@ export async function notifyNewAcademyCourse(course: { slug: string; title: stri
   const entityId = `academy:new_course:${course.slug}`;
 
   const progress = await fetchAllPages<{ user_id: string }>(() =>
-    supabase.from('academy_user_course_progress').select('user_id').order('user_id'),
+    supabase.from('academy_user_course_progress').select('user_id').order('user_id').order('course_id'),
   );
   if (progress.error) throw new Error(progress.error);
   const userIds = [...new Set(progress.rows.map((r) => r.user_id))];

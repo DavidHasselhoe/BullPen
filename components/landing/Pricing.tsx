@@ -6,6 +6,7 @@ import { Icon } from './Icon';
 import { PRICING, FREE_WATCHLISTS, FREE_ALERT_STOCKS } from '@/lib/billing/entitlements';
 import { QUOTAS } from '@/lib/billing/quotas';
 import { renewalTerms } from '@/lib/billing/trial-copy';
+import { useTrialDays } from '@/hooks/use-trial-days';
 
 interface Props {
   onSignUp: () => void;
@@ -82,6 +83,9 @@ const PLANS: Plan[] = [
 
 export function Pricing({ onSignUp, onSubscribe }: Props) {
   const [annual, setAnnual] = useState(true);
+  // A signed-in invitee gets a longer trial, and checkout starts straight from
+  // this section, so its disclosure has to state their real length.
+  const { days: trialDays } = useTrialDays();
 
   return (
     <section id="pricing" className="landing-section">
@@ -204,7 +208,7 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                       }}
                     >
                       {/* Was "Most popular": not true (almost every account is free). */}
-                      {PRICING.trialDays} days free
+                      {trialDays} days free
                     </div>
                   )}
 
@@ -235,7 +239,7 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                     className={`btn btn-${p.ctaStyle}`}
                     style={{ justifyContent: 'center', padding: '14px', fontSize: 14, marginBottom: 24 }}
                   >
-                    {p.cta}
+                    {p.name === 'Pro' ? `Start free ${trialDays}-day trial` : p.cta}
                     <Icon name="arrowRight" size={14} />
                   </button>
 
@@ -252,10 +256,10 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                       }}
                     >
                       <p style={{ margin: 0, color: 'var(--fg-muted)' }}>
-                        {renewalTerms(annual ? 'annual' : 'monthly').chargeLine}
+                        {renewalTerms(annual ? 'annual' : 'monthly', { days: trialDays }).chargeLine}
                       </p>
                       <p style={{ margin: '2px 0 0' }}>
-                        {renewalTerms(annual ? 'annual' : 'monthly').cancelLine}
+                        {renewalTerms(annual ? 'annual' : 'monthly', { days: trialDays }).cancelLine}
                       </p>
                     </div>
                   )}
@@ -313,7 +317,7 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
                 window was previously not mentioned anywhere on this page. */}
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
-              {PRICING.trialDays}-day free trial
+              {trialDays}-day free trial
             </span>
             <span style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>

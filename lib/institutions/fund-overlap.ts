@@ -58,7 +58,8 @@ async function pagedHoldings(filingIds: string[], column: 'symbol' | 'cusip', va
       .in(column, values)
       .is('put_call', null)
       .order('filing_id')
-      .order('cusip'),
+      .order('cusip')
+      .order('id'),
   );
   if (error) throw new Error(error);
   return rows;
