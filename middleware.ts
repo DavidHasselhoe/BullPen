@@ -129,16 +129,21 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
         },
       },
     });
-    // Refresh session so Server Actions and Server Components see it
-    const { data: { user } } = await supabase.auth.getUser();
+    // Refresh the session (an expired token is refreshed inside, which rewrites
+    // the cookies) so Server Actions and Server Components see it. getClaims
+    // verifies the JWT locally against the project's cached ES256 key, where
+    // getUser() was a round trip to Supabase Auth on every signed-in page view.
+    // A token without an asymmetric key falls back to getUser() on its own.
+    const { data } = await supabase.auth.getClaims();
+    const userId = data?.claims.sub;
 
     // Return-visit tracking (user_active_days, migration 182): server-side,
     // so it counts every account whether or not it accepted analytics cookies.
     // Runs after the response; a failure only loses that day's stamp.
-    if (user) {
+    if (userId) {
       const day = new Date().toISOString().slice(0, 10);
       if (day !== stampedDay) { stampedToday.clear(); stampedDay = day; }
-      const key = `${user.id}:${day}`;
+      const key = `${userId}:${day}`;
       if (!stampedToday.has(key)) {
         stampedToday.add(key);
         event.waitUntil(Promise.resolve(supabase.rpc('touch_active_day')).then(
