@@ -65,6 +65,7 @@ import { MARKET_CAP_PROMOTION_FLOOR, dropDelistedTickers } from '@/lib/market-da
 import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
 import { notifyHealthScoreChanges, notifyQuarterlyHealthChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
 import type { ScreenerRow } from '@/app/api/screener/route';
+import { chunk } from '@/lib/utils';
 
 /** /statistics costs ~53 credits/symbol (matches app/api/screener/refresh/
  *  route.ts's CREDITS_PER_SYMBOL) — reserved against the same shared budget
@@ -240,12 +241,6 @@ async function readCachedFinancials(sym: string): Promise<{
     cashflow: cashflow ?? [],
     degraded: !income || !balance || !cashflow,
   };
-}
-
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
 }
 
 /**

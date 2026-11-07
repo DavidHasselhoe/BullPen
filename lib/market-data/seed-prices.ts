@@ -24,6 +24,7 @@ import { WsManager } from './ws-manager';
 import { getStockQuotes, isOutsideRegularSessionET, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { rmget, rset } from '@/lib/cache/redis-cache';
 import { secondsUntilNextOpenET } from '@/lib/market-data/trading-day';
+import { chunk } from '@/lib/utils';
 
 export interface SeededQuote {
   price: number;
@@ -136,10 +137,7 @@ export async function seedPrices(
   // at connect time and un-ticked symbols (e.g. pre-market) never get a
   // second chance.
   const seedTtl = seedTtlSeconds();
-  const chunks: string[][] = [];
-  for (let i = 0; i < stillNeeded.length; i += SEED_CHUNK) {
-    chunks.push(stillNeeded.slice(i, i + SEED_CHUNK));
-  }
+  const chunks = chunk(stillNeeded, SEED_CHUNK);
 
   await Promise.all(
     chunks.map(async (chunk) => {

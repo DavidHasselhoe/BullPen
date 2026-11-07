@@ -8,9 +8,10 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ScreenerRow } from '@/app/api/screener/route';
-import { fetchAllPages, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
+import { loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
 import { canUseScreenAlerts, type SavedScreenScope } from '@/lib/screener/saved-screen-limits';
 import { createNotification } from '@/lib/notifications/notifications-db';
+import { fetchAllPages, selectInChunks } from '@/lib/supabase/paging';
 
 const NUMERIC_KEYS = [
   'healthScoreMin', 'healthScoreMax', 'marketCapMin', 'marketCapMax', 'peMin', 'peMax', 'pbMin', 'pbMax',
@@ -139,15 +140,13 @@ export async function runSavedScreenAlerts(
   summary.screens = presets.length;
   if (presets.length === 0) return summary;
 
-  // ponytail: one .in() of every alert owner; chunk it if alert owners pass a few hundred (URL length).
   const userIds = [...new Set(presets.map((p) => p.user_id))];
-  const { data: users, error: userErr } = await supabase
-    .from('users')
-    .select('id, account_tier, role, pro_bonus_until, settings')
-    .in('id', userIds);
-  if (userErr) throw new Error(`users: ${userErr.message}`);
+  const { rows: users, error: userErr } = await selectInChunks<UserRow, string>(userIds, (ids) =>
+    supabase.from('users').select('id, account_tier, role, pro_bonus_until, settings').in('id', ids),
+  );
+  if (userErr) throw new Error(`users: ${userErr}`);
   const eligibleUsers = new Set(
-    ((users ?? []) as UserRow[])
+    users
       .filter((u) => canUseScreenAlerts(u.account_tier, u.role, u.pro_bonus_until))
       .filter((u) => u.settings?.notifications?.saved_screen !== false)
       .map((u) => u.id),

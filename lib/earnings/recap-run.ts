@@ -26,6 +26,7 @@ import { checkRateLimit } from '@/lib/security/rate-limiter';
 import { sleep } from '@/lib/utils';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 import { fetchPressRelease, generateRecap, recapKey, storeRecap, type EarningsRecap } from '@/lib/ai/earnings-recap';
+import { fetchAllPages, selectInChunks } from '@/lib/supabase/paging';
 
 /** Generations a day, all users together. ~$0.03 each (measured, see the hand-over), so $1.20 at worst. */
 const DAILY_GENERATIONS = 40;
@@ -48,16 +49,12 @@ type Tracker = { userId: string; owned: boolean };
 
 async function pagedRows(table: 'user_holdings' | 'user_watchlist'): Promise<Array<{ user_id: string; symbol: string }>> {
   const supabase = createServerClient();
-  const out: Array<{ user_id: string; symbol: string }> = [];
-  for (let from = 0; ; from += 1000) {
-    let q = supabase.from(table).select('user_id, symbol').eq('alerts_enabled', true).order('id').range(from, from + 999);
-    if (table === 'user_holdings') q = q.or(OPEN_POSITION_FILTER);
-    const { data, error } = await q;
-    if (error) throw new Error(`${table}: ${error.message}`);
-    out.push(...((data ?? []) as Array<{ user_id: string; symbol: string }>));
-    if (!data || data.length < 1000) break;
-  }
-  return out;
+  const { rows, error } = await fetchAllPages<{ user_id: string; symbol: string }>(() => {
+    const q = supabase.from(table).select('user_id, symbol').eq('alerts_enabled', true);
+    return (table === 'user_holdings' ? q.or(OPEN_POSITION_FILTER) : q).order('id');
+  });
+  if (error) throw new Error(`${table}: ${error}`);
+  return rows;
 }
 
 /** symbol → who tracks it. Holdings first, so held-and-watched counts as owned. */
@@ -85,17 +82,18 @@ async function notifyRecap(recap: EarningsRecap, name: string, who: Tracker[]): 
   const supabase = createServerClient();
   const entityId = recapEntityId(recap.symbol, recap.reportDate);
   const ids = who.map((w) => w.userId);
-  const [{ data: users, error: usersErr }, { data: already, error: doneErr }] = await Promise.all([
-    supabase.from('users').select('id, settings, account_tier, role, pro_bonus_until').in('id', ids),
-    supabase.from('notifications').select('user_id').eq('entity_id', entityId).in('user_id', ids),
-  ]);
-  if (usersErr || doneErr) throw new Error(`recipients: ${(usersErr ?? doneErr)!.message}`);
-  const done = new Set(((already ?? []) as Array<{ user_id: string }>).map((r) => r.user_id));
-  let sent = 0;
-  for (const u of (users ?? []) as Array<{
+  type UserRow = {
     id: string; settings: { notifications?: Record<string, boolean> } | null;
     account_tier: number | null; role: string | null; pro_bonus_until: string | null;
-  }>) {
+  };
+  const [{ rows: users, error: usersErr }, { rows: already, error: doneErr }] = await Promise.all([
+    selectInChunks<UserRow, string>(ids, (slice) => supabase.from('users').select('id, settings, account_tier, role, pro_bonus_until').in('id', slice)),
+    selectInChunks<{ user_id: string }, string>(ids, (slice) => supabase.from('notifications').select('user_id').eq('entity_id', entityId).in('user_id', slice)),
+  ]);
+  if (usersErr || doneErr) throw new Error(`recipients: ${usersErr ?? doneErr}`);
+  const done = new Set(already.map((r) => r.user_id));
+  let sent = 0;
+  for (const u of users) {
     if (done.has(u.id) || !isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until))) continue;
     if (u.settings?.notifications?.upcoming_earnings === false) continue;
     const res = await createNotification({

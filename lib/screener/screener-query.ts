@@ -11,6 +11,7 @@ import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
 import { DOW30_TICKERS } from '@/lib/market-data/dow30';
 import type { IndexId } from '@/lib/market-data/index-membership';
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
+import { fetchAllPages } from '@/lib/supabase/paging';
 
 /** Every bound is optional. marketCap is raw USD here (the UI and Bull both speak billions and convert before calling). */
 export interface ScreenerFilterParams {
@@ -34,34 +35,6 @@ export interface ScreenerFilterParams {
   revenueGrowthMax?: number;
   week52ChangeMin?: number;
   week52ChangeMax?: number;
-}
-
-/**
- * PostgREST caps an unbounded `select()` at 1000 rows and says nothing about
- * it. Three screener queries were silently truncating because of that: the
- * "All" view returned 997 of 3053 rows, the default active view 1000 of 1219,
- * and the `countOnly` query behind the "View all (N)" pill read 999. The first
- * two reached the Pro CSV/PDF export, so a paid file was quietly missing two
- * thirds of the universe, which is the worst way for a paid feature to fail.
- *
- * Callers must supply a stable sort. `market_cap` is not unique, so every call
- * site adds `ticker` as a tiebreaker to stop rows shifting between pages.
- */
-const PAGE = 1000;
-
-export async function fetchAllPages<T>(
-  build: () => PromiseLike<{ data: T[] | null; error: { message: string } | null }> & {
-    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-  }
-): Promise<{ rows: T[]; error: string | null }> {
-  const rows: T[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await build().range(from, from + PAGE - 1);
-    if (error) return { rows, error: error.message };
-    const page = data ?? [];
-    rows.push(...page);
-    if (page.length < PAGE) return { rows, error: null };
-  }
 }
 
 const INDEX_TICKERS: Record<IndexId, string[]> = {

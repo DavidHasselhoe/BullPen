@@ -21,6 +21,7 @@ import { addDays, todayET } from '@/lib/dates/calendar-format';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
 import { logger } from '@/lib/utils/logger';
 import { SITE_URL } from '@/lib/site';
+import { fetchAllPages } from '@/lib/supabase/paging';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 const UTM = 'utm_source=email&utm_medium=results&utm_campaign=earnings_results';
@@ -244,14 +245,10 @@ export async function sendResultsEmails(opts: { dryRun?: boolean; today?: string
   const today = opts.today ?? todayET();
   const run: ResultsRun = { reports: 0, sent: 0, failed: 0, dryRun: !!opts.dryRun };
 
-  // Paginated: PostgREST silently caps an unbounded select at 1000.
-  const subs: SubRow[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await table().select('*').not('confirmed_at', 'is', null).is('unsubscribed_at', null).order('id').range(from, from + 999);
-    if (error) throw new Error(error.message);
-    subs.push(...((data ?? []) as SubRow[]));
-    if (!data || data.length < 1000) break;
-  }
+  const { rows: subs, error } = await fetchAllPages<SubRow>(() =>
+    table().select('*').not('confirmed_at', 'is', null).is('unsubscribed_at', null).order('id'),
+  );
+  if (error) throw new Error(error);
   if (!subs.length) return run;
 
   // Cache only: the calendar crons keep these days warm, and a send must not spend TwelveData credits.

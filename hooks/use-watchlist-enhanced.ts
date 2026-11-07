@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
+import { chunk } from '@/lib/utils';
 
 export interface HealthScore {
   score: number;
@@ -36,8 +37,7 @@ export function useWatchlistEnhanced(symbols: string[]) {
     queryFn: async (): Promise<EnhancedDataMap> => {
       // The route takes at most 50 symbols and the page sends every list's;
       // past 50 a single request was a 400 and every card lost its data.
-      const chunks: string[][] = [];
-      for (let i = 0; i < sorted.length; i += ENHANCED_CHUNK) chunks.push(sorted.slice(i, i + ENHANCED_CHUNK));
+      const chunks = chunk(sorted, ENHANCED_CHUNK);
       const parts = await Promise.all(chunks.map(async (chunk) => {
         const res = await fetch('/api/watchlist/enhanced', {
           method: 'POST',

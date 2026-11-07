@@ -241,6 +241,7 @@ export async function createPortfolioRecapNotification(
 
 import { describeAlert, describeAlertKey, type UserAlert } from '@/types/alerts';
 import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
+import { fetchAllPages, selectInChunks } from '@/lib/supabase/paging';
 
 /**
  * Create a notification when a user-defined alert is triggered by the
@@ -353,29 +354,27 @@ export async function notifyHealthScoreChanges(changes: HealthScoreChange[]): Pr
 async function healthAlertAudience(symbols: string[]): Promise<{ userSymbols: Map<string, Set<string>>; companyNames: Map<string, string> }> {
   const supabase = createServerClient();
 
+  type Row = { user_id: string; symbol: string; company_name: string | null };
   const [watchlistRes, holdingsRes] = await Promise.all([
-    supabase.from('user_watchlist').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true) as unknown as
-      Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string | null }> | null }>,
-    supabase.from('user_holdings').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true).or(OPEN_POSITION_FILTER) as unknown as
-      Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string | null }> | null }>,
+    fetchAllPages<Row>(() => supabase.from('user_watchlist').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true).order('id')),
+    fetchAllPages<Row>(() => supabase.from('user_holdings').select('user_id, symbol, company_name').in('symbol', symbols).eq('alerts_enabled', true).or(OPEN_POSITION_FILTER).order('id')),
   ]);
 
   const userSymbols = new Map<string, Set<string>>();
   const companyNames = new Map<string, string>();
-  for (const row of [...(watchlistRes.data ?? []), ...(holdingsRes.data ?? [])]) {
+  for (const row of [...watchlistRes.rows, ...holdingsRes.rows]) {
     if (!userSymbols.has(row.user_id)) userSymbols.set(row.user_id, new Set());
     userSymbols.get(row.user_id)!.add(row.symbol);
     if (row.company_name && !companyNames.has(row.symbol)) companyNames.set(row.symbol, row.company_name);
   }
   if (userSymbols.size === 0) return { userSymbols, companyNames };
 
-  const { data: users } = await supabase
-    .from('users')
-    .select('id, settings')
-    .in('id', [...userSymbols.keys()]) as unknown as
-    { data: Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }> | null };
+  const { rows: users } = await selectInChunks<{ id: string; settings: { notifications?: Record<string, boolean> } | null }, string>(
+    [...userSymbols.keys()],
+    (ids) => supabase.from('users').select('id, settings').in('id', ids),
+  );
   const enabledUserIds = new Set(
-    (users ?? [])
+    users
       .filter((u) => u.settings?.notifications?.health_score_change !== false)
       .map((u) => u.id)
   );
@@ -603,28 +602,22 @@ export async function notifyNewAcademyCourse(course: { slug: string; title: stri
   const supabase = createServerClient();
   const entityId = `academy:new_course:${course.slug}`;
 
-  // Paginated: PostgREST silently caps an unbounded select at 1000.
-  const learners = new Set<string>();
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase
-      .from('academy_user_course_progress')
-      .select('user_id')
-      .order('user_id')
-      .range(from, from + 999);
-    if (error) throw error;
-    for (const r of data ?? []) learners.add(r.user_id as string);
-    if (!data || data.length < 1000) break;
-  }
-  if (learners.size === 0) return 0;
-  const userIds = [...learners];
+  const progress = await fetchAllPages<{ user_id: string }>(() =>
+    supabase.from('academy_user_course_progress').select('user_id').order('user_id'),
+  );
+  if (progress.error) throw new Error(progress.error);
+  const userIds = [...new Set(progress.rows.map((r) => r.user_id))];
+  if (userIds.length === 0) return 0;
 
-  const [{ data: users, error: usersError }, { data: existing }] = await Promise.all([
-    supabase.from('users').select('id, settings').in('id', userIds),
-    supabase.from('notifications').select('user_id').eq('entity_id', entityId).in('user_id', userIds),
+  const [{ rows: users, error: usersError }, { rows: existing }] = await Promise.all([
+    selectInChunks<{ id: string; settings: { notifications?: Record<string, boolean> } | null }, string>(
+      userIds, (ids) => supabase.from('users').select('id, settings').in('id', ids)),
+    selectInChunks<{ user_id: string }, string>(
+      userIds, (ids) => supabase.from('notifications').select('user_id').eq('entity_id', entityId).in('user_id', ids)),
   ]);
-  if (usersError) throw usersError;
-  const skip = new Set((existing ?? []).map((n) => n.user_id as string));
-  for (const u of (users ?? []) as Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }>) {
+  if (usersError) throw new Error(usersError);
+  const skip = new Set(existing.map((n) => n.user_id));
+  for (const u of users) {
     if (u.settings?.notifications?.new_course === false) skip.add(u.id);
   }
 
@@ -729,25 +722,19 @@ function quarterLabel(iso: string): string {
 export async function notifyInstitutionFilingChange(notice: InstitutionFilingNotice): Promise<number> {
   const supabase = createServerClient();
 
-  const { data: follows } = (await supabase
-    .from('user_institution_follows')
-    .select('user_id')
-    .eq('investor_id', notice.investorId)) as unknown as {
-    data: Array<{ user_id: string }> | null;
-  };
+  const { rows: follows } = await fetchAllPages<{ user_id: string }>(() =>
+    supabase.from('user_institution_follows').select('user_id').eq('investor_id', notice.investorId).order('user_id'),
+  );
 
-  const followerIds = (follows ?? []).map((f) => f.user_id);
+  const followerIds = follows.map((f) => f.user_id);
   if (followerIds.length === 0) return 0;
 
-  const { data: users } = (await supabase
-    .from('users')
-    .select('id, settings')
-    .in('id', followerIds)) as unknown as {
-    data: Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }> | null;
-  };
+  const { rows: users } = await selectInChunks<{ id: string; settings: { notifications?: Record<string, boolean> } | null }, string>(
+    followerIds, (ids) => supabase.from('users').select('id, settings').in('id', ids),
+  );
 
   // Absent means enabled, matching every other notification preference.
-  const enabled = (users ?? [])
+  const enabled = users
     .filter((u) => u.settings?.notifications?.institution_filing !== false)
     .map((u) => u.id);
   if (enabled.length === 0) return 0;
@@ -810,20 +797,16 @@ export async function notifyPoliticianTrades(notice: PoliticianTradesNotice): Pr
   if (trades.length === 0) return 0;
   const supabase = createServerClient();
 
-  const { data: follows } = (await supabase
-    .from('user_politician_follows')
-    .select('user_id')
-    .eq('politician_id', notice.politicianId)) as unknown as { data: Array<{ user_id: string }> | null };
-  const followerIds = (follows ?? []).map((f) => f.user_id);
+  const { rows: follows } = await fetchAllPages<{ user_id: string }>(() =>
+    supabase.from('user_politician_follows').select('user_id').eq('politician_id', notice.politicianId).order('user_id'),
+  );
+  const followerIds = follows.map((f) => f.user_id);
   if (followerIds.length === 0) return 0;
 
-  const { data: users } = (await supabase
-    .from('users')
-    .select('id, settings')
-    .in('id', followerIds)) as unknown as {
-    data: Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }> | null;
-  };
-  const enabled = (users ?? [])
+  const { rows: users } = await selectInChunks<{ id: string; settings: { notifications?: Record<string, boolean> } | null }, string>(
+    followerIds, (ids) => supabase.from('users').select('id, settings').in('id', ids),
+  );
+  const enabled = users
     .filter((u) => u.settings?.notifications?.politician_trades !== false)
     .map((u) => u.id);
   if (enabled.length === 0) return 0;
@@ -907,26 +890,25 @@ export async function notifyHoldersOfPoliticianTrades(
   const symbols = [...bySymbol.keys()];
   const supabase = createServerClient();
 
+  type Row = { user_id: string; symbol: string };
   const [held, watched] = await Promise.all([
-    supabase.from('user_holdings').select('user_id, symbol').in('symbol', symbols).or(OPEN_POSITION_FILTER),
-    supabase.from('user_watchlist').select('user_id, symbol').in('symbol', symbols),
+    fetchAllPages<Row>(() => supabase.from('user_holdings').select('user_id, symbol').in('symbol', symbols).or(OPEN_POSITION_FILTER).order('id')),
+    fetchAllPages<Row>(() => supabase.from('user_watchlist').select('user_id, symbol').in('symbol', symbols).order('id')),
   ]);
   const userSymbols = new Map<string, Set<string>>();
-  for (const r of [...((held.data ?? []) as { user_id: string; symbol: string }[]), ...((watched.data ?? []) as { user_id: string; symbol: string }[])]) {
+  for (const r of [...held.rows, ...watched.rows]) {
     userSymbols.set(r.user_id, (userSymbols.get(r.user_id) ?? new Set()).add(r.symbol.toUpperCase()));
   }
   if (userSymbols.size === 0) return 0;
 
-  const { data: users } = (await supabase
-    .from('users')
-    .select('id, settings, account_tier, role, pro_bonus_until')
-    .in('id', [...userSymbols.keys()])) as unknown as {
-    data: Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null; account_tier: number | null; role: string | null; pro_bonus_until: string | null }> | null;
-  };
+  const { rows: users } = await selectInChunks<
+    { id: string; settings: { notifications?: Record<string, boolean> } | null; account_tier: number | null; role: string | null; pro_bonus_until: string | null },
+    string
+  >([...userSymbols.keys()], (ids) => supabase.from('users').select('id, settings, account_tier, role, pro_bonus_until').in('id', ids));
 
   const entityId = `politician-holdings:${newest}`;
   let sent = 0;
-  for (const u of users ?? []) {
+  for (const u of users) {
     if (!isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until))) continue;
     if (u.settings?.notifications?.politician_trades_holdings === false) continue;
     const mine = [...(userSymbols.get(u.id) ?? [])].filter((s) => bySymbol.has(s));
@@ -980,19 +962,17 @@ export interface EconomicReleaseToday {
  */
 async function economicFollowers(): Promise<Array<{ id: string; kinds: Set<EconomicKind> }>> {
   const supabase = createServerClient();
-  const users: Array<{ id: string; kinds: Set<EconomicKind> }> = [];
-  // Paginated: PostgREST silently caps an unbounded select at 1000.
   // ponytail: reads every account's settings to treat a missing toggle as on; filter
   // in the query (economic_events is null or not 'false') once accounts number in the thousands.
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase.from('users').select('id, settings').order('id').range(from, from + 999);
-    if (error) throw error;
-    for (const u of data ?? []) {
-      const settings = (u.settings as { notifications?: Record<string, unknown> } & Record<string, unknown> | null) ?? {};
-      if (settings.notifications?.economic_events === false) continue;
-      users.push({ id: u.id as string, kinds: new Set(parseCalendarPrefs(settings[CALENDAR_PREFS_KEY]).economicKinds) });
-    }
-    if (!data || data.length < 1000) break;
+  const { rows, error } = await fetchAllPages<{ id: string; settings: unknown }>(() =>
+    supabase.from('users').select('id, settings').order('id'),
+  );
+  if (error) throw new Error(error);
+  const users: Array<{ id: string; kinds: Set<EconomicKind> }> = [];
+  for (const u of rows) {
+    const settings = (u.settings as { notifications?: Record<string, unknown> } & Record<string, unknown> | null) ?? {};
+    if (settings.notifications?.economic_events === false) continue;
+    users.push({ id: u.id, kinds: new Set(parseCalendarPrefs(settings[CALENDAR_PREFS_KEY]).economicKinds) });
   }
   return users;
 }
@@ -1014,13 +994,11 @@ export async function notifyEconomicEventsToday(date: string, events: EconomicRe
   if (users.length === 0) return 0;
   const userIds = users.map((u) => u.id);
 
-  // One query for everyone already told about today, instead of one per user.
-  const { data: existing } = await supabase
-    .from('notifications')
-    .select('user_id')
-    .eq('entity_id', entityId)
-    .in('user_id', userIds);
-  const done = new Set((existing ?? []).map((n) => n.user_id as string));
+  // One query per slice of users already told about today, instead of one per user.
+  const { rows: existing } = await selectInChunks<{ user_id: string }, string>(userIds, (ids) =>
+    supabase.from('notifications').select('user_id').eq('entity_id', entityId).in('user_id', ids),
+  );
+  const done = new Set(existing.map((n) => n.user_id));
 
   const et = (iso: string) =>
     new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' });
@@ -1067,10 +1045,12 @@ export async function notifyEconomicResults(event: EconomicResultEvent): Promise
 
   const users = (await economicFollowers()).filter((u) => u.kinds.has(event.kind));
   if (users.length === 0) return 0;
-  const { data: existing, error: existingError } = await supabase
-    .from('notifications').select('user_id').eq('entity_id', entityId).in('user_id', users.map((u) => u.id));
-  if (existingError) throw existingError;
-  const done = new Set((existing ?? []).map((n) => n.user_id as string));
+  const { rows: existing, error: existingError } = await selectInChunks<{ user_id: string }, string>(
+    users.map((u) => u.id),
+    (ids) => supabase.from('notifications').select('user_id').eq('entity_id', entityId).in('user_id', ids),
+  );
+  if (existingError) throw new Error(existingError);
+  const done = new Set(existing.map((n) => n.user_id));
 
   const title = enText(text.title);
   const message = text.message ? enText(text.message) : '';
@@ -1095,17 +1075,12 @@ async function usersTracking(symbols: string[], includeWatchlist: boolean): Prom
   const out = new Map<string, Set<string>>();
   if (symbols.length === 0) return out;
   for (const table of includeWatchlist ? (['user_holdings', 'user_watchlist'] as const) : (['user_holdings'] as const)) {
-    // Paginated: a popular stock can have more than PostgREST's silent 1000-row cap.
-    for (let from = 0; ; from += 1000) {
-      let q = supabase.from(table).select('user_id, symbol').in('symbol', symbols).eq('alerts_enabled', true);
-      if (table === 'user_holdings') q = q.or(OPEN_POSITION_FILTER);
-      const { data, error } = await q.order('user_id').range(from, from + 999);
-      if (error) throw error;
-      for (const r of (data ?? []) as { user_id: string; symbol: string }[]) {
-        out.set(r.user_id, (out.get(r.user_id) ?? new Set()).add(r.symbol.toUpperCase()));
-      }
-      if (!data || data.length < 1000) break;
-    }
+    const { rows, error } = await fetchAllPages<{ user_id: string; symbol: string }>(() => {
+      const q = supabase.from(table).select('user_id, symbol').in('symbol', symbols).eq('alerts_enabled', true);
+      return (table === 'user_holdings' ? q.or(OPEN_POSITION_FILTER) : q).order('id');
+    });
+    if (error) throw new Error(error);
+    for (const r of rows) out.set(r.user_id, (out.get(r.user_id) ?? new Set()).add(r.symbol.toUpperCase()));
   }
   return out;
 }
@@ -1131,10 +1106,12 @@ export async function notifyIndexMembershipChanges(events: IndexChangeEvent[]): 
   const userIds = [...new Set([...stockTrackers.keys(), ...fundHolders.keys()])];
   if (userIds.length === 0) return 0;
 
-  const { data: users, error: usersError } = await supabase.from('users').select('id, settings').in('id', userIds);
-  if (usersError) throw usersError;
+  const { rows: users, error: usersError } = await selectInChunks<{ id: string; settings: { notifications?: Record<string, boolean> } | null }, string>(
+    userIds, (ids) => supabase.from('users').select('id, settings').in('id', ids),
+  );
+  if (usersError) throw new Error(usersError);
   const optedOut = new Set(
-    ((users ?? []) as Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }>)
+    users
       .filter((u) => u.settings?.notifications?.index_changes === false)
       .map((u) => u.id),
   );
@@ -1214,13 +1191,15 @@ export async function notifyIndexMembershipChanges(events: IndexChangeEvent[]): 
   }
   if (rows.length === 0) return 0;
 
-  const { data: existing, error } = await supabase
-    .from('notifications')
-    .select('user_id, entity_id')
-    .in('entity_id', [...new Set(rows.map((r) => r.entity_id))])
-    .in('user_id', [...new Set(rows.map((r) => r.user_id))]);
-  if (error) throw error;
-  const done = new Set((existing ?? []).map((n) => `${n.user_id}|${n.entity_id}`));
+  // ponytail: a slice returns up to 150 users x entities rows; fine for the handful of
+  // entities one index sync produces, page each slice if a sync ever carries ~7+.
+  const entityIds = [...new Set(rows.map((r) => r.entity_id))];
+  const { rows: existing, error } = await selectInChunks<{ user_id: string; entity_id: string }, string>(
+    [...new Set(rows.map((r) => r.user_id))],
+    (ids) => supabase.from('notifications').select('user_id, entity_id').in('entity_id', entityIds).in('user_id', ids),
+  );
+  if (error) throw new Error(error);
+  const done = new Set(existing.map((n) => `${n.user_id}|${n.entity_id}`));
   const fresh = rows.filter((r) => !done.has(`${r.user_id}|${r.entity_id}`));
   for (let i = 0; i < fresh.length; i += 500) {
     const { error: insertError } = await supabase.from('notifications').insert(fresh.slice(i, i + 500));

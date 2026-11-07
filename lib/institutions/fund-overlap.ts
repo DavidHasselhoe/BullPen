@@ -12,6 +12,7 @@
 
 import { createServerClient } from '@/lib/supabase/client';
 import { UNCHANGED_BAND_PCT } from './compute-diff';
+import { fetchAllPages } from '@/lib/supabase/paging';
 
 export type FundMoveStatus = 'new' | 'increased' | 'reduced' | 'sold_out';
 
@@ -49,21 +50,18 @@ type HoldingRow = { filing_id: string; cusip: string; symbol: string | null; sha
 /** All rows matching `filter`, paged: PostgREST silently caps a select at 1000. */
 async function pagedHoldings(filingIds: string[], column: 'symbol' | 'cusip', values: string[]): Promise<HoldingRow[]> {
   const db = createServerClient();
-  const rows: HoldingRow[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await db
+  const { rows, error } = await fetchAllPages<HoldingRow>(() =>
+    db
       .from('institutional_holdings')
       .select('filing_id, cusip, symbol, shares, value_usd, portfolio_pct, share_type')
       .in('filing_id', filingIds)
       .in(column, values)
       .is('put_call', null)
       .order('filing_id')
-      .order('cusip')
-      .range(from, from + 999);
-    if (error) throw error;
-    rows.push(...((data ?? []) as HoldingRow[]));
-    if (!data || data.length < 1000) return rows;
-  }
+      .order('cusip'),
+  );
+  if (error) throw new Error(error);
+  return rows;
 }
 
 export async function getFundMovesForSymbols(symbols: string[]): Promise<FundMove[]> {

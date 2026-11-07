@@ -26,7 +26,7 @@ import { AuthGate } from '@/components/ui/AuthGate';
 import { WatchlistPreview } from '@/components/billing/GatePreviews';
 import Link from 'next/link';
 import { Bookmark, Search, Plus, Radio, TrendingUp, LayoutGrid, List, Sparkles, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { chunk, cn } from '@/lib/utils';
 import { useTradingSession } from '@/hooks/use-trading-session';
 
 type ViewMode = 'grid' | 'table';
@@ -105,9 +105,7 @@ export default function WatchlistPage() {
       const empty = { sparklines: {}, previousSession: [] };
       if (allSymbols.length === 0) return empty;
       // The route takes at most 20 symbols, and the watchlist spans every list.
-      const chunks: string[][] = [];
-      for (let i = 0; i < allSymbols.length; i += 20) chunks.push(allSymbols.slice(i, i + 20));
-      const parts = await Promise.all(chunks.map(async (chunk) => {
+      const parts = await Promise.all(chunk(allSymbols, 20).map(async (chunk) => {
         const res = await fetch(`/api/watchlist/sparklines?symbols=${encodeURIComponent(chunk.join(','))}`);
         return res.ok ? res.json() : null;
       }));

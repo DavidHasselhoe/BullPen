@@ -13,6 +13,7 @@ import { getUsStocksList, getUsEtfList, getUsFundsList, type StockReference } fr
 import { rankFromMarketCap, rankFromEtfName, INDEX_MEMBER_RANK, INDEX_FUND_RANK } from '@/lib/search/index-rank';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
 import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
+import { chunk } from '@/lib/utils';
 
 /** Exchanges a retail user can actually trade on. OTC is deliberately excluded:
  *  it is 12k+ shells and delisted tickers, two-thirds of the /stocks feed, and
@@ -63,12 +64,6 @@ interface IndexRow {
   kind: 's' | 'e' | 'f';
   exchange: string | null;
   rank: number;
-}
-
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
 }
 
 /** Market caps for every ticker we hold stats on, paged past PostgREST's 1000-row cap. */

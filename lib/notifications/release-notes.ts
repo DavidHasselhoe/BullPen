@@ -13,6 +13,7 @@
 import changelog from '@/content/changelog.json';
 import { createServerClient } from '@/lib/supabase/client';
 import type { ReleaseNotesParams } from './notifications-db';
+import { fetchAllPages } from '@/lib/supabase/paging';
 
 export type ChangelogType = 'new' | 'improved' | 'fixed';
 export interface ChangelogDay { date: string; entries: { type: string; text: string; highlight?: boolean }[] }
@@ -48,19 +49,17 @@ export async function notifyReleaseNotes(runDate: string): Promise<{ items: numb
   const supabase = createServerClient();
   const entityId = `release_notes:${params.from}`;
 
-  const { data: existing } = await supabase.from('notifications').select('user_id').eq('entity_id', entityId);
-  const skip = new Set((existing ?? []).map((n) => n.user_id as string));
-
-  // Paginated: PostgREST silently caps an unbounded select at 1000.
-  const userIds: string[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase.from('users').select('id, settings').order('id').range(from, from + 999);
-    if (error) throw error;
-    for (const u of (data ?? []) as Array<{ id: string; settings: { notifications?: Record<string, boolean> } | null }>) {
-      if (u.settings?.notifications?.release_notes !== false && !skip.has(u.id)) userIds.push(u.id);
-    }
-    if (!data || data.length < 1000) break;
-  }
+  // Both paged: a cut-off `existing` would send the notes twice to everyone past row 1000.
+  const [existing, users] = await Promise.all([
+    fetchAllPages<{ user_id: string }>(() => supabase.from('notifications').select('user_id').eq('entity_id', entityId).order('id')),
+    fetchAllPages<{ id: string; settings: { notifications?: Record<string, boolean> } | null }>(() =>
+      supabase.from('users').select('id, settings').order('id')),
+  ]);
+  if (existing.error || users.error) throw new Error(existing.error ?? users.error!);
+  const skip = new Set(existing.rows.map((n) => n.user_id));
+  const userIds = users.rows
+    .filter((u) => u.settings?.notifications?.release_notes !== false && !skip.has(u.id))
+    .map((u) => u.id);
 
   const count = params.items.length;
   const rows = userIds.map((user_id) => ({

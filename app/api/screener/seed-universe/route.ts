@@ -19,6 +19,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { getUsStocksList, TwelveDataRateLimitError } from '@/lib/twelvedata/twelvedata-client';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
 import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
+import { chunk } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -26,12 +27,6 @@ export const maxDuration = 120;
 const ACTIVE_EXCHANGES = new Set(['NYSE', 'NASDAQ']);
 const ALLOWED_TYPES = new Set(['Common Stock', 'American Depositary Receipt']);
 const UPSERT_CHUNK = 500;
-
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;

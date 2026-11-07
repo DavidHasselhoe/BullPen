@@ -34,6 +34,8 @@ import { isPro, tierFromUser } from '@/lib/billing/tier';
 import { logger } from '@/lib/utils/logger';
 import { SITE_URL } from '@/lib/site';
 import { resolveTimeZone } from '@/lib/dates/clock';
+import { fetchAllPages, selectInChunks } from '@/lib/supabase/paging';
+import { chunk } from '@/lib/utils';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 /** The crons write at 08:00 and 21:30 UTC; 26h covers both with slack for drift. */
@@ -724,26 +726,20 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   // Paged: PostgREST caps a response at 1000 rows, and a row cut here is never
   // emailed, since by the next run it is older than the lookback.
   const since = new Date(Date.now() - LOOKBACK_MS).toISOString();
-  const rows: AlertRow[] = [];
-  for (let from = 0; ; from += 1000) {
+  const { rows, error: rowsError } = await fetchAllPages<AlertRow>(() => {
     let query = supabase
       .from('notifications')
       .select('id, user_id, type, entity_type, entity_id, title, message, created_at, pushed_at')
       .in('type', ['earnings', 'dividend', 'price_move', 'health_score', 'politician_trade', 'market', 'daily_brief', 'weekly_pick'])
-      .gte('created_at', since)
-      .order('created_at', { ascending: true })
-      .order('id', { ascending: true })
-      .range(from, from + 999);
+      .gte('created_at', since);
     if (opts.userId) query = query.eq('user_id', opts.userId);
     // A one-account dry run previews this morning's email even after it went out.
     if (!(opts.dryRun && opts.userId)) query = query.is('emailed_at', null);
-    const { data, error } = await query;
-    if (error) {
-      run.errors.push(`notifications: ${error.message}`);
-      return run;
-    }
-    rows.push(...((data ?? []) as AlertRow[]));
-    if (!data || data.length < 1000) break;
+    return query.order('created_at', { ascending: true }).order('id', { ascending: true });
+  });
+  if (rowsError) {
+    run.errors.push(`notifications: ${rowsError}`);
+    return run;
   }
 
   // A row pushed alone was seen on the device (first channel wins); rows folded into a combined
@@ -751,20 +747,17 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   const stamps = [...new Set(rows.map((r) => r.pushed_at).filter((v): v is string => !!v))];
   const groupSize = new Map<string, number>();
   if (!(opts.dryRun && opts.userId)) {
-    for (let i = 0; i < stamps.length; i += 100) {
-      const chunk = stamps.slice(i, i + 100);
-      for (let from = 0; ; from += 1000) {
-        const { data, error } = await supabase.from('notifications').select('user_id, pushed_at')
-          .in('pushed_at', chunk).order('id', { ascending: true }).range(from, from + 999);
-        if (error) {
-          run.errors.push(`pushed groups: ${error.message}`);
-          return run;
-        }
-        for (const g of (data ?? []) as { user_id: string; pushed_at: string }[]) {
-          const k = `${g.user_id}|${new Date(g.pushed_at).getTime()}`;
-          groupSize.set(k, (groupSize.get(k) ?? 0) + 1);
-        }
-        if (!data || data.length < 1000) break;
+    for (const slice of chunk(stamps, 100)) {
+      const { rows: grouped, error } = await fetchAllPages<{ user_id: string; pushed_at: string }>(() =>
+        supabase.from('notifications').select('user_id, pushed_at').in('pushed_at', slice).order('id', { ascending: true }),
+      );
+      if (error) {
+        run.errors.push(`pushed groups: ${error}`);
+        return run;
+      }
+      for (const g of grouped) {
+        const k = `${g.user_id}|${new Date(g.pushed_at).getTime()}`;
+        groupSize.set(k, (groupSize.get(k) ?? 0) + 1);
       }
     }
   }
@@ -819,22 +812,15 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
   // Every watchlist, not only those of people with alerts: their stocks are a
   // reason to email on their own. Optional: any failure just leaves it out.
   const watchBy = new Map<string, Map<string, string>>();
-  for (let from = 0; ; from += 1000) {
-    let query = supabase
-      .from('user_watchlist')
-      .select('user_id, symbol, company_name')
-      .order('id', { ascending: true })
-      .range(from, from + 999);
-    if (opts.userId) query = query.eq('user_id', opts.userId);
-    const { data, error } = await query;
-    if (error) break;
-    for (const w of (data ?? []) as Array<{ user_id: string; symbol: string; company_name: string | null }>) {
-      // A stock on two of someone's lists counts once.
-      const own = watchBy.get(w.user_id) ?? new Map<string, string>();
-      own.set(w.symbol, w.company_name ? displayCompanyName(w.company_name, w.symbol) : w.symbol);
-      watchBy.set(w.user_id, own);
-    }
-    if (!data || data.length < 1000) break;
+  const { rows: watchRows } = await fetchAllPages<{ user_id: string; symbol: string; company_name: string | null }>(() => {
+    const query = supabase.from('user_watchlist').select('user_id, symbol, company_name');
+    return (opts.userId ? query.eq('user_id', opts.userId) : query).order('id', { ascending: true });
+  });
+  for (const w of watchRows) {
+    // A stock on two of someone's lists counts once.
+    const own = watchBy.get(w.user_id) ?? new Map<string, string>();
+    own.set(w.symbol, w.company_name ? displayCompanyName(w.company_name, w.symbol) : w.symbol);
+    watchBy.set(w.user_id, own);
   }
   const period = watchPeriod(today);
   const pctBy = await watchMoves([...new Set([...watchBy.values()].flatMap((m) => [...m.keys()]))], period).catch((err) => {
@@ -870,12 +856,7 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     }),
   );
 
-  const { data: users } = await supabase
-    .from('users')
-    .select('id, email, email_verified_at, settings, created_at, alert_email_sent_at, device_time_zone, account_tier, role, pro_bonus_until')
-    .in('id', candidates);
-
-  for (const u of (users ?? []) as Array<{
+  const { rows: users, error: usersError } = await selectInChunks<{
     id: string;
     account_tier: number | null;
     role: string | null;
@@ -886,7 +867,15 @@ export async function sendMorningAlertEmails(opts: { dryRun?: boolean; userId?: 
     alert_email_sent_at: string | null;
     device_time_zone: string | null;
     settings: { notifications?: Record<string, boolean>; time_zone?: unknown } | null;
-  }>) {
+  }, string>(candidates, (ids) =>
+    supabase
+      .from('users')
+      .select('id, email, email_verified_at, settings, created_at, alert_email_sent_at, device_time_zone, account_tier, role, pro_bonus_until')
+      .in('id', ids),
+  );
+  if (usersError) run.errors.push(`users: ${usersError}`);
+
+  for (const u of users) {
     // The other run's reader: their rows stay unemailed until it comes.
     if (opts.slot && emailSlot(u.settings?.time_zone, u.device_time_zone) !== opts.slot) continue;
     const entry = byUser.get(u.id) ?? { ids: [], items: [] };

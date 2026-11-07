@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
-import { fetchAllPages } from '@/lib/screener/screener-query';
+import { fetchAllPages } from '@/lib/supabase/paging';
 
 async function getHandler(
   _request: NextRequest,

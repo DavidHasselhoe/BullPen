@@ -30,6 +30,7 @@ import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { todayInET, yesterdayInET } from '@/lib/academy/streak';
 import { createDailyChallengeReminderNotification } from '@/lib/notifications/notification-creators';
+import { fetchAllPages, selectInChunks } from '@/lib/supabase/paging';
 
 export const maxDuration = 60;
 
@@ -66,14 +67,16 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     // notification settings, rather than scanning every user first.
     // last_activity_date must be exactly yesterday, not just "not today" —
     // see the file header for why that distinction is load-bearing.
-    const { data: atRisk, error: statsErr } = await supabase
-      .from('academy_user_stats')
-      .select('user_id, current_streak')
-      .gte('current_streak', 1)
-      .eq('last_activity_date', yesterdayInET()) as unknown as
-      { data: Array<{ user_id: string; current_streak: number }> | null; error: unknown };
+    const { rows: atRisk, error: statsErr } = await fetchAllPages<{ user_id: string; current_streak: number }>(() =>
+      supabase
+        .from('academy_user_stats')
+        .select('user_id, current_streak')
+        .gte('current_streak', 1)
+        .eq('last_activity_date', yesterdayInET())
+        .order('user_id'),
+    );
 
-    if (statsErr || !atRisk?.length) {
+    if (statsErr || !atRisk.length) {
       return NextResponse.json({ ...summary, message: 'No streaks at risk today' });
     }
     summary.streaksAtRisk = atRisk.length;
@@ -81,14 +84,15 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     // ── 2. Filter to users with the reminder enabled ─────────────────────────
     // daily_challenge_reminder defaults to true when not set.
     const candidateIds = atRisk.map((r) => r.user_id);
-    const { data: users, error: usersErr } = await supabase
-      .from('users')
-      .select('id, settings')
-      .in('id', candidateIds)
-      .or('settings->notifications->daily_challenge_reminder.is.null,settings->notifications->daily_challenge_reminder.eq.true') as unknown as
-      { data: Array<{ id: string }> | null; error: unknown };
+    const { rows: users, error: usersErr } = await selectInChunks<{ id: string }, string>(candidateIds, (ids) =>
+      supabase
+        .from('users')
+        .select('id, settings')
+        .in('id', ids)
+        .or('settings->notifications->daily_challenge_reminder.is.null,settings->notifications->daily_challenge_reminder.eq.true'),
+    );
 
-    if (usersErr || !users?.length) {
+    if (usersErr || !users.length) {
       return NextResponse.json({ ...summary, message: 'No eligible users after settings filter' });
     }
 

@@ -19,6 +19,7 @@ import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 import { listingMic } from '@/lib/assets/asset-type';
 import { getDividendSchedules } from './dividend-schedule';
 import { regularPayments } from './dividend-income';
+import { fetchAllPages } from '@/lib/supabase/paging';
 
 /** Notification entity ids start with this; notification-href.ts sends them to the hub. */
 export const DIVIDEND_INCOME_ENTITY = 'portfolio:dividend_income';
@@ -63,27 +64,28 @@ export async function runDividendPaydays(today: string): Promise<{ proUsers: num
   const supabase = createServerClient();
   const out = { proUsers: 0, notified: 0, missing: [] as string[], errors: [] as string[] };
 
-  const { data: users, error } = await supabase
-    .from('users')
-    .select('id, account_tier, role, pro_bonus_until')
-    .or('settings->notifications->dividend_reminder.is.null,settings->notifications->dividend_reminder.eq.true');
-  if (error) { out.errors.push(`users: ${error.message}`); return out; }
-  const pros = ((users ?? []) as Array<{ id: string; account_tier: number | null; role: string | null; pro_bonus_until: string | null }>)
-    .filter((u) => isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until)))
-    .map((u) => u.id);
-  out.proUsers = pros.length;
-  if (!pros.length) return out;
+  const { rows: users, error } = await fetchAllPages<{ id: string; account_tier: number | null; role: string | null; pro_bonus_until: string | null }>(() =>
+    supabase
+      .from('users')
+      .select('id, account_tier, role, pro_bonus_until')
+      .or('settings->notifications->dividend_reminder.is.null,settings->notifications->dividend_reminder.eq.true')
+      .order('id'),
+  );
+  if (error) { out.errors.push(`users: ${error}`); return out; }
+  const pros = new Set(users.filter((u) => isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until))).map((u) => u.id));
+  out.proUsers = pros.size;
+  if (!pros.size) return out;
 
-  const { data: rows, error: hErr } = await supabase
-    .from('user_holdings')
-    .select('user_id, symbol, quantity, mic_code, trading_currency')
-    .in('user_id', pros)
-    .or(OPEN_POSITION_FILTER);
-  if (hErr) { out.errors.push(`holdings: ${hErr.message}`); return out; }
+  // Every open position, filtered to Pro here: an .in() of every Pro id would outgrow the URL.
+  const { rows, error: hErr } = await fetchAllPages<{ user_id: string; symbol: string; quantity: number | null; mic_code: string | null; trading_currency: string | null }>(() =>
+    supabase.from('user_holdings').select('user_id, symbol, quantity, mic_code, trading_currency').or(OPEN_POSITION_FILTER).order('id'),
+  );
+  if (hErr) { out.errors.push(`holdings: ${hErr}`); return out; }
 
   // user -> symbol -> shares (lots add up; no share count means no amount to tell them)
   const held = new Map<string, Map<string, number>>();
-  for (const h of (rows ?? []) as Array<{ user_id: string; symbol: string; quantity: number | null; mic_code: string | null; trading_currency: string | null }>) {
+  for (const h of rows) {
+    if (!pros.has(h.user_id)) continue;
     if (!h.quantity || listingMic(h.mic_code) || (h.trading_currency ?? 'USD') !== 'USD' || h.symbol.includes('/')) continue;
     const m = held.get(h.user_id) ?? new Map<string, number>();
     m.set(h.symbol.toUpperCase(), (m.get(h.symbol.toUpperCase()) ?? 0) + h.quantity);

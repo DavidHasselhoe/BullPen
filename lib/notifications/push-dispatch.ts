@@ -10,6 +10,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { isExpired, planUserPush, type PendingPushRow, type PushedRow } from '@/lib/notifications/push-plan';
 import { notificationHref } from '@/lib/notifications/notification-href';
 import { sendPush, type StoredSubscription } from '@/lib/notifications/push-send';
+import { fetchAllPages, selectInChunks } from '@/lib/supabase/paging';
 
 const HOUR_MS = 3_600_000;
 
@@ -19,15 +20,6 @@ type SubDb = StoredSubscription & { user_id: string; time_zone: string | null };
 export interface PushDispatchStats {
   users: number; pushes: number; rows: number; held_quiet: number; capped: number;
   expired: number; gone: number; failed: number; errors: string[];
-}
-
-function groupBy<T>(items: T[], key: (t: T) => string): Map<string, T[]> {
-  const m = new Map<string, T[]>();
-  for (const i of items) {
-    const k = key(i);
-    m.set(k, [...(m.get(k) ?? []), i]);
-  }
-  return m;
 }
 
 /** Throws on a failed read; per-user send failures land in `errors`. `userIds` limits the run to those users. */
@@ -43,49 +35,51 @@ export async function dispatchPushes(userIds?: string[]): Promise<PushDispatchSt
   const now = new Date();
 
   // Newest subscription first, so its time zone is the user's.
-  let subQuery = supabase
-    .from('push_subscriptions')
-    .select('id, user_id, endpoint, p256dh, auth, time_zone')
-    .order('created_at', { ascending: false });
-  if (userIds) subQuery = subQuery.in('user_id', userIds);
-  const { data: subData, error: subErr } = await subQuery;
-  if (subErr) throw new Error(`push_subscriptions: ${subErr.message}`);
-  const subsByUser = groupBy((subData ?? []) as SubDb[], (s) => s.user_id);
+  const { rows: subData, error: subErr } = await fetchAllPages<SubDb>(() => {
+    const q = supabase.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth, time_zone');
+    return (userIds ? q.in('user_id', userIds) : q).order('created_at', { ascending: false }).order('id');
+  });
+  if (subErr) throw new Error(`push_subscriptions: ${subErr}`);
+  const subsByUser = Map.groupBy(subData, (s) => s.user_id);
   if (subsByUser.size === 0) return stats;
 
-  // ponytail: PostgREST caps an unbounded select at 1000 rows; a backlog past that waits for the next run
-  const { data: pendingData, error: pendErr } = await supabase
-    .from('notifications')
-    .select('id, user_id, type, entity_type, entity_id, push_kind, title, message, created_at, is_read')
-    .not('push_kind', 'is', null)
-    .is('pushed_at', null)
-    .is('emailed_at', null) // first channel wins: a row the morning email carried is never pushed
-    .eq('is_read', false)
-    .gt('created_at', new Date(now.getTime() - 24 * HOUR_MS).toISOString())
-    .in('user_id', [...subsByUser.keys()])
-    .limit(1000);
-  if (pendErr) throw new Error(`notifications: ${pendErr.message}`);
+  // ponytail: up to 1000 pending rows per slice of 150 subscribers; a backlog past that waits for the next run
+  const { rows: pendingData, error: pendErr } = await selectInChunks<PendingDb, string>([...subsByUser.keys()], (ids) =>
+    supabase
+      .from('notifications')
+      .select('id, user_id, type, entity_type, entity_id, push_kind, title, message, created_at, is_read')
+      .not('push_kind', 'is', null)
+      .is('pushed_at', null)
+      .is('emailed_at', null) // first channel wins: a row the morning email carried is never pushed
+      .eq('is_read', false)
+      .gt('created_at', new Date(now.getTime() - 24 * HOUR_MS).toISOString())
+      .in('user_id', ids)
+      .limit(1000),
+  );
+  if (pendErr) throw new Error(`notifications: ${pendErr}`);
 
   const live: PendingDb[] = [];
-  for (const r of (pendingData ?? []) as PendingDb[]) {
+  for (const r of pendingData) {
     if (isExpired(r, now)) stats.expired++;
     else live.push(r);
   }
-  const pendingByUser = groupBy(live, (r) => r.user_id);
+  const pendingByUser = Map.groupBy(live, (r) => r.user_id);
   if (pendingByUser.size === 0) return stats;
   const activeIds = [...pendingByUser.keys()];
 
-  const [{ data: pushedData, error: pushedErr }, { data: userData, error: userErr }] = await Promise.all([
-    supabase.from('notifications').select('user_id, pushed_at, push_kind')
-      .in('user_id', activeIds).gt('pushed_at', new Date(now.getTime() - 30 * HOUR_MS).toISOString()),
-    supabase.from('users').select('id, settings').in('id', activeIds),
+  const [{ rows: pushedData, error: pushedErr }, { rows: userData, error: userErr }] = await Promise.all([
+    selectInChunks<PushedRow & { user_id: string }, string>(activeIds, (ids) =>
+      supabase.from('notifications').select('user_id, pushed_at, push_kind')
+        .in('user_id', ids).gt('pushed_at', new Date(now.getTime() - 30 * HOUR_MS).toISOString())),
+    selectInChunks<{ id: string; settings: { notifications?: Record<string, boolean> } | null }, string>(activeIds, (ids) =>
+      supabase.from('users').select('id, settings').in('id', ids)),
   ]);
-  if (pushedErr) throw new Error(`notifications pushed: ${pushedErr.message}`);
-  if (userErr) throw new Error(`users: ${userErr.message}`);
+  if (pushedErr) throw new Error(`notifications pushed: ${pushedErr}`);
+  if (userErr) throw new Error(`users: ${userErr}`);
 
-  const pushedByUser = groupBy((pushedData ?? []) as (PushedRow & { user_id: string })[], (p) => p.user_id);
+  const pushedByUser = Map.groupBy(pushedData, (p) => p.user_id);
   const prefsByUser = new Map<string, Record<string, boolean>>();
-  for (const u of (userData ?? []) as { id: string; settings: { notifications?: Record<string, boolean> } | null }[]) {
+  for (const u of userData) {
     prefsByUser.set(u.id, u.settings?.notifications ?? {});
   }
 

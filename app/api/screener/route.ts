@@ -4,10 +4,12 @@ import { withRateLimit } from '@/lib/security/api-security';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
 import { TwelveDataRateLimitError, getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
-import { screenerStaleCutoffIso, fetchAllPages, isIndexScope, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
+import { screenerStaleCutoffIso, isIndexScope, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
 import { getLastPrices, cacheLastPrice, type LastPriceSeed } from '@/lib/market-data/last-price-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
+import { fetchAllPages } from '@/lib/supabase/paging';
+import { chunk } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +48,7 @@ async function hydrateLastPrices(tickers: string[], streamed: boolean): Promise<
   const missing = upper.filter((t) => !seeds.has(t) && !(streamed && STREAMED_TICKERS.has(t)));
 
   if (missing.length > 0) {
-    const chunks: string[][] = [];
-    for (let i = 0; i < missing.length; i += PRICE_QUOTE_CHUNK) chunks.push(missing.slice(i, i + PRICE_QUOTE_CHUNK));
+    const chunks = chunk(missing, PRICE_QUOTE_CHUNK);
 
     await Promise.all(chunks.map(async (chunk) => {
       // Shared per-minute budget: a denied chunk renders "—", same as a failed fetch.
