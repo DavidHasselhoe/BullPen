@@ -11,7 +11,7 @@ _Moved out of CLAUDE.md on 2026-10-19 so it is read when needed instead of sent 
 |---|---|
 | **Supabase** (Postgres) | User auth, companies DB, holdings, watchlist, social, theses, daily briefs |
 | **Twelve Data API** | Primary market data — quotes, candles, stats, financials, earnings, logos, symbol search |
-| **Finnhub** | News feed, fallback prices |
+| **Finnhub** | News feed only (no display license for prices) |
 | **SnapTrade** | Brokerage sync (connected holdings) |
 | **Anthropic Claude** | "Why Today?" price explanations, Daily Brief generation |
 | **OpenAI** | BullPen AI research assistant chat |

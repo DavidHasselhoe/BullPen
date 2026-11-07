@@ -32,7 +32,7 @@ ANTHROPIC_API_KEY=sk-ant-...your-anthropic-api-key
 # When TWELVE_DATA_API_KEY is set, Twelve Data is used for quotes, candles, movers, earnings.
 # When not set, Finnhub is used. News always uses Finnhub (Twelve Data has no news).
 TWELVE_DATA_API_KEY=                    # Optional: Twelve Data API key (twelvedata.com) — enables full historical charts
-FINNHUB_API_KEY=your-finnhub-api-key    # Required for news; also fallback for price data when Twelve Data key is not set
+FINNHUB_API_KEY=your-finnhub-api-key    # Required for news (never used for prices)
 
 # Cron Job Secret (required for autonomous filing updates)
 # Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -112,19 +112,19 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.posthog.com
 
 ### Step 3: Get Market Data API Key(s)
 
-**Option A: Twelve Data (recommended for full historical charts)**  
+**Twelve Data (required)**  
 1. Go to [Twelve Data](https://twelvedata.com)
 2. Sign up (free Basic tier: 8 req/min for testing)
 3. Get your API key from the dashboard
 4. Add `TWELVE_DATA_API_KEY=your-key` to `.env.local`  
-When set, Twelve Data is used for quotes, candles, movers, earnings, recommendations. Full historical data (40+ years daily).
+Required. Twelve Data serves every quote, candle, mover and earnings figure. Full historical data (40+ years daily).
 
-**Option B: Finnhub (required for news; fallback when Twelve Data key not set)**  
+**Finnhub (required for news only)**  
 1. Go to [Finnhub](https://finnhub.io)
 2. Sign up for a free account
 3. Go to **Dashboard** → **API Key**
 4. Add `FINNHUB_API_KEY=your-key` to `.env.local`  
-Used for: market news, company news. Also powers price data when `TWELVE_DATA_API_KEY` is not set.
+Used for: market news, company news.
 
 ### Step 4: Get Anthropic API Key (for every AI feature)
 

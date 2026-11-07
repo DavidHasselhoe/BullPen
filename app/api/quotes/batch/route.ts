@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStockQuotes, TwelveDataRateLimitError } from '@/lib/market-data';
 import { listingMic } from '@/lib/assets/asset-type';
-import { getStockQuote } from '@/lib/market-data';
+import { chunk } from '@/lib/utils';
 import { logger } from '@/lib/utils/logger';
 import { withRateLimit } from '@/lib/security/api-security';
 import { validateTicker } from '@/lib/security/input-validation';
@@ -84,65 +84,44 @@ async function handler(request: NextRequest) {
 
     const prepost = body?.prepost === true;
 
-    const useTwelveData = !!process.env.TWELVE_DATA_API_KEY;
-    if (useTwelveData) {
-      // Chunk into /batch-sized groups and fire them in parallel. Each chunk is
-      // isolated in its own try/catch — previously a single chunk throwing (rate
-      // limit, transient network error) rejected the whole Promise.all and wiped
-      // every symbol from the response, even ones from chunks that had already
-      // succeeded. A 40-stock portfolio is one chunk, so that one failure meant
-      // the entire holdings/watchlist table went blank for that fetch cycle.
-      const chunks: string[][] = [];
-      for (let i = 0; i < capped.length; i += BATCH_CHUNK) {
-        chunks.push(capped.slice(i, i + BATCH_CHUNK));
-      }
-      // Reserve against the shared per-minute credit budget (lib/twelvedata/
-      // credit-budget.ts) before each chunk's live fetch — this route has no
-      // cache of its own (quotes must stay fresh) and MAX_SYMBOLS(300) x the
-      // 60/min rate limit could otherwise burn up to 18,000 credits/min from
-      // one caller, blowing past the account's 610/min cap. A denied chunk
-      // just falls through to the last-price fallback below, same graceful
-      // degradation already used for a network failure.
-      await Promise.all(chunks.map(async (chunk) => {
-        if (!(await tryReserveOrganicCredits(chunk.length))) return;
-        try {
-          const quoteMap = await getStockQuotes(chunk, { prepost, micCodes });
-          for (const [symbol, q] of quoteMap.entries()) {
-            if (q.c > 0) {
-              quotes[symbol] = { price: q.c, change: q.d, changePercent: q.dp };
-              // Never write a mic_code-pinned quote into the shared,
-              // bare-symbol-keyed last-price cache — a different feature
-              // fetching the same bare symbol without a mic_code could read
-              // back a price for the wrong listing (e.g. "KOZ1" without
-              // disambiguation is a different instrument than the
-              // XSTU-listed Kongsberg Gruppen this holding was pinned to).
-              if (!micPinnedSymbols.has(symbol)) {
-                cacheLastPrice(symbol, { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null }, prepost);
-              }
+    // Chunk into /batch-sized groups and fire them in parallel. Each chunk is
+    // isolated in its own try/catch — previously a single chunk throwing (rate
+    // limit, transient network error) rejected the whole Promise.all and wiped
+    // every symbol from the response, even ones from chunks that had already
+    // succeeded. A 40-stock portfolio is one chunk, so that one failure meant
+    // the entire holdings/watchlist table went blank for that fetch cycle.
+    //
+    // Reserve against the shared per-minute credit budget (lib/twelvedata/
+    // credit-budget.ts) before each chunk's live fetch — this route has no
+    // cache of its own (quotes must stay fresh) and MAX_SYMBOLS(300) x the
+    // 60/min rate limit could otherwise burn up to 18,000 credits/min from
+    // one caller, blowing past the account's 610/min cap. A denied chunk
+    // just falls through to the last-price fallback below, same graceful
+    // degradation already used for a network failure.
+    await Promise.all(chunk(capped, BATCH_CHUNK).map(async (symbols) => {
+      if (!(await tryReserveOrganicCredits(symbols.length))) return;
+      try {
+        const quoteMap = await getStockQuotes(symbols, { prepost, micCodes });
+        for (const [symbol, q] of quoteMap.entries()) {
+          if (q.c > 0) {
+            quotes[symbol] = { price: q.c, change: q.d, changePercent: q.dp };
+            // Never write a mic_code-pinned quote into the shared,
+            // bare-symbol-keyed last-price cache — a different feature
+            // fetching the same bare symbol without a mic_code could read
+            // back a price for the wrong listing (e.g. "KOZ1" without
+            // disambiguation is a different instrument than the
+            // XSTU-listed Kongsberg Gruppen this holding was pinned to).
+            if (!micPinnedSymbols.has(symbol)) {
+              cacheLastPrice(symbol, { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null }, prepost);
             }
-          }
-        } catch (err) {
-          if (!(err instanceof TwelveDataRateLimitError)) {
-            logger.warn('[quotes-batch] chunk failed', { error: err });
           }
         }
-      }));
-    } else {
-      // Finnhub: parallel individual calls
-      await Promise.all(
-        capped.map(async (symbol) => {
-          try {
-            const q = await getStockQuote(symbol);
-            if (q.c > 0) {
-              quotes[symbol] = { price: q.c, change: q.d, changePercent: q.dp };
-              cacheLastPrice(symbol, { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null });
-            }
-          } catch (err) {
-            logger.warn(`[quotes-batch] Failed for ${symbol}`, { error: err });
-          }
-        })
-      );
-    }
+      } catch (err) {
+        if (!(err instanceof TwelveDataRateLimitError)) {
+          logger.warn('[quotes-batch] chunk failed', { error: err });
+        }
+      }
+    }));
 
     // Last-known-price fallback (shared with the Screener) for any requested
     // symbol a fresh quote didn't cover — a chunk failure above, a rate limit,

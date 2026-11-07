@@ -120,7 +120,7 @@ A stock research and portfolio web app for beginner-to-intermediate investors. L
 | **Ops notifications** | Discord webhooks (changelog announcements, cron/error alerts) |
 
 **Primary market data:** TwelveData (quotes, candles, stats, financials, earnings, logos)  
-**News & fallbacks:** Finnhub  
+**News:** Finnhub  
 **SEC filings:** EDGAR direct  
 **Company logos:** Logo.dev + TwelveData, persisted in Supabase Storage
 
@@ -131,7 +131,7 @@ A stock research and portfolio web app for beginner-to-intermediate investors. L
 | Source | Used for |
 |--------|----------|
 | **TwelveData** | Real-time & historical quotes, candles, statistics, financials, earnings, technical indicators, logos, symbol search |
-| **Finnhub** | Market news, fallback quotes |
+| **Finnhub** | Market news (no license to display its prices) |
 | **SEC EDGAR** | 10-K, 10-Q, 20-F, 8-K filing ingestion |
 | **Anthropic Claude** | Bull chat, "Why Today?" price explanations, Daily Brief, AI Deep Dive reports, Bull's Weekly Pick, Academy content |
 | **Resend** | Morning alert email, verification and billing email |
@@ -174,7 +174,7 @@ TWELVE_DATA_API_KEY     # Primary market data
 **Optional / production:**
 
 ```
-FINNHUB_API_KEY         # News + quote fallbacks
+FINNHUB_API_KEY         # News
 RESEND_API_KEY          # Email notifications
 CRON_SECRET             # Protect cron endpoints
 LOGO_DEV_KEY            # Company logos
