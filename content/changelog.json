@@ -1,5 +1,19 @@
 [
   {
+    "date": "2026-11-07",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Invite a friend: when they sign up through your link, their free Pro trial lasts 30 days instead of 7, and you get a free month of Pro once their trial starts",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Pro members who got Pro through an invite now get the notice that the Daily Brief is ready, like everyone else on Pro"
+      }
+    ]
+  },
+  {
     "date": "2026-11-06",
     "entries": [
       {
