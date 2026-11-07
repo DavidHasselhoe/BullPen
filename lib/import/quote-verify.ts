@@ -16,6 +16,8 @@
  * treat that 404 as "not quotable with this mic_code," not as an error.
  */
 
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
+
 export interface QuoteMeta {
   symbol: string;
   name: string;
@@ -37,6 +39,10 @@ function apiKey(): string {
 export async function getQuoteMeta(symbol: string, micCode?: string): Promise<QuoteMeta | null> {
   const params = new URLSearchParams({ symbol: symbol.toUpperCase(), apikey: apiKey() });
   if (micCode) params.set('mic_code', micCode);
+
+  // Same shared per-minute budget as every other TwelveData caller: import
+  // resolution checks several candidates per row, so it can burst.
+  if (!(await tryReserveOrganicCredits(1))) throw new Error('TwelveData rate limited: credit budget exhausted');
 
   const res = await fetch(`https://api.twelvedata.com/quote?${params.toString()}`);
   const data = (await res.json()) as Record<string, unknown>;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,8 +14,14 @@ import type { TFunction } from 'i18next';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { HealthRing } from '@/components/finance/HealthRing';
 import { TermTooltip } from '@/components/ui/TermTooltip';
-import { HealthScoreHistoryModal, type HealthScoreHistoryPoint } from '@/components/stock/HealthScoreHistoryModal';
+import type { HealthScoreHistoryPoint } from '@/components/stock/HealthScoreHistoryModal';
 import type { HealthScore, CategoryScore } from '@/lib/finance/health-score';
+
+// recharts only downloads once someone opens the history.
+const HealthScoreHistoryModal = dynamic(
+  () => import('@/components/stock/HealthScoreHistoryModal').then((m) => m.HealthScoreHistoryModal),
+  { ssr: false },
+);
 
 // ─── API response shape ───────────────────────────────────────────────────────
 
@@ -250,6 +257,8 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
     : null;
 
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Mounted from the first open on, so the dialog still animates closed.
+  const [historyMounted, setHistoryMounted] = useState(false);
 
   // Emit signals to parent after render — avoids "setState during render" warning
   useEffect(() => {
@@ -322,7 +331,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
           <div className="flex items-center gap-2">
             {trend !== null && (
               <button
-                onClick={() => setHistoryOpen(true)}
+                onClick={() => { setHistoryMounted(true); setHistoryOpen(true); }}
                 className={cn(
                   'flex items-center gap-1 whitespace-nowrap text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full border transition-colors',
                   trend > 0
@@ -437,12 +446,14 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
         </div>
       </CardContent>
 
-      <HealthScoreHistoryModal
-        ticker={ticker}
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        history={history}
-      />
+      {historyMounted && (
+        <HealthScoreHistoryModal
+          ticker={ticker}
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          history={history}
+        />
+      )}
     </Card>
   );
 }
