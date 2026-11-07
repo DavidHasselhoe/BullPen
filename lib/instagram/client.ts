@@ -98,6 +98,26 @@ async function waitForContainerReady(containerId: string, accessToken: string, m
   }
 }
 
+/**
+ * media_publish can still answer "Media ID is not available" for a few
+ * seconds after the container reports FINISHED (Meta's error 9007 / 2207027,
+ * "not ready for publishing, please wait"). That one try is what failed the
+ * W45 2026 picks scoreboard. Retrying is safe: a creation_id can be published
+ * only once, so a retry never posts twice. Waits 5s, 10s, 20s, then gives up.
+ */
+async function publishWhenAvailable(userId: string, containerId: string, accessToken: string): Promise<Record<string, unknown>> {
+  for (const waitMs of [5_000, 10_000, 20_000, 0]) {
+    try {
+      return await graphPost(`/${userId}/media_publish`, { creation_id: containerId }, accessToken);
+    } catch (err) {
+      const notReady = err instanceof Error && /media id is not available|not ready for publishing/i.test(err.message);
+      if (!notReady || waitMs === 0) throw err;
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+    }
+  }
+  throw new Error('unreachable');
+}
+
 export interface PublishCarouselParams {
   /** Publicly fetchable image URLs, in carousel display order. */
   imageUrls: string[];
@@ -153,11 +173,7 @@ export async function publishCarousel(params: PublishCarouselParams): Promise<Pu
 
   await waitForContainerReady(containerId, accessToken);
 
-  const published = await graphPost(
-    `/${userId}/media_publish`,
-    { creation_id: containerId },
-    accessToken
-  );
+  const published = await publishWhenAvailable(userId, containerId, accessToken);
   const mediaId = published.id as string;
 
   const permalinkRes = await graphGet(`/${mediaId}?fields=permalink`, accessToken);
