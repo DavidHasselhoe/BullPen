@@ -26,7 +26,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { publishStagedPost } from '@/lib/instagram/publish';
 
-export const maxDuration = 60;
+// Same as the generation crons: a carousel upload + Meta processing + publish
+// retries runs past 60s (the W45 2026 scoreboard re-publish timed out at 60
+// after Meta had already published it, leaving the row at ready).
+export const maxDuration = 300;
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
