@@ -86,7 +86,6 @@ app/api/brokerage/disconnect/route.ts|error TS2339|Property 'user_secret' does n
 app/api/brokerage/disconnect/route.ts|error TS2345|Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
 app/api/brokerage/disconnect/route.ts|error TS2345|Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
 app/api/brokerage/disconnect/route.ts|error TS2345|Argument of type '{ is_active: boolean; }' is not assignable to parameter of type 'never'.
-app/api/brokerage/register/route.ts|error TS2769|No overload matches this call.
 app/api/brokerage/sync/route.ts|error TS2339|Property 'snaptrade_user_id' does not exist on type 'never'.
 app/api/brokerage/sync/route.ts|error TS2339|Property 'user_secret' does not exist on type 'never'.
 app/api/brokerage/sync/route.ts|error TS2345|Argument of type '{ last_synced_at: string; is_active: boolean; }' is not assignable to parameter of type 'never'.
@@ -338,17 +337,6 @@ lib/billing/log-ai-call.ts|error TS2769|No overload matches this call.
 lib/billing/tier.ts|error TS2339|Property 'account_tier' does not exist on type 'never'.
 lib/billing/tier.ts|error TS2339|Property 'role' does not exist on type 'never'.
 lib/cache/market-data-cache.ts|error TS2769|No overload matches this call.
-lib/discover/discover-db.ts|error TS2339|Property 'data' does not exist on type 'unknown'.
-lib/discover/discover-db.ts|error TS2339|Property 'data' does not exist on type 'unknown'.
-lib/discover/discover-db.ts|error TS2339|Property 'data' does not exist on type 'unknown'.
-lib/discover/discover-db.ts|error TS2339|Property 'data' does not exist on type 'unknown'.
-lib/discover/discover-db.ts|error TS2339|Property 'error' does not exist on type 'unknown'.
-lib/discover/discover-db.ts|error TS2339|Property 'error' does not exist on type 'unknown'.
-lib/discover/discover-db.ts|error TS2339|Property 'error' does not exist on type 'unknown'.
-lib/discover/discover-db.ts|error TS2345|Argument of type 'PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, never[], "companies", never, "GET">' is not assignable to parameter of type 'Promise<unknown>'.
-lib/discover/discover-db.ts|error TS2345|Argument of type 'PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, never[], "signals", never, "GET">' is not assignable to parameter of type 'Promise<unknown>'.
-lib/discover/discover-db.ts|error TS2345|Argument of type 'PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, never[], "trends", never, "GET">' is not assignable to parameter of type 'Promise<unknown>'.
-lib/discover/discover-db.ts|error TS2345|Argument of type 'PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, never[], "trends", never, "GET">' is not assignable to parameter of type 'Promise<unknown>'.
 lib/email/earnings-alert.ts|error TS2339|Property 'id' does not exist on type 'never'.
 lib/email/earnings-alert.ts|error TS2339|Property 'id' does not exist on type 'never'.
 lib/email/earnings-alert.ts|error TS2339|Property 'value' does not exist on type 'never'.

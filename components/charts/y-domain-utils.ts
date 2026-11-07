@@ -47,13 +47,6 @@ export function isYDomainTweenPhase(phase: ChartPhase): boolean {
   return phase === "gridTweenLoading" || phase === "gridTweenReady";
 }
 
-/** Phases where {@link ReferenceArea} bands are shown (fade in/out on transitions). */
-export function isReferenceAreaVisiblePhase(phase: ChartPhase): boolean {
-  return (
-    phase === "ready" || phase === "revealing" || phase === "gridTweenReady"
-  );
-}
-
 export function resolveAnimatedYDestinationDomains(
   chartPhase: ChartPhase,
   skeletonByAxis: Record<string, YDomain>,
@@ -94,19 +87,6 @@ export function computeYDomainsByAxis({
   }
 
   return domains;
-}
-
-/** Merge domain maps, normalizing axis ids to strings. */
-export function mergeYDomainRecords(
-  ...records: Record<string, YDomain>[]
-): Record<string, YDomain> {
-  const merged: Record<string, YDomain> = {};
-  for (const record of records) {
-    for (const [axisId, domain] of Object.entries(record)) {
-      merged[normalizeYAxisId(axisId)] = domain;
-    }
-  }
-  return merged;
 }
 
 export function domainsEqual(

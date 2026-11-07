@@ -231,8 +231,8 @@ function findFabricatedEps(rows: EarningsCalendarItem[]): Set<EarningsCalendarIt
 
 /**
  * One earnings day: TD's rows (or a cached day being repaired) merged with
- * Nasdaq's rows for the same date. Pure, so the live fetch and
- * scripts/repair-earnings-calendar-cache.ts run the same logic.
+ * Nasdaq's rows for the same date. Pure, so the live fetch and a cache
+ * repair (the one-off script lives in git history) run the same logic.
  *
  * A row in a fabricated batch loses its numbers, and when Nasdaq answered for
  * the day and does not list the company, the row goes entirely: a cloned row

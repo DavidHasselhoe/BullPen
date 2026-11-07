@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getClientIdentifier } from './rate-limiter';
-import { validateTicker, validateSearchQuery, validateUUID } from './input-validation';
+import { validateTicker, validateSearchQuery } from './input-validation';
 
 /**
  * Rate limiting middleware for API routes.
@@ -83,21 +83,6 @@ export function validateTickerParam(ticker: string | undefined): { valid: boolea
   }
 
   return validateTicker(ticker);
-}
-
-/**
- * Validates companyId (UUID) parameter from route
- */
-export function validateCompanyIdParam(companyId: string | undefined): { valid: boolean; error?: string } {
-  if (!companyId) {
-    return { valid: false, error: 'Company ID parameter is required' };
-  }
-
-  if (!validateUUID(companyId)) {
-    return { valid: false, error: 'Invalid company ID format' };
-  }
-
-  return { valid: true };
 }
 
 /**

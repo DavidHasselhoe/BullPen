@@ -5,13 +5,7 @@
 // server-side counterpart (this file never runs there).
 
 const LOCALE_COOKIE = 'bp_lang';
-const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year, matches middleware.ts
-
-export function readLocaleCookie(): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
-}
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 export function writeLocaleCookie(locale: string): void {
   if (typeof document === 'undefined') return;

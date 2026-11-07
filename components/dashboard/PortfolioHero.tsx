@@ -15,7 +15,7 @@ import { useEntitlements } from '@/hooks/use-entitlements';
 import { SERIES_RANGES, buildPortfolioSeries, type MarketSession, type SeriesRange } from '@/lib/dashboard/portfolio-series';
 import { SessionLine, SessionLegend, SESSION_MUTED_STROKE as MUTED_STROKE, type SessionRegion } from '@/components/charts/session-line';
 import { trackEvent } from '@/lib/analytics/track';
-import type { BatchQuote } from '@/lib/market-data/quote-batcher';
+import type { BatchQuote } from '@/lib/holdings/holding-quotes';
 import { HomeSection, homePanel } from '@/components/dashboard/HomeSection';
 import { useHomePortfolio } from '@/hooks/use-home-portfolio';
 import { useUserSettings } from '@/hooks/use-user-settings';

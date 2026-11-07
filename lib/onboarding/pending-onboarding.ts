@@ -156,10 +156,6 @@ export function readPendingOnboarding(): PendingOnboarding | null {
   }
 }
 
-export function hasPendingOnboarding(): boolean {
-  return readPendingOnboarding() !== null;
-}
-
 export function clearPendingOnboarding(): void {
   if (!isBrowser()) return;
   try {

@@ -87,30 +87,3 @@ export function validateLimit(limit: string | null, max: number = 100, defaultLi
 
   return Math.min(parsed, max); // Cap at max
 }
-
-/**
- * Sanitizes string to prevent XSS
- * React already escapes, but this is extra protection for API responses
- */
-export function sanitizeString(input: string): string {
-  if (typeof input !== 'string') {
-    return '';
-  }
-
-  return input
-    .replace(/[<>]/g, '') // Remove HTML brackets
-    .trim()
-    .slice(0, 10000); // Limit length
-}
-
-/**
- * Validates email format (basic)
- */
-export function validateEmail(email: string): boolean {
-  if (!email || typeof email !== 'string') {
-    return false;
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) && email.length <= 255;
-}

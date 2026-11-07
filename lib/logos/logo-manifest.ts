@@ -51,7 +51,7 @@ async function listAllObjects(): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   let offset = 0;
 
-  // Same paging loop as scripts/clear-logo-bucket.ts. ~1200 objects = 2 pages.
+  // ~1200 objects = 2 pages.
   for (let page = 0; page < 50; page++) {
     const { data, error } = await supabase.storage
       .from(BUCKET)
@@ -114,9 +114,4 @@ export function logoUrlFromManifest(manifest: LogoManifest, ticker: string): str
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '') ?? '';
   if (!base) return null;
   return `${base}/storage/v1/object/public/${BUCKET}/${ticker.toLowerCase()}.${ext}`;
-}
-
-/** Test/diagnostic hook — drops the in-process memo. */
-export function resetLogoManifestMemo(): void {
-  memo = null;
 }

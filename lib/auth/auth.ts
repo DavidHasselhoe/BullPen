@@ -549,34 +549,6 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
 }
 
 /**
- * Gets the current authenticated user
- */
-export async function getCurrentUser(): Promise<AuthUser | null> {
-  const supabase = createBrowserClient();
-
-  try {
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !authUser) {
-      return null;
-    }
-
-    // Sensitive columns aren't selectable via the base table for the
-    // browser client anymore — see migration 121_users_column_scoping.sql.
-    // This RPC is scoped hard to auth.uid() server-side.
-    const { data: userProfile, error: profileError } = await supabase.rpc('get_own_profile');
-
-    if (profileError || !userProfile) {
-      return null;
-    }
-
-    return userProfile as AuthUser;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Gets the current session
  */
 export async function getSession() {

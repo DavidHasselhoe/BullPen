@@ -171,13 +171,6 @@ export function fmtMonthLabel(key: string): string {
   });
 }
 
-/** Formats a month key as "Jul 2026". */
-export function fmtMonthLabelShort(key: string): string {
-  return new Date(`${key}-01T12:00:00Z`).toLocaleDateString('en-US', {
-    month: 'short', year: 'numeric', timeZone: 'UTC',
-  });
-}
-
 /** Day of week for a `YYYY-MM-DD` string, 0 = Monday … 6 = Sunday. */
 export function weekdayMondayFirst(d: string): number {
   const dow = parseDay(d).getUTCDay(); // 0 = Sun

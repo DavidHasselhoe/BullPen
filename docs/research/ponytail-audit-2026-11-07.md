@@ -81,3 +81,14 @@ buildProjectionPath 75, convertTimeToLocal 63, inferNumberStyle 59, inferDateFor
 ---
 
 net: about -7,500 lines possible (Q1-Q3 + Q10 + W1 + W13 + the ui-demo orphans, before the W10 second pass), -3 deps now (`@visx/pattern`, `i18next-browser-languagedetector`, `ws`), and up to -9 more if D2 is ever taken. Biggest runtime wins: D1 (static marketing and stock pages), then W2 (no Auth round trip per signed-in page view).
+
+---
+
+## Applied 2026-11-07 (same day, uncommitted for end session)
+
+Net, excluding `debug-extraction/` and the lockfile: 123 files, +403 / -7,910 lines. Deps removed: `@visx/pattern`, `i18next-browser-languagedetector`, `ws`.
+
+- **Done:** Q1-Q13, W1 (Finnhub price fallback gone, docs updated), W2 (`getClaims()` in middleware; the project JWKS serves an ES256 key), W3-W6 (new `lib/supabase/paging.ts` with `fetchAllPages` + `selectInChunks`, `chunk()` in `lib/utils.ts`; every unbounded or URL-growing user read listed above now goes through them, plus release-notes' unpaged `existing` read, both follow lists and the dividend payday holdings read), W7, W8 (tested against a local fake server, not against TwelveData), W9, W11, W12, and part of W13 (deleted `repair-earnings-calendar-cache`, `fit-logos-to-circle`, `clear-logo-bucket`; kept the Academy staging pair, `backfill-institution-logos`, `vendor-og-fonts`, `theme-overlap-report`, `test-portfolio-activity` as rerunnable tools).
+- **Kept on purpose:** `toolUxEnglishStrings`/`planCopyEnglish` (en-locale generators), `isOldEnough` (D7), `lib/discord/bot-message.ts` (D5). The shared quote/earnings types stay in `finnhub-client.ts` because TwelveData's own `EarningsCalendar` lacks the `unconfirmed`/`estimated` flags clients read.
+- **Not done:** W10 beyond the cascade of unused helpers (the projection props in `time-series-chart-shell.tsx` are still there). All D items.
+- **Unverified:** W9's saving. In `next dev`, Turbopack fetched the lazy modal's chunk as soon as its parent loaded, same as the existing lazy `AdvancedChartModal`, so the production effect needs a build to confirm. W2 with a real signed-in session (no sign-in was attempted). New self-check: `npm run test-paging`.

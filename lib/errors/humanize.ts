@@ -123,19 +123,3 @@ export function humanizeError(input: unknown): string {
 
   return SERVER_MSG;
 }
-
-/**
- * Convenience for catch blocks: parse a fetch Response and return the human
- * message. Reads the JSON body if present so server-side error codes win.
- */
-export async function humanizeFetchError(res: Response): Promise<string> {
-  try {
-    const body = await res.clone().json().catch(() => null);
-    if (body && (body.error || body.code || body.message)) {
-      return humanizeError({ ...body, status: res.status });
-    }
-  } catch {
-    /* ignore — fall through to status-only */
-  }
-  return fromStatus(res.status) ?? SERVER_MSG;
-}

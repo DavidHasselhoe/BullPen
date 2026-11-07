@@ -332,20 +332,6 @@ export function calculateMarketStatus(
 }
 
 /**
- * Formats time until event as HH:MM:SS
- */
-export function formatTimeUntil(milliseconds: number): string {
-  if (milliseconds <= 0) return '00:00:00';
-  
-  const totalSeconds = Math.floor(milliseconds / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
-
-/**
  * Formats time until event as "Xh Ym" or "Xm" for display
  */
 export function formatTimeUntilShort(milliseconds: number): string {
@@ -355,72 +341,4 @@ export function formatTimeUntilShort(milliseconds: number): string {
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-}
-
-/**
- * Converts a time string (HH:MM) from exchange timezone to user's local timezone
- * Uses a binary search approach to find the UTC time that corresponds to the target time in exchange timezone
- */
-export function convertTimeToLocal(timeStr: string, exchangeTimezone: string): string {
-  try {
-    const [targetHours, targetMinutes] = timeStr.split(':').map(Number);
-    const targetMinutesTotal = targetHours * 60 + targetMinutes;
-    
-    // Get today's date
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
-    
-    // Binary search for the UTC time that formats to target time in exchange timezone
-    let bestDate: Date | null = null;
-    let bestDiff = Infinity;
-    
-    // Search through UTC hours (roughly ±12 hours from target to account for timezone differences)
-    const startHour = Math.max(0, targetHours - 12);
-    const endHour = Math.min(24, targetHours + 12);
-    
-    for (let utcHour = startHour; utcHour < endHour; utcHour++) {
-      for (let utcMinute = 0; utcMinute < 60; utcMinute += 5) { // Check every 5 minutes
-        const testDate = new Date(`${todayStr}T${String(utcHour).padStart(2, '0')}:${String(utcMinute).padStart(2, '0')}:00Z`);
-        
-        // Format this UTC date in the exchange timezone
-        const formatter = new Intl.DateTimeFormat('en-US', {
-          timeZone: exchangeTimezone,
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        });
-        
-        const formatted = formatter.format(testDate);
-        const [formattedHours, formattedMinutes] = formatted.split(':').map(Number);
-        const formattedMinutesTotal = formattedHours * 60 + formattedMinutes;
-        
-        // Calculate difference (account for day wrap-around)
-        let diff = Math.abs(formattedMinutesTotal - targetMinutesTotal);
-        if (diff > 720) diff = 1440 - diff; // Handle day boundary
-        
-        if (diff < bestDiff) {
-          bestDiff = diff;
-          bestDate = testDate;
-          if (diff === 0) break; // Exact match
-        }
-      }
-      if (bestDiff === 0) break;
-    }
-    
-    if (!bestDate) {
-      return timeStr; // Fallback
-    }
-    
-    // Format the UTC date in local timezone
-    const localFormatter = new Intl.DateTimeFormat('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
-    
-    return localFormatter.format(bestDate);
-  } catch (error) {
-    console.error('Error converting time to local:', error);
-    return timeStr; // Fallback to original time
-  }
 }

@@ -12,9 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Crown } from 'lucide-react';
-import { getTierColor } from '@/lib/tier-colors';
 import { cn } from '@/lib/utils';
 import { type ClassValue } from 'clsx';
 
@@ -93,7 +91,7 @@ export function ProfileAvatar({
   // Tier 1-2 are "normal" (no special border)
   // Removed Platinum and Diamond - only Gold and Normal
   const showTierBorder = tier === 3;
-  const tierColor = showTierBorder ? getTierColor(3) : undefined; // Always use Gold color for tier 3
+  const tierColor = showTierBorder ? '#FFD700' : undefined; // Pro (account_tier 3) gold ring
 
   const avatarElement = (
     <div
@@ -152,29 +150,5 @@ export function ProfileAvatar({
         <p className="text-xs text-muted-foreground">{tierName}</p>
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-/**
- * Loading state for ProfileAvatar
- */
-export function ProfileAvatarSkeleton({
-  size = 'md',
-  className,
-}: {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  className?: ClassValue;
-}) {
-  return (
-    <div
-      className={cn(`relative rounded-full ${SIZE_CLASSES[size]}`, className)}
-      style={{ border: '2px solid #C0C0C0' }}
-    >
-      <div className="absolute inset-0 rounded-full overflow-hidden">
-        <Avatar className={`w-full h-full`}>
-          <Skeleton className={`w-full h-full rounded-full bg-muted/50`} />
-        </Avatar>
-      </div>
-    </div>
   );
 }

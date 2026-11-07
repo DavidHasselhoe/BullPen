@@ -33,14 +33,11 @@ import { ingestFiling, list13FFilings, type IngestTarget } from '@/lib/instituti
 import { enrichHoldingSectors } from '@/lib/institutions/enrich-holding-sectors';
 import { fetchFirst13FFiledDate } from '@/lib/edgar/edgar-watch';
 import { isInFilingWindow } from '@/lib/institutions/filing-schedule';
+import { sleep } from '@/lib/utils';
 
 export const maxDuration = 300;
 
 const INTER_FUND_DELAY_MS = 250; // polite-citizen pacing against SEC EDGAR, no formal rate limit but edgar-watch.ts calls for this
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 async function syncFund(supabase: ReturnType<typeof createServerClient>, investor: IngestTarget) {
   const latest13F = (await list13FFilings(investor.cik))[0];

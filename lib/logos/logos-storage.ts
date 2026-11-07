@@ -160,33 +160,3 @@ export async function uploadLogoToStorage(
     };
   }
 }
-
-/**
- * Checks if logo already exists in storage
- */
-export async function logoExistsInStorage(ticker: string): Promise<boolean> {
-  const supabase = createServerClient();
-
-  try {
-    // Check for any extension (png, jpg, svg)
-    const extensions = ['png', 'jpg', 'svg'];
-    const fileName = ticker.toLowerCase();
-    const bucket = 'company-logos';
-
-    for (const ext of extensions) {
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .list('', {
-          search: `${fileName}.${ext}`,
-        });
-
-      if (!error && data?.some((file) => file.name === `${fileName}.${ext}`)) {
-        return true;
-      }
-    }
-
-    return false;
-  } catch {
-    return false;
-  }
-}

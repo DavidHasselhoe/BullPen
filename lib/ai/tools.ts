@@ -2054,28 +2054,6 @@ const getHealthScoreHistory = tool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Data-only tools — no navigation or portfolio mutation. Shared by any AI
-// surface that needs company/financial data lookups (main chat, chart
-// assistant, etc.) regardless of where in the app it's embedded.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const COMPANY_DATA_TOOLS = {
-  getCompanyProfile,
-  searchCompanies,
-  getCompanyMetrics,
-  compareCompanies,
-  getLiveQuote,
-  getTechnicals,
-  getKeyStatistics,
-  getCompanyFinancials,
-  getEarningsData,
-  getUpcomingEarnings,
-  getHealthScore,
-  getHealthScoreHistory,
-  getLiveCompanyProfile,
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Tool: Washington Trading (stored disclosures only — no API credits)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2394,5 +2372,3 @@ export const BULLPEN_TOOLS = {
   getHealthScoreHistory,
   getLiveCompanyProfile,
 };
-
-export const CLIENT_ACTION_KEY = '__clientAction';

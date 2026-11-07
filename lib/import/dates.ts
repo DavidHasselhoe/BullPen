@@ -90,77 +90,10 @@ function finalize(year: number, month: number, day: number): string | null {
   return `${year}-${pad2(month)}-${pad2(day)}`;
 }
 
-/** True if `s` matches DD/MM/YYYY-shaped punctuation with two 1-2 digit
- *  parts before a 4-digit year (or vice versa) — the family of formats
- *  where day/month order is genuinely ambiguous per-cell. */
-function splitNumericDateParts(s: string): [string, string, string] | null {
-  const m = /^(\d{1,4})[.\-/](\d{1,4})[.\-/](\d{1,4})$/.exec(s.trim());
-  return m ? [m[1], m[2], m[3]] : null;
-}
-
 export interface DateFormatInference {
   format: DateFormat | null;
   ambiguous: boolean;
   reason: string;
-}
-
-/**
- * Infers the date format over a population of samples. DD/MM vs MM/DD is
- * resolved in code wherever possible: if any first-part value exceeds 12,
- * it must be DMY; if any second-part value exceeds 12, it must be MDY. Only
- * when neither ever happens is the file genuinely ambiguous — the caller
- * decides the default (locale hint, then the app's UI language, then DMY).
- */
-export function inferDateFormat(samples: string[]): DateFormatInference {
-  const nonEmpty = samples.map((s) => s.trim()).filter(Boolean);
-  if (nonEmpty.length === 0) {
-    return { format: null, ambiguous: true, reason: 'no samples' };
-  }
-
-  // ISO first — the common, unambiguous case.
-  if (nonEmpty.every((s) => /^\d{4}-\d{2}-\d{2}$/.test(s))) {
-    return { format: 'YYYY-MM-DD', ambiguous: false, reason: 'ISO 8601' };
-  }
-  if (nonEmpty.every((s) => /^\d{8}$/.test(s))) {
-    return { format: 'YYYYMMDD', ambiguous: false, reason: 'compact ISO' };
-  }
-  if (nonEmpty.every((s) => /^\d{4}\/\d{2}\/\d{2}$/.test(s))) {
-    return { format: 'YYYY/MM/DD', ambiguous: false, reason: 'ISO with slashes' };
-  }
-
-  const parts = nonEmpty.map(splitNumericDateParts).filter((p): p is [string, string, string] => p !== null);
-  if (parts.length === 0) {
-    return { format: null, ambiguous: true, reason: 'unrecognized shape' };
-  }
-
-  const separator = /^\d{1,2}\.(\d{1,2})\.\d{4}$/.test(nonEmpty[0]) ? '.'
-    : nonEmpty[0].includes('/') ? '/' : '-';
-  const yearFirst = parts.every((p) => p[0].length === 4);
-  if (yearFirst) {
-    return { format: separator === '/' ? 'YYYY/MM/DD' : 'YYYY-MM-DD', ambiguous: false, reason: 'year-first' };
-  }
-
-  const firstOver12 = parts.some((p) => Number(p[0]) > 12);
-  const secondOver12 = parts.some((p) => Number(p[1]) > 12);
-
-  if (firstOver12 && !secondOver12) {
-    const fmt = separator === '.' ? 'DD.MM.YYYY' : separator === '/' ? 'DD/MM/YYYY' : 'DD-MM-YYYY';
-    return { format: fmt, ambiguous: false, reason: 'day > 12 seen in first part' };
-  }
-  if (secondOver12 && !firstOver12) {
-    const fmt = separator === '/' ? 'MM/DD/YYYY' : 'MM-DD-YYYY';
-    return { format: fmt, ambiguous: false, reason: 'day > 12 seen in second part' };
-  }
-  if (firstOver12 && secondOver12) {
-    return { format: null, ambiguous: true, reason: 'conflicting: both parts exceed 12 somewhere' };
-  }
-
-  // Neither part ever exceeds 12 — genuinely ambiguous.
-  return {
-    format: separator === '.' ? 'DD.MM.YYYY' : separator === '/' ? 'DD/MM/YYYY' : 'DD-MM-YYYY',
-    ambiguous: true,
-    reason: 'neither part ever exceeds 12',
-  };
 }
 
 export { DATE_FORMATS };

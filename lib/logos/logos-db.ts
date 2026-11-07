@@ -44,47 +44,6 @@ export async function updateCompanyLogo(
 }
 
 /**
- * Gets company logo metadata
- */
-export async function getCompanyLogo(companyId: string): Promise<{
-  success: boolean;
-  logo?: LogoMetadata;
-  error?: string;
-}> {
-  const supabase = createServerClient();
-
-  try {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('logo_url, logo_source, logo_updated_at')
-      .eq('id', companyId)
-      .single();
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    if (!data) {
-      return { success: false, error: 'Company not found' };
-    }
-
-    return {
-      success: true,
-      logo: {
-        logo_url: data.logo_url,
-        logo_source: data.logo_source as 'brand' | 'logo.dev' | 'wikipedia' | 'manual' | null,
-        logo_updated_at: data.logo_updated_at,
-      },
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
  * Gets all companies that need logos (missing logo_url)
  */
 export async function getCompaniesNeedingLogos(limit?: number): Promise<{

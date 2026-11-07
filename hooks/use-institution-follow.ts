@@ -82,5 +82,3 @@ export function useToggleFollow(kind: FollowKind, slug: string) {
 
 // Fund-specific names kept for the existing 13F call sites.
 export const useFollowedFunds = () => useFollowedSlugs('institution');
-export const useIsFollowingFund = (slug: string) => useIsFollowing('institution', slug);
-export const useToggleFundFollow = (slug: string) => useToggleFollow('institution', slug);

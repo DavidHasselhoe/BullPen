@@ -7,10 +7,7 @@ import {
 } from "react";
 import { isChartClipPassthrough } from "./chart-child-passthrough";
 import type { ProjectionPoint } from "./projection-utils";
-import {
-  projectionDateExtents,
-  projectionValueExtents,
-} from "./projection-utils";
+import { projectionValueExtents } from "./projection-utils";
 import { normalizeYAxisId } from "./y-axis-scales";
 
 export interface ProjectionLineConfig {
@@ -114,16 +111,4 @@ export function mergeProjectionYDomain(
 
   const padding = (nextMax - nextMin) * 0.05 || 1;
   return [nextMin - padding, nextMax + padding];
-}
-
-export function mergeProjectionXDomainMax(
-  maxTime: number,
-  configs: ProjectionLineConfig[]
-): number {
-  const paths = configs.map((config) => config.data);
-  const extents = projectionDateExtents(paths);
-  if (!extents) {
-    return maxTime;
-  }
-  return Math.max(maxTime, extents.maxTime);
 }

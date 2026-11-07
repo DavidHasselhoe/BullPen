@@ -14,12 +14,6 @@ function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
 
-/** Position of `current` between `low` and `high`, clamped 0–1. */
-export function week52Position(low: number, high: number, current: number): number {
-  if (high <= low) return 0.5;
-  return clamp01((current - low) / (high - low));
-}
-
 /** "Trading 8% below its 1-year high" — the sentence a beginner actually wants. */
 export function week52Insight(low: number, high: number, current: number): string {
   if (high <= low || current <= 0) return '';

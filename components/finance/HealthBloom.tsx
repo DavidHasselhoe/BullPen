@@ -216,29 +216,3 @@ export const HealthBloomLegendRow = forwardRef<HTMLButtonElement, HealthBloomLeg
     );
   }
 );
-
-export function HealthBloomLegend({
-  categories,
-  hoveredCategory,
-  onCategoryHover,
-  onCategoryClick,
-}: {
-  categories: CategoryScore[];
-  hoveredCategory?: string | null;
-  onCategoryHover?: (name: string | null) => void;
-  onCategoryClick?: (name: string) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      {categories.map((cat) => (
-        <HealthBloomLegendRow
-          key={cat.name}
-          category={cat}
-          hovered={hoveredCategory === cat.name}
-          onCategoryHover={onCategoryHover}
-          onClick={onCategoryClick ? () => onCategoryClick(cat.name) : undefined}
-        />
-      ))}
-    </div>
-  );
-}

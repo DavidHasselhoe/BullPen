@@ -5,9 +5,7 @@ const REF_COOKIE_NAME = 'bp_ref';
 
 /** Reads the bp_ref cookie set by middleware on /share/[id], or null if absent. */
 export function getShareRefCookie(): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${REF_COOKIE_NAME}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  return readCookie(REF_COOKIE_NAME);
 }
 
 /**

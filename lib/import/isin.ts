@@ -7,12 +7,6 @@
 
 export const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
 
-/** ISO 3166-1 alpha-2 prefix of an ISIN, e.g. 'NO' for Norway. Not validated
- *  against the real country list here — callers that care can cross-check. */
-export function isinCountryPrefix(isin: string): string {
-  return isin.slice(0, 2).toUpperCase();
-}
-
 /** Luhn mod-10 over the ISIN with letters expanded to two-digit numbers
  *  (A=10 ... Z=35), per ISO 6166. */
 export function isValidIsin(raw: string): boolean {

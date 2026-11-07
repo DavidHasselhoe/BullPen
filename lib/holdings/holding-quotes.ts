@@ -1,6 +1,13 @@
-import type { BatchQuote } from '@/lib/market-data/quote-batcher';
 import type { UserHolding } from '@/lib/types/database';
 import { listingMic } from '@/lib/assets/asset-type';
+
+/** One row of the /api/quotes/batch response. */
+export interface BatchQuote {
+  price: number;
+  change: number;
+  changePercent: number;
+  stale?: boolean;
+}
 
 /**
  * The quote request behind every "what is my portfolio worth" number: My

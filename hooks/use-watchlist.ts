@@ -44,12 +44,6 @@ export function useWatchlist() {
   });
 }
 
-/** Returns true if a symbol is in the watchlist */
-export function useIsWatched(symbol: string) {
-  const { data } = useWatchlist();
-  return (data ?? []).some((item) => item.symbol === symbol.toUpperCase());
-}
-
 /**
  * Put a cache back the way it was before an optimistic update. "Was empty"
  * counts: skipping the rollback when there had been no cached list left a
@@ -117,39 +111,6 @@ export function useAddToWatchlist() {
       queryClient.invalidateQueries({ queryKey: ['watchlist-since-added'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-performance'] });
       queryClient.invalidateQueries({ queryKey: ['watchlist-lists'] }); // refresh item_count badge
-    },
-  });
-}
-
-/** Toggle alerts_enabled for a symbol in the watchlist */
-export function useToggleWatchlistAlert() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ symbol, alerts_enabled }: { symbol: string; alerts_enabled: boolean }) => {
-      const res = await fetch('/api/watchlist', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol, alerts_enabled }),
-      });
-      if (!res.ok) throw new Error('Failed to update alert setting');
-      return res.json();
-    },
-    onMutate: async ({ symbol, alerts_enabled }) => {
-      await queryClient.cancelQueries({ queryKey: ['watchlist'] });
-      const previous = queryClient.getQueryData<WatchlistItem[]>(['watchlist']);
-      queryClient.setQueryData<WatchlistItem[]>(['watchlist'], (old) =>
-        (old ?? []).map((item) =>
-          item.symbol === symbol.toUpperCase() ? { ...item, alerts_enabled } : item
-        )
-      );
-      return { previous };
-    },
-    onError: (_err, _vars, ctx) => {
-      queryClient.setQueryData(['watchlist'], ctx?.previous);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
     },
   });
 }

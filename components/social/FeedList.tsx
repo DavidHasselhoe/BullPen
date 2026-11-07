@@ -20,7 +20,7 @@ import { PoliticianAvatar } from '@/components/congress/PoliticianAvatar';
 import { slugToAssetPath } from '@/lib/assets/asset-type';
 import { fmtTradingDate, intlLocale } from '@/lib/dates/clock';
 import { fetchHoldingQuotes } from '@/lib/holdings/holding-quotes';
-import type { BatchQuote } from '@/lib/market-data/quote-batcher';
+import type { BatchQuote } from '@/lib/holdings/holding-quotes';
 import type { FeedItem } from '@/app/api/social/feed/route';
 
 type PoliticianItem = Extract<FeedItem, { kind: 'politician_trades' }>;
