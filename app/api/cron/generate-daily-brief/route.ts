@@ -29,6 +29,7 @@ import { getIndexMovers } from '@/lib/market-data/index-movers';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 import { createDailyBriefReadyNotification } from '@/lib/notifications/notification-creators';
+import { isPro, tierFromUser } from '@/lib/billing/tier';
 
 // 300s is Vercel's ceiling and the hard limit this route lives inside. Under
 // web_search_20250305 the whole invocation historically finished well within
@@ -800,12 +801,14 @@ Use live web search to verify the latest news for "Movers & Stories", "Watch Tod
   // published brief over a notification failure.
   after(async () => {
     try {
-      const { data: proUsers } = await supabase
+      // Invite/referral Pro lives in pro_bonus_until, not account_tier.
+      const { data: candidates } = await supabase
         .from('users')
-        .select('id')
-        .or('role.eq.admin,account_tier.gte.3') as unknown as
-        { data: Array<{ id: string }> | null };
-      for (const u of proUsers ?? []) {
+        .select('id, account_tier, role, pro_bonus_until')
+        .or(`role.eq.admin,account_tier.gte.3,pro_bonus_until.gt.${new Date().toISOString()}`) as unknown as
+        { data: Array<{ id: string; account_tier: number | null; role: string | null; pro_bonus_until: string | null }> | null };
+      const proUsers = (candidates ?? []).filter((u) => isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until)));
+      for (const u of proUsers) {
         await createDailyBriefReadyNotification(u.id, { title: titleLine, publishedDate: todayET });
       }
     } catch (err) {
