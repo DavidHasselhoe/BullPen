@@ -17,16 +17,16 @@ import { PRICING } from '@/lib/billing/entitlements';
  * `marketing` sets the text in the marketing ramp (DESIGN.md Two-Registers
  * Rule) for /get-started/trial; /upgrade keeps the product size.
  */
-export function TrialTimeline({ annual, className, marketing = false }: { annual: boolean; className?: string; marketing?: boolean }) {
+export function TrialTimeline({ annual, className, marketing = false, days = PRICING.trialDays }: { annual: boolean; className?: string; marketing?: boolean; days?: number }) {
   const { t } = useTranslation('billing');
   const charge = annual ? PRICING.proAnnualPerMonth * 12 : PRICING.proMonthly;
-  const reminderDay = PRICING.trialDays - 3;
+  const reminderDay = days - 3;
   const steps = [
     { icon: Unlock, when: t('trialTimelineToday'), what: t('trialTimelineTodayDesc') },
     { icon: Bell, when: t('trialTimelineDay', { day: reminderDay }), what: t('trialTimelineReminderDesc') },
     {
       icon: CreditCard,
-      when: t('trialTimelineDay', { day: PRICING.trialDays }),
+      when: t('trialTimelineDay', { day: days }),
       what: annual ? t('trialTimelineChargeAnnual', { price: charge }) : t('trialTimelineChargeMonthly', { price: charge }),
     },
   ];

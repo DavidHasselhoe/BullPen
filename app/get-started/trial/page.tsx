@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useEntitlements } from '@/hooks/use-entitlements';
+import { useTrialDays } from '@/hooks/use-trial-days';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { Logo } from '@/components/landing/Atoms';
 import { OnboardingProgress } from '@/components/get-started/OnboardingProgress';
@@ -22,6 +23,7 @@ import '@/components/landing/landing-styles.css';
 export default function TrialOfferPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const { isPro } = useEntitlements();
+  const { days: trialDays, isLoading: trialLoading } = useTrialDays();
   const { data: watchlist } = useWatchlist();
   const router = useRouter();
   const [cycle, setCycle] = useState<BillingCycle>('annual');
@@ -63,11 +65,11 @@ export default function TrialOfferPage() {
   }, [isLoading, isAuthenticated, isPro]);
 
   // The frame renders while auth loads or a redirect is underway, never a blank screen.
-  const ready = !isLoading && isAuthenticated && !isPro;
+  const ready = !isLoading && !trialLoading && isAuthenticated && !isPro;
   const yearlySaving = Math.round((1 - PRICING.proAnnualPerMonth / PRICING.proMonthly) * 100);
 
   const lead = watchlist?.[0]?.symbol;
-  const terms = renewalTerms(cycle);
+  const terms = renewalTerms(cycle, { days: trialDays });
 
   async function start() {
     setStatus('loading');
@@ -123,10 +125,10 @@ export default function TrialOfferPage() {
               style={{ margin: '0 0 12px', fontSize: 'clamp(26px, 3.4vw, 34px)', color: 'var(--fg)', textAlign: 'center' }}
             >
               Try Pro free for a{' '}
-              <span className="accent-serif" style={{ color: 'var(--accent)' }}>week.</span>
+              <span className="accent-serif" style={{ color: 'var(--accent)' }}>{trialDays > PRICING.trialDays ? 'month.' : 'week.'}</span>
             </h1>
             <p style={{ margin: '0 0 28px', textAlign: 'center', fontSize: 16, color: 'var(--fg-muted)' }}>
-              {justConfirmed ? 'All set. ' : ''}Every Pro feature for {PRICING.trialDays} days.
+              {justConfirmed ? 'All set. ' : ''}Every Pro feature for {trialDays} days{trialDays > PRICING.trialDays ? ", thanks to your friend's link" : ''}.
             </p>
 
             {/* A left-aligned list centred as a block, so it lines up under the centred headline. */}
@@ -168,7 +170,7 @@ export default function TrialOfferPage() {
             </div>
 
             {/* Today, the reminder, the charge: said before they commit. */}
-            <TrialTimeline annual={cycle === 'annual'} className="mx-auto mt-6 w-fit" marketing />
+            <TrialTimeline annual={cycle === 'annual'} days={trialDays} className="mx-auto mt-6 w-fit" marketing />
 
             <button
               type="button"

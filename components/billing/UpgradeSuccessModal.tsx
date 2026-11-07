@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { PLAN_COMPARISON, PRICING } from '@/lib/billing/entitlements';
+import { PLAN_COMPARISON } from '@/lib/billing/entitlements';
 import { POSE_SRC } from '@/components/ui/EmptyState';
 
 interface Props {
@@ -38,7 +38,7 @@ export function UpgradeSuccessModal({ open, onOpenChange }: Props) {
           />
           <DialogTitle>{t('upgradeSuccessTitle')}</DialogTitle>
           <DialogDescription>
-            {t('upgradeSuccessDescription', { trialDays: PRICING.trialDays })}
+            {t('upgradeSuccessDescription')}
           </DialogDescription>
         </DialogHeader>
 

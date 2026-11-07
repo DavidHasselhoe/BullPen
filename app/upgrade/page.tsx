@@ -14,6 +14,7 @@ import { InkBullets } from '@/components/ai/InkText';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { useEntitlements } from '@/hooks/use-entitlements';
+import { useTrialDays } from '@/hooks/use-trial-days';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { FREE_ALERT_STOCKS, FREE_WATCHLISTS, PRICING, PLAN_COMPARISON, type ComparisonRow } from '@/lib/billing/entitlements';
 import { planCopyKey } from '@/lib/billing/plan-copy';
@@ -150,6 +151,7 @@ function UpgradeContent() {
   const { t, i18n } = useTranslation('billing');
   const { isAuthenticated, user } = useAuth();
   const { isPro } = useEntitlements();
+  const { days: trialDays } = useTrialDays();
   const { data: watchlist } = useWatchlist();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -173,7 +175,7 @@ function UpgradeContent() {
   }, [searchParams]);
 
   const price = annual ? PRICING.proAnnualPerMonth : PRICING.proMonthly;
-  const terms = renewalTerms(annual ? 'annual' : 'monthly');
+  const terms = renewalTerms(annual ? 'annual' : 'monthly', { days: trialDays });
 
   async function handleUpgrade() {
     const cycle = annual ? 'annual' : 'monthly';
@@ -215,8 +217,8 @@ function UpgradeContent() {
   );
 
   const FAQ: Array<{ q: string; a: React.ReactNode }> = [
-    { q: t('upgradeFaqTrialQ'), a: t('upgradeFaqTrialA', { trialDays: PRICING.trialDays, moneyBackDays: PRICING.moneyBackDays }) },
-    { q: t('upgradeFaqCardQ'), a: t('upgradeFaqCardA', { trialDays: PRICING.trialDays }) },
+    { q: t('upgradeFaqTrialQ'), a: t('upgradeFaqTrialA', { trialDays, moneyBackDays: PRICING.moneyBackDays }) },
+    { q: t('upgradeFaqCardQ'), a: t('upgradeFaqCardA', { trialDays }) },
     { q: t('upgradeFaqCancelQ'), a: t('upgradeFaqCancelA') },
     { q: t('upgradeFaqCompareQ'), a: freeKeeps },
     { q: t('upgradeFaqLimitsQ'), a: t('upgradeFaqLimitsA', { alertStocks: FREE_ALERT_STOCKS, watchlists: FREE_WATCHLISTS }) },
@@ -301,7 +303,7 @@ function UpgradeContent() {
                   <h2 id="pro-plan-name" className="text-xl font-bold tracking-tight">{t('upgradeProPlanName')}</h2>
                 </div>
                 <span className="rounded-full border px-2.5 py-1 text-xs font-medium text-foreground">
-                  {t('upgradeTrialBadge', { trialDays: PRICING.trialDays })}
+                  {t('upgradeTrialBadge', { trialDays })}
                 </span>
               </div>
 
@@ -343,7 +345,7 @@ function UpgradeContent() {
                 <Button onClick={handleUpgrade} disabled={status === 'loading'} className="btn-brand-solid mt-6 h-11 w-full text-sm font-semibold">
                   {status === 'loading'
                     ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />{t('upgradeOneSec')}</>
-                    : t('upgradeStartTrial', { trialDays: PRICING.trialDays })}
+                    : t('upgradeStartTrial', { trialDays })}
                 </Button>
               )}
               {!isPro && status === 'idle' && (
@@ -363,7 +365,7 @@ function UpgradeContent() {
               {/* What happens when, before they commit: Pro today, a reminder, then the charge. */}
               {!isPro && (
                 <div className="mt-5 border-t pt-4 max-sm:order-2">
-                  <TrialTimeline annual={annual} />
+                  <TrialTimeline annual={annual} days={trialDays} />
                   <p className="mt-3 text-xs text-muted-foreground">{t('upgradeRefundNote', { moneyBackDays: PRICING.moneyBackDays })}</p>
                 </div>
               )}

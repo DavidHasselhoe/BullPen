@@ -97,6 +97,13 @@ export async function POST(request: NextRequest) {
           // with the real post-charge status, so skip granting Pro here.
           const revoked = await enforceTrialFingerprint(sub, customerId, userId);
           if (revoked) break;
+          // A referred user's trial passed the card check: mark their referral
+          // used and give the referrer their month (migration 198; runs once
+          // per referral, so a redelivered event does nothing). Best-effort.
+          if (userId) {
+            const { error: referralError } = await createServerClient().rpc('claim_referral_trial' as never, { referred: userId } as never);
+            if (referralError) console.error('[billing/webhook] claim_referral_trial failed', referralError.message);
+          }
           // Trial terms at sign-up: what will be charged, when, and how to
           // cancel. Best-effort: an email failure must not fail the webhook,
           // or Stripe retries it and the grant below runs twice.

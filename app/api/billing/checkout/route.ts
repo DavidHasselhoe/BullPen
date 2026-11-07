@@ -8,9 +8,9 @@ import {
   priceIdForCycle,
   isStripeConfigured,
   statusGrantsPro,
-  PRO_TRIAL_DAYS,
   TIER_PRO,
 } from '@/lib/billing/stripe';
+import { trialDaysFor } from '@/lib/billing/referral-trial';
 import { checkoutReturnUrls, parseReturnTarget } from '@/lib/billing/checkout-return';
 import { getVerificationState } from '@/lib/auth/email-verification';
 
@@ -147,12 +147,15 @@ async function checkoutHandler(
     // via env to avoid failing session creation before tax is configured.
     const automaticTax = process.env.STRIPE_AUTOMATIC_TAX === 'true';
 
+    const trialDays = await trialDaysFor(supabase, userId);
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
-        trial_period_days: PRO_TRIAL_DAYS,
+        // 30 days for an unused invite/share referral, else PRO_TRIAL_DAYS. The
+        // purchase pages show the same number (/api/billing/trial).
+        trial_period_days: trialDays,
         metadata: { supabase_user_id: userId },
       },
       client_reference_id: userId,
@@ -175,7 +178,8 @@ async function checkoutHandler(
     // The return target is part of the key: an onboarding checkout and an
     // /upgrade checkout have different return URLs, so they must never collapse
     // onto the same cached session.
-    const idempotencyKey = `checkout:${userId}:${cycle}:${returnTarget}`;
+    // The trial length is part of it too: it changes once a referral trial is used.
+    const idempotencyKey = `checkout:${userId}:${cycle}:${returnTarget}:t${trialDays}`;
     let checkoutSession: Stripe.Checkout.Session;
     try {
       checkoutSession = await stripe.checkout.sessions.create(sessionParams, { idempotencyKey });

@@ -11,10 +11,10 @@ export function getShareRefCookie(): string | null {
 }
 
 /**
- * If a bp_ref cookie is present, asks the server to attribute this signup and
- * grant the "give a month, get a month" referral reward to both the new
- * signup and the share's owner (migrations 114/115/124 — bonus Pro access,
- * notifications on both sides). The RPC derives the caller from auth.uid()
+ * If a share (bp_ref) or invite cookie is present, asks the server to record
+ * the referral. Nothing is granted here (migration 198): the new user's
+ * checkout trial becomes 30 days, and the referrer earns a month when that
+ * trial starts (Stripe webhook). The RPC derives the caller from auth.uid()
  * and is itself idempotent (checks + sets settings.acquired_via_share_id
  * atomically), so this is safe to call on every login/signup completion —
  * a no-op whenever there's no cookie or the account is already attributed.

@@ -57,7 +57,7 @@
   "paywallContentUpgradeCta": "Upgrade to Pro · ${{price}}/mo",
   "paywallContentMaybeLater": "Maybe later",
   "upgradeSuccessTitle": "Welcome to Pro!",
-  "upgradeSuccessDescription": "Thanks for upgrading. Your {{trialDays}}-day trial is live, and here's everything you just unlocked.",
+  "upgradeSuccessDescription": "Thanks for upgrading. Your free trial is live, and here's everything you just unlocked.",
   "upgradeSuccessStartExploring": "Start exploring",
   "upgradeBackHome": "Home",
   "upgradeFaqTrialQ": "Is there a free trial?",

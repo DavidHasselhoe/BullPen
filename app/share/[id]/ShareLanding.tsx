@@ -39,7 +39,7 @@ export function ShareLanding({ share }: { share: PortfolioShare }) {
           Start tracking your portfolio
         </Button>
         <p className="text-xs text-muted-foreground mt-3">
-          Free to start, no card required. Sign up here and get a free month of Pro.
+          Free to start, no card required. Sign up here and your Pro trial lasts 30 days instead of 7.
         </p>
 
         {/* The one piece of real social proof this page has: a link to the

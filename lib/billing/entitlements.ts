@@ -22,6 +22,8 @@ export const PRICING = {
   proMonthly: 12,
   proAnnualPerMonth: 9,   // billed yearly → $108/yr (25% off)
   trialDays: 7,
+  /** Trial for someone who signed up through an invite or share link (lib/billing/referral-trial.ts). */
+  referralTrialDays: 30,
   moneyBackDays: 30,
 };
 

@@ -15,9 +15,10 @@ interface InviteInfo {
 }
 
 /**
- * The account's personal invite link. A friend who signs up through it and
- * the sender each get a month of Pro; the limits (new accounts only, 3 months
- * per 30 days, 12 in total) live in record_referral, migration 173.
+ * The account's personal invite link. A friend who signs up through it gets
+ * a 30-day Pro trial instead of 7; the sender gets a month once that trial
+ * starts. The limits (new accounts only, 3 months per 30 days, 12 in total)
+ * live in record_referral and claim_referral_trial, migration 198.
  */
 export function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { t } = useTranslation('navigation');

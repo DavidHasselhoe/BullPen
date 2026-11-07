@@ -31,14 +31,14 @@ export interface RenewalTerms {
   cancelLine: string;
 }
 
-export function renewalTerms(cycle: BillingCycle, options: { trial?: boolean } = {}): RenewalTerms {
+export function renewalTerms(cycle: BillingCycle, options: { trial?: boolean; days?: number } = {}): RenewalTerms {
   const withTrial = options.trial ?? true;
   const total = cycle === 'annual' ? PRICING.proAnnualPerMonth * 12 : PRICING.proMonthly;
   const per = cycle === 'annual' ? 'a year' : 'a month';
   const every = cycle === 'annual' ? 'every year' : 'every month';
 
   const chargeLine = withTrial
-    ? `Free for ${PRICING.trialDays} days, then $${total} ${per}. It renews automatically ${every} until you cancel.`
+    ? `Free for ${options.days ?? PRICING.trialDays} days, then $${total} ${per}. It renews automatically ${every} until you cancel.`
     : `$${total} ${per}, renewed automatically ${every} until you cancel.`;
 
   const reminder = withTrial ? 'We email you 3 days before the trial ends. ' : '';

@@ -19,7 +19,7 @@ type InviteState = 'guest' | 'member' | 'own';
 const noSubscribe = () => () => {};
 
 /**
- * "A friend sent you a month of *Pro*": the one starred word gets the serif
+ * "A friend sent you 30 days of *Pro*": the one starred word gets the serif
  * accent. Stars, not <em>, because the pseudo-locale doubles vowels.
  */
 function withSerif(text: string): ReactNode {
@@ -35,7 +35,7 @@ function withSerif(text: string): ReactNode {
 }
 
 /**
- * A friend's invite link. Offer-led: the free month is the reason they came,
+ * A friend's invite link. Offer-led: the 30-day trial is the reason they came,
  * so it is the headline, the button and the line in the signup dialog, not
  * fine print under the button. The same frame serves the inviter opening
  * their own link (share it instead) and any other signed-in account.
@@ -104,7 +104,7 @@ export function InviteLanding({ state, code, inviterName, url }: { state: Invite
                 <ul
                   style={{ listStyle: 'none', padding: 0, margin: '18px 0 0', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 18px', fontSize: 13, color: 'var(--fg-dim)' }}
                 >
-                  {(['inviteNoCard', 'inviteNothingToCancel', 'inviteFreeAfter'] as const).map((key) => (
+                  {(['inviteFreeSignup', 'inviteTrialLength', 'inviteCancelBeforeEnd'] as const).map((key) => (
                     <li key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                       <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
                       {t(`auth:${key}`)}
