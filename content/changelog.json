@@ -1,5 +1,24 @@
 [
   {
+    "date": "2026-11-09",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Dividends on Holdings is now a short preview of your next paydays with company logos. Expand it for the full year, or hide it if dividends aren't for you",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Right at the market open, a stock that hasn't traded yet now shows no change instead of yesterday's move, and the explanation next to it always fits the direction it moved",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Dividend estimates now include real raises, like NVIDIA's increase this year, instead of mistaking them for one-off payments"
+      }
+    ]
+  },
+  {
     "date": "2026-11-07",
     "entries": [
       {
