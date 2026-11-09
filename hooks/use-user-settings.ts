@@ -51,7 +51,7 @@ export function useUserSettings() {
   /** Throws so the card can show the failure. */
   const setDividendsHidden = useCallback(
     async (hidden: boolean) => {
-      if (!user?.id) return;
+      if (!user?.id) throw new Error('not_signed_in');
       const supabase = createBrowserClient();
       const { data: row, error: fetchError } = await supabase
         .from('users')
