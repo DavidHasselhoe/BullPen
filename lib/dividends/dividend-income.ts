@@ -50,7 +50,11 @@ function monthStartPlus(d: string, n: number): string {
 /**
  * Valid, de-duplicated payments, newest first, without one-offs. TwelveData
  * books spin-offs as cash dividends (HON's $115.89 against ~$1.19 quarterly),
- * and a special isn't recurring income, so anything over 5x the median goes.
+ * and a special isn't recurring income, so a payment over 5x the ones on both
+ * sides of it goes. Against neighbours, not the median: years of small payments
+ * made NVDA's real raise ($0.01 to $0.25, June 2026) look like a special. A
+ * raise that is still the newest payment has only one neighbour and counts
+ * from its second payment, since projecting a special forward is the worse error.
  */
 export function regularPayments(events: DividendEvent[]): DividendEvent[] {
   const seen = new Set<string>();
@@ -58,10 +62,10 @@ export function regularPayments(events: DividendEvent[]): DividendEvent[] {
     .filter((e) => e.amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(e.exDate))
     .filter((e) => (seen.has(e.exDate) ? false : (seen.add(e.exDate), true)))
     .sort((a, b) => b.exDate.localeCompare(a.exDate));
-  if (valid.length === 0) return [];
-  const sorted = valid.map((e) => e.amount).sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)];
-  return valid.filter((e) => e.amount <= median * 5);
+  return valid.filter((e, i) => {
+    const neighbours = [valid[i - 1], valid[i + 1]].filter(Boolean);
+    return neighbours.length === 0 || neighbours.some((n) => e.amount <= n.amount * 5);
+  });
 }
 
 /** The next payment a holder gets: the earliest one whose money hasn't arrived yet. */
@@ -133,7 +137,7 @@ export interface IncomeMonth {
 export function incomeMonths(entries: IncomeEntry[], today: string): IncomeMonth[] {
   return Array.from({ length: 12 }, (_, i) => {
     const month = monthStartPlus(today, i).slice(0, 7);
-    const inMonth = entries.filter((e) => e.date.startsWith(month));
+    const inMonth = entries.filter((e) => e.date.startsWith(month)).sort((a, b) => a.date.localeCompare(b.date));
     return { month, total: inMonth.reduce((s, e) => s + (e.total ?? 0), 0), entries: inMonth };
   });
 }
@@ -188,6 +192,19 @@ if (process.argv[1]?.endsWith('dividend-income.ts')) {
   ];
   assert(holdingYear('HON', hon, 1, today).every((e) => e.perShare < 2), 'spin-off dropped');
 
+  // NVDA as cached on 2026-11-09: a 25x raise is the new normal, not a special.
+  const nvda: DividendEvent[] = [
+    { exDate: '2026-09-10', payDate: '2026-10-01', amount: 0.25 },
+    { exDate: '2026-06-04', payDate: '2026-06-26', amount: 0.25 },
+    { exDate: '2026-03-11', payDate: '2026-04-01', amount: 0.01 },
+    { exDate: '2025-12-04', payDate: '2025-12-26', amount: 0.01 },
+    { exDate: '2025-09-11', payDate: '2025-10-02', amount: 0.01 },
+  ];
+  assert(lastPayment(nvda, '2026-11-09')?.amount === 0.25, 'a real raise stays in the record');
+  assert(holdingYear('NVDA', nvda, 10, '2026-11-09').every((e) => e.perShare === 0.25), 'projections use the raised amount');
+  assert(regularPayments(nvda.slice(2).concat()).length === 3, 'small steady payments all stay');
+  assert(regularPayments([{ exDate: '2026-09-10', payDate: null, amount: 3 }, ...nvda.slice(2)])[0].amount === 0.01, 'a lone newest jump waits for a second payment');
+
   // Stopped paying: nothing projected.
   const stopped = [{ exDate: '2025-03-01', payDate: null, amount: 0.5 }, { exDate: '2024-12-01', payDate: null, amount: 0.5 }];
   assert(holdingYear('X', stopped, 5, today).length === 0, 'stale payer projects nothing');
@@ -202,5 +219,8 @@ if (process.argv[1]?.endsWith('dividend-income.ts')) {
   }));
   const months = incomeMonths(holdingYear('O', monthly, 4, today), today);
   assert(months.length === 12 && months.every((m) => m.entries.length === 1 && close(m.total, 1)), 'monthly payer fills all 12 months');
+  // Entries arrive grouped by holding; a month reads in date order across them.
+  const mixed = [{ ...koYear[0], symbol: 'B', date: '2026-12-26' }, { ...koYear[0], symbol: 'A', date: '2026-12-11' }];
+  assert(incomeMonths(mixed, today)[1].entries[0].symbol === 'A', 'month entries sorted by date across holdings');
   console.log('dividend-income self-check passed');
 }
