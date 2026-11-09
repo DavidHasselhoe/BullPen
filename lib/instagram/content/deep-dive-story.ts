@@ -29,6 +29,14 @@ export function statusFor(estimate: number | null, actual: number | null): 'beat
 
 const pct = (v: number) => `${Math.round(Math.abs(v))}%`;
 
+/**
+ * Past this year-over-year growth (percent) the rate says more about how small
+ * last year's revenue was than about the business, so a change in it is no
+ * story: ASTS "slowed" from 2,627% to 187% in a quarter its revenue nearly tripled.
+ * ponytail: flat cutoff, compare absolute revenue added if it misfires.
+ */
+const MAX_COMPARABLE_GROWTH = 300;
+
 /** Median, not mean: META's -13%, +9%, +8% averages to a "usual 1% beat" that never happened. */
 export function typicalSurprise(xs: number[]): number {
   const s = [...xs].sort((a, b) => a - b);
@@ -103,7 +111,7 @@ export function buildStory(d: EarningsDeepDiveData): StoryPoint[] {
   }
 
   const lastGrowth = d.revenueGrowthHistory?.length ? d.revenueGrowthHistory[d.revenueGrowthHistory.length - 1].yoyPercent : null;
-  if (d.revenueYoyGrowthPercent != null && lastGrowth != null) {
+  if (d.revenueYoyGrowthPercent != null && lastGrowth != null && Math.max(d.revenueYoyGrowthPercent, lastGrowth) <= MAX_COMPARABLE_GROWTH) {
     const diff = d.revenueYoyGrowthPercent - lastGrowth;
     if (diff <= -3) bad.push({ kind: 'growth', bad: true, title: 'Growth slowed', text: `Revenue growth slowed to ${pct(d.revenueYoyGrowthPercent)} from ${pct(lastGrowth)} the quarter before.` });
     if (diff >= 3) good.push({ kind: 'growth', bad: false, title: 'Growth sped up', text: `Revenue growth sped up to ${pct(d.revenueYoyGrowthPercent)} from ${pct(lastGrowth)} the quarter before.` });

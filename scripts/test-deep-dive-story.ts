@@ -80,6 +80,15 @@ assert.ok(!basisGap.some((p) => /usual/.test(p)), 'basis mismatch hides the beat
 const both = buildStoryPoints({ ...base, capexActual: null, epsStatus: 'missed', revenueStatus: 'missed' } as EarningsDeepDiveData);
 assert.match(both[0], /both came in below/);
 
+// ASTS: 2,627% to 187% is a tiny base washing out, in either direction. The double miss leads instead.
+const asts = { ...base, capexActual: null, guidanceRevenueHigh: null, epsStatus: 'missed', revenueStatus: 'missed', revenueYoyGrowthPercent: 187 };
+const tinyBase = buildStoryPoints({ ...asts, revenueGrowthHistory: [{ periodEnd: '2026-06-30', yoyPercent: 2627 }] } as EarningsDeepDiveData);
+assert.deepEqual(tinyBase, ['Profit per share and revenue both came in below what analysts expected.']);
+const tinyBaseUp = buildStoryPoints({ ...asts, revenueYoyGrowthPercent: 900, revenueGrowthHistory: [{ periodEnd: '2026-06-30', yoyPercent: 400 }] } as EarningsDeepDiveData);
+assert.ok(!tinyBaseUp.some((p) => /growth/.test(p)), 'no "sped up" off a tiny base either');
+// RKLB: 62% to 73% is a real change and stays.
+assert.ok(buildStoryPoints({ ...asts, revenueYoyGrowthPercent: 73, revenueGrowthHistory: [{ periodEnd: '2026-06-30', yoyPercent: 62 }] } as EarningsDeepDiveData).some((p) => /sped up to 73%/.test(p)));
+
 // Scoreboard row 3: the segment when it has an estimate, else next quarter's outlook, never a half row.
 const row3 = (d: Partial<EarningsDeepDiveData>) => scoreboardRows({ ...base, epsActual: 1.2, epsEstimate: 1.1, ...d } as EarningsDeepDiveData)[2]?.label;
 assert.equal(row3({ segmentLabel: 'Google Cloud', segmentRevenueActual: 15e9, segmentRevenueEstimate: 14e9 }), 'Google Cloud revenue');
