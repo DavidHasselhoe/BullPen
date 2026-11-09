@@ -258,5 +258,8 @@
   "planUnlockAiChat": "Más chat con IA y Análisis a fondo, además de Portfolio Builder sin límite",
   "sectionPlanLabel": "Plan",
   "notifSavedScreenLabel": "Coincidencias de filtros guardados",
-  "notifSavedScreenDescription": "Cuando una acción nueva cumple un filtro guardado con la campana activada"
+  "notifSavedScreenDescription": "Cuando una acción nueva cumple un filtro guardado con la campana activada",
+  "customizeHoldingsHeading": "Mis posiciones",
+  "customizeShowDividendsLabel": "Mostrar dividendos",
+  "customizeShowDividendsDescription": "Próximos pagos de tus inversiones en Mis posiciones."
 }

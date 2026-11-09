@@ -123,7 +123,7 @@ The palette is almost entirely achromatic — a grayscale ramp doing the structu
 - **Border** (`oklch(1 0 0 / 10%)` dark / `oklch(0.922 0 0)` light): the quietest possible separator; borders should almost disappear at rest and only sharpen slightly on hover.
 
 ### Named Rules
-**The One Signal Rule.** Emerald and red are reserved exclusively for financial direction (gain/loss), the landing brand accent, and primary AI-generation buttons (see §5 Buttons — "AI action buttons"). They never appear as decoration, illustration fill, or a general UI state color beyond those earned exceptions — if something needs a new color for its own sake, it's a sign the design is reaching for effect instead of clarity.
+**The One Signal Rule.** Emerald and red are reserved exclusively for financial direction (gain/loss), the landing brand accent, and primary AI-generation buttons (see §5 Buttons — "AI action buttons"). Money a company has confirmed it will pay you counts as financial direction: an announced dividend reads `+$4.90` in emerald, while an estimate stays neutral, so on the Dividends card the color means "confirmed." They never appear as decoration, illustration fill, or a general UI state color beyond those earned exceptions — if something needs a new color for its own sake, it's a sign the design is reaching for effect instead of clarity.
 
 **The Never-Color-Alone Rule.** Gains and losses are never conveyed by color alone. Direction is always reinforced with an icon, sign (+/−), or label, since red-green colorblindness is common among traders — this is a stated PRODUCT.md accessibility requirement, not a nice-to-have.
 

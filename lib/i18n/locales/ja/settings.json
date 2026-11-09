@@ -258,5 +258,8 @@
   "notifReleaseNotesDescription": "毎週月曜日に、BullPenの主な改善点をまとめた短いお知らせをお届けします",
   "planUnlockAiChat": "AIチャットとDeep Diveをさらに利用でき、ポートフォリオビルダーも無制限でお使いいただけます",
   "notifSavedScreenLabel": "保存したスクリーンの該当銘柄",
-  "notifSavedScreenDescription": "ベルがオンの保存スクリーンに新しい銘柄が該当したとき"
+  "notifSavedScreenDescription": "ベルがオンの保存スクリーンに新しい銘柄が該当したとき",
+  "customizeHoldingsHeading": "保有銘柄",
+  "customizeShowDividendsLabel": "配当を表示",
+  "customizeShowDividendsDescription": "保有銘柄に、保有銘柄の今後の支払いを表示します。"
 }

@@ -258,5 +258,8 @@
   "notifReleaseNotesLabel": "What’s new",
   "notifReleaseNotesDescription": "A short note each Monday with the biggest improvements to BullPen",
   "notifSavedScreenLabel": "Saved screen matches",
-  "notifSavedScreenDescription": "When a new stock matches a saved screen with its bell on"
+  "notifSavedScreenDescription": "When a new stock matches a saved screen with its bell on",
+  "customizeHoldingsHeading": "My Holdings",
+  "customizeShowDividendsLabel": "Show dividends",
+  "customizeShowDividendsDescription": "Upcoming payments from your holdings on My Holdings."
 }

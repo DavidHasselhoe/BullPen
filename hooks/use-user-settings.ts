@@ -45,6 +45,31 @@ export function useUserSettings() {
       ? { amount: rawCash.amount, currency: rawCash.currency }
       : null;
 
+  // The Dividends card on My Holdings, hidden by its own menu or in Settings.
+  const dividendsHidden = settings.dividends_hidden === true;
+
+  /** Throws so the card can show the failure. */
+  const setDividendsHidden = useCallback(
+    async (hidden: boolean) => {
+      if (!user?.id) return;
+      const supabase = createBrowserClient();
+      const { data: row, error: fetchError } = await supabase
+        .from('users')
+        .select('settings')
+        .eq('id', user.id)
+        .single();
+      if (fetchError) throw fetchError;
+      const existing = (row?.settings as Record<string, unknown>) || {};
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ settings: { ...existing, dividends_hidden: hidden } })
+        .eq('id', user.id);
+      if (updateError) throw updateError;
+      window.dispatchEvent(new Event('auth:refresh'));
+    },
+    [user]
+  );
+
   /** Pass null to clear the balance. Throws so the dialog can show the failure. */
   const updateCashBalance = useCallback(
     async (cash: CashBalance | null) => {
@@ -150,5 +175,7 @@ export function useUserSettings() {
     cashBalance,
     updateCashBalance,
     adjustCashBalance,
+    dividendsHidden,
+    setDividendsHidden,
   };
 }

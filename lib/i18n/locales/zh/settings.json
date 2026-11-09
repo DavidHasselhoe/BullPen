@@ -258,5 +258,8 @@
   "notifReleaseNotesDescription": "每周一发送一条简短通知，汇总 BullPen 的重要更新",
   "planUnlockAiChat": "更多 AI 对话和深度分析，外加无限次的投资组合生成器",
   "notifSavedScreenLabel": "已保存筛选的新匹配",
-  "notifSavedScreenDescription": "当有新股票符合开启铃铛的已保存筛选时"
+  "notifSavedScreenDescription": "当有新股票符合开启铃铛的已保存筛选时",
+  "customizeHoldingsHeading": "我的持仓",
+  "customizeShowDividendsLabel": "显示股息",
+  "customizeShowDividendsDescription": "在我的持仓页显示持仓的即将到来的付款。"
 }

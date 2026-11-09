@@ -258,5 +258,8 @@
   "notifReleaseNotesDescription": "En kort oppdatering hver mandag med de største forbedringene i BullPen",
   "planUnlockAiChat": "Mer AI-chat og Deep Dives, pluss ubegrenset Portfolio Builder",
   "notifSavedScreenLabel": "Treff i lagrede filtre",
-  "notifSavedScreenDescription": "Når en ny aksje passer til et lagret filter med bjellen på"
+  "notifSavedScreenDescription": "Når en ny aksje passer til et lagret filter med bjellen på",
+  "customizeHoldingsHeading": "Min beholdning",
+  "customizeShowDividendsLabel": "Vis utbytte",
+  "customizeShowDividendsDescription": "Kommende utbetalinger fra beholdningene dine på Min beholdning."
 }

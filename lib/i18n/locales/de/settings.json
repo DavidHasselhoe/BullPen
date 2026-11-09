@@ -258,5 +258,8 @@
   "planUnlockAiChat": "Mehr KI-Chat und Deep Dives sowie unbegrenzter Portfolio Builder",
   "sectionPlanLabel": "Plan",
   "notifSavedScreenLabel": "Treffer gespeicherter Screens",
-  "notifSavedScreenDescription": "Wenn eine neue Aktie zu einem gespeicherten Screen mit aktiver Glocke passt"
+  "notifSavedScreenDescription": "Wenn eine neue Aktie zu einem gespeicherten Screen mit aktiver Glocke passt",
+  "customizeHoldingsHeading": "Meine Positionen",
+  "customizeShowDividendsLabel": "Dividenden anzeigen",
+  "customizeShowDividendsDescription": "Anstehende Zahlungen deiner Bestände auf Meine Positionen."
 }

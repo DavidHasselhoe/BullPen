@@ -38,9 +38,14 @@ async function get(_request: NextRequest, _context: unknown, session: { userId: 
 
   // One entry per symbol; lots of the same stock add up. A lot without a share count makes the whole amount unknown.
   const bySymbol = new Map<string, { name: string; shares: number | null }>();
+  const excluded = new Set<string>();
   for (const h of (data ?? []) as HoldingRow[]) {
-    if (listingMic(h.mic_code) || (h.trading_currency ?? 'USD') !== 'USD' || h.symbol.includes('/')) continue;
+    if (h.symbol.includes('/')) continue;
     const sym = h.symbol.toUpperCase();
+    if (listingMic(h.mic_code) || (h.trading_currency ?? 'USD') !== 'USD') {
+      excluded.add(sym);
+      continue;
+    }
     const prev = bySymbol.get(sym);
     const shares = h.quantity == null || (prev && prev.shares == null) ? null : (prev?.shares ?? 0) + h.quantity;
     bySymbol.set(sym, { name: h.company_name || sym, shares });
@@ -67,6 +72,8 @@ async function get(_request: NextRequest, _context: unknown, session: { userId: 
     pro,
     holdings,
     missing,
+    // Foreign listings aren't counted; the card says so rather than coming up short.
+    excluded: [...excluded],
     // Free gets only how many payments are coming, as the locked card's hook; never the amounts.
     yearPaymentCount: entries.length,
     year: pro ? {

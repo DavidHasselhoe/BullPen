@@ -258,5 +258,8 @@
   "notifReleaseNotesDescription": "Une courte note chaque lundi avec les principales améliorations de BullPen",
   "planUnlockAiChat": "Plus de discussions IA et d'analyses approfondies, ainsi qu'un Portfolio Builder illimité",
   "notifSavedScreenLabel": "Correspondances des filtres enregistrés",
-  "notifSavedScreenDescription": "Quand une nouvelle action correspond à un filtre enregistré dont la cloche est activée"
+  "notifSavedScreenDescription": "Quand une nouvelle action correspond à un filtre enregistré dont la cloche est activée",
+  "customizeHoldingsHeading": "Mes positions",
+  "customizeShowDividendsLabel": "Afficher les dividendes",
+  "customizeShowDividendsDescription": "Prochains versements de vos positions sur Mes positions."
 }

@@ -138,6 +138,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
   const [stockMode, setStockMode] = useState<boolean>(false);
   const [homepageMenuOpen, setHomepageMenuOpen] = useState<boolean>(false);
   const [showWelcomeText, setShowWelcomeText] = useState<boolean>(true);
+  const [showDividends, setShowDividends] = useState<boolean>(true);
   const [roundNumbers, setRoundNumbers] = useState<boolean>(false);
   // Experience level lives here and only here (it used to be a Profile select
   // and a Simple/Pro toggle on two tabs as well, with "Pro" writing
@@ -313,6 +314,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setHomepageStockPick(stockMatch ? minimalStockPick(stockMatch[1]) : null);
       setStockMode(!!stockMatch);
       setShowWelcomeText(settings.show_welcome_text !== undefined ? settings.show_welcome_text : true);
+      setShowDividends(settings.dividends_hidden !== true);
       setRoundNumbers(settings.round_numbers === true);
       setWidgetOrder(Array.isArray(settings.homepage_widget_order) ? settings.homepage_widget_order : DEFAULT_WIDGET_ORDER);
       setWidgetHidden(Array.isArray(settings.homepage_widget_hidden) ? settings.homepage_widget_hidden : []);
@@ -324,9 +326,11 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setAllowHoldingsContext(settings.allow_holdings_context === true);
       setError(null);
 
-      // Allow autosave after a short delay so the above setters don't trigger a spurious save
-      const t = setTimeout(() => { isInitializedRef.current = true; }, 400);
-      return () => clearTimeout(t);
+      // Allow autosave after a short delay so the above setters don't trigger a
+      // spurious save. Not cleared on cleanup: a new `user` object inside these
+      // 400 ms re-runs this effect, which returns early above, so clearing here
+      // left autosave off (and every change unsaved) until the modal reopened.
+      setTimeout(() => { isInitializedRef.current = true; }, 400);
     }
   }, [user, open]);
 
@@ -357,6 +361,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
         time_format: timeFormatPref,
         default_homepage: defaultHomepage,
         show_welcome_text: showWelcomeText,
+        dividends_hidden: !showDividends,
         round_numbers: roundNumbers,
         notifications,
         investment_horizon: investmentHorizon,
@@ -419,7 +424,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
     }, 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultCurrency, theme, language, timeZonePref, timeFormatPref, defaultHomepage, showWelcomeText, roundNumbers, notifications, experienceLevel, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden]);
+  }, [defaultCurrency, theme, language, timeZonePref, timeFormatPref, defaultHomepage, showWelcomeText, showDividends, roundNumbers, notifications, experienceLevel, riskProfile, investmentHorizon, responseStyle, allowHoldingsContext, widgetOrder, widgetHidden]);
 
   const handleDeleteAccount = async (): Promise<string | null> => {
     if (!user) return t('errorDeleteAccount');
@@ -1028,6 +1033,17 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
                       }}
                     />
                   </div>
+                </SettingsGroup>
+
+                <SettingsGroup title={t('customizeHoldingsHeading')}>
+                  <SettingsCard>
+                    <ToggleSetting
+                      label={t('customizeShowDividendsLabel')}
+                      description={t('customizeShowDividendsDescription')}
+                      checked={showDividends}
+                      onCheckedChange={setShowDividends}
+                    />
+                  </SettingsCard>
                 </SettingsGroup>
 
                 <SettingsGroup title={t('customizeChartsHeading')} hint={t('customizeChartsHint')}>
