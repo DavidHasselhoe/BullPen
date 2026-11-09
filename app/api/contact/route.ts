@@ -56,7 +56,7 @@ async function handler(req: NextRequest): Promise<NextResponse> {
   const safeEmail = escapeHtml(email);
   const safeMessage = escapeHtml(message).replace(/\n/g, '<br>');
   sendEmail({
-    to: 'david@hasselo.no',
+    to: 'contact@bullpeninvest.com',
     subject: `New contact form submission from ${name}`,
     // Dark like every other BullPen email: the shared footer's greys assume it.
     html: `<div style="background: #0b0f0d; color: #fafafa; padding: 24px;"><p><strong>From:</strong> ${safeName} (${safeEmail})</p><p>${safeMessage}</p>${EMAIL_FOOTER_MARKER}</div>`,
