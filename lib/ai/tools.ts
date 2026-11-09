@@ -40,7 +40,7 @@ import type { CategoryScore } from '@/lib/finance/health-score';
 import { computeTechnicals, etDate } from '@/lib/finance/technicals';
 import { sma } from '@/lib/finance/indicators';
 import { getTier, isPro } from '@/lib/billing/tier';
-import { WHY_TODAY_DAILY_GENERATIONS, WHY_TODAY_MIN_MOVE, isStale, resolveWhyToday, whyTodayLanguage } from '@/lib/ai/why-today';
+import { WHY_TODAY_DAILY_GENERATIONS, WHY_TODAY_MIN_MOVE, resolveWhyToday, whyTodayLanguage } from '@/lib/ai/why-today';
 import { AlertTypeSchema, alertTypeLabel, describeAlert, FREE_ACTIVE_ALERT_LIMIT, type AlertType } from '@/types/alerts';
 import { DIVIDEND_QUICK_PICKS } from '@/lib/finance/dividend-quick-picks';
 import { getHoldings } from '@/lib/holdings/holdings-db';
@@ -1932,9 +1932,7 @@ export function getWhyTodayTool(userId: string, language: string | null | undefi
         dailyCap: pro ? WHY_TODAY_DAILY_GENERATIONS.pro : WHY_TODAY_DAILY_GENERATIONS.free,
         source: 'bull',
       });
-      // Home keeps a stale answer when it can't write a new one; Bull must not
-      // tell someone a stock is rebounding when it has turned down.
-      if (why.status === 'ready' && !isStale({ ...why, generatedAt: '' }, q.dp)) {
+      if (why.status === 'ready') {
         return { ticker: symbol, changePct, explanation: why.text, explainedMovePct: round1(why.changePct) };
       }
       if (why.status === 'pending') return { ticker: symbol, changePct, note: 'The explanation is being written right now. Tell the user to ask again in a minute.' };

@@ -30,7 +30,7 @@ assert.equal(pre.pc, 253.97);
 assert.equal(pre.dp.toFixed(2), '1.59');
 
 // Without prepost the regular session stands.
-const reg = parseQuoteResponse({ ...base, extended_timestamp: 1790801700 }, 'CEG', false);
+const reg = parseQuoteResponse({ ...base, extended_timestamp: 1790801700 }, 'CEG', false, new Date(1790801700_000));
 assert.equal(reg.c, 253.97);
 assert.equal(reg.dp.toFixed(2), '-4.01');
 
@@ -50,5 +50,32 @@ assert.equal(parseQuoteResponse(tue, 'CEG', true, new Date(1791352800_000)).dp.t
 const wed = parseQuoteResponse(tue, 'CEG', true, new Date(1791372660_000));
 assert.equal(wed.pc.toFixed(2), '300.40');
 assert.equal(wed.dp.toFixed(2), '-2.13');
+
+// One minute after the bell /quote can still be the last session's row. Real
+// NBIS numbers: Thursday 11-05 closed -14.94%, seen at 9:31am ET on Friday 11-06.
+const nbis = {
+  ...base, symbol: 'NBIS', close: '120.37', previous_close: '141.52', change: '-21.15',
+  percent_change: '-14.94', datetime: '2026-11-05', is_market_open: true,
+  extended_price: undefined, extended_change: undefined, extended_percent_change: undefined,
+};
+const friday931 = new Date('2026-11-06T14:31:35Z');
+const atBell = parseQuoteResponse(nbis, 'NBIS', false, friday931);
+assert.equal(atBell.priorSession, true);
+// Flat today, measured from the last close, so the first live tick is right too.
+assert.deepEqual([atBell.c, atBell.d, atBell.dp, atBell.pc], [120.37, 0, 0, 120.37]);
+// 8:00am ET, no pre-market trade: flat for anyone asking about today...
+const friday8 = new Date('2026-11-06T13:00:00Z');
+assert.equal(parseQuoteResponse({ ...nbis, is_market_open: false }, 'NBIS', true, friday8).dp, 0);
+// ...but a plain quote before the open is still the last session, as Discover expects.
+assert.equal(parseQuoteResponse({ ...nbis, is_market_open: false }, 'NBIS', false, friday8).dp, -14.94);
+// Once today's row arrives it is an ordinary quote.
+assert.equal(parseQuoteResponse({ ...nbis, datetime: '2026-11-06' }, 'NBIS', false, friday931).priorSession, undefined);
+// A Friday close read on Sunday is still the current session.
+assert.equal(parseQuoteResponse({ ...nbis, datetime: '2026-11-06' }, 'NBIS', false, new Date('2026-11-08T15:00:00Z')).priorSession, undefined);
+// A pre-market trade is today's move, whatever the row's date says (the Oct 1 case above).
+assert.equal(pre.priorSession, undefined);
+// A listing whose day runs ahead of New York, and crypto, are never flagged.
+assert.equal(parseQuoteResponse({ ...nbis, datetime: '2026-11-07' }, 'NBIS', false, friday931).priorSession, undefined);
+assert.equal(parseQuoteResponse({ ...nbis, currency: undefined, datetime: '2026-11-01' }, 'BTC/USD', false, friday931).priorSession, undefined);
 
 console.log('extended quote: ok');

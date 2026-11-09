@@ -7,7 +7,7 @@
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
 import { assertNoTickerCollision } from '@/lib/market-data/ticker-overrides';
 import { fetchNasdaqEarningsDay } from '@/lib/market-data/nasdaq-earnings-calendar';
-import { sessionDateET } from '@/lib/market-data/trading-day';
+import { sessionDateET, tradingMinutesET } from '@/lib/market-data/trading-day';
 import { classifyTradingSession, strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
 // Circular (latest-rates quotes FX through this file); both sides only call each other at runtime.
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
@@ -171,6 +171,8 @@ export interface StockQuote {
   volume?: number;
   /** When the extended-hours trade behind `c` happened (unix seconds). Set only when `c` is an extended-hours price. */
   et?: number;
+  /** Nothing has traded yet in the current session. `d`/`dp` are 0, except on a plain quote before the open, where they are the last session's. */
+  priorSession?: boolean;
 }
 
 export interface StockCandles {
@@ -328,16 +330,25 @@ export function parseQuoteResponse(data: TwelveDataQuoteResponse, symbol: string
 
   const volume = data.volume ? parseInt(data.volume, 10) : undefined;
 
+  // Right after the bell /quote still returns the last session's row (NBIS on
+  // 2026-11-06 at 09:31 ET: -14.94%, Thursday's move, on a +7.6% day), as does
+  // a stock with no pre-market trade yet. Nothing has happened today, so today's
+  // change is zero. Before the open a plain quote is left alone: without
+  // prepost the caller is asking for the last session (Discover, the brief).
+  const priorSession = !!data.datetime && !symbol.includes('/') && data.datetime < sessionDateET(now);
+  const flat = priorSession && (useExtended || (tradingMinutesET(now) ?? 0) >= 570);
+
   return {
     c: close,
-    d: change,
-    dp: percentChange,
+    d: flat ? 0 : change,
+    dp: flat ? 0 : percentChange,
     h: parseFloat(data.high || String(close)),
     l: parseFloat(data.low || String(close)),
     o: parseFloat(data.open || String(close)),
-    pc,
+    pc: flat ? close : pc,
     t: timestamp,
     ...(volume && volume > 0 ? { volume } : {}),
+    ...(priorSession ? { priorSession } : {}),
   };
 }
 

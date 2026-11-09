@@ -228,7 +228,7 @@ export const WHY_TODAY_DAILY_GENERATIONS = { free: 2, pro: 20 };
 export async function resolveWhyToday(opts: {
   userId: string;
   ticker: string;
-  quote: { c: number; d: number; dp: number } | undefined;
+  quote: { c: number; d: number; dp: number; priorSession?: boolean } | undefined;
   language: string;
   mic?: string | null;
   /** False: read the cache only. */
@@ -237,22 +237,25 @@ export async function resolveWhyToday(opts: {
   source: 'inline' | 'bull' | 'recap';
 }): Promise<InlineWhy> {
   const { userId, ticker, quote: q, language, mic } = opts;
-  if (!q || !Number.isFinite(q.dp) || !(q.c > 0) || Math.abs(q.dp) < WHY_TODAY_MIN_MOVE) return { status: 'skipped' };
+  if (!q || !Number.isFinite(q.dp) || !(q.c > 0) || (!q.priorSession && Math.abs(q.dp) < WHY_TODAY_MIN_MOVE)) return { status: 'skipped' };
 
   const key = whyTodayKey(ticker, language, mic);
   const cached = await rget<CachedWhyToday>(key);
   const ready = (c: CachedWhyToday): InlineWhy => ({ status: 'ready', text: c.text, changePct: c.changePct });
-  if (cached && !(await needsRewrite(ticker, cached, q.dp, mic))) return ready(cached);
-  // Cache-only callers get nothing rather than a stale story, as the stock
-  // page's cached route does: "shares are rebounding" on a stock now down 3%.
-  if (!opts.mayGenerate) return { status: 'skipped' };
+  // A quote still showing the last session says nothing about today: judging
+  // by it replaced correct pre-market answers with yesterday's cause at the open.
+  if (cached && (q.priorSession || !(await needsRewrite(ticker, cached, q.dp, mic)))) return ready(cached);
+  // Past this point any cached answer no longer fits the move, so it is never
+  // shown: nothing beats "shares fell" beside a stock up 10%. Same for
+  // cache-only callers, as on the stock page's cached route.
+  if (!opts.mayGenerate || q.priorSession) return { status: 'skipped' };
 
   const lock = whyTodayLockKey(key);
   // Someone else is writing it right now.
-  if (!(await rsetnx(lock, 90))) return cached ? ready(cached) : { status: 'pending' };
+  if (!(await rsetnx(lock, 90))) return { status: 'pending' };
   try {
     const cap = await checkRateLimit(`why-today-gen:${userId}`, { windowMs: 24 * 60 * 60 * 1000, maxRequests: opts.dailyCap });
-    if (!cap.allowed) return cached ? ready(cached) : { status: 'skipped' };
+    if (!cap.allowed) return { status: 'skipped' };
 
     const move = { ticker, price: q.c, change: q.d, changePct: q.dp };
     const { text, inputTokens, outputTokens, webSearches } = await generateWhyToday(move, language);
@@ -265,13 +268,13 @@ export async function resolveWhyToday(opts: {
       webSearches,
       metadata: { ticker, [opts.source]: true },
     });
-    if (!text) return cached ? ready(cached) : { status: 'skipped' };
+    if (!text) return { status: 'skipped' };
     const fresh: CachedWhyToday = { text, changePct: q.dp, generatedAt: new Date().toISOString() };
     await rset(key, fresh, WHY_TODAY_CACHE_TTL);
     return ready(fresh);
   } catch (err) {
     console.error(`[why-today/${opts.source}] generation failed:`, ticker, err);
-    return cached ? ready(cached) : { status: 'skipped' };
+    return { status: 'skipped' };
   } finally {
     void rdel(lock);
   }

@@ -7,7 +7,8 @@
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 import assert from 'node:assert/strict';
-import { isMaterial8K, isStale, needsRewrite } from '../lib/ai/why-today';
+import { isMaterial8K, isStale, needsRewrite, resolveWhyToday, whyTodayKey } from '../lib/ai/why-today';
+import { rdel, rset } from '../lib/cache/redis-cache';
 
 const at = (changePct: number) => ({ text: '', changePct, generatedAt: '' });
 
@@ -50,4 +51,22 @@ async function filings() {
   assert.equal(await needsRewrite('NVDA', written(hourAgo), 6), false);
 }
 
-filings().then(() => console.log('why today staleness: ok'));
+// A throwaway ticker and dailyCap 0, so a regression here can never reach a paid generation.
+async function atTheOpen() {
+  const key = whyTodayKey('ZZTEST', 'en');
+  const ask = (quote: { c: number; d: number; dp: number; priorSession?: boolean }) =>
+    resolveWhyToday({ userId: 'staleness-test', ticker: 'ZZTEST', quote, language: 'en', mayGenerate: true, dailyCap: 0, source: 'inline' });
+  await rset(key, { text: 'Pre-market answer.', changePct: 6, generatedAt: new Date().toISOString() }, 60);
+  try {
+    // Yesterday's -15% still on the quote: the morning's answer stands.
+    assert.equal((await ask({ c: 10, d: -2, dp: -15, priorSession: true })).status, 'ready');
+    // A real reversal it can't rewrite: nothing, not "shares rose" beside a stock down 15%.
+    assert.equal((await ask({ c: 10, d: -2, dp: -15 })).status, 'skipped');
+  } finally {
+    await rdel(key);
+  }
+  // Nothing cached and no trade yet: no generation from yesterday's numbers.
+  assert.equal((await ask({ c: 10, d: -2, dp: -15, priorSession: true })).status, 'skipped');
+}
+
+filings().then(atTheOpen).then(() => console.log('why today staleness: ok'));

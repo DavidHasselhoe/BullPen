@@ -71,7 +71,7 @@ async function handler(
   let serverMove: WhyTodayMove | null = null;
   try {
     const q = (await getStockQuotes([ticker], { prepost: isOutsideRegularSessionET() })).get(ticker);
-    if (q && Number.isFinite(q.dp) && q.c > 0) serverMove = { ticker, price: q.c, change: q.d, changePct: q.dp };
+    if (q && !q.priorSession && Number.isFinite(q.dp) && q.c > 0) serverMove = { ticker, price: q.c, change: q.d, changePct: q.dp };
   } catch { /* fall back to the client's numbers, uncached */ }
 
   const key = whyTodayKey(ticker, language);
