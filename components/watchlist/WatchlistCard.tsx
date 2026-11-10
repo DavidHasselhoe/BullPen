@@ -151,7 +151,9 @@ export function WatchlistCard({
         {/* Header */}
         <div className="flex items-center gap-3">
           <CompanyLogo name={company_name} ticker={symbol} logoUrl={logo_url ?? null} size={36} />
-          <div className="min-w-0 flex-1 [@media(hover:none)]:pr-24">
+          {/* Make room for the action buttons whenever they show, so the name
+              truncates instead of running under them. */}
+          <div className="min-w-0 flex-1 group-hover:pr-24 group-focus-within:pr-24 [@media(hover:none)]:pr-24">
             {/* clamp-ok: a company name is a short label; the full legal name is on hover. */}
             <p className="flex items-baseline gap-1.5 text-sm font-semibold text-foreground leading-none" title={company_name || undefined}>
               <span className="truncate">{display_name || displayCompanyName(company_name || symbol, symbol)}</span>
