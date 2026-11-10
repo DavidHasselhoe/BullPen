@@ -1,7 +1,7 @@
 /**
  * GET /api/market/mood
  *
- * Returns the composite Fear & Greed score from lib/market/mood.ts.
+ * Returns the composite market mood score from lib/market/mood.ts.
  *
  * CDN-cached for 15 minutes — no auth required.
  */

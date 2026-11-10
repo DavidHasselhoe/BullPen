@@ -2,7 +2,6 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Calculator,
   Wallet,
-  Gauge,
   Grid3X3,
   Bot,
   Filter,
@@ -86,14 +85,6 @@ export const TOOLS: ToolConfig[] = [
     description: 'Annual income growth, reinvestment impact, and break-even year for dividend-paying stocks.',
     href: '/tools/dividend',
     icon: Wallet,
-    status: 'available',
-  },
-  {
-    id: 'market-mood',
-    name: 'Market Mood',
-    description: 'Bullish vs bearish sentiment, volatility trend, macro pulse. A fear vs greed index.',
-    href: '/tools/market-mood',
-    icon: Gauge,
     status: 'available',
   },
   {

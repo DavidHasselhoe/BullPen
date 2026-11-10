@@ -400,7 +400,7 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       DATA_GATHER_TIMEOUT_MS
     ),
     withTimeout<Awaited<ReturnType<typeof fetchMarketContext>>>(fetchMarketContext(), DATA_GATHER_TIMEOUT_MS),
-    // The same Fear & Greed score readers see on Market Mood, so the brief's
+    // The same mood score readers see on Market Mood, so the brief's
     // read on sentiment matches the app's.
     withTimeout<Awaited<ReturnType<typeof computeMarketMood>>>(computeMarketMood(), DATA_GATHER_TIMEOUT_MS),
   ]);
@@ -492,7 +492,7 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
   // Optional market context lines (omit block when data is unavailable)
   const marketContextLines = [
     mood
-      ? `BullPen Market Mood (our Fear & Greed score, 0 = extreme fear, 100 = extreme greed): ${mood.composite} (${mood.label}). ${mood.signals.map((s) => `${s.name}: ${s.detail}`).join(' ')}`
+      ? `BullPen Market Mood (our market mood score, 0 = extreme fear, 100 = extreme greed): ${mood.composite} (${mood.label}). ${mood.signals.map((s) => `${s.name}: ${s.detail}`).join(' ')}`
       : null,
     marketCtx.treasury10y ? `10Y Treasury: ${marketCtx.treasury10y}` : null,
     beatRateText ? `EPS beat rate yesterday: ${beatRateText}` : null,

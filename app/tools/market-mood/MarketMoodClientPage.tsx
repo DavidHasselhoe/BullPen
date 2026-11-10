@@ -46,7 +46,8 @@ export default function MarketMoodClientPage() {
       <ToolHeader
         icon={<Gauge />}
         title={t('marketMoodTitle', 'Market Mood')}
-        description={t('marketMoodSubtitle', 'Fear & Greed Index: composite of 4 market signals')}
+        description={t('marketMoodTagline', 'How fearful or greedy the market is right now, from 4 signals')}
+        back={false}
         actions={
           <>
             {updatedLabel && (
@@ -111,9 +112,9 @@ export default function MarketMoodClientPage() {
               <ToolSectionTitle className="mb-1.5">{t('marketMoodMethodologyHeading', 'Methodology')}</ToolSectionTitle>
               <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
                 {t(
-                  'marketMoodMethodology',
-                  'Composite weighted by {{vix}} volatility (35%), {{sp500}} momentum vs 125-day average (30%), high-yield bond demand {{hygLqd}} (20%), and safe-haven flight {{spyTlt}} (15%). A score of {{low}} represents extreme fear; {{high}}, extreme greed.',
-                  { vix: 'VIX', sp500: 'S&P 500', hygLqd: 'HYG/LQD', spyTlt: 'SPY/TLT', low: '0', high: '100' }
+                  'marketMoodMethodologyDaily',
+                  'Weighted from four signals measured on daily closes: {{sp500}} volatility over the last 20 trading days (35%), {{sp500}} momentum vs its 125-day average (30%), junk bond demand {{hygLqd}} over 20 days (20%), and safe-haven demand {{spyTlt}} over 20 days (15%). A score of {{low}} represents extreme fear; {{high}}, extreme greed.',
+                  { sp500: 'S&P 500', hygLqd: 'HYG/LQD', spyTlt: 'SPY/TLT', low: '0', high: '100' }
                 )}
               </p>
             </section>

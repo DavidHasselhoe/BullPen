@@ -1,14 +1,18 @@
 /**
- * Composite Fear & Greed score (0–100) derived from 4 signals:
- *   1. VIX (market volatility)         — 35% weight
- *   2. S&P 500 momentum (vs 125d SMA)  — 30% weight
- *   3. Junk bond demand (HYG vs LQD)   — 20% weight
- *   4. Safe haven demand (SPY vs TLT)  — 15% weight
+ * Composite market mood score (0–100) derived from 4 signals, all read from
+ * daily closes so one big day can't swing the whole score:
+ *   1. Market volatility (SPY 20-day realized volatility) — 35% weight
+ *   2. S&P 500 momentum (SPY vs its 125-day average)       — 30% weight
+ *   3. Junk bond demand (HYG vs LQD, 20-day return)        — 20% weight
+ *   4. Safe haven demand (SPY vs TLT, 20-day return)       — 15% weight
+ *
+ * VIX itself isn't on our TwelveData plan (indices aren't covered), so the
+ * volatility signal measures how much SPY has actually been swinging instead.
  *
  * Shared by GET /api/market/mood and the Daily Brief cron.
  */
 
-import { getStockQuotes, getIndicator } from '@/lib/twelvedata/twelvedata-client';
+import { getStockCandles } from '@/lib/twelvedata/twelvedata-client';
 
 export interface MoodSignal {
   name: string;
@@ -25,6 +29,10 @@ export interface MarketMoodData {
   generatedAt: string;
 }
 
+/** Trading days in the return and volatility windows (about a month). */
+const WINDOW = 20;
+const SMA_DAYS = 125;
+
 function clamp(v: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, v));
 }
@@ -37,9 +45,30 @@ function scoreToLabel(s: number): string {
   return 'Extreme Greed';
 }
 
-// Low VIX = complacency/greed, High VIX = panic/fear
-function vixToScore(vix: number): number {
-  return Math.round(clamp(95 - 3.2 * (vix - 10), 5, 95));
+const signed = (n: number, digits = 1) => `${n >= 0 ? '+' : ''}${n.toFixed(digits)}%`;
+
+/** % return over the last WINDOW trading days. */
+function windowReturn(closes: number[]): number {
+  const last = closes[closes.length - 1];
+  const start = closes[closes.length - 1 - WINDOW];
+  return (last / start - 1) * 100;
+}
+
+/** Standard deviation of the last WINDOW daily returns, in %. */
+function dailyVolatility(closes: number[]): number {
+  const recent = closes.slice(-(WINDOW + 1));
+  const returns = recent.slice(1).map((c, i) => c / recent[i] - 1);
+  const mean = returns.reduce((s, r) => s + r, 0) / returns.length;
+  const variance = returns.reduce((s, r) => s + (r - mean) ** 2, 0) / (returns.length - 1);
+  return Math.sqrt(variance) * 100;
+}
+
+// The score mappings below are calibration knobs: each puts a typical market
+// near 50 and a rare extreme at the 5/95 clamps.
+
+// Annualized realized vol: ~10% calm (≈74), ~17% typical (50), 30%+ panic (5).
+function volatilityToScore(annualizedPct: number): number {
+  return Math.round(clamp(50 - 3.5 * (annualizedPct - 17), 5, 95));
 }
 
 // SPY above 125d SMA = bullish momentum, below = bearish
@@ -47,105 +76,104 @@ function momentumToScore(pctFromSma: number): number {
   return Math.round(clamp(50 + pctFromSma * 5, 5, 95));
 }
 
-// HYG (high yield) outperforming LQD (investment grade) = risk appetite
-function bondSpreadToScore(hygDp: number, lqdDp: number): number {
-  const spread = hygDp - lqdDp;
-  return Math.round(clamp(50 + spread * 35, 5, 95));
+// HYG beating LQD over 20 days = risk appetite. ±2% is a big month.
+function bondSpreadToScore(spread: number): number {
+  return Math.round(clamp(50 + spread * 15, 5, 95));
 }
 
-// SPY outperforming TLT = risk-on, TLT outperforming SPY = flight to safety
-function safeHavenToScore(spyDp: number, tltDp: number): number {
-  const divergence = spyDp - tltDp;
-  return Math.round(clamp(50 + divergence * 18, 5, 95));
+// SPY beating TLT over 20 days = risk-on. ±6% is a big month.
+function safeHavenToScore(divergence: number): number {
+  return Math.round(clamp(50 + divergence * 5, 5, 95));
 }
 
-/** Null when SPY can't be quoted: without it no signal means anything. */
+/** Null when SPY's history can't be loaded: without it no signal means anything. */
 export async function computeMarketMood(): Promise<MarketMoodData | null> {
-  const [quotesResult, smaResult] = await Promise.allSettled([
-    getStockQuotes(['VIX', 'SPY', 'HYG', 'LQD', 'TLT']),
-    getIndicator('SPY', 'sma', { interval: '1day', time_period: 125, outputsize: 5 }),
-  ]);
+  const now = Math.floor(Date.now() / 1000);
+  // ~140 trading days: enough for the 125-day average with room for holidays.
+  const from = now - 200 * 86_400;
+  const symbols = ['SPY', 'HYG', 'LQD', 'TLT'] as const;
+  const results = await Promise.allSettled(symbols.map((s) => getStockCandles(s, from, now, 'D')));
 
-  // Log which symbols are missing so we can diagnose plan / symbol issues
-  const quotes = quotesResult.status === 'fulfilled' ? quotesResult.value : new Map();
-  if (quotesResult.status === 'rejected') {
-    console.error('[market/mood] batch quotes failed:', quotesResult.reason);
-  }
+  const closes = new Map<string, number[]>();
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled' && r.value.c.length > WINDOW) closes.set(symbols[i], r.value.c);
+    else console.warn(`[market/mood] no history for ${symbols[i]}:`, r.status === 'rejected' ? r.reason : 'too few bars');
+  });
 
-  const vixQ = quotes.get('VIX');
-  const spyQ = quotes.get('SPY');
-  const hygQ = quotes.get('HYG');
-  const lqdQ = quotes.get('LQD');
-  const tltQ = quotes.get('TLT');
+  const spy = closes.get('SPY');
+  if (!spy) return null;
+  const hyg = closes.get('HYG');
+  const lqd = closes.get('LQD');
+  const tlt = closes.get('TLT');
 
-  const missing = ['VIX', 'SPY', 'HYG', 'LQD', 'TLT'].filter(s => !quotes.get(s));
-  if (missing.length > 0) {
-    console.warn('[market/mood] missing symbols:', missing.join(', '));
-  }
-
-  if (!spyQ) return null;
-
-  // SMA — best effort
-  let smaValue: number | null = null;
-  if (smaResult.status === 'fulfilled' && smaResult.value.values.length > 0) {
-    const raw = smaResult.value.values[0].sma;
-    smaValue = typeof raw === 'number' ? raw : null;
-  }
-
-  const momentumPct = smaValue ? ((spyQ.c - smaValue) / smaValue) * 100 : 0;
-
-  // Build signals — each is computed only when its required data is present,
-  // otherwise it's omitted from the composite so the weight is redistributed.
   type WeightedSignal = MoodSignal & { weight: number };
   const available: WeightedSignal[] = [];
 
-  if (vixQ) {
-    const score = vixToScore(vixQ.c);
+  {
+    const daily = dailyVolatility(spy);
+    const annualized = daily * Math.sqrt(252);
+    const score = volatilityToScore(annualized);
     available.push({
       weight: 0.35,
       name: 'Market Volatility',
       score,
       label: scoreToLabel(score),
-      detail: `VIX at ${vixQ.c.toFixed(2)} (${vixQ.dp >= 0 ? '+' : ''}${vixQ.dp.toFixed(1)}% today). ${vixQ.c < 15 ? 'Low volatility, investors are complacent.' : vixQ.c < 25 ? 'Moderate market uncertainty.' : 'Elevated fear and risk aversion.'}`,
-      raw: { vix: vixQ.c, change: vixQ.dp },
+      detail: `SPY has swung about ${daily.toFixed(1)}% on a typical day over the last ${WINDOW} trading days. ${
+        annualized < 12 ? 'A calm market, investors are relaxed.'
+          : annualized < 20 ? 'Normal swings.'
+          : annualized < 30 ? 'A choppy, nervous market.'
+          : 'Big swings, investors are on edge.'
+      }`,
+      raw: { dailyVolPct: daily, annualizedVolPct: annualized },
     });
   }
 
-  {
-    const score = smaValue ? momentumToScore(momentumPct) : 50;
+  if (spy.length >= SMA_DAYS) {
+    const price = spy[spy.length - 1];
+    const sma = spy.slice(-SMA_DAYS).reduce((s, c) => s + c, 0) / SMA_DAYS;
+    const pct = (price / sma - 1) * 100;
+    const score = momentumToScore(pct);
     available.push({
       weight: 0.30,
       name: 'S&P 500 Momentum',
       score,
       label: scoreToLabel(score),
-      detail: smaValue
-        ? `SPY $${spyQ.c.toFixed(2)} is ${momentumPct >= 0 ? '+' : ''}${momentumPct.toFixed(1)}% ${momentumPct >= 0 ? 'above' : 'below'} its 125-day moving average. ${momentumPct > 5 ? 'Strong bullish trend.' : momentumPct > 0 ? 'Mild bullish bias.' : momentumPct > -5 ? 'Mild bearish pressure.' : 'Bearish momentum.'}`
-        : `SPY at $${spyQ.c.toFixed(2)}, 125-day average unavailable`,
-      raw: { price: spyQ.c, sma125: smaValue ?? 0, pctFromSma: momentumPct },
+      detail: `SPY $${price.toFixed(2)} is ${Math.abs(pct).toFixed(1)}% ${pct >= 0 ? 'above' : 'below'} its ${SMA_DAYS}-day average. ${
+        pct > 5 ? 'Strong bullish trend.' : pct > 0 ? 'Mild bullish bias.' : pct > -5 ? 'Mild bearish pressure.' : 'Bearish momentum.'
+      }`,
+      raw: { price, sma125: sma, pctFromSma: pct },
     });
   }
 
-  if (hygQ && lqdQ) {
-    const score = bondSpreadToScore(hygQ.dp, lqdQ.dp);
+  if (hyg && lqd) {
+    const h = windowReturn(hyg);
+    const l = windowReturn(lqd);
+    const score = bondSpreadToScore(h - l);
     available.push({
       weight: 0.20,
       name: 'Junk Bond Demand',
       score,
       label: scoreToLabel(score),
-      detail: `HYG ${hygQ.dp >= 0 ? '+' : ''}${hygQ.dp.toFixed(2)}% vs LQD ${lqdQ.dp >= 0 ? '+' : ''}${lqdQ.dp.toFixed(2)}%. ${hygQ.dp > lqdQ.dp ? 'Investors chasing yield signals risk appetite.' : 'Flight to quality bonds signals caution.'}`,
-      raw: { hyg: hygQ.dp, lqd: lqdQ.dp, spread: hygQ.dp - lqdQ.dp },
+      detail: `Over ${WINDOW} trading days, junk bonds (HYG) returned ${signed(h)} vs investment grade (LQD) ${signed(l)}. ${
+        h > l ? 'Investors are reaching for yield, a sign of risk appetite.' : 'Investors prefer safer bonds, a sign of caution.'
+      }`,
+      raw: { hyg: h, lqd: l, spread: h - l },
     });
   }
 
-  if (tltQ) {
-    const score = safeHavenToScore(spyQ.dp, tltQ.dp);
+  if (tlt) {
+    const s = windowReturn(spy);
+    const t = windowReturn(tlt);
+    const score = safeHavenToScore(s - t);
     available.push({
       weight: 0.15,
       name: 'Safe Haven Demand',
       score,
       label: scoreToLabel(score),
-      detail: `SPY ${spyQ.dp >= 0 ? '+' : ''}${spyQ.dp.toFixed(2)}% vs TLT ${tltQ.dp >= 0 ? '+' : ''}${tltQ.dp.toFixed(2)}%. ${spyQ.dp > tltQ.dp ? 'Equities outperforming treasuries, risk-on sentiment.' : 'Treasuries outperforming equities, defensive positioning.'}`,
-      raw: { spy: spyQ.dp, tlt: tltQ.dp, divergence: spyQ.dp - tltQ.dp },
+      detail: `Over ${WINDOW} trading days, stocks (SPY) returned ${signed(s)} vs Treasuries (TLT) ${signed(t)}. ${
+        s > t ? 'Stocks are winning, investors are taking risk.' : 'Treasuries are winning, investors are playing it safe.'
+      }`,
+      raw: { spy: s, tlt: t, divergence: s - t },
     });
   }
 
