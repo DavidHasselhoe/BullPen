@@ -73,8 +73,17 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     // Cards show trade counts and last-trade dates; don't make them wait out the 1h cache.
     if (inserted > 0) await invalidateCachedPrefix('congress:');
 
-    const failed = results.filter((r) => r.error).map((r) => ({ slug: r.slug, error: r.error }));
-    return NextResponse.json({ inserted, notified, notifiedHolders, totalCredits, failed });
+    // `errors` as strings so withCronReport records the text, not just a count.
+    // Every member failing is the vendor (an empty balance answers 402 to all),
+    // not a quiet week: a 502 trips the failed-run alert. Oct 27 and Nov 3 2026
+    // stored nothing and still returned 200.
+    const errors = results.filter((r) => r.error).map((r) => `${r.slug}: ${r.error}`);
+    const allFailed = results.length > 0 && errors.length === results.length;
+    if (errors.length) console.error('[refresh-congress-trades] member errors', errors);
+    return NextResponse.json(
+      { inserted, notified, notifiedHolders, totalCredits, errors },
+      { status: allFailed ? 502 : 200 },
+    );
   } catch (error) {
     console.error('[refresh-congress-trades] failed', error);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
