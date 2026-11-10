@@ -49,7 +49,7 @@ export async function getCongressTrades(symbol: string, limit = 200): Promise<Co
 }
 
 export interface FundHolderRow {
-  fund: { slug: string; name: string; manager: string | null };
+  fund: { slug: string; name: string; manager: string | null; logoUrl: string | null };
   periodOfReport: string;
   /** Pro detail: the caller decides whether to show these. */
   shares: number | null;
@@ -63,13 +63,13 @@ export async function getFundHolders(symbol: string): Promise<FundHolderRow[]> {
   // ~18 funds x 5 quarters: well under PostgREST's 1000-row cap.
   const { data: filings, error } = await db
     .from('institutional_filings')
-    .select('id, investor_id, period_of_report, institutional_investors!inner(slug, display_name, manager_name, is_active)')
+    .select('id, investor_id, period_of_report, institutional_investors!inner(slug, display_name, manager_name, is_active, logo_url)')
     .eq('parse_status', 'ok')
     .order('period_of_report', { ascending: false });
   if (error) throw error;
   type Filing = {
     id: string; investor_id: string; period_of_report: string;
-    institutional_investors: { slug: string; display_name: string; manager_name: string | null; is_active: boolean };
+    institutional_investors: { slug: string; display_name: string; manager_name: string | null; is_active: boolean; logo_url: string | null };
   };
   const latest = new Map<string, Filing>();
   for (const f of (filings ?? []) as unknown as Filing[]) {
@@ -93,7 +93,7 @@ export async function getFundHolders(symbol: string): Promise<FundHolderRow[]> {
     if (!f) continue;
     const prev = perFund.get(f.investor_id);
     perFund.set(f.investor_id, {
-      fund: { slug: f.institutional_investors.slug, name: f.institutional_investors.display_name, manager: f.institutional_investors.manager_name },
+      fund: { slug: f.institutional_investors.slug, name: f.institutional_investors.display_name, manager: f.institutional_investors.manager_name, logoUrl: f.institutional_investors.logo_url },
       periodOfReport: f.period_of_report,
       shares: (prev?.shares ?? 0) + Number(h.shares ?? 0),
       valueUsd: (prev?.valueUsd ?? 0) + Number(h.value_usd ?? 0),

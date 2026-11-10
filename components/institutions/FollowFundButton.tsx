@@ -35,9 +35,14 @@ interface FollowFundButtonProps {
   className?: string;
   /** Also used for tracked politicians on Washington Trading. */
   kind?: FollowKind;
+  /**
+   * One of several rows (Home's "up close" list): an outline button and no
+   * "See in Feed" link, so a column of them doesn't outshout the names.
+   */
+  inList?: boolean;
 }
 
-export function FollowFundButton({ slug, displayName, compact, className, kind = 'institution' }: FollowFundButtonProps) {
+export function FollowFundButton({ slug, displayName, compact, className, kind = 'institution', inList }: FollowFundButtonProps) {
   const { t } = useTranslation('discover');
   const { isAuthenticated } = useAuth();
   const openGate = useSignupGate();
@@ -57,7 +62,7 @@ export function FollowFundButton({ slug, displayName, compact, className, kind =
 
   return (
     <span className={cn('inline-flex shrink-0 items-center gap-3', className)}>
-      {following && !compact && (
+      {following && !compact && !inList && (
         <Link
           href="/social"
           className="hidden py-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline sm:inline"
@@ -93,12 +98,19 @@ export function FollowFundButton({ slug, displayName, compact, className, kind =
             ? 'border-border/60 bg-muted/50 text-foreground hover:bg-muted/70'
             : compact
               ? 'border-border/60 bg-transparent text-muted-foreground hover:border-border hover:text-foreground'
+              : inList
+                ? 'border-border/60 bg-transparent text-foreground hover:border-border hover:bg-muted/40'
               : 'border-transparent bg-primary text-primary-foreground hover:bg-primary/90'
         )}
       >
         {following ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}
         {!compact && (following ? t('followFollowing') : t('followFollow'))}
       </button>
+      {/* The optimistic toggle rolls back on failure; without this the button
+          just flips back and the person never learns the follow didn't stick. */}
+      {toggle.isError && (
+        <span role="alert" className="text-xs text-destructive">{t('followFailed')}</span>
+      )}
     </span>
   );
 }

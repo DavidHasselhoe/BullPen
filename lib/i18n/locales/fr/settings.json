@@ -261,5 +261,6 @@
   "notifSavedScreenDescription": "Quand une nouvelle action correspond à un filtre enregistré dont la cloche est activée",
   "customizeHoldingsHeading": "Mes positions",
   "customizeShowDividendsLabel": "Afficher les dividendes",
-  "customizeShowDividendsDescription": "Prochains versements de vos positions sur Mes positions."
+  "customizeShowDividendsDescription": "Prochains versements de vos positions sur Mes positions.",
+  "homeWidget_your_stock": "Votre action en détail"
 }

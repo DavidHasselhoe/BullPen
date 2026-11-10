@@ -261,5 +261,6 @@
   "notifSavedScreenDescription": "当有新股票符合开启铃铛的已保存筛选时",
   "customizeHoldingsHeading": "我的持仓",
   "customizeShowDividendsLabel": "显示股息",
-  "customizeShowDividendsDescription": "在我的持仓页显示持仓的即将到来的付款。"
+  "customizeShowDividendsDescription": "在我的持仓页显示持仓的即将到来的付款。",
+  "homeWidget_your_stock": "近看你的股票"
 }

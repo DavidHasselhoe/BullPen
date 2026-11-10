@@ -18,6 +18,7 @@ import { ComingUp } from '@/components/dashboard/ComingUp';
 import { YourNews } from '@/components/dashboard/YourNews';
 import { PickUp } from '@/components/dashboard/PickUp';
 import { FromFollows } from '@/components/dashboard/FromFollows';
+import { YourStockUpClose } from '@/components/dashboard/YourStockUpClose';
 import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
 import { StarterPicker } from '@/components/dashboard/StarterPicker';
 import { TrialStartedModal } from '@/components/billing/TrialStartedModal';
@@ -28,6 +29,8 @@ function WidgetSlot({ id }: { id: string }) {
   switch (id) {
     case 'daily_brief':
       return <DailyBriefWidget />;
+    case 'your_stock':
+      return <YourStockUpClose />;
     case 'coming_up':
       return <ComingUp />;
     case 'your_news':

@@ -261,5 +261,6 @@
   "notifSavedScreenDescription": "Når en ny aksje passer til et lagret filter med bjellen på",
   "customizeHoldingsHeading": "Min beholdning",
   "customizeShowDividendsLabel": "Vis utbytte",
-  "customizeShowDividendsDescription": "Kommende utbetalinger fra beholdningene dine på Min beholdning."
+  "customizeShowDividendsDescription": "Kommende utbetalinger fra beholdningene dine på Min beholdning.",
+  "homeWidget_your_stock": "Aksjen din på nært hold"
 }

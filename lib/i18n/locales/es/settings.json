@@ -261,5 +261,6 @@
   "notifSavedScreenDescription": "Cuando una acción nueva cumple un filtro guardado con la campana activada",
   "customizeHoldingsHeading": "Mis posiciones",
   "customizeShowDividendsLabel": "Mostrar dividendos",
-  "customizeShowDividendsDescription": "Próximos pagos de tus inversiones en Mis posiciones."
+  "customizeShowDividendsDescription": "Próximos pagos de tus inversiones en Mis posiciones.",
+  "homeWidget_your_stock": "Tu acción de cerca"
 }

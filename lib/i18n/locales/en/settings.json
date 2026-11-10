@@ -261,5 +261,6 @@
   "notifSavedScreenDescription": "When a new stock matches a saved screen with its bell on",
   "customizeHoldingsHeading": "My Holdings",
   "customizeShowDividendsLabel": "Show dividends",
-  "customizeShowDividendsDescription": "Upcoming payments from your holdings on My Holdings."
+  "customizeShowDividendsDescription": "Upcoming payments from your holdings on My Holdings.",
+  "homeWidget_your_stock": "Your stock up close"
 }
