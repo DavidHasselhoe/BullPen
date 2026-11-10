@@ -27,11 +27,12 @@ on:
 jobs:
   refresh-extended:
     runs-on: ubuntu-latest
-    # ~155 active batches at ~70s each (1,383 tier-1 tickers as of 2026-11)
-    # is ~180 min. Until 2026-11 getActiveUniverse
-    # was capped at 1000 rows, so this job stopped at batch 200 and 180 looked
-    # like plenty.
-    timeout-minutes: 240
+    # ~230 active batches at ~70s each (1,759 tier-1 tickers on 2026-11-10)
+    # is ~270 min. 240 timed out every run from 2026-11-07 (GitHub reports a
+    # timeout as "cancelled") and left the alphabetical tail unrefreshed.
+    # 350 is just under GitHub's 360-min cap for hosted runners, room for ~50
+    # more batches. Past that, move the 122 seam up into the 22:00 job instead.
+    timeout-minutes: 350
     steps:
       - name: Refresh remaining active universe (batch 122 onward, until done)
         env:
