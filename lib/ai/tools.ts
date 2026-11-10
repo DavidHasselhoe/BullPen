@@ -29,7 +29,10 @@ import {
   type CashFlowPeriod,
   type EarningsCalendarItem,
 } from '@/lib/twelvedata/twelvedata-client';
-import { getCalendarRange, WARM_DAYS_BACK, WARM_DAYS_FORWARD } from '@/lib/market-data/calendar-days';
+import { datesBetween, getCalendarRange, WARM_DAYS_BACK, WARM_DAYS_FORWARD } from '@/lib/market-data/calendar-days';
+import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
+import { getActiveUniverse } from '@/lib/market-data/screener-universe';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { statementsInUsd } from '@/lib/currency/latest-rates';
@@ -1727,7 +1730,8 @@ function reportSession(time: string | undefined): 'before open' | 'after close' 
 const getUpcomingEarnings = tool({
   description:
     'Next earnings report date for one or more stocks, e.g. every holding or watchlist stock the user has. ' +
-    'Use for "when does X report", "any of my holdings have earnings soon", "what reports this week". ' +
+    'Use for "when does X report", "any of my holdings have earnings soon". For who reports market-wide on a ' +
+    'day or week ("what companies report today"), use getEarningsCalendar instead. ' +
     'Pass all tickers in ONE call. Free: reads BullPen\'s earnings calendar, no API credits. ' +
     'Answer in text, one line per stock with its date and, when known, "before open" or "after close". ' +
     'estimated: true means the date is projected from past reporting dates, not announced by the company: say so. ' +
@@ -2133,8 +2137,119 @@ function byValue<T extends { valueUsd: number }>(rows: T[], n = 10): T[] {
 const PRO_LOCKED_NOTE =
   'This part is Pro. Do not guess at or paraphrase what it says. Tell the user it is part of Pro and where in the app it lives.';
 
-export function appContentTools(userId: string | null) {
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** Longest range per getEarningsCalendar call; a week view is 7. */
+const EARNINGS_CAL_MAX_DAYS = 14;
+/** Rows returned across the whole range, split evenly over its days. */
+const EARNINGS_CAL_ROWS = 40;
+
+/** Open holdings + watchlist symbols, for ranking the user's own stocks first. */
+async function userListSymbols(userId: string): Promise<Set<string>> {
+  const [h, w] = await Promise.all([
+    supabase().from('user_holdings').select('symbol').eq('user_id', userId).or(OPEN_POSITION_FILTER),
+    supabase().from('user_watchlist').select('symbol').eq('user_id', userId),
+  ]);
+  return new Set(
+    [...(h.data ?? []), ...(w.data ?? [])].map((r) => (r as { symbol: string }).symbol.toUpperCase())
+  );
+}
+
+/**
+ * `listsAllowed` mirrors Settings > Ask Bull > holdings access: without it the
+ * user's own stocks are not read, so nothing is ranked or flagged as theirs.
+ */
+export function appContentTools(userId: string | null, listsAllowed = false) {
   return {
+    // Same per-day cache and universe as /api/calendar/earnings, read cache
+    // only: the prefetch cron keeps WARM_DAYS_BACK..WARM_DAYS_FORWARD warm, so
+    // this never spends credits.
+    getEarningsCalendar: tool({
+      description:
+        'Every company reporting earnings on a day or a short range, market-wide, from the Market Events Calendar. ' +
+        'Use for "what companies report earnings today", "big earnings this week", "who reported yesterday". For ' +
+        'the dates of specific named stocks use getUpcomingEarnings instead. Free: cached calendar, no API credits. ' +
+        'Rows are ranked with the user\'s own holdings and watchlist first (onYourList: true), then by market cap. ' +
+        'A busy day has hundreds of reports, so only the largest come back: total is the real count for that day, ' +
+        'and when truncated is true say these are the biggest names and the full list is on the calendar page. ' +
+        'session is "before open" or "after close" when known. estimated: true means the date is projected, not ' +
+        'announced by the company: say so. epsActual set means it already reported. missingDates had no calendar ' +
+        'data (usually more than 45 days out): say so, never guess. For economic releases on the same days (CPI, ' +
+        'jobs report, Fed), call getEconomicCalendar as well.',
+      inputSchema: jsonSchema<{ from?: string; to?: string }>({
+        type: 'object',
+        properties: {
+          from: { type: 'string', description: 'YYYY-MM-DD (New York date), default today' },
+          to: { type: 'string', description: `YYYY-MM-DD, default from. At most ${EARNINGS_CAL_MAX_DAYS} days in total.` },
+        },
+        additionalProperties: false,
+      }),
+      execute: async ({ from, to }) => {
+        const start = from ?? todayET();
+        const end = to ?? start;
+        if (!DATE_RE.test(start) || !DATE_RE.test(end) || end < start) {
+          return { error: 'Dates must be YYYY-MM-DD, with to on or after from.' };
+        }
+        const days = datesBetween(start, end);
+        if (days.length > EARNINGS_CAL_MAX_DAYS) return { error: `At most ${EARNINGS_CAL_MAX_DAYS} days per call.` };
+
+        try {
+          const [{ byDate, missingDates }, universe, mine] = await Promise.all([
+            getCalendarRange<EarningsCalendarItem>('earnings', start, end, { allowFetch: false }),
+            getActiveUniverse(),
+            listsAllowed && userId ? userListSymbols(userId) : Promise.resolve(new Set<string>()),
+          ]);
+
+          // The calendar page's universe filter, except the user's own small
+          // caps, which belong on their answer even outside it.
+          const inUniverse = new Set(universe);
+          const seen = new Set<string>();
+          const rows: Array<EarningsCalendarItem & { day: string }> = [];
+          for (const [day, items] of byDate) {
+            for (const r of items) {
+              const sym = r.symbol?.toUpperCase();
+              if (!sym || seen.has(`${day}|${sym}`) || !(inUniverse.has(sym) || mine.has(sym))) continue;
+              seen.add(`${day}|${sym}`);
+              rows.push({ ...r, symbol: sym, day });
+            }
+          }
+
+          const ranked = (await attachCalendarMeta(rows)).sort((a, b) =>
+            Number(mine.has(b.symbol)) - Number(mine.has(a.symbol)) ||
+            (b.market_cap ?? -1) - (a.market_cap ?? -1) ||
+            a.symbol.localeCompare(b.symbol)
+          );
+
+          const perDay = Math.max(5, Math.floor(EARNINGS_CAL_ROWS / days.length));
+          const out = days.filter((d) => byDate.has(d)).map((date) => {
+            const all = ranked.filter((r) => r.day === date);
+            return {
+              date,
+              total: all.length,
+              reports: all.slice(0, perDay).map((r) => ({
+                ticker: r.symbol,
+                name: r.name ?? null,
+                session: reportSession(r.time),
+                ...(r.date_estimated ? { estimated: true } : {}),
+                ...(r.eps_estimate != null ? { epsEstimate: r.eps_estimate } : {}),
+                ...(r.eps_actual != null ? { epsActual: r.eps_actual } : {}),
+                ...(mine.has(r.symbol) ? { onYourList: true } : {}),
+              })),
+            };
+          });
+
+          return {
+            today: todayET(),
+            days: out,
+            truncated: out.some((d) => d.total > d.reports.length),
+            ...(missingDates.length ? { missingDates } : {}),
+            page: '/tools/calendar',
+          };
+        } catch {
+          return { error: 'Could not load the earnings calendar.' };
+        }
+      },
+    }),
+
     getWeeklyPicks: tool({
       description:
         "Read Bull's Weekly Pick: the latest (or a given week's) pick with its headline, one-liner, entry price and " +

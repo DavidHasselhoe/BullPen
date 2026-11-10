@@ -157,7 +157,7 @@ export async function runAgent(
     ...BULLPEN_TOOLS,
     // Registered for everyone, signed in or not: each one applies the same
     // tier gate as its page, so a logged-out caller just gets the free layer.
-    ...appContentTools(userId ?? null),
+    ...appContentTools(userId ?? null, allowHoldingsContext === true),
     ...(userId ? { createAlert: createAlertTool(userId), getMyAlerts: getMyAlertsTool(userId) } : {}),
     ...(userId ? { getPortfolioContext: getPortfolioContextTool(userId, allowHoldingsContext === true) } : {}),
     // Pro-gated (see /api/stock/[ticker]/insider-transactions) — needs userId
