@@ -21,7 +21,7 @@ import { validateTicker } from '@/lib/security/input-validation';
 import { getTradesForSymbols } from '@/lib/congress/insights';
 import { tradeDirection, type TradeDirection } from '@/lib/congress/types';
 import { getFundHolders } from '@/lib/stock/subpage-data';
-import { getCalendarRange, dropMisdatedEarnings } from '@/lib/market-data/calendar-days';
+import { getCalendarRange } from '@/lib/market-data/calendar-days';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
 import { HEALTH_CATEGORIES } from '@/lib/finance/health-score';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
@@ -69,7 +69,7 @@ function pillarExtremes(row: Partial<Record<Pillar, number | null>>): { stronges
 async function nextEarnings(symbol: string): Promise<Spotlight['nextEarnings']> {
   const today = todayET();
   const { byDate } = await getCalendarRange<EarningsCalendarItem>('earnings', today, addDays(today, EARNINGS_DAYS_AHEAD), { allowFetch: false });
-  const row = [...dropMisdatedEarnings(byDate).values()]
+  const row = [...byDate.values()]
     .flat()
     .filter((r) => r.symbol?.toUpperCase() === symbol)
     .sort((a, b) => a.date.localeCompare(b.date))[0];
@@ -96,7 +96,7 @@ async function handler(_request: NextRequest, context?: unknown) {
     const row = stats as StatsRow | null;
 
     const [trades, holders, earnings, peerRows] = await Promise.all([
-      getTradesForSymbols([symbol], 365, 100),
+      getTradesForSymbols([symbol], 365, 1000),
       getFundHolders(symbol),
       // A cold calendar cache is "no date on file", not a failed section.
       nextEarnings(symbol).catch(() => null),
@@ -133,11 +133,12 @@ async function handler(_request: NextRequest, context?: unknown) {
       nextEarnings: earnings,
       members: [...byMember.values()].slice(0, MAX_MEMBERS),
       // By conviction, not dollars: 9% of Tiger's portfolio says more than 1% of Citadel's.
-      funds: [...holders].sort((a, b) => (b.portfolioPct ?? 0) - (a.portfolioPct ?? 0)).slice(0, MAX_FUNDS).map((h) => ({
+      funds: [...holders].sort((a, b) => (b.portfolioPct ?? 0) - (a.portfolioPct ?? 0)).slice(0, MAX_FUNDS).map((h, i) => ({
         slug: h.fund.slug,
         name: shortFundName(h.fund.name),
         logoUrl: h.fund.logoUrl,
-        portfolioPct: h.portfolioPct,
+        // Like the stock page's fund list: only the first row's % is free, and this response is public.
+        portfolioPct: i === 0 ? h.portfolioPct : null,
         periodOfReport: h.periodOfReport,
       })),
       peers: ((peerRows.data ?? []) as { ticker: string; name: string | null }[])

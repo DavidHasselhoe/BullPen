@@ -150,7 +150,6 @@ export function ListScorecard({ listId, today, score, scoreLoading, allNew, grad
                       className={cn(
                         'flex min-h-8 items-center gap-1.5 rounded-md px-1 text-sm font-medium tabular-nums text-foreground transition-colors hover:bg-background',
                         active && 'bg-background ring-1 ring-border',
-                        gradeFilter && !active && 'opacity-50 hover:opacity-100',
                       )}
                     >
                       <span className={cn('rounded px-1.5 py-0.5 text-xs font-semibold', gradeColor(g))}>{g}</span>
