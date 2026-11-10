@@ -98,6 +98,18 @@
   "scorecardStartsTomorrow": "Measured from today's close. Check back tomorrow.",
   "scorecardUnavailable": "Not available right now",
   "scorecardHealth": "Health Scores",
+
+  "scorecardHealthHint": "Select a grade to show only those stocks",
+
+  "scorecardGradeFilterAriaLabel_one": "Show the {{count}} stock graded {{grade}}",
+
+  "scorecardGradeFilterAriaLabel_other": "Show the {{count}} stocks graded {{grade}}",
+
+  "watchlistGradeFilterStatus_one": "Showing {{count}} of {{total}} stocks, the one graded {{grade}}.",
+
+  "watchlistGradeFilterStatus_other": "Showing {{count}} of {{total}} stocks, the ones graded {{grade}}.",
+
+  "watchlistGradeFilterClear": "Show all",
   "watchlistColSinceAdded": "Since added",
   "watchlistSinceAddedNew": "New",
   "scorecardChartShow": "Show chart",

@@ -50,7 +50,7 @@ interface WatchlistCardProps {
   week52High?: number | null;
 }
 
-function gradeColor(grade: string) {
+export function gradeColor(grade: string) {
   if (grade === 'A') return 'bg-emerald-500/15 text-emerald-500';
   if (grade === 'B') return 'bg-green-500/15 text-green-600';
   if (grade === 'C') return 'bg-amber-500/15 text-amber-500';

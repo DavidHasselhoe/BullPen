@@ -166,6 +166,17 @@ export default function WatchlistPage() {
   const today = todaySummary(displayItems.flatMap((i) => quotes[i.symbol] ? [{ symbol: i.symbol, changePercent: quotes[i.symbol]!.changePercent }] : []));
   const score = listScore(sinceAddedEntries ?? [], (s) => quotes[s]?.price, spyPrice);
 
+  // A grade picked in the scorecard narrows the cards/table to those stocks.
+  // Tied to the list it was picked on, so switching lists clears it without an
+  // effect, and it lapses by itself once no stock in the list has that grade.
+  const [gradePick, setGradePick] = useState<{ listId: string | null; grade: string } | null>(null);
+  const gradeOf = (symbol: string) => enhancedData?.[symbol]?.healthScore?.grade;
+  const gradeMatches = gradePick && gradePick.listId === activeListId
+    ? displayItems.filter((i) => gradeOf(i.symbol) === gradePick.grade)
+    : [];
+  const gradeFilter = gradeMatches.length > 0 ? gradePick!.grade : null;
+  const shownItems = gradeFilter ? gradeMatches : displayItems;
+
   const handleAdd = async (result: SearchResult) => {
     let listId = activeListId ?? undefined;
 
@@ -389,7 +400,9 @@ export default function WatchlistPage() {
             score={score}
             scoreLoading={sinceAddedLoading}
             allNew={(sinceAddedEntries ?? []).every((e) => e.startClose == null && !e.removedAt)}
-            grades={displayItems.flatMap((i) => enhancedData?.[i.symbol]?.healthScore?.grade ?? [])}
+            grades={displayItems.flatMap((i) => gradeOf(i.symbol) ?? [])}
+            gradeFilter={gradeFilter}
+            onGradeFilter={(grade) => setGradePick(grade ? { listId: activeListId, grade } : null)}
           />
         )}
 
@@ -409,6 +422,19 @@ export default function WatchlistPage() {
               seed={seedQuotes}
             />
           </div>
+        )}
+
+        {gradeFilter && (
+          <p role="status" className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+            {t('watchlistGradeFilterStatus', { count: shownItems.length, total: displayItems.length, grade: gradeFilter })}
+            <button
+              type="button"
+              onClick={() => setGradePick(null)}
+              className="-my-2 py-2 font-medium text-primary underline-offset-4 hover:underline"
+            >
+              {t('watchlistGradeFilterClear')}
+            </button>
+          </p>
         )}
 
         {/* Content */}
@@ -475,7 +501,7 @@ export default function WatchlistPage() {
           </div>
         ) : viewMode === 'table' ? (
           <WatchlistTable
-            items={displayItems}
+            items={shownItems}
             quotes={quotes}
             sinceAdded={sinceAdded}
             enhancedData={enhancedData}
@@ -484,7 +510,7 @@ export default function WatchlistPage() {
           />
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {displayItems.map((item) => {
+            {shownItems.map((item) => {
               const quote = quotes[item.symbol];
               const enhanced = enhancedData?.[item.symbol];
               return (

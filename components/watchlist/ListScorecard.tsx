@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Info, LineChart as LineChartIcon } from 'lucide-react';
 import { ListScoreChart } from './ListScoreChart';
+import { gradeColor } from './WatchlistCard';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -18,6 +19,9 @@ interface ListScorecardProps {
   /** Every pick was added today, so there is no close to measure from yet. */
   allNew: boolean;
   grades: string[];
+  /** The grade the list below is filtered to, if any. */
+  gradeFilter: string | null;
+  onGradeFilter: (grade: string | null) => void;
 }
 
 const GRADE_ORDER = ['A', 'B', 'C', 'D', 'F'];
@@ -45,7 +49,7 @@ function Stat({ label, children }: { label: React.ReactNode; children: React.Rea
  * list's picks have done since they were added against the S&P 500. Percent
  * only. These are stocks someone watched, not money they made.
  */
-export function ListScorecard({ listId, today, score, scoreLoading, allNew, grades }: ListScorecardProps) {
+export function ListScorecard({ listId, today, score, scoreLoading, allNew, grades, gradeFilter, onGradeFilter }: ListScorecardProps) {
   const { t } = useTranslation('watchlist');
   const [chartOpen, setChartOpen] = useState(false);
 
@@ -130,9 +134,33 @@ export function ListScorecard({ listId, today, score, scoreLoading, allNew, grad
   
         <Stat label={t('scorecardHealth')}>
           {gradeMix.length > 0 ? (
-            <span className="text-sm font-medium tabular-nums text-foreground">
-              {gradeMix.map((x) => `${x.n} ${x.g}`).join(' · ')}
-            </span>
+            <>
+              {/* A count per grade, not an average: a list has no money behind it
+                  to weight by, and an average would hide the one weak stock. */}
+              <div className="-ml-1 flex flex-wrap gap-1">
+                {gradeMix.map(({ g, n }) => {
+                  const active = gradeFilter === g;
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => onGradeFilter(active ? null : g)}
+                      aria-pressed={active}
+                      aria-label={t('scorecardGradeFilterAriaLabel', { count: n, grade: g })}
+                      className={cn(
+                        'flex min-h-8 items-center gap-1.5 rounded-md px-1 text-sm font-medium tabular-nums text-foreground transition-colors hover:bg-background',
+                        active && 'bg-background ring-1 ring-border',
+                        gradeFilter && !active && 'opacity-50 hover:opacity-100',
+                      )}
+                    >
+                      <span className={cn('rounded px-1.5 py-0.5 text-xs font-semibold', gradeColor(g))}>{g}</span>
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="text-xs text-muted-foreground">{t('scorecardHealthHint')}</span>
+            </>
           ) : <span className="text-xs text-muted-foreground">{t('scorecardUnavailable')}</span>}
         </Stat>
       </section>
