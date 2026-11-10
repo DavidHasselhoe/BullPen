@@ -32,14 +32,16 @@ import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
  * fires. Without it the S&P 500 board fired ~503 credits at once, unrecorded,
  * on top of whatever crons and Discover had just spent: TwelveData rate-limited
  * every 100-symbol sub-request, getStockQuotes dropped them silently, and only
- * the 3-symbol tail chunk (ZBH, ZBRA, ZTS) made it onto the heatmap. 65s spans
- * one bucket rollover; past that the chunk is skipped rather than fired blind.
+ * the 3-symbol tail chunk (ZBH, ZBRA, ZTS) made it onto the heatmap. Every
+ * seedPrices caller (price streams, Discover, heatmap) waits here, so the wait
+ * is short: past 10s the chunk is skipped rather than fired blind, and the
+ * heatmap serves its last complete board instead.
  */
 async function reserveSeedCredits(cost: number): Promise<boolean> {
-  const deadline = Date.now() + 65_000;
+  const deadline = Date.now() + 10_000;
   while (!(await tryReserveOrganicCredits(cost))) {
     if (Date.now() > deadline) return false;
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
   return true;
 }
