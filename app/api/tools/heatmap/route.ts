@@ -40,7 +40,7 @@ export interface HeatmapResponse {
   error?: string;
 }
 
-const HEATMAP_CACHE_KEY = 'heatmap:v2';
+const HEATMAP_CACHE_KEY = 'heatmap:v3';
 const HEATMAP_CACHE_TTL_SECONDS = 3 * 60;
 const MY_STOCKS_CACHE_TTL_SECONDS = 3 * 60;
 /** Post-dedupe, post-crypto/forex-filter cap on how many of a user's tracked
@@ -70,6 +70,18 @@ function getCurrentSession(): Session {
   if (etMins >= 960 && etMins < 1200) return 'post';
   return 'closed';
 }
+
+/** TwelveData's sector names (what companies/screener_stats store) to the GICS
+ *  names SP500_SECTORS and SECTOR_ORDER use, so a ticker missing from the
+ *  static map lands in "Health Care", not a second "Healthcare" chip. */
+const TO_GICS: Record<string, string> = {
+  Technology: 'Information Technology',
+  Healthcare: 'Health Care',
+  'Financial Services': 'Financials',
+  'Consumer Cyclical': 'Consumer Discretionary',
+  'Consumer Defensive': 'Consumer Staples',
+  'Basic Materials': 'Materials',
+};
 
 const SECTOR_ORDER = [
   'Information Technology',
@@ -117,7 +129,7 @@ function buildSectors(stocks: HeatmapStock[]): HeatmapSector[] {
 /**
  * Resolves the S&P 500 constituent list into fully-priced HeatmapStock rows.
  * Behavior is unchanged from before this file's mode split — same sector
- * sourcing (static map → companies table → 'Other'), same market-cap
+ * sourcing (static map → companies table → screener_stats → 'Other'), same market-cap
  * fallback (real screener_stats value, or a rank-based synthetic estimate),
  * same dual-class dedup.
  */
@@ -130,7 +142,7 @@ async function resolveSp500Stocks(): Promise<HeatmapStock[]> {
   const [{ data: statsData }, { data: companiesData }] = await Promise.all([
     supabase
       .from('screener_stats')
-      .select('ticker, market_cap')
+      .select('ticker, market_cap, sector')
       .in('ticker', SP500_TICKERS),
     supabase
       .from('companies')
@@ -139,7 +151,9 @@ async function resolveSp500Stocks(): Promise<HeatmapStock[]> {
   ]);
 
   const marketCapMap = new Map<string, number>();
+  const statsSectorMap = new Map<string, string>();
   for (const s of statsData ?? []) {
+    if (s.sector) statsSectorMap.set(s.ticker, s.sector as string);
     if (s.market_cap && (s.market_cap as number) > 0) {
       marketCapMap.set(s.ticker, s.market_cap as number);
     }
@@ -188,11 +202,11 @@ async function resolveSp500Stocks(): Promise<HeatmapStock[]> {
     const change = quote.changePercent ?? 0;
     const previousClose = quote.previousClose;
 
-    // Sector: static map → DB → 'Other'
+    // Sector: static map → companies → screener_stats → 'Other', in GICS names
+    const dbSector = (dbSectorMap.get(ticker) ?? statsSectorMap.get(ticker))?.trim();
     const sectorName =
       SP500_SECTORS[ticker] ??
-      dbSectorMap.get(ticker)?.trim() ??
-      'Other';
+      (dbSector ? TO_GICS[dbSector] ?? dbSector : 'Other');
 
     // Name: DB → ticker (TwelveData quotes don't carry a company name)
     const name = dbNameMap.get(ticker) ?? ticker;
@@ -317,6 +331,19 @@ async function resolveMyStocks(userId: string): Promise<HeatmapStock[]> {
   return stocks;
 }
 
+/** A board missing whole quote chunks is not "the S&P 500" (2026-11-10: 3
+ *  tiles, cached as fresh for 3 min), so it is never cached or served as one. */
+function isCompleteBoard(stockCount: number): boolean {
+  return stockCount >= SP500_TICKERS.length * 0.95;
+}
+
+/** The last cached board, however old, if it is a complete one. */
+async function getCompleteStaleBoard(): Promise<HeatmapResponse | null> {
+  const stale = await getCachedStale<HeatmapResponse>(HEATMAP_CACHE_KEY);
+  const count = stale?.sectors?.reduce((n, s) => n + s.stocks.length, 0) ?? 0;
+  return stale?.success && isCompleteBoard(count) ? stale : null;
+}
+
 async function handleSp500(): Promise<NextResponse> {
   const cachedHeatmap = await getCached<HeatmapResponse>(HEATMAP_CACHE_KEY);
   if (cachedHeatmap) {
@@ -327,21 +354,20 @@ async function handleSp500(): Promise<NextResponse> {
 
   try {
     const stocks = await resolveSp500Stocks();
-
-    if (stocks.length === 0) {
-      // Every symbol failed to resolve — Redis cold and TwelveData
-      // unavailable at the same time. Rare, but a live-price hiccup shouldn't
-      // blank the page: fall back to the last cached snapshot (however stale)
-      // so the user sees yesterday's close instead of an error card. The
+    if (!isCompleteBoard(stocks.length)) {
+      // Redis cold and TwelveData short on credits or down at the same time.
+      // Fall back to the last cached snapshot (however stale) so the user sees
+      // yesterday's close instead of a gutted board or an error card. The
       // `lastUpdated` timestamp already shown in the header makes the age
       // honest rather than presenting stale data as live.
-      const stale = await getCachedStale<HeatmapResponse>(HEATMAP_CACHE_KEY);
-      if (stale?.success) {
-        logger.error('Heatmap API: zero symbols resolved from seedPrices, served stale cache');
+      const stale = await getCompleteStaleBoard();
+      if (stale) {
+        logger.error(`Heatmap API: only ${stocks.length} symbols resolved, served stale cache`);
         return NextResponse.json(stale);
       }
-      logger.error('Heatmap API: zero symbols resolved from seedPrices, no stale cache available');
-      return NextResponse.json({ success: false, error: GENERIC_LOAD_ERROR });
+      logger.error(`Heatmap API: only ${stocks.length} symbols resolved, no complete stale cache`);
+      if (stocks.length === 0) return NextResponse.json({ success: false, error: GENERIC_LOAD_ERROR });
+      return NextResponse.json({ success: true, sectors: buildSectors(stocks), session, lastUpdated: new Date().toISOString() });
     }
 
     const response: HeatmapResponse = {
@@ -358,8 +384,8 @@ async function handleSp500(): Promise<NextResponse> {
     // Log the real cause server-side; the client only ever sees a generic,
     // provider-agnostic message — no status codes, no vendor names.
     logger.error('Heatmap API error', err);
-    const stale = await getCachedStale<HeatmapResponse>(HEATMAP_CACHE_KEY);
-    if (stale?.success) {
+    const stale = await getCompleteStaleBoard();
+    if (stale) {
       logger.error('Heatmap API error, served stale cache');
       return NextResponse.json(stale);
     }

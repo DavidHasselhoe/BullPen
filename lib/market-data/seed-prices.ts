@@ -25,6 +25,24 @@ import { getStockQuotes, isOutsideRegularSessionET, withRateLimitRetry } from '@
 import { rmget, rset } from '@/lib/cache/redis-cache';
 import { secondsUntilNextOpenET } from '@/lib/market-data/trading-day';
 import { chunk } from '@/lib/utils';
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
+
+/**
+ * Waits for room in the shared per-minute TwelveData bucket before a chunk
+ * fires. Without it the S&P 500 board fired ~503 credits at once, unrecorded,
+ * on top of whatever crons and Discover had just spent: TwelveData rate-limited
+ * every 100-symbol sub-request, getStockQuotes dropped them silently, and only
+ * the 3-symbol tail chunk (ZBH, ZBRA, ZTS) made it onto the heatmap. 65s spans
+ * one bucket rollover; past that the chunk is skipped rather than fired blind.
+ */
+async function reserveSeedCredits(cost: number): Promise<boolean> {
+  const deadline = Date.now() + 65_000;
+  while (!(await tryReserveOrganicCredits(cost))) {
+    if (Date.now() > deadline) return false;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+  return true;
+}
 
 export interface SeededQuote {
   price: number;
@@ -142,6 +160,10 @@ export async function seedPrices(
   await Promise.all(
     chunks.map(async (chunk) => {
       try {
+        if (!(await reserveSeedCredits(chunk.length))) {
+          console.warn(`[seed-prices] no credit budget for ${chunk.length} symbols, skipped`);
+          return;
+        }
         const quotes = await withRateLimitRetry(() => getStockQuotes(chunk, { prepost }));
         for (const [sym, quote] of quotes.entries()) {
           if (!quote || quote.c <= 0) continue;
