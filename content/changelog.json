@@ -1,5 +1,40 @@
 [
   {
+    "date": "2026-11-10",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Home now shows your biggest holding up close: its health score, next earnings, which members of Congress and big funds trade it with a Follow button, and the largest companies in its industry to watch",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "Ask Bull who reports earnings today or this week, and get the real list from the earnings calendar, with your own stocks first",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "On your watchlist, Health Scores shows a colored chip for each grade. Tap one to see just those stocks"
+      },
+      {
+        "type": "improved",
+        "text": "Market Mood now reads the last month of volatility, momentum, junk bonds and Treasuries, so one big day no longer swings the whole score"
+      },
+      {
+        "type": "fixed",
+        "text": "The S&P 500 heatmap could load only a handful of stocks. It now always shows the whole index"
+      },
+      {
+        "type": "fixed",
+        "text": "Trades from the members of Congress you follow stopped arriving after October 20. The missing weeks are filled in and new trades come in again"
+      },
+      {
+        "type": "fixed",
+        "text": "On watchlist cards, the company name no longer runs under the buttons that appear when you hover"
+      }
+    ]
+  },
+  {
     "date": "2026-11-09",
     "entries": [
       {
