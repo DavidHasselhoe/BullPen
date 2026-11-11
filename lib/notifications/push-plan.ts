@@ -5,7 +5,8 @@
 import { isValidTimeZone } from '@/lib/dates/clock';
 
 export type PushKind = 'user_alert' | 'portfolio_open' | 'portfolio_recap' | 'price_alerts' | 'upcoming_earnings'
-  | 'dividend_reminder' | 'weekly_pick' | 'daily_challenge_reminder' | 'new_course' | 'saved_screen' | 'earnings_recap';
+  | 'dividend_reminder' | 'weekly_pick' | 'daily_challenge_reminder' | 'new_course' | 'saved_screen' | 'earnings_recap'
+  | 'economic_events';
 
 /**
  * Highest priority first: the lead row supplies the push title and URL.
@@ -15,7 +16,8 @@ export type PushKind = 'user_alert' | 'portfolio_open' | 'portfolio_recap' | 'pr
  */
 export const PUSH_PRIORITY: PushKind[] = [
   // earnings_recap (Pro, a held or watched stock's results) leads the capped kinds.
-  'user_alert', 'portfolio_recap', 'portfolio_open', 'earnings_recap', 'price_alerts', 'upcoming_earnings',
+  // economic_events is only the result of a release the user follows (CPI, jobs, Fed...), never the morning heads-up.
+  'user_alert', 'portfolio_recap', 'portfolio_open', 'earnings_recap', 'price_alerts', 'economic_events', 'upcoming_earnings',
   'saved_screen', 'dividend_reminder', 'weekly_pick', 'daily_challenge_reminder', 'new_course',
 ];
 

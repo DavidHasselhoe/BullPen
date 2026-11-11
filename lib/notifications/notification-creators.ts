@@ -22,6 +22,7 @@ import { economicResultText, RESULT_KINDS_NOTIFIED, type EconomicResultEvent } f
 import { CALENDAR_PREFS_KEY, parseCalendarPrefs } from '@/lib/market-data/calendar-prefs';
 import { indexChangeWeekOf, type IndexChangeEvent } from '@/lib/market-data/index-events';
 import { TRACKERS, type IndexId } from '@/lib/market-data/index-membership';
+import { pushNow } from './push-dispatch';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1055,13 +1056,18 @@ export async function notifyEconomicResults(event: EconomicResultEvent): Promise
   const title = enText(text.title);
   const message = text.message ? enText(text.message) : '';
   const params = i18n(text.title, text.message);
+  // push_kind matches the settings key, so turning economic_events off stops the push too.
   const rows = users.filter((u) => !done.has(u.id)).map((u) => ({
     user_id: u.id, type: 'market', title, message, entity_type: 'market', entity_id: entityId, severity: 'info', params,
+    push_kind: 'economic_events',
   }));
   for (let i = 0; i < rows.length; i += 500) {
     const { error } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
     if (error) throw error;
   }
+  // Straight to the phone instead of waiting up to 15 minutes for the dispatcher, which retries whatever this misses.
+  const { pushErrors } = await pushNow(rows.map((r) => r.user_id));
+  if (pushErrors.length) console.error('[notifyEconomicResults] push', pushErrors);
   return rows.length;
 }
 
