@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-11-11",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Results of the economic releases you follow (the Fed, CPI, jobs, PCE and GDP) now arrive as a phone notification, not only in the notification bell",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Choose which releases on the economy page now opens the release picker in the Market Calendar, so you can pick the ones that notify you"
+      },
+      {
+        "type": "fixed",
+        "text": "Screener data for stocks later in the alphabet had stopped refreshing every night. The whole list is refreshed again"
+      }
+    ]
+  },
+  {
     "date": "2026-11-10",
     "entries": [
       {
@@ -31,6 +49,10 @@
       {
         "type": "fixed",
         "text": "On watchlist cards, the company name no longer runs under the buttons that appear when you hover"
+      },
+      {
+        "type": "fixed",
+        "text": "Discover, the heatmap and live prices no longer stall for up to a minute at busy moments"
       }
     ]
   },
