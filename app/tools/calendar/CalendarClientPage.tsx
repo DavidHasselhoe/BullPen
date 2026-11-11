@@ -76,6 +76,7 @@ export function CalendarClientPage() {
   const setParams = useCallback(
     (next: { view?: CalendarView; date?: string }) => {
       const params = new URLSearchParams(searchParams.toString());
+      params.delete('pick'); // open-the-menu-on-arrival is for the arrival only, not every reload after
       params.set('view', next.view ?? view);
       params.set('date', next.date ?? anchor);
       router.replace(`/tools/calendar?${params.toString()}`, { scroll: false });
