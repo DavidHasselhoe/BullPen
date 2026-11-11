@@ -695,7 +695,7 @@
   "calendarScopeGoHoldings": "Positionen hinzufügen",
   "calendarScopeGoWatchlist": "Zur Beobachtungsliste hinzufügen",
   "calendarEconomicMenuTitle": "Wirtschaftliche Veröffentlichungen",
-  "calendarEconomicMenuHint": "Wähle die aus, die dir wichtig sind. Wenn Benachrichtigungen für Wirtschaftsdaten aktiviert sind, erhältst du nur diese.",
+  "calendarEconomicMenuHint": "Wähle die aus, die dir wichtig sind. Mit aktivierten Benachrichtigungen für Wirtschaftsdaten bekommst du für jede einen Hinweis am Morgen. Fed, CPI, Arbeitsmarktbericht, PCE und BIP schicken zusätzlich das Ergebnis.",
   "calendarEconomicSelectAll": "Alle auswählen",
   "calendarEconomicClear": "Löschen",
   "economicExplainTrigger": "Was ist das?",

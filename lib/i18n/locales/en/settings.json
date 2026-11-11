@@ -198,7 +198,7 @@
   "darkMode": "Dark mode",
   "title": "Settings",
   "notifEconomicEventsLabel": "Economic releases and results",
-  "notifEconomicEventsDescription": "A morning heads-up on days with a US economic release you follow, then what came in once it is out. Choose which releases under Economic in the Market Calendar.",
+  "notifEconomicEventsDescription": "A morning heads-up on days with a US economic release you follow. The Fed, CPI, jobs, PCE and GDP also send the result once it is out. Choose which releases under Economic in the Market Calendar.",
   "deleteDialogTitle": "Delete your account?",
   "deleteDialogIntro": "This permanently deletes your BullPen account. It cannot be undone.",
   "deleteDialogDataPoint": "Your holdings, watchlist, alerts, notes and settings are deleted for good.",

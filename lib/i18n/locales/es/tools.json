@@ -704,7 +704,7 @@
   "calendarScopeGoHoldings": "Añade posiciones",
   "calendarScopeGoWatchlist": "Añade a tu lista de seguimiento",
   "calendarEconomicMenuTitle": "Publicaciones económicas",
-  "calendarEconomicMenuHint": "Elige las que te interesan. Si las notificaciones económicas están activas, solo recibirás estas.",
+  "calendarEconomicMenuHint": "Elige las que te interesan. Con las notificaciones económicas activas, recibes un aviso la mañana de cada una. La Fed, el CPI, el reporte de empleos, el PCE y el PIB también envían el resultado.",
   "calendarEconomicSelectAll": "Seleccionar todas",
   "calendarEconomicClear": "Limpiar",
   "economicExplainTrigger": "¿Qué es esto?",

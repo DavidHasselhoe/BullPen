@@ -197,7 +197,7 @@
   "darkMode": "Mode sombre",
   "title": "Paramètres",
   "notifEconomicEventsLabel": "Données économiques et résultats",
-  "notifEconomicEventsDescription": "Une notification le matin des jours avec un communiqué économique américain que vous suivez, puis le résultat dès sa publication. Choisissez les communiqués à suivre sous Économie dans le Calendrier de marché.",
+  "notifEconomicEventsDescription": "Une notification le matin des jours avec un communiqué économique américain que vous suivez. La Fed, le CPI, le rapport sur l'emploi, le PCE et le PIB envoient aussi le résultat dès sa publication. Choisissez les communiqués à suivre sous Économie dans le Calendrier de marché.",
   "deleteDialogTitle": "Supprimer votre compte ?",
   "deleteDialogIntro": "Cela supprime définitivement votre compte BullPen. Cette action ne peut pas être annulée.",
   "deleteDialogDataPoint": "Vos positions, listes de suivi, alertes, notes et paramètres sont supprimés définitivement.",

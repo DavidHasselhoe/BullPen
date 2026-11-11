@@ -71,7 +71,8 @@ export function TypeFilterChips({ active, onToggle, economicKinds, onEconomicKin
             <ChevronDown className="h-3 w-3 opacity-70" aria-hidden />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-72 p-3">
+        {/* Capped to the room Radix measured: on a short screen the menu (opened on arrival from the economy hub) otherwise runs off the top. */}
+        <PopoverContent align="start" collisionPadding={8} className="w-72 p-3 max-h-[var(--radix-popover-content-available-height)] overflow-y-auto">
           <p className="text-sm font-semibold text-foreground">{t('calendarEconomicMenuTitle')}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{t('calendarEconomicMenuHint')}</p>
           <div className="mt-3 flex flex-col">

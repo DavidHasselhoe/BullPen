@@ -706,7 +706,7 @@
   "calendarScopeGoHoldings": "保有銘柄を追加",
   "calendarScopeGoWatchlist": "ウォッチリストに追加",
   "calendarEconomicMenuTitle": "経済指標の発表",
-  "calendarEconomicMenuHint": "関心のあるものを選んでください。経済指標の通知をオンにしている場合、選んだものだけが届きます。",
+  "calendarEconomicMenuHint": "関心のあるものを選んでください。経済指標の通知をオンにすると、選んだ指標ごとに発表日の朝にお知らせします。FRB、CPI、雇用統計、PCE、GDPは結果もお届けします。",
   "calendarEconomicSelectAll": "すべて選択",
   "calendarEconomicClear": "クリア",
   "economicExplainTrigger": "これは何ですか？",

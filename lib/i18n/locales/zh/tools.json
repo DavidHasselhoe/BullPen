@@ -708,7 +708,7 @@
   "calendarScopeGoHoldings": "添加持仓",
   "calendarScopeGoWatchlist": "添加到关注列表",
   "calendarEconomicMenuTitle": "经济数据发布",
-  "calendarEconomicMenuHint": "选择你关心的数据。如果启用了经济通知，你只会收到这些。",
+  "calendarEconomicMenuHint": "选择你关心的数据。开启经济通知后，每项数据发布当天早上都会提醒你。美联储、CPI、就业报告、PCE 和国内生产总值还会推送结果。",
   "calendarEconomicSelectAll": "全选",
   "calendarEconomicClear": "清空",
   "economicExplainTrigger": "这是什么？",

@@ -197,7 +197,7 @@
   "darkMode": "Mørk modus",
   "title": "Innstillinger",
   "notifEconomicEventsLabel": "Økonomiske rapporter og resultater",
-  "notifEconomicEventsDescription": "Et morgenvarsel på dager med en amerikansk økonomisk rapport du følger, og resultatet når det er ute. Velg hvilke rapporter under Økonomisk i Markedskalenderen.",
+  "notifEconomicEventsDescription": "Et morgenvarsel på dager med en amerikansk økonomisk rapport du følger. Fed, CPI, jobbrapporten, PCE og BNP sender også resultatet når det er ute. Velg hvilke rapporter under Økonomisk i Markedskalenderen.",
   "deleteDialogTitle": "Slette kontoen din?",
   "deleteDialogIntro": "Dette sletter BullPen-kontoen din permanent. Det kan ikke angres.",
   "deleteDialogDataPoint": "Beholdningen din, favorittlisten, varsler, notater og innstillinger slettes for alltid.",

@@ -700,7 +700,7 @@
   "calendarScopeGoHoldings": "Legg til beholdning",
   "calendarScopeGoWatchlist": "Legg til i favorittlisten",
   "calendarEconomicMenuTitle": "Økonomiske nyheter",
-  "calendarEconomicMenuHint": "Velg de som interesserer deg. Hvis økonomiske varsler er på, får du bare disse.",
+  "calendarEconomicMenuHint": "Velg de som interesserer deg. Med økonomiske varsler på får du et morgenvarsel for hver av dem. Fed, CPI, jobbrapporten, PCE og BNP sender også resultatet.",
   "calendarEconomicSelectAll": "Velg alle",
   "calendarEconomicClear": "Fjern",
   "economicExplainTrigger": "Hva er dette?",

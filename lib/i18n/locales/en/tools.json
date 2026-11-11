@@ -713,7 +713,7 @@
   "calendarScopeGoHoldings": "Add holdings",
   "calendarScopeGoWatchlist": "Add to your watchlist",
   "calendarEconomicMenuTitle": "Economic releases",
-  "calendarEconomicMenuHint": "Pick the ones you care about. If economic notifications are on, you only get these.",
+  "calendarEconomicMenuHint": "Pick the ones you care about. With economic notifications on, each sends a morning heads-up, and the Fed, CPI, jobs, PCE and GDP also send the result.",
   "calendarEconomicSelectAll": "Select all",
   "calendarEconomicClear": "Clear",
   "economicExplainTrigger": "What is this?",
