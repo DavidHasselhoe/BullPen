@@ -27,11 +27,13 @@ on:
 jobs:
   refresh-extended:
     runs-on: ubuntu-latest
-    # ~230 active batches at ~70s each (1,759 tier-1 tickers on 2026-11-10)
-    # is ~270 min. 240 timed out every run from 2026-11-07 (GitHub reports a
-    # timeout as "cancelled") and left the alphabetical tail unrefreshed.
-    # 350 is just under GitHub's 360-min cap for hosted runners, room for ~50
-    # more batches. Past that, move the 122 seam up into the 22:00 job instead.
+    # Batches start 65s apart (the sleep is what's left of 65s after the
+    # request). Sleeping a flat 65s after each ~27s request made a batch ~92s,
+    # and the run timed out at both 240 and 350 min (GitHub reports a timeout
+    # as "cancelled"), leaving the alphabetical tail unrefreshed.
+    # 1,841 tier-1 tickers on 2026-11-11 = ~247 batches here = ~268 min.
+    # 350 is just under GitHub's 360-min cap, room for ~75 more batches.
+    # Past that, move the 122 seam up into the 22:00 job instead.
     timeout-minutes: 350
     steps:
       - name: Refresh remaining active universe (batch 122 onward, until done)
@@ -46,6 +48,7 @@ jobs:
           echo "Extended active refresh…"
           for batch in $(seq 122 400); do
             echo "→ Active batch $batch"
+            START=$SECONDS
             RESPONSE=$(curl -fsS -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?batch=${batch}") || {
               echo "Batch $batch failed (rate limit or network) — stopping active phase"
               break
@@ -56,5 +59,6 @@ jobs:
               echo "Active universe fully covered."
               break
             fi
-            sleep 65
+            WAIT=$((65 - (SECONDS - START)))
+            sleep $((WAIT > 0 ? WAIT : 0))
           done
