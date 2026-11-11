@@ -217,7 +217,7 @@ function ThisWeek({ week, today }: { week: EconomicEvent[]; today: string }) {
       )}
       <p className="mt-3 text-sm text-muted-foreground">
         {t('hubCalendarNote')}{' '}
-        <Link href="/tools/calendar" className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground underline underline-offset-4 hover:decoration-2">{t('hubCalendarLink')}</Link>
+        <Link href="/tools/calendar?pick=economic" className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground underline underline-offset-4 hover:decoration-2">{t('hubCalendarLink')}</Link>
       </p>
     </section>
   );

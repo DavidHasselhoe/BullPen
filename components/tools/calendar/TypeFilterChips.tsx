@@ -17,6 +17,8 @@ interface TypeFilterChipsProps {
   /** Economic releases shown; empty turns the Economic filter off. */
   economicKinds: EconomicKind[];
   onEconomicKindsChange: (kinds: EconomicKind[]) => void;
+  /** Open the Economic menu on arrival: the economy hub's "Choose which releases" link lands here. */
+  economicMenuOpen?: boolean;
 }
 
 const chipClass = (isActive: boolean) =>
@@ -28,7 +30,7 @@ const chipClass = (isActive: boolean) =>
       : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
   );
 
-export function TypeFilterChips({ active, onToggle, economicKinds, onEconomicKindsChange }: TypeFilterChipsProps) {
+export function TypeFilterChips({ active, onToggle, economicKinds, onEconomicKindsChange, economicMenuOpen }: TypeFilterChipsProps) {
   const { t } = useTranslation('tools');
   const TYPES: { key: EventType; label: string; icon: ElementType }[] = [
     { key: 'earnings', label: t('calendarFilterEarnings'), icon: TrendingUp },
@@ -56,7 +58,7 @@ export function TypeFilterChips({ active, onToggle, economicKinds, onEconomicKin
 
       {/* A menu rather than an on/off chip: people follow specific releases
           ("just the jobs report"), and the same picks decide which releases notify them. */}
-      <Popover>
+      <Popover defaultOpen={economicMenuOpen}>
         <PopoverTrigger asChild>
           <button type="button" className={chipClass(economicKinds.length > 0)}>
             <Landmark className="h-3.5 w-3.5" aria-hidden />

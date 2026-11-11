@@ -207,6 +207,7 @@ export function CalendarClientPage() {
             onToggle={toggleType}
             economicKinds={prefs.economicKinds}
             onEconomicKindsChange={(economicKinds) => updatePrefs({ economicKinds })}
+            economicMenuOpen={searchParams.get('pick') === 'economic'}
           />
           {isAuthenticated && (
             <ControlSelect
