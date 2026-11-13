@@ -2,7 +2,8 @@
  * S&P 500 Heatmap — real-time SSE price stream.
  *
  * Shares the global WsManager WebSocket connection with movers/stream.
- * Emits a full price map for all ~505 S&P 500 tickers every 5s.
+ * Emits the seeded prices for all ~505 S&P 500 tickers, then at most every 5s
+ * only the tickers whose price or volume changed (the client merges).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -72,20 +73,25 @@ async function streamHandler(request: NextRequest) {
   const stream = new ReadableStream({
     start(controller) {
       let closed = false;
-      let lastEmitAt = 0;
       let flushScheduled = false;
 
+      // Only symbols that changed since the last emit go out; the client merges
+      // into its map. Sending all ~505 every 5s was ~50 KB a frame, ~36 MB per
+      // open tab per hour, and took the Hobby plan past its Fast Origin
+      // Transfer quota (site paused 2026-11-13).
+      const dirty = new Set<string>();
+
       function emitPrices() {
-        if (closed || priceMap.size === 0) return;
+        if (closed || dirty.size === 0) return;
+        const changed: Record<string, HeatmapPriceEntry> = {};
+        for (const sym of dirty) changed[sym] = priceMap.get(sym)!;
+        dirty.clear();
         const session = getCurrentSession();
         safeEnqueue(
           controller,
-          encoder.encode(
-            `data: ${JSON.stringify({ prices: Object.fromEntries(priceMap), session, ts: Date.now() })}\n\n`
-          ),
+          encoder.encode(`data: ${JSON.stringify({ prices: changed, session, ts: Date.now() })}\n\n`),
           () => closed
         );
-        lastEmitAt = Date.now();
       }
 
       // Coalesces synchronous onSeed calls within the same resolved chunk into
@@ -113,18 +119,18 @@ async function streamHandler(request: NextRequest) {
 
           // Preserve existing volume when this tick doesn't carry day_volume —
           // TwelveData only includes day_volume periodically, not on every tick.
-          const prevVolume = priceMap.get(tick.symbol)?.volume;
-          priceMap.set(tick.symbol, {
-            price: tick.price,
-            change: tick.change,
-            changePercent: tick.changePercent,
-            previousClose: tick.previousClose,
-            volume: tick.dayVolume ?? prevVolume,
-          });
-
-          const now = Date.now();
-          if (now - lastEmitAt < EMIT_INTERVAL_MS) return;
-          emitPrices();
+          const prev = priceMap.get(tick.symbol);
+          const volume = tick.dayVolume ?? prev?.volume;
+          if (prev?.price !== tick.price || prev.volume !== volume) {
+            priceMap.set(tick.symbol, {
+              price: tick.price,
+              change: tick.change,
+              changePercent: tick.changePercent,
+              previousClose: tick.previousClose,
+              volume,
+            });
+            dirty.add(tick.symbol);
+          }
         },
       };
 
@@ -142,6 +148,7 @@ async function streamHandler(request: NextRequest) {
           previousClose: q.previousClose,
           ...(q.volume ? { volume: q.volume } : {}),
         });
+        dirty.add(sym);
         scheduleFlush();
       });
 
@@ -154,10 +161,15 @@ async function streamHandler(request: NextRequest) {
         safeEnqueue(controller, encoder.encode(': ping\n\n'), () => closed);
       }, 15_000);
 
+      // Live ticks go out on a fixed beat, so a change landing in a quiet
+      // moment isn't held back until some other symbol ticks.
+      const emitInterval = setInterval(emitPrices, EMIT_INTERVAL_MS);
+
       const cleanup = () => {
         if (closed) return;
         closed = true;
         clearInterval(pingInterval);
+        clearInterval(emitInterval);
         WsManager.removeListener(listenerId);
         try { controller.close(); } catch { /* already closed */ }
       };

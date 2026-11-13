@@ -126,11 +126,15 @@ function parseTick(raw: TwelveDataPriceEvent, state: ManagerState): PriceTick | 
         ? ((priceRaw - pc) / pc) * 100
         : undefined;
 
+  // Rounded to 4 decimals: the UI shows 2, and raw float math (1.2300000000000182)
+  // doubled the size of every tick streamed to the browser.
+  const round4 = (n: number | undefined) => (n == null ? n : Math.round(n * 1e4) / 1e4);
+
   return {
     symbol: raw.symbol,
     price: priceRaw,
-    change,
-    changePercent: pct,
+    change: round4(change),
+    changePercent: round4(pct),
     previousClose: hasPrevClose ? pc : 0,
     dayVolume: raw.day_volume,
   };

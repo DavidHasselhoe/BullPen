@@ -15,6 +15,7 @@ const MAX_SYMBOLS = 600;
 // seconds" per session (228 in production). Closing first ends the response
 // cleanly and EventSource reconnects on its own.
 const SESSION_TTL_MS = 290 * 1000;
+const TICK_FLUSH_MS = 1000;
 
 async function streamHandler(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
@@ -41,9 +42,28 @@ async function streamHandler(request: NextRequest) {
         try { controller.enqueue(enc.encode(chunk)); } catch { /* already closed */ }
       };
 
+      // Liquid names tick several times a second and every tick used to go
+      // straight out. The client only publishes every 100ms anyway, so keep the
+      // latest tick per symbol and flush once a second, skipping symbols whose
+      // price and volume haven't moved since the last one sent. Bytes sent
+      // here bill as Vercel Fast Origin Transfer.
+      const pending = new Map<string, PriceTick>();
+      const lastSent = new Map<string, string>();
+      const flush = () => {
+        for (const tick of pending.values()) {
+          const sig = `${tick.price}|${tick.dayVolume ?? ''}`;
+          if (lastSent.get(tick.symbol) === sig) continue;
+          lastSent.set(tick.symbol, sig);
+          safeEnqueue(`data: ${JSON.stringify(tick)}\n\n`);
+        }
+        pending.clear();
+      };
+      const flushInterval = setInterval(flush, TICK_FLUSH_MS);
+
       const safeClose = () => {
         if (closed) return;
         closed = true;
+        clearInterval(flushInterval);
         WsManager.removeListener(listenerId);
         try { controller.close(); } catch { /* already closed */ }
       };
@@ -54,7 +74,7 @@ async function streamHandler(request: NextRequest) {
         id: listenerId,
         symbols: new Set(symbols),
         onTick(tick: PriceTick) {
-          safeEnqueue(`data: ${JSON.stringify(tick)}\n\n`);
+          pending.set(tick.symbol, tick);
         },
       };
 
