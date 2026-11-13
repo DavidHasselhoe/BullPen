@@ -54,7 +54,10 @@ function coversContent(button: HTMLElement, scroller: HTMLElement): boolean {
 }
 
 export function AIPanelToggle() {
-  const { t } = useTranslation('ai');
+  // 'navigation', not 'ai': this button is in the root layout on every page,
+  // and 'ai' only loads once the chat opens, so its label and aria-label went
+  // out as raw "askBull" / "panelToggleAriaLabel" in every server render.
+  const { t } = useTranslation('navigation');
   const { isOpen, toggle } = useAIPanel();
   const pathname = usePathname();
   // The import review has its own sticky Save bar in the corner the button sits in.

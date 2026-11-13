@@ -252,5 +252,8 @@
   "notifDividendPayManyTitle": "本日、保有株から {{amount}} の配当",
   "notifDividendLockedOneTitle": "{{symbol}} の配当 {{amount}} が確定",
   "notifDividendLockedOneMessage": "本日の権利落ち日より前に株を保有していたため、この配当を受け取れます。1株あたり {{perShare}} × {{shares}} 株。",
-  "notifDividendLockedManyTitle": "{{count}} 件の配当 {{amount}} が確定"
+  "notifDividendLockedManyTitle": "{{count}} 件の配当 {{amount}} が確定",
+  "askBull": "Ask Bull",
+  "panelToggleAriaLabel": "Ask Bull: AI アシスタントを開く",
+  "sidePanelClose": "AIパネルを閉じる"
 }

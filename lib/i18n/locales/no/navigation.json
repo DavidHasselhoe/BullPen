@@ -252,5 +252,8 @@
   "notifDividendPayManyTitle": "Aksjene dine betaler deg {{amount}} i dag",
   "notifDividendLockedOneTitle": "Utbytte fra {{symbol}} sikret: {{amount}}",
   "notifDividendLockedOneMessage": "Du eide aksjene før dagens eks-utbyttedag, så denne utbetalingen er din. {{perShare}} per aksje på dine {{shares}} aksjer.",
-  "notifDividendLockedManyTitle": "{{count}} utbytter sikret: {{amount}}"
+  "notifDividendLockedManyTitle": "{{count}} utbytter sikret: {{amount}}",
+  "askBull": "Ask Bull",
+  "panelToggleAriaLabel": "Ask Bull: åpne AI-assistent",
+  "sidePanelClose": "Lukk AI-panel"
 }

@@ -252,5 +252,8 @@
   "notifDividendPayManyTitle": "Vos actions vous versent {{amount}} aujourd'hui",
   "notifDividendLockedOneTitle": "Dividende {{symbol}} acquis : {{amount}}",
   "notifDividendLockedOneMessage": "Vous déteniez les actions avant la date de détachement d'aujourd'hui, ce versement vous revient. {{perShare}} par action sur vos {{shares}} actions.",
-  "notifDividendLockedManyTitle": "{{count}} dividendes acquis : {{amount}}"
+  "notifDividendLockedManyTitle": "{{count}} dividendes acquis : {{amount}}",
+  "askBull": "Ask Bull",
+  "panelToggleAriaLabel": "Ask Bull : ouvrir l'Assistant IA",
+  "sidePanelClose": "Fermer le panneau IA"
 }

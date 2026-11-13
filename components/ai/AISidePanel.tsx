@@ -53,6 +53,8 @@ function formatShortDate(iso: string, locale: string): string {
 }
 
 export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery, whyToday, onCloseWhyToday }: AISidePanelProps) {
+  // The closed panel is in every server render, before 'ai' has loaded, so its
+  // header label and close button read from 'navigation' (always loaded).
   const { t } = useTranslation('ai');
   const locale = useIntlLocale();
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -224,7 +226,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                 <p className="text-sm font-semibold leading-none truncate">{t('sidePanelWhyMoved', { ticker: whyToday.ticker })}</p>
               </>
             ) : (
-              <p className="text-sm font-semibold leading-none truncate">{t('askBull')}</p>
+              <p className="text-sm font-semibold leading-none truncate">{t('askBull', { ns: 'navigation' })}</p>
             )}
           </div>
           <div className="flex items-center gap-0.5">
@@ -278,7 +280,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
             )}
             <button
               onClick={handleClose}
-              aria-label={t('sidePanelClose')}
+              aria-label={t('sidePanelClose', { ns: 'navigation' })}
               className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors sm:h-9 sm:w-9"
             >
               <X className="h-4 w-4" />

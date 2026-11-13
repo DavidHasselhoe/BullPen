@@ -252,5 +252,8 @@
   "notifDividendPayManyTitle": "你的股票今天向你派发 {{amount}}",
   "notifDividendLockedOneTitle": "{{symbol}} 股息已锁定：{{amount}}",
   "notifDividendLockedOneMessage": "你在今天的除息日之前持有股票，这笔派息归你。每股 {{perShare}}，你持有 {{shares}} 股。",
-  "notifDividendLockedManyTitle": "{{count}} 笔股息已锁定：{{amount}}"
+  "notifDividendLockedManyTitle": "{{count}} 笔股息已锁定：{{amount}}",
+  "askBull": "Ask Bull",
+  "panelToggleAriaLabel": "Ask Bull: 打开 AI 助手",
+  "sidePanelClose": "关闭 AI 面板"
 }

@@ -252,5 +252,8 @@
   "notifDividendPayManyTitle": "Tus acciones te pagan {{amount}} hoy",
   "notifDividendLockedOneTitle": "Dividendo de {{symbol}} asegurado: {{amount}}",
   "notifDividendLockedOneMessage": "Tenías las acciones antes de la fecha ex-dividendo de hoy, así que este pago es tuyo. {{perShare}} por acción en tus {{shares}} acciones.",
-  "notifDividendLockedManyTitle": "{{count}} dividendos asegurados: {{amount}}"
+  "notifDividendLockedManyTitle": "{{count}} dividendos asegurados: {{amount}}",
+  "askBull": "Ask Bull",
+  "panelToggleAriaLabel": "Ask Bull: abrir Asistente de IA",
+  "sidePanelClose": "Cerrar panel de IA"
 }

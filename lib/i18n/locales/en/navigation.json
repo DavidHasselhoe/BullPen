@@ -252,5 +252,8 @@
   "notifDividendPayManyTitle": "Your stocks pay you {{amount}} today",
   "notifDividendLockedOneTitle": "{{symbol}} dividend locked in: {{amount}}",
   "notifDividendLockedOneMessage": "You owned shares before today's ex-dividend date, so this payout is yours. {{perShare}} a share on your {{shares}} shares.",
-  "notifDividendLockedManyTitle": "{{count}} dividends locked in: {{amount}}"
+  "notifDividendLockedManyTitle": "{{count}} dividends locked in: {{amount}}",
+  "askBull": "Ask Bull",
+  "panelToggleAriaLabel": "Ask Bull: open AI Assistant",
+  "sidePanelClose": "Close AI panel"
 }

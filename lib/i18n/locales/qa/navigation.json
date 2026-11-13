@@ -252,5 +252,8 @@
   "notifDividendPayManyTitle": "«Yoouur stoocks paay yoouu {{amount}} toodaay»",
   "notifDividendLockedOneTitle": "«{{symbol}} diiviideend loockeed iin: {{amount}}»",
   "notifDividendLockedOneMessage": "«Yoouu oowneed shaarees beefooree toodaay's eex-diiviideend daatee, soo thiis paayoouut iis yoouurs. {{perShare}} aa shaaree oon yoouur {{shares}} shaarees.»",
-  "notifDividendLockedManyTitle": "«{{count}} diiviideends loockeed iin: {{amount}}»"
+  "notifDividendLockedManyTitle": "«{{count}} diiviideends loockeed iin: {{amount}}»",
+  "askBull": "«AAsk Buull»",
+  "panelToggleAriaLabel": "«AAsk Buull: oopeen AAII AAssiistaant»",
+  "sidePanelClose": "«Cloosee AAII paaneel»"
 }
