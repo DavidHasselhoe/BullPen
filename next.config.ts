@@ -77,11 +77,7 @@ const nextConfig: NextConfig = {
     // was done at 0.8s, the CSS at 4.3s, first paint at 4.5s (Lighthouse,
     // devtools throttling, 2026-10-22). Inlined, styles arrive with the HTML.
     // Cost: no cross-page caching of the CSS, ~32KB more per full page load.
-    // Turned off 2026-11-13: the real cost was 3 copies of the 214KB raw
-    // stylesheet per full page load (one <style>, two RSC payload rows), ~650KB
-    // of an 819KB page, all of it billed as Fast Origin Transfer. That is what
-    // paused the Hobby plan.
-    inlineCss: false,
+    inlineCss: true,
   },
   // The marketing landing moved from /welcome to / (Nov 2026). Keep old inbound
   // links (Show HN posts, tweets, etc.) working.
