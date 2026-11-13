@@ -76,7 +76,11 @@ const nextConfig: NextConfig = {
     // chunks (~520KB) sharing the same slow connection: on Discover the HTML
     // was done at 0.8s, the CSS at 4.3s, first paint at 4.5s (Lighthouse,
     // devtools throttling, 2026-10-22). Inlined, styles arrive with the HTML.
-    // Cost: no cross-page caching of the CSS, ~32KB more per full page load.
+    // Cost: no cross-page caching of the CSS, and the 214KB raw stylesheet
+    // ships three times per full page load (one <style>, two RSC payload
+    // rows): ~650KB of an 819KB document. Turning it off was re-measured
+    // 2026-11-13 (preview A/B, devtools): Discover FCP 1.7s -> 5.2s, so it
+    // stays on; signed-out stock pages are CDN-cached instead (middleware.ts).
     inlineCss: true,
   },
   // The marketing landing moved from /welcome to / (Nov 2026). Keep old inbound

@@ -73,9 +73,29 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     requestHeaders.set(PATHNAME_HEADER, request.nextUrl.pathname);
   }
 
-  const response = NextResponse.next({
-    request: { headers: requestHeaders },
-  });
+  // No Supabase auth cookie (logged-out visitors, crawlers): nothing to refresh.
+  const hasSession = request.cookies.getAll().some((c) => c.name.startsWith('sb-'));
+
+  // The CDN-cached stock page is an internal rewrite target only; a direct
+  // URL would be a second copy of every stock page for crawlers to find.
+  const cachedStock = request.nextUrl.pathname.match(/^\/cached-stock\/([^/]+)$/);
+  if (cachedStock) {
+    return NextResponse.redirect(new URL(`/stock/${cachedStock[1]}`, request.url), 308);
+  }
+
+  // Signed-out English visitors (crawlers, first visits) get the stock page
+  // from the CDN instead of a fresh ~819KB render: see app/cached-stock/[ticker].
+  // Signed-in or non-English requests keep the per-request page.
+  const stockPage = request.nextUrl.pathname.match(/^\/stock\/([A-Za-z0-9.\-]{1,15})$/);
+  const serveCached = request.method === 'GET' && !hasSession && locale === 'en';
+
+  const response = stockPage && serveCached
+    ? NextResponse.rewrite(new URL(`/cached-stock/${stockPage[1]}${request.nextUrl.search}`, request.url), {
+        request: { headers: requestHeaders },
+      })
+    : NextResponse.next({
+        request: { headers: requestHeaders },
+      });
 
   // First request with no saved preference: seed the cookie so subsequent
   // requests (and the client-side i18next instance) agree with what the
@@ -114,8 +134,6 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  // No Supabase auth cookie (logged-out visitors, crawlers): nothing to refresh.
-  const hasSession = request.cookies.getAll().some((c) => c.name.startsWith('sb-'));
   if (!isApiRoute && hasSession && supabaseUrl && supabaseAnonKey) {
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
