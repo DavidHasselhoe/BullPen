@@ -41,7 +41,11 @@ export function generateStaticParams() {
 export default function CachedStockPage({ params }: { params: Promise<{ ticker: string }> }) {
   return (
     <NamespaceBundle locale="en" ns="stock" resources={stockEn}>
-      <StockPage params={params} />
+      {/* requireSnapshot: a failed snapshot throws, so a background regeneration
+          keeps serving the last good copy instead of caching one with no price
+          for every guest and crawler. buildSnapshot already falls back to stale
+          cached data, so this only fires when there is no quote at all. */}
+      <StockPage params={params} requireSnapshot />
     </NamespaceBundle>
   );
 }

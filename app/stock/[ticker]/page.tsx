@@ -32,8 +32,11 @@ import StockPageClient from './StockPageClient';
 
 export default async function StockPage({
   params,
+  requireSnapshot = false,
 }: {
   params: Promise<{ ticker: string }>;
+  /** Rethrow a failed snapshot instead of rendering without it (the CDN-cached copy, app/cached-stock). */
+  requireSnapshot?: boolean;
 }) {
   const { ticker: rawTicker } = await params;
   // Must match the key useStockSnapshot builds on the client, which upper-cases
@@ -57,7 +60,8 @@ export default async function StockPage({
       queryKey: ['stock-snapshot', ticker],
       queryFn: () => buildSnapshot(slugToSymbol(ticker)),
     });
-  } catch {
+  } catch (err) {
+    if (requireSnapshot) throw err;
     // A failed prefetch is not a failed page: the client hook will ask for it
     // itself, exactly as it did before this existed.
   }
