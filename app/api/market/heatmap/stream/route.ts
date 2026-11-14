@@ -121,7 +121,12 @@ async function streamHandler(request: NextRequest) {
           // TwelveData only includes day_volume periodically, not on every tick.
           const prev = priceMap.get(tick.symbol);
           const volume = tick.dayVolume ?? prev?.volume;
-          if (prev?.price !== tick.price || prev.volume !== volume) {
+          if (
+            prev?.price !== tick.price ||
+            prev.volume !== volume ||
+            prev.changePercent !== tick.changePercent ||
+            prev.previousClose !== tick.previousClose
+          ) {
             priceMap.set(tick.symbol, {
               price: tick.price,
               change: tick.change,

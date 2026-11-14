@@ -90,7 +90,8 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const serveCached = request.method === 'GET' && !hasSession && locale === 'en';
 
   const response = stockPage && serveCached
-    ? NextResponse.rewrite(new URL(`/cached-stock/${stockPage[1]}${request.nextUrl.search}`, request.url), {
+    ? // Upper-cased so /stock/aapl and /stock/AAPL share one cache entry.
+      NextResponse.rewrite(new URL(`/cached-stock/${stockPage[1].toUpperCase()}${request.nextUrl.search}`, request.url), {
         request: { headers: requestHeaders },
       })
     : NextResponse.next({

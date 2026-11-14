@@ -51,7 +51,9 @@ async function streamHandler(request: NextRequest) {
       const lastSent = new Map<string, string>();
       const flush = () => {
         for (const tick of pending.values()) {
-          const sig = `${tick.price}|${tick.dayVolume ?? ''}`;
+          // change/previousClose included: a tick that first gains its previous
+          // close at an unchanged price must still go out, or the % stays blank.
+          const sig = `${tick.price}|${tick.dayVolume ?? ''}|${tick.changePercent ?? ''}|${tick.previousClose}`;
           if (lastSent.get(tick.symbol) === sig) continue;
           lastSent.set(tick.symbol, sig);
           safeEnqueue(`data: ${JSON.stringify(tick)}\n\n`);
