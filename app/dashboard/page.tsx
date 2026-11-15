@@ -28,12 +28,15 @@ import DashboardClient from './DashboardClient';
 
 export default async function DashboardPage() {
   const queryClient = new QueryClient();
+  // Started before the profile wait: they don't need it.
+  const welcomePromise = getInitialWelcome();
+  const indicesPromise = getMarketIndices().catch(() => []);
   const profile = await getServerProfile();
 
   // Individually non-fatal: no indices just means no market line.
   const [welcome, indices] = await Promise.all([
-    getInitialWelcome(),
-    getMarketIndices().catch(() => []),
+    welcomePromise,
+    indicesPromise,
     // Same keys and shapes as useHoldings / useWatchlist (hooks/use-holdings.ts,
     // hooks/use-watchlist.ts). The profile id is JWT-verified by PostgREST.
     profile &&

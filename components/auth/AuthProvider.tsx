@@ -93,10 +93,18 @@ async function loadUserFromSession(
  * Treating every load as one re-ran the OAuth profile upsert and a third
  * profile fetch on each page view (measured 2026-11-15).
  */
-const FRESH_SIGN_IN_MS = 60_000;
+// Remembers the last sign-in this browser handled. Not a clock comparison: a
+// device clock a minute off would skip a real sign-in's profile setup.
+const HANDLED_SIGN_IN_KEY = 'bp_handled_sign_in';
 function isFreshSignIn(session: Session): boolean {
-  const at = Date.parse(session.user.last_sign_in_at ?? '');
-  return Number.isFinite(at) && Date.now() - at < FRESH_SIGN_IN_MS;
+  const mark = `${session.user.id}:${session.user.last_sign_in_at ?? ''}`;
+  try {
+    if (localStorage.getItem(HANDLED_SIGN_IN_KEY) === mark) return false;
+    localStorage.setItem(HANDLED_SIGN_IN_KEY, mark);
+  } catch {
+    // No storage (private mode): treat as new, the old behaviour.
+  }
+  return true;
 }
 
 export function AuthProvider({ children, initialUser = null }: { children: React.ReactNode; initialUser?: AuthUser | null }) {
