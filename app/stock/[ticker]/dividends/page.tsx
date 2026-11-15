@@ -69,7 +69,8 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
   };
 }
 
-export default async function StockDividendsPage({ params }: { params: Promise<{ ticker: string }> }) {
+/** requireData: a failed load throws instead of rendering the error state (the CDN-cached copy, app/cached-stock/[ticker]/[subpage]). */
+export default async function StockDividendsPage({ params, requireData = false }: { params: Promise<{ ticker: string }>; requireData?: boolean }) {
   const ticker = (await params).ticker.toUpperCase();
   const locale = await getRequestLocale();
   const [{ name, items, yieldPct, failed, available }, t, userId] = await Promise.all([
@@ -77,6 +78,8 @@ export default async function StockDividendsPage({ params }: { params: Promise<{
     getServerT(locale, `/stock/${ticker}`),
     getCurrentUserId().catch(() => null),
   ]);
+  // A cached copy must not keep an outage for hours: throwing keeps the last good one.
+  if (failed && requireData) throw new Error(`Dividends for ${ticker} failed to load`);
   const f = subpageFormat(locale);
 
   const sorted = [...items].sort((a, b) => b.ex_dividend_date.localeCompare(a.ex_dividend_date));

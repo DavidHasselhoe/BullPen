@@ -78,20 +78,20 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
 
   // The CDN-cached stock page is an internal rewrite target only; a direct
   // URL would be a second copy of every stock page for crawlers to find.
-  const cachedStock = request.nextUrl.pathname.match(/^\/cached-stock\/([^/]+)$/);
+  const cachedStock = request.nextUrl.pathname.match(/^\/cached-stock\/([^/]+(?:\/[^/]+)?)$/);
   if (cachedStock) {
     return NextResponse.redirect(new URL(`/stock/${cachedStock[1]}`, request.url), 308);
   }
 
-  // Signed-out English visitors (crawlers, first visits) get the stock page
-  // from the CDN instead of a fresh ~819KB render: see app/cached-stock/[ticker].
+  // Signed-out English visitors (crawlers, first visits) get the stock page and
+  // its subpages from the CDN instead of a fresh render: see app/cached-stock.
   // Signed-in or non-English requests keep the per-request page.
-  const stockPage = request.nextUrl.pathname.match(/^\/stock\/([A-Za-z0-9.\-]{1,15})$/);
+  const stockPage = request.nextUrl.pathname.match(/^\/stock\/([A-Za-z0-9.\-]{1,15})(\/(?:dividends|congress-trades|fund-holders))?$/);
   const serveCached = request.method === 'GET' && !hasSession && locale === 'en';
 
   const response = stockPage && serveCached
     ? // Upper-cased so /stock/aapl and /stock/AAPL share one cache entry.
-      NextResponse.rewrite(new URL(`/cached-stock/${stockPage[1].toUpperCase()}${request.nextUrl.search}`, request.url), {
+      NextResponse.rewrite(new URL(`/cached-stock/${stockPage[1].toUpperCase()}${stockPage[2] ?? ''}${request.nextUrl.search}`, request.url), {
         request: { headers: requestHeaders },
       })
     : NextResponse.next({

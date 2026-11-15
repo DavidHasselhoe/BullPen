@@ -58,7 +58,8 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
   };
 }
 
-export default async function StockFundHoldersPage({ params }: { params: Promise<{ ticker: string }> }) {
+/** requireData: a failed load throws instead of rendering the error state (the CDN-cached copy, app/cached-stock/[ticker]/[subpage]). */
+export default async function StockFundHoldersPage({ params, requireData = false }: { params: Promise<{ ticker: string }>; requireData?: boolean }) {
   const ticker = (await params).ticker.toUpperCase();
   const locale = await getRequestLocale();
   const userId = await getCurrentUserId().catch(() => null);
@@ -67,6 +68,8 @@ export default async function StockFundHoldersPage({ params }: { params: Promise
     getServerT(locale, `/stock/${ticker}`),
     userId ? getTier(userId).then(isPro).catch(() => false) : Promise.resolve(false),
   ]);
+  // A cached copy must not keep an outage for hours: throwing keeps the last good one.
+  if (failed && requireData) throw new Error(`Fund holders for ${ticker} failed to load`);
   const f = subpageFormat(locale);
   const latestQuarter = holders.reduce<string | null>((max, h) => (!max || h.periodOfReport > max ? h.periodOfReport : max), null);
   // Where this stock ranks among the covered stocks by how many of these funds

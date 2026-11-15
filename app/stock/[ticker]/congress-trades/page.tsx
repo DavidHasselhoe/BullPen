@@ -44,7 +44,8 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
   };
 }
 
-export default async function StockCongressTradesPage({ params }: { params: Promise<{ ticker: string }> }) {
+/** requireData: a failed load throws instead of rendering the error state (the CDN-cached copy, app/cached-stock/[ticker]/[subpage]). */
+export default async function StockCongressTradesPage({ params, requireData = false }: { params: Promise<{ ticker: string }>; requireData?: boolean }) {
   const ticker = (await params).ticker.toUpperCase();
   const locale = await getRequestLocale();
   // Party and chamber names live in Discover's namespace, beside the member pages.
@@ -54,6 +55,8 @@ export default async function StockCongressTradesPage({ params }: { params: Prom
     getServerT(locale, '/discover'),
     getCurrentUserId().catch(() => null),
   ]);
+  // A cached copy must not keep an outage for hours: throwing keeps the last good one.
+  if (failed && requireData) throw new Error(`Congress trades for ${ticker} failed to load`);
   const f = subpageFormat(locale);
   const position = (p: { party: string | null; chamber: string | null; state: string | null }) =>
     positionLine(p, (key, opts) => td(`discover:${key}`, opts));
