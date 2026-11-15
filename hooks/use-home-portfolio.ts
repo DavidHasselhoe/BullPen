@@ -116,6 +116,8 @@ export function useHomePortfolio() {
     /** Nothing tracked yet: the new-user state. Only true once both lists have loaded. */
     isNew: !holdingsLoading && !watchlistLoading && holdings.length === 0 && (watchlist?.length ?? 0) === 0,
     isLoading: holdingsLoading || watchlistLoading || (symbols.length > 0 && quotesQuery.isLoading),
+    /** Holdings or watchlist still loading: `symbols` isn't final yet. Cards that need only the symbols wait on this, not on prices. */
+    listsLoading: holdingsLoading || watchlistLoading,
     pricesFailed: quotesQuery.isError || (!!quotes && symbols.length > 0 && Object.keys(quotes).length === 0),
     portfolio,
     movers,

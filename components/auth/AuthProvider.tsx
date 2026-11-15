@@ -87,10 +87,28 @@ async function loadUserFromSession(
   return fetchUserProfile(supabase, session.user.id, lastErrorRef);
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+/**
+ * Supabase fires SIGNED_IN on every page load and tab refocus, not only at a
+ * real sign-in, so "new sign-in" is judged by the account's last sign-in time.
+ * Treating every load as one re-ran the OAuth profile upsert and a third
+ * profile fetch on each page view (measured 2026-11-15).
+ */
+const FRESH_SIGN_IN_MS = 60_000;
+function isFreshSignIn(session: Session): boolean {
+  const at = Date.parse(session.user.last_sign_in_at ?? '');
+  return Number.isFinite(at) && Date.now() - at < FRESH_SIGN_IN_MS;
+}
+
+export function AuthProvider({ children, initialUser = null }: { children: React.ReactNode; initialUser?: AuthUser | null }) {
+  // Signed in on the server: start signed in, so user queries don't wait on
+  // the browser's own profile fetch. Signed out: wait for the client session
+  // as before (a legacy localStorage session can still turn up).
+  const [user, setUser] = useState<AuthUser | null>(initialUser);
+  const [isLoading, setIsLoading] = useState(!initialUser);
   const lastErrorRef = useRef(0);
+  // Whose profile is loaded or loading, so the INITIAL_SESSION event, the
+  // getSession() fallback and token refreshes don't each fetch it again.
+  const profileForRef = useRef<string | null>(initialUser?.id ?? null);
   const supabase = useMemo(() => createBrowserClient(), []);
   const queryClient = useQueryClient();
   // Tracks whose data is currently cached in TanStack Query, so a sign-out or
@@ -98,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // renders. Without this, a Pro-gated widget that only checks its own query's
   // cached success state (rather than live auth) keeps showing the previous
   // session's real content after that session ends.
-  const cachedForUserIdRef = useRef<string | null>(null);
+  const cachedForUserIdRef = useRef<string | null>(initialUser?.id ?? null);
 
   const refresh = useCallback(async () => {
     try {
@@ -151,9 +169,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ) => {
       if (!mounted) return;
 
-      if (event === 'SIGNED_OUT') {
-        queryClient.clear();
+      if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session?.user)) {
+        if (event === 'SIGNED_OUT') queryClient.clear();
         cachedForUserIdRef.current = null;
+        profileForRef.current = null;
         setUser(null);
         setIsLoading(false);
         return;
@@ -175,7 +194,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         cachedForUserIdRef.current = session.user.id;
 
-        const isNewSignIn = event === 'SIGNED_IN';
+        const isNewSignIn = event === 'SIGNED_IN' && isFreshSignIn(session);
+        // Same account, profile already here or on its way: nothing changed
+        // that the profile row holds (USER_UPDATED still reloads it). isLoading
+        // is left to the fetch in flight: false here would read as signed out.
+        if (!isNewSignIn && event !== 'USER_UPDATED' && profileForRef.current === session.user.id) return;
+        profileForRef.current = session.user.id;
         try {
           const profile = await loadUserFromSession(
             supabase,
@@ -184,7 +208,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isNewSignIn
           );
           if (mounted) setUser(profile);
+          // A failed fetch leaves the next auth event free to try again.
+          if (!profile) profileForRef.current = null;
         } catch {
+          profileForRef.current = null;
           if (mounted) setUser(null);
         }
         if (mounted) {

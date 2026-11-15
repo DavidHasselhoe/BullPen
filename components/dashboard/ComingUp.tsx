@@ -53,7 +53,8 @@ export function ComingUp() {
   const { t: tTools } = useTranslation('tools');
   const { t: tNav } = useTranslation('navigation');
   const locale = useIntlLocale();
-  const { symbols, isLoading: homeLoading } = useHomePortfolio();
+  // Needs the symbols, not their prices: waiting on quotes held this card back a round trip.
+  const { symbols, listsLoading: homeLoading } = useHomePortfolio();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const from = todayET();

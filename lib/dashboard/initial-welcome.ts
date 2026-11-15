@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { createSessionClient } from '@/lib/auth/server-session';
+import { getServerProfile } from '@/lib/auth/server-session';
 import { TZ_COOKIE, greetingName, greetingForHour, type Greeting, type InitialWelcome } from './greeting';
 
 /**
@@ -8,15 +8,11 @@ import { TZ_COOKIE, greetingName, greetingForHour, type Greeting, type InitialWe
  * Largest Contentful Paint element). Null when signed out, when the user
  * turned the greeting off, or on any failure: the client then renders it
  * exactly as before.
- *
- * get_own_profile runs with the session's JWT, which PostgREST verifies, so a
- * forged cookie gets no row.
+ * The profile is the root layout's (getServerProfile), so no second RPC.
  */
 export async function getInitialWelcome(): Promise<InitialWelcome | null> {
   try {
-    const supabase = await createSessionClient();
-    const { data } = await supabase.rpc('get_own_profile');
-    const user = data as { full_name?: string | null; username?: string | null; email?: string | null; settings?: Record<string, unknown> | null } | null;
+    const user = await getServerProfile();
     if (!user || user.settings?.show_welcome_text === false) return null;
     const name = greetingName(user);
 

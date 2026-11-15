@@ -17,7 +17,8 @@ function shouldToast(n: Notification): boolean {
  * just when they happen to open the bell.
  */
 export function NotificationToastListener() {
-  const { data: notifications } = useNotifications(10);
+  // The bell's limit, so both read one cache entry: a limit of its own cost a second fetch on every page load.
+  const { data: notifications } = useNotifications(50);
   const [active, setActive] = useState<Notification | null>(null);
   const seenIds = useRef<Set<string> | null>(null);
 

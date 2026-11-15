@@ -53,19 +53,21 @@ function quarterOf(iso: string): string {
  */
 export function YourStockUpClose() {
   const { t, i18n } = useTranslation('discover');
-  const { holdings, quotes, toUsd, pricesFailed } = useHomePortfolio();
+  const { holdings, quotes, toUsd, pricesFailed, listsLoading } = useHomePortfolio();
   const { data: watchlist } = useWatchlist();
 
   // Biggest open position by value; until prices arrive a second holding
   // could still outrank the first, so wait rather than load the wrong stock.
   const anchor = useMemo(() => {
+    // Holdings still loading read as none: it fetched a watchlist stock, then swapped to the holding.
+    if (listsLoading) return null;
     const listed = holdings.filter((h) => isListed(h.symbol));
     if (listed.length > 1 && !quotes && !pricesFailed) return null;
     const value = (h: (typeof listed)[number]) => (quotes?.[h.symbol]?.price ?? 0) * (h.quantity ?? 0) * toUsd(h);
     const top = [...listed].sort((a, b) => value(b) - value(a))[0];
     if (top) return top.symbol;
     return (watchlist ?? []).find((w) => isListed(w.symbol))?.symbol ?? null;
-  }, [holdings, quotes, pricesFailed, toUsd, watchlist]);
+  }, [listsLoading, holdings, quotes, pricesFailed, toUsd, watchlist]);
 
   const query = useQuery({
     queryKey: ['stock-spotlight', anchor],

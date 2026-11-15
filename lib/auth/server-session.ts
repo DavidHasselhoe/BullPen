@@ -3,9 +3,11 @@
  * Resolves the authenticated user from cookies — never trust client-provided userId.
  */
 
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/lib/supabase/types';
+import type { AuthUser } from '@/lib/auth/auth';
 
 /**
  * Create a Supabase client that reads/writes the session from Next.js cookies.
@@ -71,3 +73,31 @@ export async function getCurrentUserId(): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * The signed-in user's own profile for this request, or null when signed out.
+ * React cache(): the root layout and a page asking in the same request share
+ * one RPC.
+ *
+ * get_own_profile runs with the session's JWT, which PostgREST verifies, so a
+ * forged cookie gets no row, and `id` is safe to scope server reads by.
+ *
+ * The root layout hands this to AuthProvider so signed-in pages don't wait
+ * on the browser's own profile fetch (0.15-1.9s measured 2026-11-15) before
+ * any user query may start. Never cached across users: every route that reads
+ * cookies() renders per request, and force-static routes see no cookies.
+ */
+const PROFILE_WAIT_MS = 400;
+export const getServerProfile = cache(async (): Promise<AuthUser | null> => {
+  try {
+    const store = await cookies();
+    if (!store.getAll().some((c) => c.name.startsWith('sb-') && c.name.includes('-auth-token'))) return null;
+    const supabase = await createSessionClient();
+    const rpc = supabase.rpc('get_own_profile' as never).then(({ data, error }) => (error || !data ? null : (data as AuthUser)));
+    // The root layout waits on this before the first byte, so a slow database
+    // must not hold the page shell: past the cap the browser fetches it itself.
+    return await Promise.race([rpc, new Promise<null>((resolve) => setTimeout(() => resolve(null), PROFILE_WAIT_MS))]);
+  } catch {
+    return null;
+  }
+});

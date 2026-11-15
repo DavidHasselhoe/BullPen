@@ -24,6 +24,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import { preconnect } from "react-dom";
 import { Suspense } from "react";
 import { cookies } from "next/headers";
+import { getServerProfile } from "@/lib/auth/server-session";
 
 import { SITE_URL } from '@/lib/site';
 const geistSans = Geist({
@@ -125,7 +126,10 @@ export default async function RootLayout({
   // choice (see ThemeProvider). Only the theme reads this: a cookie being there
   // is not proof of a session, and nothing here trusts it as one.
   const hasSessionCookie = cookieStore.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
-  const resources = await loadResources(locale, pathname);
+  // The signed-in profile rides along with the page so AuthProvider starts
+  // signed in: user queries start at hydration instead of after a browser
+  // round trip to Supabase. Null without a session cookie (no RPC at all).
+  const [resources, initialUser] = await Promise.all([loadResources(locale, pathname), getServerProfile()]);
 
   return (
     <html
@@ -141,7 +145,7 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD) }}
         />
-        <Providers locale={locale} resources={resources}>
+        <Providers locale={locale} resources={resources} initialUser={initialUser}>
           <ThemeProvider>
             <AIPanelProvider>
               <CommandPaletteProvider>

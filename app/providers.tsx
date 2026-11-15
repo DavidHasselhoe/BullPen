@@ -7,6 +7,7 @@ import { AuthProvider } from '@/components/auth/AuthProvider';
 import { SignupGateProvider } from '@/components/auth/SignupGate';
 import { ClockSync } from '@/components/i18n/ClockSync';
 import type { CreateI18nOptions } from '@/lib/i18n/config';
+import type { AuthUser } from '@/lib/auth/auth';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -14,9 +15,11 @@ interface ProvidersProps {
   locale: string;
   /** Server-preloaded i18next resources for `locale` — see lib/i18n/server.ts's loadResources(). */
   resources: CreateI18nOptions['resources'];
+  /** The signed-in profile from the server render (getServerProfile); null when signed out. */
+  initialUser: AuthUser | null;
 }
 
-export function Providers({ children, locale, resources }: ProvidersProps) {
+export function Providers({ children, locale, resources, initialUser }: ProvidersProps) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -31,7 +34,7 @@ export function Providers({ children, locale, resources }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <AuthProvider initialUser={initialUser}>
         <LanguageProvider locale={locale} resources={resources}>
           <ClockSync />
           <SignupGateProvider>{children}</SignupGateProvider>

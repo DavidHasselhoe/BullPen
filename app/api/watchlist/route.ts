@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
-import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
 import { addWatchlistItem, isValidWatchSymbol } from '@/lib/watchlist/add-item';
 import { removeWatchlistItems } from '@/lib/watchlist/remove-item';
-import { getDisplayNames } from '@/lib/market-data/display-names';
+import { listWatchlistItems } from '@/lib/watchlist/list-items';
 
 /** GET /api/watchlist — list current user's watchlist */
 async function getHandler(
@@ -12,30 +11,14 @@ async function getHandler(
   _ctx: unknown,
   session: { userId: string }
 ): Promise<NextResponse> {
-  const supabase = createServerClient();
-
-  const { data, error } = await supabase
-    .from('user_watchlist')
-    .select('id, symbol, company_name, alerts_enabled, added_at, list_id')
-    .eq('user_id', session.userId)
-    .order('added_at', { ascending: false });
-
-  if (error) {
+  try {
+    const watchlist = await listWatchlistItems(session.userId);
+    return addSecurityHeaders(NextResponse.json({ success: true, watchlist }));
+  } catch {
     return addSecurityHeaders(
       NextResponse.json({ success: false, error: 'Failed to fetch watchlist' }, { status: 500 })
     );
   }
-
-  const rows = data ?? [];
-  const symbols = rows.map((r) => r.symbol);
-  const [logoUrls, displayNames] = await Promise.all([getLogoUrlsForTickers(symbols), getDisplayNames(symbols)]);
-  const watchlist = rows.map((row) => ({
-    ...row,
-    logo_url: logoUrls.get(row.symbol) ?? null,
-    display_name: displayNames.get(row.symbol.toUpperCase()) ?? null,
-  }));
-
-  return addSecurityHeaders(NextResponse.json({ success: true, watchlist }));
 }
 
 /** POST /api/watchlist — add a symbol */
