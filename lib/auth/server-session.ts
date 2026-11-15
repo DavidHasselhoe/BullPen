@@ -93,7 +93,9 @@ export const getServerProfile = cache(async (): Promise<AuthUser | null> => {
     const store = await cookies();
     if (!store.getAll().some((c) => c.name.startsWith('sb-') && c.name.includes('-auth-token'))) return null;
     const supabase = await createSessionClient();
-    const rpc = supabase.rpc('get_own_profile' as never).then(({ data, error }) => (error || !data ? null : (data as AuthUser)));
+    // get_own_profile returns one users row, not a set: with no valid session
+    // (an expired or garbled cookie) PostgREST sends a row of nulls, not null.
+    const rpc = supabase.rpc('get_own_profile' as never).then(({ data, error }) => (error || !(data as AuthUser | null)?.id ? null : (data as AuthUser)));
     // The root layout waits on this before the first byte, so a slow database
     // must not hold the page shell: past the cap the browser fetches it itself.
     return await Promise.race([rpc, new Promise<null>((resolve) => setTimeout(() => resolve(null), PROFILE_WAIT_MS))]);
