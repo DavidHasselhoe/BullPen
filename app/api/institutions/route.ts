@@ -15,7 +15,12 @@ export type { SectorWeight, InstitutionalFundSummary } from '@/lib/institutions/
 
 async function handler(_request: NextRequest): Promise<NextResponse> {
   try {
-    return addSecurityHeaders(NextResponse.json({ success: true, funds: await loadFundSummaries() }));
+    const res = NextResponse.json({ success: true, funds: await loadFundSummaries() });
+    // Public and the same for everyone (the list is cached an hour server-side
+    // anyway): from the CDN, Discover's fund row doesn't wait on a function
+    // (4.4s cold on 2026-11-15).
+    res.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    return addSecurityHeaders(res);
   } catch (err) {
     console.error('[institutions] failed:', err);
     return addSecurityHeaders(

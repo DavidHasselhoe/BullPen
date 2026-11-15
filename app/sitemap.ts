@@ -4,7 +4,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { COMMODITIES, symbolToSlug } from '@/lib/assets/asset-type';
 import { SITE_URL } from '@/lib/site';
-import { getSubpageCoverage, MIN_CONGRESS_TRADES, MIN_FUND_HOLDERS } from '@/lib/stock/subpage-data';
+import { getSignificantSubpageCoverage, MIN_CONGRESS_TRADES, MIN_FUND_HOLDERS } from '@/lib/stock/subpage-data';
 import { loadCongressMembers, MIN_MEMBER_TRADES } from '@/lib/congress/member-data';
 import { loadFundSummaries } from '@/lib/institutions/fund-summaries';
 
@@ -97,7 +97,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // two rows is still linked from its stock page, just not offered here: on
   // 2026-10-15 Search Console had 155 subpages "crawled, not indexed", and a
   // sitemap of thin pages spends the crawl a young domain gets on them.
-  const coverage = await getSubpageCoverage([...SIGNIFICANT_TICKERS]).catch(() => null);
+  const coverage = await getSignificantSubpageCoverage().catch(() => null);
   const subpageEntries = coverage
     ? [...SIGNIFICANT_TICKERS].flatMap((ticker) => [
         ...(coverage.dividends.has(ticker) ? [`/stock/${ticker}/dividends`] : []),

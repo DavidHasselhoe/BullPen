@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { cache } from 'react';
 import { Lock } from 'lucide-react';
 import { getDisplayNames } from '@/lib/market-data/display-names';
-import { getAvailableSubpages, getFundHolders, getSubpageCoverage, MIN_FUND_HOLDERS } from '@/lib/stock/subpage-data';
+import { getAvailableSubpages, getFundHolders, getSignificantSubpageCoverage, MIN_FUND_HOLDERS } from '@/lib/stock/subpage-data';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCurrentUserId } from '@/lib/auth/server-session';
@@ -30,7 +30,7 @@ const load = cache(async (ticker: string) => {
       .then((r) => (r.error ? null : r.count ?? 0)),
     // How many tracked funds hold each S&P 500 / Nasdaq-100 stock, for the one
     // fact on this page that is about this stock and not the template.
-    getSubpageCoverage([...SIGNIFICANT_TICKERS]).then((c) => c.funds).catch(() => null),
+    getSignificantSubpageCoverage().then((c) => c.funds).catch(() => null),
     getAvailableSubpages(ticker),
   ]);
   return {

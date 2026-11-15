@@ -352,7 +352,9 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
             <ExperienceOnboardingBanner />
 
             {/* Company header loading skeleton — shown until both DB and TwelveData profile resolve */}
-            {companyLoading && !company && !profileData && (
+            {/* Not with initialName: the real header below already renders from it,
+                and this card vanishing when the data landed shifted the page (CLS 0.15). */}
+            {companyLoading && !company && !profileData && !initialName && (
               <Card className="mb-8">
                 <CardHeader>
                   <div className="flex items-center gap-3">

@@ -11,6 +11,8 @@
 import { createServerClient } from '@/lib/supabase/client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { getDividends, withRateLimitRetry, type DividendItem } from '@/lib/twelvedata/twelvedata-client';
+import { rget, rset } from '@/lib/cache/redis-cache';
+import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 
 export interface CongressTradeRow {
   politician: { slug: string; name: string; party: string | null; state: string | null; chamber: string | null };
@@ -174,4 +176,25 @@ export async function getSubpageCoverage(tickers: string[]): Promise<{ congress:
     funds: toMap(funds.data, 'funds'),
     dividends: new Set(((divs.data ?? []) as Array<{ ticker: string }>).map((r) => r.ticker.toUpperCase())),
   };
+}
+
+type StoredCoverage = { congress: [string, number][]; funds: [string, number][]; dividends: string[] };
+const SIGNIFICANT_COVERAGE_KEY = 'subpage-coverage:significant:v1';
+
+/**
+ * getSubpageCoverage over every S&P 500 / Nasdaq-100 ticker, cached an hour.
+ * The same answer for every fund-holders page and the sitemap, and ~1.6s of
+ * database time per call (fund_holder_counts_among, 2026-11-15): crawlers
+ * walking ~520 fund-holders pages paid it on each one. 13F and congress data
+ * change weekly at most. A result with an empty map is not cached, so a failed
+ * RPC can't hide every subpage for an hour.
+ */
+export async function getSignificantSubpageCoverage(): Promise<Awaited<ReturnType<typeof getSubpageCoverage>>> {
+  const hit = await rget<StoredCoverage>(SIGNIFICANT_COVERAGE_KEY);
+  if (hit) return { congress: new Map(hit.congress), funds: new Map(hit.funds), dividends: new Set(hit.dividends) };
+  const c = await getSubpageCoverage([...SIGNIFICANT_TICKERS]);
+  if (c.congress.size > 0 && c.funds.size > 0 && c.dividends.size > 0) {
+    void rset<StoredCoverage>(SIGNIFICANT_COVERAGE_KEY, { congress: [...c.congress], funds: [...c.funds], dividends: [...c.dividends] }, 60 * 60);
+  }
+  return c;
 }
