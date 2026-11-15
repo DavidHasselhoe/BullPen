@@ -13,6 +13,7 @@ import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { getDividends, withRateLimitRetry, type DividendItem } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
+import { cache } from 'react';
 
 export interface CongressTradeRow {
   politician: { slug: string; name: string; party: string | null; state: string | null; chamber: string | null };
@@ -136,7 +137,7 @@ export async function getDividendHistory(symbol: string): Promise<{ items: Divid
 
 /** Which subpages have anything on them for this ticker, for the subpage tabs; null when unknown. */
 export async function getAvailableSubpages(ticker: string): Promise<Array<'dividends' | 'congress' | 'funds'> | null> {
-  const c = await getSubpageCoverage([ticker]).catch(() => null);
+  const c = await getTickerCoverage(ticker).catch(() => null);
   if (!c) return null;
   return [
     ...(c.dividends.has(ticker) ? ['dividends' as const] : []),
@@ -192,9 +193,25 @@ const SIGNIFICANT_COVERAGE_KEY = 'subpage-coverage:significant:v1';
 export async function getSignificantSubpageCoverage(): Promise<Awaited<ReturnType<typeof getSubpageCoverage>>> {
   const hit = await rget<StoredCoverage>(SIGNIFICANT_COVERAGE_KEY);
   if (hit) return { congress: new Map(hit.congress), funds: new Map(hit.funds), dividends: new Set(hit.dividends) };
-  const c = await getSubpageCoverage([...SIGNIFICANT_TICKERS]);
-  if (c.congress.size > 0 && c.funds.size > 0 && c.dividends.size > 0) {
-    void rset<StoredCoverage>(SIGNIFICANT_COVERAGE_KEY, { congress: [...c.congress], funds: [...c.funds], dividends: [...c.dividends] }, 60 * 60);
-  }
-  return c;
+  // One rebuild per instance at a time: when the hour runs out mid crawl, every
+  // concurrent render would otherwise run the 520-ticker query at once.
+  significantInflight ??= getSubpageCoverage([...SIGNIFICANT_TICKERS])
+    .then((c) => {
+      if (c.congress.size > 0 && c.funds.size > 0 && c.dividends.size > 0) {
+        void rset<StoredCoverage>(SIGNIFICANT_COVERAGE_KEY, { congress: [...c.congress], funds: [...c.funds], dividends: [...c.dividends] }, 60 * 60);
+      }
+      return c;
+    })
+    .finally(() => { significantInflight = null; });
+  return significantInflight;
 }
+let significantInflight: ReturnType<typeof getSubpageCoverage> | null = null;
+
+/**
+ * getSubpageCoverage for one ticker, once per request. An index stock reads the
+ * hour-cached list above instead of three queries: every stock page and
+ * subpage render asked, and crawler bursts of ~1,200 renders an hour made
+ * these the busiest calls on the database (2026-11-15).
+ */
+export const getTickerCoverage = cache((ticker: string) =>
+  SIGNIFICANT_TICKERS.has(ticker) ? getSignificantSubpageCoverage() : getSubpageCoverage([ticker]));

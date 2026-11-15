@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cache } from 'react';
 import { getDisplayNames } from '@/lib/market-data/display-names';
-import { getAvailableSubpages, getCongressTrades, getSubpageCoverage, MIN_CONGRESS_TRADES } from '@/lib/stock/subpage-data';
+import { getAvailableSubpages, getCongressTrades, getTickerCoverage, MIN_CONGRESS_TRADES } from '@/lib/stock/subpage-data';
 import { positionLine } from '@/lib/congress/member-list';
 import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
@@ -22,7 +22,7 @@ const load = cache(async (ticker: string) => {
     getCongressTrades(ticker).catch(() => null),
     getAvailableSubpages(ticker),
     // The sitemap's own count, so the noindex below can't drift from it.
-    getSubpageCoverage([ticker]).then((c) => c.congress.get(ticker) ?? 0).catch(() => null),
+    getTickerCoverage(ticker).then((c) => c.congress.get(ticker) ?? 0).catch(() => null),
   ]);
   const yearAgo = new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10);
   return { name: names.get(ticker) ?? ticker, trades: trades ?? [], failed: !trades, available, yearAgo, sitemapCount };

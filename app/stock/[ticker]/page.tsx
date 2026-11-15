@@ -24,7 +24,7 @@ import { SectorPeers } from '@/components/stock/SectorPeers';
 import { StockGlance } from '@/components/stock/StockGlance';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
-import { getSubpageCoverage } from '@/lib/stock/subpage-data';
+import { getTickerCoverage } from '@/lib/stock/subpage-data';
 import { indexMemberships } from '@/lib/market-data/index-membership';
 import { getIndexBadgeFacts } from '@/lib/market-data/index-events';
 import Link from 'next/link';
@@ -51,7 +51,7 @@ export default async function StockPage({
   const namePromise = getDisplayNames([ticker]).then((m) => m.get(ticker)).catch(() => undefined);
   const localePromise = getRequestLocale();
   // Which subpages have something to show for this ticker; only those are linked.
-  const coveragePromise = getSubpageCoverage([ticker]).catch(() => null);
+  const coveragePromise = getTickerCoverage(ticker).catch(() => null);
   const indices = indexMemberships(ticker);
   // "Joined in the week of" and fund weight for the index badges' tooltips.
   const indexFactsPromise = indices.length > 0 ? getIndexBadgeFacts(ticker).catch(() => ({})) : Promise.resolve({});
