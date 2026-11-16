@@ -70,6 +70,24 @@ export function useUserSettings() {
     [user]
   );
 
+  // Home's first-week checklist, closed with its own Hide button.
+  const firstWeekHidden = settings.first_week_hidden === true;
+
+  /** Throws so the checklist can show the failure. */
+  const hideFirstWeek = useCallback(async () => {
+    if (!user?.id) throw new Error('not_signed_in');
+    const supabase = createBrowserClient();
+    const { data: row, error: fetchError } = await supabase.from('users').select('settings').eq('id', user.id).single();
+    if (fetchError) throw fetchError;
+    const existing = (row?.settings as Record<string, unknown>) || {};
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ settings: { ...existing, first_week_hidden: true } })
+      .eq('id', user.id);
+    if (updateError) throw updateError;
+    window.dispatchEvent(new Event('auth:refresh'));
+  }, [user]);
+
   /** Pass null to clear the balance. Throws so the dialog can show the failure. */
   const updateCashBalance = useCallback(
     async (cash: CashBalance | null) => {
@@ -177,5 +195,7 @@ export function useUserSettings() {
     adjustCashBalance,
     dividendsHidden,
     setDividendsHidden,
+    firstWeekHidden,
+    hideFirstWeek,
   };
 }

@@ -21,6 +21,7 @@ import { FromFollows } from '@/components/dashboard/FromFollows';
 import { YourStockUpClose } from '@/components/dashboard/YourStockUpClose';
 import { DailyBriefWidget } from '@/components/discover/DailyBriefWidget';
 import { StarterPicker } from '@/components/dashboard/StarterPicker';
+import { FirstWeekChecklist } from '@/components/dashboard/FirstWeekChecklist';
 import { TrialStartedModal } from '@/components/billing/TrialStartedModal';
 import { CancelledModal } from '@/components/billing/CancelledModal';
 import { resolveWidgetOrder } from '@/lib/dashboard/widgets';
@@ -86,6 +87,7 @@ export default function DashboardClient({
             ) : (
               <PortfolioHero />
             )}
+            {isAuthenticated && !isNew && !picking && <FirstWeekChecklist />}
             {isAuthenticated && !isNew && !picking && <PushPrompt context="home" />}
             {order.map((id) => (
               <WidgetSlot key={id} id={id} />
@@ -94,10 +96,11 @@ export default function DashboardClient({
 
           <footer className="mt-12 flex flex-col gap-4 border-t border-border/60 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-medium text-foreground">{t('homeCaughtUp')}</p>
+              {/* Not under the starter picker: "caught up" before the first task is done reads as "you're finished". */}
+              {!(isNew || picking) && <p className="mb-1 text-sm font-medium text-foreground">{t('homeCaughtUp')}</p>}
               <Link
                 href="/discover"
-                className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 {t('homeExploreMarket')}
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
