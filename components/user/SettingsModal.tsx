@@ -121,7 +121,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
 
   // Settings state
   const [defaultCurrency, setDefaultCurrency] = useState<string | null>(null);
-  const [theme, setTheme] = useState<ThemeValue>('dark');
+  const [theme, setTheme] = useState<ThemeValue>('light');
   const [language, setLanguage] = useState<string | null>(null);
   // 'auto' (the device's zone), 'market' (New York) or an IANA zone. See lib/dates/clock.ts.
   const [timeZonePref, setTimeZonePref] = useState<string>('auto');
@@ -274,7 +274,7 @@ export function SettingsModal({ open, onOpenChange, initialTab }: SettingsModalP
       setTimeFormatPref(settings.time_format === '12' || settings.time_format === '24' ? settings.time_format : 'auto');
 
       // Sanitize theme — ignore any old animated themes (aurora, particles, etc.)
-      const oldTheme = settings.theme || 'dark';
+      const oldTheme = settings.theme || 'light';
       const oldBackground = settings.background || 'none';
       let resolvedTheme: ThemeValue = 'dark';
       if (oldBackground !== 'none' && (oldTheme === 'dark' || !oldTheme)) {

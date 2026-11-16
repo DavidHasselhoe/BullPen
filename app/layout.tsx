@@ -23,7 +23,7 @@ import { PwaBoot } from "@/components/pwa/PwaBoot";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { preconnect } from "react-dom";
 import { Suspense } from "react";
-import { cookies } from "next/headers";
+import { isDarkTheme } from "@/components/theme/theme-choice";
 import { getServerProfile } from "@/lib/auth/server-session";
 
 import { SITE_URL } from '@/lib/site';
@@ -110,20 +110,18 @@ export default async function RootLayout({
   // already force-dynamic, and these are cheap text renders. Splitting into
   // two root layouts (marketing vs. app) via route groups would avoid this
   // and is deferred; see the i18n plan's Phase 0.2 for the full reasoning.
-  const [locale, pathname, cookieStore] = await Promise.all([getRequestLocale(), getRequestPathname(), cookies()]);
-  // Guests render light, accounts dark until ThemeProvider applies their own
-  // choice (see ThemeProvider). Only the theme reads this: a cookie being there
-  // is not proof of a session, and nothing here trusts it as one.
-  const hasSessionCookie = cookieStore.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+  const [locale, pathname] = await Promise.all([getRequestLocale(), getRequestPathname()]);
   // The signed-in profile rides along with the page so AuthProvider starts
   // signed in: user queries start at hydration instead of after a browser
   // round trip to Supabase. Null without a session cookie (no RPC at all).
   const [resources, initialUser] = await Promise.all([loadResources(locale, pathname), getServerProfile()]);
 
+  // Theme from the saved profile (isDarkTheme). No profile (guest, or the
+  // profile wait timed out) renders light; ThemeProvider corrects it on load.
   return (
     <html
       lang={locale}
-      className={`${hasSessionCookie ? "dark " : ""}h-full ${geistSans.variable} ${geistMono.variable}`}
+      className={`${isDarkTheme(initialUser?.settings) ? "dark " : ""}h-full ${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="antialiased h-full min-h-screen overflow-x-hidden scrollbar-hide">
         <script

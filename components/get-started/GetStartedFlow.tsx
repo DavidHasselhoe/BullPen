@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { trackEvent } from '@/lib/analytics/track';
+import { isDarkTheme } from '@/components/theme/theme-choice';
 import {
   clearDraft,
   DEFAULT_ALERTS,
@@ -23,13 +24,12 @@ export const TOTAL_STEPS = 6;
 /**
  * Root class for the onboarding screens (here and /get-started/trial). Light,
  * like the landing page they come from, unless the account saved dark in
- * Settings. landing-force-light keeps the shared shadcn pieces (signup form,
- * logos, trial timeline) light even when <html> carries the account's dark
- * default (ThemeProvider).
+ * Settings (same rule as the app, isDarkTheme). landing-force-light keeps the
+ * shared shadcn pieces (signup form, logos, trial timeline) light even if
+ * <html> is still dark for a moment before ThemeProvider settles.
  */
 export function onboardingRootClass(settings: unknown): string {
-  const dark = (settings as { theme?: unknown } | null | undefined)?.theme === 'dark';
-  return `bullpen-landing-root ${dark ? 'dark' : 'landing-light-preview landing-force-light'}`;
+  return `bullpen-landing-root ${isDarkTheme(settings) ? 'dark' : 'landing-light-preview landing-force-light'}`;
 }
 const STEP_KEYS = ['explain_style', 'pick_stocks', 'invests', 'alerts', 'preview'] as const;
 

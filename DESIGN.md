@@ -88,13 +88,13 @@ components:
 
 **Creative North Star: "The Confident Ledger"**
 
-BullPen is a calm, neutral instrument that lets one color carry all the meaning. The base system — background, surface, border, text — is a disciplined grayscale ramp, dark by default, with almost no hue of its own (the faint 162° green tint in the dark neutrals is a whisper, not a statement). Against that quiet field, Signal Emerald does double duty: it's the brand's only real accent color on the landing page, and it's the literal "your position is up" signal everywhere a number can move. Nothing competes with it. Signal Red is its mirror for the down case. Everything else — buttons, cards, inputs, nav — is built to disappear so those two colors read instantly.
+BullPen is a calm, neutral instrument that lets one color carry all the meaning. The base system — background, surface, border, text — is a disciplined grayscale ramp, light by default with dark one Settings toggle away, with almost no hue of its own (the faint 162° green tint in the dark neutrals is a whisper, not a statement). Against that quiet field, Signal Emerald does double duty: it's the brand's only real accent color on the landing page, and it's the literal "your position is up" signal everywhere a number can move. Nothing competes with it. Signal Red is its mirror for the down case. Everything else — buttons, cards, inputs, nav — is built to disappear so those two colors read instantly.
 
 This system explicitly rejects Bloomberg-terminal density: dense, cryptic, jargon-heavy screens that assume professional training. Depth of data is fine; visual noise is not. Every surface favors a small number of clearly hierarchized things over showing everything at once, and every component is built to feel precise and responsive rather than soft, bouncy, or decorative.
 
 **Key Characteristics:**
 - One brand color (Signal Emerald), spent deliberately, not spread across the UI
-- Dark-by-default, disciplined grayscale neutrals with a near-imperceptible green undertone
+- Light-by-default (dark in Settings), disciplined grayscale neutrals; the dark ramp carries a near-imperceptible green undertone
 - Geist Sans carries structure everywhere, headlines included; no headline word is ever switched to an italic serif accent (The No Serif Accent Rule)
 - Tabular, monospaced numerals wherever a price, percentage, or financial figure appears
 - Flat surfaces at rest; depth is earned through interaction, not painted on by default
@@ -113,7 +113,7 @@ The palette is almost entirely achromatic — a grayscale ramp doing the structu
 ### Neutral
 - **Ink** (`oklch(0.985 0 0)` dark / `oklch(0.145 0 0)` light): primary text.
 - **Muted Ink** (`oklch(0.708 0 0)` dark / `oklch(0.556 0 0)` light): secondary text, captions, descriptions.
-- **Background** (`oklch(0.145 0.008 162)` dark / `oklch(1 0 0)` light): page canvas. Signed-in accounts default to dark (the app sets `dark` on `<html>` unless they choose light); signed-out visitors get light, matching the light landing page they arrive from (`app/layout.tsx` + `components/theme/ThemeProvider.tsx`).
+- **Background** (`oklch(0.145 0.008 162)` dark / `oklch(1 0 0)` light): page canvas. Light unless the account saved dark in Settings (`isDarkTheme` in `components/theme/theme-choice.ts`, used by `app/layout.tsx`, `ThemeProvider` and onboarding), so landing, onboarding and the app read as one product. Accounts from before 2026-11-16 were backfilled to an explicit dark.
 - **Surface** (`oklch(0.205 0.007 162)` dark / `oklch(0.97 0 0)` light): cards, popovers, dropdowns — one step off the page background.
 - **Border** (`oklch(1 0 0 / 10%)` dark / `oklch(0.922 0 0)` light): the quietest possible separator; borders should almost disappear at rest and only sharpen slightly on hover.
 
