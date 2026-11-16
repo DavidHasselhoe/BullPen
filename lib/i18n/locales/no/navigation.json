@@ -255,5 +255,6 @@
   "notifDividendLockedManyTitle": "{{count}} utbytter sikret: {{amount}}",
   "askBull": "Ask Bull",
   "panelToggleAriaLabel": "Ask Bull: åpne AI-assistent",
-  "sidePanelClose": "Lukk AI-panel"
+  "sidePanelClose": "Lukk AI-panel",
+  "navHelpCenter": "Hjelpesenter"
 }

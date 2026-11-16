@@ -255,5 +255,6 @@
   "notifDividendLockedManyTitle": "{{count}} 件の配当 {{amount}} が確定",
   "askBull": "Ask Bull",
   "panelToggleAriaLabel": "Ask Bull: AI アシスタントを開く",
-  "sidePanelClose": "AIパネルを閉じる"
+  "sidePanelClose": "AIパネルを閉じる",
+  "navHelpCenter": "ヘルプセンター"
 }

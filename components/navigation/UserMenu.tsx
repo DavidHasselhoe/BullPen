@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, Settings, LogOut, Loader2, Shield, CreditCard, Sparkles, MessageSquarePlus, Inbox, Gift } from 'lucide-react';
+import { User, Settings, LogOut, Loader2, Shield, CreditCard, Sparkles, MessageSquarePlus, Inbox, Gift, LifeBuoy } from 'lucide-react';
 import { InviteDialog } from '@/components/navigation/InviteDialog';
 import { ProfileModal } from '@/components/user/ProfileModal';
 import { ProfileAvatar, getUserDisplayName, getUserInitials } from '@/components/user/ProfileAvatar';
@@ -224,6 +224,11 @@ export function UserMenu({ forceDark = false, forceLight = false, open, onOpenCh
         )}
 
         <DropdownMenuSeparator />
+        {/* Was linked only from the landing footer, so signed-in people never found it. */}
+        <DropdownMenuItem onClick={() => router.push('/help')} className="cursor-pointer">
+          <LifeBuoy className="mr-2 h-4 w-4" />
+          <span>{t('navHelpCenter')}</span>
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => setFeedbackOpen(true)}
           className="cursor-pointer"

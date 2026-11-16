@@ -255,5 +255,6 @@
   "notifDividendLockedManyTitle": "{{count}} dividendes acquis : {{amount}}",
   "askBull": "Ask Bull",
   "panelToggleAriaLabel": "Ask Bull : ouvrir l'Assistant IA",
-  "sidePanelClose": "Fermer le panneau IA"
+  "sidePanelClose": "Fermer le panneau IA",
+  "navHelpCenter": "Centre d'aide"
 }

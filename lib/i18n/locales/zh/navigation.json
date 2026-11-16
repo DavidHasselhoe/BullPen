@@ -255,5 +255,6 @@
   "notifDividendLockedManyTitle": "{{count}} 笔股息已锁定：{{amount}}",
   "askBull": "Ask Bull",
   "panelToggleAriaLabel": "Ask Bull: 打开 AI 助手",
-  "sidePanelClose": "关闭 AI 面板"
+  "sidePanelClose": "关闭 AI 面板",
+  "navHelpCenter": "帮助中心"
 }
