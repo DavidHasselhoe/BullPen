@@ -22,9 +22,10 @@ export function TrialTimeline({ annual, className, marketing = false, days = PRI
   const charge = annual ? PRICING.proAnnualPerMonth * 12 : PRICING.proMonthly;
   const reminderDay = days - 3;
   const steps = [
-    { icon: Unlock, when: t('trialTimelineToday'), what: t('trialTimelineTodayDesc') },
-    { icon: Bell, when: t('trialTimelineDay', { day: reminderDay }), what: t('trialTimelineReminderDesc') },
+    { id: 'today', icon: Unlock, when: t('trialTimelineToday'), what: t('trialTimelineTodayDesc') },
+    { id: 'reminder', icon: Bell, when: t('trialTimelineDay', { day: reminderDay }), what: t('trialTimelineReminderDesc') },
     {
+      id: 'charge',
       icon: CreditCard,
       when: t('trialTimelineDay', { day: days }),
       what: annual ? t('trialTimelineChargeAnnual', { price: charge }) : t('trialTimelineChargeMonthly', { price: charge }),
@@ -33,8 +34,8 @@ export function TrialTimeline({ annual, className, marketing = false, days = PRI
 
   return (
     <ol className={cn('relative space-y-3', className)}>
-      {steps.map(({ icon: Icon, when, what }, i) => (
-        <li key={when} className="relative flex gap-3">
+      {steps.map(({ id, icon: Icon, when, what }, i) => (
+        <li key={id} className="relative flex gap-3">
           {/* Connector between the steps */}
           {i < steps.length - 1 && <span aria-hidden className="absolute left-[11px] top-6 h-[calc(100%-4px)] w-px bg-border" />}
           <span className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-background">
