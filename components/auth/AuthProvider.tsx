@@ -62,7 +62,9 @@ async function fetchUserProfile(
       const { data, error, status } = await supabase.rpc('get_own_profile');
       const row = data as AuthUser | null;
       if (!error && row?.id) return row;
-      if (!error || (status > 0 && status < 500)) return null;
+      // 408/429 are load, not auth: a crawler burst can rate-limit this call too.
+      const transient = status === 0 || status === 408 || status === 429 || status >= 500;
+      if (!error || !transient) return null;
     } catch {
       // Network failure: retry like a 5xx.
     }
