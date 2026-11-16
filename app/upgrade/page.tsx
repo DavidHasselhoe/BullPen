@@ -130,7 +130,7 @@ function Beat({ time, title, desc, children }: { time: string; title: string; de
  * they were shot on; edge to edge, the text sat against the rounded corner.
  */
 function Shot({ src, darkSrc, alt, width, height }: { src: string; darkSrc: string; alt: string; width: number; height: number }) {
-  // The captures are 1x and 568px wide. Shrunk to a phone's width their text
+  // The captures are 2x files shown 568px wide. Shrunk to a phone's width their text
   // was about 7px, so below sm they keep their real size and scroll sideways
   // (focusable, so the keyboard can scroll it too).
   const img = 'h-auto max-sm:w-[568px] max-sm:max-w-none sm:w-full';
@@ -383,11 +383,11 @@ function UpgradeContent() {
             <h2 id="day-heading" className="text-sm font-medium text-muted-foreground">{t('upgradeDayHeading')}</h2>
             <ol className="relative mt-6 space-y-14 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-px before:bg-border">
               <Beat time={t('upgradeBeatBriefTime')} title={t('upgradeBeatBriefTitle')} desc={t('upgradeBeatBriefDesc')}>
-                <Shot src="/screenshots/bento-brief.png" darkSrc="/screenshots/bento-brief-dark.png" alt={t('upgradeBeatBriefAlt')} width={568} height={231} />
+                <Shot src="/screenshots/bento-brief.png" darkSrc="/screenshots/bento-brief-dark.png" alt={t('upgradeBeatBriefAlt')} width={568} height={233} />
               </Beat>
               {/* Generic on purpose: the capture shows another stock, so naming theirs would mislabel it. */}
               <Beat time={t('upgradeBeatWhyTime')} title={t('upgradeBeatWhyTitleGeneric')} desc={t('upgradeBeatWhyDesc')}>
-                <Shot src="/screenshots/bento-why.png" darkSrc="/screenshots/bento-why-dark.png" alt={t('upgradeBeatWhyAlt')} width={568} height={316} />
+                <Shot src="/screenshots/bento-why.png" darkSrc="/screenshots/bento-why-dark.png" alt={t('upgradeBeatWhyAlt')} width={568} height={331} />
               </Beat>
               <Beat time={t('upgradeBeatAskTime')} title={t('upgradeBeatAskTitle')} desc={t('upgradeBeatAskDesc', { limit: QUOTAS.chat.proCap })}>
                 {/* Questions only: an invented answer would be a fake product shot. */}

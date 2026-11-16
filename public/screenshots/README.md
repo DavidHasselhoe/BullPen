@@ -2,8 +2,7 @@
 
 Real captures of the running app, in **light mode** to match the light landing
 page. The landing page's bento (`components/landing/Benefits.tsx`) uses the
-`bento-*.png` pairs below; `/upgrade` uses the older single-size `bento-why` and
-`bento-brief` shots with their `-dark` twins.
+`bento-*.png` pairs below; `/upgrade` uses `bento-why` and `bento-brief` with their `-dark` twins (2x, shown at 568px).
 
 Each bento shot is one card of the real app, taken twice from the app's own
 responsive layout so neither is a shrunken desktop screen:
@@ -27,8 +26,8 @@ height needs its `h` (and maybe `y`) updated there.
 | `bento-economy(-m).png` | `/tools/economy` result cards | Landing |
 | `bento-academy(-m).png` | `/academy` Daily Challenge card | Landing |
 | `bento-daily-brief(-m).png` | `/dashboard` "Daily brief" section | Landing |
-| `bento-why.png` / `-dark` | `/stock/VST` price card down to the Why reason, a recreated day (see below), 568x316 | `/upgrade` |
-| `bento-brief.png` / `-dark` | `/dashboard` "Daily brief" section, 568x231 | `/upgrade` |
+| `bento-why.png` / `-dark` | `/stock/MU` price card down to the Why reason, a recreated day (see below), 568x331 CSS, 1136x662 file | `/upgrade` |
+| `bento-brief.png` / `-dark` | `/dashboard` "Daily brief" section, 568x233 CSS, 1136x466 file | `/upgrade` |
 
 ## How to re-take the bento
 
@@ -51,12 +50,19 @@ skeletons, no number that only makes sense for the test account.
 
 The sample has to name a real catalyst ("no company news today" sells
 nothing), and today rarely has a cached one. So the shot recreates a real past
-day instead: VST on 2026-10-13, its real close ($162.36, +$4.23 from $158.13)
-and the real cached answer from `whytoday:v2:2026-10-13:en:VST`. Shot the next
-morning before the open, when the snapshot quote is still that close, with
-Playwright `page.route` serving the old answer to `/api/stock/VST/why-today-cached`,
-`{ success: true, data: null }` to `/extended-hours` (or the pre-market move
-replaces the close and hides the answer) and aborting `/api/market/prices`.
+day instead: MU on 2026-11-13, its real close ($778.31, -$20.13, -2.52%) and
+the real cached answer from `whytoday:v2:2026-11-13:en:MU`, written right after
+that close at -2.55%. Shot the next trading morning before the open, when the
+snapshot quote is still that close, at a 600px viewport and 2x, with Playwright
+`page.route` serving the old answer to `/api/stock/MU/why-today-cached`,
+`{ success: true, data: null }` to `/extended-hours` and aborting
+`/api/market/prices**` (the glob must reach `/stream`: the live SSE price is the
+pre-market tick and replaces the close). Expand the answer's Show more and hide
+its Show less before shooting. Both themes come from one signed-in page by
+toggling the `dark` class on `<html>`, so the account's theme needn't change.
+Pick an answer generated after the close: one written mid-session carries a
+different move than the close (AVGO and AMD on 11-13 did), and the app rightly
+hides it.
 Never pair an answer with a different day's price, and never write an answer
 by hand: every word in it should be something the app really said about that
 day. The landing hero no longer needs this: it shows real cached answers live
