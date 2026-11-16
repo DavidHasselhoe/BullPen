@@ -27,7 +27,7 @@ const loadInviter = cache(async (code: string): Promise<{ id: string; firstName:
     .maybeSingle();
   if (!data) return null;
   const row = data as { id: string; full_name: string | null };
-  // The headline marks its serif word with *stars*; a name can't add one.
+  // The headlines star one word (stripped on render); a name must not add one.
   const first = row.full_name?.trim().split(/\s+/)[0]?.replace(/\*/g, '') ?? null;
   return { id: row.id, firstName: first || null };
 });

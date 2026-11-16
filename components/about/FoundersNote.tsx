@@ -54,9 +54,6 @@ export function FoundersNote() {
           />
         )}
         <div>
-          {/* Instrument Serif italic is the brand's single flourish, reserved
-              for marketing headlines. A signature is the one other place it
-              genuinely earns its keep: it is a personal mark, not decoration. */}
           <div className="founders-note-name">{note.signature.name}</div>
           <div className="founders-note-role">{note.signature.role}</div>
         </div>

@@ -22,7 +22,7 @@ Institutional-grade market data and AI-generated explanations, translated so a b
 
 ## Brand Personality
 
-Confident, clear, modern. Sharp and premium-feeling — closer to a well-designed fintech product than a friendly consumer toy — but never intimidating. The existing landing identity (dark theme, emerald accent, Instrument Serif display type against Geist sans/mono) is the reference point: it reads as capable and current, not corporate-safe or gamified.
+Confident, clear, modern. Sharp and premium-feeling — closer to a well-designed fintech product than a friendly consumer toy — but never intimidating. The existing landing identity (dark theme, emerald accent, Geist sans/mono throughout) is the reference point: it reads as capable and current, not corporate-safe or gamified.
 
 ## Anti-references
 

@@ -72,12 +72,10 @@ export function StockLabel({ name, ticker, detail }: { name: string; ticker: str
 }
 
 /**
- * Step headline. `accent` is the optional serif word (DESIGN.md One Serif
- * Word Rule); only the payoff screens use it, since on every step it read as
- * a template and the word that mattered ("ready.") lost its weight.
- * Focused by GetStartedFlow after each step change, hence tabIndex -1.
+ * Step headline. Focused by GetStartedFlow after each step change, hence
+ * tabIndex -1.
  */
-export function StepHeadline({ text, accent }: { text: string; accent?: string }) {
+export function StepHeadline({ text }: { text: string }) {
   return (
     <h1
       className="headline"
@@ -86,7 +84,6 @@ export function StepHeadline({ text, accent }: { text: string; accent?: string }
       style={{ margin: '0 0 12px', fontSize: 'clamp(26px, 3.4vw, 34px)', color: 'var(--fg)', textAlign: 'center', outline: 'none' }}
     >
       {text}
-      {accent && <>{' '}<span className="accent-serif" style={{ color: 'var(--accent)' }}>{accent}</span></>}
     </h1>
   );
 }

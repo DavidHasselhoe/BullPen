@@ -277,13 +277,10 @@ function UpgradeContent() {
         )}
 
         <div className="grid grid-cols-1 items-start gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* Hero. One serif word, the page's only display moment. */}
+        {/* Hero, the page's only display moment. */}
         <header className="max-w-3xl lg:col-start-1 lg:row-start-1">
           <h1 className="text-balance text-4xl font-bold tracking-[-0.03em] text-foreground sm:text-5xl">
-            {t('upgradeHeroTitle')}{' '}
-            <span className="font-normal italic text-[var(--brand)]" style={{ fontFamily: 'var(--font-instrument-serif), serif' }}>
-              {t('upgradeHeroTitleAccent')}
-            </span>
+            {t('upgradeHeroTitle')} {t('upgradeHeroTitleAccent')}
           </h1>
           {/* Inks in the way Bull's own explanations do. */}
           <InkBullets

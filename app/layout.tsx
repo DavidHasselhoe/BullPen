@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { VercelAnalytics } from "@/components/analytics/VercelAnalytics";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 // Analytics: ERR_BLOCKED_BY_CLIENT = ad blocker (uBlock, etc.). Harmless - analytics won't run for those users.
@@ -37,17 +37,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Display serif used on the marketing landing page (/welcome) for the accented words.
-// Not preloaded: only /welcome and /upgrade use it, and preloading put its two
-// files on every page, competing with the stylesheet that gates first paint
-// (Discover on a throttled phone, 2026-10-21). Those pages fetch it on use.
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  preload: false,
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -134,7 +123,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${hasSessionCookie ? "dark " : ""}h-full ${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
+      className={`${hasSessionCookie ? "dark " : ""}h-full ${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="antialiased h-full min-h-screen overflow-x-hidden scrollbar-hide">
         <script

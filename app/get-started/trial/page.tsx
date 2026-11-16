@@ -124,8 +124,7 @@ export default function TrialOfferPage() {
               className="headline"
               style={{ margin: '0 0 12px', fontSize: 'clamp(26px, 3.4vw, 34px)', color: 'var(--fg)', textAlign: 'center' }}
             >
-              Try Pro free for a{' '}
-              <span className="accent-serif" style={{ color: 'var(--accent)' }}>{trialDays > PRICING.trialDays ? 'month.' : 'week.'}</span>
+              Try Pro free for a {trialDays > PRICING.trialDays ? 'month.' : 'week.'}
             </h1>
             <p style={{ margin: '0 0 28px', textAlign: 'center', fontSize: 16, color: 'var(--fg-muted)' }}>
               {justConfirmed ? 'All set. ' : ''}Every Pro feature for {trialDays} days{trialDays > PRICING.trialDays ? ", thanks to your friend's link" : ''}.

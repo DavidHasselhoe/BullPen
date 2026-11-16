@@ -81,7 +81,7 @@ export function PreviewStep({
 
   return (
     <StepShell stepIndex={stepIndex} totalSteps={totalSteps} onBack={onBack} maxWidth={480}>
-      <StepHeadline text="Your BullPen is" accent="ready." />
+      <StepHeadline text="Your BullPen is ready." />
       <p style={{ margin: '0 0 24px', textAlign: 'center', fontSize: 15, color: 'var(--fg-muted)' }}>
         Your watchlist, live.
       </p>

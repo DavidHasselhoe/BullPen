@@ -26,11 +26,6 @@ typography:
     fontWeight: 700
     lineHeight: 0.98
     letterSpacing: "-0.04em"
-  accent-serif:
-    fontFamily: "var(--font-instrument-serif), 'Times New Roman', serif"
-    fontStyle: "italic"
-    fontWeight: 400
-    letterSpacing: "-0.02em"
   body:
     fontFamily: "var(--font-geist-sans), -apple-system, sans-serif"
     fontSize: "0.875rem"
@@ -100,7 +95,7 @@ This system explicitly rejects Bloomberg-terminal density: dense, cryptic, jargo
 **Key Characteristics:**
 - One brand color (Signal Emerald), spent deliberately, not spread across the UI
 - Dark-by-default, disciplined grayscale neutrals with a near-imperceptible green undertone
-- Geist Sans carries structure everywhere; Instrument Serif italic is reserved for a single emphasized word per marketing headline, never body copy or product UI
+- Geist Sans carries structure everywhere, headlines included; no headline word is ever switched to an italic serif accent (The No Serif Accent Rule)
 - Tabular, monospaced numerals wherever a price, percentage, or financial figure appears
 - Flat surfaces at rest; depth is earned through interaction, not painted on by default
 
@@ -129,15 +124,14 @@ The palette is almost entirely achromatic — a grayscale ramp doing the structu
 
 ## 3. Typography
 
-**Display Font:** Geist Sans (bold, tight tracking) for structural headlines; Instrument Serif italic as a one-word emphasis accent within a headline, never as a full display face.
+**Display Font:** Geist Sans (bold, tight tracking) for structural headlines. There is no accent face.
 **Body Font:** Geist Sans
 **Label/Mono Font:** Geist Mono, used specifically for numerals (`font-feature-settings: "tnum"`) — prices, percentages, tickers, and anywhere a column of numbers needs to align.
 
-**Character:** A single confident sans (Geist) carries almost the entire interface — it reads modern and engineered, not decorative. The one deliberate departure, an italic serif dropped into a headline ("The market, *explained.*"), exists purely to make the landing page's single most important word feel considered rather than generated. It appears once per headline, never twice.
+**Character:** A single confident sans (Geist) carries almost the entire interface — it reads modern and engineered, not decorative. Headlines are one typeface, one weight and one color: no word inside them is switched to a serif, italic or the accent color for emphasis.
 
 ### Hierarchy
 - **Display** (700, `clamp(3rem, 8vw, 6.5rem)`, line-height 0.98, tracking -0.04em): landing hero headlines only. `text-wrap: balance` keeps line breaks even.
-- **Accent-serif** (400 italic, tracking -0.02em, `var(--accent)` color): the single emphasized word inside a display headline.
 - **Title** (600, ~1.125rem, tight leading): card titles, section headers, modal headers.
 - **Body** (400, 0.875rem, line-height 1.55): descriptions, paragraph copy. Caps at ~65-75ch measure in prose contexts.
 - **Label** (500, 0.75rem): form labels, stat labels, badges — occasionally uppercase with wide tracking for status pills only, never as a default section eyebrow.
@@ -159,7 +153,7 @@ This ramp existed in the code long before it was written down here, which meant 
 - **Numeric** (Geist Mono, tabular figures): every price, percentage, and financial statistic. This is a hard rule, not a style preference — misaligned numeral widths undermine the "confident ledger" feel immediately.
 
 ### Named Rules
-**The One Serif Word Rule.** Instrument Serif italic appears on exactly one emphasized word per headline, on marketing surfaces only. It is never used for body copy, UI chrome, or product-surface headings — the product register stays entirely in Geist Sans.
+**The No Serif Accent Rule.** No headline, on any surface, switches one word to an italic serif (or the accent color) for emphasis. BullPen used Instrument Serif italic this way until November 2026, then removed it from the landing page and afterwards from the app (onboarding, trial, invite, /upgrade, the About signature), because readers who know the trend take the italic-serif accent word as the mark of a generated page. The web font is no longer loaded. The only Instrument Serif left is the TTF baked into generated social images (OG cards, Instagram slides).
 
 **The Tabular Numerals Rule.** Any rendered price, percentage, delta, or financial statistic uses Geist Mono with tabular figures. Proportional numerals in a price are a bug, not a style choice.
 
@@ -211,7 +205,7 @@ Form-first tools (Dividend calculator, Buy Here, Portfolio Builder at `max-w-4xl
 ### Signature Component: The Topic Chip Headline
 The landing hero (`components/landing/Hero.tsx`): "Finally understand" in bold Geist Sans, then one chip on its own line holding what BullPen explains ("the market", "your stocks", "earnings day"...). The chip is a soft emerald pill with an emerald dot, the word in ink Geist Sans at a lighter weight, notion.com's shape in the brand's one accent. It rotates once and rests on the first word, and nothing else on the line moves.
 
-It replaced the serif accent headline in November 2026: a 2026-11-02 critique found the italic-serif word in a tinted pill was the page's strongest generated-landing tell, worse as the moving part of a rotation. Instrument Serif stays available for a single word on secondary marketing pages (the trial and invite pages use it), under the One Serif Word Rule, but it is no longer the hero's voice.
+It replaced the serif accent headline in November 2026: a 2026-11-02 critique found the italic-serif word in a tinted pill was the page's strongest generated-landing tell, worse as the moving part of a rotation. The serif accent was later removed from every other page too (The No Serif Accent Rule).
 
 ## 6. Motion
 
@@ -230,7 +224,6 @@ Everything else that moves is a response to something the user did (hover lift, 
 - **Do** render every price, percentage, and financial statistic in Geist Mono with tabular figures.
 - **Do** keep cards and containers flat at rest; let `shadow-md` + hover lift be the only depth cue.
 - **Do** use `rounded-full` pills only for the landing CTA and status pills — `rounded-md`/`rounded-xl` everywhere else.
-- **Do** use the italic Instrument Serif accent for at most one word per marketing headline.
 - **Do** put explanatory/methodology copy (how a number is calculated, disclaimers, "how this works") behind an `Accordion` (`components/ui/accordion.tsx`), collapsed by default. A reader who wants the detail opens the row that answers their actual question; everyone else sees one line, not a paragraph.
 
 ### Don't:
@@ -239,6 +232,6 @@ Everything else that moves is a response to something the user did (hover lift, 
 - **Don't** use `border-left`/`border-right` colored stripes as a card or list-item accent.
 - **Don't** apply `background-clip: text` gradient text for emphasis — use Signal Emerald or weight/size instead.
 - **Don't** introduce a third "meaningful" UI color beyond Signal Emerald/Red — Info Blue and Warn Amber are for status pills only, not general accents.
-- **Don't** use Instrument Serif for body copy, UI chrome, or more than one word in a headline.
+- **Don't** set a headline word in an italic serif or the accent color for emphasis, on any surface.
 - **Don't** paint a visible shadow on a surface at rest outside the landing CTA — depth is earned on hover, not decorative.
 - **Don't** let the landing hero's `clamp(48px, 8vw, 104px)` display size grow further — it already sits above the general 6rem/96px display ceiling; treat that as the outer bound, not a floor to build on.

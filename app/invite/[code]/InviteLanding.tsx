@@ -1,6 +1,6 @@
 'use client';
 
-import { lazy, Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { Logo } from '@/components/landing/Atoms';
@@ -19,20 +19,11 @@ type InviteState = 'guest' | 'member' | 'own';
 const noSubscribe = () => () => {};
 
 /**
- * "A friend sent you 30 days of *Pro*": the one starred word gets the serif
- * accent. Stars, not <em>, because the pseudo-locale doubles vowels.
+ * The headlines still star one word ("30 days of *Pro*") from when it got a
+ * serif accent; the stars stay in the translations so they don't go stale,
+ * and are dropped here.
  */
-function withSerif(text: string): ReactNode {
-  const [before, word, after] = text.split(/\*(.+?)\*/);
-  if (word === undefined) return text;
-  return (
-    <>
-      {before}
-      <span className="accent-serif" style={{ color: 'var(--accent)' }}>{word}</span>
-      {after}
-    </>
-  );
-}
+const unstar = (text: string) => text.replace(/\*/g, '');
 
 /**
  * A friend's invite link. Offer-led: the 30-day trial is the reason they came,
@@ -82,7 +73,7 @@ export function InviteLanding({ state, code, inviterName, url }: { state: Invite
             {state === 'guest' && (
               <>
                 <h1 className="headline" style={{ margin: 0, fontSize: 'clamp(38px, 6.4vw, 64px)', color: 'var(--fg)', overflowWrap: 'anywhere' }}>
-                  {withSerif(name ? t('auth:inviteHeadline', { name }) : t('auth:inviteHeadlineAnonymous'))}
+                  {unstar(name ? t('auth:inviteHeadline', { name }) : t('auth:inviteHeadlineAnonymous'))}
                 </h1>
                 <p style={{ margin: '20px auto 0', maxWidth: 520, fontSize: 19, lineHeight: 1.5, color: 'var(--fg-muted)', textWrap: 'pretty' }}>
                   {t('auth:inviteBody')}
@@ -130,7 +121,7 @@ export function InviteLanding({ state, code, inviterName, url }: { state: Invite
             {state === 'member' && (
               <>
                 <h1 className="headline" style={{ margin: 0, fontSize: 'clamp(34px, 5.4vw, 52px)', color: 'var(--fg)' }}>
-                  {withSerif(t('auth:inviteMemberTitle'))}
+                  {unstar(t('auth:inviteMemberTitle'))}
                 </h1>
                 <p style={{ margin: '18px auto 0', maxWidth: 480, fontSize: 17, lineHeight: 1.55, color: 'var(--fg-muted)', textWrap: 'pretty' }}>
                   {t('auth:inviteSignedIn')}
@@ -193,7 +184,7 @@ function OwnLink({ url }: { url: string }) {
   return (
     <>
       <h1 className="headline" style={{ margin: 0, fontSize: 'clamp(34px, 5.4vw, 52px)', color: 'var(--fg)' }}>
-        {withSerif(t('auth:inviteOwnTitle'))}
+        {unstar(t('auth:inviteOwnTitle'))}
       </h1>
       <p style={{ margin: '18px auto 0', maxWidth: 480, fontSize: 17, lineHeight: 1.55, color: 'var(--fg-muted)', textWrap: 'pretty' }}>
         {t('navigation:inviteDescription')}
