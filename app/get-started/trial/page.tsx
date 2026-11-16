@@ -10,7 +10,7 @@ import { useTrialDays } from '@/hooks/use-trial-days';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { Logo } from '@/components/landing/Atoms';
 import { OnboardingProgress } from '@/components/get-started/OnboardingProgress';
-import { TOTAL_STEPS } from '@/components/get-started/GetStartedFlow';
+import { TOTAL_STEPS, onboardingRootClass } from '@/components/get-started/GetStartedFlow';
 import { PRICING } from '@/lib/billing/entitlements';
 import { startCheckout, type BillingCycle } from '@/lib/billing/checkout';
 import { renewalTerms } from '@/lib/billing/trial-copy';
@@ -21,7 +21,7 @@ import { AWAITING_CONFIRMATION_KEY } from '@/lib/onboarding/pending-onboarding';
 import '@/components/landing/landing-styles.css';
 
 export default function TrialOfferPage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const { isPro } = useEntitlements();
   const { days: trialDays, isLoading: trialLoading } = useTrialDays();
   const { data: watchlist } = useWatchlist();
@@ -104,7 +104,7 @@ export default function TrialOfferPage() {
   ];
 
   return (
-    <div className="bullpen-landing-root dark">
+    <div className={onboardingRootClass(user?.settings)}>
       <div className="page-bg" aria-hidden />
       <div className="page-noise" aria-hidden />
       <div className="content-layer">

@@ -18,6 +18,18 @@ import { PreviewStep } from './PreviewStep';
 
 /** 4 screens here plus the trial offer at /get-started/trial, for the progress bar. */
 export const TOTAL_STEPS = 5;
+
+/**
+ * Root class for the onboarding screens (here and /get-started/trial). Light,
+ * like the landing page they come from, unless the account saved dark in
+ * Settings. landing-force-light keeps the shared shadcn pieces (signup form,
+ * logos, trial timeline) light even when <html> carries the account's dark
+ * default (ThemeProvider).
+ */
+export function onboardingRootClass(settings: unknown): string {
+  const dark = (settings as { theme?: unknown } | null | undefined)?.theme === 'dark';
+  return `bullpen-landing-root ${dark ? 'dark' : 'landing-light-preview landing-force-light'}`;
+}
 const STEP_KEYS = ['explain_style', 'pick_stocks', 'alerts', 'preview'] as const;
 
 export function GetStartedFlow({ signedIn = false }: { signedIn?: boolean }) {

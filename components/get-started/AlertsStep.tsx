@@ -84,7 +84,7 @@ export function AlertsStep({
                 onClick={() => onChange({ ...alerts, [row.key]: !on })}
                 style={{
                   position: 'relative', width: 44, height: 26, flexShrink: 0, borderRadius: 999, border: 'none', cursor: 'pointer',
-                  background: on ? 'var(--accent)' : 'var(--border-strong)', transition: 'background 180ms ease-out',
+                  background: on ? 'var(--accent)' : 'var(--fg-dim)', transition: 'background 180ms ease-out',
                 }}
               >
                 <span

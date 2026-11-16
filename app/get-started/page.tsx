@@ -5,11 +5,11 @@ import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Logo } from '@/components/landing/Atoms';
-import { GetStartedFlow } from '@/components/get-started/GetStartedFlow';
+import { GetStartedFlow, onboardingRootClass } from '@/components/get-started/GetStartedFlow';
 import '@/components/landing/landing-styles.css';
 
 function GetStartedContent() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   // Set by /auth/callback for a brand-new account that signed up some other
   // way: it runs the same steps, saving to the account instead of staging
@@ -32,7 +32,7 @@ function GetStartedContent() {
   const ready = !isLoading && !leave;
 
   return (
-    <div className="bullpen-landing-root dark">
+    <div className={onboardingRootClass(user?.settings)}>
       <div className="page-bg" aria-hidden />
       <div className="page-noise" aria-hidden />
 
