@@ -36,6 +36,10 @@
       {
         "type": "fixed",
         "text": "Disabled buttons in setup no longer show a frozen shine, and the trial page no longer gets stuck showing placeholder text"
+      },
+      {
+        "type": "fixed",
+        "text": "Dividend pages for newly listed companies no longer show a loading error. They now say no payments are on record yet"
       }
     ]
   },
