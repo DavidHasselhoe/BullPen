@@ -15,6 +15,7 @@ import {
   getBalanceSheet,
   getCashFlow,
   withRateLimitRetry,
+  TwelveDataRateLimitError,
   type CompanyStatistics,
   type IncomeStatementPeriod,
   type BalanceSheetPeriod,
@@ -22,12 +23,16 @@ import {
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { coalesce } from '@/lib/cache/request-coalesce';
+import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { computeHealthScore, healthColumns, HEALTH_SCORE_METHOD, type HealthScore } from '@/lib/finance/health-score';
 import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { createServerClient } from '@/lib/supabase/client';
 
 const STATS_TTL = 60 * 60; // 1 hour — matches /statistics route
 const FINANCIALS_TTL = 24 * 60 * 60; // 24 hours — matches /financials route
+// Same reservations as the /statistics and /financials routes.
+const STATS_CREDITS = 50;
+const STATEMENT_CREDITS = 101;
 
 export interface HealthScoreResult {
   healthScore: HealthScore;
@@ -123,68 +128,48 @@ export async function getHealthScoreForSymbol(symbol: string): Promise<HealthSco
   if (!stats) {
     // /snapshot seeds snap-stats:<sym> from the same /batch call — reuse it
     // before hitting TwelveData again, same pattern as /statistics.
-    stats = (await getCached<CompanyStatistics>(`snap-stats:${sym}`)) ?? null;
-    if (!stats) {
-      stats = await coalesce(`stats:${sym}`, () => getStatistics(sym));
+    const fresh =
+      (await getCached<CompanyStatistics>(`snap-stats:${sym}`)) ??
+      ((await tryReserveOrganicCredits(STATS_CREDITS)) ? await coalesce(`stats:${sym}`, () => getStatistics(sym)) : null);
+    if (fresh) {
+      stats = fresh;
+      await setCached(`stats:${sym}`, sym, 'statistics', stats, STATS_TTL).catch(() => {});
+    } else {
+      // Budget denied: the last known statistics, or a 429 the route already handles.
+      stats = await getCachedStale<CompanyStatistics>(`stats:${sym}`);
+      if (!stats) throw new TwelveDataRateLimitError();
     }
-    await setCached(`stats:${sym}`, sym, 'statistics', stats, STATS_TTL).catch(() => {});
   }
 
-  let incomeDegraded = false;
-  let balanceDegraded = false;
-  let cashflowDegraded = false;
-  let incomeFresh = false;
-  let balanceFresh = false;
-  let cashflowFresh = false;
+  // Each statement is ~101 credits and this runs on every cold stock page, so
+  // a crawl through 40 tickers asked for ~12,000 credits in a minute
+  // (2026-11-16, 2,188 used against the 610 cap). Reserved like /financials:
+  // a denied or failed fetch serves the last cached value; only a statement
+  // never cached at all makes the score degraded (persisted score fallback).
+  const statement = async <T>(kind: string, fetcher: () => Promise<T[]>): Promise<{ rows: T[]; degraded: boolean }> => {
+    const key = `financials:${sym}:${kind}:quarterly`;
+    const cached = await getCached<T[]>(key);
+    if (cached) return { rows: cached, degraded: false };
+    if (await tryReserveOrganicCredits(STATEMENT_CREDITS)) {
+      try {
+        const fresh = await coalesce(key, () => withRateLimitRetry(fetcher));
+        // Only fresh data is cached: re-caching a stale fallback would reset its TTL.
+        void setCached(key, sym, 'financials', fresh, FINANCIALS_TTL).catch(() => {});
+        return { rows: fresh, degraded: false };
+      } catch (err) {
+        console.warn(`[health-score] ${kind} fetch failed for ${sym}:`, err instanceof Error ? err.message : err);
+      }
+    }
+    const stale = await getCachedStale<T[]>(key);
+    return { rows: stale ?? [], degraded: !stale };
+  };
 
   const [income, balance, cashflow] = await Promise.all([
-    getCached<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`).then(async (cached) => {
-      if (cached) return cached;
-      try {
-        const fresh = await coalesce(`financials:${sym}:income:quarterly`, () => withRateLimitRetry(() => getIncomeStatement(sym, 'quarterly')));
-        incomeFresh = true;
-        return fresh;
-      } catch (err) {
-        console.warn(`[health-score] income fetch failed for ${sym}:`, err instanceof Error ? err.message : err);
-        const stale = await getCachedStale<IncomeStatementPeriod[]>(`financials:${sym}:income:quarterly`);
-        if (!stale) incomeDegraded = true;
-        return stale ?? [];
-      }
-    }),
-    getCached<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`).then(async (cached) => {
-      if (cached) return cached;
-      try {
-        const fresh = await coalesce(`financials:${sym}:balance:quarterly`, () => withRateLimitRetry(() => getBalanceSheet(sym, 'quarterly')));
-        balanceFresh = true;
-        return fresh;
-      } catch (err) {
-        console.warn(`[health-score] balance sheet fetch failed for ${sym}:`, err instanceof Error ? err.message : err);
-        const stale = await getCachedStale<BalanceSheetPeriod[]>(`financials:${sym}:balance:quarterly`);
-        if (!stale) balanceDegraded = true;
-        return stale ?? [];
-      }
-    }),
-    getCached<CashFlowPeriod[]>(`financials:${sym}:cashflow:quarterly`).then(async (cached) => {
-      if (cached) return cached;
-      try {
-        const fresh = await coalesce(`financials:${sym}:cashflow:quarterly`, () => withRateLimitRetry(() => getCashFlow(sym, 'quarterly')));
-        cashflowFresh = true;
-        return fresh;
-      } catch (err) {
-        console.warn(`[health-score] cash flow fetch failed for ${sym}:`, err instanceof Error ? err.message : err);
-        const stale = await getCachedStale<CashFlowPeriod[]>(`financials:${sym}:cashflow:quarterly`);
-        if (!stale) cashflowDegraded = true;
-        return stale ?? [];
-      }
-    }),
+    statement<IncomeStatementPeriod>('income', () => getIncomeStatement(sym, 'quarterly')),
+    statement<BalanceSheetPeriod>('balance', () => getBalanceSheet(sym, 'quarterly')),
+    statement<CashFlowPeriod>('cashflow', () => getCashFlow(sym, 'quarterly')),
   ]);
 
-  // Persist only genuinely fresh data — re-caching a stale fallback would reset
-  // its TTL and delay the next real retry by another 24h.
-  if (incomeFresh)   void setCached(`financials:${sym}:income:quarterly`,   sym, 'financials', income,   FINANCIALS_TTL).catch(() => {});
-  if (balanceFresh)  void setCached(`financials:${sym}:balance:quarterly`,  sym, 'financials', balance,  FINANCIALS_TTL).catch(() => {});
-  if (cashflowFresh) void setCached(`financials:${sym}:cashflow:quarterly`, sym, 'financials', cashflow, FINANCIALS_TTL).catch(() => {});
-
-  const degraded = incomeDegraded || balanceDegraded || cashflowDegraded;
-  return computeAndSyncHealthScore(sym, stats, income, balance, cashflow, degraded);
+  const degraded = income.degraded || balance.degraded || cashflow.degraded;
+  return computeAndSyncHealthScore(sym, stats, income.rows, balance.rows, cashflow.rows, degraded);
 }

@@ -13,7 +13,7 @@ import { getFundamentalsLastChange, withRateLimitRetry } from '@/lib/twelvedata/
 import type { EarningsCalendarItem, IncomeStatementPeriod } from '@/lib/twelvedata/twelvedata-client';
 import { getCalendarRange } from '@/lib/market-data/calendar-days';
 import { getCached, getCachedMany, getCachedManyStale, setCached } from '@/lib/cache/market-data-cache';
-import { tryReserveCredits } from '@/lib/twelvedata/credit-budget';
+import { tryReserveCredits, tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
 
 const CHECK_THROTTLE_MS = 60 * 60 * 1000; // 1 hour between checks per company
@@ -72,6 +72,11 @@ export async function checkAndInvalidateFundamentals(
     // early at all. Claimed before the call so a failing ticker is throttled too.
     const last = await getCached<{ at: string }>(checkKey(sym));
     if (last && Date.now() - Date.parse(last.at) < CHECK_THROTTLE_MS) {
+      return { checked: false, throttled: true, keysExpired: [] };
+    }
+    // An optional check: under a crawl it gives way to page loads, and as it
+    // isn't claimed below, the next visit tries again.
+    if (!(await tryReserveOrganicCredits(CREDITS_PER_CHECK))) {
       return { checked: false, throttled: true, keysExpired: [] };
     }
     await setCached(checkKey(sym), sym, 'fundamentals_check', { at: new Date().toISOString() }, RECHECK_MS / 1000);
