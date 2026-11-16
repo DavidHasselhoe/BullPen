@@ -665,5 +665,20 @@
   "spotlightWatchAria": "{{name}}をウォッチリストに追加",
   "spotlightWatchingAria": "{{name}}はウォッチリストにあります",
   "spotlightWatchFailed": "{{name}}を追加できませんでした。もう一度お試しください。",
-  "followFailed": "更新できませんでした。もう一度お試しください。"
+  "followFailed": "更新できませんでした。もう一度お試しください。",
+  "bullChipsIntro": "BullはBullPenのAIアシスタントです。保有銘柄やウォッチ中の銘柄について、わかりやすい言葉で何でも質問できます。保有銘柄の追加や価格アラートの設定もできます。",
+  "firstWeekTitle": "最初の1週間",
+  "firstWeekProgress": "{{total}}件中{{done}}件完了",
+  "firstWeekHide": "非表示",
+  "firstWeekHideFailed": "このリストを非表示にできませんでした。接続を確認して、もう一度お試しください。",
+  "firstWeekDoneSr": "（完了）",
+  "firstWeekBull": "{{name}}についてBullに聞く",
+  "firstWeekBullAny": "Bullに質問する",
+  "firstWeekBullHint": "AIアシスタントが値動きをわかりやすく説明します。",
+  "firstWeekLookup": "銘柄を調べる",
+  "firstWeekLookupHint": "各銘柄ページでは数値の意味を説明し、ヘルススコアを表示します。",
+  "firstWeekHoldings": "保有銘柄を追加する",
+  "firstWeekHoldingsHint": "手入力するか、証券会社のファイルから取り込めます。ホームで実際のポートフォリオを追跡できます。",
+  "firstWeekAcademy": "今日のAcademyチャレンジに挑戦",
+  "firstWeekAcademyHint": "1日1問、約1分です。"
 }

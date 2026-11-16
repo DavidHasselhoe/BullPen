@@ -190,5 +190,8 @@
   "chatLimitReachedFree": "本日の無料のBullメッセージ{{limit}}件をご利用済みです。{{time}}にリセットされます。",
   "chatLimitReachedPro": "本日のBullメッセージ{{limit}}件をすべてご利用済みです。{{time}}にリセットされます。",
   "chatLimitUpgrade": "Proにアップグレード",
-  "statisticsEvEbitda": "EV/EBITDA"
+  "statisticsEvEbitda": "EV/EBITDA",
+  "starterPromptWhyMoving": "最近の{{name}}の値動きの理由は？",
+  "starterPromptExpensive": "{{name}}は今割高ですか？",
+  "starterPromptCompare": "{{a}}と{{b}}を比較して"
 }

@@ -665,5 +665,20 @@
   "spotlightWatchAria": "将{{name}}加入自选",
   "spotlightWatchingAria": "{{name}}已在你的自选中",
   "spotlightWatchFailed": "无法添加{{name}}。请重试。",
-  "followFailed": "无法更新。请重试。"
+  "followFailed": "无法更新。请重试。",
+  "bullChipsIntro": "Bull 是 BullPen 的 AI 助手。你可以用简单的话问它任何关于你的股票的问题。它还能帮你添加持仓或设置价格提醒。",
+  "firstWeekTitle": "你的第一周",
+  "firstWeekProgress": "已完成 {{done}}/{{total}}",
+  "firstWeekHide": "隐藏",
+  "firstWeekHideFailed": "无法隐藏此列表。请检查网络连接后重试。",
+  "firstWeekDoneSr": "（已完成）",
+  "firstWeekBull": "向 Bull 询问{{name}}",
+  "firstWeekBullAny": "向 Bull 提个问题",
+  "firstWeekBullHint": "你的 AI 助手会用简单的话解释每一次涨跌。",
+  "firstWeekLookup": "查询一只股票",
+  "firstWeekLookupHint": "每个股票页面都会解释各项数据，并给出健康评分。",
+  "firstWeekHoldings": "添加你持有的股票",
+  "firstWeekHoldingsHint": "手动输入，或导入券商导出的文件。之后首页会追踪你的真实投资组合。",
+  "firstWeekAcademy": "试试今天的 Academy 挑战",
+  "firstWeekAcademyHint": "每天一道题，大约一分钟。"
 }

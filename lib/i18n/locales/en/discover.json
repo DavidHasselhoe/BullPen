@@ -666,5 +666,20 @@
   "spotlightWatchAria": "Add {{name}} to your watchlist",
   "spotlightWatchingAria": "{{name}} is on your watchlist",
   "spotlightWatchFailed": "Couldn't add {{name}}. Try again.",
-  "followFailed": "Couldn't update. Try again."
+  "followFailed": "Couldn't update. Try again.",
+  "bullChipsIntro": "Bull is BullPen's AI assistant. Ask it anything about your stocks in plain words. It can also add holdings or set price alerts for you.",
+  "firstWeekTitle": "Your first week",
+  "firstWeekProgress": "{{done}} of {{total}} done",
+  "firstWeekHide": "Hide",
+  "firstWeekHideFailed": "Couldn't hide this list. Check your connection and try again.",
+  "firstWeekDoneSr": "(done)",
+  "firstWeekBull": "Ask Bull about {{name}}",
+  "firstWeekBullAny": "Ask Bull a question",
+  "firstWeekBullHint": "Your AI assistant explains any move in plain words.",
+  "firstWeekLookup": "Look up a stock",
+  "firstWeekLookupHint": "Every stock page explains its numbers and gives it a health score.",
+  "firstWeekHoldings": "Add what you own",
+  "firstWeekHoldingsHint": "Type it in or import a file from your broker. Home then tracks your real portfolio.",
+  "firstWeekAcademy": "Try today's Academy challenge",
+  "firstWeekAcademyHint": "One question a day, about a minute."
 }

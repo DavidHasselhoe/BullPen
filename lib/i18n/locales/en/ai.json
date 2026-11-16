@@ -192,5 +192,8 @@
   "technicalsRsi": "RSI 14",
   "technicalsFromHigh": "From 52-wk high",
   "technicalsShowOnChart": "Show on chart",
-  "toolStatus_drawLevels": "Drawing levels…"
+  "toolStatus_drawLevels": "Drawing levels…",
+  "starterPromptWhyMoving": "What's been moving {{name}} lately?",
+  "starterPromptExpensive": "Is {{name}} expensive right now?",
+  "starterPromptCompare": "Compare {{a}} and {{b}}"
 }

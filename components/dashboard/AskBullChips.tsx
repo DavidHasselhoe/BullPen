@@ -1,6 +1,8 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
+import { hasAskedBull, subscribeAskedBull } from '@/lib/ai/asked-bull';
 import { Sparkles } from 'lucide-react';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { trackEvent } from '@/lib/analytics/track';
@@ -23,6 +25,8 @@ interface Chip {
 export function AskBullChips({ movers, heldSymbols }: { movers: HomeMover[]; heldSymbols: string[] }) {
   const { t } = useTranslation('discover');
   const { open } = useAIPanel();
+  // Server and hydration render as already asked, so the intro never flashes for returning people.
+  const askedBull = useSyncExternalStore(subscribeAskedBull, hasAskedBull, () => true);
 
   const chips: Chip[] = [];
   const top = movers[0];
@@ -42,24 +46,28 @@ export function AskBullChips({ movers, heldSymbols }: { movers: HomeMover[]; hel
   chips.push({ id: 'market_today', label: t('bullChipMarket'), query: t('bullChipMarketQuery') });
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2">
-      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5" aria-hidden />
-        {t('bullChipsLabel')}
-      </span>
-      {chips.map((c) => (
-        <button
-          key={c.id}
-          type="button"
-          onClick={() => {
-            trackEvent('home_bull_chip', { chip: c.id });
-            open({ query: c.query });
-          }}
-          className="h-9 rounded-md border border-border/60 bg-card px-3 text-xs font-medium text-foreground transition-colors hover:border-border hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8"
-        >
-          {c.label}
-        </button>
-      ))}
+    <div className="mt-3">
+      {/* Nothing else in the app says who Bull is. Gone after the first question. */}
+      {!askedBull && <p className="mb-2 max-w-[65ch] text-xs text-muted-foreground">{t('bullChipsIntro')}</p>}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />
+          {t('bullChipsLabel')}
+        </span>
+        {chips.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => {
+              trackEvent('home_bull_chip', { chip: c.id });
+              open({ query: c.query });
+            }}
+            className="h-9 rounded-md border border-border/60 bg-card px-3 text-xs font-medium text-foreground transition-colors hover:border-border hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8"
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

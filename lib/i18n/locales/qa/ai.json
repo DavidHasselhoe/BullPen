@@ -192,5 +192,8 @@
   "technicalsRsi": "«RSII 14»",
   "technicalsFromHigh": "«Froom 52-wk hiigh»",
   "technicalsShowOnChart": "«Shoow oon chaart»",
-  "toolStatus_drawLevels": "«Draawiing leeveels…»"
+  "toolStatus_drawLevels": "«Draawiing leeveels…»",
+  "starterPromptWhyMoving": "«Whaat's beeeen mooviing {{name}} laateely?»",
+  "starterPromptExpensive": "«IIs {{name}} eexpeensiivee riight noow?»",
+  "starterPromptCompare": "«Coompaaree {{a}} aand {{b}}»"
 }

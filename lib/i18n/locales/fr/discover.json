@@ -666,5 +666,20 @@
   "spotlightWatchAria": "Ajouter {{name}} à votre liste de suivi",
   "spotlightWatchingAria": "{{name}} est dans votre liste de suivi",
   "spotlightWatchFailed": "Impossible d'ajouter {{name}}. Réessayez.",
-  "followFailed": "Mise à jour impossible. Réessayez."
+  "followFailed": "Mise à jour impossible. Réessayez.",
+  "bullChipsIntro": "Bull est l'assistant IA de BullPen. Posez-lui toutes vos questions sur vos actions, en termes simples. Il peut aussi ajouter des positions ou créer des alertes de prix pour vous.",
+  "firstWeekTitle": "Votre première semaine",
+  "firstWeekProgress": "{{done}} sur {{total}} faits",
+  "firstWeekHide": "Masquer",
+  "firstWeekHideFailed": "Impossible de masquer cette liste. Vérifiez votre connexion et réessayez.",
+  "firstWeekDoneSr": "(fait)",
+  "firstWeekBull": "Interrogez Bull sur {{name}}",
+  "firstWeekBullAny": "Posez une question à Bull",
+  "firstWeekBullHint": "Votre assistant IA explique chaque mouvement en termes simples.",
+  "firstWeekLookup": "Recherchez une action",
+  "firstWeekLookupHint": "Chaque page action explique ses chiffres et lui attribue un score de santé.",
+  "firstWeekHoldings": "Ajoutez ce que vous possédez",
+  "firstWeekHoldingsHint": "Saisissez-le ou importez un fichier de votre courtier. L'accueil suit alors votre vrai portefeuille.",
+  "firstWeekAcademy": "Essayez le défi Academy du jour",
+  "firstWeekAcademyHint": "Une question par jour, environ une minute."
 }

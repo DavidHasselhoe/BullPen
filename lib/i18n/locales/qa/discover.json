@@ -666,5 +666,20 @@
   "spotlightWatchAria": "«AAdd {{name}} too yoouur waatchliist»",
   "spotlightWatchingAria": "«{{name}} iis oon yoouur waatchliist»",
   "spotlightWatchFailed": "«Coouuldn't aadd {{name}}. Try aagaaiin.»",
-  "followFailed": "«Coouuldn't uupdaatee. Try aagaaiin.»"
+  "followFailed": "«Coouuldn't uupdaatee. Try aagaaiin.»",
+  "bullChipsIntro": "«Buull iis BuullPeen's AAII aassiistaant. AAsk iit aanythiing aaboouut yoouur stoocks iin plaaiin woords. IIt caan aalsoo aadd hooldiings oor seet priicee aaleerts foor yoouu.»",
+  "firstWeekTitle": "«Yoouur fiirst weeeek»",
+  "firstWeekProgress": "«{{done}} oof {{total}} doonee»",
+  "firstWeekHide": "«Hiidee»",
+  "firstWeekHideFailed": "«Coouuldn't hiidee thiis liist. Cheeck yoouur coonneectiioon aand try aagaaiin.»",
+  "firstWeekDoneSr": "«(doonee)»",
+  "firstWeekBull": "«AAsk Buull aaboouut {{name}}»",
+  "firstWeekBullAny": "«AAsk Buull aa quueestiioon»",
+  "firstWeekBullHint": "«Yoouur AAII aassiistaant eexplaaiins aany moovee iin plaaiin woords.»",
+  "firstWeekLookup": "«Looook uup aa stoock»",
+  "firstWeekLookupHint": "«EEveery stoock paagee eexplaaiins iits nuumbeers aand giivees iit aa heeaalth scooree.»",
+  "firstWeekHoldings": "«AAdd whaat yoouu oown»",
+  "firstWeekHoldingsHint": "«Typee iit iin oor iimpoort aa fiilee froom yoouur brookeer. Hoomee theen traacks yoouur reeaal poortfooliioo.»",
+  "firstWeekAcademy": "«Try toodaay's AAcaadeemy chaalleengee»",
+  "firstWeekAcademyHint": "«OOnee quueestiioon aa daay, aaboouut aa miinuutee.»"
 }

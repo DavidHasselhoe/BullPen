@@ -190,5 +190,8 @@
   "navigateNo": "No",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "starterPromptWhyMoving": "¿Qué ha movido a {{name}} últimamente?",
+  "starterPromptExpensive": "¿Está {{name}} cara ahora mismo?",
+  "starterPromptCompare": "Compara {{a}} y {{b}}"
 }

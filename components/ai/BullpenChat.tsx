@@ -24,6 +24,8 @@ import { useStickToBottom } from '@/hooks/use-stick-to-bottom';
 import { useSmoothText } from '@/hooks/use-smooth-text';
 import { quotaDecision, type QuotaState } from '@/lib/billing/quotas';
 import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymbol } from '@/hooks/use-holdings';
+import { useMyStockNames } from '@/hooks/use-my-stock-names';
+import { markAskedBull } from '@/lib/ai/asked-bull';
 import { useAlerts } from '@/hooks/use-alerts';
 import { QuotaIndicator } from '@/components/billing/QuotaIndicator';
 import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
@@ -44,6 +46,21 @@ function getDefaultStarterPrompts(t: TFunction): string[] {
     t('starterPromptHealthCheck'),
     t('starterPromptInsiderBuying'),
     t('starterPromptGrowthStocks'),
+  ];
+}
+
+/**
+ * First-open prompts about the stocks this person owns or follows, so Bull's
+ * empty state reads as their assistant rather than a demo about AAPL and NVDA.
+ * Open holdings lead, then the watchlist. Null with nothing to name.
+ */
+function usePersonalStarterPrompts(t: TFunction): string[] | null {
+  const names = useMyStockNames();
+  if (names.length === 0) return null;
+  return [
+    t('starterPromptWhyMoving', { name: names[0] }),
+    t('starterPromptExpensive', { name: names[0] }),
+    names.length >= 2 ? t('starterPromptCompare', { a: names[0], b: names[1] }) : t('starterPromptGrowthStocks'),
   ];
 }
 
@@ -234,7 +251,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
 ) {
   const router = useRouter();
   const { t, i18n } = useTranslation('ai');
-  const resolvedStarterPrompts = starterPrompts ?? getDefaultStarterPrompts(t);
+  const personalPrompts = usePersonalStarterPrompts(t);
+  const resolvedStarterPrompts = starterPrompts ?? personalPrompts ?? getDefaultStarterPrompts(t);
   const addHoldingMutation = useAddOrUpdateHolding();
   const updateHoldingMutation = useUpdateHoldingBySymbol();
   const removeHoldingMutation = useRemoveHoldingBySymbol();
@@ -506,6 +524,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     }
     setLimitQuota(null);
     trackAskBull(source);
+    markAskedBull();
     setStoppedId(null);
     sendMessage({ parts: [{ type: 'text', text }] });
     requestAnimationFrame(() => scrollToBottom('smooth'));
@@ -548,6 +567,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
     lastSentInitialQueryRef.current = initialQuery;
     // Opened with a question already asked (command palette, Deep Dive, chart): the panel sent it.
     trackEvent('ask_bull_sent', { source: 'opened_with_question' });
+    markAskedBull();
     sendMessage({ parts: [{ type: 'text', text: initialQuery }] });
     onConsumedQuery?.();
   }, [initialQuery, open, sendMessage, onConsumedQuery]);

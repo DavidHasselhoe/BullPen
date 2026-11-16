@@ -666,5 +666,20 @@
   "spotlightWatchAria": "{{name}} zur Watchlist hinzufügen",
   "spotlightWatchingAria": "{{name}} ist auf deiner Watchlist",
   "spotlightWatchFailed": "{{name}} konnte nicht hinzugefügt werden. Versuch es erneut.",
-  "followFailed": "Konnte nicht aktualisiert werden. Versuch es erneut."
+  "followFailed": "Konnte nicht aktualisiert werden. Versuch es erneut.",
+  "bullChipsIntro": "Bull ist der KI-Assistent von BullPen. Frag ihn alles zu deinen Aktien, in einfachen Worten. Er kann auch Positionen hinzufügen oder Kursalarme für dich einrichten.",
+  "firstWeekTitle": "Deine erste Woche",
+  "firstWeekProgress": "{{done}} von {{total}} erledigt",
+  "firstWeekHide": "Ausblenden",
+  "firstWeekHideFailed": "Die Liste konnte nicht ausgeblendet werden. Prüfe deine Verbindung und versuche es erneut.",
+  "firstWeekDoneSr": "(erledigt)",
+  "firstWeekBull": "Frag Bull zu {{name}}",
+  "firstWeekBullAny": "Stell Bull eine Frage",
+  "firstWeekBullHint": "Dein KI-Assistent erklärt jede Kursbewegung in einfachen Worten.",
+  "firstWeekLookup": "Eine Aktie nachschlagen",
+  "firstWeekLookupHint": "Jede Aktienseite erklärt ihre Kennzahlen und gibt ihr einen Health Score.",
+  "firstWeekHoldings": "Füge hinzu, was du besitzt",
+  "firstWeekHoldingsHint": "Gib es ein oder importiere eine Datei von deinem Broker. Die Startseite verfolgt dann dein echtes Portfolio.",
+  "firstWeekAcademy": "Probiere die heutige Academy-Challenge",
+  "firstWeekAcademyHint": "Eine Frage pro Tag, etwa eine Minute."
 }

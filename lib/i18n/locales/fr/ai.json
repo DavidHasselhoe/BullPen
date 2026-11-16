@@ -190,5 +190,8 @@
   "chatUnitMessages": "messages",
   "financialsCapex": "CapEx",
   "insiderNet": "Net {{value}}",
-  "statisticsEvEbitda": "EV/EBITDA"
+  "statisticsEvEbitda": "EV/EBITDA",
+  "starterPromptWhyMoving": "Qu'est-ce qui fait bouger {{name}} ces derniers temps ?",
+  "starterPromptExpensive": "{{name}} est-elle chère en ce moment ?",
+  "starterPromptCompare": "Compare {{a}} et {{b}}"
 }

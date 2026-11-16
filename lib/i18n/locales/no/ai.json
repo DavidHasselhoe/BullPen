@@ -190,5 +190,8 @@
   "financialsCapex": "CapEx",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta"
+  "termsGateBeta": "Beta",
+  "starterPromptWhyMoving": "Hva har beveget {{name}} i det siste?",
+  "starterPromptExpensive": "Er {{name}} dyr akkurat nå?",
+  "starterPromptCompare": "Sammenlign {{a}} og {{b}}"
 }

@@ -666,5 +666,20 @@
   "spotlightWatchAria": "Legg {{name}} til i overvåkningslisten",
   "spotlightWatchingAria": "{{name}} er i overvåkningslisten din",
   "spotlightWatchFailed": "Kunne ikke legge til {{name}}. Prøv igjen.",
-  "followFailed": "Kunne ikke oppdatere. Prøv igjen."
+  "followFailed": "Kunne ikke oppdatere. Prøv igjen.",
+  "bullChipsIntro": "Bull er BullPens AI-assistent. Spør om hva som helst om aksjene dine, med enkle ord. Den kan også legge til beholdninger eller sette opp prisvarsler for deg.",
+  "firstWeekTitle": "Din første uke",
+  "firstWeekProgress": "{{done}} av {{total}} fullført",
+  "firstWeekHide": "Skjul",
+  "firstWeekHideFailed": "Kunne ikke skjule listen. Sjekk tilkoblingen og prøv igjen.",
+  "firstWeekDoneSr": "(fullført)",
+  "firstWeekBull": "Spør Bull om {{name}}",
+  "firstWeekBullAny": "Still Bull et spørsmål",
+  "firstWeekBullHint": "AI-assistenten din forklarer enhver kursbevegelse med enkle ord.",
+  "firstWeekLookup": "Slå opp en aksje",
+  "firstWeekLookupHint": "Hver aksjeside forklarer tallene og gir aksjen en helsescore.",
+  "firstWeekHoldings": "Legg til det du eier",
+  "firstWeekHoldingsHint": "Skriv det inn eller importer en fil fra megleren din. Hjem følger da den ekte porteføljen din.",
+  "firstWeekAcademy": "Prøv dagens Academy-utfordring",
+  "firstWeekAcademyHint": "Ett spørsmål om dagen, omtrent ett minutt."
 }
