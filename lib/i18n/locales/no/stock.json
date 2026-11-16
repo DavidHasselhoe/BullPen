@@ -478,6 +478,7 @@
   "dividendsMetaDescription": "Hver utbyttebetaling fra {{name}} ({{ticker}}), totaler per år og gjeldende utbytteavkastning, forklart på enkelt norsk.",
   "dividendsH1": "{{name}} utbyttehistorikk",
   "dividendsNone": "{{name}} betaler ikke utbytte akkurat nå.",
+  "dividendsNoneOnRecord": "{{name}} har ingen registrerte utbyttebetalinger ennå.",
   "dividendsSummaryYield": "{{name}} betaler utbytte verdt omtrent {{yield}} av aksjekursen per år.",
   "dividendsSummaryLatest": "Den siste utbetalingen var {{amount}} per aksje, for alle som eide aksjer før {{date}}.",
   "dividendsFrequencyMonthly": "{{name}} utbetaler utbytte hver måned.",

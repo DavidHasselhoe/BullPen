@@ -488,6 +488,7 @@
   "dividendsMetaDescription": "{{name}}（{{ticker}}）のすべての配当支払い、年ごとの合計、現在の配当利回り。わかりやすく説明します。",
   "dividendsH1": "{{name}} 配当履歴",
   "dividendsNone": "{{name}} は現在配当を支払っていません。",
+  "dividendsNoneOnRecord": "{{name}} の配当支払いの記録はまだありません。",
   "dividendsSummaryYield": "{{name}} は毎年株価の約{{yield}}相当の配当を支払っています。",
   "dividendsSummaryLatest": "最新の支払いは{{date}}前に株を保有していた人を対象に1株あたり{{amount}}でした。",
   "dividendsFrequencyMonthly": "{{name}}は毎月配当を支払っています。",

@@ -488,6 +488,7 @@
   "dividendsMetaDescription": "{{name}} ({{ticker}}) 的每次股息支付、按年汇总和当前股息收益率，用简明英语解释。",
   "dividendsH1": "{{name}} 股息历史",
   "dividendsNone": "{{name}} 目前不支付股息。",
+  "dividendsNoneOnRecord": "{{name}} 目前还没有股息支付记录。",
   "dividendsSummaryYield": "{{name}} 每年支付的股息约为其股价的 {{yield}}。",
   "dividendsSummaryLatest": "最近一次支付为每股 {{amount}}，适用于在 {{date}} 前持有该股票的任何人。",
   "dividendsFrequencyMonthly": "{{name}} 每月派发一次股息。",

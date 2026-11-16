@@ -479,6 +479,7 @@
   "dividendsMetaDescription": "Jede {{name}} ({{ticker}}) Dividendenzahlung, Gesamtsummen pro Jahr und die aktuelle Dividendenrendite, verständlich erklärt.",
   "dividendsH1": "{{name}} Dividendenhistorie",
   "dividendsNone": "{{name}} zahlt derzeit keine Dividende.",
+  "dividendsNoneOnRecord": "Für {{name}} sind noch keine Dividendenzahlungen erfasst.",
   "dividendsSummaryYield": "{{name}} zahlt eine Dividende von etwa {{yield}} des Aktienkurses pro Jahr.",
   "dividendsSummaryLatest": "Die letzte Zahlung betrug {{amount}} pro Aktie für alle, die die Aktien vor {{date}} hielten.",
   "dividendsFrequencyMonthly": "{{name}} zahlt jeden Monat eine Dividende.",

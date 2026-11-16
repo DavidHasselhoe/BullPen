@@ -21,10 +21,13 @@ const load = cache(async (ticker: string) => {
     getDividendHistory(ticker).catch(() => null),
     getAvailableSubpages(ticker),
   ]);
-  // A yield on record with no payments is a partial answer from TwelveData,
-  // not a company that pays nothing.
-  const failed = !history || (!!history.yieldPct && history.items.length === 0);
-  return { name: names.get(ticker) ?? ticker, items: history?.items ?? [], yieldPct: history?.yieldPct ?? null, failed, available };
+  // Only a thrown load is a failure. A yield on record with no payments is a
+  // real answer: a fresh spin-off carries a yield before it has paid anything
+  // (VYLR, 2026-11-16: /dividends returned [] while stats said 0.4%). It reads
+  // "none on record yet", not "pays none", since the yield says otherwise.
+  const failed = !history;
+  const noneYet = !!history?.yieldPct && history.items.length === 0;
+  return { name: names.get(ticker) ?? ticker, items: history?.items ?? [], yieldPct: history?.yieldPct ?? null, failed, noneYet, available };
 });
 
 const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
@@ -73,7 +76,7 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
 export default async function StockDividendsPage({ params, requireData = false }: { params: Promise<{ ticker: string }>; requireData?: boolean }) {
   const ticker = (await params).ticker.toUpperCase();
   const locale = await getRequestLocale();
-  const [{ name, items, yieldPct, failed, available }, t, userId] = await Promise.all([
+  const [{ name, items, yieldPct, failed, noneYet, available }, t, userId] = await Promise.all([
     load(ticker),
     getServerT(locale, `/stock/${ticker}`),
     getCurrentUserId().catch(() => null),
@@ -144,7 +147,7 @@ export default async function StockDividendsPage({ params, requireData = false }
         <SubpageLoadError name={name} href={`/stock/${ticker}/dividends`} t={t} />
       ) : !latest ? (
         <p className="text-base text-foreground">
-          {t('stock:dividendsNone', { name })}{' '}
+          {t(noneYet ? 'stock:dividendsNoneOnRecord' : 'stock:dividendsNone', { name })}{' '}
           <Link href="/tools/screener?divYieldMin=2.5" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">{t('stock:dividendsFindPayers')}</Link>
         </p>
       ) : (

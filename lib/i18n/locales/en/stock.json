@@ -488,6 +488,7 @@
   "dividendsMetaDescription": "Every {{name}} ({{ticker}}) dividend payment, totals by year and the current dividend yield, explained in plain English.",
   "dividendsH1": "{{name}} dividend history",
   "dividendsNone": "{{name}} doesn't pay a dividend right now.",
+  "dividendsNoneOnRecord": "{{name}} has no dividend payments on record yet.",
   "dividendsSummaryYield": "{{name}} pays a dividend worth about {{yield}} of its share price a year.",
   "dividendsSummaryLatest": "The most recent payment was {{amount}} per share, for anyone who owned shares before {{date}}.",
   "dividendsFrequencyMonthly": "{{name}} pays a dividend every month.",

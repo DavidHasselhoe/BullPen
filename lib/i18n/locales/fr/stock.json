@@ -477,6 +477,7 @@
   "dividendsMetaDescription": "Chaque versement de dividende de {{name}} ({{ticker}}), totaux par année et rendement actuel des dividendes, expliqués simplement.",
   "dividendsH1": "Historique des dividendes de {{name}}",
   "dividendsNone": "{{name}} ne verse pas de dividende actuellement.",
+  "dividendsNoneOnRecord": "Aucun versement de dividende n'est encore enregistré pour {{name}}.",
   "dividendsSummaryYield": "{{name}} verse un dividende d'environ {{yield}} du cours de l'action par an.",
   "dividendsSummaryLatest": "Le versement le plus récent était de {{amount}} par action, pour ceux qui possédaient les actions avant {{date}}.",
   "dividendsFrequencyMonthly": "{{name}} verse un dividende chaque mois.",

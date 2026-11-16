@@ -479,6 +479,7 @@
   "dividendsMetaDescription": "Cada pago de dividendo de {{name}} ({{ticker}}), totales por año y el rendimiento de dividendo actual, explicado en lenguaje sencillo.",
   "dividendsH1": "Historial de dividendos de {{name}}",
   "dividendsNone": "{{name}} no paga dividendo en este momento.",
+  "dividendsNoneOnRecord": "{{name}} aún no tiene pagos de dividendos registrados.",
   "dividendsSummaryYield": "{{name}} paga un dividendo de aproximadamente {{yield}} del precio de la acción anualmente.",
   "dividendsSummaryLatest": "El pago más reciente fue {{amount}} por acción, para quien era propietario de acciones antes de {{date}}.",
   "dividendsFrequencyMonthly": "{{name}} paga un dividendo cada mes.",

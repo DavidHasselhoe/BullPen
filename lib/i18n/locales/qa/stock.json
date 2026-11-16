@@ -488,6 +488,7 @@
   "dividendsMetaDescription": "«EEveery {{name}} ({{ticker}}) diiviideend paaymeent, tootaals by yeeaar aand thee cuurreent diiviideend yiieeld, eexplaaiineed iin plaaiin EEngliish.»",
   "dividendsH1": "«{{name}} diiviideend hiistoory»",
   "dividendsNone": "«{{name}} dooeesn't paay aa diiviideend riight noow.»",
+  "dividendsNoneOnRecord": "«{{name}} haas noo diiviideend paaymeents oon reecoord yeet.»",
   "dividendsSummaryYield": "«{{name}} paays aa diiviideend woorth aaboouut {{yield}} oof iits shaaree priicee aa yeeaar.»",
   "dividendsSummaryLatest": "«Thee moost reeceent paaymeent waas {{amount}} peer shaaree, foor aanyoonee whoo oowneed shaarees beefooree {{date}}.»",
   "dividendsFrequencyMonthly": "«{{name}} paays aa diiviideend eeveery moonth.»",
