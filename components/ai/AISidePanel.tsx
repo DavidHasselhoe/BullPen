@@ -33,6 +33,7 @@ interface AISidePanelProps {
   initialQuery?: string | null;
   aiContext?: AIContext | null;
   onConsumedQuery?: () => void;
+  inputHint?: string | null;
   whyToday?: WhyTodayPayload | null;
   onCloseWhyToday?: () => void;
 }
@@ -52,7 +53,7 @@ function formatShortDate(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 
-export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery, whyToday, onCloseWhyToday }: AISidePanelProps) {
+export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumedQuery, inputHint, whyToday, onCloseWhyToday }: AISidePanelProps) {
   // The closed panel is in every server render, before 'ai' has loaded, so its
   // header label and close button read from 'navigation' (always loaded).
   const { t } = useTranslation('ai');
@@ -360,6 +361,7 @@ export function AISidePanel({ open, onClose, initialQuery, aiContext, onConsumed
                       initialQuery={initialQuery ?? undefined}
                       aiContext={aiContext ?? undefined}
                       onConsumedQuery={onConsumedQuery}
+                      inputHint={inputHint ?? undefined}
                       conversationId={conversationId}
                       initialMessages={initialMessages}
                     />

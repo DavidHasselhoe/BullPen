@@ -72,6 +72,8 @@ interface BullpenChatProps {
   aiContext?: AIContextProp;
   /** Called after initial query has been sent */
   onConsumedQuery?: () => void;
+  /** Placeholder in place of the default, e.g. an example of what to type. */
+  inputHint?: string;
   /** Runs the chart tools' actions (timeframe, indicators...) against the open chart. */
   onChartAction?: (action: ChartAction) => void | Promise<void>;
   /**
@@ -227,7 +229,7 @@ export interface BullpenChatHandle {
 }
 
 export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(function BullpenChat(
-  { compact = false, user, starterPrompts, open, initialQuery, aiContext, onConsumedQuery, onChartAction, conversationId, initialMessages },
+  { compact = false, user, starterPrompts, open, initialQuery, aiContext, onConsumedQuery, inputHint, onChartAction, conversationId, initialMessages },
   ref
 ) {
   const router = useRouter();
@@ -933,7 +935,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
           rows={1}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder={t('chatInputPlaceholder')}
+          placeholder={inputHint ?? t('chatInputPlaceholder')}
           aria-label={t('chatInputAriaLabel')}
           className="flex-1 resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring max-h-[120px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           style={{ height: 'auto' }}

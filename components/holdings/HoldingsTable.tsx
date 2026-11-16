@@ -24,6 +24,8 @@ import { buildCsv, csvNum, csvShares, downloadCsv, exportStem } from '@/lib/expo
 import { downloadPdf } from '@/lib/export/pdf';
 import { ExportMenu } from '@/components/export/ExportMenu';
 import { useEntitlements } from '@/hooks/use-entitlements';
+import { useAIPanel } from '@/components/ai/AIPanelProvider';
+import { BullAiIcon } from '@/components/ai/BullAiIcon';
 
 // ─── Sparkline ────────────────────────────────────────────────────────────────
 
@@ -485,6 +487,7 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices, h
   const { roundNumbers } = useUserSettings();
   const removeHolding = useRemoveHolding();
   const { isPro } = useEntitlements();
+  const { open: openBull } = useAIPanel();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'marketValue' | 'symbol' | 'allocation'>('marketValue');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -702,6 +705,19 @@ export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices, h
             title={t('holdingsTableEmptyTitle')}
             description={t('holdingsTableEmptyDescription')}
           >
+            {/* Bull first: typing "10 Apple shares" is the easiest way in for a beginner.
+                It only opens the chat with an example placeholder; the user writes the message. */}
+            <div className="mb-4 flex flex-col items-center gap-2">
+              <Button
+                size="lg"
+                onClick={() => openBull({ hint: t('holdingsTableTellBullPlaceholder') })}
+                className="min-h-11 gap-2 rounded-full px-6 animate-ai-pill-shine"
+              >
+                <BullAiIcon pose="wave" size={22} className="invert dark:invert-0" />
+                {t('holdingsTableTellBull')}
+              </Button>
+              <p className="text-xs text-muted-foreground">{t('holdingsTableTellBullHint')}</p>
+            </div>
             <div className="mx-auto flex max-w-md flex-col gap-2 sm:flex-row">
               {onAddClick && (
                 <button

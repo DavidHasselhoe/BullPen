@@ -38,6 +38,8 @@ export interface WhyTodayPayload {
 interface OpenOptions {
   query?: string;
   context?: AIContext;
+  /** Placeholder for the chat input, for an opener that asks the reader to type something specific. */
+  hint?: string;
 }
 
 interface AIPanelContextValue {
@@ -98,15 +100,18 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
   const [aiContext, setAIContextState] = useState<AIContext | null>(null);
   const [lastTicker, setLastTicker] = useState<string | null>(null);
   const [whyToday, setWhyToday] = useState<WhyTodayPayload | null>(null);
+  const [inputHint, setInputHint] = useState<string | null>(null);
 
   const open = useCallback((opt?: OpenOptions) => {
     if (opt?.query) setInitialQuery(opt.query);
     if (opt?.context) setAIContextState(opt.context);
+    setInputHint(opt?.hint ?? null);
     setIsOpen(true);
   }, []);
 
   const close = useCallback(() => {
     setIsOpen(false);
+    setInputHint(null);
     // Closing the whole panel always drops back to chat — reopening later
     // (e.g. via a Sparkles "Ask AI" button elsewhere) shouldn't land the
     // user back in a stale Why Today view.
@@ -173,6 +178,7 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
           initialQuery={initialQuery}
           aiContext={aiContext}
           onConsumedQuery={clearInitialQuery}
+          inputHint={inputHint}
           whyToday={whyToday}
           onCloseWhyToday={closeWhyToday}
         />
