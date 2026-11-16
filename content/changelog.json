@@ -1,5 +1,71 @@
 [
   {
+    "date": "2026-11-16",
+    "entries": [
+      {
+        "type": "new",
+        "text": "New accounts get a first-week checklist on Home: ask Bull about one of your stocks, look up a company, add what you own and try the Academy challenge. Each step ticks itself off when you do it",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "An empty My Holdings page now offers Tell Bull what you own. Type something like 10 Apple shares bought in March, and Bull adds it once you confirm",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "Setup now asks whether you invest already, and Home starts from your answer"
+      },
+      {
+        "type": "improved",
+        "text": "Bull's suggested questions are now about the stocks you own and follow, and Home explains who Bull is until you ask your first question"
+      },
+      {
+        "type": "improved",
+        "text": "Setup and new accounts now use the light theme, matching the rest of BullPen. Dark mode is still one tap away in Settings"
+      },
+      {
+        "type": "improved",
+        "text": "The Help Center is now in the account menu"
+      },
+      {
+        "type": "fixed",
+        "text": "When the database was slow, the app could show you as signed out even though you were still signed in. It now waits and carries on once the data arrives",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Disabled buttons in setup no longer show a frozen shine, and the trial page no longer gets stuck showing placeholder text"
+      }
+    ]
+  },
+  {
+    "date": "2026-11-15",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Home loads faster when you're signed in: your holdings and watchlist arrive with the page instead of after it"
+      },
+      {
+        "type": "fixed",
+        "text": "An expired sign-in no longer breaks the page. You're simply shown as signed out"
+      },
+      {
+        "type": "fixed",
+        "text": "Stock pages no longer jump as the company details finish loading"
+      }
+    ]
+  },
+  {
+    "date": "2026-11-13",
+    "entries": [
+      {
+        "type": "fixed",
+        "text": "The Ask Bull button no longer shows placeholder text in place of its label"
+      }
+    ]
+  },
+  {
     "date": "2026-11-11",
     "entries": [
       {
