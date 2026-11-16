@@ -49,7 +49,7 @@ async function flush(userId: string): Promise<boolean> {
     const { error } = await usersTable
       .update({
         experience_level: experienceLevelFor(pending.style),
-        settings: { ...settings, notifications },
+        settings: { ...settings, notifications, ...(pending.invests && { invests: pending.invests }) },
       })
       .eq('id', userId);
     if (error) return false;

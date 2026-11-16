@@ -110,6 +110,15 @@ assert.deepEqual(
   withPush,
   'a held push subscription survives parsing'
 );
+assert.equal(
+  parsePendingOnboarding(JSON.stringify({ ...JSON.parse(good), invests: 'yes' }), now)?.invests,
+  'yes',
+  'the invest answer survives parsing'
+);
+assert.ok(
+  !('invests' in (parsePendingOnboarding(JSON.stringify({ ...JSON.parse(good), invests: 'maybe' }), now) ?? {})),
+  'an unknown invest answer is dropped, not saved'
+);
 assert.equal(parsePendingOnboarding(null, now), null);
 assert.equal(parsePendingOnboarding('not json', now), null);
 assert.equal(

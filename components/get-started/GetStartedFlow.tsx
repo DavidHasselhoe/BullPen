@@ -13,11 +13,12 @@ import {
 } from '@/lib/onboarding/pending-onboarding';
 import { ExplainStyleStep } from './ExplainStyleStep';
 import { PickStocksStep } from './PickStocksStep';
+import { InvestStep } from './InvestStep';
 import { AlertsStep } from './AlertsStep';
 import { PreviewStep } from './PreviewStep';
 
-/** 4 screens here plus the trial offer at /get-started/trial, for the progress bar. */
-export const TOTAL_STEPS = 5;
+/** 5 screens here plus the trial offer at /get-started/trial, for the progress bar. */
+export const TOTAL_STEPS = 6;
 
 /**
  * Root class for the onboarding screens (here and /get-started/trial). Light,
@@ -30,7 +31,7 @@ export function onboardingRootClass(settings: unknown): string {
   const dark = (settings as { theme?: unknown } | null | undefined)?.theme === 'dark';
   return `bullpen-landing-root ${dark ? 'dark' : 'landing-light-preview landing-force-light'}`;
 }
-const STEP_KEYS = ['explain_style', 'pick_stocks', 'alerts', 'preview'] as const;
+const STEP_KEYS = ['explain_style', 'pick_stocks', 'invests', 'alerts', 'preview'] as const;
 
 export function GetStartedFlow({ signedIn = false }: { signedIn?: boolean }) {
   // Mounts only after GetStartedPage's auth gate, never in the SSR tree, so
@@ -51,8 +52,8 @@ export function GetStartedFlow({ signedIn = false }: { signedIn?: boolean }) {
   // Reaching the preview means every choice is made: stage it for the
   // post-signup flush and drop the draft.
   useEffect(() => {
-    if (step !== 3 || !draft.style) return;
-    savePendingOnboarding({ style: draft.style, picks: draft.picks, alerts: draft.alerts, pushSubscription: draft.pushSubscription });
+    if (step !== 4 || !draft.style) return;
+    savePendingOnboarding({ style: draft.style, picks: draft.picks, alerts: draft.alerts, invests: draft.invests, pushSubscription: draft.pushSubscription });
     clearDraft();
   }, [step, draft]);
 
@@ -103,29 +104,43 @@ export function GetStartedFlow({ signedIn = false }: { signedIn?: boolean }) {
             />
           )}
           {safeStep === 2 && (
+            <InvestStep
+              key="invests"
+              value={draft.invests}
+              stepIndex={2}
+              totalSteps={TOTAL_STEPS}
+              onBack={() => setStep(1)}
+              onSelect={(invests) => {
+                trackEvent('get_started_step_answered', { step_key: 'invests', step_number: 3, value: invests });
+                setDraft((d) => ({ ...d, invests }));
+                setStep(3);
+              }}
+            />
+          )}
+          {safeStep === 3 && (
             <AlertsStep
               key="alerts"
               alerts={draft.alerts}
               pushSubscription={draft.pushSubscription}
               onPushSubscription={(pushSubscription) => setDraft((d) => ({ ...d, pushSubscription }))}
-              stepIndex={2}
+              stepIndex={3}
               totalSteps={TOTAL_STEPS}
               onChange={(alerts) => setDraft((d) => ({ ...d, alerts }))}
-              onBack={() => setStep(1)}
+              onBack={() => setStep(2)}
               onContinue={() => {
                 trackEvent('alerts_chosen', { ...draft.alerts });
-                setStep(3);
+                setStep(4);
               }}
             />
           )}
-          {safeStep === 3 && draft.style && (
+          {safeStep === 4 && draft.style && (
             <PreviewStep
               key="preview"
               picks={draft.picks}
               alerts={draft.alerts}
-              stepIndex={3}
+              stepIndex={4}
               totalSteps={TOTAL_STEPS}
-              onBack={() => setStep(2)}
+              onBack={() => setStep(3)}
               signedIn={signedIn}
             />
           )}

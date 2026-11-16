@@ -31,11 +31,15 @@ export interface PendingPush {
   timeZone: string;
 }
 
+/** "Do you invest already?" Saved as users.settings.invests; Home's first-week checklist leads with holdings for 'yes'. */
+export type InvestAnswer = 'yes' | 'not_yet';
+
 /** Everything chosen before signup, ready to be written. */
 export interface PendingOnboarding {
   style: ExplainStyle;
   picks: StockPick[];
   alerts: AlertChoices;
+  invests?: InvestAnswer;
   pushSubscription?: PendingPush;
 }
 
@@ -44,7 +48,13 @@ export interface OnboardingDraft {
   style?: ExplainStyle;
   picks: StockPick[];
   alerts: AlertChoices;
+  invests?: InvestAnswer;
   pushSubscription?: PendingPush;
+}
+
+/** Absent rather than undefined, so a payload without the answer parses to the same shape as before. */
+function investsField(value: unknown): { invests?: InvestAnswer } {
+  return value === 'yes' || value === 'not_yet' ? { invests: value } : {};
 }
 
 const PENDING_KEY = 'bp.pendingOnboarding.v2';
@@ -123,7 +133,7 @@ export function parsePendingOnboarding(raw: string | null, now: number): Pending
     if (parsed.style !== 'plain' && parsed.style !== 'market') return null;
     const alerts = sanitizeAlerts(parsed.alerts);
     if (!alerts) return null;
-    return { style: parsed.style, picks: sanitizePicks(parsed.picks), alerts, ...pushField(parsed.pushSubscription) };
+    return { style: parsed.style, picks: sanitizePicks(parsed.picks), alerts, ...investsField(parsed.invests), ...pushField(parsed.pushSubscription) };
   } catch {
     return null;
   }
@@ -191,6 +201,7 @@ export function readDraft(): { step: number; draft: OnboardingDraft } | null {
         style,
         picks: sanitizePicks(parsed.draft.picks),
         alerts: sanitizeAlerts(parsed.draft.alerts) ?? DEFAULT_ALERTS,
+        ...investsField(parsed.draft.invests),
         ...pushField(parsed.draft.pushSubscription),
       },
     };
