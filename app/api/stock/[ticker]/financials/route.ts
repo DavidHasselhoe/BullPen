@@ -29,9 +29,10 @@ async function fetchGatedStatement<T>(
   cost: number,
   fetcher: () => Promise<T>
 ): Promise<{ denied: false; data: T } | { denied: true }> {
-  if (await tryReserveOrganicCredits(cost)) {
-    return { denied: false, data: await coalesce(cacheKey, () => withRateLimitRetry(fetcher)) };
-  }
+  // Reserved inside the coalesced fetch: the health score shares these keys,
+  // and a request joining an in-flight fetch must not count its credits twice.
+  const data = await coalesce(cacheKey, async () => ((await tryReserveOrganicCredits(cost)) ? withRateLimitRetry(fetcher) : null));
+  if (data !== null) return { denied: false, data };
   const stale = await getCachedStale<T>(cacheKey);
   if (stale !== null) return { denied: false, data: stale };
   return { denied: true };

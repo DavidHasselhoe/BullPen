@@ -77,7 +77,7 @@ export async function checkAndInvalidateFundamentals(
     // An optional check: under a crawl it gives way to page loads, and as it
     // isn't claimed below, the next visit tries again.
     if (!(await tryReserveOrganicCredits(CREDITS_PER_CHECK))) {
-      return { checked: false, throttled: true, keysExpired: [] };
+      return { checked: false, keysExpired: [], error: 'credit_budget' };
     }
     await setCached(checkKey(sym), sym, 'fundamentals_check', { at: new Date().toISOString() }, RECHECK_MS / 1000);
 

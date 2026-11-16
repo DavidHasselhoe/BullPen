@@ -150,15 +150,18 @@ export async function getHealthScoreForSymbol(symbol: string): Promise<HealthSco
     const key = `financials:${sym}:${kind}:quarterly`;
     const cached = await getCached<T[]>(key);
     if (cached) return { rows: cached, degraded: false };
-    if (await tryReserveOrganicCredits(STATEMENT_CREDITS)) {
-      try {
-        const fresh = await coalesce(key, () => withRateLimitRetry(fetcher));
+    try {
+      // Reserved inside the coalesced fetch, as /financials does on the same key:
+      // a request joining an in-flight fetch must not count its credits twice.
+      const fresh = await coalesce(key, async () =>
+        (await tryReserveOrganicCredits(STATEMENT_CREDITS)) ? withRateLimitRetry(fetcher) : null);
+      if (fresh) {
         // Only fresh data is cached: re-caching a stale fallback would reset its TTL.
         void setCached(key, sym, 'financials', fresh, FINANCIALS_TTL).catch(() => {});
         return { rows: fresh, degraded: false };
-      } catch (err) {
-        console.warn(`[health-score] ${kind} fetch failed for ${sym}:`, err instanceof Error ? err.message : err);
       }
+    } catch (err) {
+      console.warn(`[health-score] ${kind} fetch failed for ${sym}:`, err instanceof Error ? err.message : err);
     }
     const stale = await getCachedStale<T[]>(key);
     return { rows: stale ?? [], degraded: !stale };
