@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { trackEvent } from '@/lib/analytics/track';
 import {
@@ -33,9 +33,21 @@ export function onboardingRootClass(settings: unknown): string {
 }
 const STEP_KEYS = ['explain_style', 'pick_stocks', 'invests', 'alerts', 'preview'] as const;
 
-export function GetStartedFlow({ signedIn = false }: { signedIn?: boolean }) {
-  // Mounts only after GetStartedPage's auth gate, never in the SSR tree, so
-  // reading sessionStorage in the initializer can't cause a hydration mismatch.
+const noopSubscribe = () => () => {};
+
+/**
+ * The steps restore a saved draft from sessionStorage, which the server can't
+ * see. Since the server knows who is signed in, it renders this page's flow
+ * for signed-in setup (?setup=1), so it drew step 1 while a reload mid-flow
+ * restored step 3: a hydration mismatch. Rendering the steps only in the
+ * browser keeps the draft read out of the server pass.
+ */
+export function GetStartedFlow(props: { signedIn?: boolean }) {
+  const inBrowser = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  return inBrowser ? <Flow {...props} /> : null;
+}
+
+function Flow({ signedIn = false }: { signedIn?: boolean }) {
   const [step, setStep] = useState(() => readDraft()?.step ?? 0);
   const [draft, setDraft] = useState<OnboardingDraft>(
     () => readDraft()?.draft ?? { picks: [], alerts: DEFAULT_ALERTS }
