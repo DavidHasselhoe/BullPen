@@ -10,6 +10,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { useCreateWatchlistList, useAddToWatchlist } from '@/hooks/use-watchlist';
 import { WATCHLIST_TEMPLATES, type WatchlistTemplate } from '@/lib/watchlist/templates';
 import { PaywallDialog } from './PaywallDialog';
+import { ThemePicksPanel } from './ThemePicksPanel';
 
 interface Props {
   open: boolean;
@@ -62,13 +63,25 @@ export function WatchlistTemplatesDialog({ open, onOpenChange, onCreated }: Prop
             </DialogDescription>
           </DialogHeader>
 
+          <div className="-mr-1 space-y-4 overflow-y-auto pr-1">
+          <ThemePicksPanel
+            onPaywall={() => setShowPaywall(true)}
+            onCreated={(listId, complete) => {
+              onCreated?.(listId);
+              // A partial add keeps the dialog open so its alert stays readable.
+              if (complete) onOpenChange(false);
+            }}
+          />
+
+          <p className="text-xs font-medium text-muted-foreground">{t('aiPicksOrTemplates')}</p>
+
           {error && (
-            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500">
+            <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500">
               {error}
             </p>
           )}
 
-          <div className="grid gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {WATCHLIST_TEMPLATES.map((template) => {
               const busy = addingId === template.id;
               const preview = template.symbols.slice(0, 6);
@@ -124,6 +137,7 @@ export function WatchlistTemplatesDialog({ open, onOpenChange, onCreated }: Prop
                 </div>
               );
             })}
+          </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -98,17 +98,11 @@
   "scorecardStartsTomorrow": "Measured from today's close. Check back tomorrow.",
   "scorecardUnavailable": "Not available right now",
   "scorecardHealth": "Health Scores",
-
   "scorecardHealthHint": "Select a grade to show only those stocks",
-
   "scorecardGradeFilterAriaLabel_one": "Show the {{count}} stock graded {{grade}}",
-
   "scorecardGradeFilterAriaLabel_other": "Show the {{count}} stocks graded {{grade}}",
-
   "watchlistGradeFilterStatus_one": "Showing {{count}} of {{total}} stocks, the one graded {{grade}}.",
-
   "watchlistGradeFilterStatus_other": "Showing {{count}} of {{total}} stocks, the ones graded {{grade}}.",
-
   "watchlistGradeFilterClear": "Show all",
   "watchlistColSinceAdded": "Since added",
   "watchlistSinceAddedNew": "New",
@@ -169,5 +163,27 @@
   "shareOpenPage": "Open the page",
   "shareStop": "Stop sharing",
   "shareStopHint": "Stopping makes this link stop working. Sharing again creates a new one.",
-  "shareError": "Couldn't update sharing. Try again in a moment."
+  "shareError": "Couldn't update sharing. Try again in a moment.",
+  "aiPicksTitle": "Describe a theme",
+  "aiPicksHint": "Tell us what you're curious about and we'll pick up to 5 matching stocks from our database. They're ideas to research, not advice, and you can remove any before saving.",
+  "aiPicksPlaceholder": "e.g. AI power infrastructure",
+  "aiPicksInputLabel": "Theme",
+  "aiPicksFind": "Find stocks",
+  "aiPicksFinding": "Finding stocks…",
+  "aiPicksRemove": "Remove {{symbol}}",
+  "aiPicksListName": "List name",
+  "aiPicksCreate_one": "Create list with 1 stock",
+  "aiPicksCreate_other": "Create list with {{count}} stocks",
+  "aiPicksStartOver": "Try another theme",
+  "aiPicksNoMatch": "Nothing in our database clearly fits that theme. Try describing it another way. This search didn't count toward your limit.",
+  "aiPicksLimitFree": "You've used your {{limit}} theme searches for this month. Pro includes {{proLimit}} a month.",
+  "aiPicksLimitPro": "You've used all {{limit}} theme searches for this month. They reset at the start of next month.",
+  "aiPicksTooFast": "That's a lot of searches in a row. Wait a minute and try again.",
+  "aiPicksError": "We couldn't find stocks right now. Please try again.",
+  "aiPicksPartialAdd_one": "The list was created, but 1 stock couldn't be added. You can add it from its stock page.",
+  "aiPicksPartialAdd_other": "The list was created, but {{count}} stocks couldn't be added. You can add them from their stock pages.",
+  "aiPicksOrTemplates": "Or start from a ready-made list",
+  "aiPicksUnitOne": "theme search",
+  "aiPicksUnitOther": "theme searches",
+  "aiPicksResultsLabel": "Picks for {{theme}}"
 }

@@ -44,6 +44,14 @@ assert.equal(quotaDecision('chat', true, freeChat).allowed, true, 'Pro is not he
 assert.equal(quotaDecision('chat', true, proChat).reason, 'pro_cap_reached', 'Pro at the soft cap is blocked, with no upsell reason');
 console.log('ok  chat quota gate');
 
+// The theme-fill limit both POST /api/watchlist/ai-picks (via checkQuota) and ThemePicksPanel call.
+const { count: freeFill, proCap: proFill = 0 } = QUOTAS.watchlist_ai_fill;
+assert.equal(quotaDecision('watchlist_ai_fill', false, freeFill - 1).allowed, true, 'Free under the theme-fill limit can search');
+assert.equal(quotaDecision('watchlist_ai_fill', false, freeFill).allowed, false, 'Free at the theme-fill limit is blocked');
+assert.equal(quotaDecision('watchlist_ai_fill', true, freeFill).allowed, true, 'Pro is not held to the free theme-fill limit');
+assert.equal(quotaDecision('watchlist_ai_fill', true, proFill).allowed, false, 'Pro at its theme-fill cap is blocked');
+console.log('ok  theme-fill quota gate');
+
 const base = (process.env.SMOKE_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 
 async function sessionCookie(): Promise<string> {

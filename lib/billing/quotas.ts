@@ -40,6 +40,8 @@ export const QUOTAS = {
   // Bull's Weekly Pick. See lib/picks/thesis-access.ts for how "1 free" picks
   // WHICH pick a free user gets to keep reading for the rest of the period.
   weekly_pick_thesis: { count: 1, period: 'month' } as QuotaConfig,
+  // "Describe a theme" watchlist fill (lib/watchlist/ai-picks.ts): two Haiku 5.5 calls, ~$0.005. Counted only when it returns picks.
+  watchlist_ai_fill: { count: 3, period: 'month', proCap: 50 } as QuotaConfig,
 };
 
 export type QuotaFeature = keyof typeof QUOTAS;

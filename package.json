@@ -21,6 +21,8 @@
     "test-calendar-day-model": "tsx scripts/test-calendar-day-model.ts",
     "test-trends": "tsx scripts/test-trends.ts",
     "backfill-health-categories": "tsx scripts/backfill-health-categories.ts",
+    "backfill-company-descriptions": "tsx scripts/backfill-company-descriptions.ts",
+    "test-ai-picks": "tsx scripts/test-ai-picks.ts",
     "populate-quotes": "tsx scripts/populate-investing-quotes.ts",
     "test-resend": "tsx scripts/test-resend.ts",
     "test-credit-budget": "tsx scripts/test-credit-budget.ts",
