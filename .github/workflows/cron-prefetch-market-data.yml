@@ -23,7 +23,8 @@ on:
 jobs:
   prefetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    # A clean run takes ~2h58m (11-11), so 180 left no room for retries.
+    timeout-minutes: 240
     steps:
       - name: Refresh stats + earnings (paced batches)
         env:
@@ -35,12 +36,30 @@ jobs:
             exit 1
           fi
           echo "Starting stats+earnings prefetch…"
+          # One failed request used to end the run as "success", leaving the
+          # rest of the universe uncached with nothing failing (same bug the
+          # screener jobs had, fixed 2026-11-17). Retry twice, then skip the
+          # batch; stop only after 3 skipped in a row; any skip fails the job.
+          SKIPPED=0; MISSES=0
           for batch in $(seq 0 120); do
             echo "→ Batch $batch"
-            RESPONSE=$(curl -fsS -X GET -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/prefetch-market-data?phase=stats&batch=${batch}") || {
-              echo "Batch $batch failed (rate limit or network error) — stopping"
-              break
-            }
+            RESPONSE=""
+            for attempt in 1 2 3; do
+              RESPONSE=$(curl -fsS --max-time 150 -X GET -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/prefetch-market-data?phase=stats&batch=${batch}") && break
+              RESPONSE=""
+              echo "Batch $batch attempt $attempt failed"
+              if [ $attempt -lt 3 ]; then sleep 75; fi
+            done
+            if [ -z "$RESPONSE" ]; then
+              SKIPPED=$((SKIPPED + 1)); MISSES=$((MISSES + 1))
+              echo "::warning::Batch $batch skipped after 3 attempts"
+              if [ $MISSES -ge 3 ]; then
+                echo "::error::3 batches in a row failed, stopping at batch $batch"
+                exit 1
+              fi
+              continue
+            fi
+            MISSES=0
             echo "$RESPONSE"
             DONE=$(echo "$RESPONSE" | jq -r '.done // false')
             if [ "$DONE" = "true" ]; then
@@ -49,3 +68,7 @@ jobs:
             fi
             sleep 75
           done
+          if [ $SKIPPED -gt 0 ]; then
+            echo "::error::$SKIPPED batch(es) skipped after retries"
+            exit 1
+          fi
