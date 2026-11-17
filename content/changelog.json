@@ -1,5 +1,45 @@
 [
   {
+    "date": "2026-11-17",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Starting a new watchlist? Describe a theme, like AI power infrastructure, and Bull suggests up to 5 matching stocks with a one-line reason each. Remove any you don't want, then create the list",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Fund pages now show every holding from the latest 13F filing for free. Pro adds what each fund bought and sold since the quarter before, plus all earlier quarters",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "When you ask Bull about your portfolio and it can't see your holdings yet, one tap under its reply turns that on and asks again",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "The Market Risk part of the Financial Health score is now called Stability, so a high score clearly means a calmer stock. Stocks without enough trading history to measure it now show no Stability score instead of a perfect one"
+      },
+      {
+        "type": "improved",
+        "text": "Dividend pages now answer the question first: does this company pay a dividend, how much a year, and what the last payment was"
+      },
+      {
+        "type": "fixed",
+        "text": "After a fund filed a new 13F, its page kept showing the previous quarter as the latest until you picked another quarter"
+      },
+      {
+        "type": "fixed",
+        "text": "Screener numbers and health scores could go days without updating for some stocks. They now refresh every night as planned"
+      },
+      {
+        "type": "fixed",
+        "text": "Upgrade screens show the right preview in every language, not just English"
+      }
+    ]
+  },
+  {
     "date": "2026-11-16",
     "entries": [
       {
