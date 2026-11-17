@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { rget } from '@/lib/cache/redis-cache';
-import { isStale, whyTodayKey, whyTodayLanguage, type CachedWhyToday } from '@/lib/ai/why-today';
+import { isStale, whyTodayKey, whyTodayLanguage, whyTodayTeaser, type CachedWhyToday } from '@/lib/ai/why-today';
 
 const NONE = { success: true, point: null, more: 0 };
 
@@ -26,30 +26,12 @@ async function get(request: NextRequest): Promise<NextResponse> {
     return addSecurityHeaders(NextResponse.json({ success: false, error: 'Invalid request' }, { status: 400 }));
   }
 
-  const cached = await rget<CachedWhyToday>(whyTodayKey(ticker, whyTodayLanguage(params.get('lang'))));
-  if (!cached || isStale(cached, pct) || /^no company news/i.test(cached.text.trim())) {
-    return addSecurityHeaders(NextResponse.json(NONE));
-  }
-  const parts = sentences(cached.text.trim(), whyTodayLanguage(params.get('lang')));
-  if (parts.length < 2) return addSecurityHeaders(NextResponse.json(NONE));
-  return addSecurityHeaders(NextResponse.json({ success: true, point: parts[0], more: parts.length - 1 }));
-}
-
-/**
- * The answer is one or two plain sentences (whyTodayRequest). ICU breaks after
- * "U.S." too, so a fragment shorter than a real sentence joins the next one.
- * ponytail: length heuristic, not an abbreviation list; a miss only means no preview.
- */
-function sentences(text: string, language: string): string[] {
-  const out: string[] = [];
-  for (const { segment } of new Intl.Segmenter(language, { granularity: 'sentence' }).segment(text)) {
-    const s = segment.trim();
-    if (!s) continue;
-    const last = out.length - 1;
-    if (last >= 0 && out[last].length < 25) out[last] = `${out[last]} ${s}`;
-    else out.push(s);
-  }
-  return out;
+  const language = whyTodayLanguage(params.get('lang'));
+  const cached = await rget<CachedWhyToday>(whyTodayKey(ticker, language));
+  if (!cached || isStale(cached, pct)) return addSecurityHeaders(NextResponse.json(NONE));
+  const teaser = whyTodayTeaser(cached.text, language);
+  if (!teaser) return addSecurityHeaders(NextResponse.json(NONE));
+  return addSecurityHeaders(NextResponse.json({ success: true, ...teaser }));
 }
 
 export const GET = withAuth(get, { rateLimit: { windowMs: 60 * 1000, maxRequests: 30 } });

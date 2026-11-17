@@ -213,6 +213,28 @@ export async function generateWhyToday(move: WhyTodayMove, language: string) {
 }
 
 
+/**
+ * The free teaser: the first whole sentence of an answer, or null when there
+ * is nothing safe to show. A one-sentence answer would give the whole thing
+ * away, and "No company news" is not a reason. Shared by the upgrade dialog's
+ * preview and Bull, so free accounts see the same amount in both.
+ */
+export function whyTodayTeaser(text: string, language: string): { point: string; more: number } | null {
+  const trimmed = text.trim();
+  if (/^no company news/i.test(trimmed)) return null;
+  // ICU breaks after "U.S." too, so a fragment shorter than a real sentence joins the next one.
+  // ponytail: length heuristic, not an abbreviation list; a miss only means no preview.
+  const parts: string[] = [];
+  for (const { segment } of new Intl.Segmenter(language, { granularity: 'sentence' }).segment(trimmed)) {
+    const s = segment.trim();
+    if (!s) continue;
+    const last = parts.length - 1;
+    if (last >= 0 && parts[last].length < 25) parts[last] = `${parts[last]} ${s}`;
+    else parts.push(s);
+  }
+  return parts.length < 2 ? null : { point: parts[0], more: parts.length - 1 };
+}
+
 /** Generations one account may trigger per day. Cache hits are free and uncapped. */
 export const WHY_TODAY_DAILY_GENERATIONS = { free: 2, pro: 20 };
 
