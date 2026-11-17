@@ -155,7 +155,7 @@
     "jspdf-autotable": "^5.0.8",
     "lightweight-charts": "^5.1.0",
     "lucide-react": "^0.562.0",
-    "next": "^16.4.1",
+    "next": "^16.4.5",
     "next-themes": "^0.4.6",
     "posthog-js": "^1.417.2",
     "react": "19.2.3",
@@ -186,7 +186,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.3.8",
     "eslint-plugin-i18next": "^6.1.5",
-    "i18next-cli": "^1.71.3",
+    "i18next-cli": "^1.90.0",
     "tailwindcss": "^4",
     "tsx": "^4.7.0",
     "typescript": "^5"
@@ -194,6 +194,9 @@
   "overrides": {
     "zod": "^4.6.6",
     "@radix-ui/react-slot": "1.2.4",
-    "axios": "^1.20.0"
+    "axios": "^1.20.0",
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.1"
+    }
   }
 }
