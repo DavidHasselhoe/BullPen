@@ -222,5 +222,7 @@
   "plan_row_fund_portfolios_13f": "Carteras de fondos (13F)",
   "plan_value_latest_quarter": "Último trimestre",
   "plan_value_every_quarter_changes": "Cada trimestre + cambios",
-  "plan_row_politician_scorecards": "Fichas de políticos"
+  "plan_row_politician_scorecards": "Fichas de políticos",
+  "paywallBenefitFundChanges": "Lo que más de 15 inversores legendarios compraron y vendieron cada trimestre, más cada informe anterior",
+  "fundPreviewChanges": "Lo que {{fund}} cambió este trimestre"
 }

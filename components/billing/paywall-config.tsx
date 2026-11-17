@@ -105,7 +105,7 @@ export function getAiPaywallConfig(t: TFunction, context?: PaywallPreviewContext
     'Institutional Holdings': {
       benefits: [
         // The latest quarter's holdings are free since 2026-11-17; Pro is the changes and the history.
-        { icon: Landmark, text: 'What 15+ legendary investors bought and sold each quarter, plus every earlier filing' },
+        { icon: Landmark, text: t('paywallBenefitFundChanges') },
         { icon: ShieldAlert, text: t('paywallBenefitUnlimitedRiskAnalysis') },
         { icon: Zap, text: t('paywallBenefitDailyBrief') },
       ],

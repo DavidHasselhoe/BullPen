@@ -222,5 +222,7 @@
   "plan_row_fund_portfolios_13f": "基金持仓（13F）",
   "plan_value_latest_quarter": "最新季度",
   "plan_value_every_quarter_changes": "所有季度 + 变化",
-  "plan_row_politician_scorecards": "政客评分卡"
+  "plan_row_politician_scorecards": "政客评分卡",
+  "paywallBenefitFundChanges": "15 位以上传奇投资者每个季度的买入和卖出，以及以往每一份申报",
+  "fundPreviewChanges": "{{fund}} 本季度的变化"
 }

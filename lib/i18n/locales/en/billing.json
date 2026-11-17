@@ -222,5 +222,7 @@
   "plan_row_fund_portfolios_13f": "Fund portfolios (13F)",
   "plan_value_latest_quarter": "Latest quarter",
   "plan_value_every_quarter_changes": "Every quarter + changes",
-  "plan_row_politician_scorecards": "Politician scorecards"
+  "plan_row_politician_scorecards": "Politician scorecards",
+  "paywallBenefitFundChanges": "What 15+ legendary investors bought and sold each quarter, plus every earlier filing",
+  "fundPreviewChanges": "What {{fund}} changed this quarter"
 }

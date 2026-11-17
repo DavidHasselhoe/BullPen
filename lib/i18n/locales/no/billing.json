@@ -222,5 +222,7 @@
   "plan_row_fund_portfolios_13f": "Fondsporteføljer (13F)",
   "plan_value_latest_quarter": "Siste kvartal",
   "plan_value_every_quarter_changes": "Alle kvartaler + endringer",
-  "plan_row_politician_scorecards": "Politikerprofiler"
+  "plan_row_politician_scorecards": "Politikerprofiler",
+  "paywallBenefitFundChanges": "Hva 15+ legendariske investorer kjøpte og solgte hvert kvartal, pluss hver tidligere rapport",
+  "fundPreviewChanges": "Hva {{fund}} endret dette kvartalet"
 }

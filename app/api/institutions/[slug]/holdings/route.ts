@@ -39,7 +39,10 @@ async function handler(
     }
     if (pro) return addSecurityHeaders(NextResponse.json({ success: true, ...result.data }));
     if (quarter && quarter !== result.data.filing.periodOfReport) {
-      return addSecurityHeaders(NextResponse.json({ success: false, error: 'pro_required' }, { status: 403 }));
+      // A quarter the fund never filed is not a Pro upsell.
+      return addSecurityHeaders(result.data.availableQuarters.includes(quarter)
+        ? NextResponse.json({ success: false, error: 'pro_required' }, { status: 403 })
+        : NextResponse.json({ success: false, error: 'not_found' }, { status: 404 }));
     }
     return addSecurityHeaders(NextResponse.json({ success: true, ...freeLatestView(result.data) }));
   } catch (err) {

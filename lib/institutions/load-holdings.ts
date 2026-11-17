@@ -6,6 +6,7 @@
  * header for the dual gate).
  */
 
+import { cache } from 'react';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
 import { computeHoldingsDiff, type DiffableHolding, type HoldingsDiff } from '@/lib/institutions/compute-diff';
@@ -257,7 +258,12 @@ export type LoadHoldingsResult =
   | { ok: true; data: HoldingsResponse }
   | { ok: false; status: number; error: string };
 
-export async function loadFundHoldings(slug: string, requestedQuarter: string | null): Promise<LoadHoldingsResult> {
+/** Deduped per server render: the fund page's metadata, teaser and body all
+ *  read it, and on a cache miss they used to run three full loads at once.
+ *  Outside a render (API routes, crons) cache() is a plain call. */
+export const loadFundHoldings = cache(loadFundHoldingsUncached);
+
+async function loadFundHoldingsUncached(slug: string, requestedQuarter: string | null): Promise<LoadHoldingsResult> {
   const cacheKey = `${holdingsCachePrefix(slug)}${requestedQuarter ?? 'latest'}`;
   const cached = await getCached<HoldingsResponse>(cacheKey);
   if (cached) return { ok: true, data: cached };

@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 /**
  * Teaser behind the Institutional Holdings paywall.
  *
@@ -17,10 +19,11 @@ interface Props {
 const PLACEHOLDER_WIDTHS = ['w-2/3', 'w-1/2', 'w-1/3'];
 
 export function InstitutionalHoldingsPaywallPreview({ fundName, rows }: Props) {
+  const { t } = useTranslation('billing');
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
       {fundName && (
-        <p className="mb-3 text-left text-xs font-medium text-foreground">What {fundName} changed this quarter</p>
+        <p className="mb-3 text-left text-xs font-medium text-foreground">{t('fundPreviewChanges', { fund: fundName })}</p>
       )}
       {rows && rows.length > 0 ? (
         <div className="pointer-events-none space-y-2">
