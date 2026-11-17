@@ -484,7 +484,7 @@
   "subpageLoadError": "現在、{{name}}の情報を読み込めませんでした。通常は1分ほどで復旧します。",
   "subpageRetry": "もう一度試す",
   "subpageNotReported": "未発表",
-  "dividendsMetaTitle": "{{name}}（{{ticker}}）配当履歴と利回り",
+  "dividendsMetaTitle": "{{name}}（{{ticker}}）の配当：利回り・支払い・履歴",
   "dividendsMetaDescription": "{{name}}（{{ticker}}）のすべての配当支払い、年ごとの合計、現在の配当利回り。わかりやすく説明します。",
   "dividendsH1": "{{name}} 配当履歴",
   "dividendsNone": "{{name}} は現在配当を支払っていません。",
@@ -703,5 +703,11 @@
   "earningsRecapSource": "企業のプレスリリースをもとにAIが作成しました。",
   "earningsRecapReadRelease": "リリースを読む",
   "earningsRecapLocked": "Proならプレスリリースを読み、この決算を分かりやすい3つのポイントにまとめます。",
-  "earningsRecapUnlock": "Proで見る"
+  "earningsRecapUnlock": "Proで見る",
+  "dividendsMetaDescYield": "はい、{{name}}（{{ticker}}）は配当を支払っています。年間で約{{yield}}です。直近は1株あたり{{amount}}でした。{{since}}年以降のすべての支払いと年ごとの合計。",
+  "dividendsMetaDescNoYield": "はい、{{name}}（{{ticker}}）は配当を支払っています。直近は1株あたり{{amount}}でした。{{since}}年以降のすべての支払いと年ごとの合計。",
+  "dividendsQuestion": "{{name}}は配当を支払っていますか？",
+  "dividendsAnswerYes": "はい。",
+  "dividendsAnswerNo": "いいえ。",
+  "dividendsAnswerNotYet": "まだです。"
 }

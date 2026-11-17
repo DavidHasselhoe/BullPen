@@ -62,10 +62,26 @@ const FREQUENCY_KEY: Record<number, string> = {
 
 export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }): Promise<Metadata> {
   const ticker = (await params).ticker.toUpperCase();
-  const [{ name, items, failed }, t] = await Promise.all([load(ticker), getRequestLocale().then((l) => getServerT(l, `/stock/${ticker}`))]);
+  const locale = await getRequestLocale();
+  const [{ name, items, yieldPct, failed }, t] = await Promise.all([load(ticker), getServerT(locale, `/stock/${ticker}`)]);
+  // Half the non-name searches that reach BullPen are "<stock> dividend"
+  // questions (Search Console 2026-11-09: 509 of 1,000, 0 clicks). The
+  // snippet answers the question with this stock's own numbers.
+  const f = subpageFormat(locale);
+  const chrono = [...items].sort((a, b) => a.ex_dividend_date.localeCompare(b.ex_dividend_date));
+  const latest = chrono.at(-1);
+  const vars = latest && {
+    name,
+    ticker,
+    amount: f.perShare(latest.amount),
+    since: chrono[0].ex_dividend_date.slice(0, 4),
+    yield: yieldPct ? f.pct(yieldPct) : '',
+  };
   return {
     title: t('stock:dividendsMetaTitle', { name, ticker }),
-    description: t('stock:dividendsMetaDescription', { name, ticker }),
+    description: vars
+      ? t(yieldPct ? 'stock:dividendsMetaDescYield' : 'stock:dividendsMetaDescNoYield', vars)
+      : t('stock:dividendsMetaDescription', { name, ticker }),
     alternates: { canonical: `/stock/${ticker}/dividends` },
     // An empty page is not worth a search result.
     ...(items.length === 0 && !failed ? { robots: { index: false, follow: true } } : {}),
@@ -147,12 +163,16 @@ export default async function StockDividendsPage({ params, requireData = false }
         <SubpageLoadError name={name} href={`/stock/${ticker}/dividends`} t={t} />
       ) : !latest ? (
         <p className="text-base text-foreground">
+          <strong className="font-semibold">{t(noneYet ? 'stock:dividendsAnswerNotYet' : 'stock:dividendsAnswerNo')}</strong>{' '}
           {t(noneYet ? 'stock:dividendsNoneOnRecord' : 'stock:dividendsNone', { name })}{' '}
           <Link href="/tools/screener?divYieldMin=2.5" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">{t('stock:dividendsFindPayers')}</Link>
         </p>
       ) : (
         <>
-          <p className="max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
+          {/* The question as people type it, answered first. */}
+          <h2 className="text-lg font-semibold text-foreground">{t('stock:dividendsQuestion', { name })}</h2>
+          <p className="mt-2 max-w-[65ch] text-pretty text-base leading-relaxed text-foreground">
+            <strong className="font-semibold">{t('stock:dividendsAnswerYes')}</strong>{' '}
             {yieldPct
               ? t('stock:dividendsSummaryYield', { name, yield: f.pct(yieldPct) })
               : null}{' '}

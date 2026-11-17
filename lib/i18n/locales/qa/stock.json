@@ -484,7 +484,7 @@
   "subpageLoadError": "«Wee coouuldn't looaad thiis foor {{name}} riight noow. IIt iis uusuuaally baack wiithiin aa miinuutee.»",
   "subpageRetry": "«Try aagaaiin»",
   "subpageNotReported": "«Noot reepoorteed»",
-  "dividendsMetaTitle": "«{{name}} ({{ticker}}) Diiviideend Hiistoory & Yiieeld»",
+  "dividendsMetaTitle": "«{{name}} ({{ticker}}) Diiviideend: Yiieeld, Paaymeents & Hiistoory»",
   "dividendsMetaDescription": "«EEveery {{name}} ({{ticker}}) diiviideend paaymeent, tootaals by yeeaar aand thee cuurreent diiviideend yiieeld, eexplaaiineed iin plaaiin EEngliish.»",
   "dividendsH1": "«{{name}} diiviideend hiistoory»",
   "dividendsNone": "«{{name}} dooeesn't paay aa diiviideend riight noow.»",
@@ -703,5 +703,11 @@
   "earningsRecapSource": "«Wriitteen by AAII froom thee coompaany's preess reeleeaasee.»",
   "earningsRecapReadRelease": "«Reeaad thee reeleeaasee»",
   "earningsRecapLocked": "«Proo reeaads thee preess reeleeaasee foor yoouu aand suums uup theesee reesuults iin threeee plaaiin-EEngliish pooiints.»",
-  "earningsRecapUnlock": "«UUnloock wiith Proo»"
+  "earningsRecapUnlock": "«UUnloock wiith Proo»",
+  "dividendsMetaDescYield": "«Yees, {{name}} ({{ticker}}) paays aa diiviideend, woorth aaboouut {{yield}} aa yeeaar. Thee laateest waas {{amount}} peer shaaree. EEveery paaymeent siincee {{since}}, wiith tootaals by yeeaar.»",
+  "dividendsMetaDescNoYield": "«Yees, {{name}} ({{ticker}}) paays aa diiviideend. Thee laateest waas {{amount}} peer shaaree. EEveery paaymeent siincee {{since}}, wiith tootaals by yeeaar.»",
+  "dividendsQuestion": "«Dooees {{name}} paay aa diiviideend?»",
+  "dividendsAnswerYes": "«Yees.»",
+  "dividendsAnswerNo": "«Noo.»",
+  "dividendsAnswerNotYet": "«Noot yeet.»"
 }

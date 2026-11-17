@@ -473,7 +473,7 @@
   "subpageLoadError": "Nous n'avons pas pu charger ces informations pour {{name}} pour le moment. Elles reviennent généralement dans une minute.",
   "subpageRetry": "Réessayer",
   "subpageNotReported": "Non publié",
-  "dividendsMetaTitle": "Historique des dividendes et rendement de {{name}} ({{ticker}})",
+  "dividendsMetaTitle": "Dividende de {{name}} ({{ticker}}) : rendement, versements et historique",
   "dividendsMetaDescription": "Chaque versement de dividende de {{name}} ({{ticker}}), totaux par année et rendement actuel des dividendes, expliqués simplement.",
   "dividendsH1": "Historique des dividendes de {{name}}",
   "dividendsNone": "{{name}} ne verse pas de dividende actuellement.",
@@ -703,5 +703,11 @@
   "earningsRecapSource": "Rédigé par une IA à partir du communiqué de l’entreprise.",
   "earningsRecapReadRelease": "Lire le communiqué",
   "earningsRecapLocked": "Pro lit le communiqué pour vous et résume ces résultats en trois points en langage clair.",
-  "earningsRecapUnlock": "Débloquer avec Pro"
+  "earningsRecapUnlock": "Débloquer avec Pro",
+  "dividendsMetaDescYield": "Oui, {{name}} ({{ticker}}) verse un dividende, environ {{yield}} par an. Le dernier était de {{amount}} par action. Chaque versement depuis {{since}}, avec les totaux par année.",
+  "dividendsMetaDescNoYield": "Oui, {{name}} ({{ticker}}) verse un dividende. Le dernier était de {{amount}} par action. Chaque versement depuis {{since}}, avec les totaux par année.",
+  "dividendsQuestion": "{{name}} verse-t-il un dividende ?",
+  "dividendsAnswerYes": "Oui.",
+  "dividendsAnswerNo": "Non.",
+  "dividendsAnswerNotYet": "Pas encore."
 }

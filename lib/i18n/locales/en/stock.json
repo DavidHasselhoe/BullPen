@@ -484,7 +484,7 @@
   "subpageLoadError": "We couldn't load this for {{name}} right now. It is usually back within a minute.",
   "subpageRetry": "Try again",
   "subpageNotReported": "Not reported",
-  "dividendsMetaTitle": "{{name}} ({{ticker}}) Dividend History & Yield",
+  "dividendsMetaTitle": "{{name}} ({{ticker}}) Dividend: Yield, Payments & History",
   "dividendsMetaDescription": "Every {{name}} ({{ticker}}) dividend payment, totals by year and the current dividend yield, explained in plain English.",
   "dividendsH1": "{{name}} dividend history",
   "dividendsNone": "{{name}} doesn't pay a dividend right now.",
@@ -703,5 +703,11 @@
   "earningsRecapSource": "Written by AI from the company's press release.",
   "earningsRecapReadRelease": "Read the release",
   "earningsRecapLocked": "Pro reads the press release for you and sums up these results in three plain-English points.",
-  "earningsRecapUnlock": "Unlock with Pro"
+  "earningsRecapUnlock": "Unlock with Pro",
+  "dividendsMetaDescYield": "Yes, {{name}} ({{ticker}}) pays a dividend, worth about {{yield}} a year. The latest was {{amount}} per share. Every payment since {{since}}, with totals by year.",
+  "dividendsMetaDescNoYield": "Yes, {{name}} ({{ticker}}) pays a dividend. The latest was {{amount}} per share. Every payment since {{since}}, with totals by year.",
+  "dividendsQuestion": "Does {{name}} pay a dividend?",
+  "dividendsAnswerYes": "Yes.",
+  "dividendsAnswerNo": "No.",
+  "dividendsAnswerNotYet": "Not yet."
 }

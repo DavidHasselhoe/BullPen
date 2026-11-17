@@ -475,7 +475,7 @@
   "subpageLoadError": "No pudimos cargar esto para {{name}} en este momento. Normalmente vuelve en un minuto.",
   "subpageRetry": "Intentar de nuevo",
   "subpageNotReported": "No reportado",
-  "dividendsMetaTitle": "Historial de dividendos y rendimiento de {{name}} ({{ticker}})",
+  "dividendsMetaTitle": "Dividendo de {{name}} ({{ticker}}): rendimiento, pagos e historial",
   "dividendsMetaDescription": "Cada pago de dividendo de {{name}} ({{ticker}}), totales por año y el rendimiento de dividendo actual, explicado en lenguaje sencillo.",
   "dividendsH1": "Historial de dividendos de {{name}}",
   "dividendsNone": "{{name}} no paga dividendo en este momento.",
@@ -703,5 +703,11 @@
   "earningsRecapSource": "Redactado por IA a partir del comunicado de la empresa.",
   "earningsRecapReadRelease": "Leer el comunicado",
   "earningsRecapLocked": "Pro lee el comunicado por ti y resume estos resultados en tres puntos en lenguaje claro.",
-  "earningsRecapUnlock": "Desbloquear con Pro"
+  "earningsRecapUnlock": "Desbloquear con Pro",
+  "dividendsMetaDescYield": "Sí, {{name}} ({{ticker}}) paga dividendo, cerca de {{yield}} al año. El último fue de {{amount}} por acción. Cada pago desde {{since}}, con totales por año.",
+  "dividendsMetaDescNoYield": "Sí, {{name}} ({{ticker}}) paga dividendo. El último fue de {{amount}} por acción. Cada pago desde {{since}}, con totales por año.",
+  "dividendsQuestion": "¿{{name}} paga dividendo?",
+  "dividendsAnswerYes": "Sí.",
+  "dividendsAnswerNo": "No.",
+  "dividendsAnswerNotYet": "Todavía no."
 }

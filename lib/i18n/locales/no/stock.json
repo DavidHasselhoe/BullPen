@@ -474,7 +474,7 @@
   "subpageLoadError": "Vi kunne ikke laste dette for {{name}} akkurat nå. Det pleier å være tilbake innen ett minutt.",
   "subpageRetry": "Prøv igjen",
   "subpageNotReported": "Ikke rapportert",
-  "dividendsMetaTitle": "{{name}} ({{ticker}}) utbyttehistorikk og avkastning",
+  "dividendsMetaTitle": "{{name}} ({{ticker}}) utbytte: avkastning, utbetalinger og historikk",
   "dividendsMetaDescription": "Hver utbyttebetaling fra {{name}} ({{ticker}}), totaler per år og gjeldende utbytteavkastning, forklart på enkelt norsk.",
   "dividendsH1": "{{name}} utbyttehistorikk",
   "dividendsNone": "{{name}} betaler ikke utbytte akkurat nå.",
@@ -703,5 +703,11 @@
   "earningsRecapSource": "Skrevet av KI ut fra selskapets pressemelding.",
   "earningsRecapReadRelease": "Les pressemeldingen",
   "earningsRecapLocked": "Pro leser pressemeldingen for deg og oppsummerer resultatene i tre punkter på vanlig språk.",
-  "earningsRecapUnlock": "Lås opp med Pro"
+  "earningsRecapUnlock": "Lås opp med Pro",
+  "dividendsMetaDescYield": "Ja, {{name}} ({{ticker}}) betaler utbytte, rundt {{yield}} i året. Siste var {{amount}} per aksje. Hver utbetaling siden {{since}}, med totaler per år.",
+  "dividendsMetaDescNoYield": "Ja, {{name}} ({{ticker}}) betaler utbytte. Siste var {{amount}} per aksje. Hver utbetaling siden {{since}}, med totaler per år.",
+  "dividendsQuestion": "Betaler {{name}} utbytte?",
+  "dividendsAnswerYes": "Ja.",
+  "dividendsAnswerNo": "Nei.",
+  "dividendsAnswerNotYet": "Ikke ennå."
 }
