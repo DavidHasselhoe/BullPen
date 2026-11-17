@@ -13,7 +13,9 @@ import { getCompanyProfile } from '../lib/twelvedata/twelvedata-client';
 import { waitForCronCreditBudget } from '../lib/twelvedata/credit-budget';
 import { AI_PICK_MIN_MARKET_CAP } from '../lib/watchlist/ai-picks';
 
-const BATCH = 20; // 200 credits, under the 400 cron share
+// 5 = 50 credits. Batches of 20 (200) fit the cron share yet still tipped the account
+// past 610/min on top of unreserved live traffic (335 rate-limit failures on 11-17).
+const BATCH = 5;
 const limitArg = process.argv.indexOf('--limit');
 const LIMIT = limitArg > 0 ? Number(process.argv[limitArg + 1]) : Infinity;
 
@@ -58,6 +60,7 @@ async function main() {
       saved += good.length;
     }
     console.log(`${Math.min(i + BATCH, missing.length)}/${missing.length}  saved=${saved} empty=${empty} failed=${failed}`);
+    await new Promise((r) => setTimeout(r, 15_000)); // ~200 credits/min at most, leaving room for live traffic
   }
 }
 
