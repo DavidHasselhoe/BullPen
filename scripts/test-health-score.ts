@@ -43,6 +43,10 @@ assert.ok(cheap.valuation > pricey.valuation, 'valuation is still reported separ
 // Low beta is not a risk.
 assert.equal(cat(solid, 'Market Risk').score, 10, 'a calm, always-profitable stock gets full Market Risk');
 
+// No beta is no data, not the calmest stock: SNDK (beta ~2, listed 2025) scored 10/10 on profits alone.
+const noBeta = computeHealthScore(stats({ beta: null }), four(() => q()), [bs()], four(() => cf()));
+assert.equal(cat(noBeta, 'Market Risk').dataAvailable, false, 'missing beta leaves the pillar out');
+
 // One blank quarter is annualised, not a dropped metric (Amazon's latest quarter had no operating income).
 const gap = computeHealthScore(stats(), [q({ operating_income: null }), q(), q(), q()], [bs()], four(() => cf()));
 assert.equal(cat(gap, 'Financial Strength').score, cat(solid, 'Financial Strength').score, 'missing quarter annualised');

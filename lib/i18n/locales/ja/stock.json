@@ -85,7 +85,7 @@
   "healthMethodologyGrowth": "売上高の成長、EPS の成長",
   "healthMethodologyHeading": "このスコアはどのように計算されていますか？",
   "healthMethodologyIntro": "直近4四半期のレポートから、ビジネスがいかに健全かを評価しています。株価は考慮しないため、健全な企業でも割高な株式である可能性があります。",
-  "healthMethodologyMarketRisk": "ベータ（ボラティリティ）、四半期連続の黒字化",
+  "healthMethodologyMarketRisk": "高いほど値動きが穏やか：低いベータ（ボラティリティ）と四半期連続の黒字",
   "healthMethodologyPoints": "（{{count}} ポイント）",
   "healthMethodologyProfitability": "年間黒字、純利益率、総資産利益率",
   "healthNotAvailable": "利用不可",

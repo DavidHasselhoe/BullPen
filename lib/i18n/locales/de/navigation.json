@@ -135,7 +135,7 @@
   "notifHealthCatFinancialStrength": "Finanzkraft",
   "notifHealthCatCashFlow": "Cashflow",
   "notifHealthCatGrowth": "Wachstum",
-  "notifHealthCatMarketRisk": "Marktrisiko",
+  "notifHealthCatMarketRisk": "Stabilität",
   "notifHealthCatValuation": "Bewertung",
   "notifWeeklyPickTitle": "Bulls Wochenauswahl: ${{symbol}}",
   "notifDailyBriefTitle": "Dein Tagesbriefing ist bereit",

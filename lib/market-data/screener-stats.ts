@@ -457,7 +457,14 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       const score = row.health_score;
       if (score == null) {
         row.health_alert_score = baseline;
-      } else if (prior?.health_score_version !== HEALTH_SCORE_METHOD || baseline == null) {
+      } else if (
+        prior?.health_score_version !== HEALTH_SCORE_METHOD ||
+        baseline == null ||
+        // A pillar gaining or losing its data (a new listing's beta arriving,
+        // or the 2026-11-17 change that leaves Stability out without one)
+        // re-weights the total. Not news about the company either.
+        (prior.health_market_risk == null) !== (row.health_market_risk == null)
+      ) {
         row.health_alert_score = score;
       } else if (crossedGradeWithBuffer(baseline, score)) {
         gradeChanges.push({

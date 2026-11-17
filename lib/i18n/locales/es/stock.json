@@ -85,7 +85,7 @@
   "healthMethodologyGrowth": "Crecimiento de ingresos, crecimiento de EPS",
   "healthMethodologyHeading": "¿Cómo se calcula esta puntuación?",
   "healthMethodologyIntro": "Calificamos qué tan sólido es el negocio según los últimos cuatro reportes trimestrales. El precio de la acción se excluye, así que una empresa saludable puede seguir siendo una acción cara.",
-  "healthMethodologyMarketRisk": "Beta (volatilidad), trimestre rentable tras trimestre",
+  "healthMethodologyMarketRisk": "Más alto es más estable: beta (volatilidad) baja y rentable trimestre tras trimestre",
   "healthMethodologyProfitability": "Rentable durante el año, margen neto, retorno sobre activos",
   "healthNotAvailable": "N/D",
   "healthOutOf100": "de 100",

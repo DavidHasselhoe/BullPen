@@ -393,9 +393,9 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     plainLabel: 'How Fast It\'s Growing',
     description: 'How quickly sales and earnings are expanding year over year. Faster growth can justify a higher price.',
   },
-  'Market Risk': {
-    plainLabel: 'How Bumpy the Ride Is',
-    description: 'How bumpy owning it tends to be: whether the stock swings much more than the market (beta), and whether profits hold up quarter after quarter.',
+  'Stability': {
+    plainLabel: 'How Smooth the Ride Is',
+    description: 'Higher means calmer: the stock swings no more than the market (beta) and stays profitable quarter after quarter. A low score means a bumpy share price, even when the finances are sound.',
   },
   'Current Ratio': {
     plainLabel: 'Can It Pay Its Bills?',
@@ -570,7 +570,7 @@ export const GLOSSARY_CATEGORIES: { name: string; terms: string[] }[] = [
   { name: 'Cash Flow', terms: ['Operating Cash Flow', 'Capital Expenditures', 'Free Cash Flow', 'FCF', 'D&A', 'Investing Activities', 'Financing Activities', 'Dividends Paid'] },
   { name: 'Technical Indicators', terms: ['SMA 50', 'SMA 200', 'EMA 20', 'BB', 'RSI', 'MACD'] },
   { name: 'Portfolio & Holdings', terms: ['Total Value', 'Cost Basis', 'Market Value', 'Unrealized P/L', 'Total P/L', 'Today P/L', 'Day Change', 'Avg Price', 'Allocation', 'Earnings', 'Thesis'] },
-  { name: 'Health Score', terms: ['Health', 'Profitability', 'Financial Strength', 'Cash Flow', 'Growth', 'Market Risk', 'Current Ratio', 'Debt-to-Equity'] },
+  { name: 'Health Score', terms: ['Health', 'Profitability', 'Financial Strength', 'Cash Flow', 'Growth', 'Stability', 'Current Ratio', 'Debt-to-Equity'] },
   { name: 'Price Panel', terms: ['Open', 'High', 'Low', 'Prev Close'] },
   { name: 'Revenue Flow', terms: ['Cost of Revenue', 'Other OpEx', 'Tax & Other', 'Other Income', 'Total Costs'] },
   { name: 'Macro & Economy', terms: ['Federal Reserve', 'Interest Rate', 'Jobs Report', 'Inflation', 'CPI', 'Unemployment Rate', 'Oil Price', 'Discount Rate', 'Growth Stock', 'Value Stock', 'Yield Curve', 'Yield Curve Inversion', 'Credit Spread', 'Sector Rotation', 'Recession'] },

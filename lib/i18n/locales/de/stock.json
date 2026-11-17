@@ -85,7 +85,7 @@
   "healthMethodologyGrowth": "Umsatzwachstum, EPS-Wachstum",
   "healthMethodologyHeading": "Wie wird diese Bewertung berechnet?",
   "healthMethodologyIntro": "Wir bewerten, wie solide das Geschäft aus den letzten vier Quartalsberichten ist. Der Aktienkurs wird nicht berücksichtigt, daher kann ein gesundes Unternehmen immer noch eine teure Aktie sein.",
-  "healthMethodologyMarketRisk": "Beta (Volatilität), profitables Quartal nach Quartal",
+  "healthMethodologyMarketRisk": "Höher ist ruhiger: niedriges Beta (Volatilität) und profitabel Quartal für Quartal",
   "healthMethodologyPoints": "({{count}} Pkt)",
   "healthMethodologyProfitability": "Das ganze Jahr über profitabel, Nettomarge, Rendite auf Vermögenswerte",
   "healthNotAvailable": "N/V",

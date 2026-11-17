@@ -15,7 +15,7 @@ import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { HealthRing } from '@/components/finance/HealthRing';
 import { TermTooltip } from '@/components/ui/TermTooltip';
 import type { HealthScoreHistoryPoint } from '@/components/stock/HealthScoreHistoryModal';
-import type { HealthScore, CategoryScore } from '@/lib/finance/health-score';
+import { healthCategoryLabel, type HealthScore, type CategoryScore } from '@/lib/finance/health-score';
 
 // recharts only downloads once someone opens the history.
 const HealthScoreHistoryModal = dynamic(
@@ -61,7 +61,7 @@ function getMethodology(t: TFunction) {
     { name: 'Financial Strength', max: 25, desc: t('healthMethodologyFinancialStrength') },
     { name: 'Cash Flow', max: 20, desc: t('healthMethodologyCashFlow') },
     { name: 'Growth', max: 15, desc: t('healthMethodologyGrowth') },
-    { name: 'Market Risk', max: 10, desc: t('healthMethodologyMarketRisk') },
+    { name: 'Stability', max: 10, desc: t('healthMethodologyMarketRisk') },
   ];
 }
 
@@ -142,7 +142,7 @@ export function CategoryBar({ cat }: { cat: CategoryScore }) {
         <span className="flex items-center gap-1.5 font-medium text-foreground">
           {/* Colour-key the label to its arc band so ring ↔ list is decodable */}
           <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', unavailable ? 'bg-muted-foreground/30' : scoreBarColor(ratio))} />
-          <TermTooltip term={cat.name} />
+          <TermTooltip term={healthCategoryLabel(cat.name)} />
         </span>
         {unavailable ? (
           <span className="text-[11px] font-medium text-muted-foreground">{t('healthNotAvailable')}</span>
@@ -173,7 +173,7 @@ interface HealthScoreCardProps {
 
 function buildExplainQuery(ticker: string, hs: HealthScore): string {
   const catLines = hs.categories
-    .map((c) => `  ${c.name}: ${c.score}/${c.max}`)
+    .map((c) => `  ${healthCategoryLabel(c.name)}: ${c.score}/${c.max}`)
     .join('\n');
 
   // [display:...] is stripped in BullpenChat before rendering — the full prompt still reaches the AI
@@ -202,7 +202,7 @@ Weaknesses (score ≤40% of max only):
 - [Category] — [score/max]: one sharp sentence on why
 
 Risk Profile:
-- Market Risk interpretation (always include)
+- Stability interpretation (always include). Higher Stability means a calmer stock: low beta and profits every quarter. It is about how bumpy the share price is, separate from how sound the finances are.
 
 **How to Interpret This**
 2–4 bullets. Focus on interactions between metrics. Highlight tensions, not definitions.
@@ -408,7 +408,7 @@ export function HealthScoreCard({ ticker, onSignalsReady }: HealthScoreCardProps
                     <div className="flex items-start justify-between gap-2">
                       <span className="flex min-w-0 items-start gap-1.5 text-xs font-medium leading-snug text-foreground">
                         <span className={cn('mt-1 h-1.5 w-1.5 shrink-0 rounded-full', unavailable ? 'bg-muted-foreground/30' : barColor)} />
-                        <TermTooltip term={cat.name} />
+                        <TermTooltip term={healthCategoryLabel(cat.name)} />
                       </span>
                       {unavailable ? (
                         <span className="text-[11px] font-medium text-muted-foreground shrink-0">{t('healthNotAvailable')}</span>

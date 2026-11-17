@@ -85,7 +85,7 @@
   "healthMethodologyGrowth": "Inntektsvekst, EPS-vekst",
   "healthMethodologyHeading": "Hvordan blir denne scoren beregnet?",
   "healthMethodologyIntro": "Vi vurderer hvor solid virksomheten er basert på de siste fire kvartalsrapportene. Aksjekursen er ikke inkludert, så et sunt selskap kan fortsatt være en dyr aksje.",
-  "healthMethodologyMarketRisk": "Beta (volatilitet), lønnsomt kvartal etter kvartal",
+  "healthMethodologyMarketRisk": "Høyere er roligere: lav beta (volatilitet) og lønnsomt kvartal etter kvartal",
   "healthMethodologyPoints": "({{count}} poeng)",
   "healthMethodologyProfitability": "Lønnsomt over året, nettomarginal, avkastning på eiendeler",
   "healthNotAvailable": "Ikke tilgjengelig",

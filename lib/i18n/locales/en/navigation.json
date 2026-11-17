@@ -141,7 +141,7 @@
   "notifHealthCatFinancialStrength": "Financial strength",
   "notifHealthCatCashFlow": "Cash flow",
   "notifHealthCatGrowth": "Growth",
-  "notifHealthCatMarketRisk": "Market risk",
+  "notifHealthCatMarketRisk": "Stability",
   "notifHealthCatValuation": "Valuation",
   "notifWeeklyPickTitle": "Bull's Weekly Pick: ${{symbol}}",
   "notifDailyBriefTitle": "Your Daily Brief is ready",

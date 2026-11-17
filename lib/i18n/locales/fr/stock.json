@@ -84,7 +84,7 @@
   "healthMethodologyGrowth": "Croissance du chiffre d'affaires, croissance de l'EPS",
   "healthMethodologyHeading": "Comment cette note est-elle calculée ?",
   "healthMethodologyIntro": "Nous évaluons la solidité de l'entreprise selon les quatre derniers rapports trimestriels. Le cours de l'action est laissé de côté, donc une entreprise saine peut toujours être une action chère.",
-  "healthMethodologyMarketRisk": "Bêta (volatilité), rentable trimestre après trimestre",
+  "healthMethodologyMarketRisk": "Plus c'est haut, plus c'est calme : bêta (volatilité) faible et rentable trimestre après trimestre",
   "healthMethodologyProfitability": "Rentable sur l'année, marge nette, retour sur actifs",
   "healthNotAvailable": "S/O",
   "healthOutOf100": "sur 100",

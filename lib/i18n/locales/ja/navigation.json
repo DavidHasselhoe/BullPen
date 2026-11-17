@@ -141,7 +141,7 @@
   "notifHealthCatFinancialStrength": "財務の健全性",
   "notifHealthCatCashFlow": "キャッシュフロー",
   "notifHealthCatGrowth": "成長性",
-  "notifHealthCatMarketRisk": "市場リスク",
+  "notifHealthCatMarketRisk": "安定性",
   "notifHealthCatValuation": "バリュエーション",
   "notifWeeklyPickTitle": "Bullの今週のピック：${{symbol}}",
   "notifDailyBriefTitle": "デイリーブリーフの準備ができました",

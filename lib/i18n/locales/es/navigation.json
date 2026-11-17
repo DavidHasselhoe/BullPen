@@ -141,7 +141,7 @@
   "notifHealthCatFinancialStrength": "Solidez financiera",
   "notifHealthCatCashFlow": "Flujo de caja",
   "notifHealthCatGrowth": "Crecimiento",
-  "notifHealthCatMarketRisk": "Riesgo de mercado",
+  "notifHealthCatMarketRisk": "Estabilidad",
   "notifHealthCatValuation": "Valoración",
   "notifWeeklyPickTitle": "La selección semanal de Bull: ${{symbol}}",
   "notifDailyBriefTitle": "Tu resumen diario está listo",

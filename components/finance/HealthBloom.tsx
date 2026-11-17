@@ -3,7 +3,7 @@
 import { forwardRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import type { CategoryScore } from '@/lib/finance/health-score';
+import { healthCategoryLabel, type CategoryScore } from '@/lib/finance/health-score';
 import { bandColor, gradeColor, TRACK, type HealthGrade } from './health-colors';
 
 /**
@@ -80,7 +80,7 @@ export function HealthBloom({
             className={interactive ? 'cursor-pointer' : undefined}
             role={interactive ? 'button' : undefined}
             tabIndex={interactive ? 0 : undefined}
-            aria-label={interactive ? `${cat.name}: ${cat.score} of ${cat.max}` : undefined}
+            aria-label={interactive ? `${healthCategoryLabel(cat.name)}: ${cat.score} of ${cat.max}` : undefined}
             onMouseEnter={onCategoryHover ? () => onCategoryHover(cat.name) : undefined}
             onMouseLeave={onCategoryHover ? () => onCategoryHover(null) : undefined}
             onClick={onCategoryClick ? () => onCategoryClick(cat.name) : undefined}
@@ -197,7 +197,7 @@ export const HealthBloomLegendRow = forwardRef<HTMLButtonElement, HealthBloomLeg
         <div className="mb-1 flex items-center justify-between text-xs">
           <span className="flex items-center gap-1.5 text-foreground/85">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-            {cat.name}
+            {healthCategoryLabel(cat.name)}
           </span>
           <span className="tabular-nums font-semibold text-muted-foreground">
             {cat.score}

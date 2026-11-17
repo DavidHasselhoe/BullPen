@@ -6,7 +6,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import { ArrowUpRight, ArrowDownRight, Minus, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import type { CategoryScore } from '@/lib/finance/health-score';
+import { healthCategoryLabel, type CategoryScore } from '@/lib/finance/health-score';
 
 export interface HealthScoreHistoryPoint {
   fiscalDate: string;
@@ -34,7 +34,7 @@ function CategoryDiffRow({ current, previous }: { current: CategoryScore; previo
   const delta = previous ? current.score - previous.score : null;
   return (
     <div className="flex items-center justify-between gap-2 py-1">
-      <span className="text-muted-foreground">{current.name}</span>
+      <span className="text-muted-foreground">{healthCategoryLabel(current.name)}</span>
       <div className="flex items-center gap-2 tabular-nums">
         <span className="text-foreground">
           {current.score}<span className="text-muted-foreground">/{current.max}</span>

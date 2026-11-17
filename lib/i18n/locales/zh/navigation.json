@@ -141,7 +141,7 @@
   "notifHealthCatFinancialStrength": "财务实力",
   "notifHealthCatCashFlow": "现金流",
   "notifHealthCatGrowth": "成长性",
-  "notifHealthCatMarketRisk": "市场风险",
+  "notifHealthCatMarketRisk": "稳定性",
   "notifHealthCatValuation": "估值",
   "notifWeeklyPickTitle": "Bull 本周精选：${{symbol}}",
   "notifDailyBriefTitle": "你的每日简报已就绪",

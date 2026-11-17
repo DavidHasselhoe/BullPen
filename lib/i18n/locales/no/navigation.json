@@ -141,7 +141,7 @@
   "notifHealthCatFinancialStrength": "Finansiell styrke",
   "notifHealthCatCashFlow": "Kontantstrøm",
   "notifHealthCatGrowth": "Vekst",
-  "notifHealthCatMarketRisk": "Markedsrisiko",
+  "notifHealthCatMarketRisk": "Stabilitet",
   "notifHealthCatValuation": "Verdsettelse",
   "notifWeeklyPickTitle": "Bulls ukentlige tips: ${{symbol}}",
   "notifDailyBriefTitle": "Dagens oppsummering er klar",

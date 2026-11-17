@@ -11,7 +11,8 @@
  *   Cash Flow           20  operating and free cash flow, cash backing earnings,
  *                           free cash flow margin
  *   Growth              15  revenue and EPS growth
- *   Market Risk         10  high volatility, earnings consistency
+ *   Market Risk         10  high volatility, earnings consistency (shown as
+ *                           "Stability"; higher = calmer; no beta = no data)
  *
  * Why method 1 was replaced (measured across 2,801 stocks, 2026-09-30):
  * - 53% of stocks graded F; Visa, Walmart, P&G and Coca-Cola scored C/D while
@@ -51,6 +52,16 @@ export const HEALTH_CATEGORIES = [
   { name: 'Growth', max: 15, column: 'health_growth' },
   { name: 'Market Risk', max: 10, column: 'health_market_risk' },
 ] as const;
+
+/**
+ * What a pillar is called on screen. "Market Risk 10/10" read as maximum
+ * risk when it means the calmest, so users see "Stability" (as the screener
+ * and Home already did). The stored name stays: history snapshots and
+ * notifications match pillars by it.
+ */
+export function healthCategoryLabel(name: string): string {
+  return name === 'Market Risk' ? 'Stability' : name;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -388,12 +399,14 @@ function scoreGrowth(stats: CompanyStatistics, signals: Signals): Tally {
 
 function scoreMarketRisk(stats: CompanyStatistics, f: Fundamentals, signals: Signals): Tally {
   const t = new Tally();
+  // No beta (recent listings and spin-offs, e.g. SNDK) leaves the pillar
+  // out. Scoring it on earnings consistency alone scaled 4/4 up to 10/10 and
+  // showed a beta-2 memory stock as the calmest on the market.
+  if (stats.beta == null) return t;
   // Only high volatility costs points; a calm, low-beta stock is not a risk.
-  if (stats.beta != null) {
-    const pts = stats.beta <= 1 ? 6 : stats.beta <= 1.3 ? 5 : stats.beta <= 1.6 ? 3 : stats.beta <= 2 ? 1 : 0;
-    t.add(6, pts);
-    signals.beta = pts >= 5 ? 'positive' : pts >= 3 ? 'neutral' : 'negative';
-  }
+  const pts = stats.beta <= 1 ? 6 : stats.beta <= 1.3 ? 5 : stats.beta <= 1.6 ? 3 : stats.beta <= 2 ? 1 : 0;
+  t.add(6, pts);
+  signals.beta = pts >= 5 ? 'positive' : pts >= 3 ? 'neutral' : 'negative';
   // Earnings consistency (4): every reported quarter of the last four in profit, or all but one.
   if (f.profitableQuarters != null) t.add(4, f.profitableQuarters === 1 ? 4 : f.profitableQuarters >= 0.66 ? 2 : 0);
   return t;

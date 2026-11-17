@@ -89,6 +89,8 @@ const nextConfig: NextConfig = {
     return [
       { source: '/welcome', destination: '/', permanent: true },
       { source: '/leaderboard', destination: '/academy/leaderboard', permanent: true },
+      // The Health Score pillar was renamed Market Risk -> Stability (2026-11-17).
+      { source: '/glossary/market-risk', destination: '/glossary/stability', permanent: true },
     ];
   },
   // Security headers (OWASP recommended). Here rather than in middleware:

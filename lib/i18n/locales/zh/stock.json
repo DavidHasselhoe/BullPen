@@ -85,7 +85,7 @@
   "healthMethodologyGrowth": "收入增长、EPS增长",
   "healthMethodologyHeading": "此分数如何计算？",
   "healthMethodologyIntro": "我们根据最近四份季度报告评估企业的健全程度。股价不计在内，所以一家健康的公司仍然可能是一只昂贵的股票。",
-  "healthMethodologyMarketRisk": "Beta（波动率）、季度利润稳定",
+  "healthMethodologyMarketRisk": "越高越平稳：Beta（波动率）低，且每个季度都盈利",
   "healthMethodologyPoints": "（{{count}} 分）",
   "healthMethodologyProfitability": "全年盈利、净利率、资产回报率",
   "healthNotAvailable": "不适用",

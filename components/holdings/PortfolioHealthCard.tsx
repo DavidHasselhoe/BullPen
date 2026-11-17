@@ -10,7 +10,7 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { HealthBloom, HealthBloomLegendRow } from '@/components/finance/HealthBloom';
 import { getGlossaryEntry } from '@/lib/finance/glossary';
 import { computePortfolioHealth, getCategoryContributors } from '@/lib/finance/portfolio-health';
-import { GRADE_CUTOFFS, HEALTH_CATEGORIES } from '@/lib/finance/health-score';
+import { GRADE_CUTOFFS, HEALTH_CATEGORIES, healthCategoryLabel } from '@/lib/finance/health-score';
 import type { TickerHealth } from '@/app/api/holdings/health-summary/route';
 import type { HoldingWithPrice } from './types';
 
@@ -121,9 +121,9 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
           <div className="space-y-2">
             {CATEGORY_ORDER.map((name) => (
               <div key={name} className="flex items-start gap-2">
-                <span className="w-28 shrink-0 text-xs font-medium text-foreground">{name}</span>
+                <span className="w-28 shrink-0 text-xs font-medium text-foreground">{healthCategoryLabel(name)}</span>
                 <span className="text-xs text-muted-foreground leading-relaxed">
-                  {getGlossaryEntry(name)?.description}
+                  {getGlossaryEntry(healthCategoryLabel(name))?.description}
                 </span>
               </div>
             ))}
@@ -189,7 +189,7 @@ export function PortfolioHealthCard({ holdings, isLoading }: PortfolioHealthCard
                 return (
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-foreground">{cat.name}</span>
+                      <span className="text-xs font-semibold text-foreground">{healthCategoryLabel(cat.name)}</span>
                       <span className="text-xs font-semibold tabular-nums text-foreground">
                         {cat.score}<span className="text-muted-foreground">/{cat.max}</span>
                       </span>

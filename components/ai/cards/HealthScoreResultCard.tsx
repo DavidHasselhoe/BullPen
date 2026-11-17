@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { CardShell } from './CardPrimitives';
+import { healthCategoryLabel } from '@/lib/finance/health-score';
 
 export interface HealthScoreOutput {
   ticker: string;
@@ -40,7 +41,7 @@ export function HealthScoreResultCard({ output }: { output: HealthScoreOutput })
           return (
             <div key={c.name} className="space-y-0.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-muted-foreground">{c.name}</span>
+                <span className="text-muted-foreground">{healthCategoryLabel(c.name)}</span>
                 <span className="tabular-nums text-muted-foreground">{unavailable ? t('healthScoreNotAvailable') : `${c.score}/${c.max}`}</span>
               </div>
               {!unavailable && (

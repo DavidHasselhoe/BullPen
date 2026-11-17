@@ -85,7 +85,7 @@
   "healthMethodologyGrowth": "Revenue growth, EPS growth",
   "healthMethodologyHeading": "How is this score calculated?",
   "healthMethodologyIntro": "We grade how sound the business is from the last four quarterly reports. The share price is left out, so a healthy company can still be an expensive stock.",
-  "healthMethodologyMarketRisk": "Beta (volatility), profitable quarter after quarter",
+  "healthMethodologyMarketRisk": "Higher is calmer: low beta (volatility) and profitable quarter after quarter",
   "healthMethodologyPoints": "({{count}} pts)",
   "healthMethodologyProfitability": "Profitable over the year, net margin, return on assets",
   "healthNotAvailable": "N/A",

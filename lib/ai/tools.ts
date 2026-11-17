@@ -1953,7 +1953,8 @@ const getHealthScore = tool({
   description:
     'Fetch BullPen\'s computed Financial Health score (0-100, grade A-F) for a stock — the same score ' +
     'shown on the stock page\'s Financial Health card, broken into Profitability, Financial Strength, ' +
-    'Cash Flow, Growth, and Market Risk. It measures business quality and safety, not price: a healthy company ' +
+    'Cash Flow, Growth, and Market Risk, which users see as "Stability": call it that, and higher means a calmer ' +
+    'stock (low beta, steady profits), not more risk. It measures business quality and safety, not price: a healthy company ' +
     'can still be expensive. Use this whenever the user asks about a company\'s "financial health", ' +
     '"financial strength", overall quality/fundamentals, or asks for a health score/grade. ' +
     'Works for any ticker globally. Costs ~250 API credits on a cold cache (free once cached for the day). ' +
@@ -2006,7 +2007,8 @@ const getHealthScoreHistory = tool({
     'on assets; Financial Strength (25) interest coverage, net debt over EBITDA, current ratio (banks: equity over ' +
     'assets); Cash Flow (20) positive operating and free cash flow, cash covering earnings, free cash flow margin, ' +
     'all over the last four quarters; Growth (15) the latest quarter\'s revenue (9 pts) and EPS (6 pts) growth ' +
-    'against the same quarter a year earlier; Market Risk (10) beta and profitable quarters. Snapshots scored by ' +
+    'against the same quarter a year earlier; Market Risk (10, shown to users as "Stability", higher = calmer) beta ' +
+    'and profitable quarters, no data without a beta. Snapshots scored by ' +
     'an older method have comparable=false: a move across them is the method changing, not the company, so do ' +
     'not explain it as news.',
   inputSchema: jsonSchema<{ ticker: string }>({
