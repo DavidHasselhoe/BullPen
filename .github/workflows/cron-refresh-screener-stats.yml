@@ -9,10 +9,11 @@ name: Cron — Refresh Screener Financial Data
 # reservation against the shared credit-budget guard, lib/twelvedata/credit-
 # budget.ts, leaves real headroom for organic user traffic in the same
 # minute instead of nearly exhausting the 610 cap on its own).
-# The loop below is `seq 0 121`: 122 batches × 65s ≈ 132 min. The sleep is
+# The loop below is `seq 0 179`: 180 batches × 65s ≈ 195 min (seam moved from
+# 121 on 2026-11-17 so the extended job has room for retries). The sleep is
 # what's left of 65s after the request, so request latency (~27s) doesn't
 # add on top. A previous 70-min timeout killed the job (conclusion
-# "cancelled") mid-run every night. 160 min leaves headroom for slow
+# "cancelled") mid-run every night. 250 min leaves headroom for retries and slow
 # individual requests.
 on:
   schedule:
@@ -22,7 +23,7 @@ on:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 160
+    timeout-minutes: 250
     steps:
       - name: Chain through screener refresh batches (first half of universe)
         env:
@@ -34,13 +35,29 @@ jobs:
             exit 1
           fi
           echo "Starting screener refresh…"
-          for batch in $(seq 0 121); do
+          SKIPPED=0; MISSES=0
+          for batch in $(seq 0 179); do
             echo "→ Batch $batch"
             START=$SECONDS
-            RESPONSE=$(curl -fsS -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?batch=${batch}") || {
-              echo "Batch $batch failed (rate limit or network error) — stopping"
-              break
-            }
+            # Retry twice, then skip; stop after 3 skipped batches in a row.
+            # (One failure used to end the run as "success".)
+            RESPONSE=""
+            for attempt in 1 2 3; do
+              RESPONSE=$(curl -fsS --max-time 150 -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?batch=${batch}") && break
+              RESPONSE=""
+              echo "Batch $batch attempt $attempt failed"
+              if [ $attempt -lt 3 ]; then sleep 65; fi
+            done
+            if [ -z "$RESPONSE" ]; then
+              SKIPPED=$((SKIPPED + 1)); MISSES=$((MISSES + 1))
+              echo "::warning::Batch $batch skipped after 3 attempts"
+              if [ $MISSES -ge 3 ]; then
+                echo "::error::3 batches in a row failed, stopping at batch $batch"
+                exit 1
+              fi
+              continue
+            fi
+            MISSES=0
             echo "$RESPONSE"
             DONE=$(echo "$RESPONSE" | jq -r '.done // false')
             if [ "$DONE" = "true" ]; then
@@ -50,3 +67,7 @@ jobs:
             WAIT=$((65 - (SECONDS - START)))
             sleep $((WAIT > 0 ? WAIT : 0))
           done
+          if [ $SKIPPED -gt 0 ]; then
+            echo "::error::$SKIPPED batch(es) skipped after retries"
+            exit 1
+          fi

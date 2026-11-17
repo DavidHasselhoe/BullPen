@@ -2,9 +2,9 @@ name: Cron — Refresh Screener (Extended)
 
 # Daily at 03:00 UTC. Complements the 22:00 "Refresh Screener Financial Data"
 # job, which covers roughly the first half (A-Z) of the active universe (batches
-# 0–121, ~610 names at the current 5-symbol batch size). This job:
-#   1. Refreshes the rest of the active universe, starting at batch 122.
-#      The upper bound (400) is a generous ceiling, not the real stop
+# 0–179, ~900 names at the current 5-symbol batch size). This job:
+#   1. Refreshes the rest of the active universe, starting at batch 180.
+#      The upper bound (700) is a generous ceiling, not the real stop
 #      condition — the loop breaks as soon as the API reports `done: true`
 #      (batch index past the end of the active universe). A previous version
 #      hardcoded the ceiling to the universe size at the time (batch 115 at a
@@ -12,7 +12,8 @@ name: Cron — Refresh Screener (Extended)
 #      grew past that seam (1219 tickers as of 2026-08) and the tail of the
 #      universe stopped getting refreshed with nothing announcing it. Letting
 #      `done` drive termination means this can't go stale again the same way
-#      — the 400 ceiling just needs to stay ahead of real universe growth.
+#      — the ceiling must stay ahead of growth: 400 fell behind on 2026-11-17
+#      (2,011 tickers = 403 batches), so the last ~10 names were never fetched.
 # The tier-0 discovery sweep used to be a second step here. It has its own
 # workflow now (cron-refresh-screener-discovery.yml) at 01:00 UTC,
 # so its longer run can't push this job past its timeout.
@@ -31,12 +32,13 @@ jobs:
     # request). Sleeping a flat 65s after each ~27s request made a batch ~92s,
     # and the run timed out at both 240 and 350 min (GitHub reports a timeout
     # as "cancelled"), leaving the alphabetical tail unrefreshed.
-    # 1,841 tier-1 tickers on 2026-11-11 = ~247 batches here = ~268 min.
-    # 350 is just under GitHub's 360-min cap, room for ~75 more batches.
-    # Past that, move the 122 seam up into the 22:00 job instead.
+    # 2,011 tier-1 tickers on 2026-11-17 = 403 batches. The seam moved from
+    # 122 to 180 that day (the 22:00 job took the rest): 223 batches here =
+    # ~242 min, leaving room for retries under the 350-min timeout. The loop
+    # end is just a ceiling; the route's "done" ends it.
     timeout-minutes: 350
     steps:
-      - name: Refresh remaining active universe (batch 122 onward, until done)
+      - name: Refresh remaining active universe (batch 180 onward, until done)
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://bullpeninvest.com' }}
@@ -46,13 +48,30 @@ jobs:
             exit 1
           fi
           echo "Extended active refresh…"
-          for batch in $(seq 122 400); do
+          # One failed request used to end the run as "success": a connection
+          # reset on batch 123 (11-16) left ~1,400 stocks unrefreshed. Retry
+          # twice, then skip the batch; stop only after 3 skipped in a row.
+          SKIPPED=0; MISSES=0
+          for batch in $(seq 180 700); do
             echo "→ Active batch $batch"
             START=$SECONDS
-            RESPONSE=$(curl -fsS -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?batch=${batch}") || {
-              echo "Batch $batch failed (rate limit or network) — stopping active phase"
-              break
-            }
+            RESPONSE=""
+            for attempt in 1 2 3; do
+              RESPONSE=$(curl -fsS --max-time 150 -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/screener/refresh?batch=${batch}") && break
+              RESPONSE=""
+              echo "Batch $batch attempt $attempt failed"
+              if [ $attempt -lt 3 ]; then sleep 65; fi
+            done
+            if [ -z "$RESPONSE" ]; then
+              SKIPPED=$((SKIPPED + 1)); MISSES=$((MISSES + 1))
+              echo "::warning::Batch $batch skipped after 3 attempts"
+              if [ $MISSES -ge 3 ]; then
+                echo "::error::3 batches in a row failed, stopping at batch $batch"
+                exit 1
+              fi
+              continue
+            fi
+            MISSES=0
             echo "$RESPONSE"
             DONE=$(echo "$RESPONSE" | jq -r '.done // false')
             if [ "$DONE" = "true" ]; then
@@ -62,3 +81,7 @@ jobs:
             WAIT=$((65 - (SECONDS - START)))
             sleep $((WAIT > 0 ? WAIT : 0))
           done
+          if [ $SKIPPED -gt 0 ]; then
+            echo "::error::$SKIPPED batch(es) skipped after retries"
+            exit 1
+          fi
