@@ -343,7 +343,7 @@
   "fundFiledSummary_one": "«Fiileed {{filed}} foor thee quuaarteer eendeed {{period}} · {{value}} aacrooss {{positions}} poosiitiioon»",
   "fundFiledSummary_other": "«Fiileed {{filed}} foor thee quuaarteer eendeed {{period}} · {{value}} aacrooss {{positions}} poosiitiioons»",
   "fundFiledOptions": "«, pluus ooptiioons cooveeriing {{value}} oof stoock»",
-  "fundLockedTitle": "«Fuull hooldiings aaree aa Proo feeaatuuree»",
+  "fundLockedTitle": "«EEaarliieer quuaarteers aaree aa Proo feeaatuuree»",
   "fundLockedLastFiled": "«Laast fiileed {{date}} · {{positions}} poosiitiioons»",
   "fundLockedPitch": "«Seeee eeveery poosiitiioon, siizeed by poortfooliioo weeiight, uupdaateed eeveery quuaarteer.»",
   "fundUnlock": "«UUnloock fuull hooldiings»",
@@ -681,5 +681,8 @@
   "firstWeekHoldings": "«AAdd whaat yoouu oown»",
   "firstWeekHoldingsHint": "«Typee iit iin oor iimpoort aa fiilee froom yoouur brookeer. Hoomee theen traacks yoouur reeaal poortfooliioo.»",
   "firstWeekAcademy": "«Try toodaay's AAcaadeemy chaalleengee»",
-  "firstWeekAcademyHint": "«OOnee quueestiioon aa daay, aaboouut aa miinuutee.»"
+  "firstWeekAcademyHint": "«OOnee quueestiioon aa daay, aaboouut aa miinuutee.»",
+  "fundChangesTitle": "«Seeee whaat chaangeed thiis quuaarteer»",
+  "fundChangesPitch": "«Proo shoows eeveery buuy, seell aand neew poosiitiioon siincee thee laast fiiliing, pluus eeaarliieer quuaarteers.»",
+  "fundChangesUnlock": "«Seeee thee chaangees»"
 }

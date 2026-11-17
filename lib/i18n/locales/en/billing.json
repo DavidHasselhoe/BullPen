@@ -202,7 +202,6 @@
   "plan_row_politician_trades_in_your_stocks": "Politician trades in your stocks",
   "plan_value_1_look_month": "1 look/month",
   "plan_row_fund_moves_in_your_stocks": "Fund moves in your stocks",
-  "plan_row_politician_scorecards_full_fund_portfolios": "Politician scorecards & full fund portfolios",
   "plan_row_ai_explanations_in_compare": "AI explanations in Compare",
   "plan_value_your_top_mover": "Your top mover",
   "plan_value_every_stock": "Every stock",
@@ -219,5 +218,9 @@
   "plan_value_12_month_calendar": "12-month calendar",
   "plan_hint_which_members_of_congress_traded_the_stocks_you_own_or_watch_what_they_did_and_when": "Which members of Congress traded the stocks you own or watch, what they did and when.",
   "plan_hint_what_the_big_funds_bought_and_sold_of_your_stocks_in_their_latest_13f_filings": "What the big funds bought and sold of your stocks in their latest 13F filings.",
-  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "Adds up the next 12 months from your holdings' real payments and tells you on payday."
+  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "Adds up the next 12 months from your holdings' real payments and tells you on payday.",
+  "plan_row_fund_portfolios_13f": "Fund portfolios (13F)",
+  "plan_value_latest_quarter": "Latest quarter",
+  "plan_value_every_quarter_changes": "Every quarter + changes",
+  "plan_row_politician_scorecards": "Politician scorecards"
 }

@@ -343,7 +343,7 @@
   "fundFiledSummary_one": "Filed {{filed}} for the quarter ended {{period}} · {{value}} across {{positions}} position",
   "fundFiledSummary_other": "Filed {{filed}} for the quarter ended {{period}} · {{value}} across {{positions}} positions",
   "fundFiledOptions": ", plus options covering {{value}} of stock",
-  "fundLockedTitle": "Full holdings are a Pro feature",
+  "fundLockedTitle": "Earlier quarters are a Pro feature",
   "fundLockedLastFiled": "Last filed {{date}} · {{positions}} positions",
   "fundLockedPitch": "See every position, sized by portfolio weight, updated every quarter.",
   "fundUnlock": "Unlock full holdings",
@@ -681,5 +681,8 @@
   "firstWeekHoldings": "Add what you own",
   "firstWeekHoldingsHint": "Type it in or import a file from your broker. Home then tracks your real portfolio.",
   "firstWeekAcademy": "Try today's Academy challenge",
-  "firstWeekAcademyHint": "One question a day, about a minute."
+  "firstWeekAcademyHint": "One question a day, about a minute.",
+  "fundChangesTitle": "See what changed this quarter",
+  "fundChangesPitch": "Pro shows every buy, sell and new position since the last filing, plus earlier quarters.",
+  "fundChangesUnlock": "See the changes"
 }

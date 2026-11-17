@@ -33,6 +33,8 @@ interface HoldingsResponse {
   diff?: HoldingsDiff | null;
   sharesHistory?: Record<string, number[]>;
   availableQuarters?: string[];
+  /** Free or signed-out: the latest quarter only, no diff (freeLatestView). */
+  limited?: boolean;
   error?: string;
 }
 
@@ -46,19 +48,24 @@ function fmtDate(iso: string, locale: string): string {
 }
 
 /**
- * `initialFunds` and `initialTeaser` come from the page's server render, so a
- * crawler (kept out of /api/ by robots.txt) sees the fund's name and its free
- * sample. The teaser is only used when it was built in the language this
- * client renders in.
+ * `initialFunds`, `initialTeaser` and `initialHoldings` come from the page's
+ * server render, so a crawler (kept out of /api/ by robots.txt) sees the
+ * fund's name and its latest holdings. The teaser is only used when it was
+ * built in the language this client renders in.
+ *
+ * Free and signed-out readers get the latest quarter in full. Pro adds what
+ * changed since the quarter before and every earlier quarter.
  */
 export function InstitutionalFundDetailClient({
   slug,
   initialFunds,
   initialTeaser,
+  initialHoldings,
 }: {
   slug: string;
   initialFunds?: InstitutionalFundSummary[];
   initialTeaser?: { lang: string; teaser: FundTeaser };
+  initialHoldings?: Omit<HoldingsResponse, 'success'>;
 }) {
   const { t, i18n } = useTranslation('discover');
   const { isAuthenticated } = useAuth();
@@ -92,7 +99,9 @@ export function InstitutionalFundDetailClient({
       const res = await fetch(url);
       return res.json();
     },
-    enabled: isAuthenticated,
+    // Server-rendered free view for a signed-out reader: nothing more to fetch.
+    // Signed in, the route answers with Pro's full view or the same free one.
+    initialData: !isAuthenticated && quarter === null && initialHoldings ? { success: true, ...initialHoldings } : undefined,
     retry: false,
     staleTime: 10 * 60 * 1000,
     // Keep the quarter on screen while the next one loads. Without this the
@@ -101,10 +110,12 @@ export function InstitutionalFundDetailClient({
     placeholderData: keepPreviousData,
   });
 
-  const locked = !isAuthenticated || holdingsData?.error === 'pro_required';
+  // Only an earlier quarter is locked now, and the free picker never offers one.
+  const locked = holdingsData?.error === 'pro_required';
+  const limited = !!holdingsData?.limited;
 
-  // What a locked visitor sees above the lock: the quarter's headline and the
-  // three largest holdings. Public SEC data, and the clearest pitch for the rest.
+  // The quarter's headline ("Trimmed Visa and opened Mastercard") is built from
+  // the diff, which stays on the server: it is the pitch for Pro on a free page.
   const { data: teaser } = useQuery({
     queryKey: ['institutions-teaser', slug, i18n.language],
     queryFn: async (): Promise<(FundTeaser & { success: boolean }) | null> => {
@@ -112,7 +123,7 @@ export function InstitutionalFundDetailClient({
       return res.ok ? res.json() : null;
     },
     initialData: initialTeaser?.lang === i18n.language ? { success: true, ...initialTeaser.teaser } : undefined,
-    enabled: locked,
+    enabled: locked || limited,
     staleTime: 60 * 60 * 1000,
   });
   const locale = intlLocale(i18n.language);
@@ -266,6 +277,24 @@ export function InstitutionalFundDetailClient({
             highlightedKey={highlightedKey}
             onHighlight={setHighlightedKey}
           />
+          {limited && (
+            <div className="mt-6 flex flex-col gap-3 rounded-xl border border-border/50 bg-card/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  {teaser?.success && teaser.headline ? teaser.headline : t('fundChangesTitle')}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{t('fundChangesPitch')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPaywallOpen(true)}
+                className="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.97]"
+              >
+                <Lock className="h-3.5 w-3.5" aria-hidden />
+                {t('fundChangesUnlock')}
+              </button>
+            </div>
+          )}
           <FundAskBullPrompts
             fundName={displayName}
             allocation={allocation}

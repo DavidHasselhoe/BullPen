@@ -341,7 +341,7 @@
   "fundFiledSummary_one": "Innlevert {{filed}} for kvartalet som endte {{period}} · {{value}} fordelt på {{positions}} beholdning",
   "fundFiledSummary_other": "Innlevert {{filed}} for kvartalet som endte {{period}} · {{value}} fordelt på {{positions}} beholdninger",
   "fundFiledOptions": ", pluss opsjoner på aksjer verdt {{value}}",
-  "fundLockedTitle": "Alle beholdninger er en Pro-funksjon",
+  "fundLockedTitle": "Tidligere kvartaler er en Pro-funksjon",
   "fundLockedLastFiled": "Sist levert {{date}} · {{positions}} posisjoner",
   "fundLockedPitch": "Se hver posisjon etter vekt i porteføljen, oppdatert hvert kvartal.",
   "fundUnlock": "Lås opp alle beholdninger",
@@ -681,5 +681,8 @@
   "firstWeekHoldings": "Legg til det du eier",
   "firstWeekHoldingsHint": "Skriv det inn eller importer en fil fra megleren din. Hjem følger da den ekte porteføljen din.",
   "firstWeekAcademy": "Prøv dagens Academy-utfordring",
-  "firstWeekAcademyHint": "Ett spørsmål om dagen, omtrent ett minutt."
+  "firstWeekAcademyHint": "Ett spørsmål om dagen, omtrent ett minutt.",
+  "fundChangesTitle": "Se hva som endret seg dette kvartalet",
+  "fundChangesPitch": "Pro viser hvert kjøp, salg og nye posisjon siden forrige rapport, pluss tidligere kvartaler.",
+  "fundChangesUnlock": "Se endringene"
 }

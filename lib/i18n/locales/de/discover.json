@@ -341,7 +341,7 @@
   "fundFiledSummary_one": "Eingereicht {{filed}} für das Quartal endend {{period}} · {{value}} über {{positions}} Position",
   "fundFiledSummary_other": "Eingereicht {{filed}} für das Quartal endend {{period}} · {{value}} über {{positions}} Positionen",
   "fundFiledOptions": ", plus Optionen auf {{value}} Aktien",
-  "fundLockedTitle": "Alle Bestände sind eine Pro-Funktion",
+  "fundLockedTitle": "Frühere Quartale sind eine Pro-Funktion",
   "fundLockedLastFiled": "Zuletzt eingereicht am {{date}} · {{positions}} Positionen",
   "fundLockedPitch": "Sieh jede Position nach Portfoliogewicht, jedes Quartal aktualisiert.",
   "fundUnlock": "Alle Bestände freischalten",
@@ -681,5 +681,8 @@
   "firstWeekHoldings": "Füge hinzu, was du besitzt",
   "firstWeekHoldingsHint": "Gib es ein oder importiere eine Datei von deinem Broker. Die Startseite verfolgt dann dein echtes Portfolio.",
   "firstWeekAcademy": "Probiere die heutige Academy-Challenge",
-  "firstWeekAcademyHint": "Eine Frage pro Tag, etwa eine Minute."
+  "firstWeekAcademyHint": "Eine Frage pro Tag, etwa eine Minute.",
+  "fundChangesTitle": "Sieh, was sich in diesem Quartal geändert hat",
+  "fundChangesPitch": "Pro zeigt jeden Kauf, Verkauf und jede neue Position seit der letzten Meldung, dazu frühere Quartale.",
+  "fundChangesUnlock": "Änderungen ansehen"
 }

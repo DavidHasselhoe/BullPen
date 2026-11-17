@@ -341,7 +341,7 @@
   "fundFiledSummary_one": "{{period}}の四半期決算で{{filed}}を提出 · {{positions}}個のポジション全体で{{value}}",
   "fundFiledSummary_other": "{{period}}の四半期決算で{{filed}}を提出 · {{positions}}個のポジション全体で{{value}}",
   "fundFiledOptions": "、さらに{{value}}の株式をカバーするオプションを含む",
-  "fundLockedTitle": "全保有銘柄はPro機能です",
+  "fundLockedTitle": "過去の四半期はPro機能です",
   "fundLockedLastFiled": "最終提出 {{date}} · {{positions}}銘柄",
   "fundLockedPitch": "全銘柄をポートフォリオ比率順に表示し、四半期ごとに更新します。",
   "fundUnlock": "全保有銘柄を見る",
@@ -680,5 +680,8 @@
   "firstWeekHoldings": "保有銘柄を追加する",
   "firstWeekHoldingsHint": "手入力するか、証券会社のファイルから取り込めます。ホームで実際のポートフォリオを追跡できます。",
   "firstWeekAcademy": "今日のAcademyチャレンジに挑戦",
-  "firstWeekAcademyHint": "1日1問、約1分です。"
+  "firstWeekAcademyHint": "1日1問、約1分です。",
+  "fundChangesTitle": "今四半期の変化を見る",
+  "fundChangesPitch": "Proでは前回の報告以降のすべての買い、売り、新規ポジションと、過去の四半期を確認できます。",
+  "fundChangesUnlock": "変化を見る"
 }

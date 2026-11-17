@@ -21,12 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-/** "2026-06-30" to "Q2 2026". */
-export function quarterLabel(iso: string): string {
-  const [year, month] = iso.split('-').map(Number);
-  if (!year || !month) return iso;
-  return `Q${Math.floor((month - 1) / 3) + 1} ${year}`;
-}
+import { quarterLabel } from '@/lib/institutions/format';
+export { quarterLabel };
 
 interface QuarterPickerProps {
   quarters: string[];

@@ -341,7 +341,7 @@
   "fundFiledSummary_one": "已提交 {{filed}} 报告，季度截止日期 {{period}} · {{value}} 跨越 {{positions}} 个持仓",
   "fundFiledSummary_other": "已提交 {{filed}} 报告，季度截止日期 {{period}} · {{value}} 跨越 {{positions}} 个持仓",
   "fundFiledOptions": "，加上覆盖 {{value}} 股票的期权",
-  "fundLockedTitle": "完整持仓是 Pro 功能",
+  "fundLockedTitle": "以往季度是 Pro 功能",
   "fundLockedLastFiled": "最近提交 {{date}} · {{positions}} 个持仓",
   "fundLockedPitch": "按组合权重查看每个持仓，每季度更新。",
   "fundUnlock": "解锁完整持仓",
@@ -680,5 +680,8 @@
   "firstWeekHoldings": "添加你持有的股票",
   "firstWeekHoldingsHint": "手动输入，或导入券商导出的文件。之后首页会追踪你的真实投资组合。",
   "firstWeekAcademy": "试试今天的 Academy 挑战",
-  "firstWeekAcademyHint": "每天一道题，大约一分钟。"
+  "firstWeekAcademyHint": "每天一道题，大约一分钟。",
+  "fundChangesTitle": "查看本季度的变化",
+  "fundChangesPitch": "Pro 显示自上次申报以来的每一笔买入、卖出和新建仓位，以及以往季度。",
+  "fundChangesUnlock": "查看变化"
 }

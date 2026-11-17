@@ -20,7 +20,7 @@ export function InstitutionalHoldingsPaywallPreview({ fundName, rows }: Props) {
   return (
     <div className="relative select-none bg-card px-6 pb-8 pt-7" aria-hidden="true">
       {fundName && (
-        <p className="mb-3 text-left text-xs font-medium text-foreground">{fundName}&apos;s full holdings</p>
+        <p className="mb-3 text-left text-xs font-medium text-foreground">What {fundName} changed this quarter</p>
       )}
       {rows && rows.length > 0 ? (
         <div className="pointer-events-none space-y-2">

@@ -202,7 +202,6 @@
   "plan_row_politician_trades_in_your_stocks": "Politiker-Trades in deinen Aktien",
   "plan_value_1_look_month": "1 Einblick/Monat",
   "plan_row_fund_moves_in_your_stocks": "Fondsbewegungen in deinen Aktien",
-  "plan_row_politician_scorecards_full_fund_portfolios": "Politiker-Scorecards & komplette Fondsportfolios",
   "plan_row_ai_explanations_in_compare": "KI-Erklärungen im Vergleich",
   "plan_value_your_top_mover": "Deine größte Bewegung",
   "plan_value_every_stock": "Jede Aktie",
@@ -219,5 +218,9 @@
   "plan_value_12_month_calendar": "12-Monats-Kalender",
   "plan_hint_which_members_of_congress_traded_the_stocks_you_own_or_watch_what_they_did_and_when": "Welche Kongressmitglieder mit den Aktien gehandelt haben, die du besitzt oder beobachtest, was sie getan haben und wann.",
   "plan_hint_what_the_big_funds_bought_and_sold_of_your_stocks_in_their_latest_13f_filings": "Was die großen Fonds laut ihren neuesten 13F-Meldungen von deinen Aktien gekauft und verkauft haben.",
-  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "Rechnet die nächsten 12 Monate aus den echten Zahlungen deiner Positionen zusammen und sagt dir am Zahltag Bescheid."
+  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "Rechnet die nächsten 12 Monate aus den echten Zahlungen deiner Positionen zusammen und sagt dir am Zahltag Bescheid.",
+  "plan_row_fund_portfolios_13f": "Fondsportfolios (13F)",
+  "plan_value_latest_quarter": "Letztes Quartal",
+  "plan_value_every_quarter_changes": "Jedes Quartal + Änderungen",
+  "plan_row_politician_scorecards": "Politiker-Scorecards"
 }

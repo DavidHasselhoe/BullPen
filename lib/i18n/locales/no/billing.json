@@ -202,7 +202,6 @@
   "plan_row_politician_trades_in_your_stocks": "Politikerhandler i aksjene dine",
   "plan_value_1_look_month": "1 titt/måned",
   "plan_row_fund_moves_in_your_stocks": "Fondsbevegelser i aksjene dine",
-  "plan_row_politician_scorecards_full_fund_portfolios": "Politikerprofiler og komplette fondsporteføljer",
   "plan_row_ai_explanations_in_compare": "AI-forklaringer i Sammenlign",
   "plan_value_your_top_mover": "Din største bevegelse",
   "plan_value_every_stock": "Hver aksje",
@@ -219,5 +218,9 @@
   "plan_value_12_month_calendar": "12-månederskalender",
   "plan_hint_which_members_of_congress_traded_the_stocks_you_own_or_watch_what_they_did_and_when": "Hvilke kongressmedlemmer som handlet aksjene du eier eller følger, hva de gjorde og når.",
   "plan_hint_what_the_big_funds_bought_and_sold_of_your_stocks_in_their_latest_13f_filings": "Hva de store fondene kjøpte og solgte av aksjene dine i sine siste 13F-rapporter.",
-  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "Summerer de neste 12 månedene ut fra beholdningenes faktiske utbetalinger og gir beskjed på utbetalingsdagen."
+  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "Summerer de neste 12 månedene ut fra beholdningenes faktiske utbetalinger og gir beskjed på utbetalingsdagen.",
+  "plan_row_fund_portfolios_13f": "Fondsporteføljer (13F)",
+  "plan_value_latest_quarter": "Siste kvartal",
+  "plan_value_every_quarter_changes": "Alle kvartaler + endringer",
+  "plan_row_politician_scorecards": "Politikerprofiler"
 }

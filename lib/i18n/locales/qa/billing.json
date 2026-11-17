@@ -57,7 +57,7 @@
   "paywallContentUpgradeCta": "«UUpgraadee too Proo · ${{price}}/moo»",
   "paywallContentMaybeLater": "«Maaybee laateer»",
   "upgradeSuccessTitle": "«Weelcoomee too Proo!»",
-  "upgradeSuccessDescription": "«Thaanks foor uupgraadiing. Yoouur {{trialDays}}-daay triiaal iis liivee, aand heeree's eeveerythiing yoouu juust uunloockeed.»",
+  "upgradeSuccessDescription": "«Thaanks foor uupgraadiing. Yoouur freeee triiaal iis liivee, aand heeree's eeveerythiing yoouu juust uunloockeed.»",
   "upgradeSuccessStartExploring": "«Staart eexplooriing»",
   "upgradeBackHome": "«Hoomee»",
   "upgradeFaqTrialQ": "«IIs theeree aa freeee triiaal?»",
@@ -202,7 +202,6 @@
   "plan_row_politician_trades_in_your_stocks": "«Pooliitiiciiaan traadees iin yoouur stoocks»",
   "plan_value_1_look_month": "«1 looook/moonth»",
   "plan_row_fund_moves_in_your_stocks": "«Fuund moovees iin yoouur stoocks»",
-  "plan_row_politician_scorecards_full_fund_portfolios": "«Pooliitiiciiaan scooreecaards & fuull fuund poortfooliioos»",
   "plan_row_ai_explanations_in_compare": "«AAII eexplaanaatiioons iin Coompaaree»",
   "plan_value_your_top_mover": "«Yoouur toop mooveer»",
   "plan_value_every_stock": "«EEveery stoock»",
@@ -219,5 +218,9 @@
   "plan_value_12_month_calendar": "«12-moonth caaleendaar»",
   "plan_hint_which_members_of_congress_traded_the_stocks_you_own_or_watch_what_they_did_and_when": "«Whiich meembeers oof Coongreess traadeed thee stoocks yoouu oown oor waatch, whaat theey diid aand wheen.»",
   "plan_hint_what_the_big_funds_bought_and_sold_of_your_stocks_in_their_latest_13f_filings": "«Whaat thee biig fuunds boouught aand soold oof yoouur stoocks iin theeiir laateest 13F fiiliings.»",
-  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "«AAdds uup thee neext 12 moonths froom yoouur hooldiings' reeaal paaymeents aand teells yoouu oon paaydaay.»"
+  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "«AAdds uup thee neext 12 moonths froom yoouur hooldiings' reeaal paaymeents aand teells yoouu oon paaydaay.»",
+  "plan_row_fund_portfolios_13f": "«Fuund poortfooliioos (13F)»",
+  "plan_value_latest_quarter": "«Laateest quuaarteer»",
+  "plan_value_every_quarter_changes": "«EEveery quuaarteer + chaangees»",
+  "plan_row_politician_scorecards": "«Pooliitiiciiaan scooreecaards»"
 }

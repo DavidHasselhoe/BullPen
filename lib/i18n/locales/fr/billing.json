@@ -202,7 +202,6 @@
   "plan_row_politician_trades_in_your_stocks": "Transactions des politiciens sur vos actions",
   "plan_value_1_look_month": "1 aperçu/mois",
   "plan_row_fund_moves_in_your_stocks": "Mouvements des fonds sur vos actions",
-  "plan_row_politician_scorecards_full_fund_portfolios": "Fiches des politiciens et portefeuilles complets des fonds",
   "plan_row_ai_explanations_in_compare": "Explications IA dans Comparer",
   "plan_value_your_top_mover": "Votre plus forte variation",
   "plan_value_every_stock": "Chaque action",
@@ -219,5 +218,9 @@
   "plan_value_12_month_calendar": "Calendrier sur 12 mois",
   "plan_hint_which_members_of_congress_traded_the_stocks_you_own_or_watch_what_they_did_and_when": "Quels membres du Congrès ont négocié les actions que vous détenez ou suivez, ce qu’ils ont fait et quand.",
   "plan_hint_what_the_big_funds_bought_and_sold_of_your_stocks_in_their_latest_13f_filings": "Ce que les grands fonds ont acheté et vendu de vos actions dans leurs derniers dépôts 13F.",
-  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "Additionne les 12 prochains mois à partir des versements réels de vos positions et vous prévient le jour du paiement."
+  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "Additionne les 12 prochains mois à partir des versements réels de vos positions et vous prévient le jour du paiement.",
+  "plan_row_fund_portfolios_13f": "Portefeuilles des fonds (13F)",
+  "plan_value_latest_quarter": "Dernier trimestre",
+  "plan_value_every_quarter_changes": "Chaque trimestre + changements",
+  "plan_row_politician_scorecards": "Fiches des politiciens"
 }

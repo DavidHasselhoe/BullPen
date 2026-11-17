@@ -100,7 +100,9 @@ export const PLAN_COMPARISON: ComparisonGroup[] = [
         pro: true,
         hint: 'What the big funds bought and sold of your stocks in their latest 13F filings.',
       },
-      { label: 'Politician scorecards & full fund portfolios', free: false, pro: true },
+      // Latest 13F quarter free since 2026-11-17 (fund pages rank for "<fund> 13f").
+      { label: 'Fund portfolios (13F)', free: 'Latest quarter', pro: 'Every quarter + changes' },
+      { label: 'Politician scorecards', free: false, pro: true },
     ],
   },
   {

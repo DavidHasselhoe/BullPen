@@ -331,7 +331,7 @@
   "fundFiledSummary_one": "Déposé {{filed}} pour le trimestre terminé {{period}} · {{value}} répartis sur {{positions}} position",
   "fundFiledSummary_other": "Déposé {{filed}} pour le trimestre terminé {{period}} · {{value}} répartis sur {{positions}} positions",
   "fundFiledOptions": ", plus options couvrant {{value}} d'actions",
-  "fundLockedTitle": "Les positions complètes sont une fonction Pro",
+  "fundLockedTitle": "Les trimestres précédents sont une fonctionnalité Pro",
   "fundLockedLastFiled": "Dernier dépôt le {{date}} · {{positions}} positions",
   "fundLockedPitch": "Voyez chaque position selon son poids dans le portefeuille, mise à jour chaque trimestre.",
   "fundUnlock": "Débloquer les positions complètes",
@@ -681,5 +681,8 @@
   "firstWeekHoldings": "Ajoutez ce que vous possédez",
   "firstWeekHoldingsHint": "Saisissez-le ou importez un fichier de votre courtier. L'accueil suit alors votre vrai portefeuille.",
   "firstWeekAcademy": "Essayez le défi Academy du jour",
-  "firstWeekAcademyHint": "Une question par jour, environ une minute."
+  "firstWeekAcademyHint": "Une question par jour, environ une minute.",
+  "fundChangesTitle": "Voir ce qui a changé ce trimestre",
+  "fundChangesPitch": "Pro montre chaque achat, vente et nouvelle position depuis la dernière déclaration, ainsi que les trimestres précédents.",
+  "fundChangesUnlock": "Voir les changements"
 }

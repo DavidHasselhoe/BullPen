@@ -237,6 +237,22 @@ async function attachCatalogueNames(
   }
 }
 
+/**
+ * What free and signed-out readers get: the latest quarter's full holdings,
+ * public SEC data that ranks for "<fund> 13f" searches. Pro keeps what
+ * BullPen adds on top: the quarter-over-quarter changes (diff, the share
+ * streaks behind the takeaway sentence) and every earlier quarter. Decided
+ * 2026-11-17; before that free readers saw three holdings and a lock.
+ */
+export function freeLatestView(data: HoldingsResponse): HoldingsResponse & { limited: true } {
+  return { ...data, diff: null, sharesHistory: {}, availableQuarters: data.availableQuarters.slice(0, 1), limited: true };
+}
+
+/** Funds up to this size are server-rendered in full for signed-out readers
+ *  and crawlers. Citadel (~6,400) and Renaissance (~3,200) would add 1-2 MB to
+ *  the HTML, so the browser fetches those instead. */
+export const SSR_MAX_POSITIONS = 1000;
+
 export type LoadHoldingsResult =
   | { ok: true; data: HoldingsResponse }
   | { ok: false; status: number; error: string };

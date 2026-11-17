@@ -8,6 +8,13 @@ export function fmtUsd(n: number): string {
   return `$${n.toLocaleString()}`;
 }
 
+/** A 13F period of report, "2026-06-30" to "Q2 2026". */
+export function quarterLabel(iso: string): string {
+  const [year, month] = iso.split('-').map(Number);
+  if (!year || !month) return iso;
+  return `Q${Math.floor((month - 1) / 3) + 1} ${year}`;
+}
+
 /** Share counts run to nine digits on a big fund — compact them, since the
  *  exact count is secondary to the position's weight. */
 export function fmtShares(n: number): string {

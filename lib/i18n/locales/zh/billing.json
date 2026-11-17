@@ -202,7 +202,6 @@
   "plan_row_politician_trades_in_your_stocks": "你的股票中的政客交易",
   "plan_value_1_look_month": "每月 1 次",
   "plan_row_fund_moves_in_your_stocks": "你的股票中的基金动向",
-  "plan_row_politician_scorecards_full_fund_portfolios": "政客评分卡和基金完整持仓",
   "plan_row_ai_explanations_in_compare": "对比中的 AI 解读",
   "plan_value_your_top_mover": "你的最大涨跌股",
   "plan_value_every_stock": "每只股票",
@@ -219,5 +218,9 @@
   "plan_value_12_month_calendar": "12 个月日历",
   "plan_hint_which_members_of_congress_traded_the_stocks_you_own_or_watch_what_they_did_and_when": "哪些国会议员交易了你持有或关注的股票、交易内容和时间。",
   "plan_hint_what_the_big_funds_bought_and_sold_of_your_stocks_in_their_latest_13f_filings": "大型基金在最新 13F 文件中买入和卖出了你的哪些股票。",
-  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "根据持仓的实际派息汇总未来 12 个月，并在派发日提醒你。"
+  "plan_hint_adds_up_the_next_12_months_from_your_holdings_real_payments_and_tells_you_on_payday": "根据持仓的实际派息汇总未来 12 个月，并在派发日提醒你。",
+  "plan_row_fund_portfolios_13f": "基金持仓（13F）",
+  "plan_value_latest_quarter": "最新季度",
+  "plan_value_every_quarter_changes": "所有季度 + 变化",
+  "plan_row_politician_scorecards": "政客评分卡"
 }
