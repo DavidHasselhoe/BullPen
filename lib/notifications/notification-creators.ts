@@ -1040,7 +1040,12 @@ export const enText = (m: NotifMsg): string => enNotif.t(m.key, Object.fromEntri
 export async function notifyEconomicResults(event: EconomicResultEvent): Promise<number> {
   if (!RESULT_KINDS_NOTIFIED.includes(event.kind)) return 0;
   const text = economicResultText(event);
-  if (!text) return 0;
+  if (!text) {
+    // Was silent: CPI on 11-10 told nobody because FRED has no Oct 2025 index (the
+    // shutdown month), so there was no year-over-year headline to write.
+    console.error(`[notifyEconomicResults] ${event.id}: no headline figure in [${event.results.map((r) => r.key).join(', ')}], nobody notified`);
+    return 0;
+  }
   const supabase = createServerClient();
   const entityId = `economic-result:${event.kind}:${event.id}`;
 
