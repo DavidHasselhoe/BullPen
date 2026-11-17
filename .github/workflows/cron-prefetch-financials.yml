@@ -74,12 +74,31 @@ jobs:
             exit 1
           fi
           echo "Starting financials prefetch…"
+          # One 504 used to end the run as "success" (11-14, 11-15, 11-16 all
+          # stopped between batch 65 and 152, leaving health scores unfed).
+          # Retry twice, then move on; stop after 3 failed batches in a row.
+          # The route always takes the head of the still-cold list, so a
+          # retry or a skipped batch never skips a symbol.
+          MISSES=0
           for batch in $(seq 0 299); do
             echo "→ Financials batch $batch"
-            RESPONSE=$(curl -fsS -X GET -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/prefetch-market-data?phase=financials&batch=${batch}") || {
-              echo "Batch $batch failed (rate limit or network error) — stopping"
-              break
-            }
+            RESPONSE=""
+            for attempt in 1 2 3; do
+              RESPONSE=$(curl -fsS --max-time 330 -X GET -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/prefetch-market-data?phase=financials&batch=${batch}") && break
+              RESPONSE=""
+              echo "Batch $batch attempt $attempt failed"
+              if [ $attempt -lt 3 ]; then sleep 65; fi
+            done
+            if [ -z "$RESPONSE" ]; then
+              MISSES=$((MISSES + 1))
+              echo "::warning::Batch $batch failed 3 times"
+              if [ $MISSES -ge 3 ]; then
+                echo "::error::3 batches in a row failed, stopping at batch $batch"
+                exit 1
+              fi
+              continue
+            fi
+            MISSES=0
             echo "$RESPONSE"
             DONE=$(echo "$RESPONSE" | jq -r '.done // false')
             if [ "$DONE" = "true" ]; then
