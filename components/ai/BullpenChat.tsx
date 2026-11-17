@@ -668,6 +668,7 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
         open={paywallQuota !== null}
         onOpenChange={(o) => !o && setPaywallQuota(null)}
         featureName={t('askBull')}
+        preview="Ask Bull"
         quota={paywallQuota ?? undefined}
         previewContext={aiContext?.tickers.length === 1 ? { ticker: aiContext.tickers[0] } : undefined}
       />
@@ -750,8 +751,8 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                 onRetryAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
                 onConfirmAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
                 onCancelAction={() => setActionOutcomes((prev) => ({ ...prev, [actionKey]: { status: 'cancelled' } }))}
-              />
                 onHoldingsAccessEnabled={isLatest ? regenerateReply : undefined}
+              />
             );
           };
           // Anything that asks the user something (navigate Yes/No, confirm a

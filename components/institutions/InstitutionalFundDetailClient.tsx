@@ -317,6 +317,7 @@ export function InstitutionalFundDetailClient({
         open={paywallOpen}
         onOpenChange={setPaywallOpen}
         featureName={t('instHeading')}
+        preview="Institutional Holdings"
         quota={{ allowed: false, used: 0, limit: 0, period: 'month', resetsAt: new Date().toISOString(), reason: 'pro_only' }}
         previewContext={{ fundName: displayName, fundTop: teaser?.success ? teaser.top : undefined }}
       />

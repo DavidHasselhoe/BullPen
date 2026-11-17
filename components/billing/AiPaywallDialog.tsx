@@ -8,15 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Crown } from 'lucide-react';
 import type { QuotaState } from '@/lib/billing/quotas';
 import { AiPaywallContent } from './AiPaywallContent';
-import { getAiPaywallConfig, type PaywallPreviewContext } from './paywall-config';
+import { getAiPaywallConfig, type PaywallPreviewContext, type PaywallPreviewKey } from './paywall-config';
 
 import { fmtClockTime, fmtClockDate, type Clock } from '@/lib/dates/clock';
 import { useClock } from '@/hooks/use-clock';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Human-readable feature name, e.g. "Portfolio Builder" */
+  /** Human-readable feature name, e.g. "Portfolio Builder", in the reader's language. */
   featureName: string;
+  /** Which preview and value stack to show. A fixed key, never the translated name. */
+  preview: PaywallPreviewKey;
   /** Quota state from the 402 response (used to compose the message). Optional — falls back to generic copy. */
   quota?: QuotaState;
   /** Real data the trigger site already had on screen (ticker, day change,
@@ -36,7 +38,7 @@ function formatReset(iso: string, period: 'day' | 'month', clock: Clock): string
   return `on ${fmtClockDate(d, { month: 'long', day: 'numeric' }, clock)}`;
 }
 
-export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previewContext, headline: headlineOverride, note }: Props) {
+export function AiPaywallDialog({ open, onOpenChange, featureName, preview, quota, previewContext, headline: headlineOverride, note }: Props) {
   const clock = useClock();
   const { t } = useTranslation('billing');
   const isProOnly = quota?.reason === 'pro_only';
@@ -56,7 +58,7 @@ export function AiPaywallDialog({ open, onOpenChange, featureName, quota, previe
   // getAiPaywallConfig — one shared AiPaywallContent, only the benefits/preview
   // differ per feature. isProCap still falls through to the generic "Got it"
   // content below since that user is already Pro and shouldn't be upsold.
-  const config = getAiPaywallConfig(t, previewContext)[featureName];
+  const config = getAiPaywallConfig(t, previewContext)[preview];
   if (config && !isProCap) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>

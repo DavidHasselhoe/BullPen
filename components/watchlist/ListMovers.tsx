@@ -127,6 +127,7 @@ export function ListMovers({ listName, items, quotes, seed }: ListMoversProps) {
         open={paywallOpen}
         onOpenChange={setPaywallOpen}
         featureName={tHome('whyTodayWidgetFeatureName')}
+        preview="Why Today"
         quota={paywallQuota}
       />
     </section>

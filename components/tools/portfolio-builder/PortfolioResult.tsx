@@ -201,6 +201,7 @@ function RiskScenarioAction({
         open={paywallQuota !== null}
         onOpenChange={(o) => !o && setPaywallQuota(null)}
         featureName={t('portfolioBuilderRiskScenarioFeatureName')}
+        preview="Portfolio Risk Analysis"
         quota={paywallQuota ?? undefined}
       />
     </>

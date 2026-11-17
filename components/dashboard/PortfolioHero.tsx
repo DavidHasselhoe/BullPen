@@ -296,6 +296,7 @@ export function PortfolioHero() {
         open={paywallOpen}
         onOpenChange={setPaywallOpen}
         featureName={t('whyTodayWidgetFeatureName')}
+        preview="Why Today"
         quota={paywallQuota}
       />
     </HomeSection>

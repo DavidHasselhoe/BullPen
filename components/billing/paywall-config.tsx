@@ -40,10 +40,10 @@ export interface PaywallPreviewContext {
 
 /**
  * Rich paywall content (preview + value stack) for every AI-generation gate
- * in the app, keyed by the `featureName` each caller already passes to
- * AiPaywallDialog. Unmapped feature names fall back to the plain generic
- * dialog — see AiPaywallDialog.tsx. Keys are literal English feature-name
- * identifiers used for lookup, not UI copy — never translate them.
+ * in the app, keyed by the `preview` each caller passes to AiPaywallDialog.
+ * Keys are fixed identifiers, not UI copy. They used to be matched against the
+ * translated `featureName`, so every non-English reader (and the builder's
+ * "Risk analysis") got the plain generic dialog (fixed 2026-11-17).
  *
  * Each list leads with the feature actually being unlocked, then two of the
  * other flagship Pro benefits — never claims "unlimited" for a feature that
@@ -56,7 +56,11 @@ export interface PaywallPreviewContext {
  * paid answer, and showing a real-looking number there would misrepresent
  * a result the user hasn't actually paid to generate.
  */
-export function getAiPaywallConfig(t: TFunction, context?: PaywallPreviewContext): Record<string, PaywallConfig> {
+export type PaywallPreviewKey =
+  | 'Portfolio Risk Analysis' | 'Why Today' | 'Ask Bull' | 'Portfolio Builder'
+  | 'Deep Dive' | 'Institutional Holdings' | 'Price Alerts';
+
+export function getAiPaywallConfig(t: TFunction, context?: PaywallPreviewContext): Record<PaywallPreviewKey, PaywallConfig> {
   return {
     'Portfolio Risk Analysis': {
       benefits: [

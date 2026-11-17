@@ -407,6 +407,7 @@ export default function DeepDivePage() {
           open={paywallQuota !== null}
           onOpenChange={(o) => !o && setPaywallQuota(null)}
           featureName={t('deepDiveFeatureName', 'Deep Dive')}
+          preview="Deep Dive"
           quota={paywallQuota ?? undefined}
           previewContext={{ ticker: symbol, companyName: report?.companyName }}
         />

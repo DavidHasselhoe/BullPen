@@ -166,6 +166,7 @@ export function CreateAlertForm({ onCreated, onCancel, onCreate, initialTicker, 
         open={limitReached}
         onOpenChange={setLimitReached}
         featureName="Price Alerts"
+        preview="Price Alerts"
         headline={t('limitReachedTitle', { limit: FREE_ACTIVE_ALERT_LIMIT })}
         note={t('limitReachedNote')}
         previewContext={{

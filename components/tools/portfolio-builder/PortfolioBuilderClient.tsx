@@ -320,6 +320,7 @@ export function PortfolioBuilderClient() {
           open={paywallQuota !== null}
           onOpenChange={(o) => !o && setPaywallQuota(null)}
           featureName={t('portfolioBuilderTitle')}
+          preview="Portfolio Builder"
           quota={paywallQuota ?? undefined}
         />
       </div>
