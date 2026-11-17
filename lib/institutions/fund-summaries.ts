@@ -21,7 +21,7 @@ import { getCached, setCached } from '@/lib/cache/market-data-cache';
 
 // v2: summaries gained the sort/filter fields below. A new key rather than a
 // flush, so an old cached list can never be served without them.
-const CACHE_KEY = 'institutions:fund-list:v2';
+export const FUND_LIST_CACHE_KEY = 'institutions:fund-list:v2';
 const CACHE_TTL_SECONDS = 60 * 60;
 
 export interface SectorWeight {
@@ -91,7 +91,7 @@ interface FilingAggRow {
 }
 
 export async function loadFundSummaries(): Promise<InstitutionalFundSummary[]> {
-  const cached = await getCached<InstitutionalFundSummary[]>(CACHE_KEY);
+  const cached = await getCached<InstitutionalFundSummary[]>(FUND_LIST_CACHE_KEY);
   if (cached) return cached;
 
   const supabase = createServerClient();
@@ -165,7 +165,7 @@ export async function loadFundSummaries(): Promise<InstitutionalFundSummary[]> {
   // A list without metrics would sit in the cache for an hour with every
   // sort and filter dead, so only a complete one is cached.
   if (!metricsError) {
-    void setCached(CACHE_KEY, 'institutions', 'institutional_fund_list', funds, CACHE_TTL_SECONDS);
+    void setCached(FUND_LIST_CACHE_KEY, 'institutions', 'institutional_fund_list', funds, CACHE_TTL_SECONDS);
   }
   return funds;
 }

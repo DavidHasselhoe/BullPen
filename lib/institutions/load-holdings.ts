@@ -12,6 +12,15 @@ import { computeHoldingsDiff, type DiffableHolding, type HoldingsDiff } from '@/
 
 const CACHE_TTL_SECONDS = 12 * 60 * 60;
 
+/** Every cached quarter of one fund lives under this prefix, and ingest busts
+ *  it through this function. It used to hardcode the unversioned prefix, so
+ *  after the v2/v3 bumps the bust matched nothing and a new filing stayed
+ *  hidden behind the cached "latest" for up to 12h.
+ *  v2: holdings carry catalogue names (companyName, isFund). v3: fund.logoUrl. */
+export function holdingsCachePrefix(slug: string): string {
+  return `institutions:holdings:v3:${slug}:`;
+}
+
 interface HoldingRow {
   symbol: string | null;
   name_of_issuer: string;
@@ -233,8 +242,7 @@ export type LoadHoldingsResult =
   | { ok: false; status: number; error: string };
 
 export async function loadFundHoldings(slug: string, requestedQuarter: string | null): Promise<LoadHoldingsResult> {
-  // v2: holdings carry catalogue names (companyName, isFund). v3: fund.logoUrl.
-  const cacheKey = `institutions:holdings:v3:${slug}:${requestedQuarter ?? 'latest'}`;
+  const cacheKey = `${holdingsCachePrefix(slug)}${requestedQuarter ?? 'latest'}`;
   const cached = await getCached<HoldingsResponse>(cacheKey);
   if (cached) return { ok: true, data: cached };
 

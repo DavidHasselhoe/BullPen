@@ -16,6 +16,8 @@ import { fetchRecentFilings, fetchFilingIndex, fetchFilingDocument, type EdgarFi
 import { parseInfoTable, parsePeriodOfReport } from '@/lib/institutions/parse-13f-xml';
 import { resolveHoldingsForFiling } from '@/lib/institutions/resolve-cusip';
 import { invalidateCachedPrefix } from '@/lib/cache/market-data-cache';
+import { holdingsCachePrefix } from '@/lib/institutions/load-holdings';
+import { FUND_LIST_CACHE_KEY } from '@/lib/institutions/fund-summaries';
 import { computeHoldingsDiff, type DiffableHolding } from '@/lib/institutions/compute-diff';
 import { buildAllocation, quarterHeadline } from '@/lib/institutions/allocation';
 import { notifyInstitutionFilingChange } from '@/lib/notifications/notification-creators';
@@ -252,8 +254,13 @@ export async function ingestFiling(
     // Every cached response for this fund is now wrong, including the "latest"
     // one: gaining a prior quarter flips its diff from null to real. Bust the
     // whole prefix here rather than at each call site, so neither the cron nor
-    // the backfill can forget.
-    await invalidateCachedPrefix(`institutions:holdings:${investor.slug}:`);
+    // the backfill can forget. The fund list shows each fund's latest filing
+    // too. Both keys come from their readers, so a version bump can't strand
+    // this bust again.
+    await Promise.all([
+      invalidateCachedPrefix(holdingsCachePrefix(investor.slug)),
+      invalidateCachedPrefix(FUND_LIST_CACHE_KEY),
+    ]);
 
     if (notify) {
       await notifyFollowers(supabase, investor, filing, periodOfReport, filingId);
