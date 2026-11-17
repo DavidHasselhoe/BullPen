@@ -1270,7 +1270,9 @@ export function getPortfolioContextTool(userId: string, allowed: boolean) {
       if (!allowed) {
         return {
           holdingsAccess: 'off' as const,
-          howToTurnOn: 'Settings > Ask Bull > "Let Bull see my holdings and watchlist"',
+          howToTurnOn:
+            'A "Let Bull see my holdings" button appears under your reply: one tap turns it on and asks you again. ' +
+            'Point to that button in one short sentence. It also lives in Settings > Ask Bull.',
         };
       }
       const [holdingsResult, book, watchlistRes] = await Promise.all([

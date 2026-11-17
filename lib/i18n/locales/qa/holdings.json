@@ -130,7 +130,7 @@
   "holdingsTableImportFromCsv": "«IImpoort froom CSV oor PDF»",
   "holdingsTableTellBull": "«Teell Buull whaat yoouu oown»",
   "holdingsTableTellBullHint": "«Typee soomeethiing liikee 10 AApplee shaarees boouught iin Maarch.»",
-  "holdingsTableTellBullPlaceholder": "«Liikee 10 AApplee shaarees boouught iin Maarch»",
+  "holdingsTableTellBullPlaceholder": "«II boouught 10 AApplee shaarees iin Maarch»",
   "holdingsTableNoMatch": "«Noo hooldiings maatch \"{{search}}\"»",
   "holdingsTableRemoveHolding": "«Reemoovee hooldiing»",
   "holdingsTableRemoving": "«Reemooviing…»",

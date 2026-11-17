@@ -193,5 +193,8 @@
   "termsGateBeta": "Beta",
   "starterPromptWhyMoving": "Hva har beveget {{name}} i det siste?",
   "starterPromptExpensive": "Er {{name}} dyr akkurat nå?",
-  "starterPromptCompare": "Sammenlign {{a}} og {{b}}"
+  "starterPromptCompare": "Sammenlign {{a}} og {{b}}",
+  "holdingsAccessTurnOn": "La Bull se beholdningen min",
+  "holdingsAccessOn": "Ferdig. Bull kan nå se beholdningen og favorittlisten din.",
+  "holdingsAccessError": "Kunne ikke skru det på. Prøv igjen, eller bruk Innstillinger > Ask Bull."
 }

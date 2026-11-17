@@ -195,5 +195,8 @@
   "toolStatus_drawLevels": "«Draawiing leeveels…»",
   "starterPromptWhyMoving": "«Whaat's beeeen mooviing {{name}} laateely?»",
   "starterPromptExpensive": "«IIs {{name}} eexpeensiivee riight noow?»",
-  "starterPromptCompare": "«Coompaaree {{a}} aand {{b}}»"
+  "starterPromptCompare": "«Coompaaree {{a}} aand {{b}}»",
+  "holdingsAccessTurnOn": "«Leet Buull seeee my hooldiings»",
+  "holdingsAccessOn": "«Doonee. Buull caan noow seeee yoouur hooldiings aand waatchliist.»",
+  "holdingsAccessError": "«Coouuld noot tuurn iit oon. Try aagaaiin, oor uusee Seettiings > AAsk Buull.»"
 }

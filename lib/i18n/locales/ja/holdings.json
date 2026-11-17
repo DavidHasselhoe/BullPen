@@ -130,7 +130,7 @@
   "holdingsTableImportFromCsv": "CSVまたはPDFからインポート",
   "holdingsTableTellBull": "Bullに保有銘柄を伝える",
   "holdingsTableTellBullHint": "例えば「3月に買ったApple株10株」のように入力します。",
-  "holdingsTableTellBullPlaceholder": "例：3月に買ったApple株10株",
+  "holdingsTableTellBullPlaceholder": "3月にApple株を10株買いました",
   "holdingsTableNoMatch": "「{{search}}」に一致する保有銘柄がありません",
   "holdingsTableRemoveHolding": "保有銘柄を削除",
   "holdingsTableRemoving": "削除中…",

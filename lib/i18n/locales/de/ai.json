@@ -193,5 +193,8 @@
   "termsGateBeta": "Beta",
   "starterPromptWhyMoving": "Was hat {{name}} zuletzt bewegt?",
   "starterPromptExpensive": "Ist {{name}} gerade teuer?",
-  "starterPromptCompare": "Vergleiche {{a}} und {{b}}"
+  "starterPromptCompare": "Vergleiche {{a}} und {{b}}",
+  "holdingsAccessTurnOn": "Bull meine Bestände zeigen",
+  "holdingsAccessOn": "Erledigt. Bull kann jetzt deine Bestände und Watchlist sehen.",
+  "holdingsAccessError": "Konnte nicht eingeschaltet werden. Versuche es erneut oder nutze Einstellungen > Ask Bull."
 }

@@ -182,7 +182,27 @@ export function useUserSettings() {
     window.dispatchEvent(new Event('auth:refresh'));
   }, [user]);
 
+  // Settings > Ask Bull: lets Bull read holdings and watchlist. Off by default.
+  const allowHoldingsContext = settings.allow_holdings_context === true;
+
+  /** The one-tap switch Bull's chat offers when a portfolio question hits the setting. Throws on failure. */
+  const enableHoldingsContext = useCallback(async () => {
+    if (!user?.id) throw new Error('not_signed_in');
+    const supabase = createBrowserClient();
+    const { data: row, error: fetchError } = await supabase.from('users').select('settings').eq('id', user.id).single();
+    if (fetchError) throw fetchError;
+    const existing = (row?.settings as Record<string, unknown>) || {};
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ settings: { ...existing, allow_holdings_context: true } })
+      .eq('id', user.id);
+    if (updateError) throw updateError;
+    window.dispatchEvent(new Event('auth:refresh'));
+  }, [user]);
+
   return {
+    allowHoldingsContext,
+    enableHoldingsContext,
     makeProfilePublic,
     showWelcomeText,
     roundNumbers,

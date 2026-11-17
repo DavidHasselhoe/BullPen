@@ -193,5 +193,8 @@
   "termsGateBeta": "Beta",
   "starterPromptWhyMoving": "¿Qué ha movido a {{name}} últimamente?",
   "starterPromptExpensive": "¿Está {{name}} cara ahora mismo?",
-  "starterPromptCompare": "Compara {{a}} y {{b}}"
+  "starterPromptCompare": "Compara {{a}} y {{b}}",
+  "holdingsAccessTurnOn": "Dejar que Bull vea mis posiciones",
+  "holdingsAccessOn": "Listo. Bull ya puede ver tus posiciones y tu lista de observación.",
+  "holdingsAccessError": "No se pudo activar. Inténtalo de nuevo o usa Ajustes > Ask Bull."
 }

@@ -193,5 +193,8 @@
   "statisticsEvEbitda": "EV/EBITDA",
   "starterPromptWhyMoving": "Qu'est-ce qui fait bouger {{name}} ces derniers temps ?",
   "starterPromptExpensive": "{{name}} est-elle chère en ce moment ?",
-  "starterPromptCompare": "Compare {{a}} et {{b}}"
+  "starterPromptCompare": "Compare {{a}} et {{b}}",
+  "holdingsAccessTurnOn": "Laisser Bull voir mes avoirs",
+  "holdingsAccessOn": "C'est fait. Bull peut maintenant voir vos avoirs et votre liste de suivi.",
+  "holdingsAccessError": "Impossible de l'activer. Réessayez, ou passez par Paramètres > Ask Bull."
 }

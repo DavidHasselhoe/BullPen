@@ -195,5 +195,8 @@
   "toolStatus_drawLevels": "Drawing levels…",
   "starterPromptWhyMoving": "What's been moving {{name}} lately?",
   "starterPromptExpensive": "Is {{name}} expensive right now?",
-  "starterPromptCompare": "Compare {{a}} and {{b}}"
+  "starterPromptCompare": "Compare {{a}} and {{b}}",
+  "holdingsAccessTurnOn": "Let Bull see my holdings",
+  "holdingsAccessOn": "Done. Bull can now see your holdings and watchlist.",
+  "holdingsAccessError": "Could not turn it on. Try again, or use Settings > Ask Bull."
 }

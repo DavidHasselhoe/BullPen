@@ -127,7 +127,7 @@
   "holdingsTableImportFromCsv": "Importer depuis un CSV ou PDF",
   "holdingsTableTellBull": "Dites à Bull ce que vous possédez",
   "holdingsTableTellBullHint": "Écrivez par exemple 10 actions Apple achetées en mars.",
-  "holdingsTableTellBullPlaceholder": "Par exemple 10 actions Apple achetées en mars",
+  "holdingsTableTellBullPlaceholder": "J'ai acheté 10 actions Apple en mars",
   "holdingsTableNoMatch": "Aucune position ne correspond à « {{search}} »",
   "holdingsTableRemoveHolding": "Supprimer le titre",
   "holdingsTableRemoving": "Suppression…",

@@ -193,5 +193,8 @@
   "statisticsEvEbitda": "EV/EBITDA",
   "starterPromptWhyMoving": "最近の{{name}}の値動きの理由は？",
   "starterPromptExpensive": "{{name}}は今割高ですか？",
-  "starterPromptCompare": "{{a}}と{{b}}を比較して"
+  "starterPromptCompare": "{{a}}と{{b}}を比較して",
+  "holdingsAccessTurnOn": "Bullに保有銘柄を見せる",
+  "holdingsAccessOn": "完了しました。Bullがあなたの保有銘柄とウォッチリストを見られるようになりました。",
+  "holdingsAccessError": "オンにできませんでした。もう一度試すか、設定 > Ask Bull から変更してください。"
 }

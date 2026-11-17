@@ -130,7 +130,7 @@
   "holdingsTableImportFromCsv": "Import from CSV or PDF",
   "holdingsTableTellBull": "Tell Bull what you own",
   "holdingsTableTellBullHint": "Type something like 10 Apple shares bought in March.",
-  "holdingsTableTellBullPlaceholder": "Like 10 Apple shares bought in March",
+  "holdingsTableTellBullPlaceholder": "I bought 10 Apple shares in March",
   "holdingsTableNoMatch": "No holdings match \"{{search}}\"",
   "holdingsTableRemoveHolding": "Remove holding",
   "holdingsTableRemoving": "Removing…",

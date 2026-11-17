@@ -13,6 +13,7 @@ import { InsiderActivityResultCard, type InsiderActivityOutput } from './cards/I
 import { ScreenStocksResultCard, type ScreenStocksOutput } from './cards/ScreenStocksResultCard';
 import { ActionReceiptCard } from './cards/ActionReceiptCard';
 import { NavigateConfirmCard } from './cards/NavigateConfirmCard';
+import { HoldingsAccessCard } from './cards/HoldingsAccessCard';
 import type { ClientAction, ActionOutcome, NavigateDecision } from '@/lib/ai/tool-ux';
 
 /**
@@ -54,6 +55,7 @@ export function ToolResultCard({
   onRetryAction,
   onConfirmAction,
   onCancelAction,
+  onHoldingsAccessEnabled,
 }: {
   toolName: string;
   output: unknown;
@@ -71,6 +73,8 @@ export function ToolResultCard({
   /** Write actions wait for these: Confirm runs the change, Cancel records that nothing changed. */
   onConfirmAction?: () => void;
   onCancelAction?: () => void;
+  /** getPortfolioContext came back with access off and the user turned it on. */
+  onHoldingsAccessEnabled?: () => void;
 }) {
   if (clientAction && clientAction.type === 'navigate') {
     if (!clientAction.requiresConfirmation) return null;
@@ -100,6 +104,10 @@ export function ToolResultCard({
   if ('error' in (output as Record<string, unknown>)) return null;
 
   switch (toolName) {
+    case 'getPortfolioContext': {
+      if ((output as { holdingsAccess?: string }).holdingsAccess !== 'off') return null;
+      return <HoldingsAccessCard isHistorical={!!isHistorical} onEnabled={onHoldingsAccessEnabled} />;
+    }
     case 'getHealthScore': {
       const o = output as Partial<HealthScoreOutput>;
       if (!o.categories || typeof o.score !== 'number') return null;

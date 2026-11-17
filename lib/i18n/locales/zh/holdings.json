@@ -130,7 +130,7 @@
   "holdingsTableImportFromCsv": "从 CSV 或 PDF 导入",
   "holdingsTableTellBull": "告诉 Bull 你持有什么",
   "holdingsTableTellBullHint": "输入类似「3月买入的10股 Apple」这样的内容。",
-  "holdingsTableTellBullPlaceholder": "例如：3月买入的10股 Apple",
+  "holdingsTableTellBullPlaceholder": "我在3月买了10股 Apple",
   "holdingsTableNoMatch": "没有持仓与\"{{search}}\"相匹配",
   "holdingsTableRemoveHolding": "删除持仓",
   "holdingsTableRemoving": "删除中…",

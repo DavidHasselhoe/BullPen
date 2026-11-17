@@ -751,11 +751,14 @@ export const BullpenChat = forwardRef<BullpenChatHandle, BullpenChatProps>(funct
                 onConfirmAction={call.clientAction ? () => runClientAction(call.clientAction!, actionKey) : undefined}
                 onCancelAction={() => setActionOutcomes((prev) => ({ ...prev, [actionKey]: { status: 'cancelled' } }))}
               />
+                onHoldingsAccessEnabled={isLatest ? regenerateReply : undefined}
             );
           };
           // Anything that asks the user something (navigate Yes/No, confirm a
           // change to their account) goes after the text, which ends on that question.
-          const isNavigate = (call: (typeof toolCalls)[number]) => !!call.clientAction;
+          const isNavigate = (call: (typeof toolCalls)[number]) =>
+            !!call.clientAction ||
+            (call.toolName === 'getPortfolioContext' && (call.output as { holdingsAccess?: string } | null)?.holdingsAccess === 'off');
           // The screener's own table is that list: on the screener, or when this
           // reply opens it straight away, a screenStocks card repeats it (2026-10-28).
           const screenerShowsList = !!aiContext?.screener || toolCalls.some(
