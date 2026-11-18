@@ -26,6 +26,7 @@ import { ChevronLeft, ChevronRight, Lock, Play, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { ProBadge } from '@/components/billing/ProBadge';
 import { useEarningsHistory } from '@/hooks/use-earnings-history';
 import { useEarningsRecap } from '@/components/stock/EarningsRecap';
 import { storyReport, revenueGrowth, outlook, type StoryReport, type EarningsReaction } from '@/lib/earnings/story';
@@ -40,6 +41,7 @@ import type { ReleaseFigures } from '@/lib/ai/earnings-recap';
 
 const STORY_PARAM = 'story';
 const STORY_EVENT = 'bullpen:earnings-story';
+const STORY_ID = 'earnings-story';
 
 function setStoryParam(on: boolean) {
   const url = new URL(window.location.href);
@@ -112,14 +114,14 @@ export function EarningsStory({ ticker, name }: { ticker: string; name: string }
 
   if (!story) return null;
   const locale = intlLocale(i18n.language);
-  const compact = (v: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(v);
+  const compact = (v: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD', notation: 'compact', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v);
   const { report } = story;
   const recap = recapRes?.recap ?? null;
   const quarter = report.quarter && report.year ? fiscalLabel(t, { quarter: report.quarter, year: report.year, offCalendar: report.offCalendar }) : null;
   // A report date is a New York date, not a time of day: formatted as is, never through the display clock.
   const date = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${report.date}T12:00:00Z`));
 
-  const slides: { key: string; body: ReactNode }[] = [{ key: 'verdict', body: <VerdictSlide story={story} name={name} quarter={quarter} t={t} /> }];
+  const slides: { key: string; body: ReactNode }[] = [{ key: 'verdict', body: <VerdictSlide story={story} name={name} t={t} /> }];
   if (recap) {
     slides.push({ key: 'growth', body: <GrowthSlide figures={recap.figures} fallback={recap.bullets[1]} compact={compact} t={t} /> });
     slides.push({ key: 'outlook', body: <OutlookSlide figures={recap.figures} watch={recap.bullets[2]} sourceUrl={recap.sourceUrl} compact={compact} t={t} /> });
@@ -135,6 +137,8 @@ export function EarningsStory({ ticker, name }: { ticker: string; name: string }
       <DialogContent
         showCloseButton={false}
         aria-describedby={undefined}
+        // Focus the story itself, not the close button: arrow keys work at once and no ring shows on open.
+        onOpenAutoFocus={(e) => { e.preventDefault(); document.getElementById(STORY_ID)?.focus(); }}
         onCloseAutoFocus={(e) => {
           if (!toCardOnClose.current) return;
           toCardOnClose.current = false;
@@ -207,7 +211,7 @@ function StoryViewer({ slides, header, onEnd, t }: { slides: { key: string; body
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" onKeyDown={onKeyDown}>
+    <div id={STORY_ID} tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none" onKeyDown={onKeyDown}>
       <div className="px-4 pt-3 sm:px-5" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
         <div className="flex gap-1" aria-hidden>
           {slides.map((s, i) => (
@@ -228,7 +232,7 @@ function StoryViewer({ slides, header, onEnd, t }: { slides: { key: string; body
       </div>
 
       <div
-        className="relative min-h-0 flex-1 touch-pan-y select-none overflow-y-auto px-5 py-6 sm:px-6"
+        className="relative min-h-0 flex-1 touch-pan-y select-none overflow-y-auto overflow-x-hidden px-5 py-6 sm:px-6"
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onClick={onClick}
@@ -237,7 +241,8 @@ function StoryViewer({ slides, header, onEnd, t }: { slides: { key: string; body
         <div
           key={slides[at].key}
           className={cn(
-            'flex min-h-full flex-col justify-center animate-in fade-in duration-200',
+            // Top-aligned so the headline sits at the same height on every slide.
+            'pt-2 sm:pt-4 animate-in fade-in duration-200',
             direction === 1 ? 'motion-safe:slide-in-from-right-6' : 'motion-safe:slide-in-from-left-6',
           )}
         >
@@ -263,11 +268,7 @@ function StoryViewer({ slides, header, onEnd, t }: { slides: { key: string; body
 
 // ─── Slides ──────────────────────────────────────────────────────────────────
 
-function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{children}</p>;
-}
-
-function VerdictSlide({ story, name, quarter, t }: { story: StoryReport; name: string; quarter: string | null; t: TFunction }) {
+function VerdictSlide({ story, name, t }: { story: StoryReport; name: string; t: TFunction }) {
   const { report, usualSurprise } = story;
   const diff = Math.round((report.epsActual - report.epsEstimate) * 100) / 100;
   const surprise = Math.abs(report.epsEstimate) >= 0.05 ? (diff / Math.abs(report.epsEstimate)) * 100 : null;
@@ -275,7 +276,6 @@ function VerdictSlide({ story, name, quarter, t }: { story: StoryReport; name: s
   const tone = verdict === 'beat' ? UP : verdict === 'missed' ? DOWN : 'text-muted-foreground';
   return (
     <div className="space-y-5">
-      <Eyebrow>{quarter ? t('earningsStoryVerdictEyebrow', { quarter }) : t('earningsStoryVerdictEyebrowNoQuarter')}</Eyebrow>
       <h2 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl">
         <span className={tone} aria-hidden>{verdict === 'beat' ? '▲ ' : verdict === 'missed' ? '▼ ' : ''}</span>
         {t(verdict === 'beat' ? 'earningsStoryVerdictBeat' : verdict === 'missed' ? 'earningsStoryVerdictMissed' : 'earningsStoryVerdictMet', { name })}
@@ -308,7 +308,6 @@ function GrowthSlide({ figures, fallback, compact, t }: { figures: ReleaseFigure
   if (growth == null || !figures?.revenue || !figures.revenueYearAgo) {
     return (
       <div className="space-y-4">
-        <Eyebrow>{t('earningsStoryGrowthEyebrow')}</Eyebrow>
         <h2 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{t('earningsStoryGrowthFallbackTitle')}</h2>
         {/* Model-written, shown whole. */}
         {fallback && <p className="text-base leading-relaxed">{fallback}</p>}
@@ -322,7 +321,6 @@ function GrowthSlide({ figures, fallback, compact, t }: { figures: ReleaseFigure
   ];
   return (
     <div className="space-y-6">
-      <Eyebrow>{t('earningsStoryGrowthEyebrow')}</Eyebrow>
       <h2 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl">
         <span className={growth >= 0 ? UP : DOWN} aria-hidden>{growth >= 0 ? '▲ ' : '▼ '}</span>
         {t(growth >= 0 ? 'earningsStoryGrowthUp' : 'earningsStoryGrowthDown', { pct: pct(growth) })}
@@ -353,25 +351,21 @@ function OutlookSlide({ figures, watch, sourceUrl, compact, t }: {
     <div className="space-y-6">
       {o && (
         <div className="space-y-2">
-          <Eyebrow>{t('earningsStoryOutlookEyebrow')}</Eyebrow>
           <h2 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl">
             {t('earningsStoryOutlookTitle', { amount: compact(o.mid) })}
           </h2>
           {o.vsNow != null && Math.abs(o.vsNow) >= 0.5 && (
-            <p className={cn('font-mono text-sm font-medium tabular-nums', o.vsNow > 0 ? UP : DOWN)}>
-              {t('earningsStoryOutlookVsNow', { pct: signedPct(o.vsNow) })}
+            <p className="text-sm">
+              <span className={cn('font-mono font-medium tabular-nums', o.vsNow > 0 ? UP : DOWN)}>{signedPct(o.vsNow)}</span>{' '}
+              <span className="text-muted-foreground">{t('earningsStoryOutlookVsNow')}</span>
             </p>
           )}
           <p className="text-sm text-muted-foreground">{t('earningsStoryOutlookOwn')}</p>
         </div>
       )}
-      {watch && (
-        <div className="space-y-2">
-          <Eyebrow>{t('earningsStoryWatchEyebrow')}</Eyebrow>
-          {/* Model-written, shown whole. */}
-          <p className={cn('leading-relaxed', o ? 'text-base' : 'text-lg')}>{watch}</p>
-        </div>
-      )}
+      {/* Model-written, shown whole. Without an outlook figure it is the slide's own heading's subject. */}
+      {!o && <h2 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{t('earningsStoryWatchTitle')}</h2>}
+      {watch && <p className="text-base leading-relaxed">{watch}</p>}
       <p className="text-xs text-muted-foreground">
         {t('earningsRecapSource')}
         {sourceUrl && <>{' '}<a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">{t('earningsRecapReadRelease')}</a></>}
@@ -383,11 +377,14 @@ function OutlookSlide({ figures, watch, sourceUrl, compact, t }: {
 function LockedSlide({ t }: { t: TFunction }) {
   return (
     <div className="space-y-4">
-      <Eyebrow><Lock className="mr-1 inline size-3 align-[-1px]" aria-hidden />Pro</Eyebrow>
-      <h2 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl">{t('earningsStoryLockedTitle')}</h2>
+      <h2 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl">
+        <Lock className="mr-2 inline size-5 align-[-2px] text-muted-foreground" aria-hidden />
+        {t('earningsStoryLockedTitle')}
+      </h2>
       <p className="text-base leading-relaxed text-muted-foreground">{t('earningsStoryLockedBody')}</p>
-      <div>
+      <div className="flex items-center gap-3">
         <Button asChild size="sm" className="h-11"><Link href="/upgrade">{t('earningsStoryLockedCta')}</Link></Button>
+        <ProBadge />
       </div>
     </div>
   );
@@ -397,7 +394,6 @@ function ReactionSlide({ reaction, story, t }: { reaction: EarningsReaction | nu
   if (!reaction) {
     return (
       <div className="space-y-4" aria-busy>
-        <Eyebrow>{t('earningsStoryReactionEyebrow')}</Eyebrow>
         <div className="h-9 w-3/4 animate-pulse rounded-md bg-muted" />
         <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
       </div>
@@ -411,7 +407,6 @@ function ReactionSlide({ reaction, story, t }: { reaction: EarningsReaction | nu
   const asOf = new Date(reaction.asOf * 1000);
   return (
     <div className="space-y-5">
-      <Eyebrow>{t('earningsStoryReactionEyebrow')}</Eyebrow>
       <h2 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl">
         {!flat && <span className={move > 0 ? UP : DOWN} aria-hidden>{move > 0 ? '▲ ' : '▼ '}</span>}
         {flat ? t('earningsStoryReactionFlat') : t(move > 0 ? 'earningsStoryReactionUp' : 'earningsStoryReactionDown', { pct: pct(move, 1) })}

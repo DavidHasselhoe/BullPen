@@ -134,7 +134,7 @@ export function EarningsDotChart({ columns }: { columns: EarningsDotColumn[] }) 
               <span className={cn('mt-1 whitespace-nowrap text-xs', isSelected ? 'font-medium text-foreground' : 'text-muted-foreground')}>
                 {c.label}
               </span>
-              <span className={cn('mt-0.5 whitespace-nowrap font-mono text-xs tabular-nums leading-tight', v ? VERDICT_TEXT[v] : 'text-muted-foreground')}>
+              <span className={cn('mt-0.5 whitespace-nowrap text-xs leading-tight', !c.upcoming && 'font-mono tabular-nums', v ? VERDICT_TEXT[v] : 'text-muted-foreground')}>
                 {c.upcoming
                   ? t('earningsChartNext')
                   : v === 'met'
