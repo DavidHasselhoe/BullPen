@@ -1,6 +1,7 @@
 import { getImageProps } from 'next/image';
-import type { CSSProperties } from 'react';
+import type { ComponentType, CSSProperties } from 'react';
 import { SectionHeading } from './Atoms';
+import { PlainEnglishDemo } from './Demos';
 
 /**
  * What a beginner gets, free first, as a bento of real light-mode captures.
@@ -11,6 +12,8 @@ import { SectionHeading } from './Atoms';
  * close to the app's own size inside an inset frame, so text reads like it
  * does in the product and no corner is cut. `y` scrolls a tall
  * capture to the moment the copy talks about. See public/screenshots/README.md.
+ * A card with `demo` shows a live, animated copy of the app's UI instead
+ * (Demos.tsx).
  */
 
 interface Shot {
@@ -21,24 +24,22 @@ interface Shot {
   y?: number;
 }
 
-interface Benefit {
+interface Common {
   title: string;
   body: string;
+  /** Capture file name; also the card's key. */
   file: string;
-  alt: string;
-  desktop: Shot;
-  phone: Shot;
   pro?: boolean;
 }
+type ShotBenefit = Common & { alt: string; desktop: Shot; phone: Shot };
+type Benefit = ShotBenefit | (Common & { demo: ComponentType });
 
 const BENEFITS: Benefit[] = [
   {
     title: 'Every number, in plain English.',
     body: 'Beginner mode turns "EV/EBITDA" into "Company value vs operating profit" and says what it means for this company. Tap any label for more.',
     file: 'bento-plain-english',
-    alt: "NVIDIA's company value vs operating profit, 24.39, on a scale from 0 to 30 with the typical value marked, and a plain-English line on what it means",
-    desktop: { w: 568, h: 879, y: 604 },
-    phone: { w: 328, h: 995, y: 700 },
+    demo: PlainEnglishDemo,
   },
   {
     title: 'One grade for how healthy a company is.',
@@ -83,7 +84,7 @@ const BENEFITS: Benefit[] = [
   },
 ];
 
-function Capture({ b }: { b: Benefit }) {
+function Capture({ b }: { b: ShotBenefit }) {
   const desktop = getImageProps({ src: `/screenshots/${b.file}.png`, alt: b.alt, width: b.desktop.w, height: b.desktop.h });
   const phone = getImageProps({ src: `/screenshots/${b.file}-m.png`, alt: b.alt, width: b.phone.w, height: b.phone.h });
   const vars = {
@@ -119,7 +120,11 @@ export function Benefits() {
                 </h3>
                 <p className="benefit-body">{b.body}</p>
               </div>
-              <Capture b={b} />
+              {'demo' in b ? (
+                <div className="benefit-demo"><b.demo /></div>
+              ) : (
+                <Capture b={b} />
+              )}
             </article>
           ))}
         </div>

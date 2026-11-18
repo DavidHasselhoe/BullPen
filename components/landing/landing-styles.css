@@ -888,6 +888,151 @@
   .bullpen-landing-root .benefit-card:hover { transition: none; transform: none; }
 }
 
+/* ── Live demos (Demos.tsx) ────────────────────────────────────────────────
+   The app's own card, drawn larger than in the product so it reads at bento
+   size. Final state is the default; [data-phase="armed"] is the rewound
+   start, and only transform and opacity move between the two (plus the
+   ring's stroke offset, paint-only on one small SVG). */
+.bullpen-landing-root .benefit-demo {
+  flex: 1;
+  margin: 0 22px 22px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+}
+.bullpen-landing-root .demo-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.bullpen-landing-root .demo-co {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.bullpen-landing-root .demo-when { font-size: 12px; font-weight: 400; color: var(--fg-dim); }
+.bullpen-landing-root .demo-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.bullpen-landing-root .demo-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+.bullpen-landing-root .demo-toggle button[aria-checked="true"] {
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.1);
+}
+.bullpen-landing-root .demo-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (pointer: coarse) {
+  .bullpen-landing-root .demo-toggle button { min-height: 44px; }
+}
+
+.bullpen-landing-root .mdemo-label {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--fg-muted);
+}
+.bullpen-landing-root .mdemo-label-text { animation: demo-fade-in 300ms ease-out both; }
+.bullpen-landing-root .mdemo-help {
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: -0.15em;
+  color: var(--fg-dim);
+  transition: opacity 300ms;
+}
+.bullpen-landing-root .mdemo-help.is-hidden { opacity: 0; }
+.bullpen-landing-root .mdemo-value {
+  margin: 8px 0 18px;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+.bullpen-landing-root .mdemo-track {
+  position: relative;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--surface-2);
+}
+.bullpen-landing-root .mdemo-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 99px;
+  background: color-mix(in oklch, var(--fg) 40%, transparent);
+  transform-origin: left;
+  transition: transform 900ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+.bullpen-landing-root .mdemo-tick {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 16px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: color-mix(in oklch, var(--fg) 55%, transparent);
+}
+.bullpen-landing-root .mdemo-scale {
+  position: relative;
+  height: 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--fg-dim);
+}
+.bullpen-landing-root .mdemo-scale span { position: absolute; white-space: nowrap; }
+.bullpen-landing-root .mdemo-insight {
+  margin: 18px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--fg-muted);
+  transition: opacity 400ms ease-out 150ms;
+}
+.bullpen-landing-root .mdemo-insight.is-hidden { opacity: 0; transition: none; }
+.bullpen-landing-root .demo[data-phase="play"] .mdemo-insight { transition-delay: 800ms; }
+@keyframes demo-fade-in {
+  from { opacity: 0; }
+}
+@media (max-width: 900px) {
+  .bullpen-landing-root .benefit-demo { margin: 0 16px 16px; padding: 18px; }
+  .bullpen-landing-root .mdemo-value { font-size: 36px; }
+}
+/* The plain label wraps on phones: hold two lines so the flip moves nothing,
+   and drop the toggle icons so it stays beside the company name. */
+@media (max-width: 520px) {
+  .bullpen-landing-root .mdemo-label { min-height: 2.8em; }
+  .bullpen-landing-root .demo-toggle svg { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bullpen-landing-root .demo * { transition: none !important; }
+}
+
 
 /* ── Sections ──────────────────────────────────────────────────────────── */
 .bullpen-landing-root .landing-section { position: relative; padding: 112px 0; }
