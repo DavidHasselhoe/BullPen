@@ -26,6 +26,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 import { getStockCandles, getStockQuotes } from '@/lib/market-data';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { tradingMinutesET } from '@/lib/market-data/trading-day';
@@ -148,7 +149,9 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       supabase
         .from('user_holdings')
         .select('user_id, symbol, company_name, quantity')
-        .eq('alerts_enabled', true) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string; quantity: number | null }> | null }>,
+        .eq('alerts_enabled', true)
+        // A sold position is not "your stock": its moves landed in the morning email as one.
+        .or(OPEN_POSITION_FILTER) as unknown as Promise<{ data: Array<{ user_id: string; symbol: string; company_name: string; quantity: number | null }> | null }>,
     ]);
 
     // Build per-user symbol map

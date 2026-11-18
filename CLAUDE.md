@@ -30,6 +30,10 @@ It runs a methodical final pass — design-system alignment, spacing/alignment a
 
 Every create, save or delete shows the user when it fails: an inline `role="alert"` message (as in `components/watchlist/CreateListDialog.tsx`) or an error state. Never `mutateAsync(...).catch(() => {})`, and never treat a `{ success: false }` result as "do nothing". A tier or limit gate lives in one function that both the API route and the client hook call (`canCreateWatchlist` is the example), so the button and the server can't disagree. Run `npm run smoke-writes` after touching a watchlist route or gate.
 
+### A sold position is never "owned"
+
+Selling everything keeps the `user_holdings` row at quantity 0 for history, so a plain read of that table returns stocks the user no longer has. On the client use `useHoldings()`, which is open-only; `useHoldings({ includeClosed: true })` is for history screens. On the server, `getHoldings()` is open-only, and any direct `.from('user_holdings').select(...)` adds `.or(OPEN_POSITION_FILTER)` or a `// closed-ok: <why>` comment above it. `npm run test-no-sold-as-owned` enforces it; run it after touching any holdings read.
+
 ### Long pick lists get a search box
 
 A dropdown with more than ~20 options (time zones, industries, countries, currencies if the list grows) uses `<SearchableSelect>` (`components/ui/searchable-select.tsx`), not `<Select>`. A plain Select of 400 time zones ran past the Settings modal with no way to jump to Oslo. Count the real worst case, not the usual one: the screener's Industry list is ~20 inside a sector and 125 with none picked. Options like "Automatic" or "Any" go in `pinned`, which stays above the list.

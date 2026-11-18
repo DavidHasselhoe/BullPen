@@ -283,6 +283,7 @@ async function reverseEvent(userId: string, event: JournalEvent): Promise<string
     .maybeSingle();
   if (!lot) return null; // already gone; nothing to reverse
 
+  // closed-ok: undoing a buy works on the row whatever its quantity.
   const { data: holding } = await supabase
     .from('user_holdings')
     .select('id, quantity, avg_price')
@@ -334,6 +335,7 @@ async function removeEmptiedHoldings(
   if (holdingIds.length === 0) return;
   const supabase = createServerClient();
 
+  // closed-ok: undo looks up the rows it created, by id.
   const { data: holdings } = await supabase
     .from('user_holdings')
     .select('id, symbol, quantity, created_at')

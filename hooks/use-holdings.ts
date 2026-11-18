@@ -21,14 +21,23 @@ import {
   type SellHoldingInput,
 } from '@/app/actions/holdings';
 import type { UserHolding, HoldingSale, HoldingPurchase } from '@/lib/types/database';
+import { isOpenPosition } from '@/lib/holdings/open-position';
+
+const openOnly = (rows: UserHolding[]) => rows.filter(isOpenPosition);
 
 /**
- * TanStack Query hook to fetch user holdings
+ * The positions this user holds now. A fully sold position keeps its row at
+ * quantity 0 for sale history and undo, and showing it anywhere as "yours" is
+ * the bug this app has shipped over and over, so open-only is the default.
+ * `includeClosed` is for the few screens that show history (the holdings page,
+ * import review, the chart's buy/sell markers) and must filter for themselves.
  */
-export function useHoldings() {
+export function useHoldings({ includeClosed = false }: { includeClosed?: boolean } = {}) {
   const { user, isAuthenticated } = useAuth();
 
   return useQuery({
+    // One cache entry either way: `select` narrows it per caller.
+    select: includeClosed ? undefined : openOnly,
     queryKey: ['holdings', user?.id],
     queryFn: async (): Promise<UserHolding[]> => {
       if (!isAuthenticated || !user) {

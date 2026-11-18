@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 import { areHoldingsPublic } from '@/lib/social/visibility';
 
 /**
@@ -48,11 +49,14 @@ async function countBy(
   supabase: ReturnType<typeof createServerClient>,
   table: string,
   column: string,
-  ids: string[]
+  ids: string[],
+  orFilter?: string
 ): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
   if (ids.length === 0) return counts;
-  const { data } = await supabase.from(table).select(column).in(column, ids);
+  let query = supabase.from(table).select(column).in(column, ids);
+  if (orFilter) query = query.or(orFilter);
+  const { data } = await query;
   for (const row of (data as unknown as Record<string, string>[] | null) ?? []) {
     counts.set(row[column], (counts.get(row[column]) ?? 0) + 1);
   }
@@ -103,7 +107,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
     const [theses, followers, holdings] = await Promise.all([
       countBy(supabase, 'stock_theses', 'user_id', ids),
       countBy(supabase, 'user_follows', 'following_id', ids),
-      countBy(supabase, 'user_holdings', 'user_id', [...holdingsVisible]),
+      countBy(supabase, 'user_holdings', 'user_id', [...holdingsVisible], OPEN_POSITION_FILTER),
     ]);
 
     // Most active first: what someone has written and who follows them is the

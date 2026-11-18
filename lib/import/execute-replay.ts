@@ -47,6 +47,7 @@ export async function executeReplay(
   const supabase = createServerClient();
 
   const symbols = [...new Set(plan.ops.map((op) => op.symbol))];
+  // closed-ok: replay writes onto the existing row, sold or not.
   const { data: existingRows } = await supabase
     .from('user_holdings')
     .select('id, symbol')

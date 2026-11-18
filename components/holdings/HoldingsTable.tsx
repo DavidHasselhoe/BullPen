@@ -482,7 +482,8 @@ const HoldingRow = memo(function HoldingRow({
 
 export function HoldingsTable({ onAddClick, onImportClick, holdingsWithPrices, hoveredSector, isPricesLoading: isLoadingPrices, cashValue = null, onCashClick }: HoldingsTableProps) {
   const { t } = useTranslation('holdings');
-  const { data: holdings, isLoading } = useHoldings();
+  // Closed rows too: someone who sold everything still needs the table (and Sold Positions), not the empty state.
+  const { data: holdings, isLoading } = useHoldings({ includeClosed: true });
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
   const removeHolding = useRemoveHolding();

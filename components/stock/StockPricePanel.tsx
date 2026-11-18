@@ -336,7 +336,8 @@ export function StockPricePanel({ ticker, minimal = false }: { ticker: string; m
   // Cheap Supabase reads (no TwelveData cost) shared across the app via the
   // same queryKey, so this is fetched unconditionally rather than gated
   // behind the toggle — flipping the switch on shows markers instantly.
-  const { data: allHoldings } = useHoldings();
+  // Closed rows too: a sold position's buy date still marks the chart.
+  const { data: allHoldings } = useHoldings({ includeClosed: true });
   const { data: allSales } = useHoldingSales();
   const { data: allPurchases } = useHoldingPurchases();
   const myHolding = allHoldings?.find((h) => h.symbol.toUpperCase() === ticker.toUpperCase());

@@ -186,7 +186,7 @@ export function ImportReviewClient({ importId }: { importId: string }) {
   // user includes them one by one.
   const [includedDuplicates, setIncludedDuplicates] = useState<Set<number>>(new Set());
 
-  const { data: existingHoldings } = useHoldings();
+  const { data: existingHoldings } = useHoldings({ includeClosed: true });
 
   const draft = data?.import.parsed;
 

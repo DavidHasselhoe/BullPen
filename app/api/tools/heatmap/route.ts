@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/client';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 import { withRateLimit, requireAuth } from '@/lib/security/api-security';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
 import { SP500_SECTORS } from '@/lib/market-data/sp500-sectors';
@@ -246,19 +247,11 @@ async function resolveMyStocks(userId: string): Promise<HeatmapStock[]> {
   const supabase = createServerClient();
 
   const [{ data: holdingsRows }, { data: watchlistRows }] = await Promise.all([
-    supabase.from('user_holdings').select('symbol, quantity').eq('user_id', userId),
+    supabase.from('user_holdings').select('symbol').eq('user_id', userId).or(OPEN_POSITION_FILTER),
     supabase.from('user_watchlist').select('symbol').eq('user_id', userId),
   ]);
 
-  // A fully sold position keeps its row at quantity = 0 rather than being
-  // deleted (see docs/superpowers/specs/2026-07-23-holding-sales-design.md —
-  // enables sale history / average-cost accounting). Null quantity is a
-  // separate, legitimate case (tracking without portfolio values, per
-  // user_holdings.quantity's column comment) and must stay included — same
-  // "quantity == null || quantity > 0" distinction app/holdings/page.tsx uses.
-  const heldSymbols = (holdingsRows ?? [])
-    .filter((r) => r.quantity == null || (r.quantity as number) > 1e-9)
-    .map((r) => r.symbol as string);
+  const heldSymbols = (holdingsRows ?? []).map((r) => r.symbol as string);
 
   const uniqueSymbols = [
     ...new Set(

@@ -118,6 +118,7 @@ export async function exportUserData(): Promise<{
 
     const [profileResult, holdingsResult] = await Promise.all([
       supabase.from('users').select('*').eq('id', userId).single(),
+      // closed-ok: a data export includes sold positions.
       supabase.from('user_holdings').select('*').eq('user_id', userId),
     ]);
 

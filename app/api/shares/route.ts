@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 import { computeTodaySparkline, getTodayCandlesForSymbol, type SparklineHolding, type CandleData } from '@/lib/holdings/today-sparkline';
 import { getStockQuotes } from '@/lib/market-data';
 import { isOutsideRegularSessionET } from '@/lib/twelvedata/twelvedata-client';
@@ -31,7 +32,8 @@ async function handler(
   const { data: holdingRows } = await supabase
     .from('user_holdings')
     .select('symbol, quantity, mic_code')
-    .eq('user_id', session.userId);
+    .eq('user_id', session.userId)
+    .or(OPEN_POSITION_FILTER);
 
   // Snapshotted onto the row below (not joined live at render time) — same
   // "frozen, independent of what happens to the account later" reasoning as

@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, addSecurityHeaders } from '@/lib/security/api-security';
 import { createServerClient } from '@/lib/supabase/client';
+import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
 import { areHoldingsPublic } from '@/lib/social/visibility';
 import { buildFundTeaser, type FundTeaser } from '@/lib/institutions/fund-teaser';
 import { formatAmountRange, tradeDirection, type TradeDirection } from '@/lib/congress/types';
@@ -75,6 +76,7 @@ async function memberAdds(supabase: Supabase, userId: string): Promise<FeedItem[
     .from('user_holdings')
     .select('id, user_id, symbol, company_name, created_at')
     .in('user_id', [...visible.keys()])
+    .or(OPEN_POSITION_FILTER)
     .order('created_at', { ascending: false })
     .limit(MAX_ITEMS);
 

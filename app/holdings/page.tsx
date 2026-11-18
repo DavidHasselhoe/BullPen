@@ -44,7 +44,7 @@ import { listingMic } from '@/lib/assets/asset-type';
 export default function HoldingsPage() {
   const { t } = useTranslation('holdings');
   const { user, isAuthenticated } = useAuth();
-  const { data: allHoldings, isLoading: holdingsLoading } = useHoldings();
+  const { data: allHoldings, isLoading: holdingsLoading } = useHoldings({ includeClosed: true });
 
   // Selling down to 0 shares zeroes out quantity rather than deleting the row
   // (see holdings-db.ts sellHolding) so undo and historical chart reconstruction

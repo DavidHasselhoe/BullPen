@@ -99,6 +99,7 @@ async function handler(request: NextRequest, context: unknown, session: { userId
     });
   }
 
+  // closed-ok: an import that buys a sold stock again reopens its row.
   const { data: existingRows } = await supabase
     .from('user_holdings')
     .select('id, symbol, quantity, source')

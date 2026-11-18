@@ -48,6 +48,7 @@ async function handler(
   const supabase = createServerClient();
 
   const [{ data: holdingRows }, { data: saleRows }] = await Promise.all([
+    // closed-ok: past performance includes positions sold since.
     supabase
       .from('user_holdings')
       .select('symbol, company_name, quantity, date_purchased, created_at, trading_currency')
