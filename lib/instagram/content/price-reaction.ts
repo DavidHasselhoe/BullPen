@@ -34,12 +34,16 @@ function sessionFor(releasedAt: number): 'pre' | 'post' | null {
   return minute < 9 * 60 + 30 ? 'pre' : null;
 }
 
-/** The reaction as of `now`, in one call. Exported for re-rendering past posts at their publish time. */
-export async function readPriceReactionAsOf(ticker: string, releasedAt: number, now: number): Promise<PriceReaction | null> {
+/**
+ * The reaction as of `now`, in one call. Exported for re-rendering past posts at
+ * their publish time, and for the stock page's earnings story, which reads days
+ * of trading at 5-minute bars to stay under one call's bar limit.
+ */
+export async function readPriceReactionAsOf(ticker: string, releasedAt: number, now: number, resolution: '1' | '5' = '1'): Promise<PriceReaction | null> {
   const session = sessionFor(releasedAt);
   if (!session) return null;
   // Four days back reaches a Monday pre-market release's Friday close in the same call.
-  const r = await getStockCandles(ticker, releasedAt - 4 * 86400, now, '1', { extendedHours: true });
+  const r = await getStockCandles(ticker, releasedAt - 4 * 86400, now, resolution, { extendedHours: true });
   const bars = r.t.map((t, i) => ({ t, c: r.c[i], regular: r.session?.[i] === 'regular' })).filter((b) => b.t <= now);
 
   const close = bars.filter((b) => b.regular && b.t < releasedAt).pop();

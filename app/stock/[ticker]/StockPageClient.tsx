@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { EarningsCalendar } from '@/components/stock/EarningsCalendar';
 import { EarningsEmailLanding } from '@/components/stock/EarningsEmailSignup';
+import { EarningsStory } from '@/components/stock/EarningsStory';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -416,6 +417,8 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
                         <AddToListPicker symbol={ticker} companyName={displayName} />
                         <AlertDialog symbol={ticker} companyName={displayName} />
                         <EarningsEmailLanding symbol={ticker} name={displayName} />
+                        {/* Outside the lazy Earnings card, so ?story=earnings opens at the top of the page. */}
+                        {showFundamentals && <EarningsStory ticker={ticker} name={displayName} />}
                         {showFundamentals && (
                           <Button asChild variant="outline" size="sm" className="gap-2">
                             <Link href={`/tools/deep-dive/${ticker}?new=1`}>

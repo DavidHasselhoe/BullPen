@@ -99,6 +99,8 @@ export function notificationSource(n: Notification, t: (key: string) => string):
     const course = n.entity_id?.match(/^academy:new_course:(.+)$/)?.[1];
     return { label: t('notifSourceAcademy'), href: course ? `/academy/${course}` : '/academy' };
   }
+  // A results recap opens the earnings story on the stock page (components/stock/EarningsStory.tsx).
+  if (sym && n.entity_id?.includes(':earnings_recap:')) return { label: sym, href: `/stock/${sym}?story=earnings` };
   if (sym) return { label: sym, href: `/stock/${sym}` };
   return null;
 }

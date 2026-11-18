@@ -20,6 +20,7 @@ import { useEarningsHistory } from '@/hooks/use-earnings-history';
 import { EarningsDotChart, type EarningsDotColumn } from '@/components/stock/EarningsDotChart';
 import { EarningsEmailSignup } from '@/components/stock/EarningsEmailSignup';
 import { EarningsRecap, useEarningsRecap } from '@/components/stock/EarningsRecap';
+import { EarningsStoryButton } from '@/components/stock/EarningsStory';
 import type { EarningsCalendar as EarningsItem } from '@/lib/finnhub/finnhub-client';
 import { fiscalLabel } from '@/lib/finance/fiscal-label';
 import { todayET } from '@/lib/dates/calendar-format';
@@ -205,6 +206,8 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
             {t('earningsDateNotAnnounced')}
           </p>
         )}
+
+        <EarningsStoryButton ticker={ticker} />
 
         <EarningsRecap data={recap} />
 
