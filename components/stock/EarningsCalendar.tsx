@@ -5,8 +5,8 @@
  *
  * Fetches ~15 months of history under its own queryKey (distinct from the
  * upcoming-only snapshot seed) so "Recent Reports" has data to show. Next
- * report leads with a countdown; past quarters render a DeltaBar (actual vs
- * estimate) instead of two bare numbers.
+ * report leads with a countdown; past quarters render as an expected-vs-actual
+ * dot chart (EarningsDotChart) instead of two bare numbers.
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useExperienceLevel } from '@/hooks/use-experience-level';
 import { useEarningsHistory } from '@/hooks/use-earnings-history';
-import { DeltaBar } from '@/components/viz/DeltaBar';
+import { EarningsDotChart, type EarningsDotColumn } from '@/components/stock/EarningsDotChart';
 import { EarningsEmailSignup } from '@/components/stock/EarningsEmailSignup';
 import { EarningsRecap, useEarningsRecap } from '@/components/stock/EarningsRecap';
 import type { EarningsCalendar as EarningsItem } from '@/lib/finnhub/finnhub-client';
@@ -104,11 +104,27 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
   const past = Array.from(seen.values()).sort((a, b) => b.date.localeCompare(a.date));
   const nextEvent = upcoming[0] ?? null;
 
-  const recent = past.slice(0, 5);
+  // The last four reports, as the chart shows them; the streak counts the same ones.
+  const recent = past.slice(0, 4);
   // Unconfirmed reports aren't counted toward the beat/miss streak — the actual
   // EPS hasn't been cross-checked against a filed statement yet, so it shouldn't
   // feed a confidence-implying stat.
   const scored = recent.filter((e) => e.epsActual != null && e.epsEstimate != null && !e.unconfirmed);
+  const quarterLabel = (e: EarningsItem) =>
+    e.quarter && e.year ? fiscalLabel(t, { quarter: e.quarter, year: e.year, offCalendar: e.offCalendar }) : formatDate(e.date);
+  const columns: EarningsDotColumn[] = [
+    ...[...recent].reverse().map((e) => ({
+      key: e.date,
+      label: quarterLabel(e),
+      date: formatDate(e.date),
+      estimate: e.epsEstimate,
+      actual: e.epsActual,
+      provisional: e.actualSource === 'release' ? ('release' as const) : e.unconfirmed ? ('unconfirmed' as const) : undefined,
+    })),
+    ...(nextEvent?.epsEstimate != null
+      ? [{ key: nextEvent.date, label: quarterLabel(nextEvent), date: formatDate(nextEvent.date), estimate: nextEvent.epsEstimate, actual: null, upcoming: true, estimatedDate: nextEvent.estimated }]
+      : []),
+  ];
   const beats = scored.filter((e) => (e.epsActual as number) >= (e.epsEstimate as number)).length;
   const streakLine =
     scored.length >= 2
@@ -195,7 +211,7 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
         {/* Past earnings — actual vs estimate bars */}
         {recent.length > 0 && (
           <div>
-            <div className="mb-2 flex items-baseline justify-between gap-3">
+            <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('earningsRecentReportsLabel')}</p>
               {streakLine && (
                 <p className="text-xs text-muted-foreground">
@@ -203,40 +219,7 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
                 </p>
               )}
             </div>
-            <div className="space-y-1">
-              {recent.map((e, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between gap-4 py-2 px-3 rounded-md hover:bg-muted/40 transition-colors"
-                >
-                  {/* Wraps on phones: it was shrink-0, so date + quarter +
-                      "Awaiting filing" pushed the result off the card. */}
-                  <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span className="whitespace-nowrap text-sm font-medium">{formatDate(e.date)}</span>
-                    {e.quarter && e.year && (
-                      <span className="text-xs text-muted-foreground">{fiscalLabel(t, { quarter: e.quarter, year: e.year, offCalendar: e.offCalendar })}</span>
-                    )}
-                    {e.unconfirmed && (
-                      <Badge variant="outline" className="text-xs">{t('earningsUnconfirmed')}</Badge>
-                    )}
-                  </div>
-                  <DeltaBar
-                    className="shrink-0"
-                    estimate={e.epsEstimate}
-                    actual={e.epsActual}
-                    srLabel={
-                      e.epsActual != null && e.epsEstimate != null
-                        ? t('earningsDeltaSrLabelActual', {
-                            actual: e.epsActual.toFixed(2),
-                            estimate: e.epsEstimate.toFixed(2),
-                            suffix: e.unconfirmed ? t('earningsDeltaSrLabelUnconfirmedSuffix') : '',
-                          })
-                        : t('earningsDeltaSrLabelEstimate', { estimate: e.epsEstimate?.toFixed(2) ?? '—' })
-                    }
-                  />
-                </div>
-              ))}
-            </div>
+            <EarningsDotChart key={ticker} columns={columns} />
           </div>
         )}
       </CardContent>

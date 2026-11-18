@@ -160,6 +160,8 @@ export interface EarningsCalendar {
   estimated?: boolean;
   /** quarter/year are the company's fiscal ones and its year isn't the calendar year: label "Q3 FY26". */
   offCalendar?: boolean;
+  /** 'release': the actual was read from the press release by AI the evening of the report, until Nasdaq posts its own. */
+  actualSource?: 'release';
 }
 
 /**

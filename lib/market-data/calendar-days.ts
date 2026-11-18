@@ -51,7 +51,7 @@ import {
   type SplitsCalendarItem,
   type IPOCalendarItem,
 } from '@/lib/twelvedata/twelvedata-client';
-import { fetchNasdaqEarningsDay, type NasdaqEarningsRow } from './nasdaq-earnings-calendar';
+import { fetchNasdaqEarningsDay, type NasdaqEarningsRow, type NasdaqEpsReport } from './nasdaq-earnings-calendar';
 import { getCachedMany, getCachedManyStale, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveCredits, waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
@@ -798,12 +798,12 @@ export function mergeCalendarIntoSymbolEarnings(
   for (const c of calendarRows) {
     if (!isNasdaqConfirmed(c)) continue;
     const i = rows.findIndex((r) => Math.abs(dayDeltaFromToday(r.date, c.date)) <= MISDATED_WINDOW_DAYS);
-    const base = i >= 0 ? rows[i] : newHistoryRow(rows, c, symbol);
+    const base = i >= 0 ? rows[i] : newHistoryRow(rows, c.date, symbol);
     // EPS stays a pair from one source (see mergeNasdaqIntoEarningsDay). A
     // calendar actual is Nasdaq's or the company's release, so it needs no
     // filing match before it counts toward the beat/miss streak.
     const eps = c.eps_actual != null
-      ? { epsEstimate: c.eps_estimate ?? null, epsActual: c.eps_actual, unconfirmed: false }
+      ? { epsEstimate: c.eps_estimate ?? null, epsActual: c.eps_actual, unconfirmed: false, actualSource: c.eps_actual_source }
       : base.epsActual != null
         ? {}
         : { epsEstimate: c.eps_estimate ?? base.epsEstimate };
@@ -820,15 +820,45 @@ export function mergeCalendarIntoSymbolEarnings(
   return rows;
 }
 
-function newHistoryRow(rows: EarningsCalendar[], c: EarningsCalendarItem, symbol: string): EarningsCalendar {
+/**
+ * Overlays Nasdaq's EPS history (its last 4 reports, estimate and actual on
+ * one adjusted basis) onto the stock page rows, so a row never pairs a GAAP
+ * actual with an adjusted estimate from TwelveData's mixed /earnings feed. A
+ * report within MISDATED_WINDOW_DAYS of a row is that row; otherwise it is
+ * added. Any other row within DUPLICATE_REPORT_DAYS of a Nasdaq report is a
+ * duplicate TwelveData invented (META 2026-01-23, $1.61 vs $1.87, five days
+ * before the real Jan 28 report) and is dropped: reports are a quarter apart.
+ * Runs after mergeCalendarIntoSymbolEarnings, so once Nasdaq posts an actual
+ * it replaces the one read from the press release. Pure.
+ */
+export function mergeNasdaqEpsHistory(rows: EarningsCalendar[], reports: NasdaqEpsReport[], symbol: string): EarningsCalendar[] {
+  const sorted = [...reports].sort((a, b) => a.date.localeCompare(b.date));
+  if (!sorted.length) return rows;
+  const out = [...rows];
+  const matched = new Set<EarningsCalendar>();
+  for (const n of sorted) {
+    const i = out.findIndex((r) => !matched.has(r) && Math.abs(dayDeltaFromToday(r.date, n.date)) <= MISDATED_WINDOW_DAYS);
+    const base = i >= 0 ? out[i] : newHistoryRow(out, n.date, symbol);
+    const merged: EarningsCalendar = { ...base, date: n.date, epsEstimate: n.estimate, epsActual: n.actual, unconfirmed: false, actualSource: undefined };
+    matched.add(merged);
+    if (i >= 0) out[i] = merged;
+    else out.push(merged);
+  }
+  return out.filter((r) => matched.has(r) || !sorted.some((n) => Math.abs(dayDeltaFromToday(r.date, n.date)) <= DUPLICATE_REPORT_DAYS));
+}
+
+/** Two quarterly reports from one company are never this close; a row this near a Nasdaq report is a copy of it. */
+const DUPLICATE_REPORT_DAYS = 30;
+
+function newHistoryRow(rows: EarningsCalendar[], date: string, symbol: string): EarningsCalendar {
   const prev = rows
-    .filter((r) => r.date < c.date && r.quarter != null && r.year != null)
+    .filter((r) => r.date < date && r.quarter != null && r.year != null)
     .sort((a, b) => b.date.localeCompare(a.date))[0];
   const { quarter, year } = prev
     ? { quarter: prev.quarter === 4 ? 1 : prev.quarter! + 1, year: prev.quarter === 4 ? prev.year! + 1 : prev.year! }
-    : reportDateToFiscalQuarter(c.date);
+    : reportDateToFiscalQuarter(date);
   return {
-    date: c.date,
+    date,
     epsActual: null,
     epsEstimate: null,
     hour: '',

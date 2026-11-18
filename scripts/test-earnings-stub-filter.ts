@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { stripFabricatedEpsStubs, mergeNasdaqIntoEarningsDay, mergeCalendarIntoSymbolEarnings, applyReleaseEps } from '../lib/market-data/calendar-days';
+import { stripFabricatedEpsStubs, mergeNasdaqIntoEarningsDay, mergeCalendarIntoSymbolEarnings, mergeNasdaqEpsHistory, applyReleaseEps } from '../lib/market-data/calendar-days';
 import type { NasdaqEarningsRow } from '../lib/market-data/nasdaq-earnings-calendar';
 import type { EarningsCalendar } from '../lib/finnhub/finnhub-client';
 import type { EarningsCalendarItem } from '../lib/twelvedata/twelvedata-client';
@@ -190,3 +190,37 @@ const estPage = mergeCalendarIntoSymbolEarnings([], [{ ...f.get('GOOG')! }], 'GO
 assert.equal(estPage[0].estimated, true, 'the stock page carries the flag');
 
 console.log('estimated dates: all assertions passed');
+
+// ── Stock histPage EPS history: Nasdaq's last 4 reports replace TwelveData's mixed basis ──
+const hrow = (date: string, est: number | null, act: number | null, extra: Partial<EarningsCalendar> = {}): EarningsCalendar =>
+  ({ date, epsEstimate: est, epsActual: act, hour: '', quarter: null, year: null, revenueActual: null, revenueEstimate: null, symbol: 'META', ...extra });
+const metaRows = [
+  hrow('2025-10-29', 6.67, 7.25),
+  hrow('2026-01-23', 1.61, 1.87), // TD's invented duplicate
+  hrow('2026-01-28', 8.21, 8.88),
+  hrow('2026-04-28', 6.71, 5.1, { unconfirmed: true }), // a day off and GAAP
+  hrow('2026-07-29', 7.1, 6.18),
+  hrow('2026-10-21', 6.52, 7.4, { actualSource: 'release' }),
+  hrow('2027-01-27', 8.4, null),
+];
+const nqHistory = [
+  { date: '2026-10-21', estimate: 6.52, actual: 7.42 },
+  { date: '2026-07-29', estimate: 7.1, actual: 6.18 },
+  { date: '2026-04-29', estimate: 6.71, actual: 7.31 },
+  { date: '2026-01-28', estimate: 8.21, actual: 8.88 },
+];
+const histPage = mergeNasdaqEpsHistory(metaRows, nqHistory, 'META');
+const byDate = new Map(histPage.map((r) => [r.date, r]));
+assert.ok(!byDate.has('2026-01-23'), 'a duplicate between Nasdaq reports is dropped');
+assert.ok(!byDate.has('2026-04-28'), 'a misdated row takes Nasdaq\'s date');
+assert.equal(byDate.get('2026-04-29')!.epsActual, 7.31, 'Nasdaq\'s adjusted actual replaces TD\'s GAAP one');
+assert.equal(byDate.get('2026-04-29')!.unconfirmed, false);
+assert.equal(byDate.get('2026-10-21')!.actualSource, undefined, 'Nasdaq\'s actual replaces the release figure');
+assert.equal(byDate.get('2026-10-21')!.epsActual, 7.42);
+assert.equal(byDate.get('2025-10-29')!.epsActual, 7.25, 'rows before Nasdaq\'s span are kept');
+assert.equal(byDate.get('2027-01-27')!.epsEstimate, 8.4, 'the upcoming row is kept');
+assert.equal(histPage.length, 6);
+assert.equal(mergeNasdaqEpsHistory(metaRows, [], 'META'), metaRows, 'no Nasdaq history leaves the rows alone');
+assert.equal(mergeNasdaqEpsHistory([], nqHistory, 'META').length, 4, 'reports with no TD row are added');
+
+console.log('Nasdaq EPS history: all assertions passed');

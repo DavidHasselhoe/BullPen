@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getEarningsCalendar } from '@/lib/market-data';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
-import { getCalendarRange, mergeCalendarIntoSymbolEarnings } from '@/lib/market-data/calendar-days';
+import { getCalendarRange, mergeCalendarIntoSymbolEarnings, mergeNasdaqEpsHistory } from '@/lib/market-data/calendar-days';
+import { fetchNasdaqEpsHistory, type NasdaqEpsReport } from '@/lib/market-data/nasdaq-earnings-calendar';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
 import type { EarningsCalendar } from '@/lib/finnhub/finnhub-client';
 import type { EarningsCalendarItem } from '@/lib/twelvedata/twelvedata-client';
@@ -16,6 +17,20 @@ const HISTORY_CREDITS = 121;
 /** Far enough back to hold any quarterly reporter's latest report, far enough ahead for the warmed calendar. */
 const CALENDAR_DAYS_BACK = 100;
 const CALENDAR_DAYS_AHEAD = 45;
+
+/**
+ * Nasdaq's last 4 reports (estimate + actual, one adjusted basis), cached.
+ * Free, no credits. An empty answer (not listed, or Nasdaq failing) is kept
+ * only an hour so a hiccup doesn't hide the history for half a day.
+ */
+async function getNasdaqEps(ticker: string): Promise<NasdaqEpsReport[]> {
+  const cacheKey = `nasdaq-eps-history:${ticker}`;
+  const cached = await getCached<NasdaqEpsReport[]>(cacheKey);
+  if (cached) return cached;
+  const reports = await fetchNasdaqEpsHistory(ticker);
+  void setCached(cacheKey, ticker, 'nasdaq_eps_history', reports, reports.length ? HISTORY_TTL_SECONDS : 60 * 60);
+  return reports;
+}
 
 /**
  * Per-symbol /earnings history, cached. It ignores from/to (TD returns the
@@ -59,6 +74,7 @@ export async function GET(
   // The company's own fiscal quarters, so these rows name a quarter exactly as
   // Revenue Flow and Financials do (both read the same SEC calendar).
   const fiscal = getFiscalCalendar(ticker).catch(() => null);
+  const nasdaqEps = getNasdaqEps(ticker).catch(() => [] as NasdaqEpsReport[]);
 
   let history: EarningsCalendar[] = [];
   try {
@@ -70,6 +86,9 @@ export async function GET(
 
   return NextResponse.json({
     success: true,
-    earnings: labelEarnings(mergeCalendarIntoSymbolEarnings(history, await calendar, ticker), await fiscal),
+    earnings: labelEarnings(
+      mergeNasdaqEpsHistory(mergeCalendarIntoSymbolEarnings(history, await calendar, ticker), await nasdaqEps, ticker),
+      await fiscal,
+    ),
   });
 }

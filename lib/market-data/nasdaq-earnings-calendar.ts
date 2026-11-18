@@ -111,33 +111,47 @@ interface NasdaqSurpriseResponse {
   data?: { earningsSurpriseTable?: { rows?: { dateReported?: string; eps?: number | string; consensusForecast?: string }[] | null } | null } | null;
 }
 
+/** One reported quarter from Nasdaq's earnings-surprise table: consensus and actual, both adjusted. */
+export interface NasdaqEpsReport { date: string; estimate: number; actual: number }
+
 /**
- * EPS surprise % for a company's last 4 reports, newest first, from the same
- * unofficial API (/company/<symbol>/earnings-surprise). One consistent
- * adjusted basis, unlike TwelveData's /earnings history, which for META held
- * a $1.61 estimate for a quarter consensus had near $8 and mixed GAAP with
- * adjusted actuals (checked 2026-10-29). Fails soft to [].
+ * A company's last 4 reports, newest first, from the same unofficial API
+ * (/company/<symbol>/earnings-surprise). Estimate and actual share one
+ * consistent adjusted basis, unlike TwelveData's /earnings history, which for
+ * META held a $1.61 estimate for a quarter consensus had near $8 and mixed
+ * GAAP with adjusted actuals (checked 2026-10-29). Fails soft to [].
  */
-export async function fetchNasdaqEpsSurprises(symbol: string): Promise<{ date: string; surprisePercent: number }[]> {
+export async function fetchNasdaqEpsHistory(symbol: string): Promise<NasdaqEpsReport[]> {
   try {
     const res = await fetch(`https://api.nasdaq.com/api/company/${encodeURIComponent(symbol)}/earnings-surprise`, {
       headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
+      signal: AbortSignal.timeout(6000),
     });
     if (!res.ok) return [];
     const body = (await res.json()) as NasdaqSurpriseResponse;
-    const out: { date: string; surprisePercent: number }[] = [];
+    const out: NasdaqEpsReport[] = [];
     for (const r of body.data?.earningsSurpriseTable?.rows ?? []) {
       const [m, d, y] = (r.dateReported ?? '').split('/');
+      if (!y || r.eps == null || r.eps === '' || !r.consensusForecast) continue;
       const actual = Number(r.eps);
       const estimate = Number(r.consensusForecast);
-      // Recomputed from the two figures rather than trusting the table's own %:
-      // a near-zero estimate turns any rounding into a four-digit surprise.
-      if (!y || !Number.isFinite(actual) || !Number.isFinite(estimate) || Math.abs(estimate) < 0.05) continue;
-      out.push({ date: `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`, surprisePercent: ((actual - estimate) / Math.abs(estimate)) * 100 });
+      if (!Number.isFinite(actual) || !Number.isFinite(estimate)) continue;
+      out.push({ date: `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`, estimate, actual });
     }
     return out;
   } catch (err) {
     console.error(`[nasdaq-earnings-calendar] surprise fetch failed for ${symbol}:`, err);
     return [];
   }
+}
+
+/**
+ * EPS surprise % for the same reports, recomputed from the two figures rather
+ * than trusting the table's own %: a near-zero estimate turns any rounding
+ * into a four-digit surprise, so those quarters are skipped.
+ */
+export async function fetchNasdaqEpsSurprises(symbol: string): Promise<{ date: string; surprisePercent: number }[]> {
+  return (await fetchNasdaqEpsHistory(symbol))
+    .filter((r) => Math.abs(r.estimate) >= 0.05)
+    .map((r) => ({ date: r.date, surprisePercent: ((r.actual - r.estimate) / Math.abs(r.estimate)) * 100 }));
 }
