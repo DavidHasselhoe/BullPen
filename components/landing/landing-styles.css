@@ -900,7 +900,12 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--bg);
+  display: flex;
+  flex-direction: column;
 }
+/* The panel takes the row height its neighbour sets; the metric body sits
+   centred in it instead of leaving an empty band at the bottom. */
+.bullpen-landing-root .demo { flex: 1; display: flex; flex-direction: column; }
 .bullpen-landing-root .demo-head {
   display: flex;
   flex-wrap: wrap;
@@ -946,13 +951,15 @@
   color: var(--fg);
   box-shadow: 0 1px 2px oklch(0 0 0 / 0.1);
 }
+.bullpen-landing-root .demo-toggle button:hover { color: var(--fg); }
 .bullpen-landing-root .demo-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 @media (pointer: coarse) {
   .bullpen-landing-root .demo-toggle button { min-height: 44px; }
 }
 
 .bullpen-landing-root .mdemo-label {
-  margin: 0;
+  margin: auto 0 0;
+  text-wrap: balance;
   font-size: 16px;
   line-height: 1.4;
   color: var(--fg-muted);
@@ -968,7 +975,7 @@
 .bullpen-landing-root .mdemo-help.is-hidden { opacity: 0; }
 .bullpen-landing-root .mdemo-value {
   margin: 8px 0 18px;
-  font-size: 40px;
+  font-size: 44px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -1008,7 +1015,7 @@
 }
 .bullpen-landing-root .mdemo-scale span { position: absolute; white-space: nowrap; }
 .bullpen-landing-root .mdemo-insight {
-  margin: 18px 0 0;
+  margin: 18px 0 auto;
   font-size: 16px;
   line-height: 1.5;
   color: var(--fg-muted);

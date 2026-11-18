@@ -111,7 +111,7 @@ export function PlainEnglishDemo() {
           NVIDIA
           <span className="demo-when mono">Nov 1</span>
         </span>
-        <div role="radiogroup" aria-label="Labels" className="demo-toggle">
+        <div role="radiogroup" aria-label="Terminology" className="demo-toggle">
           {([true, false] as const).map((s) => (
             <button key={String(s)} type="button" role="radio" aria-checked={simple === s} onClick={() => choose(s)}>
               {s ? <Sparkles size={13} aria-hidden /> : <BarChart2 size={13} aria-hidden />}
