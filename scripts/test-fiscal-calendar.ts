@@ -74,6 +74,14 @@ async function main() {
   ], mu);
   assert.deepEqual(rows.map((r) => fiscalLabelEn({ fiscalQuarter: r.quarter!, fiscalYear: r.year! }, true)), ['Q1 FY27', 'Q4 FY26', 'Q3 FY26']);
 
+  // Marvell's Lumentum merger 8-K (Nov 2 2026) carried a 2.02 with preliminary
+  // numbers one day after Q3 FY27 ended. It is not Q3's release: Dec 1 is.
+  // Holds before Dec 1 (counted on from Q2) and after (matched to the release).
+  const mrvl = await calendarFor('1835632');
+  assert.equal(periodForRelease(mrvl, '2026-11-02'), null);
+  const mrvlRows = labelEarnings([{ date: '2026-12-01', quarter: 4, year: 2027 }, { date: '2026-08-27', quarter: 2, year: 2027 }], mrvl);
+  assert.deepEqual(mrvlRows.map((r) => fiscalLabelEn({ fiscalQuarter: r.quarter!, fiscalYear: r.year! }, true)), ['Q3 FY27', 'Q2 FY27']);
+
   console.log('fiscal calendar: ok');
 }
 

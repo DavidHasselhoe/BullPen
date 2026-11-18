@@ -90,11 +90,17 @@ export function buildFiscalCalendar(
   }
 
   // Results released after the newest filing, for a quarter that has ended:
-  // Micron released Q4 FY26 on Sep 30 2026 with the 10-K weeks away. 80 days
-  // keeps a stray mid-quarter 2.02 (a guidance update) from passing as one.
+  // Micron released Q4 FY26 on Sep 30 2026 with the 10-K weeks away. The 2.02
+  // must come a quarter (91 days) plus half the company's shortest recent
+  // release lag after the last period end. That keeps out a mid-quarter
+  // guidance update and preliminary numbers put out at quarter end: Marvell's
+  // Lumentum merger 8-K of Nov 2 2026 carried a 2.02 one day after Q3 FY27
+  // closed, and Q3 itself was released Dec 1.
   const newest = periods[0];
   if (newest) {
-    const pending = releases.filter((d) => d > (newest.reportedOn ?? newest.periodEnd!) && days(d, newest.periodEnd!) >= 80).at(-1);
+    const lags = periods.filter((p) => p.reportedOn).slice(0, 4).map((p) => days(p.reportedOn!, p.periodEnd!));
+    const minGap = 91 + (lags.length ? Math.min(...lags) / 2 : 7);
+    const pending = releases.filter((d) => d > (newest.reportedOn ?? newest.periodEnd!) && days(d, newest.periodEnd!) >= minGap).at(-1);
     if (pending) {
       const q4 = newest.fiscalQuarter === 4;
       periods.unshift({
