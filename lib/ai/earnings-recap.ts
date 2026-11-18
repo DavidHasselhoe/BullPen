@@ -207,15 +207,18 @@ export function ungroundedNumbers(bullets: string[], source: string): string[] {
  * The model's EPS pair, kept only when both figures are printed in the release
  * and the adjusted one sits near GAAP. It fills a report's actual until Nasdaq
  * posts one (applyReleaseEps), so a figure that fails is dropped, never guessed.
- * ponytail: the GAAP band rejects big one-off quarters (GAAP loss, adjusted
- * profit); those wait for Nasdaq. Widen it if real quarters keep landing outside.
+ * The $1 floor lets a near-zero GAAP quarter with a one-off charge through
+ * (GAAP -0.10, adjusted 0.85).
+ * ponytail: past the floor the band still rejects big one-off quarters (GAAP
+ * well below half of adjusted); those wait for Nasdaq. Widen it if real
+ * quarters keep landing outside.
  */
 export function parseReleaseEps(value: unknown, source: string): ReleaseEps | null {
   const { gaap, adjusted } = (value ?? {}) as { gaap?: unknown; adjusted?: unknown };
   if (typeof gaap !== 'number' || typeof adjusted !== 'number' || !Number.isFinite(gaap) || !Number.isFinite(adjusted)) return null;
   const printed = new Set((source.match(NUMBER_RE) ?? []).map((s) => Number(s.replace(/,/g, ''))));
   if (!printed.has(Math.abs(gaap)) || !printed.has(Math.abs(adjusted))) return null;
-  if (Math.abs(adjusted - gaap) > Math.max(Math.abs(gaap), 0.5)) return null;
+  if (Math.abs(adjusted - gaap) > Math.max(Math.abs(gaap), 1)) return null;
   return { gaap, adjusted };
 }
 

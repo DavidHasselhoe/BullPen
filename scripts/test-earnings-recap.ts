@@ -50,6 +50,7 @@ assert.equal(parseRecap(withEps({ gaap: 2.7, adjusted: '2.68' }), NVDA_SOURCE).e
 assert.equal(parseRecap(withEps({ gaap: 2.2, adjusted: 2.68 }), NVDA_SOURCE).eps?.adjusted, 2.68, 'within the GAAP band');
 assert.equal(parseRecap(withEps({ gaap: 1.3, adjusted: 2.68 }), NVDA_SOURCE).eps, null, 'more than double GAAP is too far to trust');
 assert.equal(parseRecap(withEps({ gaap: -2.7, adjusted: 2.68 }), NVDA_SOURCE.replace('$2.70', '$(2.70)')).eps, null, 'a GAAP loss against an adjusted profit is too far apart to trust');
+assert.deepEqual(parseRecap(withEps({ gaap: -0.1, adjusted: 0.85 }), 'GAAP diluted EPS $(0.10). Non-GAAP diluted EPS $0.85.').eps, { gaap: -0.1, adjusted: 0.85 }, 'a near-zero GAAP quarter with a one-off charge is kept');
 assert.deepEqual(parseRecap(JSON.stringify({ bullets: ['Only one.'], eps: { gaap: 2.7, adjusted: 2.68 } }), NVDA_SOURCE).eps, { gaap: 2.7, adjusted: 2.68 }, 'kept when the bullets are not');
 
 // Revenue figures for the story: whole dollars, each printed in the release; growth is worked out in code.

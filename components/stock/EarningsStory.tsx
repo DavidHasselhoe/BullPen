@@ -76,7 +76,7 @@ export function EarningsStoryButton({ ticker }: { ticker: string }) {
   const { t } = useTranslation('stock');
   if (!useEarningsStoryReport(ticker)) return null;
   return (
-    <Button type="button" variant="outline" size="sm" className="gap-2" onClick={openEarningsStory}>
+    <Button type="button" variant="outline" size="sm" className="gap-2" onClick={openEarningsStory} data-earnings-story-open>
       <Play className="h-3.5 w-3.5" aria-hidden /> {t('earningsStoryOpen')}
     </Button>
   );
@@ -146,7 +146,7 @@ export function EarningsStory({ ticker, name }: { ticker: string; name: string }
           const card = document.getElementById('nav-earnings');
           card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           // Focus lands on the card's own story button, so keyboard users continue from the card.
-          card?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
+          card?.querySelector<HTMLElement>('[data-earnings-story-open]')?.focus({ preventScroll: true });
         }}
         className={cn(
           'flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0',

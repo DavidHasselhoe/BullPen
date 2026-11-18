@@ -47,6 +47,15 @@ for (const file of ROOTS.flatMap(walk)) {
     if (lines.slice(Math.max(0, i - 3), i + 1).some((l) => l.includes('closed-ok:'))) return;
     failures.push(`${file}:${i + 1}  ${line.trim()}`);
   });
+  // The table name passed on as a value (countBy(supabase, 'user_holdings', ...),
+  // pagedRows('user_holdings')): the filter must be within a few lines either way.
+  // ponytail: a nearby-lines window, not a data-flow trace; tighten if a helper hides the filter further away.
+  lines.forEach((line, i) => {
+    if (!/['"]user_holdings['"]/.test(line) || /from\(\s*['"]user_holdings['"]\s*\)/.test(line) || /^\s*(\/\/|\*)/.test(line)) return;
+    const near = lines.slice(Math.max(0, i - 8), i + 9);
+    if (near.some((l) => l.includes('OPEN_POSITION_FILTER') || l.includes('closed-ok:'))) return;
+    failures.push(`${file}:${i + 1}  ${line.trim()}`);
+  });
 }
 
 if (failures.length) {
