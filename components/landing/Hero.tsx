@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Icon } from './Icon';
+import { countUp } from './Demos';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { slugToAssetPath, symbolToSlug } from '@/lib/assets/asset-type';
@@ -174,6 +175,14 @@ function WhyDemo() {
   const [pick, setPick] = useState(0);
   const answers = data?.answers ?? [];
   const current = answers[Math.min(pick, answers.length - 1)];
+  // Moves only when someone picks a stock: the % counts up and the answer fades
+  // in. No auto-cycle (a sentence needs longer than a timer gives it, and
+  // nothing moves unasked), so no pause control is needed. The first answer
+  // and reduced motion show final values straight away.
+  const [shownPct, setShownPct] = useState<number | null>(null);
+  const [picked, setPicked] = useState(false);
+  const stopCount = useRef<() => void>(() => {});
+  useEffect(() => () => stopCount.current(), []);
 
   return (
     <figure className="why-demo" aria-busy={isLoading}>
@@ -201,7 +210,13 @@ function WhyDemo() {
                   aria-pressed={a === current}
                   className="why-demo-pick"
                   onClick={() => {
+                    if (a === current) return;
                     setPick(i);
+                    stopCount.current();
+                    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                      setPicked(true);
+                      stopCount.current = countUp(Math.abs(a.changePct), 600, setShownPct);
+                    }
                     trackEvent('landing_why_pick', { ticker: a.ticker });
                   }}
                 >
@@ -220,10 +235,12 @@ function WhyDemo() {
             <p className="why-demo-move">
               {current.name} {current.changePct >= 0 ? 'rose' : 'fell'}{' '}
               <span className={`mono ${current.changePct >= 0 ? 'up' : 'down'}`}>
-                {current.changePct >= 0 ? '+' : '−'}{Math.abs(current.changePct).toFixed(2)}%
+                {current.changePct >= 0 ? '+' : '−'}
+                <span aria-hidden>{(shownPct ?? Math.abs(current.changePct)).toFixed(2)}</span>
+                <span className="sr-only">{Math.abs(current.changePct).toFixed(2)}</span>%
               </span>
             </p>
-            <p className="why-demo-text">{current.text}</p>
+            <p key={current.ticker} className={picked ? 'why-demo-text is-new' : 'why-demo-text'}>{current.text}</p>
             <Link href={`/stock/${symbolToSlug(current.ticker)}`} className="why-demo-link">
               Open {current.name}&apos;s page
               <Icon name="arrowRight" size={14} />

@@ -1334,6 +1334,10 @@
 .bullpen-landing-root .why-demo-body { display: flex; flex-direction: column; gap: 8px; min-height: 132px; }
 .bullpen-landing-root .why-demo-move { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--fg); }
 .bullpen-landing-root .why-demo-text { margin: 0; font-size: 16px; line-height: 1.6; color: var(--fg-muted); text-wrap: pretty; }
+.bullpen-landing-root .why-demo-text.is-new { animation: why-text-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes why-text-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
 .bullpen-landing-root .why-demo-link {
   display: inline-flex;
   align-items: center;

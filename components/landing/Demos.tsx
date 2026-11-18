@@ -47,7 +47,7 @@ function usePlayOnView(ref: RefObject<HTMLElement | null>, arm: () => void, play
 }
 
 /** Ease-out count from 0 to `to`; returns a cancel. */
-function countUp(to: number, ms: number, onFrame: (n: number) => void): () => void {
+export function countUp(to: number, ms: number, onFrame: (n: number) => void): () => void {
   const start = performance.now();
   let id = 0;
   const tick = (now: number) => {
