@@ -1,5 +1,41 @@
 [
   {
+    "date": "2026-11-18",
+    "entries": [
+      {
+        "type": "new",
+        "text": "When a company you follow reports earnings, you can now walk through the results in a few short slides: whether it beat expectations, how sales grew, what it expects next quarter and how the stock reacted. Open it from the Earnings card on the stock page or straight from the notification",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Earnings results could compare numbers from two different sources, so a company that beat expectations could be reported as a big miss. Each result now uses one source for both the estimate and the actual",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Stocks you have fully sold no longer show up as yours in the morning email, price alerts, the social feed or anywhere else. Your sale history stays on the Holdings page",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "The Earnings card now shows the last four reports as a chart of what was expected next to what the company earned, plus the estimate for the next report"
+      },
+      {
+        "type": "improved",
+        "text": "Whether a company beat or missed now shows the evening it reports, read from its own press release, instead of the next morning"
+      },
+      {
+        "type": "improved",
+        "text": "Before you run your first Deep Dive, you can see a real sample report, so you know what you will get"
+      },
+      {
+        "type": "fixed",
+        "text": "An upcoming earnings report could be labelled with the wrong quarter when the company had put out early numbers alongside a merger announcement"
+      }
+    ]
+  },
+  {
     "date": "2026-11-17",
     "entries": [
       {
