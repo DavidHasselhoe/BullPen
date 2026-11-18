@@ -263,13 +263,18 @@ export function mergeNasdaqIntoEarningsDay(
       bySymbol.set(nRow.symbol, mapNasdaqRowToEarningsItem(nRow, date));
       continue;
     }
+    // EPS is one unit from one source. Mixed per field, a day cached before
+    // Nasdaq posted its actuals paired TD's wrong actual with Nasdaq's estimate:
+    // NVDA Nov 17, 2026 went out as $1.24 vs $2.49 "missed by 50%" (really $2.68).
+    // TD's estimate only fills in while neither side has an actual to compare.
+    const nasdaqReported = nRow.epsActual != null;
     bySymbol.set(nRow.symbol, {
       ...existing,
       name: existing.name || nRow.name,
       time: existing.time || nRow.time || '',
-      eps_estimate: nRow.epsEstimate ?? existing.eps_estimate,
-      eps_actual: nRow.epsActual ?? existing.eps_actual,
-      surprise: nRow.surprisePercent ?? existing.surprise,
+      eps_estimate: nasdaqReported ? nRow.epsEstimate : nRow.epsEstimate ?? existing.eps_estimate,
+      eps_actual: nRow.epsActual,
+      surprise: nRow.surprisePercent,
       nasdaq_confirmed: true,
       date_estimated: isEstimatedNasdaqDate(nRow),
     });

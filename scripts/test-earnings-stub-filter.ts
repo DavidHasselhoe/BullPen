@@ -117,6 +117,41 @@ assert.equal(jun.hour, 'AMC');
 
 console.log('mergeNasdaqIntoEarningsDay + mergeCalendarIntoSymbolEarnings: all assertions passed');
 
+// ── 2026-11-18: an actual never pairs with the other source's estimate ──────
+// NVDA's Nov 17 day was cached the next morning, before Nasdaq posted actuals:
+// Nasdaq had the 2.49 estimate and no actual, TD had a wrong 1.24 actual, and
+// the merge paired them into a "50% miss" email. NVDA really earned 2.68.
+const nov17 = mergeNasdaqIntoEarningsDay(
+  [
+    { symbol: 'NVDA', date: '2026-11-17', time: '', eps_estimate: null, eps_actual: 1.24, surprise: null },
+    { symbol: 'HD', date: '2026-11-17', time: '', eps_estimate: 3.72, eps_actual: 3.74, surprise: 0.52 },
+  ],
+  [
+    { symbol: 'NVDA', time: 'AMC', epsEstimate: 2.49, epsActual: null, surprisePercent: null },
+    { symbol: 'HD', time: 'BMO', epsEstimate: 3.86, epsActual: null, surprisePercent: null },
+  ],
+  '2026-11-17',
+);
+for (const r of nov17) {
+  assert.equal(r.eps_actual, null, `${r.symbol}: TD's actual must not sit next to Nasdaq's estimate`);
+  assert.equal(r.surprise, null, `${r.symbol}: nor TD's surprise`);
+}
+assert.equal(nov17.find((r) => r.symbol === 'NVDA')!.eps_estimate, 2.49, 'the estimate is still shown before results');
+const nov17Later = mergeNasdaqIntoEarningsDay(
+  [{ symbol: 'NVDA', date: '2026-11-17', time: '', eps_estimate: 2.4, eps_actual: 1.24, surprise: -48 }],
+  [{ symbol: 'NVDA', time: null, epsEstimate: 2.47, epsActual: 2.68, surprisePercent: 8.5 }],
+  '2026-11-17',
+)[0];
+assert.deepEqual([nov17Later.eps_estimate, nov17Later.eps_actual, nov17Later.surprise], [2.47, 2.68, 8.5], 'once Nasdaq posts, all three are Nasdaq\'s');
+const onlyActual = mergeNasdaqIntoEarningsDay(
+  [{ symbol: 'ZTO', date: '2026-11-17', time: '', eps_estimate: 0.5, eps_actual: 0.43, surprise: null }],
+  [{ symbol: 'ZTO', time: null, epsEstimate: null, epsActual: 0.48, surprisePercent: null }],
+  '2026-11-17',
+)[0];
+assert.equal(onlyActual.eps_estimate, null, 'Nasdaq\'s actual is not compared with TD\'s estimate either');
+
+console.log('one source per EPS pair: all assertions passed');
+
 // ── Estimated dates: Nasdaq rows with no timing and no actual are Zacks projections ──
 const future = mergeNasdaqIntoEarningsDay(
   [{ symbol: 'JPM', date: '2026-11-04', time: 'Pre Market', eps_estimate: 5.8, eps_actual: null }],
