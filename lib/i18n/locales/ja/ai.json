@@ -11,6 +11,9 @@
   "chatContextPromptRisks": "{{ticker}}の主なリスクは何ですか？",
   "chatContextPromptSummarize": "{{ticker}}の主要指標をまとめる",
   "chatDismiss": "閉じる",
+  "chatLimitReachedFree": "本日の無料のBullメッセージ{{limit}}件をご利用済みです。{{time}}にリセットされます。",
+  "chatLimitReachedPro": "本日のBullメッセージ{{limit}}件をすべてご利用済みです。{{time}}にリセットされます。",
+  "chatLimitUpgrade": "Proにアップグレード",
   "chatGenericError": "エラーが発生しました。もう一度試してください。",
   "chatImBull": "私はBullです",
   "chatInputAriaLabel": "メッセージ入力",
@@ -187,14 +190,13 @@
   "technicalsFromHigh": "52週高値比",
   "technicalsShowOnChart": "チャートで表示",
   "toolStatus_drawLevels": "ラインを描画中…",
-  "chatLimitReachedFree": "本日の無料のBullメッセージ{{limit}}件をご利用済みです。{{time}}にリセットされます。",
-  "chatLimitReachedPro": "本日のBullメッセージ{{limit}}件をすべてご利用済みです。{{time}}にリセットされます。",
-  "chatLimitUpgrade": "Proにアップグレード",
-  "statisticsEvEbitda": "EV/EBITDA",
   "starterPromptWhyMoving": "最近の{{name}}の値動きの理由は？",
   "starterPromptExpensive": "{{name}}は今割高ですか？",
   "starterPromptCompare": "{{a}}と{{b}}を比較して",
   "holdingsAccessTurnOn": "Bullに保有銘柄を見せる",
   "holdingsAccessOn": "完了しました。Bullがあなたの保有銘柄とウォッチリストを見られるようになりました。",
-  "holdingsAccessError": "オンにできませんでした。もう一度試すか、設定 > Ask Bull から変更してください。"
+  "holdingsAccessError": "オンにできませんでした。もう一度試すか、設定 > Ask Bull から変更してください。",
+  "statisticsEvEbitda": "EV/EBITDA",
+  "toolStatus_getHealthScoreHistory": "スコア履歴を確認しています…",
+  "toolStatus_getWhyToday": "本日のニュースを確認しています…"
 }

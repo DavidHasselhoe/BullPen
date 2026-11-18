@@ -166,6 +166,8 @@
   "moversSubtitleLast": "{{day}} 波动最大的 S&P 500 和纳斯达克100股票",
   "moversGainers": "涨幅最大",
   "moversLosers": "跌幅最大",
+  "moversNoneUp": "目前还没有上涨的股票。",
+  "moversNoneDown": "目前还没有下跌的股票。",
   "moversFooterNote": "按常规交易时段的百分比涨跌排名。不包括盘前和盘后波动。",
   "moversSubtitlePremarket": "S&P 500 和 Nasdaq-100 股票在今天开盘前的涨跌，相比{{day}}的收盘价",
   "moversFooterPremarket": "当前价格与上一个收盘价比较，仅限于纽约时间凌晨4:00以后交易过的股票。盘前交易量较少，几笔小单就可能造成大幅波动。",
@@ -341,7 +343,6 @@
   "fundFiledSummary_one": "已提交 {{filed}} 报告，季度截止日期 {{period}} · {{value}} 跨越 {{positions}} 个持仓",
   "fundFiledSummary_other": "已提交 {{filed}} 报告，季度截止日期 {{period}} · {{value}} 跨越 {{positions}} 个持仓",
   "fundFiledOptions": "，加上覆盖 {{value}} 股票的期权",
-  "fundLockedTitle": "以往季度是 Pro 功能",
   "fundLockedLastFiled": "最近提交 {{date}} · {{positions}} 个持仓",
   "fundLockedPitch": "按组合权重查看每个持仓，每季度更新。",
   "fundUnlock": "解锁完整持仓",
@@ -630,9 +631,6 @@
   "indexName_sp500": "S&P 500",
   "indexName_nasdaq100": "纳斯达克100",
   "indexName_dow30": "道琼斯30",
-  "moversNoneUp": "目前还没有上涨的股票。",
-  "moversNoneDown": "目前还没有下跌的股票。",
-  "indexColWeightTip_sp500": "How much of SPY, a fund that tracks the S&P 500, is in this company, as of {{date}}. Bigger companies count for more.",
   "peekTryFree": "免费试用一天",
   "peekError": "无法开启免费查看，请重试。",
   "peekOpenUntilToday": "免费查看中，开放至 {{time}}。",
@@ -683,5 +681,8 @@
   "firstWeekAcademyHint": "每天一道题，大约一分钟。",
   "fundChangesTitle": "查看本季度的变化",
   "fundChangesPitch": "Pro 显示自上次申报以来的每一笔买入、卖出和新建仓位，以及以往季度。",
-  "fundChangesUnlock": "查看变化"
+  "fundChangesUnlock": "查看变化",
+  "fundLockedTitle": "早期季度数据是 Pro 功能",
+  "indexColWeightTip_sp500": "How much of SPY, a fund that tracks the S&P 500, is in this company, as of {{date}}. Bigger companies count for more.",
+  "spotlightMemberTrades_one": "近 12 个月 {{count}} 笔交易"
 }

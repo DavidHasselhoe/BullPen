@@ -11,6 +11,9 @@
   "chatContextPromptRisks": "{{ticker}} 的主要风险是什么？",
   "chatContextPromptSummarize": "总结 {{ticker}} 的关键指标",
   "chatDismiss": "关闭",
+  "chatLimitReachedFree": "你今天的 {{limit}} 条免费 Bull 消息已经用完了。将在 {{time}} 重置。",
+  "chatLimitReachedPro": "你今天的 {{limit}} 条 Bull 消息已全部用完。将在 {{time}} 重置。",
+  "chatLimitUpgrade": "升级到 Pro",
   "chatGenericError": "出了点问题。请重试。",
   "chatImBull": "我是 Bull",
   "chatInputAriaLabel": "消息输入框",
@@ -187,14 +190,13 @@
   "technicalsFromHigh": "距52周高点",
   "technicalsShowOnChart": "在图表中查看",
   "toolStatus_drawLevels": "正在绘制价位线…",
-  "chatLimitReachedFree": "你今天的 {{limit}} 条免费 Bull 消息已经用完了。将在 {{time}} 重置。",
-  "chatLimitReachedPro": "你今天的 {{limit}} 条 Bull 消息已全部用完。将在 {{time}} 重置。",
-  "chatLimitUpgrade": "升级到 Pro",
-  "statisticsEvEbitda": "EV/EBITDA",
   "starterPromptWhyMoving": "最近是什么在推动{{name}}的走势？",
   "starterPromptExpensive": "{{name}}现在贵吗？",
   "starterPromptCompare": "比较{{a}}和{{b}}",
   "holdingsAccessTurnOn": "让 Bull 查看我的持仓",
   "holdingsAccessOn": "已开启。Bull 现在可以查看你的持仓和关注列表。",
-  "holdingsAccessError": "无法开启。请重试，或前往设置 > Ask Bull。"
+  "holdingsAccessError": "无法开启。请重试，或前往设置 > Ask Bull。",
+  "statisticsEvEbitda": "EV/EBITDA",
+  "toolStatus_getHealthScoreHistory": "正在查询健康评分历史…",
+  "toolStatus_getWhyToday": "正在查看今日新闻…"
 }

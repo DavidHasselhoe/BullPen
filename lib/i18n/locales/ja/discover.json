@@ -166,6 +166,8 @@
   "moversSubtitleLast": "{{day}}のS&P 500およびNasdaq-100銘柄の最大変動",
   "moversGainers": "上昇トップ",
   "moversLosers": "下落トップ",
+  "moversNoneUp": "まだ上昇している銘柄はありません。",
+  "moversNoneDown": "まだ下落している銘柄はありません。",
   "moversFooterNote": "通常取引時間での変動率でランク付け。プレマーケット及びアフターアワーズの変動は含まれません。",
   "moversSubtitlePremarket": "S&P 500とNasdaq-100銘柄が今日の取引開始前に動いています。{{day}}の終値との比較です",
   "moversFooterPremarket": "現在の株価は最終終値からの変動です。ニューヨーク時間午前4:00以降に取引された銘柄が対象です。早朝取引は流動性が低いため、少数の小さな取引でも大きく変動する場合があります。",
@@ -341,7 +343,6 @@
   "fundFiledSummary_one": "{{period}}の四半期決算で{{filed}}を提出 · {{positions}}個のポジション全体で{{value}}",
   "fundFiledSummary_other": "{{period}}の四半期決算で{{filed}}を提出 · {{positions}}個のポジション全体で{{value}}",
   "fundFiledOptions": "、さらに{{value}}の株式をカバーするオプションを含む",
-  "fundLockedTitle": "過去の四半期はPro機能です",
   "fundLockedLastFiled": "最終提出 {{date}} · {{positions}}銘柄",
   "fundLockedPitch": "全銘柄をポートフォリオ比率順に表示し、四半期ごとに更新します。",
   "fundUnlock": "全保有銘柄を見る",
@@ -631,8 +632,6 @@
   "indexName_sp500": "S&P 500",
   "indexName_nasdaq100": "ナスダック100",
   "indexName_dow30": "ダウ30",
-  "moversNoneUp": "まだ上昇している銘柄はありません。",
-  "moversNoneDown": "まだ下落している銘柄はありません。",
   "peekTryFree": "1日無料で試す",
   "peekError": "無料閲覧を開けませんでした。もう一度お試しください。",
   "peekOpenUntilToday": "無料閲覧中、{{time}}まで。",
@@ -683,5 +682,7 @@
   "firstWeekAcademyHint": "1日1問、約1分です。",
   "fundChangesTitle": "今四半期の変化を見る",
   "fundChangesPitch": "Proでは前回の報告以降のすべての買い、売り、新規ポジションと、過去の四半期を確認できます。",
-  "fundChangesUnlock": "変化を見る"
+  "fundChangesUnlock": "変化を見る",
+  "fundLockedTitle": "過去の四半期データはPro機能です",
+  "spotlightMemberTrades_one": "過去12か月で{{count}}件の取引"
 }
