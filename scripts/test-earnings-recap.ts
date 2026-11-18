@@ -11,7 +11,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { parseRecap, ungroundedNumbers, fetchPressRelease, generateRecap, EARNINGS_RECAP_MODEL } from '@/lib/ai/earnings-recap';
+import { parseRecap, parseReleaseFigures, ungroundedNumbers, fetchPressRelease, generateRecap, EARNINGS_RECAP_MODEL } from '@/lib/ai/earnings-recap';
 import { toEmailItem } from '@/lib/email/alert-email';
 import { PUSH_PRIORITY, planUserPush } from '@/lib/notifications/push-plan';
 import { calcCost } from '@/lib/billing/pricing';
@@ -51,6 +51,25 @@ assert.equal(parseRecap(withEps({ gaap: 2.2, adjusted: 2.68 }), NVDA_SOURCE).eps
 assert.equal(parseRecap(withEps({ gaap: 1.3, adjusted: 2.68 }), NVDA_SOURCE).eps, null, 'more than double GAAP is too far to trust');
 assert.equal(parseRecap(withEps({ gaap: -2.7, adjusted: 2.68 }), NVDA_SOURCE.replace('$2.70', '$(2.70)')).eps, null, 'a GAAP loss against an adjusted profit is too far apart to trust');
 assert.deepEqual(parseRecap(JSON.stringify({ bullets: ['Only one.'], eps: { gaap: 2.7, adjusted: 2.68 } }), NVDA_SOURCE).eps, { gaap: 2.7, adjusted: 2.68 }, 'kept when the bullets are not');
+
+// Revenue figures for the story: whole dollars, each printed in the release; growth is worked out in code.
+const REV_SOURCE = 'Revenue was $115.8 billion, up from $57.0 billion a year ago. Revenue (in millions) 115,812 57,006. ' +
+  'Outlook: revenue is expected to be $130.0 billion, plus or minus 3%. Full year revenue of $420.0 billion.';
+const figs = (f: unknown) => parseReleaseFigures(f, REV_SOURCE);
+assert.deepEqual(figs({ revenue: 115.8e9, revenueYearAgo: 57.0e9, guidanceLow: 130e9, guidanceHigh: 130e9 }),
+  { revenue: 115.8e9, revenueYearAgo: 57.0e9, guidanceLow: 130e9, guidanceHigh: 130e9 });
+assert.equal(figs({ revenue: 115812e6, revenueYearAgo: 57006e6 })?.revenue, 115812e6, 'a table figure in millions counts');
+assert.equal(figs({ revenue: 115.8e9, revenueYearAgo: 61.2e9 })?.revenueYearAgo, null, 'a figure not in the release is dropped');
+assert.equal(figs({ revenue: 115.81e9, revenueYearAgo: 57e9 })?.revenue, null, 'rounded past what is printed is dropped');
+assert.equal(figs({ revenue: 115.8e9, revenueYearAgo: 115.8e9 })?.revenueYearAgo, null, 'a year-ago figure equal to this quarter is a misread');
+assert.equal(figs({ revenue: 115.8e9, guidanceLow: 126.1e9, guidanceHigh: 133.9e9 })?.guidanceLow, null, 'a computed range end is not in the release');
+assert.equal(figs({ revenue: 115.8e9, guidanceLow: 420e9, guidanceHigh: 420e9 })?.guidanceLow, null, 'a full-year outlook is not next quarter');
+assert.equal(figs({ revenue: 115.8e9, guidanceLow: 130e9, guidanceHigh: 115.8e9 })?.guidanceHigh, null, 'low above high is dropped');
+assert.equal(figs({ revenue: -115.8e9, revenueYearAgo: '57.0' }), null, 'numbers above zero only');
+assert.equal(figs(undefined), null);
+assert.equal(parseRecap(good, SOURCE).figures, null, 'a recap without figures still parses');
+assert.deepEqual(parseRecap(JSON.stringify({ ...JSON.parse(good), figures: { revenue: 102466e6, revenueYearAgo: 94930e6 } }), SOURCE).figures,
+  { revenue: 102466e6, revenueYearAgo: 94930e6, guidanceLow: null, guidanceHigh: null });
 
 // Morning email: the recap row becomes an earnings card with the bullets under it, from the evening before too.
 const bullets = (JSON.parse(good) as { bullets: string[] }).bullets;
@@ -92,6 +111,7 @@ async function liveCheck(): Promise<void> {
     const cost = calcCost(model, gen.inputTokens, gen.outputTokens);
     console.log(`${model}: ${gen.inputTokens} in / ${gen.outputTokens} out, $${cost.toFixed(4)}, ${((Date.now() - started) / 1000).toFixed(1)}s`);
     console.log(gen.bullets ? gen.bullets.map((b) => `  • ${b}`).join('\n') : `  rejected: ${gen.rejected}`);
+    console.log(`  eps ${JSON.stringify(gen.eps)}  figures ${JSON.stringify(gen.figures)}`);
   }
 }
 if (live >= 0) liveCheck().catch((err) => { console.error(err); process.exit(1); });

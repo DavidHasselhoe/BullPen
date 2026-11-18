@@ -3,7 +3,8 @@
  *
  * The latest results recap for a stock (lib/ai/earnings-recap.ts), written by
  * the check-sec-filings cron. Read only, never generates. Pro gets the
- * bullets; everyone else, signed in or not, only learns that one exists, for
+ * bullets and the revenue figures the earnings story reads; everyone else,
+ * signed in or not, only learns that one exists, for
  * the locked cue on the earnings card.
  */
 
@@ -23,8 +24,8 @@ async function get(_request: NextRequest, context: unknown, session: { userId: s
   const headers = { 'Cache-Control': 'private, no-cache' };
   if (!recap?.bullets) return addSecurityHeaders(NextResponse.json({ success: true, recap: null }, { headers }));
   if (session && isPro(await getTier(session.userId))) {
-    const { reportDate, bullets, sourceUrl } = recap;
-    return addSecurityHeaders(NextResponse.json({ success: true, recap: { reportDate, bullets, sourceUrl } }, { headers }));
+    const { reportDate, bullets, sourceUrl, figures = null } = recap;
+    return addSecurityHeaders(NextResponse.json({ success: true, recap: { reportDate, bullets, sourceUrl, figures } }, { headers }));
   }
   return addSecurityHeaders(NextResponse.json({ success: true, recap: null, locked: { reportDate: recap.reportDate } }, { headers }));
 }

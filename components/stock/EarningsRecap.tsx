@@ -13,9 +13,10 @@ import { useTranslation } from 'react-i18next';
 import { Lock } from 'lucide-react';
 import { ProBadge } from '@/components/billing/ProBadge';
 import { intlLocale } from '@/lib/i18n/intl-locale';
+import type { ReleaseFigures } from '@/lib/ai/earnings-recap';
 
 export interface RecapResponse {
-  recap: { reportDate: string; bullets: string[]; sourceUrl: string | null } | null;
+  recap: { reportDate: string; bullets: string[]; sourceUrl: string | null; figures: ReleaseFigures | null } | null;
   locked?: { reportDate: string };
 }
 
