@@ -558,7 +558,8 @@ export function applyReleaseEps(
   return rows.map((r) => {
     if (r.eps_actual != null || !isNasdaqConfirmed(r) || r.date_estimated) return r;
     const recap = recaps.get(r.symbol?.toUpperCase());
-    if (!recap?.eps || recap.reportDate !== r.date) return r;
+    // Same report when within the misdated-feed window: a row dated a day early is still this release.
+    if (!recap?.eps || !(Math.abs(dayDeltaFromToday(r.date, recap.reportDate)) <= MISDATED_WINDOW_DAYS)) return r;
     return { ...r, eps_actual: recap.eps.adjusted, surprise: null, eps_actual_source: 'release' };
   });
 }

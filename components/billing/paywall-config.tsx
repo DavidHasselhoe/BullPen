@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import type { TFunction } from 'i18next';
 import {
   ShieldAlert, Zap, Sparkles, MessageCircle, Wand2, FileSearch, Landmark, BellRing,
@@ -9,9 +10,12 @@ import { RiskAnalysisPaywallPreview } from './RiskAnalysisPaywallPreview';
 import { WhyTodayPaywallPreview } from './WhyTodayPaywallPreview';
 import { AskBullPaywallPreview } from './AskBullPaywallPreview';
 import { PortfolioBuilderPaywallPreview } from './PortfolioBuilderPaywallPreview';
-import { DeepDivePaywallPreview } from './DeepDivePaywallPreview';
 import { InstitutionalHoldingsPaywallPreview } from './InstitutionalHoldingsPaywallPreview';
 import { AlertsPaywallPreview } from './AlertsPaywallPreview';
+
+// Loaded only when the Deep Dive paywall opens: it carries the report renderer
+// and the sample report, which no other paywall needs.
+const DeepDivePaywallPreview = dynamic(() => import('./DeepDivePaywallPreview').then((m) => m.DeepDivePaywallPreview));
 
 export interface PaywallConfig {
   benefits: PaywallBenefit[];
