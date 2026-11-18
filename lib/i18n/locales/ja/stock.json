@@ -85,7 +85,6 @@
   "healthMethodologyGrowth": "売上高の成長、EPS の成長",
   "healthMethodologyHeading": "このスコアはどのように計算されていますか？",
   "healthMethodologyIntro": "直近4四半期のレポートから、ビジネスがいかに健全かを評価しています。株価は考慮しないため、健全な企業でも割高な株式である可能性があります。",
-  "healthMethodologyMarketRisk": "高いほど値動きが穏やか：低いベータ（ボラティリティ）と四半期連続の黒字",
   "healthMethodologyPoints": "（{{count}} ポイント）",
   "healthMethodologyProfitability": "年間黒字、純利益率、総資産利益率",
   "healthNotAvailable": "利用不可",
@@ -539,7 +538,6 @@
   "subpageLoadError": "現在、{{name}}の情報を読み込めませんでした。通常は1分ほどで復旧します。",
   "subpageRetry": "もう一度試す",
   "subpageNotReported": "未発表",
-  "dividendsMetaTitle": "{{name}}（{{ticker}}）の配当：利回り・支払い・履歴",
   "dividendsMetaDescription": "{{name}}（{{ticker}}）のすべての配当支払い、年ごとの合計、現在の配当利回り。わかりやすく説明します。",
   "dividendsH1": "{{name}} 配当履歴",
   "dividendsNone": "{{name}} は現在配当を支払っていません。",
@@ -747,7 +745,6 @@
   "earningsEmailToastUnsubscribedTitle": "配信を停止しました",
   "earningsEmailToastUnsubscribedBody": "{{name}}の決算結果はメールでお送りしなくなります。",
   "earningsEmailToastDismiss": "閉じる",
-  "earningsEmailPlaceholder": "you@email.com",
   "earningsEmailToastConfirmAskTitle": "メールアドレスを確認",
   "earningsEmailToastConfirmAskBody": "決算発表のたびに、{{name}}の結果をメールでお受け取りいただけます。",
   "earningsEmailToastConfirmButton": "確認",
@@ -764,5 +761,8 @@
   "dividendsQuestion": "{{name}}は配当を支払っていますか？",
   "dividendsAnswerYes": "はい。",
   "dividendsAnswerNo": "いいえ。",
-  "dividendsAnswerNotYet": "まだです。"
+  "dividendsAnswerNotYet": "まだです。",
+  "healthMethodologyMarketRisk": "数値が高いほど安定しています：ベータ（価格変動の大きさ）が低く、四半期ごとに黒字を維持していること",
+  "dividendsMetaTitle": "{{name}}（{{ticker}}）の配当：利回り・支払い・履歴",
+  "earningsEmailPlaceholder": "you@email.com"
 }

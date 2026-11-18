@@ -85,7 +85,6 @@
   "healthMethodologyGrowth": "收入增长、EPS增长",
   "healthMethodologyHeading": "此分数如何计算？",
   "healthMethodologyIntro": "我们根据最近四份季度报告评估企业的健全程度。股价不计在内，所以一家健康的公司仍然可能是一只昂贵的股票。",
-  "healthMethodologyMarketRisk": "越高越平稳：Beta（波动率）低，且每个季度都盈利",
   "healthMethodologyPoints": "（{{count}} 分）",
   "healthMethodologyProfitability": "全年盈利、净利率、资产回报率",
   "healthNotAvailable": "不适用",
@@ -539,7 +538,6 @@
   "subpageLoadError": "目前无法加载 {{name}} 的相关内容。通常一分钟内即可恢复。",
   "subpageRetry": "重试",
   "subpageNotReported": "未披露",
-  "dividendsMetaTitle": "{{name}} ({{ticker}}) 股息：收益率、派息与历史",
   "dividendsMetaDescription": "{{name}} ({{ticker}}) 的每次股息支付、按年汇总和当前股息收益率，用简明英语解释。",
   "dividendsH1": "{{name}} 股息历史",
   "dividendsNone": "{{name}} 目前不支付股息。",
@@ -746,8 +744,6 @@
   "earningsEmailToastUnsubscribedTitle": "已取消订阅",
   "earningsEmailToastUnsubscribedBody": "你将不再通过邮件收到 {{name}} 的财报结果。",
   "earningsEmailToastDismiss": "关闭",
-  "commodityReturnsTitle": "Price change vs the S&P 500",
-  "earningsEmailPlaceholder": "you@email.com",
   "earningsEmailToastConfirmAskTitle": "确认你的邮箱",
   "earningsEmailToastConfirmAskBody": "每次财报发布后，通过邮件获取{{name}}的业绩结果。",
   "earningsEmailToastConfirmButton": "确认",
@@ -764,5 +760,9 @@
   "dividendsQuestion": "{{name}} 派发股息吗？",
   "dividendsAnswerYes": "是的。",
   "dividendsAnswerNo": "不。",
-  "dividendsAnswerNotYet": "暂时没有。"
+  "dividendsAnswerNotYet": "暂时没有。",
+  "healthMethodologyMarketRisk": "数值越高越稳健：低贝塔系数（波动性）且季度盈利持续稳定",
+  "dividendsMetaTitle": "{{name}}（{{ticker}}）股息：股息率、派息与历史记录",
+  "commodityReturnsTitle": "Price change vs the S&P 500",
+  "earningsEmailPlaceholder": "you@email.com"
 }
