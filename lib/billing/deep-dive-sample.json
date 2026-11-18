@@ -1,0 +1,296 @@
+{
+  "model": "claude-sonnet-5-5",
+  "blocks": [
+    {
+      "type": "kpi_grid",
+      "items": [
+        {
+          "tone": "positive",
+          "label": "Revenue",
+          "value": "$127.6B",
+          "sublabel": "+25% YoY · just missed forecasts"
+        },
+        {
+          "tone": "positive",
+          "label": "Google Cloud revenue",
+          "value": "$30.7B",
+          "sublabel": "+103% YoY · record growth"
+        },
+        {
+          "tone": "negative",
+          "label": "Earnings per share",
+          "value": "$2.12",
+          "sublabel": "vs $2.87 a year ago · missed $3.02"
+        },
+        {
+          "tone": "negative",
+          "label": "Free cash flow",
+          "value": "-$9.1B",
+          "sublabel": "cash left after capital spending · second negative quarter"
+        },
+        {
+          "tone": "negative",
+          "label": "Capital spending",
+          "value": "$51.4B",
+          "sublabel": "more than double a year ago"
+        },
+        {
+          "tone": "positive",
+          "label": "Operating profit",
+          "value": "$40.6B",
+          "sublabel": "+30% YoY · profit grew faster than sales"
+        }
+      ],
+      "title": "Latest quarter (July to September 2026)"
+    },
+    {
+      "type": "bar_chart",
+      "unit": "$B",
+      "title": "Quarterly revenue",
+      "series": [
+        {
+          "label": "Sep 2025",
+          "value": 102.35
+        },
+        {
+          "label": "Dec 2025",
+          "value": 113.83
+        },
+        {
+          "label": "Mar 2026",
+          "value": 109.9
+        },
+        {
+          "label": "Jun 2026",
+          "value": 119.8
+        },
+        {
+          "label": "Sep 2026",
+          "value": 127.58
+        }
+      ]
+    },
+    {
+      "type": "segment_bars",
+      "items": [
+        {
+          "pct": 75.5,
+          "label": "Google Services (Search, YouTube, subscriptions)",
+          "value": "$96.3B"
+        },
+        {
+          "pct": 24.1,
+          "label": "Google Cloud",
+          "value": "$30.7B"
+        },
+        {
+          "pct": 0.3,
+          "label": "Other Bets",
+          "value": "$0.37B"
+        }
+      ],
+      "title": "Where Q3 revenue came from"
+    },
+    {
+      "rows": [
+        {
+          "badge": {
+            "text": "Slowing",
+            "tone": "negative"
+          },
+          "label": "Google Services growth",
+          "value": "15% in June quarter to 11% in September quarter"
+        },
+        {
+          "badge": {
+            "text": "Slowing",
+            "tone": "negative"
+          },
+          "label": "Search & other growth",
+          "value": "17% to 12%"
+        },
+        {
+          "badge": {
+            "text": "Accelerating",
+            "tone": "positive"
+          },
+          "label": "Cloud growth",
+          "value": "63% to 82% to 103% over three quarters"
+        },
+        {
+          "badge": {
+            "text": "About 55% due in 24 months",
+            "tone": "positive"
+          },
+          "label": "Cloud order backlog",
+          "value": "$561B"
+        },
+        {
+          "badge": {
+            "text": "2027 to rise significantly",
+            "tone": "negative"
+          },
+          "label": "2026 capital spending plan",
+          "value": "$195B to $205B"
+        }
+      ],
+      "type": "kv_table",
+      "title": "Growth is shifting from ads to Cloud"
+    },
+    {
+      "low": 300,
+      "high": 525,
+      "mean": 420.14,
+      "type": "price_targets",
+      "items": [
+        {
+          "value": "$420",
+          "source": "Consensus (MarketBeat)"
+        },
+        {
+          "tone": "positive",
+          "value": "$385",
+          "source": "KeyCorp"
+        },
+        {
+          "tone": "positive",
+          "value": "$387",
+          "source": "Wedbush"
+        },
+        {
+          "tone": "neutral",
+          "value": "$325",
+          "source": "Bernstein (Market Perform)"
+        },
+        {
+          "tone": "neutral",
+          "value": "$300",
+          "source": "DA Davidson (Neutral)"
+        }
+      ],
+      "title": "Analyst price targets (after the earnings drop)",
+      "currentPrice": 287
+    },
+    {
+      "rows": [
+        {
+          "note": "Looks cheap, but boosted by one-time investment gains such as $98B in the June quarter",
+          "label": "Price to earnings, last 12 months",
+          "value": "15.9",
+          "source": "BullPen data; Q2 2026 press release"
+        },
+        {
+          "note": "More meaningful; likely set before the post-earnings drop",
+          "label": "Price to earnings, next 12 months",
+          "value": "20.6"
+        },
+        {
+          "note": "Pays for strong growth, not a bargain",
+          "label": "Enterprise value to EBITDA",
+          "value": "21.8"
+        },
+        {
+          "note": "Low of the range is $270.70",
+          "label": "Stock vs 52-week high",
+          "value": "About 30% below $408.61"
+        }
+      ],
+      "type": "metric_table",
+      "title": "Valuation snapshot"
+    },
+    {
+      "bear": [
+        "Cash flow is negative and capital spending is set to rise significantly next year.",
+        "Search and ad growth slowed noticeably, and the quarter missed on sales and earnings.",
+        "Alphabet sold new shares and took on debt, which dilutes owners and adds risk.",
+        "Buybacks stopped, so a key source of per-share support is gone."
+      ],
+      "bull": [
+        {
+          "text": "Cloud revenue more than doubled and its operating profit more than tripled to $11.1B.",
+          "source": "Q3 2026 earnings call"
+        },
+        "Cloud backlog of $561B gives unusual visibility into future revenue.",
+        "Overall operating profit grew faster than sales, showing the business still scales well.",
+        "Analysts mostly rate it Buy, with an average target far above the current price."
+      ],
+      "type": "bull_bear"
+    },
+    {
+      "type": "catalysts",
+      "items": [
+        {
+          "title": "2027 spending plan and Q4 results",
+          "detail": "Management will give 2027 capital spending details. Some outlets expect it above $300B.",
+          "source": "Q3 2026 earnings call",
+          "direction": "neutral",
+          "timeframe": "February 2027"
+        },
+        {
+          "title": "TPU chip system sales ramp",
+          "detail": "Alphabet sells its own AI chips to customers. A meaningful revenue ramp is expected in 2027.",
+          "direction": "up",
+          "timeframe": "2027"
+        },
+        {
+          "title": "Backlog turning into revenue",
+          "detail": "About $308B of Cloud backlog is expected to convert within 24 months.",
+          "source": "Q3 2026 earnings call",
+          "direction": "up",
+          "timeframe": "Next 2 years"
+        },
+        {
+          "title": "Search growth stabilizing",
+          "detail": "Search queries are at a five-year high, yet ad revenue growth slowed.",
+          "direction": "neutral",
+          "timeframe": "Next 2 quarters"
+        }
+      ]
+    },
+    {
+      "type": "risks",
+      "items": [
+        {
+          "title": "Spending outruns cash earned",
+          "detail": "Capital spending of $51.4B beat operating cash flow of $42.3B. If Cloud demand cools, Alphabet is left with expensive, underused equipment.",
+          "source": "Q3 2026 earnings call",
+          "severity": "high"
+        },
+        {
+          "title": "Expectations still high",
+          "detail": "Even after the drop, the stock prices in strong growth. Cloud cannot double forever, so a slowdown would hurt.",
+          "severity": "medium"
+        },
+        {
+          "title": "Core ad business slowing",
+          "detail": "Services growth fell from 15% to 11% in one quarter. Rivals such as Microsoft ($MSFT) are also competing hard in AI.",
+          "severity": "medium"
+        },
+        {
+          "title": "Earnings are noisy",
+          "detail": "Large swings in investment values, such as an SpaceX stake markdown, make profit hard to read.",
+          "severity": "low"
+        }
+      ]
+    }
+  ],
+  "ticker": "GOOGL",
+  "verdict": {
+    "stance": "mixed",
+    "oneLiner": "Alphabet's AI business is booming, but it is spending more cash than it earns, and the stock just fell about 10%.",
+    "bottomLine": {
+      "holding": "Holding looks reasonable, since Cloud growth and profits are real. Watch whether free cash flow turns positive and whether the 2027 spending number is far above expectations.",
+      "considering": "The business is strong, and the lower price helps. Starting small makes sense only if you accept years of heavy spending before cash returns."
+    },
+    "confidence": "medium",
+    "threeThings": {
+      "risk": "Alphabet is spending more on AI data centers than it earns in cash, and says next year's spending will jump.",
+      "watch": "Alphabet will give its 2027 spending plan in February, and investors want proof that Cloud's order backlog turns into cash.",
+      "growth": "Revenue grew 25% to $127.6B last quarter, helped by Cloud doubling, though the core Search and ads business slowed."
+    }
+  },
+  "dataAsOf": "2026-06-30",
+  "headline": "Cloud Doubles, But Cash Burn Rattles Alphabet Investors",
+  "companyName": "Alphabet Inc.",
+  "generatedAt": "2026-10-29T16:39:47.805Z"
+}

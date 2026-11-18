@@ -146,8 +146,8 @@ function summarize(key: SectionKey, blocks: Block[], t: TFunction): string | nul
   }
 }
 
-export function DeepDiveSections({ report, currentPrice }: { report: Report; currentPrice?: number | null }) {
-  const { t } = useTranslation('tools');
+/** The report's blocks grouped into its sections, in render order, empty ones left out. */
+function groupSections(report: Report): Array<[SectionKey, Block[]]> {
   const grouped = new Map<SectionKey, Block[]>();
   for (const block of report.blocks) {
     const key = BLOCK_SECTION[block.type];
@@ -155,20 +155,39 @@ export function DeepDiveSections({ report, currentPrice }: { report: Report; cur
     if (bucket) bucket.push(block);
     else grouped.set(key, [block]);
   }
+  return SECTION_ORDER.flatMap((k) => (grouped.get(k)?.length ? [[k, grouped.get(k)!] as [SectionKey, Block[]]] : []));
+}
 
-  const present = SECTION_ORDER.filter((k) => (grouped.get(k)?.length ?? 0) > 0);
-  if (present.length === 0) return null;
+/** Each section's header without its contents: the Deep Dive paywall's "also inside" list. */
+export function SectionHeading({ sectionKey, hint }: { sectionKey: SectionKey; hint: string | null }) {
+  const { t } = useTranslation('tools');
+  const spec = SECTIONS[sectionKey];
+  const Icon = spec.icon;
+  return (
+    <span className="flex items-center gap-2.5">
+      <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', spec.chip)} aria-hidden>
+        <Icon className={cn('h-4 w-4', spec.iconColor)} />
+      </span>
+      <span className="text-sm font-semibold text-foreground">{t(spec.label)}</span>
+      {hint && <span className="text-[11px] font-normal text-muted-foreground">{hint}</span>}
+    </span>
+  );
+}
+
+export function sectionOutline(report: Report, t: TFunction): Array<{ key: SectionKey; hint: string | null }> {
+  return groupSections(report).map(([key, blocks]) => ({ key, hint: summarize(key, blocks, t) }));
+}
+
+export function DeepDiveSections({ report, currentPrice }: { report: Report; currentPrice?: number | null }) {
+  const { t } = useTranslation('tools');
+  const sections = groupSections(report);
+  if (sections.length === 0) return null;
 
   return (
     // Multiple, not single: someone comparing the bull case against the risks
     // shouldn't have one snap shut to read the other.
     <Accordion type="multiple" className="space-y-2.5">
-      {present.map((key) => {
-        const spec = SECTIONS[key];
-        const blocks = grouped.get(key)!;
-        const Icon = spec.icon;
-        const hint = summarize(key, blocks, t);
-
+      {sections.map(([key, blocks]) => {
         return (
           <AccordionItem
             key={key}
@@ -176,18 +195,7 @@ export function DeepDiveSections({ report, currentPrice }: { report: Report; cur
             className="rounded-xl border border-border/50 last:border-b"
           >
             <AccordionTrigger className="px-4 py-3 hover:no-underline">
-              <span className="flex items-center gap-2.5">
-                <span
-                  className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', spec.chip)}
-                  aria-hidden
-                >
-                  <Icon className={cn('h-4 w-4', spec.iconColor)} />
-                </span>
-                <span className="text-sm font-semibold text-foreground">{t(spec.label)}</span>
-                {hint && (
-                  <span className="text-[11px] font-normal text-muted-foreground">{hint}</span>
-                )}
-              </span>
+              <SectionHeading sectionKey={key} hint={summarize(key, blocks, t)} />
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
               <div className="space-y-7 border-t border-border/30 pt-4">

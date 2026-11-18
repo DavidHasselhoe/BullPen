@@ -263,9 +263,8 @@ export default function DeepDivePage() {
             <ArrowLeft className="h-3.5 w-3.5" /> {t('deepDiveAllDivesLink', 'All deep dives')}
           </Link>
           <Card className="overflow-hidden">
-            {/* What the report covers, for this ticker: the outline of one,
-                no made-up score (see components/billing/PreviewShapes.tsx). */}
-            <DeepDivePaywallPreview ticker={rawTicker.toUpperCase()} />
+            {/* A real sample report, labelled as one: what the reader would get for this ticker. */}
+            <DeepDivePaywallPreview ticker={rawTicker.toUpperCase()} full />
             <CardContent className="p-6 pt-2 sm:p-8 sm:pt-2 text-center">
               <h1 className="text-xl font-bold tracking-tight">{t('deepDiveSignInTitle', 'Sign in to run a deep dive')}</h1>
               <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto leading-relaxed">

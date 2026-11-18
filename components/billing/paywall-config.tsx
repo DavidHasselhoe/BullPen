@@ -100,7 +100,7 @@ export function getAiPaywallConfig(t: TFunction, context?: PaywallPreviewContext
         { icon: ShieldAlert, text: t('paywallBenefitUnlimitedRiskAnalysis') },
         { icon: Zap, text: t('paywallBenefitDailyBrief') },
       ],
-      preview: <DeepDivePaywallPreview ticker={context?.ticker} companyName={context?.companyName} />,
+      preview: <DeepDivePaywallPreview ticker={context?.ticker} />,
     },
     'Institutional Holdings': {
       benefits: [
