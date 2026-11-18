@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -262,10 +262,58 @@ function WhyDemo() {
   );
 }
 
+// ── Logo drift ───────────────────────────────────────────────────────────────
+// A few stocks anyone can look up, faint and grey in the hero's side margins.
+// Logos only, no prices: a hardcoded % would read as a live quote. Added after
+// the page has loaded so it can't delay the first paint, only where the
+// margins are wide enough, and it drifts in once and rests (WCAG 2.2.2).
+// [ticker, name, left %, top px, size px, drift-from x px, drift-from y px]
+const DRIFT: [string, string, number, number, number, number, number][] = [
+  ['AAPL', 'Apple', 5, 48, 46, -24, 14],
+  ['NVDA', 'NVIDIA', 14, 150, 38, -18, -10],
+  ['MSFT', 'Microsoft', 3, 262, 42, -26, 8],
+  ['MCD', "McDonald's", 12, 360, 34, -16, 14],
+  ['JPM', 'JPMorgan Chase', 6, 470, 38, -20, -8],
+  ['AMZN', 'Amazon', 90, 60, 42, 24, 14],
+  ['GOOGL', 'Alphabet', 83, 170, 36, 18, -10],
+  ['META', 'Meta', 93, 280, 46, 26, 8],
+  ['TSLA', 'Tesla', 85, 385, 38, 16, 14],
+  ['NKE', 'Nike', 92, 480, 34, 20, -8],
+];
+
+function LogoDrift() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!window.matchMedia('(min-width: 1280px)').matches) return;
+    const go = () => setShow(true);
+    if (document.readyState === 'complete') {
+      const t = setTimeout(go, 200);
+      return () => clearTimeout(t);
+    }
+    window.addEventListener('load', go, { once: true });
+    return () => window.removeEventListener('load', go);
+  }, []);
+  if (!show) return null;
+  return (
+    <div className="hero-logos" aria-hidden>
+      {DRIFT.map(([ticker, name, x, y, size, dx, dy], i) => (
+        <span
+          key={ticker}
+          className="hero-logo"
+          style={{ left: `${x}%`, top: y, '--dx': `${dx}px`, '--dy': `${dy}px`, '--i': i } as CSSProperties}
+        >
+          <CompanyLogo ticker={ticker} name={name} size={size} decorative />
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // ── Hero ─────────────────────────────────────────────────────────────────────
 export function Hero({ onSignUp }: Props) {
   return (
     <section id="top" className="hero">
+      <LogoDrift />
       <div className="wrap">
         <div className="hero-copy">
           <h1 className="headline hero-title">

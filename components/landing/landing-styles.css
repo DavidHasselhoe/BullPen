@@ -1226,6 +1226,26 @@
 }
 .bullpen-landing-root .hero-cta { padding: 16px 26px; font-size: 16px; }
 .bullpen-landing-root .hero-trust { margin: 16px 0 0; font-size: 14px; color: var(--fg-dim); }
+/* Logo drift (Hero.tsx LogoDrift): behind the copy (.wrap is z-index 1), grey
+   and faint so it never competes with the headline. One ~5s pass, then still. */
+.bullpen-landing-root .hero-logos { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.bullpen-landing-root .hero-logo {
+  position: absolute;
+  /* One chip for every logo: some marks are transparent, some fill a disc. */
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  opacity: 0.45;
+  filter: grayscale(1);
+  animation: hero-logo-drift 4.6s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i) * 35ms) both;
+}
+@keyframes hero-logo-drift {
+  from { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+}
+@media (max-width: 1279px) {
+  .bullpen-landing-root .hero-logos { display: none; }
+}
 
 .bullpen-landing-root .hero-search { position: relative; width: 320px; }
 .bullpen-landing-root .hero-search input {
