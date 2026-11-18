@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { stripFabricatedEpsStubs, mergeNasdaqIntoEarningsDay, mergeCalendarIntoSymbolEarnings } from '../lib/market-data/calendar-days';
+import { stripFabricatedEpsStubs, mergeNasdaqIntoEarningsDay, mergeCalendarIntoSymbolEarnings, applyReleaseEps } from '../lib/market-data/calendar-days';
 import type { NasdaqEarningsRow } from '../lib/market-data/nasdaq-earnings-calendar';
 import type { EarningsCalendar } from '../lib/finnhub/finnhub-client';
 import type { EarningsCalendarItem } from '../lib/twelvedata/twelvedata-client';
@@ -110,7 +110,7 @@ const sep = page.find((r) => r.date === '2026-09-30')!;
 assert.equal(sep.epsActual, 33.19);
 assert.equal(sep.quarter, 4, 'the new report is the quarter after the one before it');
 assert.equal(sep.year, 2026);
-assert.equal(sep.unconfirmed, true, 'not yet matched to a filing');
+assert.equal(sep.unconfirmed, false, 'a Nasdaq actual counts toward the beat/miss streak right away');
 const jun = page.find((r) => r.quarter === 3)!;
 assert.equal(jun.date, '2026-06-25', 'Nasdaq\'s date wins for the same report');
 assert.equal(jun.hour, 'AMC');
@@ -149,6 +149,25 @@ const onlyActual = mergeNasdaqIntoEarningsDay(
   '2026-11-17',
 )[0];
 assert.equal(onlyActual.eps_estimate, null, 'Nasdaq\'s actual is not compared with TD\'s estimate either');
+
+// Stock page: a calendar actual brings its own estimate; TD's history actual keeps its own pair.
+const nvHist = [{ date: '2026-11-17', epsEstimate: 2.4, epsActual: 1.24, hour: '', quarter: 3, year: 2027, revenueActual: null, revenueEstimate: null, symbol: 'NVDA', unconfirmed: true }];
+const nvPage = mergeCalendarIntoSymbolEarnings(nvHist, [{ symbol: 'NVDA', date: '2026-11-17', eps_estimate: 2.47, eps_actual: 2.68, time: 'AMC', nasdaq_confirmed: true }], 'NVDA')[0];
+assert.deepEqual([nvPage.epsEstimate, nvPage.epsActual, nvPage.unconfirmed], [2.47, 2.68, false]);
+const nvPending = mergeCalendarIntoSymbolEarnings(nvHist, [{ symbol: 'NVDA', date: '2026-11-17', eps_estimate: 2.49, eps_actual: null, time: 'AMC', nasdaq_confirmed: true }], 'NVDA')[0];
+assert.deepEqual([nvPending.epsEstimate, nvPending.epsActual], [2.4, 1.24], 'no calendar actual: the history row keeps its own pair');
+
+// Release EPS: the press release's adjusted figure fills a reported row until Nasdaq posts.
+const release = { symbol: 'NVDA', reportDate: '2026-11-17', eps: { adjusted: 2.68, gaap: 2.7 } };
+const day = [
+  { symbol: 'NVDA', date: '2026-11-17', eps_estimate: 2.49, eps_actual: null, time: 'AMC', nasdaq_confirmed: true },
+  { symbol: 'HD', date: '2026-11-17', eps_estimate: 3.86, eps_actual: 3.86, time: 'BMO', nasdaq_confirmed: true },
+];
+const filled = applyReleaseEps(day, new Map([['NVDA', release]]));
+assert.deepEqual([filled[0].eps_actual, filled[0].eps_estimate, filled[0].eps_actual_source], [2.68, 2.49, 'release']);
+assert.equal(filled[1], day[1], 'rows with an actual are left alone');
+assert.equal(applyReleaseEps(day, new Map([['NVDA', { ...release, reportDate: '2026-08-26' }]]))[0].eps_actual, null, 'an older report\'s release is not this one');
+assert.equal(applyReleaseEps([{ ...day[0], nasdaq_confirmed: false, time: '' }], new Map([['NVDA', release]]))[0].eps_actual, null, 'TD-only rows are not filled');
 
 console.log('one source per EPS pair: all assertions passed');
 

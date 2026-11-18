@@ -40,6 +40,18 @@ assert.equal(parseRecap(good.replace('a share.', 'a share — a record.'), SOURC
 assert.equal(parseRecap(good.replace('a share.', 'a share, ahead of analyst forecasts.'), SOURCE).rejected, 'analyst language');
 assert.equal(parseRecap(JSON.stringify({ bullets: ['word '.repeat(50), 'b', 'c'] }), SOURCE).rejected, 'too long');
 
+// Per-share figures come back as numbers, each found in the release, the adjusted one checked against GAAP.
+const NVDA_SOURCE = 'NVIDIA reports revenue of $115.8 billion. GAAP earnings per diluted share were $2.70. Non-GAAP earnings per diluted share were $2.68. Year-ago $1.30, prior quarter $2.20.';
+const withEps = (eps: unknown) => JSON.stringify({ bullets: ['NVIDIA had revenue of $115.8 billion.', 'Earnings were $2.70 a share.', 'Adjusted, $2.68 a share.'], eps });
+assert.deepEqual(parseRecap(withEps({ gaap: 2.7, adjusted: 2.68 }), NVDA_SOURCE).eps, { gaap: 2.7, adjusted: 2.68 });
+assert.equal(parseRecap(withEps({ gaap: 2.7, adjusted: 1.24 }), NVDA_SOURCE).eps, null, 'a figure not in the release is dropped');
+assert.equal(parseRecap(withEps({ gaap: null, adjusted: 2.68 }), NVDA_SOURCE).eps, null, 'no GAAP figure to check the adjusted one against');
+assert.equal(parseRecap(withEps({ gaap: 2.7, adjusted: '2.68' }), NVDA_SOURCE).eps, null, 'numbers only');
+assert.equal(parseRecap(withEps({ gaap: 2.2, adjusted: 2.68 }), NVDA_SOURCE).eps?.adjusted, 2.68, 'within the GAAP band');
+assert.equal(parseRecap(withEps({ gaap: 1.3, adjusted: 2.68 }), NVDA_SOURCE).eps, null, 'more than double GAAP is too far to trust');
+assert.equal(parseRecap(withEps({ gaap: -2.7, adjusted: 2.68 }), NVDA_SOURCE.replace('$2.70', '$(2.70)')).eps, null, 'a GAAP loss against an adjusted profit is too far apart to trust');
+assert.deepEqual(parseRecap(JSON.stringify({ bullets: ['Only one.'], eps: { gaap: 2.7, adjusted: 2.68 } }), NVDA_SOURCE).eps, { gaap: 2.7, adjusted: 2.68 }, 'kept when the bullets are not');
+
 // Morning email: the recap row becomes an earnings card with the bullets under it, from the evening before too.
 const bullets = (JSON.parse(good) as { bullets: string[] }).bullets;
 const card = toEmailItem({

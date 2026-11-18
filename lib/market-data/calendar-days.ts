@@ -56,6 +56,7 @@ import { getCachedMany, getCachedManyStale, getCachedStale, setCached } from '@/
 import { tryReserveCredits, waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { addDays, todayET } from '@/lib/dates/calendar-format';
 import type { EarningsCalendar } from '@/lib/finnhub/finnhub-client';
+import { recapKey, type EarningsRecap } from '@/lib/ai/earnings-recap';
 
 export type CalendarKind = 'earnings' | 'dividends' | 'splits' | 'ipo';
 
@@ -535,7 +536,49 @@ export async function getCalendarRange<T = CalendarRow>(
   const result = await readCalendarRange<T>(kind, from, to, opts);
   // Every earnings read (the calendar API, the earnings-today notification,
   // the Daily Brief) goes through here, so one provider-disagreement fix covers all.
-  return kind === 'earnings' ? withMisdatedEarningsDropped(result, from, to) : result;
+  if (kind !== 'earnings') return result;
+  return withReleaseEps(await withMisdatedEarningsDropped(result, from, to), opts.today ?? todayET());
+}
+
+/** How long after a report the press release stands in for Nasdaq's actual, which usually lands the next day. */
+const RELEASE_EPS_DAYS = 4;
+
+/**
+ * Fills a reported, Nasdaq-listed row's missing actual with the adjusted EPS
+ * from the company's press release (the earnings recap's `eps`, checked by
+ * parseReleaseEps), so the stock page, the streak, emails and the brief show
+ * the beat or miss the evening it happens instead of the morning after. It is
+ * the same adjusted basis as Nasdaq's estimate, and Nasdaq's own actual
+ * replaces it once posted. Pure.
+ */
+export function applyReleaseEps(
+  rows: EarningsCalendarItem[],
+  recaps: Map<string, Pick<EarningsRecap, 'reportDate' | 'eps'>>,
+): EarningsCalendarItem[] {
+  return rows.map((r) => {
+    if (r.eps_actual != null || !isNasdaqConfirmed(r) || r.date_estimated) return r;
+    const recap = recaps.get(r.symbol?.toUpperCase());
+    if (!recap?.eps || recap.reportDate !== r.date) return r;
+    return { ...r, eps_actual: recap.eps.adjusted, surprise: null, eps_actual_source: 'release' };
+  });
+}
+
+async function withReleaseEps<T>(result: CalendarRangeResult<T>, today: string): Promise<CalendarRangeResult<T>> {
+  const recent = [...result.byDate.keys()].filter((d) => d <= today && d >= addDays(today, -RELEASE_EPS_DAYS));
+  const pending = new Set<string>();
+  for (const d of recent) {
+    for (const r of (result.byDate.get(d) ?? []) as unknown as EarningsCalendarItem[]) {
+      if (r.eps_actual == null && isNasdaqConfirmed(r) && !r.date_estimated && r.symbol) pending.add(r.symbol.toUpperCase());
+    }
+  }
+  if (!pending.size) return result;
+  const stored = await getCachedMany<EarningsRecap>([...pending].map(recapKey));
+  const recaps = new Map([...stored.values()].map((r) => [r.symbol.toUpperCase(), r]));
+  if (!recaps.size) return result;
+  for (const d of recent) {
+    result.byDate.set(d, applyReleaseEps((result.byDate.get(d) ?? []) as unknown as EarningsCalendarItem[], recaps) as unknown as T[]);
+  }
+  return result;
 }
 
 async function readCalendarRange<T = CalendarRow>(
@@ -756,11 +799,18 @@ export function mergeCalendarIntoSymbolEarnings(
     if (!isNasdaqConfirmed(c)) continue;
     const i = rows.findIndex((r) => Math.abs(dayDeltaFromToday(r.date, c.date)) <= MISDATED_WINDOW_DAYS);
     const base = i >= 0 ? rows[i] : newHistoryRow(rows, c, symbol);
+    // EPS stays a pair from one source (see mergeNasdaqIntoEarningsDay). A
+    // calendar actual is Nasdaq's or the company's release, so it needs no
+    // filing match before it counts toward the beat/miss streak.
+    const eps = c.eps_actual != null
+      ? { epsEstimate: c.eps_estimate ?? null, epsActual: c.eps_actual, unconfirmed: false }
+      : base.epsActual != null
+        ? {}
+        : { epsEstimate: c.eps_estimate ?? base.epsEstimate };
     const merged: EarningsCalendar = {
       ...base,
+      ...eps,
       date: c.date,
-      epsEstimate: c.eps_estimate ?? base.epsEstimate,
-      epsActual: c.eps_actual ?? base.epsActual,
       hour: c.time || base.hour,
       estimated: c.date_estimated,
     };
@@ -787,7 +837,5 @@ function newHistoryRow(rows: EarningsCalendar[], c: EarningsCalendarItem, symbol
     revenueActual: null,
     revenueEstimate: null,
     symbol,
-    // Same meaning as the history feed's flag: reported, not yet matched to a filed statement.
-    unconfirmed: c.eps_actual != null,
   };
 }

@@ -42,10 +42,15 @@ export interface EarningsRecap {
   /** Null when the recap was dropped; `rejected` says why. */
   bullets: string[] | null;
   rejected?: string;
+  /** The quarter's EPS as the release states it, checked by parseReleaseEps. Null when it failed or was missing. */
+  eps?: ReleaseEps | null;
   generatedAt: string;
   /** Set once Pro readers were notified, so a crash between store and notify retries the notify only. */
   notifiedAt?: string | null;
 }
+
+/** Diluted EPS for the quarter, copied from the release. `adjusted` (non-GAAP) is the basis analysts' estimates use. */
+export interface ReleaseEps { adjusted: number; gaap: number }
 
 export const recapKey = (symbol: string) => `earnings-recap:${symbol.toUpperCase()}`;
 
@@ -91,13 +96,16 @@ export async function fetchPressRelease(symbol: string, reportDate: string): Pro
 
 const SYSTEM =
   'You write a short recap of a company\'s quarterly earnings press release for beginner investors. ' +
-  'Return JSON only: {"bullets": ["...", "...", "..."]}. Exactly three bullets, each one or two plain sentences, ' +
+  'Return JSON only: {"bullets": ["...", "...", "..."], "eps": {"gaap": 0.00, "adjusted": 0.00}}. Exactly three bullets, each one or two plain sentences, ' +
   `${MAX_WORDS_PER_BULLET - 10} words at most, no markdown.\n` +
   '1. What was reported: revenue and profit for the quarter. Say "adjusted" when a figure is not GAAP.\n' +
   '2. How that compares with the company\'s own figures: the same quarter a year ago, the previous quarter, or ' +
   'guidance the company gave before, whichever the release states.\n' +
   '3. The one thing to watch: the outlook the company gave for the next quarter or year, or, if it gave none, ' +
   'the biggest change or risk the release itself points to.\n' +
+  '"eps" is this quarter\'s diluted earnings per share copied from the release as numbers: "gaap" the GAAP figure, ' +
+  '"adjusted" the non-GAAP one, negative for a loss. Use null for one the release does not state. Never a ' +
+  'year-to-date, year-ago or basic figure.\n' +
   'Rules:\n' +
   '- Every number must be copied from the release. Never calculate a new number, growth rate or margin. You may ' +
   'round, and write a table figure in millions as billions ("94,930" in millions becomes "$94.9 billion").\n' +
@@ -112,6 +120,7 @@ let anthropic: Anthropic | null = null;
 export interface RecapGeneration {
   bullets: string[] | null;
   rejected?: string;
+  eps: ReleaseEps | null;
   inputTokens: number;
   outputTokens: number;
 }
@@ -124,7 +133,7 @@ export async function generateRecap(
   model: string = EARNINGS_RECAP_MODEL,
 ): Promise<RecapGeneration> {
   const text = source.slice(0, MAX_SOURCE_CHARS);
-  if (text.length < MIN_SOURCE_CHARS) return { bullets: null, rejected: 'release too short', inputTokens: 0, outputTokens: 0 };
+  if (text.length < MIN_SOURCE_CHARS) return { bullets: null, rejected: 'release too short', eps: null, inputTokens: 0, outputTokens: 0 };
   anthropic ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const res = await anthropic.messages.create({
     model,
@@ -170,18 +179,39 @@ export function ungroundedNumbers(bullets: string[], source: string): string[] {
   return missing;
 }
 
-/** The model's answer as bullets, or why it can't be shown. */
-export function parseRecap(raw: string, source: string): { bullets: string[] | null; rejected?: string } {
+/**
+ * The model's EPS pair, kept only when both figures are printed in the release
+ * and the adjusted one sits near GAAP. It fills a report's actual until Nasdaq
+ * posts one (applyReleaseEps), so a figure that fails is dropped, never guessed.
+ * ponytail: the GAAP band rejects big one-off quarters (GAAP loss, adjusted
+ * profit); those wait for Nasdaq. Widen it if real quarters keep landing outside.
+ */
+export function parseReleaseEps(value: unknown, source: string): ReleaseEps | null {
+  const { gaap, adjusted } = (value ?? {}) as { gaap?: unknown; adjusted?: unknown };
+  if (typeof gaap !== 'number' || typeof adjusted !== 'number' || !Number.isFinite(gaap) || !Number.isFinite(adjusted)) return null;
+  const printed = new Set((source.match(NUMBER_RE) ?? []).map((s) => Number(s.replace(/,/g, ''))));
+  if (!printed.has(Math.abs(gaap)) || !printed.has(Math.abs(adjusted))) return null;
+  if (Math.abs(adjusted - gaap) > Math.max(Math.abs(gaap), 0.5)) return null;
+  return { gaap, adjusted };
+}
+
+/** The model's answer as bullets, or why it can't be shown, plus the EPS pair, which stands on its own. */
+export function parseRecap(raw: string, source: string): { bullets: string[] | null; rejected?: string; eps: ReleaseEps | null } {
   const json = raw.match(/\{[\s\S]*\}/)?.[0];
-  let parsed: { bullets?: unknown; skip?: unknown };
+  let parsed: { bullets?: unknown; skip?: unknown; eps?: unknown };
   try {
     parsed = JSON.parse(json ?? '');
   } catch {
-    return { bullets: null, rejected: 'not json' };
+    return { bullets: null, rejected: 'not json', eps: null };
   }
-  if (typeof parsed.skip === 'string') return { bullets: null, rejected: `skip: ${parsed.skip.slice(0, 200)}` };
-  const bullets = Array.isArray(parsed.bullets)
-    ? parsed.bullets.filter((b): b is string => typeof b === 'string').map((b) => b.replace(/^[\s•*-]+/, '').replace(/\s+/g, ' ').trim()).filter(Boolean)
+  if (typeof parsed.skip === 'string') return { bullets: null, rejected: `skip: ${parsed.skip.slice(0, 200)}`, eps: null };
+  const eps = parseReleaseEps(parsed.eps, source);
+  return { ...parseBullets(parsed.bullets, source), eps };
+}
+
+function parseBullets(value: unknown, source: string): { bullets: string[] | null; rejected?: string } {
+  const bullets = Array.isArray(value)
+    ? value.filter((b): b is string => typeof b === 'string').map((b) => b.replace(/^[\s•*-]+/, '').replace(/\s+/g, ' ').trim()).filter(Boolean)
     : [];
   if (bullets.length !== 3) return { bullets: null, rejected: `${bullets.length} bullets` };
   if (bullets.some((b) => b.split(' ').length > MAX_WORDS_PER_BULLET)) return { bullets: null, rejected: 'too long' };

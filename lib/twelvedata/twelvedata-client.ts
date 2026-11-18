@@ -2016,6 +2016,9 @@ export interface EarningsCalendarItem {
   /** Nasdaq's date is Zacks' projection from past reporting dates, not one the
    *  company announced. Set by calendar-days.ts; see isEstimatedNasdaqDate. */
   date_estimated?: boolean;
+  /** 'release': eps_actual is the company's own adjusted EPS from its press
+   *  release, filled at read time until Nasdaq posts one. See applyReleaseEps. */
+  eps_actual_source?: 'release';
 }
 
 /**

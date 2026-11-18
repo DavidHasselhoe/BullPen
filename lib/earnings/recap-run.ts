@@ -163,8 +163,8 @@ export async function runEarningsRecaps(opts: { dryRun?: boolean; deadline: numb
       const lock = `${recapKey(sym)}:lock`;
       if (!(await rsetnx(lock, 180))) continue;
       try {
-        let gen: { bullets: string[] | null; rejected?: string };
-        if (!pr.text) gen = { bullets: null, rejected: 'no release exhibit' };
+        let gen: { bullets: string[] | null; rejected?: string; eps: EarningsRecap['eps'] };
+        if (!pr.text) gen = { bullets: null, rejected: 'no release exhibit', eps: null };
         else {
           const cap = await checkRateLimit('earnings-recap-gen', { windowMs: 24 * 60 * 60 * 1000, maxRequests: DAILY_GENERATIONS });
           if (!cap.allowed) { result.errors.push(`${sym}: daily cap`); continue; }
@@ -178,6 +178,7 @@ export async function runEarningsRecaps(opts: { dryRun?: boolean; deadline: numb
           sourceUrl: pr.url,
           bullets: gen.bullets,
           ...(gen.rejected ? { rejected: gen.rejected } : {}),
+          eps: gen.eps,
           generatedAt: new Date().toISOString(),
           notifiedAt: null,
         };
