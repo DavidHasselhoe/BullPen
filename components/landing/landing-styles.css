@@ -1019,6 +1019,95 @@
 @keyframes demo-fade-in {
   from { opacity: 0; }
 }
+
+/* Health: each pillar's ring arc and bar start together, one pillar after
+   another (--d), so the weak one lands last. Bars slide rather than scale so
+   their rounded ends keep their shape. */
+.bullpen-landing-root .hdemo-badge {
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--up);
+  font-size: 13px;
+  font-weight: 600;
+}
+.bullpen-landing-root .hdemo-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+}
+.bullpen-landing-root .hdemo-ring { position: relative; display: grid; justify-items: center; gap: 8px; }
+.bullpen-landing-root .hdemo-ring svg { display: block; color: var(--fg); }
+.bullpen-landing-root .hdemo-arc-track { fill: none; stroke: currentColor; stroke-opacity: 0.12; stroke-width: 10; stroke-linecap: round; }
+.bullpen-landing-root .hdemo-arc {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 260ms linear var(--d), opacity 0s var(--d);
+}
+.bullpen-landing-root .hdemo-arc.up { stroke: var(--up); }
+.bullpen-landing-root .hdemo-arc.down { stroke: var(--down); }
+.bullpen-landing-root .hdemo-score {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  width: 128px;
+  height: 128px;
+  margin-left: -64px;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+.bullpen-landing-root .hdemo-grade { margin-top: 4px; font-size: 16px; font-weight: 600; color: var(--up); }
+.bullpen-landing-root .hdemo-out { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-dim); }
+.bullpen-landing-root .hdemo-bars { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.bullpen-landing-root .hdemo-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.bullpen-landing-root .hdemo-name { display: inline-flex; align-items: baseline; gap: 8px; font-weight: 500; color: var(--fg); }
+.bullpen-landing-root .hdemo-dot { flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%; transform: translateY(-2px); }
+.bullpen-landing-root .hdemo-dot.up,
+.bullpen-landing-root .hdemo-bar.up { background: var(--up); }
+.bullpen-landing-root .hdemo-dot.down,
+.bullpen-landing-root .hdemo-bar.down { background: var(--down); }
+.bullpen-landing-root .hdemo-sig { flex-shrink: 0; font-size: 13px; font-weight: 600; }
+.bullpen-landing-root .hdemo-sig.up { color: var(--up); }
+.bullpen-landing-root .hdemo-sig.down { color: var(--down); }
+.bullpen-landing-root .hdemo-track { display: block; height: 6px; overflow: hidden; border-radius: 99px; background: var(--surface-2); }
+.bullpen-landing-root .hdemo-bar {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  transform: translateX(calc((var(--r) - 1) * 100%));
+  transition: transform 500ms cubic-bezier(0.33, 1, 0.68, 1) var(--d);
+}
+.bullpen-landing-root .hdemo-summary {
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--fg-muted);
+}
+.bullpen-landing-root .demo[data-phase="armed"] .hdemo-arc { stroke-dashoffset: 1; opacity: 0; transition: none; }
+.bullpen-landing-root .demo[data-phase="armed"] .hdemo-bar { transform: translateX(-100%); transition: none; }
+@media (max-width: 560px) {
+  .bullpen-landing-root .hdemo-body { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}
 @media (max-width: 900px) {
   .bullpen-landing-root .benefit-demo { margin: 0 16px 16px; padding: 18px; }
   .bullpen-landing-root .mdemo-value { font-size: 36px; }

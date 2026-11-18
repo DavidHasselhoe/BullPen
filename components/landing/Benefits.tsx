@@ -1,7 +1,7 @@
 import { getImageProps } from 'next/image';
 import type { ComponentType, CSSProperties } from 'react';
 import { SectionHeading } from './Atoms';
-import { PlainEnglishDemo } from './Demos';
+import { HealthDemo, PlainEnglishDemo } from './Demos';
 
 /**
  * What a beginner gets, free first, as a bento of real light-mode captures.
@@ -45,9 +45,7 @@ const BENEFITS: Benefit[] = [
     title: 'One grade for how healthy a company is.',
     body: 'Profit, debt, cash, growth and risk, scored out of 100 and graded A to F, so two companies compare at a glance.',
     file: 'bento-health',
-    alt: "NVIDIA's financial health: 89 out of 100, grade A, with five categories such as how well it makes money and how bumpy the ride is",
-    desktop: { w: 568, h: 346 },
-    phone: { w: 328, h: 437 },
+    demo: HealthDemo,
   },
   {
     title: 'A scorecard for your watchlist.',

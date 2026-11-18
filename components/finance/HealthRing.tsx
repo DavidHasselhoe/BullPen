@@ -63,7 +63,7 @@ function polar(cx: number, cy: number, r: number, deg: number): [number, number]
   return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
 }
 
-function arcPath(cx: number, cy: number, r: number, start: number, end: number): string {
+export function arcPath(cx: number, cy: number, r: number, start: number, end: number): string {
   const [x1, y1] = polar(cx, cy, r, start);
   const [x2, y2] = polar(cx, cy, r, end);
   const large = end - start > 180 ? 1 : 0;
