@@ -12,13 +12,18 @@ import { useBackground } from '@/hooks/use-background';
  * tools never shifts the back link or the title sideways: `narrow` for form and
  * AI tools (one column of inputs, a report), `wide` for data tools that need
  * the room (tables, grids, the heatmap).
+ *
+ * `maxWidth` (px) lets a page grow past `wide` when its content needs it: the
+ * Screener with many columns turned on. It only ever widens.
  */
 export function ToolPage({
   width = 'narrow',
+  maxWidth,
   className,
   children,
 }: {
   width?: 'narrow' | 'wide';
+  maxWidth?: number;
   className?: string;
   children: ReactNode;
 }) {
@@ -31,6 +36,7 @@ export function ToolPage({
           width === 'wide' ? 'max-w-7xl' : 'max-w-4xl',
           className
         )}
+        style={maxWidth ? { maxWidth } : undefined}
       >
         {children}
       </main>

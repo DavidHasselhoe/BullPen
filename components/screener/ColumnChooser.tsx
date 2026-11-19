@@ -10,6 +10,7 @@ import type { UseScreenerColumns } from '@/hooks/use-screener-columns';
 
 interface Props {
   columns: UseScreenerColumns;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const GROUP_ORDER: ColumnGroup[] = ['health', 'price', 'volume', 'valuation', 'profitability', 'risk'];
@@ -55,7 +56,7 @@ function ShownItem({ col, onToggle }: { col: ScreenerColumn; onToggle: () => voi
  * which showed PRICE and VALUATION twice). Shown columns are in table order and
  * draggable; hidden ones stay grouped by category so they're easy to find.
  */
-export function ColumnChooser({ columns }: Props) {
+export function ColumnChooser({ columns, onOpenChange }: Props) {
   const { t } = useTranslation('tools');
   const { orderedColumns, isHidden, toggle, showAll, hideAll, reorder, reset } = columns;
   const shown = orderedColumns.filter((c) => !isHidden(c.key));
@@ -64,7 +65,7 @@ export function ColumnChooser({ columns }: Props) {
   const groupLabels = getGroupLabels(t);
 
   return (
-    <Popover>
+    <Popover onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
           <SlidersHorizontal className="h-3.5 w-3.5" />

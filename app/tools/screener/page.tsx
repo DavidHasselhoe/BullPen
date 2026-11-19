@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, useSyncExternalStore, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
@@ -10,7 +10,8 @@ import { trackEvent } from '@/lib/analytics/track';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Filter } from 'lucide-react';
+import { Filter, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   ScreenerFilters,
   EMPTY_FILTERS,
@@ -82,6 +83,15 @@ function paramToView(param: string | null, customViews: ScreenerView[]): ActiveV
   const found = customViews.find((v) => v.id === param);
   if (found) return { type: 'custom', view: found };
   return { type: 'sp500' };
+}
+
+const FILTERS_HIDDEN_KEY = 'screener-filters-hidden';
+function subscribeStorage(onChange: () => void) {
+  window.addEventListener('storage', onChange);
+  return () => window.removeEventListener('storage', onChange);
+}
+function readFiltersHidden(): boolean {
+  try { return localStorage.getItem(FILTERS_HIDDEN_KEY) === '1'; } catch { return false; }
 }
 
 function ScreenerContent() {
@@ -397,6 +407,30 @@ function ScreenerContent() {
   const sectors = data?.sectors ?? [];
   const industries = data?.industries ?? [];
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
+  // Filter sidebar hide/show, remembered in this browser. Read through
+  // useSyncExternalStore so the server HTML (sidebar open) hydrates cleanly.
+  const storedFiltersHidden = useSyncExternalStore(subscribeStorage, readFiltersHidden, () => false);
+  const [filtersHiddenEdit, setFiltersHiddenEdit] = useState<boolean | null>(null);
+  const filtersHidden = filtersHiddenEdit ?? storedFiltersHidden;
+  const toggleFilters = () => {
+    const next = !filtersHidden;
+    setFiltersHiddenEdit(next);
+    try { localStorage.setItem(FILTERS_HIDDEN_KEY, next ? '1' : '0'); } catch { /* private mode */ }
+  };
+
+  // The page grows past max-w-7xl only as far as the chosen columns need, so
+  // the default 7 columns look as they always did and 30 stop hiding behind a
+  // scrollbar on a wide monitor. 310 = checkbox 36 + company 256 + cell slack;
+  // 240 = the sidebar and its gap; 64 = the page's lg padding.
+  const tableWidth = screenerColumns.visibleColumns.reduce((sum, c) => sum + c.width, 310);
+  const fitWidth = tableWidth + (filtersHidden ? 0 : 240) + 64;
+  const liveMaxWidth = fitWidth > 1280 ? fitWidth : 0;
+  // Held while the column chooser is open: growing per click slid the Columns
+  // button (and the list under the cursor) sideways, and left the popover 80px
+  // off its button. The page widens once, when the chooser closes.
+  const [chooserHeldWidth, setChooserHeldWidth] = useState<number | null>(null);
+  const pageMaxWidth = (chooserHeldWidth ?? liveMaxWidth) || undefined;
   const { prices: livePrices, session: marketSession, connected } = useHeatmapStream();
 
   const isCustomView = activeView.type === 'custom';
@@ -405,7 +439,7 @@ function ScreenerContent() {
   const customViewEmpty = isCustomView && symbolsFilter === '__none__';
 
   return (
-    <ToolPage width="wide">
+    <ToolPage width="wide" maxWidth={pageMaxWidth}>
       <ToolBackLink />
       {/* Header */}
       <div className="mb-4">
@@ -448,7 +482,22 @@ function ScreenerContent() {
             )}
           </span>
           <div className="ml-auto flex items-center gap-2">
-            <ColumnChooser columns={screenerColumns} />
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden lg:inline-flex gap-1.5 h-8 text-xs"
+              onClick={toggleFilters}
+              aria-expanded={!filtersHidden}
+              aria-controls="screener-filters"
+            >
+              {filtersHidden ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+              {t('screenerFiltersLabel', 'Filters')}
+              {activeFilterCount > 0 && <span className="text-muted-foreground">{activeFilterCount}</span>}
+            </Button>
+            <ColumnChooser
+              columns={screenerColumns}
+              onOpenChange={(open) => setChooserHeldWidth(open ? liveMaxWidth : null)}
+            />
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -495,8 +544,9 @@ function ScreenerContent() {
       {/* Stacked below lg: side by side, the results column landed off-screen
           to the right of the filters card and phones showed no results at all. */}
       <div className="flex flex-col gap-4 lg:flex-row">
-        {/* Sidebar filters — always visible */}
-        <Card className="w-56 flex-shrink-0 hidden lg:block self-start sticky top-20">
+        {/* Sidebar filters. Hidden, not unmounted, when collapsed: a half-typed
+            Min keeps its value. */}
+        <Card id="screener-filters" className={cn('w-56 flex-shrink-0 hidden self-start sticky top-20', !filtersHidden && 'lg:block')}>
           <CardContent className="p-4">
             {isLoading && !customViewEmpty ? (
               <div className="space-y-4">
