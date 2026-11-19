@@ -12,18 +12,36 @@ import { displayCompanyName } from '@/lib/market-data/company-name';
 export const FIXED_DISCLAIMER = 'Not financial advice. Report dates gathered from public sources as of posting. Dates can change; always confirm before the market moves.';
 
 /**
- * Static, not model-generated — Instagram capped posts at 5 hashtags in
- * Dec 2025, and its 2026 algorithm weighs tag-caption relevance over count
- * (mismatched/generic tags now get suppressed rather than ignored), so a
- * small hand-picked set beats letting Claude invent a fresh batch every
- * week for near-zero benefit at real hallucination/drift risk. Mix is
- * deliberate: one broad reach tag (#investing), one broad-but-topical tag
- * (#stockmarket), one exact-moment tag (#earningsseason), and two
- * audience-specific tags matching BullPen's actual beginner-to-intermediate
- * positioning rather than generic finance-influencer tags (#wallstreet,
- * #financialfreedom, etc.) that would draw the wrong audience.
+ * Static per content type, never model-written. Instagram caps a post at 5
+ * hashtags and weighs how well tags match the caption over how many there
+ * are, so each type gets 3-4 specific tags. The old shared set (#StockMarket
+ * #Investing ...) went on every post, movers included, and huge generic tags
+ * bury a small account. Reviewed 11-19 with David's brief.
  */
-export const FIXED_HASHTAGS = '#StockMarket #EarningsSeason #Investing #StocksToWatch #InvestingForBeginners';
+export const HASHTAGS = {
+  earnings_results: '#earningsseason #earningsrecap #learnaboutstocks #stocksforbeginners',
+  earnings_calendar: '#earningscalendar #earningsseason #stocksforbeginners',
+  market_movers: '#stockmovers #stockmarketnews #learnaboutstocks',
+  picks_scoreboard: '#stockpicks #sp500 #investingforbeginners',
+} as const;
+
+/** "#nvidiaearnings": the one tag people search for this exact report. */
+export function deepDiveHashtags(companyName: string, ticker: string): string {
+  const slug = displayCompanyName(companyName, ticker).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return `#${slug || ticker.toLowerCase()}earnings #earningsseason #learnaboutstocks #stocksforbeginners`;
+}
+
+/**
+ * The shape every caption prompt asks for (David's 11-19 brief): the first
+ * ~125 characters are all that show before "more", links in captions can't be
+ * tapped, and saves, shares and replies are what Instagram rewards. Appended to
+ * each generator's system prompt; the JSON "caption" field points at it.
+ */
+export const CAPTION_RULES = `CAPTION SHAPE (for the "caption" field):
+- Line 1 is ONE sentence of at most 12 words that works on its own, because Instagram shows only about the first 125 characters before "more". Use the most surprising fact, a tension, or a question, built only from the given data. If it asks a question, the next sentences answer it. No greeting, and not just a ticker.
+- Then a blank line, then one paragraph of 2 or 3 short sentences in plain language a beginner understands. Explain any money term in a few words the first time it appears (for example "profit per share, the profit for each share of stock"). Work the company and the topic in naturally, in words people search for, such as "NVIDIA's earnings" or "the biggest stock moves today".
+- Then a blank line, then one closing line that invites a reply or a save: either a simple question the reader can answer from their own view (never whether to buy or sell anything), or a save prompt such as "Save this for the next earnings season." Never end with "see it on BullPen", "link in bio", or a link.
+- Never write: "led the board", "the board", "took the biggest hit", "EPS", "beat estimates" without saying what was estimated, "bullish", "bearish", "to the moon". No hashtags and no emojis in the caption.`;
 
 export function formatWeekLabel(weekStart: string, weekEnd: string): string {
   const start = new Date(weekStart + 'T12:00:00Z');

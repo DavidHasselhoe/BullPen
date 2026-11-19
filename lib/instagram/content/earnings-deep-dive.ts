@@ -42,7 +42,7 @@ function getAnthropic(): Anthropic {
 }
 import { totalSlideCount } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
-import { resolveLogoUrl, FIXED_HASHTAGS } from './shared';
+import { resolveLogoUrl, deepDiveHashtags, CAPTION_RULES } from './shared';
 import type { EarningsDeepDiveData, EarningsDeepDiveSlides } from './schema';
 
 import { SITE_URL } from '@/lib/site';
@@ -285,7 +285,10 @@ export async function writeHeadlineAndCaption(data: EarningsDeepDiveData): Promi
   if (!spend.allowed) {
     return {
       headline: `${data.ticker} earnings are in`,
-      caption: `${data.companyName} (${data.ticker}) just reported earnings. See the full breakdown on BullPen.`,
+      caption:
+        `${data.companyName} earnings are in, explained in plain English.\n\n` +
+        'Revenue, profit per share and what changed since last quarter, step by step.\n\n' +
+        `Save this for the next time ${data.companyName} reports.\n\n${DEEP_DIVE_DISCLAIMER}\n\n${deepDiveHashtags(data.companyName, data.ticker)}`,
     };
   }
 
@@ -309,14 +312,16 @@ export async function writeHeadlineAndCaption(data: EarningsDeepDiveData): Promi
 
   const systemPrompt = `You write short, punchy Instagram copy for BullPen, a financial app for beginner-to-intermediate investors.
 
-Voice: confident, clear, never hype-y. No emoji spam (0-1 max, only if it genuinely fits). Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead. Say "profit per share", never "EPS" or "earnings per share": the slides use those words, and beginners don't know the abbreviation. Mention only the figures and facts listed below; never point readers at a number that isn't given.
+Voice: confident, clear, never hype-y. Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead. Say "profit per share", never "EPS" or "earnings per share": the slides use those words, and beginners don't know the abbreviation. Mention only the figures and facts listed below; never point readers at a number that isn't given.
 
 DATA FIDELITY (critical): you are given a real, fixed set of figures for one company's just-released earnings report. Use ONLY these figures and their already-computed beat/missed/in-line labels. Do not add, invent, or imply any other figure, and do not restate exact dollar numbers or percentages beyond what's given, since the slide images already show the exact figures.
 
 WHAT TO LEAD WITH: a beat on its own is not news, about four in five companies beat every quarter, and stocks often fall after one. When a WHAT CHANGED list is given, the headline is about its FIRST item, not about beating or missing, and the caption explains that item before mentioning the beat or miss. Never call a report strong, great, or a win when the first WHAT CHANGED item is bad news. Never describe any figure as steady, holding, up, down, faster, or slower unless a WHAT CHANGED item says exactly that: a single number on its own has no trend. Only when no WHAT CHANGED list is given may the headline be about the beat or miss.
 
 Output ONLY a JSON object with exactly two fields, nothing else, no markdown fences:
-{"headline": "a punchy hook under 10 words capturing what changed", "caption": "a 2-4 sentence Instagram caption summarizing the report, ending with a soft call to action to see the full breakdown on BullPen"}`;
+{"headline": "a punchy hook under 10 words capturing what changed", "caption": "the caption, in the CAPTION SHAPE below, summarizing the report; its first line is about the first WHAT CHANGED item when there is one"}
+
+${CAPTION_RULES}`;
 
   const userPrompt = `${data.companyName} (${data.ticker}) reported earnings ${data.reportDate}.\n${facts}\n\nWrite the headline and caption now.`;
 
@@ -347,7 +352,7 @@ Output ONLY a JSON object with exactly two fields, nothing else, no markdown fen
   const jsonStr = stripped.match(/\{[\s\S]*\}/)?.[0] ?? stripped;
   const parsed = JSON.parse(jsonStr) as { headline: string; caption: string };
 
-  return { headline: parsed.headline, caption: `${parsed.caption}\n\n${DEEP_DIVE_DISCLAIMER}\n\n${FIXED_HASHTAGS}` };
+  return { headline: parsed.headline, caption: `${parsed.caption}\n\n${DEEP_DIVE_DISCLAIMER}\n\n${deepDiveHashtags(data.companyName, data.ticker)}` };
 }
 
 /**

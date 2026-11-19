@@ -46,7 +46,7 @@ import { attachCalendarMeta } from '@/lib/market-data/calendar-market-cap';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { parseHookAndCaption } from './schema';
 import { INSTAGRAM_ALLOWLIST, NASDAQ100_SET } from './allowlist';
-import { FIXED_DISCLAIMER, FIXED_HASHTAGS, dropShareClassTwins, formatWeekLabel, resolveLogoUrl } from './shared';
+import { FIXED_DISCLAIMER, HASHTAGS, CAPTION_RULES, dropShareClassTwins, formatWeekLabel, resolveLogoUrl } from './shared';
 import type { EarningsCalendarSlides, EarningsSlideCompany } from './schema';
 import type { WebSearchEarningsHit } from './earnings-web-search';
 import { tooFewCompanies, type TooFewCompanies } from './earnings-minimum';
@@ -61,15 +61,17 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const SYSTEM_PROMPT = `You write short, punchy Instagram copy for BullPen, a financial app for beginner-to-intermediate investors.
 
-Voice: confident, clear, never hype-y. No emoji spam (0-1 max, only if it genuinely fits). Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.
+Voice: confident, clear, never hype-y. Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.
 
 DATA FIDELITY (critical): you are given a real, fixed list of companies reporting earnings this week. Use ONLY those company names and tickers. Do not add, invent, or imply any other company. Do not state specific dates, times, or numbers beyond what's given — the slide images already show the exact schedule.
 
 Output ONLY a JSON object with exactly two fields, nothing else, no markdown fences:
 {
   "headline": "a punchy hook under 10 words for the first slide, no ticker required",
-  "caption": "a 2-4 sentence Instagram caption teasing the week ahead, mentioning at most 3 of the given companies by name, ending with a soft call to action to check the full calendar on BullPen"
-}`;
+  "caption": "the caption, in the CAPTION SHAPE below, about the week of earnings reports ahead, mentioning at most 3 of the given companies by name"
+}
+
+${CAPTION_RULES}`;
 
 interface RawEarningsRow {
   symbol: string;
@@ -79,7 +81,7 @@ interface RawEarningsRow {
   market_cap: number | null;
 }
 
-async function writeHookAndCaption(
+export async function writeHookAndCaption(
   companies: RawEarningsRow[],
   weekLabel: string
 ): Promise<{ headline: string; caption: string }> {
@@ -115,7 +117,7 @@ async function writeHookAndCaption(
   }
 
   const { headline, caption } = parseHookAndCaption(textBlock.text);
-  return { headline, caption: `${caption}\n\n${FIXED_DISCLAIMER}\n\n${FIXED_HASHTAGS}` };
+  return { headline, caption: `${caption}\n\n${FIXED_DISCLAIMER}\n\n${HASHTAGS.earnings_calendar}` };
 }
 
 /**

@@ -22,7 +22,7 @@ import { checkAnthropicDailySpend } from '@/lib/billing/anthropic-spend-guard';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 import { fmtShortDate, todayET } from '@/lib/dates/calendar-format';
-import { formatDateLabel, resolveLogoUrl } from './shared';
+import { formatDateLabel, resolveLogoUrl, HASHTAGS, CAPTION_RULES } from './shared';
 import { SITE_URL } from '@/lib/site';
 import type { PicksScoreboardSlides, ScoreboardCallout, ScoreboardPick } from './schema';
 import type { PickWithPerformance } from '@/lib/picks/types';
@@ -34,7 +34,6 @@ export const SCOREBOARD_DISCLAIMER =
   'Hypothetical returns: each pick bought at the open on its pick day, no fees or taxes. ' +
   'The S&P 500 figure is SPY bought on the same days. Past performance does not predict future results. Not investment advice.';
 
-const HASHTAGS = '#StockMarket #Investing #StockPicks #SP500 #InvestingForBeginners';
 
 /** Model-written lines on the slide are never cut, so one that won't fit is dropped instead. */
 const MAX_WHY_CHARS = 220;
@@ -112,8 +111,8 @@ async function writeCopy(c: Omit<PicksScoreboardSlides, 'caption'>, why: { best:
       'Never use an em dash or en dash to connect clauses; use a period or comma. ' +
       'Output ONLY JSON, no fences: {"bestWhy": "...", "worstWhy": "...", "caption": "..."} where ' +
       'bestWhy and worstWhy are one sentence each, 25 words at most, leading with the cause (the reader already sees the ticker and percent), ' +
-      'and caption is 3-5 short sentences: the score against the S&P 500 and this week\'s change, then what drove the biggest winner and the biggest loser and why each was picked, ' +
-      'ending with "Every pick and the full track record are on BullPen, link in bio." Be honest about the loser and about a week where the lead shrank.',
+      'and caption follows the CAPTION SHAPE below: the score against the S&P 500 and this week\'s change, then what drove the biggest winner and the biggest loser and why each was picked. ' +
+      'Be honest about the loser and about a week where the lead shrank.\n\n' + CAPTION_RULES,
     messages: [{ role: 'user', content: `Today is ${todayET()}.\n${facts}` }],
   });
 
@@ -149,7 +148,7 @@ function plainCaption(c: Omit<PicksScoreboardSlides, 'caption'>): string {
     `Our Weekly Pick track record since ${c.sinceLabel}: ${pct(c.totalReturnPct)} across ${c.pickCount} picks, ` +
     `against ${pct(c.benchmarkReturnPct)} for the S&P 500 on the same days. That is ${Math.abs(lead).toFixed(1)} points ${lead >= 0 ? 'ahead' : 'behind'}. ` +
     `Best so far: ${c.best.name}, ${pct(c.best.returnPct)}. Worst: ${c.worst.name}, ${pct(c.worst.returnPct)}. ` +
-    'Every pick and the full track record are on BullPen, link in bio.'
+    '\n\nSave this to see how the picks do next week.'
   );
 }
 
@@ -196,6 +195,6 @@ export async function generatePicksScoreboardContent(): Promise<PicksScoreboardS
   const copy = await writeCopy(base, { best: best.oneLiner, worst: worst.oneLiner });
   base.best.movedBy = copy.bestWhy;
   base.worst.movedBy = copy.worstWhy;
-  const caption = `${copy.caption ?? plainCaption(base)}\n\n${SCOREBOARD_DISCLAIMER}\n\n${HASHTAGS}`;
+  const caption = `${copy.caption ?? plainCaption(base)}\n\n${SCOREBOARD_DISCLAIMER}\n\n${HASHTAGS.picks_scoreboard}`;
   return { ...base, caption };
 }

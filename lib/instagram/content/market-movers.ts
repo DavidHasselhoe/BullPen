@@ -37,7 +37,7 @@ import { getLogoManifest, logoUrlFromManifest } from '@/lib/logos/logo-manifest'
 import { resolveAndPersistLogo, downloadAndValidateLogo } from '@/lib/logos/resolve-logo';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { parseHookAndCaption } from './schema';
-import { MARKET_DATA_DISCLAIMER, MARKET_DATA_DISCLAIMER_PRE_MARKET, FIXED_HASHTAGS, formatDateLabel } from './shared';
+import { MARKET_DATA_DISCLAIMER, MARKET_DATA_DISCLAIMER_PRE_MARKET, HASHTAGS, CAPTION_RULES, formatDateLabel } from './shared';
 import type { MarketMoversSlides, MarketMoverEntry } from './schema';
 
 const MODEL = 'claude-sonnet-5-5';
@@ -52,15 +52,17 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const SYSTEM_PROMPT = `You write short, punchy Instagram copy for BullPen, a financial app for beginner-to-intermediate investors.
 
-Voice: confident, clear, never hype-y. No emoji spam (0-1 max, only if it genuinely fits). Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.
+Voice: confident, clear, never hype-y. Never use an em dash (—) or en dash (–) to connect clauses; use a period or comma instead.
 
 DATA FIDELITY (critical): you are given today's real top 5 gainers and top 5 losers from the S&P 500 and Nasdaq 100. Use ONLY those company names, tickers, and % changes. Do not add, invent, or imply any other company or number, and do not speculate about WHY any INDIVIDUAL stock moved beyond what you're explicitly told. State only that it moved, unless a VERIFIED CONTEXT note below gives you a real, confirmed reason.
 
 Output ONLY a JSON object with exactly two fields, nothing else, no markdown fences:
 {
   "headline": "a punchy hook under 10 words, no ticker required",
-  "caption": "a 2-3 sentence Instagram caption naming the day's single biggest gainer and biggest loser with their exact % change, ending with a soft call to action to check the full movers list on BullPen"
-}`;
+  "caption": "the caption, in the CAPTION SHAPE below, naming the day's single biggest gainer and biggest loser with their exact % change, and saying in plain words what the % change is measured from"
+}
+
+${CAPTION_RULES}`;
 
 const PRE_MARKET_ADDENDUM = `\n\nThis is a special PRE-MARKET edition, posted before the US market opens. These are live pre-market price moves, not the regular post-close change — make that explicit in both the headline and caption (e.g. "before the bell", "pre-market"), so nobody mistakes this for the usual after-close movers post.`;
 
@@ -156,7 +158,7 @@ export async function fetchDailyCloses(): Promise<Map<string, DailyClose[]>> {
   return closes;
 }
 
-async function writeCaption(
+export async function writeCaption(
   winners: MarketMoverEntry[],
   losers: MarketMoverEntry[],
   dateLabel: string,
@@ -209,7 +211,7 @@ async function writeCaption(
   const disclaimer = opts.period
     ? periodDisclaimer(opts.period)
     : opts.preMarket ? MARKET_DATA_DISCLAIMER_PRE_MARKET : MARKET_DATA_DISCLAIMER;
-  return `${caption}\n\n${disclaimer}\n\n${FIXED_HASHTAGS}`;
+  return `${caption}\n\n${disclaimer}\n\n${HASHTAGS.market_movers}`;
 }
 
 /**
