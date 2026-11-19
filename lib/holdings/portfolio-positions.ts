@@ -142,7 +142,7 @@ async function priceEveryPosition(tickers: string[]): Promise<Map<string, number
         if (!quote || !Number.isFinite(quote.c) || quote.c <= 0) continue;
         const upper = symbol.toUpperCase();
         prices.set(upper, quote.c);
-        cacheLastPrice(upper, { price: quote.c, changePercent: Number.isFinite(quote.dp) ? quote.dp : null });
+        cacheLastPrice(upper, { price: quote.c, changePercent: Number.isFinite(quote.dp) ? quote.dp : null, volume: quote.volume });
       }
     } catch (err) {
       // Cost basis is a complete, honest answer. Today's prices for two thirds

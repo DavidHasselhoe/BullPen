@@ -112,7 +112,7 @@ async function handler(request: NextRequest) {
             // disambiguation is a different instrument than the
             // XSTU-listed Kongsberg Gruppen this holding was pinned to).
             if (!micPinnedSymbols.has(symbol)) {
-              cacheLastPrice(symbol, { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null }, prepost);
+              cacheLastPrice(symbol, { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null, volume: q.volume }, prepost);
             }
           }
         }

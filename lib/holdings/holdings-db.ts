@@ -10,6 +10,7 @@ import { recordPortfolioActivity } from '@/lib/holdings/portfolio-activity';
 import { getLogoUrlsForTickers } from '@/lib/logos/logos-db';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 import { OPEN_POSITION_FILTER } from '@/lib/holdings/open-position';
+import { blendFxRate } from '@/lib/holdings/fx-blend';
 
 /** Cap how many listing quotes we resolve per fetch so a fresh portfolio doesn't burst the API. */
 const MAX_CURRENCY_BACKFILL = 25;
@@ -368,6 +369,17 @@ export async function addOrUpdateHolding(
       }
 
       const h = holding as { trading_currency?: string | null; purchase_currency?: string | null; purchase_fx_rate?: number | null; asset_type?: string | null; mic_code?: string | null; exchange?: string | null };
+      // The rate follows the cost basis, like avg_price above. Only blended
+      // when both lots were converted to the same home currency.
+      const sameHome = existing.purchase_currency == null || h.purchase_currency == null || existing.purchase_currency === h.purchase_currency;
+      const addsCost = holding.avg_price != null && holding.avg_price > 0 && addQty > 0;
+      let newFxRate = existing.purchase_fx_rate ?? h.purchase_fx_rate ?? null;
+      if (addsCost && existingQty > 0 && existing.avg_price != null) {
+        if (sameHome) newFxRate = blendFxRate(existingQty * existing.avg_price, existing.purchase_fx_rate, addQty * holding.avg_price!, h.purchase_fx_rate ?? null);
+      } else if (addsCost) {
+        // Reopening a sold-out position starts a fresh cost basis, as avg_price does.
+        newFxRate = h.purchase_fx_rate ?? existing.purchase_fx_rate ?? null;
+      }
       const { data: updated, error } = await supabase
         .from('user_holdings')
         .update({
@@ -380,7 +392,7 @@ export async function addOrUpdateHolding(
           // before trading_currency was captured, or a first import top-up).
           ...(existing.trading_currency == null && h.trading_currency ? { trading_currency: h.trading_currency } : {}),
           ...(existing.purchase_currency == null && h.purchase_currency ? { purchase_currency: h.purchase_currency } : {}),
-          ...(existing.purchase_fx_rate == null && h.purchase_fx_rate != null ? { purchase_fx_rate: h.purchase_fx_rate } : {}),
+          purchase_fx_rate: newFxRate,
           ...(existing.asset_type == null && h.asset_type ? { asset_type: h.asset_type } : {}),
           ...(existing.mic_code == null && h.mic_code ? { mic_code: h.mic_code } : {}),
           ...(existing.exchange == null && h.exchange ? { exchange: h.exchange } : {}),

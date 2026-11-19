@@ -101,7 +101,7 @@ async function pricesFor(symbols: string[]) {
       const quotes = await getStockQuotes(missing);
       for (const [symbol, q] of quotes) {
         if (!(q.c > 0)) continue;
-        const seed = { price: q.c, changePercent: Number.isFinite(q.dp) ? q.dp : null };
+        const seed = { price: q.c, changePercent: Number.isFinite(q.dp) ? q.dp : null, volume: q.volume };
         prices.set(symbol.toUpperCase(), seed);
         cacheLastPrice(symbol, seed);
       }

@@ -51,11 +51,13 @@ export interface SeededQuote {
   change?: number;
   changePercent?: number;
   previousClose: number;
-  /** Only populated on a fresh TwelveData fetch (not carried by the Redis seed cache). */
   volume?: number;
 }
 
-interface SeedQuote { c: number; d: number; dp: number; pc: number }
+// v (day volume) rides along so a cache hit still fills the Volume column:
+// off-session the seed is held until the next pre-market, so every load
+// between sessions is a cache hit and the column read "—" all night.
+interface SeedQuote { c: number; d: number; dp: number; pc: number; v?: number }
 
 /**
  * How long a seed stays shared. Every SSE connect (and each open tab
@@ -121,6 +123,7 @@ export async function seedPrices(
         change: isFinite(q.d) ? q.d : undefined,
         changePercent: isFinite(q.dp) ? q.dp : undefined,
         previousClose: prevClose,
+        ...(q.v ? { volume: q.v } : {}),
       });
     } else {
       stillNeeded.push(sym);
@@ -179,7 +182,7 @@ export async function seedPrices(
             volume: quote.volume,
           });
           // Write to Redis so sibling instances/routes skip this fetch (see seedTtlSeconds).
-          void rset<SeedQuote>(seedKey(sym), { c: quote.c, d: quote.d, dp: quote.dp, pc: prevClose }, seedTtl);
+          void rset<SeedQuote>(seedKey(sym), { c: quote.c, d: quote.d, dp: quote.dp, pc: prevClose, v: quote.volume }, seedTtl);
           void rset<number>(pcKey(sym), prevClose, secondsToEtMidnight());
         }
       } catch (err) {

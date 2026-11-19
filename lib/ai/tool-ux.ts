@@ -36,7 +36,7 @@ interface MessageLike {
  * and useNavigateConfirmations below.
  */
 export type ClientAction =
-  | { type: 'navigate'; path: string; label: string; requiresConfirmation: boolean }
+  | { type: 'navigate'; path: string; label: string; requiresConfirmation: boolean; confirmLabel?: string }
   | { type: 'addHolding'; ticker: string; company_name: string; quantity?: number | null; avg_price?: number | null; date_purchased?: string | null }
   | { type: 'updateHolding'; ticker: string; quantity?: number | null; avg_price?: number | null }
   | { type: 'removeHolding'; ticker: string }
@@ -246,8 +246,8 @@ export function cardResponses(
   const out: Record<string, string> = {};
   for (const [key, decision] of Object.entries(navigateDecisions)) {
     out[key] = decision === 'confirmed'
-      ? 'The user pressed Yes and was taken there. This offer is closed.'
-      : "The user pressed No and stayed where they were. This offer is closed: don't offer it again or remind them of it unless they ask.";
+      ? 'The user accepted and it was done: they were taken there, or the page they were on was updated. This offer is closed.'
+      : "The user pressed Not now and nothing changed. This offer is closed: don't offer it again or remind them of it unless they ask.";
   }
   for (const [key, outcome] of Object.entries(actionOutcomes)) {
     if (outcome.status === 'success') out[key] = 'The user pressed Confirm and it was saved. It is done.';

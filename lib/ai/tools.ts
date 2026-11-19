@@ -529,9 +529,34 @@ const EXPLICIT_USER_REQUEST_SCHEMA = {
     "not yet consented to leave the page they're on, so this must be false and they'll be asked to confirm.",
 };
 
-function navigateAction(path: string, label: string, explicitUserRequest: boolean) {
+/**
+ * The confirm button's label, written by the model in the user's language so
+ * the offer reads as the action it is ("Apply filter") instead of a bare Yes
+ * (2026-11-19: Bull offered to tighten a screen, the buttons said Yes/No and
+ * the card then said "Taking you there" on the page the user was already on).
+ */
+const CONFIRM_LABEL_SCHEMA = {
+  type: 'string' as const,
+  description:
+    'Only when explicitUserRequest is false: the label of the button that accepts your offer, 1 to 4 words in the ' +
+    "user's language, naming exactly what pressing it does, e.g. \"Apply filter\", \"Open the calendar\", " +
+    '"See AAPL\'s earnings". Never "Yes" or "OK". It does the one thing this call sets up, so if your reply ' +
+    'mentions alternatives, label the one you set up.',
+};
+
+/** A label too long for a button is dropped (the card falls back to its own), never cut. */
+function validConfirmLabel(label: string | undefined): string | undefined {
+  const l = label?.trim();
+  return l && l.length <= 32 && l.split(/\s+/).length <= 5 ? l : undefined;
+}
+
+function navigateAction(path: string, label: string, explicitUserRequest: boolean, confirmLabel?: string) {
+  const buttonLabel = explicitUserRequest ? undefined : validConfirmLabel(confirmLabel);
   return {
-    ...clientAction({ type: 'navigate', path, label, requiresConfirmation: !explicitUserRequest }),
+    ...clientAction({
+      type: 'navigate', path, label, requiresConfirmation: !explicitUserRequest,
+      ...(buttonLabel ? { confirmLabel: buttonLabel } : {}),
+    }),
     // The model writes again after this result. Without saying what the user
     // actually sees, it improvised: re-asked the question it had just asked,
     // or announced "Done, you should now be on the page" while the Yes/No
@@ -542,7 +567,7 @@ function navigateAction(path: string, label: string, explicitUserRequest: boolea
     // "Use the Yes/No buttons below" (2026-10-22).
     note: explicitUserRequest
       ? `${label} is opening now. Do not announce it or say it is done; only add something if it answers the question.`
-      : 'The user now sees Yes/No buttons under your reply. They have not moved. Do not repeat the offer, ask again, or ' +
+      : 'The user now sees a button to accept your offer, and a Not now button, under your reply. Nothing has happened yet. Do not repeat the offer, ask again, or ' +
         'say the buttons are there. If you have not yet written the answer to their question in this reply, write it ' +
         'now in full: the buttons are an extra, never the answer.',
   };
@@ -611,11 +636,13 @@ export const openScreener = tool({
     'To compare a named set of companies side by side instead, use navigateTo with destination "compare".',
   inputSchema: jsonSchema<ScreenerToolFilters & {
     explicitUserRequest: boolean;
+    confirmLabel?: string;
   }>({
     type: 'object',
     properties: {
       ...SCREENER_FILTER_PROPERTIES,
       explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
+      confirmLabel: CONFIRM_LABEL_SCHEMA,
     },
     required: ['explicitUserRequest'],
     additionalProperties: false,
@@ -650,7 +677,7 @@ export const openScreener = tool({
     const path = qs ? `/tools/screener?${qs}` : '/tools/screener';
     const appliedCount = [...params.keys()].length;
     return {
-      ...navigateAction(path, 'the stock screener', filters.explicitUserRequest),
+      ...navigateAction(path, 'the stock screener', filters.explicitUserRequest, filters.confirmLabel),
       ...(appliedCount > 0 ? { filtersApplied: appliedCount, description: `Screener opened with ${appliedCount} filter(s)` } : {}),
     };
   },
@@ -934,6 +961,7 @@ export const navigateTo = tool({
     ticker?: string;
     tickers?: string[];
     explicitUserRequest: boolean;
+    confirmLabel?: string;
   }>({
     type: 'object',
     properties: {
@@ -955,11 +983,12 @@ export const navigateTo = tool({
         description: 'Two to five tickers. Required for "compare"; ignored otherwise.',
       },
       explicitUserRequest: EXPLICIT_USER_REQUEST_SCHEMA,
+      confirmLabel: CONFIRM_LABEL_SCHEMA,
     },
     required: ['destination', 'explicitUserRequest'],
     additionalProperties: false,
   }),
-  execute: async ({ destination, ticker, tickers, explicitUserRequest }) => {
+  execute: async ({ destination, ticker, tickers, explicitUserRequest, confirmLabel }) => {
     // resolveCompanyName, not resolveCompanyId: the path is built from the
     // ticker itself, and resolveCompanyId only checks the small hand-ingested
     // `companies` table, which returned null for MU despite MU being covered
@@ -969,7 +998,7 @@ export const navigateTo = tool({
     const resolved = resolveDestination(destination, { ticker, tickers, companyName });
     if ('error' in resolved) return resolved;
     return {
-      ...navigateAction(resolved.path, resolved.label, explicitUserRequest),
+      ...navigateAction(resolved.path, resolved.label, explicitUserRequest, confirmLabel),
       ...(companyName ? { opened: companyName } : {}),
     };
   },
@@ -1740,7 +1769,7 @@ const getUpcomingEarnings = tool({
     'reportedRecently lists stocks that already reported in the past week: say when, they are not missing. ' +
     'Tickers under noDateFound have no date on file (often ETFs, funds or crypto, which do not report earnings); ' +
     'say that rather than guessing. Do not also call getEarningsData unless the user asked about past results. ' +
-    'The result already puts Yes/No buttons to open the full earnings calendar under your reply, so do not ' +
+    'The result already puts a button to open the full earnings calendar under your reply, so do not ' +
     'call navigateTo for it.',
   inputSchema: jsonSchema<{ tickers: string[] }>({
     type: 'object',
@@ -1800,8 +1829,8 @@ const getUpcomingEarnings = tool({
       noDateFound: [...wanted].filter((s) => !found.has(s) && !recent.has(s)),
       ...('error' in calendar ? {} : {
         ...navigateAction(calendar.path, calendar.label, false),
-        // The card is bare Yes/No buttons, so the reply has to ask the question.
-        note: 'Yes/No buttons that open the earnings calendar appear under your reply. Write the dated list, then ' +
+        // The card is a bare "Go there" / "Not now" pair, so the reply has to ask the question.
+        note: 'A button that opens the earnings calendar appears under your reply. Write the dated list, then ' +
           'end with one short question offering the full earnings calendar. Do not mention the buttons, and do not ' +
           'call navigateTo for the calendar: these buttons already are that offer.',
       }),

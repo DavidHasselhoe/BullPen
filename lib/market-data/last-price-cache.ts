@@ -16,6 +16,8 @@ import { secondsUntilNextOpenET } from '@/lib/market-data/trading-day';
 export interface LastPriceSeed {
   price: number;
   changePercent: number | null;
+  /** Day volume of the quote's session. Off-session that is the last session's total. */
+  volume?: number;
 }
 
 const TTL_SECONDS = 3 * 60;

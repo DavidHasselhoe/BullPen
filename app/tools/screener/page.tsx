@@ -3,15 +3,14 @@
 import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics/track';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Filter, RefreshCw } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import {
   ScreenerFilters,
   EMPTY_FILTERS,
@@ -31,9 +30,7 @@ import { isOpenPosition } from '@/lib/holdings/open-position';
 import { useScreenerViews, useUpdateScreenerView, type ScreenerView } from '@/hooks/use-screener-views';
 import { useScreenerFilterPresets } from '@/hooks/use-screener-filter-presets';
 import type { SavedScreenScope } from '@/lib/screener/saved-screen-limits';
-import { useAuth } from '@/hooks/use-auth';
 import { useAIPanel, type ScreenerAIContext } from '@/components/ai/AIPanelProvider';
-import { isAdmin, tierFromUser } from '@/lib/billing/tier';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import { ToolPage, ToolBackLink } from '@/components/tools/ToolHeader';
 import { isIndexScope } from '@/lib/screener/screener-query';
@@ -91,8 +88,6 @@ function ScreenerContent() {
   const { t } = useTranslation('tools');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
-  const userIsAdmin = isAdmin(tierFromUser(user?.account_tier, user?.role));
 
   const [filters, setFilters] = useState<ScreenerFilterValues>(() => filtersFromParams(searchParams));
   // Debounced copy — drives the query key and URL so typing doesn't re-fetch on every keystroke
@@ -105,7 +100,6 @@ function ScreenerContent() {
     const active = Object.entries(debouncedFilters).filter(([, v]) => v !== '').map(([k]) => k);
     trackEvent('screener_filtered', { filters: active, count: active.length });
   }, [debouncedFilters]);
-  const [refreshStatus, setRefreshStatus] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
@@ -226,7 +220,7 @@ function ScreenerContent() {
   );
 
   const viewParam = viewToParam(activeView);
-  const { data, isLoading, isFetching, refetch } = useQuery<{
+  const { data, isLoading, isFetching } = useQuery<{
     success: boolean;
     results: ScreenerRow[];
     sectors: string[];
@@ -322,32 +316,6 @@ function ScreenerContent() {
   });
   // The search bar reads this so it re-renders when the universe arrives.
   const universe = universeRef.current.length > 0 ? universeRef.current : (fetchedUniverse ?? []);
-
-  const { mutate: triggerRefresh, isPending: isRefreshing } = useMutation({
-    mutationFn: async (batch: number): Promise<{
-      success: boolean; nextBatch: number | null; totalBatches: number; refreshed: number; batch: number; done: boolean;
-    }> => {
-      const res = await fetch(`/api/screener/refresh?batch=${batch}`, { method: 'POST' });
-      if (!res.ok) throw new Error('Refresh failed');
-      return res.json();
-    },
-    onSuccess: (result) => {
-      setRefreshStatus(
-        t('screenerRefreshBatchStatus', 'Refreshed batch {{batch}}/{{total}} ({{count}} companies)', {
-          batch: result.batch + 1,
-          total: result.totalBatches,
-          count: result.refreshed,
-        })
-      );
-      if (result.nextBatch !== null) {
-        setTimeout(() => triggerRefresh(result.nextBatch!), 65_000);
-      } else {
-        setRefreshStatus(t('screenerRefreshSuccess', 'Screener data refreshed successfully'));
-        refetch();
-      }
-    },
-    onError: () => setRefreshStatus(t('screenerRefreshFailed', 'Refresh failed. Check console.')),
-  });
 
   // Keep a stable ref to activeView so the URL-sync effect doesn't need it as a dep
   const activeViewRef = useRef(activeView);
@@ -480,19 +448,7 @@ function ScreenerContent() {
             )}
           </span>
           <div className="ml-auto flex items-center gap-2">
-            {refreshStatus && <span className="text-xs text-muted-foreground">{refreshStatus}</span>}
             <ColumnChooser columns={screenerColumns} />
-            {userIsAdmin && (
-              <Button
-                variant="outline" size="sm"
-                onClick={() => { setRefreshStatus(t('screenerRefreshStarting', 'Starting refresh…')); triggerRefresh(0); }}
-                disabled={isRefreshing}
-                className="gap-1.5 h-8 text-xs"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? t('screenerRefreshing', 'Refreshing…') : t('screenerRefreshDataButton', 'Refresh Data')}
-              </Button>
-            )}
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -527,7 +483,13 @@ function ScreenerContent() {
 
       {/* View bar — dimmed while cherry-picking since picks override the view */}
       <div className={cn('mb-5 transition-opacity', pickedTickers.length > 0 && 'opacity-40 pointer-events-none')}>
-        <ScreenerViewBar activeView={activeView} onViewChange={handleViewChange} totalCount={allTotalData?.total} />
+        {/* On the All view, count from the same response as the results badge: the cached
+            count was fetched earlier and drifted as the nightly refresh freshened rows. */}
+        <ScreenerViewBar
+          activeView={activeView}
+          onViewChange={handleViewChange}
+          totalCount={activeView.type === 'all' && !switchingView && data?.universeSize ? data.universeSize : allTotalData?.total}
+        />
       </div>
 
       {/* Stacked below lg: side by side, the results column landed off-screen

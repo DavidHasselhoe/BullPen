@@ -289,8 +289,19 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     group: 'volume',
     defaultVisible: false,
     width: 80,
-    getValue: (_r, live) => live?.volume ?? null,
-    render: (_r, live) => fmtVolume(live?.volume ?? null),
+    // Same fallback as Price: the last session's total, dimmed, when no live figure exists.
+    getValue: (row, live) => live?.volume ?? row.last_volume ?? null,
+    render: (row, live) => {
+      if (live?.volume != null) return fmtVolume(live.volume);
+      if (row.last_volume != null) {
+        return (
+          <span className="text-muted-foreground" title={t('screenerColLastVolumeTitle')}>
+            {fmtVolume(row.last_volume)}
+          </span>
+        );
+      }
+      return '—';
+    },
   },
   {
     key: 'avg_volume',

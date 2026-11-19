@@ -472,7 +472,7 @@ export async function livePerformanceFor(row: {
     try {
       const fresh = await withRateLimitRetry(() => getStockQuotes(symbols));
       for (const [s, q] of fresh) {
-        if (Number.isFinite(q.c) && q.c > 0) cacheLastPrice(s, { price: q.c, changePercent: Number.isFinite(q.dp) ? q.dp : null });
+        if (Number.isFinite(q.c) && q.c > 0) cacheLastPrice(s, { price: q.c, changePercent: Number.isFinite(q.dp) ? q.dp : null, volume: q.volume });
       }
       quotes = fresh;
     } catch {

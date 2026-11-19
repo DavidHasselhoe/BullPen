@@ -251,7 +251,7 @@
   "tools.deepDiveTickerTitle": "cba7787cad28e90977ef21d7d2a36078acd57113379710f8f07d2a097176d9db",
   "tools.deepDiveTitle": "6caa80a220da0ca0892d11f138a7e3e39b48cf66d0df4b9051c5ce95377d00a5",
   "tools.screenerCompanyColumnLabel": "de4743c879734dc38cb3e270ecefcae077c3c2e626f9298115d5a03c8613f89b",
-  "tools.screenerDescriptionAll": "44267086642934580a6acb5827bbc4cc5c104d67affd008e6ab5f15af3bcdcdc",
+  "tools.screenerDescriptionAll": "d6d050461b8ea3814ce844165de280c2b685e8b357ef7503354e1181cddba339",
   "tools.screenerDescriptionCherryPicked_one": "70192df28690235efe1a01cf0c1461ff2d193d15fc873686be38617f059e213a",
   "tools.screenerDescriptionCherryPicked_other": "9703a565ddb89e3d9360c31ba4f958699c5d30dcaf56ee9b5b573b2ff4f8cbfa",
   "tools.screenerDescriptionCustomView": "8573c086ce8613f640468666521f6d515ad69ac43a5f63a27512aa1ff6fff80d",
@@ -2077,7 +2077,6 @@
   "billing.riskAnalysisPreviewAnalyzingMore_other": "711f4a3c5d74b8d95067d76678a2ebbf693df28bb7f3ada5a4495c8e0fb23268",
   "ai.navigateStayingHere": "cef3f38c0d697fb700529d9e063879bce21e1db5b991cbe45227f8e45ad04d4d",
   "ai.navigateTakingYouThere": "96336a3659f0cc1b56574b3b0e835fab1bdbd7b689540330f61b542d7dad6f12",
-  "ai.navigateYes": "85a39ab345d672ff8ca9b9c6876f3adcacf45ee7c1e2dbd2408fd338bd55e07e",
   "stock.insiderFilterAll": "a52ace420f2175d08b1577a1bea5445e36801229c074ef9ed6c55a73401fd9c2",
   "stock.insiderFilterEmpty": "0ffdcf863e0ece516a6e3cf90ceb8b5b61c69b182d3a1d6ea7685d2f925aea7a",
   "stock.insiderModalTitle": "075bac6ac65070ed06e5ebec7191e99777de30ac73fe5b7746f0894319f39136",
@@ -3600,7 +3599,7 @@
   "stock.indexFundOverlap": "75bb6cd3967e478138bda7a60dec8cf86f884149fa9113a1fff4ca8745c6cb7b",
   "stock.indexJoinedTip": "dd9ac7f5ec024d18038cb68bcc161718b2ae2e1db363b30b177392da82339882",
   "stock.indexWeightTip": "6661b3b0b37c55faba9ed863fc055c6964068353a61236c3772e4b6c3921ce13",
-  "tools.screenerDescriptionNasdaq100": "47ad23010d9b097168a51506468ac8b0bfed1bec424fd81d9f4d3d780427167f",
+  "tools.screenerDescriptionNasdaq100": "23f79b3eee833e130e9b7dee7ab0b2755b978fef33e1b280d2b6dd746783ab2f",
   "tools.screenerDescriptionDow30": "16c7fa32a3d28b653ec1bfd2475a8ca147cf3b83c936939ab0ce2bde00e620f6",
   "tools.deepDiveBlockBullBear": "2680bdcb6256ab69a9384764543e2ed923ffdeba24ca9626065ccdb7f0ad572a",
   "tools.deepDiveBullCase": "cdc02ea8eadebdd36bb10d00eaa20df462f9918a8678b77a0ad767f34f817655",
@@ -4505,5 +4504,11 @@
   "stock.dividendsMetaDescNoYield": "7f4f73be7b6651caab43867681c46584475db18106284cb781959d4dc2281d24",
   "stock.dividendsQuestion": "7e1e46b6b57536073cd783b16c3e11cf42547f7cae545b29f5349e031e18f5af",
   "stock.dividendsAnswerYes": "5f9a2b795615ba6a3d5455fd5624d773fbca5bcd16249c421fd37411dc9837da",
-  "stock.dividendsAnswerNotYet": "46438371960f0974b3c15f54488a09d835f9c48094ef97ad65355a1765ae921f"
+  "stock.dividendsAnswerNotYet": "46438371960f0974b3c15f54488a09d835f9c48094ef97ad65355a1765ae921f",
+  "tools.screenerColLastVolumeTitle": "fd0cd94a6ac90d5922d6edf43c0abcbd36073ce29fc58e552d405d448bcd544e",
+  "ai.navigateApply": "31e392d1c0378beca611de66c0f4c71cba29159905cc54242d9bddee5b23d851",
+  "ai.navigateGoThere": "e20bd7d7e901d3e58a8f309f390dfb1a743fd3108eed0db8e70c73c9ffe1c23d",
+  "ai.navigateNotNow": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c",
+  "ai.navigatePageUpdated": "2381d86cd57bdd2ed386f2ff4ab88aa6f196cc62c9cce7761772a925b375c79e",
+  "ai.navigateNothingChanged": "bb163d794265ed8e1713ef9320af30b8e8ba43b81671cd0bc880c43ec801e05c"
 }

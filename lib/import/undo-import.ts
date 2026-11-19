@@ -17,6 +17,7 @@
 
 import { createServerClient } from '@/lib/supabase/client';
 import { deleteHoldingSale } from '@/lib/holdings/holdings-db';
+import { blendFxRate } from '@/lib/holdings/fx-blend';
 import { logger } from '@/lib/utils/logger';
 
 /** Matches SELL_EPSILON in holdings-db — a quantity this small is zero. */
@@ -277,7 +278,7 @@ async function reverseEvent(userId: string, event: JournalEvent): Promise<string
 
   const { data: lot } = await supabase
     .from('holding_purchases')
-    .select('id, quantity, price')
+    .select('id, quantity, price, purchase_fx_rate')
     .eq('id', event.entity_id)
     .eq('user_id', userId)
     .maybeSingle();
@@ -286,7 +287,7 @@ async function reverseEvent(userId: string, event: JournalEvent): Promise<string
   // closed-ok: undoing a buy works on the row whatever its quantity.
   const { data: holding } = await supabase
     .from('user_holdings')
-    .select('id, quantity, avg_price')
+    .select('id, quantity, avg_price, purchase_fx_rate')
     .eq('id', event.holding_id)
     .eq('user_id', userId)
     .maybeSingle();
@@ -296,10 +297,15 @@ async function reverseEvent(userId: string, event: JournalEvent): Promise<string
   const lotQty = lot.quantity as number;
   const newQuantity = Math.max(0, heldQty - lotQty);
   const newAvg = reverseWeightedAverage(heldQty, (holding.avg_price as number) ?? null, lotQty, lot.price as number);
+  // Take the lot's share back out of the blended rate, the mirror of addOrUpdateHolding.
+  const heldAvg = (holding.avg_price as number) ?? null;
+  const newFx = heldAvg != null && newQuantity > QTY_EPSILON
+    ? blendFxRate(heldQty * heldAvg, (holding.purchase_fx_rate as number) ?? null, -(lotQty * (lot.price as number)), (lot.purchase_fx_rate as number) ?? null)
+    : (holding.purchase_fx_rate as number) ?? null;
 
   const { error: updateErr } = await supabase
     .from('user_holdings')
-    .update({ quantity: newQuantity, avg_price: newAvg, updated_at: new Date().toISOString() })
+    .update({ quantity: newQuantity, avg_price: newAvg, purchase_fx_rate: newFx, updated_at: new Date().toISOString() })
     .eq('id', holding.id)
     .eq('user_id', userId);
   if (updateErr) return `Could not update ${event.symbol}: ${updateErr.message}`;

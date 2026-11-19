@@ -104,7 +104,7 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       for (const [sym, q] of await getStockQuotes(misses)) {
         if (!(q.c > 0)) continue;
         quoteMap.set(sym, { c: q.c, dp: q.dp });
-        cacheLastPrice(sym, { price: q.c, changePercent: q.dp });
+        cacheLastPrice(sym, { price: q.c, changePercent: q.dp, volume: q.volume });
       }
     } catch (err) {
       errors.push(`quote fetch failed: ${String(err)}`);

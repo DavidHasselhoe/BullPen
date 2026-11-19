@@ -80,6 +80,8 @@ export function ToolResultCard({
     if (!clientAction.requiresConfirmation) return null;
     return (
       <NavigateConfirmCard
+        path={clientAction.path}
+        confirmLabel={clientAction.confirmLabel}
         decision={navigateDecision}
         isHistorical={!!isHistorical}
         onConfirm={onConfirmNavigate ?? (() => {})}

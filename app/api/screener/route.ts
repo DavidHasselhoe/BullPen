@@ -57,7 +57,7 @@ async function hydrateLastPrices(tickers: string[], streamed: boolean): Promise<
         const quotes = await withRateLimitRetry(() => getStockQuotes(chunk));
         for (const [sym, q] of quotes.entries()) {
           if (!q || !isFinite(q.c) || q.c <= 0) continue;
-          const seed: LastPriceSeed = { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null };
+          const seed: LastPriceSeed = { price: q.c, changePercent: isFinite(q.dp) ? q.dp : null, volume: q.volume };
           const symUpper = sym.toUpperCase();
           seeds.set(symUpper, seed);
           cacheLastPrice(symUpper, seed);
@@ -121,6 +121,7 @@ export interface ScreenerRow {
    */
   last_price?: number | null;
   last_change_pct?: number | null;
+  last_volume?: number | null;
 }
 
 function parseNum(val: string | null): number | undefined {
@@ -256,7 +257,7 @@ async function handler(request: NextRequest) {
   if (priceSeeds.size > 0) {
     results = results.map((r) => {
       const seed = priceSeeds.get(r.ticker.toUpperCase());
-      return seed ? { ...r, last_price: seed.price, last_change_pct: seed.changePercent } : r;
+      return seed ? { ...r, last_price: seed.price, last_change_pct: seed.changePercent, last_volume: seed.volume ?? null } : r;
     });
   }
 
