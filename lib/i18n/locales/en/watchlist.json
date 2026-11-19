@@ -175,7 +175,7 @@
   "aiPicksCreate_one": "Create list with 1 stock",
   "aiPicksCreate_other": "Create list with {{count}} stocks",
   "aiPicksStartOver": "Try another theme",
-  "aiPicksNoMatch": "Nothing in our database clearly fits that theme. Try describing it another way. This search didn't count toward your limit.",
+  "aiPicksNoMatch": "Nothing in our database clearly fits that theme. Try describing it another way. This search still counts toward your monthly limit.",
   "aiPicksLimitFree": "You've used your {{limit}} theme searches for this month. Pro includes {{proLimit}} a month.",
   "aiPicksLimitPro": "You've used all {{limit}} theme searches for this month. They reset at the start of next month.",
   "aiPicksTooFast": "That's a lot of searches in a row. Wait a minute and try again.",

@@ -79,7 +79,8 @@ const NEW_QUARTER_DAYS = 14;
  * NEW_QUARTER_DAYS (created_at is set once; later upserts keep it), so
  * months-old quarters never alert. A brand-new quarter whose row this run's
  * fire-and-forget snapshot has not written yet is picked up on the next run.
- * Quarters scored by a different method are not compared.
+ * Quarters scored by a different method are not compared, and neither are
+ * quarters scored over a different set of pillars (see comparablePillars).
  */
 export async function findQuarterlyHealthChanges(current: Map<string, CurrentQuarterScore>): Promise<QuarterlyHealthChange[]> {
   if (current.size === 0) return [];
@@ -105,12 +106,25 @@ export async function findQuarterlyHealthChanges(current: Map<string, CurrentQua
       const previous = mine.find((r) => r.fiscal_date < now.fiscalDate);
       if (!currentRow || !previous || Date.parse(currentRow.created_at) < newSince) continue;
       if (previous.method !== now.method) continue;
+      if (comparablePillars(previous.categories) !== comparablePillars(now.categories)) continue;
       const delta = now.score - previous.score;
       if (Math.abs(delta) < QUARTERLY_ALERT_POINTS) continue;
       out.push({ symbol: ticker, fiscalDate: now.fiscalDate, oldScore: previous.score, newScore: now.score, driver: quarterDriver(previous.categories, now.categories, delta) });
     }
   }
   return out;
+}
+
+/**
+ * The pillars a total was re-weighted over. A pillar gaining or losing its
+ * data moves the total without anything changing at the company: the
+ * 2026-11-17 change left Stability out for stocks with no beta (CRCL's last
+ * quarter 20 -> 56 on that alone), and a new listing's beta arriving does the
+ * same in reverse. The daily grade alert rebases on this too (screener-stats).
+ * Snapshots older than the dataAvailable field count every pillar as present.
+ */
+export function comparablePillars(categories: CategoryScore[]): string {
+  return categories.filter((c) => c.dataAvailable !== false).map((c) => c.name).sort().join('|');
 }
 
 /** The category that moved furthest in the same direction as the total. */

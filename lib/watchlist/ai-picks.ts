@@ -12,7 +12,7 @@
 import { generateText, type LanguageModelUsage } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { createServerClient } from '@/lib/supabase/client';
-import { logAiCall } from '@/lib/billing/log-ai-call';
+import { logAiCall, updateAiCallUsage } from '@/lib/billing/log-ai-call';
 import { getCompanyProfile } from '@/lib/twelvedata/twelvedata-client';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { languageName, isSupportedLanguage } from '@/lib/i18n/language-names';
@@ -140,11 +140,12 @@ async function loadDescriptions(tickers: string[]): Promise<Map<string, string>>
 }
 
 /**
- * Logs the shortlist call as `watchlist_ai_fill_shortlist` and the pick call as
- * `watchlist_ai_fill` only when it returned picks, so the quota counts one
- * generation per useful result and an empty one is free.
+ * Logs the shortlist call as `watchlist_ai_fill_shortlist`. The quota row
+ * (`watchlist_ai_fill`) is reserved by the route before this runs
+ * (reserveQuota), so every run counts, matched or not; the pick call's tokens
+ * are written onto that row. With no reservation (scripts) it logs its own.
  */
-export async function pickStocksForTheme(userId: string | null, theme: string, locale: string): Promise<AiPick[]> {
+export async function pickStocksForTheme(userId: string | null, theme: string, locale: string, reservationId: string | null = null): Promise<AiPick[]> {
   const catalogue = await loadCatalogue();
   const byTicker = new Map(catalogue.rows.map((r) => [r.ticker, r]));
   const meta = { theme };
@@ -206,6 +207,16 @@ export async function pickStocksForTheme(userId: string | null, theme: string, l
     if (picks.length === AI_PICK_MAX) break;
   }
 
-  logUsage(userId, picks.length ? 'watchlist_ai_fill' : 'watchlist_ai_fill_no_match', pickRes.usage, { ...meta, picks: picks.map((p) => p.ticker) });
+  const pickMeta = { ...meta, picks: picks.map((p) => p.ticker) };
+  if (reservationId) {
+    const u = pickRes.usage;
+    void updateAiCallUsage(reservationId, AI_PICK_MODEL, u.inputTokens, u.outputTokens, {
+      noCacheTokens: u.inputTokenDetails?.noCacheTokens,
+      cacheReadTokens: u.inputTokenDetails?.cacheReadTokens,
+      cacheWriteTokens: u.inputTokenDetails?.cacheWriteTokens,
+    }, pickMeta);
+  } else {
+    logUsage(userId, 'watchlist_ai_fill', pickRes.usage, pickMeta);
+  }
   return picks;
 }

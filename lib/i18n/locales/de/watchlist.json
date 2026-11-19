@@ -175,7 +175,7 @@
   "aiPicksCreate_one": "Liste mit 1 Aktie erstellen",
   "aiPicksCreate_other": "Liste mit {{count}} Aktien erstellen",
   "aiPicksStartOver": "Anderes Thema versuchen",
-  "aiPicksNoMatch": "Nichts in unserer Datenbank passt eindeutig zu diesem Thema. Beschreib es anders. Diese Suche wurde nicht auf dein Limit angerechnet.",
+  "aiPicksNoMatch": "Nichts in unserer Datenbank passt eindeutig zu diesem Thema. Beschreib es anders. Diese Suche zählt trotzdem für dein Monatslimit.",
   "aiPicksLimitFree": "Du hast deine {{limit}} Themensuchen für diesen Monat aufgebraucht. Pro enthält {{proLimit}} pro Monat.",
   "aiPicksLimitPro": "Du hast alle {{limit}} Themensuchen für diesen Monat aufgebraucht. Sie werden zu Beginn des nächsten Monats zurückgesetzt.",
   "aiPicksTooFast": "Das waren viele Suchen hintereinander. Warte eine Minute und versuch es erneut.",

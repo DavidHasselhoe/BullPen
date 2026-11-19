@@ -175,7 +175,7 @@
   "aiPicksCreate_one": "1銘柄でリストを作成",
   "aiPicksCreate_other": "{{count}}銘柄でリストを作成",
   "aiPicksStartOver": "別のテーマを試す",
-  "aiPicksNoMatch": "そのテーマにはっきり合う銘柄がデータベースにありません。別の言い方で試してください。この検索は上限に含まれません。",
+  "aiPicksNoMatch": "そのテーマにはっきり合う銘柄がデータベースにありません。別の言い方で試してください。この検索も月間の上限に含まれます。",
   "aiPicksLimitFree": "今月のテーマ検索{{limit}}回を使い切りました。Proなら月{{proLimit}}回使えます。",
   "aiPicksLimitPro": "今月のテーマ検索{{limit}}回をすべて使いました。来月の初めにリセットされます。",
   "aiPicksTooFast": "続けて検索しすぎています。1分待ってからもう一度お試しください。",

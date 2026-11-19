@@ -7,7 +7,7 @@
 
 import assert from 'node:assert/strict';
 import { computeHealthScore, crossedGradeWithBuffer, healthColumns } from '../lib/finance/health-score';
-import { quarterDriver } from '../lib/finance/health-score-history';
+import { quarterDriver, comparablePillars } from '../lib/finance/health-score-history';
 import type { CompanyStatistics, IncomeStatementPeriod, BalanceSheetPeriod, CashFlowPeriod } from '../lib/twelvedata/twelvedata-client';
 
 const stats = (o: Partial<CompanyStatistics> = {}): CompanyStatistics => ({
@@ -101,5 +101,10 @@ const q3 = [c('Profitability', 30), c('Cash Flow', 13), c('Growth', 9), c('Marke
 assert.equal(quarterDriver(q2, q3, -7), 'Growth');
 assert.equal(quarterDriver(q3, q2, 7), 'Growth', 'works upward too');
 assert.equal(quarterDriver(q2, q2, -5), null, 'nothing moved, no driver');
+// A pillar losing its data (no beta since 2026-11-17) makes two quarters incomparable.
+const noStability = q3.map((c) => (c.name === 'Market Risk' ? { ...c, score: 0, dataAvailable: false } : c));
+assert.notEqual(comparablePillars(q2), comparablePillars(noStability), 'pillar set changed, not comparable');
+assert.equal(comparablePillars(q2), comparablePillars(q3), 'same pillars, comparable');
+assert.equal(comparablePillars(q2), comparablePillars(q2.map((x) => ({ ...x, dataAvailable: true }))), 'old snapshots without the field count every pillar');
 
 console.log('health score self-check: all passed');

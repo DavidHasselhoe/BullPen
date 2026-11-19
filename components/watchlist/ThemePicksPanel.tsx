@@ -66,7 +66,7 @@ export function ThemePicksPanel({ onPaywall, onCreated }: Props) {
       setPicks(result);
       requestAnimationFrame(() => resultsRef.current?.focus()); // the form that had focus is gone
       setListName(q.slice(0, 60));
-      if (result.length) invalidateQuota('watchlist_ai_fill');
+      invalidateQuota('watchlist_ai_fill'); // every run counts, matched or not
     },
     onError: (err: Error) => {
       if (err.message === 'quota_exceeded') {

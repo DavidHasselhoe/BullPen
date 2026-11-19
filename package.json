@@ -41,6 +41,7 @@
     "test-no-sold-as-owned": "tsx scripts/test-no-sold-as-owned.ts",
     "test-release-notes": "tsx scripts/test-release-notes.ts",
     "smoke-writes": "tsx scripts/smoke-writes.ts",
+    "test-quota-race": "tsx scripts/test-quota-race.ts",
     "test-age-gate": "tsx scripts/test-age-gate.ts",
     "test-email-footer": "tsx scripts/test-email-footer.ts",
     "test-og-fonts": "tsx scripts/test-og-fonts.ts",

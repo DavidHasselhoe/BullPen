@@ -175,7 +175,7 @@
   "aiPicksCreate_one": "用 1 只股票创建列表",
   "aiPicksCreate_other": "用 {{count}} 只股票创建列表",
   "aiPicksStartOver": "换个主题试试",
-  "aiPicksNoMatch": "数据库中没有明显符合该主题的股票。换种描述方式试试。本次搜索不计入你的次数。",
+  "aiPicksNoMatch": "数据库中没有明显符合该主题的股票。换种描述方式试试。本次搜索仍计入你的每月次数。",
   "aiPicksLimitFree": "你本月的 {{limit}} 次主题搜索已用完。Pro 每月包含 {{proLimit}} 次。",
   "aiPicksLimitPro": "你本月的 {{limit}} 次主题搜索已全部用完。下月初会重置。",
   "aiPicksTooFast": "连续搜索太多了。请等一分钟再试。",

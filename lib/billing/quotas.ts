@@ -40,7 +40,7 @@ export const QUOTAS = {
   // Bull's Weekly Pick. See lib/picks/thesis-access.ts for how "1 free" picks
   // WHICH pick a free user gets to keep reading for the rest of the period.
   weekly_pick_thesis: { count: 1, period: 'month' } as QuotaConfig,
-  // "Describe a theme" watchlist fill (lib/watchlist/ai-picks.ts): two Haiku 5.5 calls, ~$0.005. Counted only when it returns picks.
+  // "Describe a theme" watchlist fill (lib/watchlist/ai-picks.ts): two Haiku 5.5 calls, ~$0.005. Every run counts, matched or not, reserved atomically (reserveQuota).
   watchlist_ai_fill: { count: 3, period: 'month', proCap: 50 } as QuotaConfig,
 };
 
@@ -108,6 +108,56 @@ export async function checkQuota(
   // Unlimited Pro never needs the count, so skip the query.
   const used = pro && config.proCap == null ? 0 : await countUsed();
   return { ...quotaDecision(feature, pro, used), used, period: config.period, resetsAt };
+}
+
+/**
+ * checkQuota and the usage row in one step, for routes that must not let
+ * parallel requests through on the same remaining slot. Counts the window and
+ * inserts a zero-cost 'success' row under `feature` atomically (migration
+ * 200). The caller backfills the real tokens with updateAiCallUsage(id, ...)
+ * once the model answers, or calls releaseQuota(id) if no model call happened.
+ * The limit comes from quotaDecision, the same rule the client gate uses.
+ */
+export async function reserveQuota(
+  userId: string,
+  feature: QuotaFeature,
+  model: string,
+  metadata?: Record<string, unknown>
+): Promise<QuotaState & { reservationId: string | null }> {
+  const config = QUOTAS[feature];
+  const pro = isPro(await getTier(userId));
+  const resetsAt = nextPeriodBoundary(config.period).toISOString();
+  const { limit } = quotaDecision(feature, pro, 0);
+  if (limit === 0) {
+    return { ...quotaDecision(feature, pro, 0), used: 0, period: config.period, resetsAt, reservationId: null };
+  }
+  const { data, error } = await createServerClient().rpc('reserve_ai_quota', {
+    p_user_id: userId,
+    p_feature: feature,
+    p_model: model,
+    p_limit: limit === 'unlimited' ? null : limit,
+    p_window_start: currentPeriodStart(config.period).toISOString(),
+    p_metadata: metadata ?? null,
+  } as never);
+  if (error) throw new Error(`reserve_ai_quota failed: ${error.message}`);
+  const row = (data as { reservation_id: string | null; used: number }[] | null)?.[0];
+  const used = row?.used ?? 0;
+  const reservationId = row?.reservation_id ?? null;
+  // A granted reservation is one more use; a refused one leaves the count as it was.
+  const usedNow = reservationId ? used + 1 : used;
+  return {
+    ...quotaDecision(feature, pro, used),
+    used: usedNow,
+    period: config.period,
+    resetsAt,
+    reservationId,
+  };
+}
+
+/** Gives back a reservation whose model call never happened. Never throws. */
+export async function releaseQuota(reservationId: string): Promise<void> {
+  const { error } = await createServerClient().from('ai_usage').delete().eq('id', reservationId);
+  if (error) console.error('[quotas] release failed:', error.message);
 }
 
 /**

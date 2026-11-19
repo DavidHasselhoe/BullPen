@@ -68,7 +68,7 @@ export function InstitutionalFundDetailClient({
   initialHoldings?: Omit<HoldingsResponse, 'success'>;
 }) {
   const { t, i18n } = useTranslation('discover');
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [paywallOpen, setPaywallOpen] = useState(false);
 
   const { data: listData } = useQuery({
@@ -90,10 +90,13 @@ export function InstitutionalFundDetailClient({
   // returns with no quarter param and what the page loads with.
   const [quarter, setQuarter] = useState<string | null>(null);
 
-  const { data: holdingsData, isLoading: holdingsLoading, isFetching } = useQuery({
-    queryKey: ['institutions-holdings', slug, quarter],
+  const { data: holdingsData, isPending: holdingsPending, isFetching } = useQuery({
+    queryKey: ['institutions-holdings', slug, quarter, isAuthenticated],
     queryFn: async (): Promise<HoldingsResponse> => {
-      const url = quarter
+      // Signed out: the CDN-cached free view (same for every reader).
+      const url = !isAuthenticated
+        ? `/api/institutions/${slug}/holdings?view=free`
+        : quarter
         ? `/api/institutions/${slug}/holdings?quarter=${quarter}`
         : `/api/institutions/${slug}/holdings`;
       const res = await fetch(url);
@@ -102,6 +105,8 @@ export function InstitutionalFundDetailClient({
     // Server-rendered free view for a signed-out reader: nothing more to fetch.
     // Signed in, the route answers with Pro's full view or the same free one.
     initialData: !isAuthenticated && quarter === null && initialHoldings ? { success: true, ...initialHoldings } : undefined,
+    // Wait for auth so a signed-in reader never takes the signed-out URL.
+    enabled: !authLoading,
     retry: false,
     staleTime: 10 * 60 * 1000,
     // Keep the quarter on screen while the next one loads. Without this the
@@ -256,7 +261,7 @@ export function InstitutionalFundDetailClient({
         </div>
       )}
 
-      {!locked && holdingsLoading && (
+      {!locked && holdingsPending && (
         <div className="space-y-6">
           <div className="h-[360px] rounded-xl border border-border/50 animate-shimmer" />
           <div className="space-y-2">

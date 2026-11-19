@@ -175,7 +175,7 @@
   "aiPicksCreate_one": "«Creeaatee liist wiith 1 stoock»",
   "aiPicksCreate_other": "«Creeaatee liist wiith {{count}} stoocks»",
   "aiPicksStartOver": "«Try aanootheer theemee»",
-  "aiPicksNoMatch": "«Noothiing iin oouur daataabaasee cleeaarly fiits thaat theemee. Try deescriibiing iit aanootheer waay. Thiis seeaarch diidn't coouunt toowaard yoouur liimiit.»",
+  "aiPicksNoMatch": "«Noothiing iin oouur daataabaasee cleeaarly fiits thaat theemee. Try deescriibiing iit aanootheer waay. Thiis seeaarch stiill coouunts toowaard yoouur moonthly liimiit.»",
   "aiPicksLimitFree": "«Yoouu'vee uuseed yoouur {{limit}} theemee seeaarchees foor thiis moonth. Proo iincluudees {{proLimit}} aa moonth.»",
   "aiPicksLimitPro": "«Yoouu'vee uuseed aall {{limit}} theemee seeaarchees foor thiis moonth. Theey reeseet aat thee staart oof neext moonth.»",
   "aiPicksTooFast": "«Thaat's aa loot oof seeaarchees iin aa roow. Waaiit aa miinuutee aand try aagaaiin.»",

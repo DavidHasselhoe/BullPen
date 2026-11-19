@@ -175,7 +175,7 @@
   "aiPicksCreate_one": "Lag liste med 1 aksje",
   "aiPicksCreate_other": "Lag liste med {{count}} aksjer",
   "aiPicksStartOver": "Prøv et annet tema",
-  "aiPicksNoMatch": "Ingenting i databasen vår passer tydelig til det temaet. Prøv å beskrive det på en annen måte. Dette søket ble ikke trukket fra grensen din.",
+  "aiPicksNoMatch": "Ingenting i databasen vår passer tydelig til det temaet. Prøv å beskrive det på en annen måte. Dette søket teller likevel mot månedsgrensen din.",
   "aiPicksLimitFree": "Du har brukt de {{limit}} temasøkene dine denne måneden. Pro gir {{proLimit}} i måneden.",
   "aiPicksLimitPro": "Du har brukt alle {{limit}} temasøkene denne måneden. De nullstilles ved starten av neste måned.",
   "aiPicksTooFast": "Det var mange søk på rad. Vent et minutt og prøv igjen.",

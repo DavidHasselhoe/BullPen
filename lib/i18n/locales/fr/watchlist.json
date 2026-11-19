@@ -175,7 +175,7 @@
   "aiPicksCreate_one": "Créer la liste avec 1 action",
   "aiPicksCreate_other": "Créer la liste avec {{count}} actions",
   "aiPicksStartOver": "Essayer un autre thème",
-  "aiPicksNoMatch": "Rien dans notre base de données ne correspond clairement à ce thème. Essayez de le décrire autrement. Cette recherche n'a pas été décomptée de votre limite.",
+  "aiPicksNoMatch": "Rien dans notre base de données ne correspond clairement à ce thème. Essayez de le décrire autrement. Cette recherche est tout de même décomptée de votre limite mensuelle.",
   "aiPicksLimitFree": "Vous avez utilisé vos {{limit}} recherches par thème ce mois-ci. Pro en inclut {{proLimit}} par mois.",
   "aiPicksLimitPro": "Vous avez utilisé les {{limit}} recherches par thème de ce mois. Elles se renouvellent au début du mois prochain.",
   "aiPicksTooFast": "Beaucoup de recherches d'affilée. Attendez une minute et réessayez.",

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, withRateLimit, addSecurityHeaders, rejectIfTooLarge } from '@/lib/security/api-security';
-import { checkQuota } from '@/lib/billing/quotas';
+import { reserveQuota, releaseQuota } from '@/lib/billing/quotas';
 import { classifyAiError } from '@/lib/ai/provider-error';
 import { logger } from '@/lib/utils/logger';
-import { pickStocksForTheme, AI_THEME_MAX_CHARS } from '@/lib/watchlist/ai-picks';
+import { pickStocksForTheme, AI_THEME_MAX_CHARS, AI_PICK_MODEL } from '@/lib/watchlist/ai-picks';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,15 +23,26 @@ async function handler(req: NextRequest, _ctx: unknown, session: { userId: strin
     return addSecurityHeaders(NextResponse.json({ error: 'invalid_theme' }, { status: 400 }));
   }
 
-  const quota = await checkQuota(session.userId, 'watchlist_ai_fill');
-  if (!quota.allowed) {
-    return addSecurityHeaders(NextResponse.json({ error: 'quota_exceeded', quota }, { status: 402 }));
+  // Check and count in one step, before any model call: a run counts whether
+  // or not it matches, and parallel requests can't share the last slot.
+  let quota;
+  try {
+    quota = await reserveQuota(session.userId, 'watchlist_ai_fill', AI_PICK_MODEL, { theme });
+  } catch (err) {
+    logger.error('[watchlist/ai-picks] reserve', err);
+    return addSecurityHeaders(NextResponse.json({ error: 'unknown' }, { status: 500 }));
+  }
+  const { reservationId, ...quotaState } = quota;
+  if (!reservationId) {
+    return addSecurityHeaders(NextResponse.json({ error: 'quota_exceeded', quota: quotaState }, { status: 402 }));
   }
 
   try {
-    const picks = await pickStocksForTheme(session.userId, theme, locale);
+    const picks = await pickStocksForTheme(session.userId, theme, locale, reservationId);
     return addSecurityHeaders(NextResponse.json({ picks }));
   } catch (err) {
+    // The user got an error, not an answer: give the search back.
+    await releaseQuota(reservationId);
     logger.error('[watchlist/ai-picks]', err);
     const safe = classifyAiError(err);
     return addSecurityHeaders(NextResponse.json({ error: safe.code }, { status: safe.status }));

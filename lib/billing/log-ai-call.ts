@@ -103,7 +103,9 @@ export async function updateAiCallUsage(
   outputTokens: number | undefined,
   /** The provider's split of the input tokens, when it reports one. Priced at
    *  the cache rates rather than the full input rate. */
-  cache?: CachedTokenSplit
+  cache?: CachedTokenSplit,
+  /** Replaces the row's metadata when given. */
+  metadata?: Record<string, unknown>
 ): Promise<void> {
   try {
     const supabase = createServerClient();
@@ -111,6 +113,7 @@ export async function updateAiCallUsage(
       input_tokens:  inputTokens ?? null,
       output_tokens: outputTokens ?? null,
       cost_usd:      calcCost(model, inputTokens ?? 0, outputTokens ?? 0, cache),
+      ...(metadata ? { metadata } : {}),
     } as never).eq('id', id);
   } catch (err) {
     if (process.env.NODE_ENV === 'development') {
