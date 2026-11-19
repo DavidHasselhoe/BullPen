@@ -1019,6 +1019,8 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 28px;
+  /* Centred in the row its pair partner sets, like the other demos. */
+  margin-block: auto;
 }
 .bullpen-landing-root .hdemo-ring { position: relative; display: grid; justify-items: center; gap: 8px; }
 .bullpen-landing-root .hdemo-ring svg { display: block; color: var(--fg); }
@@ -1119,7 +1121,7 @@
 .bullpen-landing-root .wdemo-label { font-size: 13px; color: var(--fg-muted); }
 .bullpen-landing-root .wdemo-big { font-size: 24px; font-weight: 600; line-height: 1.1; }
 .bullpen-landing-root .wdemo-row { font-size: 16px; font-weight: 600; }
-.bullpen-landing-root .wdemo-sub { font-size: 13px; line-height: 1.4; color: var(--fg-muted); }
+.bullpen-landing-root .wdemo-sub { font-size: 13px; line-height: 1.4; color: var(--fg-muted); text-wrap: pretty; }
 .bullpen-landing-root .wdemo-grades { font-size: 17px; font-weight: 600; color: var(--fg); }
 
 /* Economy: three result cards. */
@@ -1182,7 +1184,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 40px;
+  min-height: 44px;
   margin-top: 8px;
   font-size: 15px;
   font-weight: 600;
