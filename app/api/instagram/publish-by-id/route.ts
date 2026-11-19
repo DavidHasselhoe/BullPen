@@ -39,6 +39,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // The earnings watcher asks this before handing off a Reel: a deploy without
+  // Reel support would answer missing_id here, and later publish the carousel
+  // even after David posted the Reel by hand.
+  if (request.nextUrl.searchParams.get('probe') === 'reel') {
+    return NextResponse.json({ reel: true });
+  }
+
   const id = request.nextUrl.searchParams.get('id');
   if (!id) {
     return NextResponse.json({ success: false, error: 'missing_id' }, { status: 400 });

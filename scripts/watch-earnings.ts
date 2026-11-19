@@ -9,9 +9,11 @@
  *   2. Poll data.sec.gov every --interval seconds. The instant a new 8-K
  *      with Item 2.02 shows up for the given CIK, fetch its press-release
  *      exhibit (and CFO-commentary exhibit if one exists), extract actuals
- *      via Claude, flip the row to 'ready', and immediately auto-publish it
- *      for real through Vercel's production runtime (see publishViaProd
- *      below) — no manual `npm run instagram-publish` step needed anymore.
+ *      via Claude, flip the row to 'ready', then render it as a Reel and hand
+ *      it to David in Discord to post with a trending sound, with a publish
+ *      through Vercel's production runtime 45 min later as the fallback (see
+ *      lib/instagram/reel-handoff.ts). --carousel, or a failed render,
+ *      publishes the carousel straight away instead (see publishViaProd).
  *
  * Usage:
  *   npm run watch-earnings -- --ticker=NVDA --cik=1045810 --report-date=2026-08-26 --timing=AMC --segment="Data Center"
@@ -26,6 +28,9 @@
  *   --segment        optional business-segment label to also extract/estimate (e.g. "Data Center")
  *   --interval       optional, seconds between polls (default 15)
  *   --max-minutes    optional, give up after this long with nothing found (default 240)
+ *   --carousel       publish the old carousel straight away instead of handing
+ *                    you a Reel to post (lib/instagram/reel-handoff.ts). The
+ *                    Reel needs ffmpeg: set FFMPEG_PATH in .env.local.
  */
 
 import { config } from 'dotenv';
@@ -34,6 +39,7 @@ config({ path: '.env.local' });
 import { findEarnings8K, fetchFilingIndex, pickPressReleaseFile, pickCommentaryFile, fetchExhibitText } from '../lib/edgar/edgar-watch';
 import { seedEarningsDeepDiveDraft, refreshDraftEstimates, completeEarningsDeepDiveFromFiling } from '../lib/instagram/content/earnings-deep-dive';
 import { extractEarningsActuals } from '../lib/instagram/content/earnings-deep-dive-extract';
+import { handOffReel } from '../lib/instagram/reel-handoff';
 import { sleep } from '../lib/utils';
 
 import { SITE_URL } from '../lib/site';
@@ -111,6 +117,17 @@ async function publishViaProd(postId: string): Promise<void> {
     console.error('[watch-earnings] Auto-publish failed:', body.error ?? res.status);
     console.error(`  Retry manually: npm run instagram-publish -- --id=${postId}`);
   }
+}
+
+/** False until a deploy with Reel support is live: older prod code would publish the carousel at the fallback even after David posted the Reel. */
+async function prodSupportsReels(): Promise<boolean> {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  const base = process.env.APP_URL || SITE_URL;
+  const res = await fetch(`${base}/api/instagram/publish-by-id?probe=reel`, { headers: { Authorization: `Bearer ${secret}` } }).catch(() => null);
+  const ok = !!res?.ok && (await res.json().catch(() => ({}))).reel === true;
+  if (!ok) console.log('[watch-earnings] Production has no Reel support yet (merge to main first), so this one goes out as a carousel.');
+  return ok;
 }
 
 async function main() {
@@ -204,8 +221,31 @@ async function main() {
       console.log(`  Revenue: ${final.revenueActual} vs ${final.revenueEstimate} (${final.revenueStatus})`);
       console.log(`  Headline: ${final.headline}`);
 
-      console.log('[watch-earnings] Auto-publishing to Instagram...');
-      await publishViaProd(postId);
+      if (process.argv.includes('--carousel') || !(await prodSupportsReels())) {
+        console.log('[watch-earnings] Auto-publishing the carousel to Instagram...');
+        await publishViaProd(postId);
+        process.exit(0);
+      }
+
+      // Default: a Reel, handed to you in Discord to post with a trending sound (see lib/instagram/reel-handoff.ts).
+      console.log('[watch-earnings] Rendering the Reel and handing it to you in Discord...');
+      let handoff;
+      try {
+        handoff = await handOffReel(postId);
+      } catch (err) {
+        // Fails before the row becomes a Reel (render, ffmpeg, upload), so the carousel is still intact.
+        console.error('[watch-earnings] Reel handoff failed, publishing the carousel instead:', err instanceof Error ? err.message : err);
+        await publishViaProd(postId);
+        process.exit(0);
+      }
+      console.log(`[watch-earnings] Reel handed off: ${handoff.videoUrl}`);
+      if (!handoff.fallbackScheduled) {
+        console.log(`[watch-earnings] No fallback in QStash, so this watcher publishes it itself at ${handoff.deadline.toLocaleTimeString()} unless you post first. Keep this terminal open.`);
+        await sleep(handoff.deadline.getTime() - Date.now());
+        await publishViaProd(postId);
+      } else {
+        console.log(`  Post it from the app by ${handoff.deadline.toLocaleTimeString()}, or it publishes automatically with no music.`);
+      }
       process.exit(0);
     }
 

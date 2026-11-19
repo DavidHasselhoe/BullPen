@@ -6,7 +6,8 @@
  * sequence only needs implementing once).
  */
 import { createServerClient } from '@/lib/supabase/client';
-import { publishCarousel, isInstagramConfigured } from '@/lib/instagram/client';
+import { publishCarousel, publishReel, findReelPostedSince, isInstagramConfigured } from '@/lib/instagram/client';
+import { REEL_THUMB_OFFSET_MS } from '@/lib/instagram/render/reel';
 import { totalSlideCount, altTextForSlide } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { instagramBioLink } from '@/lib/instagram/utm-link';
@@ -21,6 +22,9 @@ interface InstagramPostRow {
   slides: InstagramPostSlides;
   content_type: string;
   period_key: string;
+  media_format: 'carousel' | 'reel';
+  video_url: string | null;
+  handoff_at: string | null;
 }
 
 export type PublishStagedPostResult =
@@ -38,7 +42,7 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
 
   const { data: post } = (await db
     .from('instagram_posts')
-    .select('id, status, caption, slides, content_type, period_key')
+    .select('id, status, caption, slides, content_type, period_key, media_format, video_url, handoff_at')
     .eq('id', id)
     .maybeSingle()) as { data: InstagramPostRow | null };
 
@@ -74,12 +78,31 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
   const imageUrls = Array.from({ length: slideCount }, (_, i) => `${appUrl}/api/instagram/render/${post.id}/${i}?v=${v}`);
   const altTexts = Array.from({ length: slideCount }, (_, i) => altTextForSlide(post.slides, i));
 
+  const isReel = post.media_format === 'reel';
+  if (isReel && !post.video_url) return { outcome: 'blocked', problems: ['Reel row has no video_url'] };
+
   if (!isInstagramConfigured()) {
-    return { outcome: 'dry_run', imageUrls, caption: post.caption };
+    return { outcome: 'dry_run', imageUrls: isReel ? [post.video_url!] : imageUrls, caption: post.caption };
   }
 
   try {
-    const result = await publishCarousel({ imageUrls, altTexts, caption: post.caption });
+    let result: { mediaId?: string; permalink?: string | null };
+    let how = 'Published to Instagram';
+    if (isReel) {
+      // A handed-off Reel is David's to post by hand with a trending sound (the
+      // API can't attach one); this run is the fallback. If he already posted
+      // it, record his post instead of publishing a second copy.
+      const manual = post.handoff_at ? await findReelPostedSince(post.handoff_at) : null;
+      if (manual) {
+        result = manual;
+        how = 'Found the Reel you posted';
+      } else {
+        result = await publishReel({ videoUrl: post.video_url!, caption: post.caption, thumbOffsetMs: REEL_THUMB_OFFSET_MS });
+        if (post.handoff_at) how = 'Nobody posted the Reel in time, so it went out automatically with no music';
+      }
+    } else {
+      result = await publishCarousel({ imageUrls, altTexts, caption: post.caption });
+    }
 
     await db
       .from('instagram_posts')
@@ -95,7 +118,7 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
     if (webhookUrl) {
       const bioLink = instagramBioLink(post.content_type, post.period_key);
       await postToDiscord(webhookUrl, {
-        content: `✅ Published to Instagram: ${result.permalink ?? result.mediaId}\nBio link should be: ${bioLink}`,
+        content: `✅ ${how}: ${result.permalink ?? result.mediaId}\nBio link should be: ${bioLink}`,
       }).catch((err) => console.error('Discord confirmation failed (post still published):', err));
     }
 

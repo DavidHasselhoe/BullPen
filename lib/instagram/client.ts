@@ -83,7 +83,7 @@ async function graphGet(path: string, accessToken: string): Promise<Record<strin
  * forever, same "wait bounded, then give up loudly" philosophy as
  * lib/twelvedata/credit-budget.ts's waitForCronCreditBudget.
  */
-async function waitForContainerReady(containerId: string, accessToken: string, maxWaitMs = 30_000): Promise<void> {
+async function waitForContainerReady(containerId: string, accessToken: string, maxWaitMs = 30_000, pollMs = 2000): Promise<void> {
   const start = Date.now();
   for (;;) {
     const status = await graphGet(`/${containerId}?fields=status_code`, accessToken);
@@ -94,7 +94,7 @@ async function waitForContainerReady(containerId: string, accessToken: string, m
     if (Date.now() - start > maxWaitMs) {
       throw new Error(`Instagram media container ${containerId} did not finish processing within ${maxWaitMs}ms`);
     }
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
   }
 }
 
@@ -180,4 +180,61 @@ export async function publishCarousel(params: PublishCarouselParams): Promise<Pu
   const permalink = permalinkRes.permalink as string | undefined;
 
   return { dryRun: false, mediaId, permalink };
+}
+
+export interface PublishReelParams {
+  /** Public MP4 URL; Meta fetches it itself. */
+  videoUrl: string;
+  caption: string;
+  /** Which frame becomes the cover, in ms. */
+  thumbOffsetMs?: number;
+}
+
+/**
+ * One container (media_type REELS) → wait for Meta to fetch and transcode the
+ * video → media_publish. Video takes longer than images, so the wait is up to
+ * 3 minutes, polled every 10s; publish-by-id's 300s maxDuration covers it.
+ */
+export async function publishReel(params: PublishReelParams): Promise<PublishCarouselResult> {
+  if (!isInstagramConfigured()) return { dryRun: true };
+  const { accessToken, userId } = getConfig();
+
+  const container = await graphPost(
+    `/${userId}/media`,
+    {
+      media_type: 'REELS',
+      video_url: params.videoUrl,
+      caption: params.caption,
+      share_to_feed: 'true',
+      ...(params.thumbOffsetMs != null ? { thumb_offset: String(params.thumbOffsetMs) } : {}),
+    },
+    accessToken
+  );
+  const containerId = container.id as string;
+  await waitForContainerReady(containerId, accessToken, 180_000, 10_000);
+
+  const published = await publishWhenAvailable(userId, containerId, accessToken);
+  const mediaId = published.id as string;
+  const permalinkRes = await graphGet(`/${mediaId}?fields=permalink`, accessToken);
+  return { dryRun: false, mediaId, permalink: permalinkRes.permalink as string | undefined };
+}
+
+/**
+ * The newest Reel on the account published at or after `sinceIso`, if any:
+ * how the fallback publish tells that David already posted a handed-off Reel
+ * by hand (with a trending sound, which the API can't attach).
+ * ponytail: any Reel after the handoff counts as that one; match on the
+ * caption if two Reels are ever handed off within the same window.
+ */
+export async function findReelPostedSince(sinceIso: string): Promise<{ mediaId: string; permalink: string | null } | null> {
+  if (!isInstagramConfigured()) return null;
+  const { accessToken, userId } = getConfig();
+  const res = await graphGet(`/${userId}/media?fields=id,media_product_type,timestamp,permalink&limit=10`, accessToken);
+  // A minute of slack for the gap between this machine's clock and Meta's.
+  const since = Date.parse(sinceIso) - 60_000;
+  const items = (res.data ?? []) as { id: string; media_product_type?: string; timestamp?: string; permalink?: string }[];
+  // Meta's timestamps end in "+0000", which Date.parse doesn't accept everywhere.
+  const at = (ts: string) => Date.parse(ts.replace(/([+-]\d\d)(\d\d)$/, '$1:$2'));
+  const hit = items.find((m) => m.media_product_type === 'REELS' && m.timestamp && at(m.timestamp) >= since);
+  return hit ? { mediaId: hit.id, permalink: hit.permalink ?? null } : null;
 }

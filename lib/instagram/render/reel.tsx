@@ -23,6 +23,8 @@ import {
 export const REEL_W = 1080;
 export const REEL_H = 1920;
 export const REEL_FPS = 30;
+/** The cover frame, in ms: past the hook's second line, which slides in at 0.6 s. */
+export const REEL_THUMB_OFFSET_MS = 1500;
 
 const PAD = { top: 250, right: 150, bottom: 400, left: 90 };
 const TRACK = REEL_W - PAD.left - PAD.right; // 840px of usable width
