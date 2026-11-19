@@ -59,7 +59,13 @@ const OTHER_SCHEDULED_ROUTES = [
 
 // ── Discover schedulers ──────────────────────────────────────────────────────
 const vercelJson = JSON.parse(read('vercel.json')) as { crons?: { path: string; schedule: string }[] };
-const vercelCronPaths = new Set((vercelJson.crons ?? []).map((c) => c.path));
+// Query strings dropped: /api/cron/dispatch-workflow?workflow=... is one route.
+const vercelCronPaths = new Set((vercelJson.crons ?? []).map((c) => c.path.replace(/\?.*$/, '')));
+
+// Every ?workflow= a Vercel cron dispatches must be a real workflow file.
+const dispatchedWorkflows = (vercelJson.crons ?? [])
+  .map((c) => c.path.match(/^\/api\/cron\/dispatch-workflow\?workflow=(.+)$/)?.[1])
+  .filter((w): w is string => !!w);
 
 const WORKFLOWS_DIR = join(ROOT, '.github', 'workflows');
 const workflowFiles = readdirSync(WORKFLOWS_DIR).filter((f) => f.endsWith('.yml'));
@@ -133,6 +139,19 @@ for (const { path, file } of OTHER_SCHEDULED_ROUTES) {
     `${path}${referenced ? '' : ' (not referenced by any workflow — skipping existence check)'}`,
     !referenced || (() => { try { statSync(file); return true; } catch { return false; } })(),
     `a workflow calls ${path} but ${file} doesn't exist.`
+  );
+}
+
+// ── 5. Dispatched workflows exist, can be dispatched, and gate their late schedule ──
+console.log('\nEvery workflow Vercel dispatches exists, has workflow_dispatch and a gate job:');
+for (const wf of dispatchedWorkflows) {
+  const src = workflowFiles.includes(wf) ? read(join('.github', 'workflows', wf)) : '';
+  check(
+    wf,
+    /^\s*workflow_dispatch:/m.test(src) && /^\s{2}gate:\s*$/m.test(src),
+    src
+      ? `${wf} needs a workflow_dispatch trigger and a \`gate\` job, or GitHub's late schedule runs it a second time.`
+      : `vercel.json dispatches ${wf} but .github/workflows/${wf} doesn't exist.`
   );
 }
 

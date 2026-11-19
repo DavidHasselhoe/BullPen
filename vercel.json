@@ -89,6 +89,30 @@
     {
       "path": "/api/cron/check-saved-screens",
       "schedule": "0 11 * * 1-5"
+    },
+    {
+      "path": "/api/cron/dispatch-workflow?workflow=cron-refresh-screener-stats.yml",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/cron/dispatch-workflow?workflow=cron-refresh-screener-discovery.yml",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/dispatch-workflow?workflow=cron-refresh-screener-extended.yml",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/dispatch-workflow?workflow=cron-prefetch-calendar.yml",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/dispatch-workflow?workflow=cron-prefetch-market-data.yml",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/dispatch-workflow?workflow=cron-prefetch-financials.yml",
+      "schedule": "30 7 * * *"
     }
   ]
 }

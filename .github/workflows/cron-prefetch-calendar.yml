@@ -36,8 +36,31 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Vercel starts this workflow on time (app/api/cron/dispatch-workflow).
+  # GitHub's own schedule fires 4-10h late and is only the fallback for a
+  # missed dispatch: it skips when a dispatch already ran in the last 20 hours.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RECENT=0
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            WF=$(basename "${GITHUB_WORKFLOW_REF%@*}")
+            SINCE=$(date -u -d '20 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+            RECENT=$(gh run list -R "$GITHUB_REPOSITORY" -w "$WF" -e workflow_dispatch --created ">=$SINCE" --json databaseId --jq length || echo 0)
+          fi
+          echo "Dispatched runs in the last 20h: $RECENT"
+          echo "run=$([ "$RECENT" = "0" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   prefetch-calendar:
     runs-on: ubuntu-latest
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     # Cold worst case ~29 min plus room for retries (2 x 65s per failed batch).
     timeout-minutes: 60
     steps:
