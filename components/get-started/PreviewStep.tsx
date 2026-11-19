@@ -16,19 +16,21 @@ import { StepHeadline, StepShell, StockLabel } from './StepShell';
 interface Quote { price: number; change: number; changePercent: number; stale?: boolean }
 
 const MAX_SHOWN = 6;
-const ALERT_WORDS: Record<Exclude<keyof AlertChoices, 'learning'>, string> = {
+const ALERT_WORDS: Record<Exclude<keyof AlertChoices, 'learning' | 'email_alerts'>, string> = {
   price_alerts: 'big price moves',
   upcoming_earnings: 'earnings',
   dividend_reminder: 'dividend dates',
 };
 
 function alertsSentence(alerts: AlertChoices): string {
-  // Learning reminders are not part of the morning email.
+  // Learning reminders are not part of the morning email, so they are not listed with the stock alerts.
   const on = (Object.keys(ALERT_WORDS) as (keyof typeof ALERT_WORDS)[]).filter((k) => alerts[k]).map((k) => ALERT_WORDS[k]);
   if (on.length === 0 && alerts.learning) return "We'll remind you about your learning streak and new courses.";
   if (on.length === 0) return 'Alerts are off. You can turn them on anytime in Settings.';
   const list = on.length === 1 ? on[0] : `${on.slice(0, -1).join(', ')} and ${on[on.length - 1]}`;
-  return `We'll email you in the morning about ${list} for these stocks.`;
+  return alerts.email_alerts
+    ? `We'll email you in the morning about ${list} for these stocks.`
+    : `You'll see ${list} for these stocks in your notifications.`;
 }
 
 export function PreviewStep({

@@ -1,5 +1,4 @@
 import { createBrowserClient } from '@/lib/supabase/client';
-import { savePushSubscription } from '@/app/actions/push';
 import {
   clearPendingOnboarding,
   experienceLevelFor,
@@ -63,16 +62,6 @@ async function flush(userId: string): Promise<boolean> {
         body: JSON.stringify({ symbol: pick.ticker, company_name: pick.name }),
       });
       if (!res.ok) return false;
-    }
-
-    // Onboarding matters more than push: a failed device save is logged, not retried by failing the flush.
-    if (pending.pushSubscription) {
-      try {
-        const res = await savePushSubscription(pending.pushSubscription.sub, pending.pushSubscription.timeZone, navigator.userAgent);
-        if (!res.success) console.error('[push] onboarding subscription not saved:', res.error);
-      } catch (e) {
-        console.error('[push] onboarding subscription not saved:', e);
-      }
     }
 
     clearPendingOnboarding();

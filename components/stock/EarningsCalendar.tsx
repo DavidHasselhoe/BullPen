@@ -105,12 +105,8 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
   const past = Array.from(seen.values()).sort((a, b) => b.date.localeCompare(a.date));
   const nextEvent = upcoming[0] ?? null;
 
-  // The last four reports, as the chart shows them; the streak counts the same ones.
+  // The last four reports, as the chart shows them (it also counts their beats).
   const recent = past.slice(0, 4);
-  // Unconfirmed reports aren't counted toward the beat/miss streak — the actual
-  // EPS hasn't been cross-checked against a filed statement yet, so it shouldn't
-  // feed a confidence-implying stat.
-  const scored = recent.filter((e) => e.epsActual != null && e.epsEstimate != null && !e.unconfirmed);
   const quarterLabel = (e: EarningsItem) =>
     e.quarter && e.year ? fiscalLabel(t, { quarter: e.quarter, year: e.year, offCalendar: e.offCalendar }) : formatDate(e.date);
   const columns: EarningsDotColumn[] = [
@@ -126,16 +122,6 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
       ? [{ key: nextEvent.date, label: quarterLabel(nextEvent), date: formatDate(nextEvent.date), estimate: nextEvent.epsEstimate, actual: null, upcoming: true, estimatedDate: nextEvent.estimated }]
       : []),
   ];
-  const beats = scored.filter((e) => (e.epsActual as number) >= (e.epsEstimate as number)).length;
-  const streakLine =
-    scored.length >= 2
-      ? beats > scored.length / 2
-        ? { text: t('earningsStreakBeat', { count: beats, total: scored.length }), glyph: '▲', cls: 'text-emerald-500' }
-        : beats < scored.length / 2
-          ? { text: t('earningsStreakMiss', { count: scored.length - beats, total: scored.length }), glyph: '▼', cls: 'text-red-500' }
-          : { text: t('earningsStreakBeat', { count: beats, total: scored.length }), glyph: '●', cls: 'text-muted-foreground' }
-      : null;
-
   return (
     <Card className="mb-8">
       <CardHeader className="pb-2">
@@ -214,14 +200,7 @@ export function EarningsCalendar({ ticker, companyName }: { ticker: string; comp
         {/* Past earnings — actual vs estimate bars */}
         {recent.length > 0 && (
           <div>
-            <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('earningsRecentReportsLabel')}</p>
-              {streakLine && (
-                <p className="text-xs text-muted-foreground">
-                  <span className={streakLine.cls} aria-hidden>{streakLine.glyph}</span> {streakLine.text}
-                </p>
-              )}
-            </div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('earningsRecentReportsLabel')}</p>
             <EarningsDotChart key={ticker} columns={columns} />
           </div>
         )}

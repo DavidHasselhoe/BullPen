@@ -16,6 +16,8 @@ export interface AlertChoices {
   dividend_reminder: boolean;
   /** Streak reminders and new courses. Maps to two notification kinds, never a key of its own. */
   learning: boolean;
+  /** The morning email (settings.notifications.email_alerts): the kinds above that are on, plus how the watchlist did. */
+  email_alerts: boolean;
 }
 
 export const DEFAULT_ALERTS: AlertChoices = {
@@ -23,13 +25,8 @@ export const DEFAULT_ALERTS: AlertChoices = {
   upcoming_earnings: true,
   dividend_reminder: true,
   learning: true,
+  email_alerts: true,
 };
-
-/** A device subscribed before signup, saved to the account once it exists. */
-export interface PendingPush {
-  sub: PushSubscriptionJSON;
-  timeZone: string;
-}
 
 /** "Do you invest already?" Saved as users.settings.invests; Home's first-week checklist leads with holdings for 'yes'. */
 export type InvestAnswer = 'yes' | 'not_yet';
@@ -40,7 +37,6 @@ export interface PendingOnboarding {
   picks: StockPick[];
   alerts: AlertChoices;
   invests?: InvestAnswer;
-  pushSubscription?: PendingPush;
 }
 
 /** In-progress flow state (style is unset until screen 1 is answered). */
@@ -49,7 +45,6 @@ export interface OnboardingDraft {
   picks: StockPick[];
   alerts: AlertChoices;
   invests?: InvestAnswer;
-  pushSubscription?: PendingPush;
 }
 
 /** Absent rather than undefined, so a payload without the answer parses to the same shape as before. */
@@ -112,14 +107,14 @@ function sanitizeAlerts(value: unknown): AlertChoices | null {
   ) {
     return null;
   }
-  // Drafts saved before the learning row existed have no value: default it on.
-  return { price_alerts: v.price_alerts, upcoming_earnings: v.upcoming_earnings, dividend_reminder: v.dividend_reminder, learning: v.learning !== false };
-}
-
-function pushField(value: unknown): { pushSubscription?: PendingPush } {
-  const v = value as Partial<PendingPush> | null;
-  if (!v || typeof v.timeZone !== 'string' || typeof v.sub?.endpoint !== 'string') return {};
-  return { pushSubscription: { sub: v.sub, timeZone: v.timeZone } };
+  // Drafts saved before the learning and email rows existed have no value: default them on.
+  return {
+    price_alerts: v.price_alerts,
+    upcoming_earnings: v.upcoming_earnings,
+    dividend_reminder: v.dividend_reminder,
+    learning: v.learning !== false,
+    email_alerts: v.email_alerts !== false,
+  };
 }
 
 /** Pure parser (no storage access) so it can be tested. */
@@ -133,7 +128,7 @@ export function parsePendingOnboarding(raw: string | null, now: number): Pending
     if (parsed.style !== 'plain' && parsed.style !== 'market') return null;
     const alerts = sanitizeAlerts(parsed.alerts);
     if (!alerts) return null;
-    return { style: parsed.style, picks: sanitizePicks(parsed.picks), alerts, ...investsField(parsed.invests), ...pushField(parsed.pushSubscription) };
+    return { style: parsed.style, picks: sanitizePicks(parsed.picks), alerts, ...investsField(parsed.invests) };
   } catch {
     return null;
   }
@@ -202,7 +197,6 @@ export function readDraft(): { step: number; draft: OnboardingDraft } | null {
         picks: sanitizePicks(parsed.draft.picks),
         alerts: sanitizeAlerts(parsed.draft.alerts) ?? DEFAULT_ALERTS,
         ...investsField(parsed.draft.invests),
-        ...pushField(parsed.draft.pushSubscription),
       },
     };
   } catch {
