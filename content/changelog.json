@@ -1,5 +1,40 @@
 [
   {
+    "date": "2026-11-19",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "The Screener now makes room for the columns you turn on. With many columns on a wide screen the page grows to fit them instead of hiding them behind a sideways scrollbar, and you can hide the filters panel for even more space",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Returns on stocks bought in another currency now use the exchange rate of every purchase, not just the first one, so the gain shown in your own currency matches your broker more closely",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "The Earnings card uses its full width: the chart sits beside the company's recent track record and the numbers for whichever quarter you pick"
+      },
+      {
+        "type": "improved",
+        "text": "When Bull offers to take you somewhere, the button now says what it will do, and the Screener shows the volume from the last trading day while the market is closed"
+      },
+      {
+        "type": "improved",
+        "text": "During setup you now choose separately which alerts appear in the app and whether you get the morning email"
+      },
+      {
+        "type": "fixed",
+        "text": "Old notifications no longer pop up as new after switching accounts or waking your computer from sleep"
+      },
+      {
+        "type": "fixed",
+        "text": "A company's health score could jump between quarters only because some data became available or went missing. Those changes no longer trigger an alert"
+      }
+    ]
+  },
+  {
     "date": "2026-11-18",
     "entries": [
       {
