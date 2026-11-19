@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
-import { BarChart2, CircleHelp, Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { ArrowDown, ArrowUp, ArrowUpRight, BarChart2, Briefcase, Check, CircleHelp, Flame, Landmark, ShoppingCart, Sparkles, X, Zap } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { arcPath } from '@/components/finance/HealthRing';
 
 /**
- * Live versions of two bento cards, built from the same parts and the same
- * NVIDIA numbers as the app, so the landing shows what the product does
+ * Live versions of the bento cards, built from the same parts and the same
+ * real numbers as the app, so the landing shows what the product does
  * instead of a shrunken screenshot of it.
  *
  * The server HTML is the finished state: that is what crawlers, screen
@@ -243,6 +243,219 @@ export function HealthDemo() {
         </ul>
       </div>
       <p className="hdemo-summary">Highly profitable, cash generative and financially secure.</p>
+    </div>
+  );
+}
+
+// ── Shared parts for the remaining cards ─────────────────────────────────────
+// A demo's phase drives two things: `.demo-rise` children (fade and lift in,
+// each after its own --d) and <Count> numbers (0 to their value). Both rest on
+// the final state, so the server HTML and reduced motion never move.
+
+function usePhase(ref: RefObject<HTMLElement | null>): Phase {
+  const [phase, setPhase] = useState<Phase>('rest');
+  usePlayOnView(ref, () => setPhase('armed'), () => setPhase('play'));
+  return phase;
+}
+
+const d = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties;
+
+/** A number that counts up while its demo plays; screen readers get `to`. */
+function Count({ phase, to, fmt, ms = 800, delay = 0 }: { phase: Phase; to: number; fmt: (n: number) => string; ms?: number; delay?: number }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (phase !== 'play') return;
+    let cancel = () => {};
+    const t = setTimeout(() => { cancel = countUp(to, ms, setN); }, delay);
+    return () => { clearTimeout(t); cancel(); };
+  }, [phase, to, ms, delay]);
+  const shown = phase === 'armed' ? 0 : phase === 'play' ? n : to;
+  return (
+    <>
+      <span aria-hidden>{fmt(shown)}</span>
+      <span className="sr-only">{fmt(to)}</span>
+    </>
+  );
+}
+
+/** "+1.27%" / "−0.20%": the sign comes from the final value, so a count to a loss never shows "+". */
+const signedPct = (to: number, digits = 2) => (v: number) => `${to < 0 ? '−' : '+'}${Math.abs(v).toFixed(digits)}%`;
+
+function DemoHead({ title, when, children }: { title: string; when: string; children?: ReactNode }) {
+  return (
+    <div className="demo-head">
+      <span className="demo-co">
+        {title}
+        <span className="demo-when mono">{when}</span>
+      </span>
+      {children}
+    </div>
+  );
+}
+
+// ── A scorecard for your watchlist ───────────────────────────────────────────
+// WatchlistScorecard's four tiles, as captured from a real list on 2026-11-02
+// (public/screenshots/bento-watchlist.png). Labels from the watchlist locale.
+export function WatchlistDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const phase = usePhase(ref);
+  return (
+    <div ref={ref} className="demo" data-phase={phase}>
+      <DemoHead title="Your watchlist" when="Nov 2" />
+      <div className="demo-body wdemo-grid" role="group" aria-label="List summary">
+        <div className="wdemo-tile">
+          <p className="wdemo-label">Average move today</p>
+          <p className="wdemo-big mono up"><Count phase={phase} to={0.32} fmt={signedPct(0.32)} /></p>
+          <p className="wdemo-sub demo-rise" style={d(600)}>8 up · 2 down · 1 flat</p>
+        </div>
+        <div className="wdemo-tile">
+          <p className="wdemo-label">Best and worst today</p>
+          <p className="wdemo-row mono up demo-rise" style={d(150)}>AMD <Count phase={phase} to={1.27} fmt={signedPct(1.27)} delay={150} /></p>
+          <p className="wdemo-row mono down demo-rise" style={d(300)}>GNRC <Count phase={phase} to={-0.2} fmt={signedPct(-0.2)} delay={300} /></p>
+        </div>
+        <div className="wdemo-tile">
+          <p className="wdemo-label">Since you added them</p>
+          <p className="wdemo-big mono down"><Count phase={phase} to={-2.84} fmt={signedPct(-2.84)} /></p>
+          <p className="wdemo-sub demo-rise" style={d(700)}>S&amp;P 500 −1.44% over the same days</p>
+          <p className="wdemo-sub demo-rise" style={d(850)}>1.4 points behind the market</p>
+        </div>
+        <div className="wdemo-tile">
+          <p className="wdemo-label">Health Scores</p>
+          <p className="wdemo-grades mono demo-rise" style={d(450)}>4 A · 3 B · 1 C</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── The economy, in plain numbers ────────────────────────────────────────────
+// Three /tools/economy result cards as captured on 2026-11-02. Each carries its
+// own data period; the "next release" dates are left out because they pass.
+const pct = (digits: number) => (v: number) => `${v.toFixed(digits)}%`;
+const plusInt = (v: number) => `+${Math.round(v).toLocaleString('en-US')}`;
+
+export function EconomyDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const phase = usePhase(ref);
+  return (
+    <div ref={ref} className="demo" data-phase={phase}>
+      <DemoHead title="BullPen Economy" when="Nov 2" />
+      <ul className="demo-body edemo-list">
+        <li className="edemo-card">
+          <p className="edemo-title"><Landmark size={16} aria-hidden />Fed interest rate</p>
+          <p className="edemo-sub">Federal funds target range</p>
+          <p className="edemo-value mono">
+            <Count phase={phase} to={3.75} fmt={pct(2)} /> to <Count phase={phase} to={4} fmt={pct(2)} />
+          </p>
+        </li>
+        <li className="edemo-card">
+          <p className="edemo-title"><ShoppingCart size={16} aria-hidden />CPI inflation</p>
+          <p className="edemo-sub">Inflation, past year · September 2026</p>
+          <p className="edemo-value mono"><Count phase={phase} to={3.7} fmt={pct(1)} delay={150} /></p>
+          <p className="edemo-change demo-rise" style={d(900)}><ArrowUp size={14} aria-hidden />Up from 3.4%</p>
+        </li>
+        <li className="edemo-card">
+          <p className="edemo-title"><Briefcase size={16} aria-hidden />Jobs report</p>
+          <p className="edemo-sub">Jobs added · September 2026</p>
+          <p className="edemo-value mono"><Count phase={phase} to={29000} fmt={plusInt} delay={300} /></p>
+          <p className="edemo-change demo-rise" style={d(1050)}><ArrowDown size={14} aria-hidden />Down from +133,000</p>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+// ── Learn the basics as you go ───────────────────────────────────────────────
+// DailyChallengeCard with the real 2026-11-02 challenge (academy_daily_challenges),
+// options in the order the app shuffles them to. The options rise in when the
+// card plays; answering is real, checked against the stored answer.
+const CHALLENGE = {
+  question: 'Which of the following is the strongest example of a good investment thesis?',
+  options: [
+    "Company X's margins have expanded for three straight years because of a new cost-cutting program, and I expect that trend to continue if the program keeps delivering savings, which I can check in each quarterly report.",
+    'The price dropped 20 percent this week, so it has to bounce back soon.',
+    "Tech stocks always go up over time, so I'll buy the biggest tech company I can find.",
+    'I have a good feeling about this stock because everyone on my favorite forum is excited about it.',
+  ],
+  correct: 0,
+  explanation:
+    'A strong thesis names a specific reason, explains how it leads to a return, and states what would prove it right or wrong. The margin-expansion thesis does all three, while the others rely on vague beliefs, hype, or price momentum with no testable reasoning.',
+  xp: 15,
+};
+
+export function AcademyDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const phase = usePhase(ref);
+  const [picked, setPicked] = useState<number | null>(null);
+  const done = picked !== null;
+  const right = picked === CHALLENGE.correct;
+  return (
+    <div ref={ref} className="demo" data-phase={phase}>
+      <div className="demo-head">
+        <span className="ademo-title">
+          <span className="ademo-flame"><Flame size={16} aria-hidden /></span>
+          <span>
+            <span className="ademo-name">Daily Challenge</span>
+            <span className="ademo-tag">Keep your streak alive</span>
+          </span>
+        </span>
+        <span className="ademo-xp"><Zap size={13} aria-hidden />+{CHALLENGE.xp} XP</span>
+      </div>
+      <div className="demo-body">
+        <p className="ademo-q">{CHALLENGE.question}</p>
+        <div className="ademo-options">
+          {CHALLENGE.options.map((o, i) => {
+            const state = !done ? '' : i === CHALLENGE.correct ? ' is-right' : i === picked ? ' is-wrong' : ' is-dim';
+            return (
+              <button key={i} type="button" disabled={done} onClick={() => setPicked(i)} className={`ademo-option demo-rise${state}`} style={d(i * 90)}>
+                <span>{o}</span>
+                {done && i === CHALLENGE.correct && <Check size={16} aria-label="Right answer" />}
+                {done && i === picked && !right && <X size={16} aria-label="Your answer" />}
+              </button>
+            );
+          })}
+        </div>
+        <div role="status" aria-live="polite">
+          {done && (
+            <div className="ademo-result">
+              <p className={right ? 'ademo-verdict up' : 'ademo-verdict warn'}>
+                <span>{right ? 'Correct!' : 'Not quite'}</span>
+                {right && <span className="ademo-earned"><Zap size={13} aria-hidden />+{CHALLENGE.xp} XP</span>}
+              </p>
+              <p className="ademo-why">{CHALLENGE.explanation}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Your market in a minute ──────────────────────────────────────────────────
+// The TL;DR of the real 2026-11-02 Daily Brief (daily_briefs), whole: the
+// landing shows it sentence by sentence rather than cutting it off.
+const Tk = ({ s }: { s: string }) => <span className="bdemo-tk mono">${s}</span>;
+
+export function DailyBriefDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const phase = usePhase(ref);
+  return (
+    <div ref={ref} className="demo" data-phase={phase}>
+      <DemoHead title="Daily Brief" when="Nov 2" />
+      <div className="demo-body">
+        <p className="bdemo-title">
+          Earnings Misery Spreads: <Tk s="RDDT" />, <Tk s="TWLO" />, <Tk s="ILMN" /> Beat and Still Burn
+        </p>
+        <p className="bdemo-text">
+          <span className="demo-rise" style={d(150)}>Beating estimates stopped being enough Friday. </span>
+          <span className="demo-rise" style={d(450)}><b>Reddit</b> (<Tk s="RDDT" />) and <b>Twilio</b> (<Tk s="TWLO" />) both beat and both got crushed on guidance. </span>
+          <span className="demo-rise" style={d(750)}>Fear is elevated: the VIX closed at 19.42, and BullPen&apos;s Market Mood reads 38, Fear. </span>
+          <span className="demo-rise" style={d(1050)}><b>Apple</b> (<Tk s="AAPL" />) and <b>Palantir</b> (<Tk s="PLTR" />) report tonight.</span>
+        </p>
+        <a href="#pricing" className="bdemo-link demo-rise" style={d(1300)}>
+          Read the full brief with Pro <ArrowUpRight size={15} aria-hidden />
+        </a>
+      </div>
     </div>
   );
 }

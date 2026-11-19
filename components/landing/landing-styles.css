@@ -791,9 +791,9 @@
 }
 
 /* ── Benefits bento ────────────────────────────────────────────────────────
-   Two columns of equal cards. Copy sits top-left; the capture peeks in from
-   the bottom-left corner and is clipped by the card, so each one shows a
-   single moment at a readable size rather than a whole shrunken screen. */
+   Wide, pair, pair, wide. A pair card stacks copy over its live demo; a wide
+   card puts the copy beside the demo on desktop. The closing Pro strip sits a
+   tone darker (--surface-2), a step in tone, not a new hue. */
 .bullpen-landing-root .benefits-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -847,41 +847,17 @@
   line-height: 1.6;
   color: var(--fg-muted);
 }
-/* An inset frame: the capture sits inside it with room on every side, scaled
-   to the frame's width so no edge or corner is ever cut, and runs off the
-   card's bottom edge when it is taller than the frame. */
-.bullpen-landing-root .benefit-shot {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  max-height: 320px;
-  margin: 0 22px;
-  padding: 22px 22px 0;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-bottom: 0;
-  border-radius: 14px 14px 0 0;
-  background: var(--bg);
-}
-/* The picture clips, not the frame: a capture scrolled up by --shot-y must not
-   show through the frame's top padding. */
-.bullpen-landing-root .benefit-shot picture { display: block; flex: 1; min-height: 0; overflow: hidden; }
-/* --shot-y is a percent of the width, so the scroll to the moment the copy is
-   about scales with the capture. Never wider than the capture's own size. The
-   phone file is a separate capture of the app's phone layout. */
-.bullpen-landing-root .benefit-shot img {
-  display: block;
-  width: 100%;
-  max-width: var(--shot-w);
-  height: auto;
-  margin: var(--shot-y, 0) auto 0;
-}
+.bullpen-landing-root .benefit-card.is-wide { grid-column: 1 / -1; flex-direction: row; }
+.bullpen-landing-root .is-wide .benefit-copy { flex: 0 0 40%; align-self: center; padding: 36px 32px 36px 36px; }
+.bullpen-landing-root .is-wide .benefit-demo { margin: 22px 22px 22px 0; }
+.bullpen-landing-root .benefit-card.is-strip { background: var(--surface-2); }
 @media (max-width: 900px) {
   .bullpen-landing-root .benefits-grid { grid-template-columns: 1fr; }
-  .bullpen-landing-root .benefit-copy { padding: 22px 20px 18px; }
+  .bullpen-landing-root .benefit-copy,
+  .bullpen-landing-root .is-wide .benefit-copy { padding: 22px 20px 18px; }
   .bullpen-landing-root .benefit-title { font-size: 20px; }
-  .bullpen-landing-root .benefit-shot { margin: 0 16px; padding: 16px 16px 0; max-height: 300px; }
-  .bullpen-landing-root .benefit-shot img { max-width: var(--shot-w-m); margin-top: var(--shot-y-m, 0); }
+  .bullpen-landing-root .benefit-card.is-wide { flex-direction: column; }
+  .bullpen-landing-root .is-wide .benefit-copy { flex: none; align-self: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .bullpen-landing-root .benefit-card,
@@ -1116,7 +1092,8 @@
   .bullpen-landing-root .hdemo-body { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 }
 @media (max-width: 900px) {
-  .bullpen-landing-root .benefit-demo { margin: 0 16px 16px; padding: 18px; }
+  .bullpen-landing-root .benefit-demo,
+  .bullpen-landing-root .is-wide .benefit-demo { margin: 0 16px 16px; padding: 18px; }
   .bullpen-landing-root .mdemo-value { font-size: 36px; }
 }
 /* The plain label wraps on phones: hold two lines so the flip moves nothing,
@@ -1125,6 +1102,100 @@
   .bullpen-landing-root .mdemo-label { min-height: 2.8em; }
   .bullpen-landing-root .demo-toggle svg { display: none; }
 }
+
+/* Shared: the body sits centred in a panel its row neighbour made taller, so
+   no card ends in an empty band. .demo-rise children fade and lift in after
+   their own --d once the demo plays. */
+.bullpen-landing-root .demo-body { margin-block: auto; }
+:where(.bullpen-landing-root .demo-body) p { margin: 0; }
+.bullpen-landing-root .demo-rise {
+  transition: opacity 260ms ease-out var(--d, 0ms), transform 300ms cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0ms);
+}
+.bullpen-landing-root .demo[data-phase="armed"] .demo-rise { opacity: 0; transform: translateY(6px); transition: none; }
+
+/* Watchlist scorecard: the app's four tiles. */
+.bullpen-landing-root .wdemo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.bullpen-landing-root .wdemo-tile { display: grid; align-content: start; gap: 6px; padding: 14px; border-radius: 12px; background: var(--surface); }
+.bullpen-landing-root .wdemo-label { font-size: 13px; color: var(--fg-muted); }
+.bullpen-landing-root .wdemo-big { font-size: 24px; font-weight: 600; line-height: 1.1; }
+.bullpen-landing-root .wdemo-row { font-size: 16px; font-weight: 600; }
+.bullpen-landing-root .wdemo-sub { font-size: 13px; line-height: 1.4; color: var(--fg-muted); }
+.bullpen-landing-root .wdemo-grades { font-size: 17px; font-weight: 600; color: var(--fg); }
+
+/* Economy: three result cards. */
+.bullpen-landing-root .edemo-list { display: grid; gap: 10px; margin-block: auto; padding: 0; list-style: none; }
+.bullpen-landing-root .edemo-card { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; }
+.bullpen-landing-root .edemo-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--fg); }
+.bullpen-landing-root .edemo-title svg { color: var(--fg-dim); }
+.bullpen-landing-root .edemo-sub { font-size: 13px; color: var(--fg-muted); }
+.bullpen-landing-root .edemo-value { margin-top: 2px; font-size: 26px; font-weight: 700; line-height: 1.15; color: var(--fg); }
+.bullpen-landing-root .edemo-change { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--fg-muted); }
+
+/* Academy: DailyChallengeCard. Answering is real; the wrong-answer amber is the app's. */
+.bullpen-landing-root .ademo-title { display: inline-flex; align-items: center; gap: 10px; }
+.bullpen-landing-root .ademo-flame { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--surface); color: oklch(0.7 0.18 50); }
+.bullpen-landing-root .ademo-name { display: block; font-size: 15px; font-weight: 600; color: var(--fg); }
+.bullpen-landing-root .ademo-tag { display: block; font-size: 12px; color: var(--fg-dim); }
+.bullpen-landing-root .ademo-xp,
+.bullpen-landing-root .ademo-earned { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--fg-dim); }
+.bullpen-landing-root .ademo-earned { color: var(--up); }
+.bullpen-landing-root .ademo-q { margin-bottom: 12px; font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--fg); }
+.bullpen-landing-root .ademo-options { display: grid; gap: 8px; }
+.bullpen-landing-root .ademo-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--fg);
+  cursor: pointer;
+}
+.bullpen-landing-root .ademo-option > span { flex: 1; }
+.bullpen-landing-root .ademo-option svg { flex-shrink: 0; }
+.bullpen-landing-root .ademo-option:hover:not(:disabled) { border-color: var(--border-strong); }
+.bullpen-landing-root .ademo-option:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bullpen-landing-root .ademo-option:disabled { cursor: default; }
+.bullpen-landing-root .ademo-option.is-right { border-color: var(--up); background: color-mix(in oklch, var(--up) 8%, var(--bg)); }
+.bullpen-landing-root .ademo-option.is-right svg { color: var(--up); }
+.bullpen-landing-root .ademo-option.is-wrong { border-color: var(--warn); background: var(--warn-soft); }
+.bullpen-landing-root .ademo-option.is-wrong svg { color: var(--warn); }
+.bullpen-landing-root .ademo-option.is-dim { opacity: 0.5; }
+.bullpen-landing-root .ademo-result { margin-top: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; animation: demo-fade-in 260ms ease-out both; }
+.bullpen-landing-root .ademo-verdict { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; font-weight: 600; }
+.bullpen-landing-root .ademo-verdict.warn { color: var(--warn); }
+.bullpen-landing-root .ademo-why { font-size: 13px; line-height: 1.55; color: var(--fg-muted); }
+
+/* Daily Brief: title and TL;DR, sentence by sentence. */
+.bullpen-landing-root .bdemo-title { margin-bottom: 10px; font-size: 17px; font-weight: 700; line-height: 1.35; color: var(--fg); text-wrap: balance; }
+.bullpen-landing-root .bdemo-text { font-size: 15px; line-height: 1.65; color: var(--fg-muted); }
+.bullpen-landing-root .bdemo-text b { font-weight: 600; color: var(--fg); }
+.bullpen-landing-root .bdemo-tk { font-size: 0.92em; color: var(--fg); border-bottom: 1px solid var(--border-strong); }
+.bullpen-landing-root .bdemo-text .demo-rise { display: inline; }
+.bullpen-landing-root .bdemo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 40px;
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+  text-decoration: none;
+}
+.bullpen-landing-root .bdemo-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bullpen-landing-root .bdemo-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+/* Two tiles across a phone split "GNRC −0.20%" and the grade counts mid-value. */
+@media (max-width: 420px) {
+  .bullpen-landing-root .wdemo-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bullpen-landing-root .demo * { transition: none !important; }
 }
