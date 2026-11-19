@@ -70,21 +70,21 @@ const SURFACE = '#f7f7f7';
 const MUTED = '#5f5f69';
 const BORDER = '#e4e4e7';
 const BORDER_STRONG = '#d4d4d8';
-const BRAND = '#34d399'; // Signal Emerald (emerald-400) — same hex used elsewhere (e.g. app/api/og/share/[id]/route.tsx)
-const BRAND_INK = '#0a0a0a'; // text/icon color on top of BRAND — dark reads better on emerald-400 than white does
+export const BRAND = '#34d399'; // Signal Emerald (emerald-400) — same hex used elsewhere (e.g. app/api/og/share/[id]/route.tsx)
+export const BRAND_INK = '#0a0a0a'; // text/icon color on top of BRAND — dark reads better on emerald-400 than white does
 const BMO_COLOR = '#0ea5e9'; // Tailwind sky-500 — matches EarningsCalendarWidget's BMO tag
-const AMC_COLOR = '#f59e0b'; // Tailwind amber-500 — matches EarningsCalendarWidget's AMC tag
+export const AMC_COLOR = '#f59e0b'; // Tailwind amber-500 — matches EarningsCalendarWidget's AMC tag
 
 // Covers (the first slide, which is all most people see) are ink, in the
 // landing page's identity, so a BullPen post is recognisable in the grid and
 // doesn't dissolve into Instagram's own white UI. Data slides stay white:
 // that is where the logos need it (see the header comment).
-const INK = '#0c100e'; // DESIGN.md bg-dark, oklch(0.145 0.008 162)
-const INK_BORDER = 'rgba(255,255,255,0.10)';
-const ON_INK = '#fafafa';
-const ON_INK_MUTED = '#a3a8a6';
-const INK_GLOW = 'radial-gradient(circle at 12% 0%, rgba(52,211,153,0.20), rgba(52,211,153,0) 55%)';
-const LOSS = '#f87171'; // red-400, the mirror of BRAND; dark text on it, like BRAND
+export const INK = '#0c100e'; // DESIGN.md bg-dark, oklch(0.145 0.008 162)
+export const INK_BORDER = 'rgba(255,255,255,0.10)';
+export const ON_INK = '#fafafa';
+export const ON_INK_MUTED = '#a3a8a6';
+export const INK_GLOW = 'radial-gradient(circle at 12% 0%, rgba(52,211,153,0.20), rgba(52,211,153,0) 55%)';
+export const LOSS = '#f87171'; // red-400, the mirror of BRAND; dark text on it, like BRAND
 // Gain/loss as TEXT on white: the 400s are under 3:1 there.
 const GAIN_TEXT = '#059669'; // emerald-600
 const LOSS_TEXT = '#dc2626'; // red-600
@@ -237,7 +237,7 @@ function formatDateHeader(dateStr: string): string {
 }
 
 /** "$1.58" / "-$0.30" — sign goes before the dollar sign, not after it like a raw toFixed() would produce. */
-function formatEps(v: number): string {
+export function formatEps(v: number): string {
   const sign = v < 0 ? '-' : '';
   return `${sign}$${Math.abs(v).toFixed(2)}`;
 }
@@ -263,7 +263,7 @@ function groupByDate<T extends { date: string }>(companies: T[]): { date: string
  *  component exactly (bold, -0.02em tracking, lowercase) rather than the
  *  spaced-out uppercase text used before — that treatment doesn't match
  *  the brand mark anywhere else in the app. */
-function Wordmark({ size = 36, onInk = false }: { size?: number; onInk?: boolean }) {
+export function Wordmark({ size = 36, onInk = false }: { size?: number; onInk?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -321,7 +321,7 @@ function InkCover({ slideIndex, totalSlides, children }: { slideIndex: number; t
 
 /** A company logo on ink: a white disc (third-party logos are drawn for white),
  *  optionally ringed in the gain/loss color when the post is about a result. */
-function InkLogo({ symbol, logoUrl, size, ring }: { symbol: string; logoUrl: string | null; size: number; ring?: string }) {
+export function InkLogo({ symbol, logoUrl, size, ring }: { symbol: string; logoUrl: string | null; size: number; ring?: string }) {
   return (
     <div style={{ display: 'flex', padding: ring ? 6 : 0, borderRadius: 999, backgroundColor: ring ?? 'transparent' }}>
       <div style={{ display: 'flex', width: size, height: size, borderRadius: 999, backgroundColor: BG, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: ring ? `4px solid ${INK}` : 'none' }}>
@@ -758,7 +758,7 @@ const INLINE_COLOR = AMC_COLOR; // amber — neutral "in line with estimates" st
  *  dollar figures; falls back to plain 2-decimal formatting under $1,000 so a
  *  small dollar figure (e.g. a per-share buyback price) never renders as
  *  "$0.0K". */
-function formatUsdCompact(v: number): string {
+export function formatUsdCompact(v: number): string {
   const sign = v < 0 ? '-' : '';
   const abs = Math.abs(v);
   if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(abs / 1e9 >= 100 ? 0 : 1)}B`;
