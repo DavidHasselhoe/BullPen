@@ -2,8 +2,11 @@
  * Instagram Weekly Pick scoreboard
  * GET /api/cron/instagram-picks-scoreboard
  *
- * Saturdays at 15:00 UTC (vercel.json), after the week's last close and an
- * hour after instagram-earnings-results. Posts the picks' track record since
+ * Fridays at 22:00 UTC (vercel.json), after the week's last close (moved from
+ * Saturday 15:00 on 2026-11-19 so Saturday carries only
+ * instagram-earnings-results). Friday and Saturday share an ISO week, so the
+ * week key and the week-over-week lead didn't move with it, and the next
+ * Weekly Pick isn't made until Monday. Posts the picks' track record since
  * the first pick against SPY bought on the same days, every week whichever
  * way it went: a scoreboard that only appears when it's ahead isn't one.
  * Skips (200) while the record is under MIN_PICKS_FOR_HEADLINE, the same

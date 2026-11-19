@@ -2,12 +2,12 @@
  * Instagram Market Movers Daily Generation Cron
  * GET /api/cron/market-movers-daily
  *
- * Runs Monday/Wednesday/Friday at 21:30 UTC, after US market close (see
- * .github/workflows/cron-market-movers.yml — same time-of-day as
- * check-price-moves, chosen for the same "reliably after close in both
- * EDT/EST" reason; nothing in this codebase hardcodes a fixed UTC close
- * time. 3x/week rather than every weekday to avoid feed fatigue on top of
- * the existing 2x/week earnings content). Generates that day's
+ * Runs every weekday at 21:30 UTC (vercel.json), reliably after the US close
+ * in both EDT and EST, but posts only on Tuesday and Thursday (POST_WEEKDAYS,
+ * cut from every weekday on 2026-11-19 to post less often). The other runs
+ * still seed the app's own movers list (refreshIndexMovers, read by Discover
+ * and the next morning's Daily Brief), which is why the schedule stays
+ * Mon-Fri. On a posting day it generates that day's
  * top-10-gainers/top-10-losers carousel (S&P 500 + Nasdaq 100 only), stages
  * it in instagram_posts, then immediately publishes it for real via
  * publishStagedPost — market movers are inherently same-day news, so unlike
@@ -26,6 +26,7 @@ import { withCronReport } from '@/lib/cron/report';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import { createServerClient } from '@/lib/supabase/client';
 import { getClosedHolidays } from '@/lib/market/exchange-holidays';
+import { weekdayMondayFirst } from '@/lib/dates/calendar-format';
 import { refreshIndexMovers } from '@/lib/market-data/index-movers';
 import { generateMarketMoversContent } from '@/lib/instagram/content/market-movers';
 import { stageAndPublishMovers, type StagedMovers } from '@/lib/instagram/movers-stage';
@@ -39,6 +40,9 @@ import type { MarketMoversSlides } from '@/lib/instagram/content/schema';
 export const maxDuration = 300;
 
 const CONTENT_TYPE = 'market_movers';
+
+/** Tuesday and Thursday, in weekdayMondayFirst's numbering (0 = Monday). */
+const POST_WEEKDAYS = new Set([1, 3]);
 
 /** Today's date in ET as YYYY-MM-DD — the daily idempotency key for this
  *  content type, sibling to isoWeekKey's weekly key for the earnings posts.
@@ -76,6 +80,12 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
 
   const basePeriodKey = todayEtDateKey();
   const periodKey = preMarket ? `${basePeriodKey}-premarket` : basePeriodKey;
+
+  // Not a posting day: the seed above is the whole job. A pre-market special
+  // edition is a deliberate manual run, so it posts on any day.
+  if (!preMarket && !POST_WEEKDAYS.has(weekdayMondayFirst(basePeriodKey))) {
+    return NextResponse.json({ success: true, skipped: true, periodKey, reason: 'not_a_posting_day' });
+  }
 
   // ── Market holiday guard ─────────────────────────────────────────────────
   // NYSE/NASDAQ full closures (Labor Day, Thanksgiving, Christmas, ...) —

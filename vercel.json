@@ -68,7 +68,7 @@
     },
     {
       "path": "/api/cron/instagram-picks-scoreboard",
-      "schedule": "0 15 * * 6"
+      "schedule": "0 22 * * 5"
     },
     {
       "path": "/api/cron/instagram-earnings-weekly",

@@ -1,14 +1,15 @@
 /**
- * Instagram Weekly + Monthly Market Movers
+ * Instagram Monthly (and, manually, Weekly) Market Movers
  * GET /api/cron/market-movers-period
  *
  * Runs every weekday at 21:40 UTC (vercel.json), ten minutes after
  * market-movers-daily so the two don't queue on the same cron credit budget.
- * Most runs exit before spending anything: it only generates on the last
- * trading day of a week (Friday, or Thursday when Friday is a closure) and/or
- * of a month (whatever weekday that falls on, e.g. Fri Feb 27 2026 or Mon Aug
- * 31 2026). One closes fetch serves both editions when a day ends a week and a
- * month.
+ * Most runs exit before spending anything: on schedule it only generates the
+ * monthly edition, on the last trading day of the month (whatever weekday
+ * that falls on, e.g. Fri Feb 27 2026 or Mon Aug 31 2026, holidays included),
+ * which no cron expression can pick out on its own. The weekly edition stopped
+ * posting on schedule on 2026-11-19 (fewer posts); ?period=week still makes
+ * one by hand.
  *
  * Same carousel and pipeline as the daily post otherwise: stage in
  * instagram_posts, preview in Discord, publish immediately.
@@ -68,15 +69,13 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: false, error: 'invalid_params' }, { status: 400 });
   }
 
-  // ── Which editions end today ─────────────────────────────────────────────
-  // A week can run into the next month (Thu Apr 30 2026), so the closure
-  // lookup spans whichever period ends later.
-  const lookupEnd = [periodEnd('week', date), periodEnd('month', date)].sort()[1];
-  const holidays = await getClosedHolidays(['NYSE', 'NASDAQ'], date, lookupEnd);
+  // ── Does the month end today ─────────────────────────────────────────────
+  // Only the monthly edition is scheduled; the weekly one is manual-only.
+  const holidays = await getClosedHolidays(['NYSE', 'NASDAQ'], date, periodEnd('month', date));
   const closed = new Set(holidays.map((h) => h.date));
   const periods: MoversPeriod[] = forced
     ? [forced as MoversPeriod]
-    : (['week', 'month'] as const).filter((p) => isLastTradingDayOf(p, date, closed));
+    : isLastTradingDayOf('month', date, closed) ? ['month'] : [];
 
   if (periods.length === 0) {
     return NextResponse.json({ success: true, skipped: true, date, reason: 'not_period_end' });
