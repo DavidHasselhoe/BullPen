@@ -185,7 +185,18 @@ const speakRange = (lo: number, hi: number) => {
   const unit = / (billion|million|thousand)$/.exec(a)?.[0];
   return unit && b.endsWith(unit) ? `${a.slice(0, -unit.length)} to ${b}` : `${a} to ${b}`;
 };
-export const speakEps = (v: number) => (v < 0 ? `a loss of ${formatEps(-v)}` : formatEps(v));
+/**
+ * A per-share amount as words a voice can't misread: "2 dollars 68", "9 cents".
+ * ElevenLabs read "$2.68" as "two sixty-eight" (heard in the 11-20 transcript).
+ */
+export const speakPerShare = (v: number) => {
+  const cents = Math.round(Math.abs(v) * 100);
+  const d = Math.floor(cents / 100), c = cents % 100;
+  if (d === 0) return `${c} ${c === 1 ? 'cent' : 'cents'}`;
+  const dollars = `${d} ${d === 1 ? 'dollar' : 'dollars'}`;
+  return c === 0 ? dollars : `${dollars} ${c}`;
+};
+export const speakEps = (v: number) => (v < 0 ? `a loss of ${speakPerShare(v)}` : speakPerShare(v));
 const VERDICT: Record<Status, string> = { beat: 'A beat.', missed: 'A miss.', inline: 'Right in line.' };
 const OUTLOOK_VERDICT: Record<Status, string> = { beat: 'Above forecast.', missed: 'Below forecast.', inline: 'In line with forecast.' };
 
@@ -341,7 +352,8 @@ function MarginBeat({ d, t, cue, lead }: { d: EarningsDeepDiveData; t: number; c
   const now = d.grossMarginActualPercent!;
   const next = d.grossMarginGuidancePercent!;
   const [nowText, nextText] = centsPair(now, next);
-  const shrink = prog(t, cue, 1.5);
+  // Lands on the next-quarter figure as it's spoken (the cue), rather than starting there.
+  const shrink = prog(t, Math.max(0.9, cue - 1.0), 1.2);
   const value = lerp(now, next, shrink);
   const co = displayCompanyName(d.companyName, d.ticker);
   const down = next < now;
@@ -359,7 +371,7 @@ function MarginBeat({ d, t, cue, lead }: { d: EarningsDeepDiveData; t: number; c
           color={shrink > 0 ? (down ? LOSS : BRAND) : BAR_DIM}
         />
       </div>
-      <Plain text={down ? 'Less of each sale is left over as profit.' : 'More of each sale is left over as profit.'} size={44} color={ON_INK} opacity={prog(t, cue + 1.5, 0.5)} />
+      <Plain text={down ? 'Less of each sale is left over as profit.' : 'More of each sale is left over as profit.'} size={44} color={ON_INK} opacity={prog(t, cue + 0.4, 0.5)} />
     </div>
   );
 }
@@ -442,7 +454,7 @@ export function deepDiveReelBeats(d: EarningsDeepDiveData): Beat[] {
         // The title ("Margins expected to slip") is on screen; the voice goes straight to the numbers.
         say: `${intro} ${co} keeps ${now} of each sales dollar, ${d.grossMarginGuidancePercent < d.grossMarginActualPercent ? 'falling' : 'rising'} to ^${next} next quarter.`,
         cueAt: 1.5,
-        sfx: (cue) => [...leadSfx(), ['tick', cue]],
+        sfx: (cue) => [...leadSfx(), ['tick', Math.max(0.9, cue - 1.0)]],
         render: (t, cue) => <MarginBeat d={d} t={t} cue={cue} lead={lead} />,
       });
     } else if (lead) {

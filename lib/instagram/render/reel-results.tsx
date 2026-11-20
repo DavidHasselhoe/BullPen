@@ -10,7 +10,7 @@
 import type { EarningsResultCompany, EarningsResultsSlides } from '@/lib/instagram/content/schema';
 import { displayCompanyName } from '@/lib/market-data/company-name';
 import { ON_INK, ON_INK_MUTED, BRAND, LOSS, InkLogo, ResultMark, formatEps } from './slides';
-import { Kicker, Plain, FollowBlock, prog, lerp, speakEps, TRACK, type Beat, type El, type Sfx } from './reel';
+import { Kicker, Plain, FollowBlock, prog, lerp, speakEps, speakPerShare, TRACK, type Beat, type El, type Sfx } from './reel';
 
 const MAX_MISS_SCENES = 3;
 const byCap = (a: EarningsResultCompany, b: EarningsResultCompany) => (b.marketCap ?? 0) - (a.marketCap ?? 0);
@@ -147,7 +147,7 @@ export function resultsReelBeats(s: EarningsResultsSlides): Beat[] {
   order.filter((c) => c.status === 'missed').slice(0, MAX_MISS_SCENES).forEach((c, i) => {
     beats.push({
       minDur: 3.0,
-      say: `${displayCompanyName(c.name, c.symbol)} ${c.epsActual < 0 ? `lost ^${formatEps(-c.epsActual)}` : `earned ^${formatEps(c.epsActual)}`} a share. Analysts expected ${speakEps(c.epsEstimate)}.`,
+      say: `${displayCompanyName(c.name, c.symbol)} ${c.epsActual < 0 ? `lost ^${speakPerShare(c.epsActual)}` : `earned ^${speakPerShare(c.epsActual)}`} a share. Analysts expected ${speakEps(c.epsEstimate)}.`,
       cueAt: 0.9,
       sfx: (cue) => [['pop', cue]],
       render: (t, cue) => <MissBeat c={c} first={i === 0} t={t} cue={cue} />,

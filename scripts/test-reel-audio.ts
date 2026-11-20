@@ -10,7 +10,7 @@ import { execFileSync } from 'child_process';
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { narration, timeBeats, type Alignment, type Beat } from '../lib/instagram/render/reel';
+import { narration, timeBeats, speakPerShare, speakEps, type Alignment, type Beat } from '../lib/instagram/render/reel';
 import { ffmpegBin, muxReelAudio } from '../lib/instagram/render/reel-audio';
 
 const beat = (say: string, minDur: number): Beat => ({ minDur, say, cueAt: 1, sfx: (cue) => [['pop', cue]], render: () => null });
@@ -47,6 +47,13 @@ assert.ok(plain.beats.every((b) => b.voice === null && b.cue === 1));
 
 const wrong = timeBeats(beats, { ...al, characters: [...'something else entirely'] });
 assert.ok(wrong.beats.every((b) => b.voice === null), 'a mismatched alignment is ignored, not trusted');
+
+// Per-share amounts as words: the voice read "$2.68" as "two sixty-eight".
+assert.equal(speakPerShare(2.68), '2 dollars 68');
+assert.equal(speakPerShare(-0.09), '9 cents');
+assert.equal(speakPerShare(1), '1 dollar');
+assert.equal(speakPerShare(0.01), '1 cent');
+assert.equal(speakEps(-0.06), 'a loss of 6 cents');
 
 // Both mixes over a dummy video.
 const dir = mkdtempSync(join(tmpdir(), 'reel-audio-test-'));
