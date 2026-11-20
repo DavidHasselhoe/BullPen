@@ -178,6 +178,13 @@ export function ReelFrame({ timeline, t, label, footer }: { timeline: ReelTimeli
 
 /** "$115.8B" → "$115.8 billion", which voices read naturally. */
 export const speakUsd = (v: number) => formatUsdCompact(v).replace(/B$/, ' billion').replace(/M$/, ' million').replace(/K$/, ' thousand');
+/** "$126 to $134 billion": the unit once when both ends share it. */
+const speakRange = (lo: number, hi: number) => {
+  if (lo === hi) return `about ${speakUsd(lo)}`;
+  const [a, b] = [speakUsd(lo), speakUsd(hi)];
+  const unit = / (billion|million|thousand)$/.exec(a)?.[0];
+  return unit && b.endsWith(unit) ? `${a.slice(0, -unit.length)} to ${b}` : `${a} to ${b}`;
+};
 export const speakEps = (v: number) => (v < 0 ? `a loss of ${formatEps(-v)}` : formatEps(v));
 const VERDICT: Record<Status, string> = { beat: 'A beat.', missed: 'A miss.', inline: 'Right in line.' };
 
@@ -276,8 +283,8 @@ function ScoreBeat({ s, t, cue }: { s: ScoreSpec; t: number; cue: number }): El 
 }
 
 function scoreBeat(s: ScoreSpec, intro: string, speak: (v: number) => string, minDur: number): Beat {
-  const say = `${intro} ${speak(s.actual)}.`
-    + (s.estimate != null ? ` Analysts expected ${speak(s.estimate)}.` : '')
+  const say = `${intro} ${speak(s.actual)}`
+    + (s.estimate != null ? `, against ${speak(s.estimate)} expected.` : '.')
     + (s.status ? ` ^${VERDICT[s.status]}` : '');
   return {
     minDur, say, cueAt: 1.6,
@@ -402,13 +409,13 @@ export function FollowBlock({ opacity }: { opacity: number }): El {
 export function deepDiveReelBeats(d: EarningsDeepDiveData): Beat[] {
   const lead = buildStory(d)[0] ?? null;
   const co = displayCompanyName(d.companyName, d.ticker);
-  const intro = lead?.bad ? "Here's the catch." : "Here's what stood out.";
+  const intro = lead?.bad ? 'The catch:' : 'What stood out:';
   const leadSfx = (): [Sfx, number][] => [[lead?.bad ? 'hit' : 'pop', 0.05]];
   const [hookA, hookB] = deepDiveHook(d);
   const beats: Beat[] = [{ minDur: 2.4, say: `${hookA} ${hookB}`, cueAt: 0.6, sfx: () => [], render: (t) => <HookBeat d={d} t={t} /> }];
 
   if (d.revenueActual != null) {
-    beats.push(scoreBeat({ label: 'Revenue', explain: 'All the money that came in from sales', actual: d.revenueActual, estimate: d.revenueEstimate, status: d.revenueStatus, fmt: formatUsdCompact }, 'Revenue, the money from sales:', speakUsd, 3.4));
+    beats.push(scoreBeat({ label: 'Revenue', explain: 'All the money that came in from sales', actual: d.revenueActual, estimate: d.revenueEstimate, status: d.revenueStatus, fmt: formatUsdCompact }, 'Sales:', speakUsd, 3.4));
   }
   if (d.epsActual != null) {
     beats.push(scoreBeat({ label: 'Profit per share', explain: 'Profit for each share of the company', actual: d.epsActual, estimate: d.epsEstimate, status: d.epsStatus, fmt: formatEps }, 'Profit per share:', speakEps, 3.2));
@@ -417,8 +424,7 @@ export function deepDiveReelBeats(d: EarningsDeepDiveData): Beat[] {
   const hasOutlook = d.guidanceRevenueLow != null && d.guidanceRevenueHigh != null && d.guidanceConsensus != null;
   const outlookSay = () => {
     const lo = d.guidanceRevenueLow!, hi = d.guidanceRevenueHigh!;
-    const range = lo === hi ? `about ${speakUsd(lo)}` : `${speakUsd(lo)} to ${speakUsd(hi)}`;
-    return `Next quarter, ${co} expects ${range} in sales. ^Analysts expected ${speakUsd(d.guidanceConsensus!)}.`;
+    return `Next quarter: ${speakRange(lo, hi)} in sales. ^Analysts expected ${speakUsd(d.guidanceConsensus!)}.`;
   };
   const outlookPop = (cue: number): [Sfx, number][] => (guidanceVsConsensus(d) ? [['pop', cue + 0.6]] : []);
   if (lead?.kind === 'guidance' && hasOutlook) {
@@ -431,7 +437,8 @@ export function deepDiveReelBeats(d: EarningsDeepDiveData): Beat[] {
       const [now, next] = centsPair(d.grossMarginActualPercent, d.grossMarginGuidancePercent).map((c) => c.replace('¢', ' cents'));
       beats.push({
         minDur: 5.0,
-        say: `${intro} ${lead.title}. Of every dollar in sales, ${co} keeps ${now} after the cost of making what it sold. Next quarter, it expects ^${next}.`,
+        // The title ("Margins expected to slip") is on screen; the voice goes straight to the numbers.
+        say: `${intro} ${co} keeps ${now} of every sales dollar now, and expects ^${next} next quarter.`,
         cueAt: 1.5,
         sfx: (cue) => [...leadSfx(), ['tick', cue]],
         render: (t, cue) => <MarginBeat d={d} t={t} cue={cue} lead={lead} />,
@@ -442,7 +449,7 @@ export function deepDiveReelBeats(d: EarningsDeepDiveData): Beat[] {
   }
 
   const move = d.priceReaction?.changePercent ?? d.afterHoursChangePercent ?? null;
-  const reaction = move != null ? `The stock moved ${move >= 0 ? 'up' : 'down'} ${Math.abs(move).toFixed(1)} percent in the first trades after the report. ` : '';
+  const reaction = move != null ? `Stock ${move >= 0 ? 'up' : 'down'} ${Math.abs(move).toFixed(1)} percent after the report. ` : '';
   beats.push({ minDur: 3.0, say: `${reaction}^Follow for earnings in plain English.`, cueAt: 0.6, sfx: (cue) => [['pop', cue]], render: (t, cue) => <EndBeat d={d} t={t} cue={cue} /> });
   return beats;
 }

@@ -33,6 +33,8 @@ export const ffmpegBin = () => process.env.FFMPEG_PATH || 'ffmpeg';
 /** A stock ElevenLabs voice until David picks one (ELEVENLABS_VOICE_ID). */
 const DEFAULT_VOICE = 'nPczCjzI2devNBz1zQrb';
 const DEFAULT_MODEL = 'eleven_multilingual_v2';
+/** speed 1.1: the default pace ran a 563-character script to 40 s, too slow for a Reel. */
+const VOICE_SETTINGS = { stability: 0.5, similarity_boost: 0.75, speed: 1.1 };
 
 /** Null when there is no ELEVENLABS_API_KEY. Throws on an API error: a paid call that fails should be seen. */
 export async function synthesizeVoice(text: string): Promise<VoiceTrack | null> {
@@ -43,7 +45,7 @@ export async function synthesizeVoice(text: string): Promise<VoiceTrack | null> 
 
   const dir = join(tmpdir(), 'bullpen-reel-voice');
   mkdirSync(dir, { recursive: true });
-  const id = createHash('sha256').update(`${voice}|${model}|${text}`).digest('hex').slice(0, 16);
+  const id = createHash('sha256').update(`${voice}|${model}|${JSON.stringify(VOICE_SETTINGS)}|${text}`).digest('hex').slice(0, 16);
   const mp3 = join(dir, `${id}.mp3`);
   const json = join(dir, `${id}.json`);
   if (existsSync(mp3) && existsSync(json)) return { path: mp3, alignment: JSON.parse(readFileSync(json, 'utf8')) };
@@ -51,7 +53,7 @@ export async function synthesizeVoice(text: string): Promise<VoiceTrack | null> 
   const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}/with-timestamps?output_format=mp3_44100_128`, {
     method: 'POST',
     headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, model_id: model, voice_settings: { stability: 0.5, similarity_boost: 0.75 } }),
+    body: JSON.stringify({ text, model_id: model, voice_settings: VOICE_SETTINGS }),
   });
   if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const body = (await res.json()) as { audio_base64: string; alignment: Alignment | null };

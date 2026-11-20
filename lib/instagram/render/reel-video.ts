@@ -21,7 +21,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { ImageResponse } from 'next/og';
 import { loadSlideFonts } from './slides';
-import { ReelFrame, narration, timeBeats, deepDiveReelBeats, deepDiveReelLabel, DEEP_DIVE_FOOTER, REEL_W, REEL_H, REEL_FPS, type Beat } from './reel';
+import { ReelFrame, narration, timeBeats, deepDiveReelBeats, deepDiveReelLabel, DEEP_DIVE_FOOTER, REEL_W, REEL_H, REEL_FPS, type Beat, type ReelTimeline } from './reel';
 import { ffmpegBin, muxReelAudio, synthesizeVoice, type VoiceTrack } from './reel-audio';
 import { resultsReelBeats, resultsReelLabel, RESULTS_FOOTER } from './reel-results';
 import type { EarningsDeepDiveData, EarningsResultsSlides } from '@/lib/instagram/content/schema';
@@ -32,10 +32,11 @@ export interface RenderReelResult {
   /** SFX only, no AI voice: the fallback auto-publish. */
   auto: string;
   voiced: boolean;
+  /** Length of the manual cut (paced by the voice when there is one). */
   seconds: number;
-  frames: number;
+  /** Length of the auto cut (each scene's minimum length). */
+  autoSeconds: number;
   vcodec: string;
-  stills: string[];
 }
 
 /** Fetches an image once as a data URL; otherwise Satori fetches it again for every frame. */
@@ -55,9 +56,11 @@ export async function renderReel(opts: { beats: Beat[]; label: string; footer: s
   const { beats, label, footer, outPath, stillsPrefix } = opts;
   const ffmpeg = ffmpegBin();
   let voice = opts.voice !== undefined ? opts.voice : await synthesizeVoice(narration(beats));
-  const timeline = timeBeats(beats, voice?.alignment ?? null);
-  if (!timeline.beats.some((b) => b.voice)) voice = null; // alignment didn't match the scenes
-  const frames = Math.round(timeline.seconds * REEL_FPS);
+  // The fallback has no voice, so it gets its own cut paced by each scene's minimum
+  // length; reusing the voiced timing would hold silent scenes for seconds.
+  const plain = timeBeats(beats, null);
+  let voiced = voice ? timeBeats(beats, voice.alignment) : null;
+  if (voiced && !voiced.beats.some((b) => b.voice)) { voiced = null; voice = null; } // alignment didn't match the scenes
   const fonts = await loadSlideFonts();
 
   const encoders = execFileSync(ffmpeg, ['-hide_banner', '-encoders'], { encoding: 'utf8' });
@@ -68,42 +71,52 @@ export async function renderReel(opts: { beats: Beat[]; label: string; footer: s
     ? ['-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-profile:v', 'high', '-maxrate', '20M', '-bufsize', '40M', '-x264-params', `keyint=${gop}:min-keyint=${gop}:scenecut=0:open-gop=0`]
     : ['-c:v', vcodec, '-rc', 'vbr', '-cq', '19', '-b:v', '0', '-maxrate', '20M', '-bufsize', '40M', '-g', gop, '-bf', '0', '-profile:v', 'high'];
 
-  const silent = join(tmpdir(), `reel-${process.pid}-${Date.now()}.mp4`);
-  const proc = spawn(ffmpeg, [
-    '-y', '-hide_banner', '-loglevel', 'error',
-    '-f', 'image2pipe', '-framerate', String(REEL_FPS), '-i', '-',
-    ...video, '-pix_fmt', 'yuv420p', '-r', String(REEL_FPS), '-an', silent,
-  ], { stdio: ['pipe', 'inherit', 'inherit'] });
-  const exited = once(proc, 'close');
-  // If ffmpeg dies, a pending 'drain' never fires and Node exits silently with code 0. Fail loudly instead.
-  let died: Error | null = null;
-  proc.on('exit', (code) => { if (code !== 0) died = new Error(`ffmpeg exited with ${code} (${vcodec})`); });
+  const temps: string[] = [];
+  /** Renders a timeline's frames into a silent temp video. */
+  const encode = async (timeline: ReelTimeline, withStills: boolean): Promise<string> => {
+    const silent = join(tmpdir(), `reel-${process.pid}-${Date.now()}-${temps.length}.mp4`);
+    temps.push(silent);
+    const proc = spawn(ffmpeg, [
+      '-y', '-hide_banner', '-loglevel', 'error',
+      '-f', 'image2pipe', '-framerate', String(REEL_FPS), '-i', '-',
+      ...video, '-pix_fmt', 'yuv420p', '-r', String(REEL_FPS), '-an', silent,
+    ], { stdio: ['pipe', 'inherit', 'inherit'] });
+    const exited = once(proc, 'close');
+    // If ffmpeg dies, a pending 'drain' never fires and Node exits silently with code 0. Fail loudly instead.
+    let died: Error | null = null;
+    proc.on('exit', (code) => { if (code !== 0) died = new Error(`ffmpeg exited with ${code} (${vcodec})`); });
 
-  const stills = new Map<number, string>();
-  if (stillsPrefix) {
-    stills.set(0, `${stillsPrefix}-cover.png`);
-    timeline.beats.forEach((b, i) => stills.set(Math.round((b.start + b.dur - 0.35) * REEL_FPS), `${stillsPrefix}-beat${i + 1}.png`));
-  }
+    const stills = new Map<number, string>();
+    if (withStills && stillsPrefix) {
+      stills.set(0, `${stillsPrefix}-cover.png`);
+      timeline.beats.forEach((b, i) => stills.set(Math.round((b.start + b.dur - 0.35) * REEL_FPS), `${stillsPrefix}-beat${i + 1}.png`));
+    }
 
-  for (let f = 0; f < frames; f++) {
-    if (died) throw died;
-    const png = Buffer.from(await new ImageResponse(ReelFrame({ timeline, t: f / REEL_FPS, label, footer }), { width: REEL_W, height: REEL_H, fonts }).arrayBuffer());
-    const still = stills.get(f);
-    if (still) writeFileSync(still, png);
-    if (!proc.stdin.write(png)) await Promise.race([once(proc.stdin, 'drain'), exited]);
-  }
-  proc.stdin.end();
-  const [code] = await exited;
-  if (code !== 0) throw died ?? new Error(`ffmpeg exited with ${code} (${vcodec})`);
+    const frames = Math.round(timeline.seconds * REEL_FPS);
+    for (let f = 0; f < frames; f++) {
+      if (died) throw died;
+      const png = Buffer.from(await new ImageResponse(ReelFrame({ timeline, t: f / REEL_FPS, label, footer }), { width: REEL_W, height: REEL_H, fonts }).arrayBuffer());
+      const still = stills.get(f);
+      if (still) writeFileSync(still, png);
+      if (!proc.stdin.write(png)) await Promise.race([once(proc.stdin, 'drain'), exited]);
+    }
+    proc.stdin.end();
+    const [code] = await exited;
+    if (code !== 0) throw died ?? new Error(`ffmpeg exited with ${code} (${vcodec})`);
+    return silent;
+  };
 
   const auto = outPath.replace(/\.mp4$/, '') + '-auto.mp4';
   try {
-    muxReelAudio({ video: silent, out: outPath, timeline, voice });
-    muxReelAudio({ video: silent, out: auto, timeline, voice: null });
+    const manualTl = voiced ?? plain;
+    const manualVideo = await encode(manualTl, true);
+    const autoVideo = voiced ? await encode(plain, false) : manualVideo;
+    muxReelAudio({ video: manualVideo, out: outPath, timeline: manualTl, voice });
+    muxReelAudio({ video: autoVideo, out: auto, timeline: plain, voice: null });
+    return { manual: outPath, auto, voiced: !!voice, seconds: manualTl.seconds, autoSeconds: plain.seconds, vcodec };
   } finally {
-    rmSync(silent, { force: true });
+    for (const t of temps) rmSync(t, { force: true });
   }
-  return { manual: outPath, auto, voiced: !!voice, seconds: timeline.seconds, frames, vcodec, stills: [...stills.values()] };
 }
 
 export async function renderResultsReel(source: EarningsResultsSlides, outPath: string, opts: { stillsPrefix?: string; voice?: VoiceTrack | null } = {}): Promise<RenderReelResult> {

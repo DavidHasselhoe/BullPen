@@ -39,7 +39,7 @@ async function main() {
   const out = join(outDir, `${key}.mp4`);
   const opts = { stillsPrefix: join(outDir, key), ...(process.argv.includes('--no-voice') ? { voice: null } : {}) };
   const r = results ? await renderResultsReel(post.slides, out, opts) : await renderDeepDiveReel(post.slides.data, out, opts);
-  console.log(`${r.manual} (${r.voiced ? 'voice + SFX' : 'SFX only, no voice'}) and ${r.auto} (SFX only): ${r.frames} frames, ${r.seconds.toFixed(1)}s, ${r.vcodec}, rendered in ${((Date.now() - started) / 1000).toFixed(0)}s`);
+  console.log(`${r.manual} (${r.voiced ? 'voice + SFX' : 'SFX only, no voice'}) and ${r.auto} (SFX only, ${r.autoSeconds.toFixed(1)}s): ${r.seconds.toFixed(1)}s, ${r.vcodec}, rendered in ${((Date.now() - started) / 1000).toFixed(0)}s`);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });
