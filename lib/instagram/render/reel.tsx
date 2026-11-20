@@ -187,6 +187,7 @@ const speakRange = (lo: number, hi: number) => {
 };
 export const speakEps = (v: number) => (v < 0 ? `a loss of ${formatEps(-v)}` : formatEps(v));
 const VERDICT: Record<Status, string> = { beat: 'A beat.', missed: 'A miss.', inline: 'Right in line.' };
+const OUTLOOK_VERDICT: Record<Status, string> = { beat: 'Above forecast.', missed: 'Below forecast.', inline: 'In line with forecast.' };
 
 // ── Hook ────────────────────────────────────────────────────────────────────
 
@@ -283,9 +284,8 @@ function ScoreBeat({ s, t, cue }: { s: ScoreSpec; t: number; cue: number }): El 
 }
 
 function scoreBeat(s: ScoreSpec, intro: string, speak: (v: number) => string, minDur: number): Beat {
-  const say = `${intro} ${speak(s.actual)}`
-    + (s.estimate != null ? `, against ${speak(s.estimate)} expected.` : '.')
-    + (s.status ? ` ^${VERDICT[s.status]}` : '');
+  // The forecast is on screen (bars); the voice says the number and the verdict only.
+  const say = `${intro} ${speak(s.actual)}.` + (s.status ? ` ^${VERDICT[s.status]}` : '');
   return {
     minDur, say, cueAt: 1.6,
     sfx: (cue) => [['tick', 0.25], ...(s.status ? [['pop', cue] as [Sfx, number]] : [])],
@@ -307,7 +307,7 @@ function OutlookBeat({ d, t, cue, kicker }: { d: EarningsDeepDiveData; t: number
   const max = Math.max(hi, cons) * 1.03;
   const x = (v: number) => ((v - min) / (max - min)) * TRACK;
   const band = prog(t, 0.4, 0.9);
-  const marker = prog(t, cue, 0.4);
+  const marker = prog(t, Math.max(0.6, cue - 0.4), 0.4); // the forecast marker drops just before the verdict
   const co = displayCompanyName(d.companyName, d.ticker);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 30 }}>
@@ -324,7 +324,7 @@ function OutlookBeat({ d, t, cue, kicker }: { d: EarningsDeepDiveData; t: number
           {`Analysts expected ${formatUsdCompact(cons)}`}
         </span>
       </div>
-      {status && <div style={{ display: 'flex', marginTop: 40 }}><StatusChip status={status} t={t} at={cue + 0.6} words={{ beat: 'Above the forecast', missed: 'Below the forecast', inline: 'In line with the forecast' }} /></div>}
+      {status && <div style={{ display: 'flex', marginTop: 40 }}><StatusChip status={status} t={t} at={cue} words={{ beat: 'Above the forecast', missed: 'Below the forecast', inline: 'In line with the forecast' }} /></div>}
     </div>
   );
 }
@@ -422,23 +422,25 @@ export function deepDiveReelBeats(d: EarningsDeepDiveData): Beat[] {
   }
 
   const hasOutlook = d.guidanceRevenueLow != null && d.guidanceRevenueHigh != null && d.guidanceConsensus != null;
-  const outlookSay = () => {
-    const lo = d.guidanceRevenueLow!, hi = d.guidanceRevenueHigh!;
-    return `Next quarter: ${speakRange(lo, hi)} in sales. ^Analysts expected ${speakUsd(d.guidanceConsensus!)}.`;
+  const outlookSay = (asLead: boolean) => {
+    const range = speakRange(d.guidanceRevenueLow!, d.guidanceRevenueHigh!);
+    const status = guidanceVsConsensus(d);
+    const verdict = status ? OUTLOOK_VERDICT[status] : `Analysts expected ${speakUsd(d.guidanceConsensus!)}.`;
+    return `${asLead ? `${intro} next quarter,` : 'Next quarter:'} ${range}. ^${verdict}`;
   };
-  const outlookPop = (cue: number): [Sfx, number][] => (guidanceVsConsensus(d) ? [['pop', cue + 0.6]] : []);
+  const outlookPop = (cue: number): [Sfx, number][] => (guidanceVsConsensus(d) ? [['pop', cue]] : []);
   if (lead?.kind === 'guidance' && hasOutlook) {
     // The outlook IS the story: show it once, as the lead.
     const kicker = { text: lead.bad ? 'The catch' : 'What stood out', color: lead.bad ? LOSS : BRAND };
-    beats.push({ minDur: 4.4, say: `${intro} ${outlookSay()}`, cueAt: 1.2, sfx: (cue) => [...leadSfx(), ...outlookPop(cue)], render: (t, cue) => <OutlookBeat d={d} t={t} cue={cue} kicker={kicker} /> });
+    beats.push({ minDur: 4.4, say: outlookSay(true), cueAt: 1.2, sfx: (cue) => [...leadSfx(), ...outlookPop(cue)], render: (t, cue) => <OutlookBeat d={d} t={t} cue={cue} kicker={kicker} /> });
   } else {
-    if (hasOutlook) beats.push({ minDur: 3.6, say: outlookSay(), cueAt: 1.2, sfx: outlookPop, render: (t, cue) => <OutlookBeat d={d} t={t} cue={cue} /> });
+    if (hasOutlook) beats.push({ minDur: 3.6, say: outlookSay(false), cueAt: 1.2, sfx: outlookPop, render: (t, cue) => <OutlookBeat d={d} t={t} cue={cue} /> });
     if (lead?.kind === 'margin' && d.grossMarginActualPercent != null && d.grossMarginGuidancePercent != null) {
       const [now, next] = centsPair(d.grossMarginActualPercent, d.grossMarginGuidancePercent).map((c) => c.replace('¢', ' cents'));
       beats.push({
         minDur: 5.0,
         // The title ("Margins expected to slip") is on screen; the voice goes straight to the numbers.
-        say: `${intro} ${co} keeps ${now} of every sales dollar now, and expects ^${next} next quarter.`,
+        say: `${intro} ${co} keeps ${now} of each sales dollar, ${d.grossMarginGuidancePercent < d.grossMarginActualPercent ? 'falling' : 'rising'} to ^${next} next quarter.`,
         cueAt: 1.5,
         sfx: (cue) => [...leadSfx(), ['tick', cue]],
         render: (t, cue) => <MarginBeat d={d} t={t} cue={cue} lead={lead} />,
@@ -449,7 +451,7 @@ export function deepDiveReelBeats(d: EarningsDeepDiveData): Beat[] {
   }
 
   const move = d.priceReaction?.changePercent ?? d.afterHoursChangePercent ?? null;
-  const reaction = move != null ? `Stock ${move >= 0 ? 'up' : 'down'} ${Math.abs(move).toFixed(1)} percent after the report. ` : '';
+  const reaction = move != null ? `Stock ${move >= 0 ? 'up' : 'down'} ${Math.abs(move).toFixed(1)} percent. ` : '';
   beats.push({ minDur: 3.0, say: `${reaction}^Follow for earnings in plain English.`, cueAt: 0.6, sfx: (cue) => [['pop', cue]], render: (t, cue) => <EndBeat d={d} t={t} cue={cue} /> });
   return beats;
 }

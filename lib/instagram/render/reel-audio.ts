@@ -30,8 +30,8 @@ export const ffmpegBin = () => process.env.FFMPEG_PATH || 'ffmpeg';
 
 // ── Voice ───────────────────────────────────────────────────────────────────
 
-/** A stock ElevenLabs voice until David picks one (ELEVENLABS_VOICE_ID). */
-const DEFAULT_VOICE = 'nPczCjzI2devNBz1zQrb';
+/** The Reels voice; ELEVENLABS_VOICE_ID overrides it. */
+const DEFAULT_VOICE = 'mggUSQGghJRhKJXslB5H'; // Gregory Edward, David's pick 11-20
 const DEFAULT_MODEL = 'eleven_multilingual_v2';
 /** speed 1.1: the default pace ran a 563-character script to 40 s, too slow for a Reel. */
 const VOICE_SETTINGS = { stability: 0.5, similarity_boost: 0.75, speed: 1.1 };

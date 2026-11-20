@@ -55,7 +55,12 @@ export async function inlineImage(url: string | null | undefined): Promise<strin
 export async function renderReel(opts: { beats: Beat[]; label: string; footer: string; outPath: string; stillsPrefix?: string; voice?: VoiceTrack | null }): Promise<RenderReelResult> {
   const { beats, label, footer, outPath, stillsPrefix } = opts;
   const ffmpeg = ffmpegBin();
-  let voice = opts.voice !== undefined ? opts.voice : await synthesizeVoice(narration(beats));
+  // A failed voice (plan limit, outage) costs the voice, not the Reel: the unattended watcher
+  // would otherwise fall back to a carousel. The handoff tells David when there's no voice.
+  let voice = opts.voice !== undefined ? opts.voice : await synthesizeVoice(narration(beats)).catch((err) => {
+    console.error('[reel] Rendering without a voice:', err instanceof Error ? err.message : err);
+    return null;
+  });
   // The fallback has no voice, so it gets its own cut paced by each scene's minimum
   // length; reusing the voiced timing would hold silent scenes for seconds.
   const plain = timeBeats(beats, null);
