@@ -223,4 +223,16 @@ assert.equal(histPage.length, 6);
 assert.equal(mergeNasdaqEpsHistory(metaRows, [], 'META'), metaRows, 'no Nasdaq history leaves the rows alone');
 assert.equal(mergeNasdaqEpsHistory([], nqHistory, 'META').length, 4, 'reports with no TD row are added');
 
+// NBIS 2026-11-20: TD dated Q1 May 7, Nasdaq May 13. Six days apart is still that report, not a new Q2.
+const nbis = mergeNasdaqEpsHistory([
+  hrow('2026-02-12', -0.6, -0.99, { quarter: 4, year: 2025 }),
+  hrow('2026-05-07', 1.11, 1.22, { quarter: 1, year: 2026 }),
+  hrow('2026-08-12', -0.86, -0.68, { quarter: 2, year: 2026 }),
+], [{ date: '2026-05-13', estimate: -0.81, actual: -0.23 }, { date: '2026-08-12', estimate: -0.67, actual: -0.12 }], 'NBIS');
+const nbisMay = nbis.find((r) => r.date === '2026-05-13')!;
+assert.equal(nbis.length, 3, 'the misdated Q1 is replaced, not duplicated');
+assert.equal(`${nbisMay.year}-Q${nbisMay.quarter}`, '2026-Q1', 'it keeps its quarter');
+assert.equal(nbisMay.epsActual, -0.23);
+assert.equal(nbis.filter((r) => r.quarter === 2 && r.year === 2026).length, 1, 'only one Q2');
+
 console.log('Nasdaq EPS history: all assertions passed');

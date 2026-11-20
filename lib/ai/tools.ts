@@ -16,7 +16,6 @@ import {
   getStockCandles,
   isOutsideRegularSessionET,
   getStatistics,
-  getCompanyEarnings,
   getIncomeStatement,
   getBalanceSheet,
   getCashFlow,
@@ -37,6 +36,7 @@ import { addDays, todayET } from '@/lib/dates/calendar-format';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { statementsInUsd } from '@/lib/currency/latest-rates';
 import { pendingReport } from '@/lib/finance/fiscal-label';
+import { getSymbolEarnings, epsSurprisePct } from '@/lib/market-data/symbol-earnings';
 import type { EarningsCalendar } from '@/lib/finnhub/finnhub-client';
 import { coalesce } from '@/lib/cache/request-coalesce';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
@@ -197,7 +197,6 @@ const CASH_FLOW_METRICS: Record<string, (r: CashFlowPeriod) => number | null> = 
 // thousands of uncapped, uncached credits with nothing to stop it repeating.
 const STATS_TTL_SECONDS = 24 * 60 * 60;
 const FINANCIALS_TTL_SECONDS = 24 * 60 * 60;
-const EARNINGS_TTL_SECONDS = 24 * 60 * 60;
 
 async function gatedFetch<T>(
   cacheKey: string,
@@ -1445,9 +1444,10 @@ const TECHNICALS_DAYS = 500;
 
 /** Past report dates from whichever earnings cache is warm. Never fetches: big moves just lose their onEarnings flag. */
 async function cachedEarningsDates(symbol: string): Promise<string[] | undefined> {
-  for (const key of [`earnings-history:${symbol}`, `ai-earnings:${symbol}`]) {
-    const rows = await getCachedStale<{ period?: string }[]>(key);
-    if (Array.isArray(rows) && rows.length) return rows.map((r) => r.period).filter((p): p is string => !!p);
+  // earnings-calendar: the Earnings card's rows, which getEarningsData reads too (`date`, not `period`).
+  for (const [key, field] of [[`earnings-calendar:${symbol}`, 'date'], [`earnings-history:${symbol}`, 'period']] as const) {
+    const rows = await getCachedStale<Record<string, unknown>[]>(key);
+    if (Array.isArray(rows) && rows.length) return rows.map((r) => r[field]).filter((p): p is string => typeof p === 'string');
   }
   return undefined;
 }
@@ -1733,7 +1733,10 @@ const getEarningsData = tool({
     'Fetch one stock\'s PAST earnings: EPS estimates vs actuals and beat/miss for its recent reports. ' +
     'Use when the user asks whether a company beat earnings or about its EPS history. ' +
     'It does not give the next report date: use getUpcomingEarnings for "when does X report" or ' +
-    '"which of my stocks report soon". Costs ~20 API credits.',
+    '"which of my stocks report soon". The rows are the stock page Earnings card\'s own (adjusted EPS, Nasdaq ' +
+    'where it has the report), so quote them as given: period is the quarter named as the card names it, ' +
+    'reportedOn the release date, and surprise is the beat or miss as a percent of the estimate\'s size (N/A when ' +
+    'the estimate is under $0.05). Usually free (shared with the stock page\'s cache), up to ~120 API credits when not cached.',
   inputSchema: jsonSchema<{ ticker: string }>({
     type: 'object',
     properties: {
@@ -1744,28 +1747,31 @@ const getEarningsData = tool({
   execute: async ({ ticker }) => {
     try {
       const symbol = ticker.toUpperCase();
-      const outcome = await gatedFetch(
-        `ai-earnings:${symbol}`, symbol, 'earnings_history', 20, EARNINGS_TTL_SECONDS,
-        () => getCompanyEarnings(symbol, 8)
-      );
-      if (outcome.denied) return { error: 'Rate limit reached fetching earnings. Try again shortly.' };
-      const earnings = outcome.data;
+      const today = todayET();
+      // The card's window: reports from the last 455 days, newest first.
+      const earnings = (await getSymbolEarnings(symbol))
+        .filter((e) => e.date <= today && e.date >= addDays(today, -455) && !e.estimated)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 8);
       // An object with the ticker, not a bare array: the card has to say whose
       // history it is, or several in one reply are anonymous.
       return {
         ticker: symbol,
         history: earnings.map((e) => {
-          const beat = e.actual != null && e.estimate != null
-            ? e.actual >= e.estimate ? 'Beat' : 'Missed'
-            : 'N/A';
+          const actual = e.epsActual;
+          const estimate = e.epsEstimate;
+          const pct = actual != null && estimate != null ? epsSurprisePct(actual, estimate) : null;
           return {
-            period: e.period,
-            epsActual: e.actual?.toFixed(2) ?? 'N/A',
-            epsEstimate: e.estimate?.toFixed(2) ?? 'N/A',
-            epsActualRaw: e.actual ?? null,
-            epsEstimateRaw: e.estimate ?? null,
-            result: beat,
-            surprise: e.surprisePercent != null ? `${e.surprisePercent > 0 ? '+' : ''}${e.surprisePercent.toFixed(1)}%` : 'N/A',
+            period: e.quarter != null && e.year != null
+              ? e.offCalendar ? `Q${e.quarter} FY${String(e.year).slice(2)}` : `Q${e.quarter} ${e.year}`
+              : e.date,
+            reportedOn: e.date,
+            epsActual: actual?.toFixed(2) ?? 'N/A',
+            epsEstimate: estimate?.toFixed(2) ?? 'N/A',
+            epsActualRaw: actual ?? null,
+            epsEstimateRaw: estimate ?? null,
+            result: actual != null && estimate != null ? (actual >= estimate ? 'Beat' : 'Missed') : 'N/A',
+            surprise: pct != null ? `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%` : 'N/A',
           };
         }),
       };

@@ -825,10 +825,12 @@ export function mergeCalendarIntoSymbolEarnings(
  * Overlays Nasdaq's EPS history (its last 4 reports, estimate and actual on
  * one adjusted basis) onto the stock page rows, so a row never pairs a GAAP
  * actual with an adjusted estimate from TwelveData's mixed /earnings feed. A
- * report within MISDATED_WINDOW_DAYS of a row is that row; otherwise it is
- * added. Any other row within DUPLICATE_REPORT_DAYS of a Nasdaq report is a
- * duplicate TwelveData invented (META 2026-01-23, $1.61 vs $1.87, five days
- * before the real Jan 28 report) and is dropped: reports are a quarter apart.
+ * report is the nearest row within DUPLICATE_REPORT_DAYS and keeps that row's
+ * quarter; otherwise it is added. Any other row that close to a Nasdaq report
+ * is a duplicate TwelveData invented (META 2026-01-23, $1.61 vs $1.87, five
+ * days before the real Jan 28 report) and is dropped: reports are a quarter
+ * apart. The window used to be MISDATED_WINDOW_DAYS, so NBIS's Q1 (TD May 7,
+ * Nasdaq May 13) came in as a new row numbered Q2 and hid the real Q2.
  * Runs after mergeCalendarIntoSymbolEarnings, so once Nasdaq posts an actual
  * it replaces the one read from the press release. Pure.
  */
@@ -838,7 +840,11 @@ export function mergeNasdaqEpsHistory(rows: EarningsCalendar[], reports: NasdaqE
   const out = [...rows];
   const matched = new Set<EarningsCalendar>();
   for (const n of sorted) {
-    const i = out.findIndex((r) => !matched.has(r) && Math.abs(dayDeltaFromToday(r.date, n.date)) <= MISDATED_WINDOW_DAYS);
+    const gap = (r: EarningsCalendar) => Math.abs(dayDeltaFromToday(r.date, n.date));
+    let i = -1;
+    out.forEach((r, k) => {
+      if (!matched.has(r) && gap(r) <= DUPLICATE_REPORT_DAYS && (i < 0 || gap(r) < gap(out[i]))) i = k;
+    });
     const base = i >= 0 ? out[i] : newHistoryRow(out, n.date, symbol);
     const merged: EarningsCalendar = { ...base, date: n.date, epsEstimate: n.estimate, epsActual: n.actual, unconfirmed: false, actualSource: undefined };
     matched.add(merged);
