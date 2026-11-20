@@ -20,6 +20,9 @@ import { computeHealthScore, healthColumns, HEALTH_SCORE_METHOD, type HealthScor
 import type { CompanyStatistics, IncomeStatementPeriod, BalanceSheetPeriod, CashFlowPeriod } from '../lib/twelvedata/twelvedata-client';
 
 const DRY = process.argv.includes('--dry-run');
+// --only=LOW,HUSA rescores just those. A full run also wipes the score of any
+// stock whose statements have left the cache.
+const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice(7).split(',');
 const SHOW = (process.argv.find((a) => a.startsWith('--show='))?.slice(7) ??
   'AAPL,MSFT,NVDA,GOOGL,AMZN,META,BRK.B,JPM,BAC,GS,V,MA,KO,PEP,PG,WMT,COST,MCD,HD,LOW,SBUX,JNJ,MRK,PFE,ABBV,LLY,UNH,XOM,CVX,NEE,DUK,T,VZ,INTC,BA,F,GM,TSLA,PLTR,AMD,MU,ORCL,CRM,NFLX,DIS,NKE,B,AU,AEM,INCY,BLK').split(',');
 
@@ -79,7 +82,7 @@ function hist(label: string, xs: { grade: string }[]) {
 }
 
 async function main() {
-  const rows = await allRows();
+  const rows = (await allRows()).filter((r) => !ONLY || ONLY.includes(r.ticker));
   const get = await statements(rows.map((r) => r.ticker));
   const results: { row: Row; hs: HealthScore; income: IncomeStatementPeriod[]; hasStatements: boolean }[] = [];
   for (const row of rows) {

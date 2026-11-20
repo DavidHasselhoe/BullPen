@@ -359,6 +359,11 @@ async function handleStatsBatch(
       const screenerRow = buildScreenerRow(sym, statsRaw);
       if (screenerRow) {
         const profile = profileMap.get(sym);
+        // This upsert leaves the health columns alone, so nulling beta here
+        // (TwelveData drops it for a day now and then: LOW on 2026-11-20)
+        // would strand a Stability score next to no beta. The screener
+        // refresh writes beta and the score together.
+        if (screenerRow.beta == null) delete (screenerRow as { beta?: unknown }).beta;
         screenerRowsBatch.push({
           ...screenerRow,
           name: profile?.name ?? statsRaw.meta?.name ?? sym,

@@ -433,7 +433,14 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       // previously persisted score instead of overwriting a good one with a
       // falsely low one. Degraded rows never count as a real grade change.
       if (degradedSymbols.has(row.ticker)) {
-        if (prior && prior.health_score != null && prior.health_score_version === HEALTH_SCORE_METHOD) {
+        // A prior score whose Stability pillar disagrees with today's beta was
+        // built on a different pillar set (often before 2026-11-17, when no
+        // beta still scored Stability), so restoring it would show Stability
+        // for a stock with no beta. Keep today's score instead.
+        if (
+          prior && prior.health_score != null && prior.health_score_version === HEALTH_SCORE_METHOD &&
+          (prior.health_market_risk == null) === (row.beta == null)
+        ) {
           row.health_score = prior.health_score;
           row.health_score_grade = prior.health_score_grade as ScreenerRow['health_score_grade'];
           row.health_profitability = prior.health_profitability;
