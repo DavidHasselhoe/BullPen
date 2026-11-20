@@ -58,7 +58,7 @@ export async function downloadAndValidateLogo(url: string): Promise<ResolvedLogo
 }
 
 export async function resolveFromTwelveData(sym: string): Promise<ResolvedLogoImage | null> {
-  // An override ticker's /logo is the colliding company's (BLD -> British Land); let logo.dev answer.
+  // An override ticker's /logo is the colliding company's (BLD -> British Land).
   if (getTickerOverride(sym)?.unavailable) return null;
   let cdnUrl: string | null = null;
   try {
@@ -71,6 +71,8 @@ export async function resolveFromTwelveData(sym: string): Promise<ResolvedLogoIm
 }
 
 export async function resolveFromLogoDev(sym: string): Promise<ResolvedLogoImage | null> {
+  // logo.dev misreads these too (BLD -> QXO, checked 2026-11-20): initials beat a wrong brand.
+  if (getTickerOverride(sym)?.unavailable) return null;
   const token = process.env.LOGO_DEV_KEY;
   if (!token) return null;
   // fallback=404 turns a miss into a real 404 instead of a generated monogram
