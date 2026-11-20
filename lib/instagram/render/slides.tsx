@@ -408,7 +408,7 @@ function gridDayHeader(date: string): string {
 }
 
 /** A check (beat) or cross (missed) on a disc of the result color, ink glyph on top like BRAND_INK. */
-function ResultMark({ status, size }: { status: 'beat' | 'missed'; size: number }) {
+export function ResultMark({ status, size }: { status: 'beat' | 'missed'; size: number }) {
   const beat = status === 'beat';
   return (
     <div style={{ display: 'flex', width: size, height: size, borderRadius: 999, backgroundColor: beat ? BRAND : MISSED_COLOR, alignItems: 'center', justifyContent: 'center' }}>

@@ -3,14 +3,20 @@
  * The API can't attach Instagram's trending sounds, so he posts it by hand
  * from the app, and a delayed publish is the fallback if he doesn't:
  *
- *   1. render the MP4 (reel-video.ts; needs ffmpeg, so this runs in the
- *      local earnings watcher, never on Vercel)
- *   2. upload it to the public instagram-reels bucket
- *   3. mark the row media_format 'reel' with video_url + handoff_at
- *   4. send the video and caption to Discord with the deadline
+ *   1. render the MP4s (reel-video.ts; needs ffmpeg, so this runs in the
+ *      local earnings watcher, never on Vercel): a voiced mix for David and
+ *      a no-voice mix (SFX + music bed) for the fallback
+ *   2. upload both to the public instagram-reels bucket
+ *   3. mark the row media_format 'reel' with video_url (the no-voice mix) +
+ *      handoff_at
+ *   4. send the voiced video and caption to Discord with the deadline
  *   5. ask QStash to call prod publish-by-id after HANDOFF_MINUTES. There,
  *      publishStagedPost records his post if a Reel appeared since the
- *      handoff, else publishes this one with no music.
+ *      handoff, else publishes video_url.
+ *
+ * The fallback never carries the AI voice: Meta wants realistic AI voices
+ * labelled "Made with AI", and the API can't set that label. David turns it
+ * on in the app when he posts the voiced cut.
  *
  * Step 5 lives in QStash rather than in the watcher, so the fallback still
  * fires if the watcher's terminal dies (it has, when the desktop app restarted).
@@ -36,15 +42,18 @@ export async function handOffReel(postId: string): Promise<HandoffResult> {
   if (post.content_type !== 'earnings_deep_dive') throw new Error(`No Reel template for ${post.content_type}`);
   if (post.status !== 'ready') throw new Error(`Post ${postId} is '${post.status}', not 'ready'`);
 
-  const file = join(tmpdir(), `${post.period_key}.mp4`);
-  const rendered = await renderDeepDiveReel(post.slides.data, file);
-  console.log(`[reel-handoff] Rendered ${rendered.seconds.toFixed(1)}s Reel with ${rendered.vcodec}.`);
+  const rendered = await renderDeepDiveReel(post.slides.data, join(tmpdir(), `${post.period_key}.mp4`));
+  console.log(`[reel-handoff] Rendered ${rendered.seconds.toFixed(1)}s Reel with ${rendered.vcodec}, ${rendered.voiced ? 'with' : 'without'} a voice.`);
 
-  // Timestamped name: a re-run never serves Meta or Discord a cached older cut.
-  const objectPath = `${post.period_key}-${Date.now()}.mp4`;
-  const { error: upErr } = await db.storage.from(BUCKET).upload(objectPath, readFileSync(file), { contentType: 'video/mp4' });
-  if (upErr) throw new Error(`Upload failed: ${upErr.message}`);
-  const videoUrl: string = db.storage.from(BUCKET).getPublicUrl(objectPath).data.publicUrl;
+  // Timestamped names: a re-run never serves Meta or Discord a cached older cut.
+  const stamp = Date.now();
+  const upload = async (file: string, objectPath: string): Promise<string> => {
+    const { error: upErr } = await db.storage.from(BUCKET).upload(objectPath, readFileSync(file), { contentType: 'video/mp4' });
+    if (upErr) throw new Error(`Upload failed: ${upErr.message}`);
+    return db.storage.from(BUCKET).getPublicUrl(objectPath).data.publicUrl;
+  };
+  const videoUrl = await upload(rendered.auto, `${post.period_key}-${stamp}-auto.mp4`);
+  const manualUrl = await upload(rendered.manual, `${post.period_key}-${stamp}.mp4`);
 
   const handoffAt = new Date();
   const deadline = new Date(handoffAt.getTime() + HANDOFF_MINUTES * 60_000);
@@ -64,14 +73,15 @@ export async function handOffReel(postId: string): Promise<HandoffResult> {
     const unix = Math.floor(deadline.getTime() / 1000);
     // Discord renders <t:…:t> in the reader's own time zone.
     const when = fallbackScheduled
-      ? `If no new Reel is on the account by <t:${unix}:t>, this one goes out automatically with no music.`
+      ? `If no new Reel is on the account by <t:${unix}:t>, a version with our own music and no voice goes out automatically.`
       : `⚠️ The automatic fallback could not be scheduled, so the watcher will publish it itself in ${HANDOFF_MINUTES} min if it's still running. Post id: ${postId}`;
     // Not fatal: the row is already a Reel and the fallback is set, so a Discord hiccup must not
     // send the caller down its publish-the-carousel-now path.
     await postToDiscord(webhookUrl, {
       content:
         `🎬 **${post.period_key} Reel is ready for you to post.** Add a trending sound in the app and set the cover to about 1.5 s in.\n` +
-        `${when}\nVideo: ${videoUrl}`,
+        (rendered.voiced ? 'It has an AI voiceover: turn on the AI label (Advanced settings) before you share, and keep the trending sound low under the voice.\n' : '') +
+        `${when}\nVideo: ${manualUrl}`,
     }).catch((err) => console.error('[reel-handoff] Discord notice failed:', err));
     // Caption on its own, so it copies cleanly and never runs into Discord's 2000-character cap with the text above.
     await postToDiscord(webhookUrl, { content: post.caption }).catch((err) => console.error('[reel-handoff] Discord caption failed:', err));
