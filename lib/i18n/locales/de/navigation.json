@@ -173,6 +173,8 @@
   "notifEconFedLowerMeaning": "Kredite werden günstiger, und Sparkonten bringen tendenziell weniger.",
   "notifEconCpi": "Die CPI-Inflation lag im Jahresvergleich bei {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %",
   "notifEconPce": "Die PCE-Inflation lag im Jahresvergleich bei {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %",
+  "notifEconCpiMonth": "Die CPI-Inflation lag im Monatsvergleich bei {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %",
+  "notifEconPceMonth": "Die PCE-Inflation lag im Monatsvergleich bei {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %",
   "notifEconCoreCpi": "Die Kerninflation ohne Lebensmittel und Energie lag bei {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %.",
   "notifEconCorePce": "Der Kern-PCE, das bevorzugte Maß der Fed, lag bei {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %.",
   "notifEconFedTarget": "Die Fed strebt 2 % an.",

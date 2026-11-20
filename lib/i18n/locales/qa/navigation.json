@@ -180,6 +180,8 @@
   "notifEconFedLowerMeaning": "«Boorroowiing geets cheeaapeer, aand saaviings aaccoouunts teend too paay leess.»",
   "notifEconCpi": "«CPII iinflaatiioon waas {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}% ooveer thee paast yeeaar»",
   "notifEconPce": "«PCEE iinflaatiioon waas {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}% ooveer thee paast yeeaar»",
+  "notifEconCpiMonth": "«CPII iinflaatiioon waas {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}% ooveer thee paast moonth»",
+  "notifEconPceMonth": "«PCEE iinflaatiioon waas {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}% ooveer thee paast moonth»",
   "notifEconCoreCpi": "«Cooree iinflaatiioon, whiich leeaavees oouut fooood aand eeneergy, waas {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%.»",
   "notifEconCorePce": "«Cooree PCEE, thee Feed's preefeerreed meeaasuuree, waas {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%.»",
   "notifEconFedTarget": "«Thee Feed aaiims foor 2%.»",

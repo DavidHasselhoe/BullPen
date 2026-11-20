@@ -175,6 +175,8 @@
   "notifEconFedLowerMeaning": "Emprunter coûte moins cher, et l'épargne a tendance à moins rapporter.",
   "notifEconCpi": "L'inflation CPI était de {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % sur un an",
   "notifEconPce": "L'inflation PCE était de {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % sur un an",
+  "notifEconCpiMonth": "L'inflation CPI était de {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % sur un mois",
+  "notifEconPceMonth": "L'inflation PCE était de {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % sur un mois",
   "notifEconCoreCpi": "L'inflation sous-jacente, hors alimentation et énergie, était de {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %.",
   "notifEconCorePce": "Le PCE sous-jacent, la mesure préférée de la Fed, était de {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %.",
   "notifEconFedTarget": "La Fed vise 2 %.",

@@ -179,6 +179,8 @@
   "notifEconFedLowerMeaning": "Pedir prestado sale más barato, y las cuentas de ahorro suelen pagar menos.",
   "notifEconCpi": "La inflación CPI fue del {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % en el último año",
   "notifEconPce": "La inflación PCE fue del {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % en el último año",
+  "notifEconCpiMonth": "La inflación CPI fue del {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % en el último mes",
+  "notifEconPceMonth": "La inflación PCE fue del {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % en el último mes",
   "notifEconCoreCpi": "La inflación subyacente, sin alimentos ni energía, fue del {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %.",
   "notifEconCorePce": "El PCE subyacente, la medida preferida de la Fed, fue del {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %.",
   "notifEconFedTarget": "La Fed busca un 2 %.",

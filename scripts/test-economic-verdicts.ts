@@ -71,6 +71,22 @@ assert.deepEqual(english({ kind: 'gdp', verdict: null, results: [{ key: 'gdp', a
   message: 'Down from 1.6% the quarter before. That figure is adjusted for inflation.',
 });
 
+// CPI on 2026-11-10: no Oct 2025 index, so no 12-month figure. The month carries it, without the yearly 2% line.
+assert.deepEqual(
+  english({
+    kind: 'cpi',
+    verdict: null,
+    results: [
+      { key: 'cpi_mom', actual: 0.3, previous: 0.2 },
+      { key: 'core_cpi_mom', actual: 0.2, previous: 0.3 },
+    ],
+  }),
+  {
+    title: 'CPI inflation was 0.3% over the past month',
+    message: 'Up from 0.2% the month before. Core inflation, which leaves out food and energy, was 0.2%.',
+  },
+);
+
 // A result without its headline says nothing rather than something wrong.
 assert.equal(economicResultText({ id: 'x', kind: 'cpi', verdict: null, results: [{ key: 'core_cpi_yoy', actual: 3, previous: 3 }] }), null);
 

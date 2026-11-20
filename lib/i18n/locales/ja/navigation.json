@@ -179,6 +179,8 @@
   "notifEconFedLowerMeaning": "お金を借りるコストが下がり、預金の利息は減る傾向があります。",
   "notifEconCpi": "CPIインフレ率は前年比{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%でした",
   "notifEconPce": "PCEインフレ率は前年比{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%でした",
+  "notifEconCpiMonth": "CPIインフレ率は前月比{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%でした",
+  "notifEconPceMonth": "PCEインフレ率は前月比{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%でした",
   "notifEconCoreCpi": "食品とエネルギーを除くコアインフレ率は{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%でした。",
   "notifEconCorePce": "FRBが重視するコアPCEは{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%でした。",
   "notifEconFedTarget": "FRBの目標は2%です。",

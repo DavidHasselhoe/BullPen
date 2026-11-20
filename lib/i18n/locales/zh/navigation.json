@@ -179,6 +179,8 @@
   "notifEconFedLowerMeaning": "借钱成本变低，储蓄账户的收益往往会减少。",
   "notifEconCpi": "CPI通胀率同比为{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%",
   "notifEconPce": "PCE通胀率同比为{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%",
+  "notifEconCpiMonth": "CPI通胀率环比为{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%",
+  "notifEconPceMonth": "PCE通胀率环比为{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%",
   "notifEconCoreCpi": "剔除食品和能源的核心通胀率为{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%。",
   "notifEconCorePce": "美联储首选的核心PCE为{{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%。",
   "notifEconFedTarget": "美联储的目标是2%。",

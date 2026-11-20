@@ -179,6 +179,8 @@
   "notifEconFedLowerMeaning": "Det blir billigere å låne, og sparekontoer gir gjerne mindre.",
   "notifEconCpi": "CPI-inflasjonen var {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % siste tolv måneder",
   "notifEconPce": "PCE-inflasjonen var {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % siste tolv måneder",
+  "notifEconCpiMonth": "CPI-inflasjonen var {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % siste måned",
+  "notifEconPceMonth": "PCE-inflasjonen var {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} % siste måned",
   "notifEconCoreCpi": "Kjerneinflasjonen, uten mat og energi, var {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %.",
   "notifEconCorePce": "Kjerne-PCE, Feds foretrukne mål, var {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} %.",
   "notifEconFedTarget": "Fed sikter mot 2 %.",

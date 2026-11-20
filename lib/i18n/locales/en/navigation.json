@@ -180,6 +180,8 @@
   "notifEconFedLowerMeaning": "Borrowing gets cheaper, and savings accounts tend to pay less.",
   "notifEconCpi": "CPI inflation was {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}% over the past year",
   "notifEconPce": "PCE inflation was {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}% over the past year",
+  "notifEconCpiMonth": "CPI inflation was {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}% over the past month",
+  "notifEconPceMonth": "PCE inflation was {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}% over the past month",
   "notifEconCoreCpi": "Core inflation, which leaves out food and energy, was {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%.",
   "notifEconCorePce": "Core PCE, the Fed's preferred measure, was {{value, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}}%.",
   "notifEconFedTarget": "The Fed aims for 2%.",

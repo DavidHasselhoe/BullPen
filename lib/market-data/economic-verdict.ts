@@ -66,7 +66,22 @@ export function economicResultText(e: EconomicResultEvent): { title: NotifMsg; m
     case 'pce': {
       const head = get(`${e.kind}_yoy`);
       const core = get(`core_${e.kind}_yoy`);
-      if (!head) return null;
+      if (!head) {
+        // No 12-month figure when the year-ago index was never published (Oct 2025,
+        // the shutdown: CPI on 2026-11-10 notified nobody). Fall back to the month.
+        // No 2% target line: that is a yearly figure, and 0.3% a month reads as under it.
+        const month = get(`${e.kind}_mom`);
+        const coreMonth = get(`core_${e.kind}_mom`);
+        if (!month) return null;
+        const parts = [
+          ...vs(month, 'Month'),
+          ...(take ?? (coreMonth ? [msg(e.kind === 'cpi' ? 'notifEconCoreCpi' : 'notifEconCorePce', { value: coreMonth.actual })] : [])),
+        ];
+        return {
+          title: msg(e.kind === 'cpi' ? 'notifEconCpiMonth' : 'notifEconPceMonth', { value: month.actual }),
+          message: parts.length ? sentences(...parts) : undefined,
+        };
+      }
       return {
         title: msg(e.kind === 'cpi' ? 'notifEconCpi' : 'notifEconPce', { value: head.actual }),
         message: sentences(
