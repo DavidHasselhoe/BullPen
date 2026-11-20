@@ -1,11 +1,11 @@
 /**
- * Sound for Reels: an ElevenLabs voice reading the beats' narration, sound
- * effects on the beats' cues, and a music bed, mixed by ffmpeg.
+ * Sound for Reels: an ElevenLabs voice reading the beats' narration and
+ * sound effects on the beats' cues, mixed by ffmpeg. No music: David adds a
+ * song in the app when he posts (11-20, he dropped our bed).
  *
  * Two mixes per Reel (reel-video.ts):
- *   - manual: voice + SFX, no bed. David posts it by hand and adds a trending
- *     song in the app, which would clash with our bed.
- *   - auto: SFX + bed, NO voice. The 45-min fallback publishes this one: Meta
+ *   - manual: voice + SFX. David posts it by hand.
+ *   - auto: SFX only, NO voice. The 45-min fallback publishes this one: Meta
  *     wants realistic AI voices labelled "Made with AI" and the API can't set
  *     the label.
  *
@@ -13,11 +13,9 @@
  * No key, no voice: the manual mix is SFX only and nothing fails. Each
  * narration is cached by its text, so re-rendering a Reel costs nothing.
  *
- * SFX and bed: a file named lib/instagram/render/audio/<name>.(mp3|wav|m4a)
- * wins (tick, pop, hit, bed); otherwise a synthesized stand-in is made
- * once with ffmpeg into the temp folder. ponytail: the synthesized bed is a
- * plain four-chord pad, fine for a fallback; drop a real royalty-free track
- * in as audio/bed.mp3 to replace it.
+ * SFX: a file named lib/instagram/render/audio/<name>.(mp3|wav) wins (tick,
+ * pop, hit); otherwise a synthesized one is made once with ffmpeg into the
+ * temp folder.
  */
 import { execFileSync } from 'child_process';
 import { createHash } from 'crypto';
@@ -64,38 +62,24 @@ export async function synthesizeVoice(text: string): Promise<VoiceTrack | null> 
   return { path: mp3, alignment: body.alignment };
 }
 
-// ── SFX + bed ───────────────────────────────────────────────────────────────
+// ── SFX ─────────────────────────────────────────────────────────────────────
 
-type Asset = Sfx | 'bed';
-
-/** ffmpeg aevalsrc expression of one chord, two slightly detuned sines per note for some width. */
-const chord = (fs: number[]) => fs.map((f) => `sin(2*PI*${f}*t)+sin(2*PI*${(f * 1.004).toFixed(2)}*t)`).join('+');
-
-// Am, F, C, G, four seconds each; every note's phase lands back on 0 at the 16 s loop point except the pad, which the chord envelope fades there.
-const BED_EXPR = [
-  `0.045*(if(lt(mod(t,16),4),${chord([110, 220, 261.63, 329.63])},if(lt(mod(t,16),8),${chord([87.31, 174.61, 220, 261.63])},if(lt(mod(t,16),12),${chord([130.81, 196, 261.63, 329.63])},${chord([98, 196, 246.94, 293.66])}))))`,
-  '*(1-exp(-mod(t,4)*5))*(1-exp(-(4-mod(t,4))*5))',
-  '+0.35*sin(2*PI*55*t)*exp(-mod(t,0.6667)*9)', // soft kick at 90 bpm
-  '+0.05*(2*random(0)-1)*exp(-mod(t+0.3333,0.6667)*70)', // off-beat hat
-].join('');
-
-const SYNTH: Record<Asset, string[]> = {
+const SYNTH: Record<Sfx, string[]> = {
   tick: ['-f', 'lavfi', '-i', 'aevalsrc=0.6*sin(2*PI*2400*t)*exp(-mod(t\\,0.055)*180)*(1-t/1.4):s=48000:d=1.2'],
   pop: ['-f', 'lavfi', '-i', 'aevalsrc=0.8*min(1\\,t*400)*sin(2*PI*(1200*t-2500*t*t))*exp(-t*22):s=48000:d=0.2'],
   hit: ['-f', 'lavfi', '-i', 'aevalsrc=0.9*sin(2*PI*(70*t-12*t*t))*exp(-t*3.2)+0.35*sin(2*PI*140*t)*exp(-t*9)+0.25*(2*random(0)-1)*exp(-t*50):s=48000:d=1.4'],
-  bed: ['-f', 'lavfi', '-i', `aevalsrc=${BED_EXPR.replace(/,/g, '\\,')}:s=48000:d=32`, '-af', 'lowpass=f=5000,aecho=0.8:0.6:300:0.2', '-ac', '2', '-c:a', 'aac', '-b:a', '160k'],
 };
 /** Bump when a SYNTH recipe changes, so cached stand-ins are remade. */
 const SYNTH_VERSION = 2;
 
-export function audioAsset(name: Asset): string {
-  for (const ext of ['mp3', 'wav', 'm4a']) {
+export function audioAsset(name: Sfx): string {
+  for (const ext of ['mp3', 'wav']) {
     const own = join(process.cwd(), 'lib/instagram/render/audio', `${name}.${ext}`);
     if (existsSync(own)) return own;
   }
   const dir = join(tmpdir(), `bullpen-reel-audio-v${SYNTH_VERSION}`);
   mkdirSync(dir, { recursive: true });
-  const out = join(dir, name === 'bed' ? 'bed.m4a' : `${name}.wav`);
+  const out = join(dir, `${name}.wav`);
   if (!existsSync(out)) execFileSync(ffmpegBin(), ['-y', '-hide_banner', '-loglevel', 'error', ...SYNTH[name], out]);
   return out;
 }
@@ -103,15 +87,14 @@ export function audioAsset(name: Asset): string {
 // ── Mix ─────────────────────────────────────────────────────────────────────
 
 const SFX_GAIN: Record<Sfx, number> = { tick: 0.3, pop: 0.55, hit: 0.8 };
-const BED_GAIN = 0.8;
 
 /**
- * Lays voice, SFX and (optionally) the bed over a silent video and writes the
- * final MP4: video copied, AAC 48 kHz stereo, normalized to -14 LUFS (where
+ * Lays the voice (if any) and SFX over a silent video and writes the final
+ * MP4: video copied, AAC 48 kHz stereo, normalized to -14 LUFS (where
  * Instagram plays audio), moov atom first.
  */
-export function muxReelAudio(opts: { video: string; out: string; timeline: ReelTimeline; voice: VoiceTrack | null; bed: boolean }): void {
-  const { video, out, timeline, voice, bed } = opts;
+export function muxReelAudio(opts: { video: string; out: string; timeline: ReelTimeline; voice: VoiceTrack | null }): void {
+  const { video, out, timeline, voice } = opts;
   const D = timeline.seconds;
   const fmt = 'aformat=sample_rates=48000:channel_layouts=stereo';
   const ms = (s: number) => Math.max(0, Math.round(s * 1000));
@@ -119,12 +102,6 @@ export function muxReelAudio(opts: { video: string; out: string; timeline: ReelT
   const chains: string[] = [];
   const mix: string[] = [];
   let input = 1;
-
-  if (bed) {
-    args.push('-stream_loop', '-1', '-i', audioAsset('bed'));
-    chains.push(`[${input++}:a]${fmt},atrim=0:${D.toFixed(3)},afade=t=in:d=0.4,afade=t=out:st=${Math.max(0, D - 1.5).toFixed(3)}:d=1.5,volume=${BED_GAIN}[bed]`);
-    mix.push('[bed]');
-  }
 
   const spoken = voice ? timeline.beats.filter((b) => b.voice) : [];
   if (voice && spoken.length) {

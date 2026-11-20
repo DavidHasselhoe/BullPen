@@ -2,7 +2,7 @@
  * Turns Reel beats (reel.tsx) into MP4s: frames through next/og's
  * ImageResponse, piped as PNGs into ffmpeg as a silent video, then two sound
  * mixes laid over it (reel-audio.ts): `manual` (voice + SFX, for David to post
- * with a trending song) and `auto` (SFX + bed, no AI voice, for the fallback).
+ * with a song) and `auto` (SFX only, no AI voice, for the fallback).
  * Runs where ffmpeg exists (David's PC for the earnings watcher, a GitHub
  * runner later), never on Vercel.
  *
@@ -27,9 +27,9 @@ import { resultsReelBeats, resultsReelLabel, RESULTS_FOOTER } from './reel-resul
 import type { EarningsDeepDiveData, EarningsResultsSlides } from '@/lib/instagram/content/schema';
 
 export interface RenderReelResult {
-  /** Voice + SFX: the one David posts. Same as `auto` minus the bed when there's no voice. */
+  /** Voice + SFX: the one David posts. Same as `auto` when there's no voice. */
   manual: string;
-  /** SFX + bed, no AI voice: the fallback auto-publish. */
+  /** SFX only, no AI voice: the fallback auto-publish. */
   auto: string;
   voiced: boolean;
   seconds: number;
@@ -98,8 +98,8 @@ export async function renderReel(opts: { beats: Beat[]; label: string; footer: s
 
   const auto = outPath.replace(/\.mp4$/, '') + '-auto.mp4';
   try {
-    muxReelAudio({ video: silent, out: outPath, timeline, voice, bed: false });
-    muxReelAudio({ video: silent, out: auto, timeline, voice: null, bed: true });
+    muxReelAudio({ video: silent, out: outPath, timeline, voice });
+    muxReelAudio({ video: silent, out: auto, timeline, voice: null });
   } finally {
     rmSync(silent, { force: true });
   }

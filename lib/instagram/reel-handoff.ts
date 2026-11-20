@@ -5,7 +5,7 @@
  *
  *   1. render the MP4s (reel-video.ts; needs ffmpeg, so this runs in the
  *      local earnings watcher, never on Vercel): a voiced mix for David and
- *      a no-voice mix (SFX + music bed) for the fallback
+ *      a no-voice mix (SFX only) for the fallback
  *   2. upload both to the public instagram-reels bucket
  *   3. mark the row media_format 'reel' with video_url (the no-voice mix) +
  *      handoff_at
@@ -73,7 +73,7 @@ export async function handOffReel(postId: string): Promise<HandoffResult> {
     const unix = Math.floor(deadline.getTime() / 1000);
     // Discord renders <t:…:t> in the reader's own time zone.
     const when = fallbackScheduled
-      ? `If no new Reel is on the account by <t:${unix}:t>, a version with our own music and no voice goes out automatically.`
+      ? `If no new Reel is on the account by <t:${unix}:t>, a version with no voice and no music goes out automatically.`
       : `⚠️ The automatic fallback could not be scheduled, so the watcher will publish it itself in ${HANDOFF_MINUTES} min if it's still running. Post id: ${postId}`;
     // Not fatal: the row is already a Reel and the fallback is set, so a Discord hiccup must not
     // send the caller down its publish-the-carousel-now path.

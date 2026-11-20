@@ -56,9 +56,9 @@ try {
   const voice = join(dir, 'voice.mp3');
   execFileSync(ff, ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', `color=c=black:s=1080x1920:r=30:d=${tl.seconds.toFixed(2)}`, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', video]);
   execFileSync(ff, ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', `sine=f=220:d=${clock.toFixed(2)}`, voice]);
-  for (const [name, withVoice, bed] of [['manual', true, false], ['auto', false, true]] as const) {
+  for (const [name, withVoice] of [['manual', true], ['auto', false]] as const) {
     const out = join(dir, `${name}.mp4`);
-    muxReelAudio({ video, out, timeline: tl, voice: withVoice ? { path: voice, alignment: al } : null, bed });
+    muxReelAudio({ video, out, timeline: tl, voice: withVoice ? { path: voice, alignment: al } : null });
     const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', out], { encoding: 'utf8' }));
     const a = probe.streams.find((s: { codec_type: string }) => s.codec_type === 'audio');
     assert.equal(a.codec_name, 'aac');

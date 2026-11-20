@@ -2,7 +2,7 @@
  * Renders an earnings deep dive or a weekly results post as a 9:16 Reel MP4, locally, from a real
  * instagram_posts row, plus one PNG still per beat. Read-only against the
  * database; publishes nothing. Writes two mixes: <key>.mp4 (voice + SFX, to
- * post by hand) and <key>-auto.mp4 (SFX + bed, the fallback). The voice needs
+ * post by hand) and <key>-auto.mp4 (SFX only, the fallback). The voice needs
  * ELEVENLABS_API_KEY and is a paid call (cached per narration, so a re-render
  * is free); --no-voice skips it. See lib/instagram/render/reel-video.ts for
  * the ffmpeg requirements (FFMPEG_PATH).
@@ -39,7 +39,7 @@ async function main() {
   const out = join(outDir, `${key}.mp4`);
   const opts = { stillsPrefix: join(outDir, key), ...(process.argv.includes('--no-voice') ? { voice: null } : {}) };
   const r = results ? await renderResultsReel(post.slides, out, opts) : await renderDeepDiveReel(post.slides.data, out, opts);
-  console.log(`${r.manual} (${r.voiced ? 'voice + SFX' : 'SFX only, no voice'}) and ${r.auto} (SFX + bed): ${r.frames} frames, ${r.seconds.toFixed(1)}s, ${r.vcodec}, rendered in ${((Date.now() - started) / 1000).toFixed(0)}s`);
+  console.log(`${r.manual} (${r.voiced ? 'voice + SFX' : 'SFX only, no voice'}) and ${r.auto} (SFX only): ${r.frames} frames, ${r.seconds.toFixed(1)}s, ${r.vcodec}, rendered in ${((Date.now() - started) / 1000).toFixed(0)}s`);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

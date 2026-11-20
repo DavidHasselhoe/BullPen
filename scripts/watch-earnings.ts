@@ -244,7 +244,7 @@ async function main() {
         await sleep(handoff.deadline.getTime() - Date.now());
         await publishViaProd(postId);
       } else {
-        console.log(`  Post it from the app by ${handoff.deadline.toLocaleTimeString()}, or the version with our music and no voice publishes automatically.`);
+        console.log(`  Post it from the app by ${handoff.deadline.toLocaleTimeString()}, or a version with no voice and no music publishes automatically.`);
       }
       process.exit(0);
     }
