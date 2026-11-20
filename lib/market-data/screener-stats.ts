@@ -50,6 +50,7 @@ import {
   isInvalidSymbolMessage,
   sanitizeDividendYield,
   plausiblePriceToBook,
+  plausibleProfitMargin,
   type CompanyStatistics,
   type IncomeStatementPeriod,
   type BalanceSheetPeriod,
@@ -123,6 +124,7 @@ export interface TwelveDataStatisticsRaw {
       profit_margin?: number | null;
       income_statement?: {
         revenue_ttm?: number | null;
+        net_income_to_common_ttm?: number | null;
         diluted_eps_ttm?: number | null;
         quarterly_revenue_growth?: number | null;
         quarterly_earnings_growth_yoy?: number | null;
@@ -163,7 +165,7 @@ export function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
     day200_ma: sp.day_200_ma ?? null,
     dividend_yield: sanitizeDividendYield(d),
     payout_ratio: d.payout_ratio ?? null,
-    profit_margin: f.profit_margin ?? null,
+    profit_margin: plausibleProfitMargin(f),
     revenue_ttm: fi.revenue_ttm ? Math.round(fi.revenue_ttm) : null,
     eps_ttm: fi.diluted_eps_ttm ?? null,
     revenue_growth_yoy: fi.quarterly_revenue_growth != null ? fi.quarterly_revenue_growth * 100 : null,
@@ -197,7 +199,7 @@ function rawToCompanyStats(raw: TwelveDataStatisticsRaw, sym: string): CompanySt
     sharesFloat: ss.float_shares ?? null,
     shortRatio: ss.short_ratio ?? null,
     dividendYield: sanitizeDividendYield(d),
-    profitMargin: f.profit_margin ?? null,
+    profitMargin: plausibleProfitMargin(f),
     revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
     epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
   };

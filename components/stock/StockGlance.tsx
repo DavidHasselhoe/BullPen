@@ -59,8 +59,9 @@ export function StockGlance({ ticker, name, snapshot, locale, t }: Props) {
   else if (price != null) sentences.push(t('stock:glancePrice', { name, ticker, price: usd(price) }));
   if (pe != null && pe > 0) sentences.push(t('stock:glancePe', { pe: plain(pe) }));
   if (low != null && high != null) sentences.push(t('stock:glanceRange', { low: usd(low), high: usd(high) }));
-  if (margin != null && growth != null) sentences.push(t('stock:glanceMarginGrowth', { margin: pct(margin), growth: pct(growth) }));
-  else if (margin != null) sentences.push(t('stock:glanceMargin', { margin: pct(margin) }));
+  // "It keeps -12% of its revenue as profit" says nothing a beginner can use; a loss shows in the facts.
+  if (margin != null && margin > 0 && growth != null) sentences.push(t('stock:glanceMarginGrowth', { margin: pct(margin), growth: pct(growth) }));
+  else if (margin != null && margin > 0) sentences.push(t('stock:glanceMargin', { margin: pct(margin) }));
   if (dividendYield != null) {
     sentences.push(dividendYield > 0 ? t('stock:glanceDividend', { yield: pct(dividendYield) }) : t('stock:glanceNoDividend'));
   }

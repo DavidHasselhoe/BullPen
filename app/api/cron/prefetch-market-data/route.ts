@@ -58,6 +58,7 @@ import {
   TwelveDataRateLimitError,
   reportDateToFiscalQuarter,
   sanitizeDividendYield,
+  plausibleProfitMargin,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, setCached, COMPANY_PROFILE_TTL_SECONDS } from '@/lib/cache/market-data-cache';
 import { rmget, rset } from '@/lib/cache/redis-cache';
@@ -174,7 +175,7 @@ function parseStats(sym: string, raw: RawStats | undefined) {
     sharesFloat: ss.float_shares ?? null,
     shortRatio: ss.short_ratio ?? null,
     dividendYield: sanitizeDividendYield(d),
-    profitMargin: (f.profit_margin as number) ?? null,
+    profitMargin: plausibleProfitMargin(f as Parameters<typeof plausibleProfitMargin>[0]),
     revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
     epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
   };

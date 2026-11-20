@@ -1089,6 +1089,9 @@ interface TwelveDataStatisticsResponse {
       profit_margin?: number | null;
       income_statement?: {
         quarterly_revenue_growth?: number | null;
+        revenue_ttm?: number | null;
+        net_income_to_common_ttm?: number | null;
+        diluted_eps_ttm?: number | null;
         quarterly_earnings_growth_yoy?: number | null;
       };
     };
@@ -1131,6 +1134,31 @@ const STALE_DIVIDEND_MONTHS = 14;
 export function plausiblePriceToBook(pb: number | null | undefined): number | null {
   if (pb == null || !Number.isFinite(pb)) return null;
   return pb > 0 && pb < 0.05 ? null : pb;
+}
+
+/**
+ * TwelveData's profit_margin is garbage for deep loss-makers: SMR (2026-11-20)
+ * read +36.3% while the same response had net_income_to_common_ttm -$186M on
+ * revenue_ttm $2.7M (-6,817%, our statements say -6,485%). ROIV, QBTS, MSTR,
+ * JOBY... same pattern. So the margin is derived from those two TTM fields;
+ * profit_margin is only the fallback, and only when its sign agrees with TTM
+ * EPS. Not trailing_pe: TD prices that off a different EPS (GILD +17.9 P/E on
+ * -$3.13 EPS and a -12.5% margin that matches its statements).
+ */
+export function plausibleProfitMargin(
+  f: {
+    profit_margin?: number | null;
+    income_statement?: { revenue_ttm?: number | null; net_income_to_common_ttm?: number | null; diluted_eps_ttm?: number | null } | null;
+  } | undefined
+): number | null {
+  const fi = f?.income_statement ?? {};
+  const ni = fi.net_income_to_common_ttm;
+  const rev = fi.revenue_ttm;
+  if (typeof ni === 'number' && Number.isFinite(ni) && typeof rev === 'number' && rev > 0) return ni / rev;
+  const m = f?.profit_margin;
+  if (m == null || !Number.isFinite(m)) return null;
+  const eps = fi.diluted_eps_ttm;
+  return typeof eps === 'number' && eps !== 0 && m !== 0 && eps > 0 !== m > 0 ? null : m;
 }
 
 export function sanitizeDividendYield(d: {
@@ -1187,7 +1215,7 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
     sharesFloat: s.float_shares ?? null,
     shortRatio: s.short_ratio ?? null,
     dividendYield: sanitizeDividendYield(d),
-    profitMargin: f.profit_margin ?? null,
+    profitMargin: plausibleProfitMargin(f),
     revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
     epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
   };
