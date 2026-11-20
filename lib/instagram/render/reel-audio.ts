@@ -14,7 +14,7 @@
  * narration is cached by its text, so re-rendering a Reel costs nothing.
  *
  * SFX and bed: a file named lib/instagram/render/audio/<name>.(mp3|wav|m4a)
- * wins (tick, whoosh, pop, hit, bed); otherwise a synthesized stand-in is made
+ * wins (tick, pop, hit, bed); otherwise a synthesized stand-in is made
  * once with ffmpeg into the temp folder. ponytail: the synthesized bed is a
  * plain four-chord pad, fine for a fallback; drop a real royalty-free track
  * in as audio/bed.mp3 to replace it.
@@ -83,7 +83,6 @@ const SYNTH: Record<Asset, string[]> = {
   tick: ['-f', 'lavfi', '-i', 'aevalsrc=0.6*sin(2*PI*2400*t)*exp(-mod(t\\,0.055)*180)*(1-t/1.4):s=48000:d=1.2'],
   pop: ['-f', 'lavfi', '-i', 'aevalsrc=0.8*min(1\\,t*400)*sin(2*PI*(1200*t-2500*t*t))*exp(-t*22):s=48000:d=0.2'],
   hit: ['-f', 'lavfi', '-i', 'aevalsrc=0.9*sin(2*PI*(70*t-12*t*t))*exp(-t*3.2)+0.35*sin(2*PI*140*t)*exp(-t*9)+0.25*(2*random(0)-1)*exp(-t*50):s=48000:d=1.4'],
-  whoosh: ['-f', 'lavfi', '-i', 'anoisesrc=d=0.5:c=pink:r=48000:a=0.6', '-af', 'highpass=f=300,lowpass=f=4000,volume=3,afade=t=in:d=0.28:curve=qsin,afade=t=out:st=0.28:d=0.22:curve=qsin'],
   bed: ['-f', 'lavfi', '-i', `aevalsrc=${BED_EXPR.replace(/,/g, '\\,')}:s=48000:d=32`, '-af', 'lowpass=f=5000,aecho=0.8:0.6:300:0.2', '-ac', '2', '-c:a', 'aac', '-b:a', '160k'],
 };
 /** Bump when a SYNTH recipe changes, so cached stand-ins are remade. */
@@ -103,7 +102,7 @@ export function audioAsset(name: Asset): string {
 
 // ── Mix ─────────────────────────────────────────────────────────────────────
 
-const SFX_GAIN: Record<Sfx, number> = { tick: 0.3, whoosh: 0.45, pop: 0.55, hit: 0.8 };
+const SFX_GAIN: Record<Sfx, number> = { tick: 0.3, pop: 0.55, hit: 0.8 };
 const BED_GAIN = 0.8;
 
 /**

@@ -49,7 +49,7 @@ const STATUS_COLOR: Record<Status, string> = { beat: BRAND, missed: LOSS, inline
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type El = any;
 
-export type Sfx = 'tick' | 'whoosh' | 'pop' | 'hit';
+export type Sfx = 'tick' | 'pop' | 'hit';
 
 /**
  * One scene. `say` is its narration; a '^' in it marks the cue, the word the
@@ -138,7 +138,6 @@ export function timeBeats(beats: Beat[], al: Alignment | null): ReelTimeline {
       if (marker >= 0) cue = lead + startOf(offsets[i] + marker) - from;
       dur = Math.max(beat.minDur, lead + (to - from) + (next == null ? 0.8 : 0.1), cue + 0.8);
     }
-    if (i > 0) sfx.push(['whoosh', Math.max(0, t - 0.15)]);
     for (const [name, at] of beat.sfx(cue)) sfx.push([name, t + at]);
     out.push({ beat, start: t, dur, cue, voice });
     t += dur;
@@ -406,7 +405,7 @@ export function deepDiveReelBeats(d: EarningsDeepDiveData): Beat[] {
   const intro = lead?.bad ? "Here's the catch." : "Here's what stood out.";
   const leadSfx = (): [Sfx, number][] => [[lead?.bad ? 'hit' : 'pop', 0.05]];
   const [hookA, hookB] = deepDiveHook(d);
-  const beats: Beat[] = [{ minDur: 2.4, say: `${hookA} ${hookB}`, cueAt: 0.6, sfx: () => [['whoosh', 0.5]], render: (t) => <HookBeat d={d} t={t} /> }];
+  const beats: Beat[] = [{ minDur: 2.4, say: `${hookA} ${hookB}`, cueAt: 0.6, sfx: () => [], render: (t) => <HookBeat d={d} t={t} /> }];
 
   if (d.revenueActual != null) {
     beats.push(scoreBeat({ label: 'Revenue', explain: 'All the money that came in from sales', actual: d.revenueActual, estimate: d.revenueEstimate, status: d.revenueStatus, fmt: formatUsdCompact }, 'Revenue, the money from sales:', speakUsd, 3.4));

@@ -40,7 +40,6 @@ assert.ok(Math.abs(rev.cue - (0.25 + startOf('A beat') - startOf('Revenue'))) < 
 assert.ok(rev.dur >= 0.25 + (rev.voice!.to - rev.voice!.from), 'a beat lasts as long as its sentence');
 assert.ok(end.dur >= 3, 'minimum length holds');
 assert.ok(tl.sfx.some(([n, at]) => n === 'pop' && Math.abs(at - (rev.start + rev.cue)) < 1e-9), 'pop on the cue');
-assert.equal(tl.sfx.filter(([n]) => n === 'whoosh').length, 2, 'a whoosh into every beat after the first');
 
 const plain = timeBeats(beats, null);
 assert.deepEqual(plain.beats.map((b) => b.dur), [2.4, 3.4, 3]);

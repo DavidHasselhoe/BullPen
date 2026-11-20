@@ -126,7 +126,7 @@ export function resultsReelBeats(s: EarningsResultsSlides): Beat[] {
     : `${s.beatCount} of ${n} companies beat the forecast this week.`;
   const beats: Beat[] = [{
     minDur: 2.6, say: `${tally} ${b}`, cueAt: 0.6,
-    sfx: () => [['whoosh', 0.5]],
+    sfx: () => [],
     render: (t) => <HookBeat s={s} t={t} />,
   }];
 
