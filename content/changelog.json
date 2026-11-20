@@ -1,5 +1,44 @@
 [
   {
+    "date": "2026-11-20",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "When a company has announced its results but its full statements aren't out yet, Financials and Revenue Flow now show that quarter as a pending column instead of leaving it out, and Bull no longer calls the quarter before it the latest",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Profit margins for companies losing a lot of money are now right. Some showed a healthy positive margin while the company was deep in the red",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Live prices in the Screener briefly turn green or red as they tick up or down"
+      },
+      {
+        "type": "fixed",
+        "text": "When a company's earnings land exactly on the estimate, the Earnings card and Bull now say it met expectations instead of showing a green +$0.00"
+      },
+      {
+        "type": "fixed",
+        "text": "Bull's answers about past earnings now use the same numbers as the stock page's Earnings card"
+      },
+      {
+        "type": "fixed",
+        "text": "Inflation results now reach you even when the yearly figure is missing, using the monthly change instead"
+      },
+      {
+        "type": "fixed",
+        "text": "A stock with no volatility data no longer shows a Stability score in its Financial Health Score"
+      },
+      {
+        "type": "fixed",
+        "text": "Community theses filters fit on narrow phone screens, a few companies no longer show another company's logo, and more labels are translated"
+      }
+    ]
+  },
+  {
     "date": "2026-11-19",
     "entries": [
       {
