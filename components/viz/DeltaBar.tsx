@@ -14,12 +14,14 @@ interface DeltaBarProps {
   actual: number | null;
   format?: (v: number) => string;
   srLabel: string;
+  /** Shown when actual lands on the estimate to the cent, instead of a green "+$0.00 (+0%)". */
+  metLabel?: string;
   className?: string;
 }
 
 const defaultFormat = (v: number) => `$${v.toFixed(2)}`;
 
-export function DeltaBar({ estimate, actual, format = defaultFormat, srLabel, className }: DeltaBarProps) {
+export function DeltaBar({ estimate, actual, format = defaultFormat, srLabel, metLabel, className }: DeltaBarProps) {
   const values = [estimate, actual].filter((v): v is number => v != null);
   if (values.length === 0) return null;
 
@@ -28,8 +30,9 @@ export function DeltaBar({ estimate, actual, format = defaultFormat, srLabel, cl
   const span = domMax - domMin || 1;
   const pos = (v: number) => Math.max(0, Math.min(1, (v - domMin) / span)) * 100;
 
-  const beat = actual != null && estimate != null ? actual >= estimate : null;
   const diff = actual != null && estimate != null ? actual - estimate : null;
+  const met = diff != null && Math.abs(diff) < 0.005;
+  const beat = diff == null || met ? null : diff > 0;
   const diffPct = diff != null && estimate ? (diff / Math.abs(estimate)) * 100 : null;
 
   return (
@@ -48,7 +51,9 @@ export function DeltaBar({ estimate, actual, format = defaultFormat, srLabel, cl
           <div className="absolute top-[-3px] h-3 w-px bg-foreground/60" style={{ left: `${pos(estimate)}%` }} />
         )}
       </div>
-      {beat != null && diff != null ? (
+      {met ? (
+        <span className="text-xs font-medium leading-none text-muted-foreground">● {metLabel || format(actual!)}</span>
+      ) : beat != null && diff != null ? (
         <span
           className={cn(
             'text-xs font-medium tabular-nums leading-none',

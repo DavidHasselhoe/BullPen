@@ -15,7 +15,7 @@ export interface EarningsRow {
 }
 
 export function EarningsResultCard({ output, ticker }: { output: EarningsRow[]; ticker?: string }) {
-  const { t } = useTranslation('ai');
+  const { t, ready } = useTranslation(['ai', 'stock']);
   const rows = output.slice(0, 4);
   if (rows.length === 0) return null;
   return (
@@ -29,6 +29,7 @@ export function EarningsResultCard({ output, ticker }: { output: EarningsRow[]; 
             <DeltaBar
               estimate={r.epsEstimateRaw ?? null}
               actual={r.epsActualRaw ?? null}
+              metLabel={ready ? t('stock:earningsChartDetailMet') : undefined}
               srLabel={
                 r.epsActualRaw != null && r.epsEstimateRaw != null
                   ? t('earningsSrLabelActual', { actual: r.epsActualRaw.toFixed(2), estimate: r.epsEstimateRaw.toFixed(2), surprise: r.surprise })
