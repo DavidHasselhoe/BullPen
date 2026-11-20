@@ -42,7 +42,9 @@ import {
 } from '@/lib/market-data/calendar-days';
 import { todayET } from '@/lib/dates/calendar-format';
 
-export const maxDuration = 60;
+// waitForCronCreditBudget can wait 65s for credits while another cron holds the
+// budget; at 60 such a call dies as a 504 (Market Data had 31 on 11-20).
+export const maxDuration = 120;
 
 /**
  * Units warmed per HTTP call. 4 x 40 = 160 credits, comfortably inside

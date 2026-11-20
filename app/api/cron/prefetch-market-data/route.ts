@@ -69,7 +69,9 @@ import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
 import { isUsExchange } from '@/lib/assets/asset-type';
 
-export const maxDuration = 60;
+// waitForCronCreditBudget can wait 65s for credits while another cron holds the
+// budget; at 60 every such call died as a 504 (11-20: 31 in Market Data).
+export const maxDuration = 120;
 
 const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 

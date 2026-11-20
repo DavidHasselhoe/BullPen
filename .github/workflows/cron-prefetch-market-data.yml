@@ -46,8 +46,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: gate
     if: needs.gate.outputs.run == 'true'
-    # A clean run takes ~2h58m (11-11), so 180 left no room for retries.
-    timeout-minutes: 240
+    # A clean run takes ~2h58m (11-11). Overlapping the Extended screener run
+    # (03:00-~07:00) adds credit waits; 240 ran out at batch 98 of 121 on 11-20.
+    # 330 still ends by 10:30 UTC, before the US open.
+    timeout-minutes: 330
     steps:
       - name: Refresh stats + earnings (paced batches)
         env:
