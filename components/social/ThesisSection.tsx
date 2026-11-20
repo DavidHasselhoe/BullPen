@@ -479,7 +479,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-base font-semibold text-foreground">
@@ -494,6 +494,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
             <button
               key={f}
               onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
               className={cn(
                 'text-xs px-2.5 py-1 rounded-full border transition-colors capitalize',
                 filter === f
