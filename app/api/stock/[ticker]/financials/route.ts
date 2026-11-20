@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withRateLimit, addSecurityHeaders } from '@/lib/security/api-security';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { coalesce } from '@/lib/cache/request-coalesce';
+import { STATEMENTS_TTL_SECONDS } from '@/lib/cache/fundamentals-freshness';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import {
   getIncomeStatement,
@@ -42,10 +43,11 @@ type FinancialType = 'income' | 'balance' | 'cashflow' | 'dividends' | 'splits';
 type Period = 'quarterly' | 'annual';
 
 // Splits are announced weeks ahead and happen rarely (years apart for most stocks).
-// Everything else updates quarterly, so 24h is fine.
+// Statements change only on a report; the freshness checks expire them early
+// (lib/cache/fundamentals-freshness.ts). Dividends keep 24h: a declaration lands any day.
 function ttlForType(type: FinancialType): number {
   if (type === 'splits') return 30 * 24 * 60 * 60;
-  return 24 * 60 * 60;
+  return type === 'dividends' ? 24 * 60 * 60 : STATEMENTS_TTL_SECONDS;
 }
 
 /**

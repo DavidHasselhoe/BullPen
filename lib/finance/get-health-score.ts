@@ -22,6 +22,7 @@ import {
   type CashFlowPeriod,
 } from '@/lib/twelvedata/twelvedata-client';
 import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
+import { STATEMENTS_TTL_SECONDS } from '@/lib/cache/fundamentals-freshness';
 import { coalesce } from '@/lib/cache/request-coalesce';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { computeHealthScore, healthColumns, HEALTH_SCORE_METHOD, type HealthScore } from '@/lib/finance/health-score';
@@ -29,7 +30,7 @@ import { recordHealthScoreSnapshot } from '@/lib/finance/health-score-history';
 import { createServerClient } from '@/lib/supabase/client';
 
 const STATS_TTL = 60 * 60; // 1 hour — matches /statistics route
-const FINANCIALS_TTL = 24 * 60 * 60; // 24 hours — matches /financials route
+const FINANCIALS_TTL = STATEMENTS_TTL_SECONDS;
 // Same reservations as the /statistics and /financials routes.
 const STATS_CREDITS = 50;
 const STATEMENT_CREDITS = 101;

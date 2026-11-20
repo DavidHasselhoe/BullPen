@@ -46,7 +46,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withCronReport } from '@/lib/cron/report';
 import { createServerClient } from '@/lib/supabase/client';
-import { checkRecentReporters } from '@/lib/cache/fundamentals-freshness';
+import { checkRecentReporters, STATEMENTS_TTL_SECONDS } from '@/lib/cache/fundamentals-freshness';
 import { logSecurityEvent } from '@/lib/security/security-events';
 import {
   batchFetch,
@@ -77,7 +77,7 @@ export const maxDuration = 120;
 const APIKEY = () => process.env.TWELVE_DATA_API_KEY ?? '';
 
 const STATS_TTL = 24 * 60 * 60;           // 24h — price-dependent, refresh daily
-const FINANCIALS_TTL = 7 * 24 * 60 * 60;  // 7 days — quarterly reports, slow-moving
+const FINANCIALS_TTL = STATEMENTS_TTL_SECONDS;
 const STATS_BATCH_SIZE = 5;               // symbols per batch (5 × 70 credits ≈ 350/call)
 /** /statistics (~50 credits/symbol) + /earnings (20 credits/symbol), reserved
  *  worst-case per symbol before firing — same shared per-minute budget

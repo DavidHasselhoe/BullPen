@@ -39,6 +39,7 @@ import { pendingReport } from '@/lib/finance/fiscal-label';
 import { getSymbolEarnings, epsSurprisePct } from '@/lib/market-data/symbol-earnings';
 import type { EarningsCalendar } from '@/lib/finnhub/finnhub-client';
 import { coalesce } from '@/lib/cache/request-coalesce';
+import { STATEMENTS_TTL_SECONDS } from '@/lib/cache/fundamentals-freshness';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { getHealthScoreForSymbol } from '@/lib/finance/get-health-score';
 import type { CategoryScore } from '@/lib/finance/health-score';
@@ -196,7 +197,7 @@ const CASH_FLOW_METRICS: Record<string, (r: CashFlowPeriod) => number | null> = 
 // message ("compare these 15 tickers' financials") can fan out into
 // thousands of uncapped, uncached credits with nothing to stop it repeating.
 const STATS_TTL_SECONDS = 24 * 60 * 60;
-const FINANCIALS_TTL_SECONDS = 24 * 60 * 60;
+const FINANCIALS_TTL_SECONDS = STATEMENTS_TTL_SECONDS;
 
 async function gatedFetch<T>(
   cacheKey: string,

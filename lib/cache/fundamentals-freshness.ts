@@ -22,6 +22,18 @@ const RECHECK_MS = 12 * 60 * 60 * 1000;
 const checkKey = (sym: string) => `fundamentals-check:${sym}`;
 
 /**
+ * How long income, balance and cash-flow rows live, for every writer of
+ * financials:{sym}:{income|balance|cashflow}:*. Statements only change when a
+ * company reports, and the checks in this file expire them early when
+ * TwelveData has: page views (hourly) and checkRecentReporters (daily, for
+ * REPORTED_LOOKBACK_DAYS after a report). At 7 days the nightly prefetch
+ * needed ~286 symbols a day at 303 credits against ~250 it can do, and a 24h
+ * writer (page, health score, Bull) sent its row back into that queue the next
+ * day. At 30 days it needs ~90 a day (2026-11-20).
+ */
+export const STATEMENTS_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+/**
  * Maps TwelveData data-type names to the cache key prefixes used by
  * app/api/stock/[ticker]/statistics and app/api/stock/[ticker]/financials.
  *
@@ -153,7 +165,8 @@ export async function checkAndInvalidateFundamentals(
 // ── After an earnings report ─────────────────────────────────────────────────
 
 /** How far back a report still gets its statements chased. */
-const REPORTED_LOOKBACK_DAYS = 10;
+// 45, not 10: TwelveData can take ~5 weeks to post a quarter (NBIS, a 6-K filer).
+const REPORTED_LOOKBACK_DAYS = 45;
 /** A report this long after the newest stored period end isn't in the statements yet (as pendingReport). */
 const BEHIND_DAYS = 95;
 const CREDITS_PER_CHECK = 5;
@@ -179,9 +192,9 @@ export function reportersBehind(
  * days and whose cached statements don't include it yet, so the financials
  * prefetch that runs next refetches the ones TwelveData has updated.
  *
- * The page-view check above was the only thing that could cut the 7-day
- * statement cache short, so a report nobody opened the stock page for waited
- * out the week. On 2026-10-30 all 241 large caps that had reported since
+ * The page-view check above was the only thing that could cut the statement
+ * cache short, so a report nobody opened the stock page for waited out the
+ * TTL (7 days then). On 2026-10-30 all 241 large caps that had reported since
  * Oct 20 (GOOGL, AMZN, MSFT, META among them) still had June statements, and
  * the Deep Dive and Bull read the same cache. Self-consuming like the
  * prefetch phases: a checked company drops out for RECHECK_MS.

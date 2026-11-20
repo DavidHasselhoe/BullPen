@@ -20,8 +20,9 @@ name: Cron — Prefetch Financials
 # live user traffic and for whichever other cron happens to overlap after
 # GitHub's scheduling drift.
 #
-# Ceiling: the universe is ~1,400 unique tickers on a 7-day cache TTL, so
-# steady state is ~200 symbols/day. 300 batches × 65s ≈ 5h25m gives real
+# Ceiling: the universe is ~2,000 tickers on a 30-day cache TTL (since
+# 2026-11-20; at 7 days it needed ~286/day, more than a run can do), so
+# steady state is ~90 symbols/day, more in earnings season. 300 batches × 65s ≈ 5h25m gives real
 # headroom over that; the loop breaks on `done: true` as soon as nothing is
 # left to warm, so a normal day exits early. The first run after a cold start
 # will not clear the whole backlog in one pass — it rolls forward over a few
@@ -69,9 +70,9 @@ jobs:
     if: needs.gate.outputs.run == 'true'
     timeout-minutes: 350
     steps:
-      # Statements are cached for 7 days and only a stock page view re-checks
-      # them early, so a company nobody opened sat on the old quarter for a
-      # week after reporting. This expires the ones TwelveData has updated
+      # Statements are cached for 30 days and only a stock page view re-checks
+      # them early, so a company nobody opened would sit on the old quarter
+      # for weeks after reporting. This expires the ones TwelveData has updated
       # since the report; the loop below then refetches them. 5 credits per
       # company, 20 per call; failures don't block the financials loop.
       - name: Re-check statements for recent earnings reporters
