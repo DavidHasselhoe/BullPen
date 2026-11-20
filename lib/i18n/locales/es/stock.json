@@ -485,6 +485,7 @@
   "financialsYearEndTitle": "Año fiscal finalizado {{date}}",
   "financialsReportedOn": "Presentado {{date}}",
   "financialsReportPending": "{{period}} se publicó el {{date}}. Sus estados financieros completos aún no están en nuestros datos.",
+  "financialsStatementsPending": "Estados pendientes",
   "financialsConvertedNote": "Mostrado en dólares estadounidenses. Convertido desde {{from}} a 1 USD = {{rate}} {{from}}, el tipo del {{date}}.",
   "sectorPeersHeading": "Más en {{sector}}",
   "sectorPeersSubtitle": "Empresas de tamaño similar en el mismo sector",

@@ -485,6 +485,7 @@
   "financialsYearEndTitle": "Geschäftsjahr endend {{date}}",
   "financialsReportedOn": "Berichtet {{date}}",
   "financialsReportPending": "{{period}} wurde am {{date}} veröffentlicht. Die vollständigen Finanzberichte sind in unseren Daten noch nicht enthalten.",
+  "financialsStatementsPending": "Berichte ausstehend",
   "financialsConvertedNote": "In US-Dollar angezeigt. Umgerechnet aus {{from}} zu 1 USD = {{rate}} {{from}}, Kurs vom {{date}}.",
   "sectorPeersHeading": "Mehr in {{sector}}",
   "sectorPeersSubtitle": "Unternehmen ähnlicher Größe aus demselben Sektor",

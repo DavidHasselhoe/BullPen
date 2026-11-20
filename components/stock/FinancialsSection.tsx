@@ -137,9 +137,14 @@ interface TableProps<T> {
   rows: TableRow<T>[];
   data: T[];
   columns: PeriodColumn[];
+  /** A quarter already reported whose statements aren't in yet: an empty column on the right, so the newest quarter isn't just missing. */
+  pending?: PeriodColumn | null;
 }
 
-function FinancialTable<T extends Record<string, unknown>>({ rows, data, columns }: TableProps<T>) {
+/** What the statement tables take from the section. */
+type StatementTableProps<T> = { data: T[]; columns: PeriodColumn[]; pending?: PeriodColumn | null };
+
+function FinancialTable<T extends Record<string, unknown>>({ rows, data, columns, pending }: TableProps<T>) {
   const { t } = useTranslation('stock');
   if (!data.length) {
     return (
@@ -172,6 +177,12 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, columns
                 )}
               </th>
             ))}
+            {pending && (
+              <th title={pending.title} className="py-2.5 text-right font-medium text-muted-foreground px-3 min-w-[90px]">
+                <span className="block">{pending.label}</span>
+                <span className="block text-[11px] font-normal">{t('financialsStatementsPending')}</span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -225,6 +236,7 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, columns
                     </td>
                   );
                 })}
+                {pending && <td className="py-2.5 px-3 text-right text-muted-foreground/60">—</td>}
               </tr>
             );
           })}
@@ -234,7 +246,7 @@ function FinancialTable<T extends Record<string, unknown>>({ rows, data, columns
   );
 }
 
-function IncomeTable({ data, columns }: { data: IncomeStatementPeriod[]; columns: PeriodColumn[] }) {
+function IncomeTable({ data, columns, pending }: StatementTableProps<IncomeStatementPeriod>) {
   const { t } = useTranslation('stock');
   const rows: TableProps<IncomeStatementPeriod>['rows'] = [
     { label: t('financialsRowRevenue'),          key: 'revenue',                                   fmt: (v) => fmtNum(v as number), highlight: true },
@@ -249,10 +261,10 @@ function IncomeTable({ data, columns }: { data: IncomeStatementPeriod[]; columns
     { label: t('financialsRowInterestExpense'),  key: 'interest_expense',                          fmt: (v) => fmtNum(v as number), costMetric: true },
     { label: t('financialsRowIncomeTax'),        key: 'income_tax_expense',                        fmt: (v) => fmtNum(v as number) },
   ];
-  return <FinancialTable rows={rows} data={data} columns={columns} />;
+  return <FinancialTable rows={rows} data={data} columns={columns} pending={pending} />;
 }
 
-function BalanceTable({ data, columns }: { data: BalanceSheetPeriod[]; columns: PeriodColumn[] }) {
+function BalanceTable({ data, columns, pending }: StatementTableProps<BalanceSheetPeriod>) {
   const { t } = useTranslation('stock');
   const rows: TableProps<BalanceSheetPeriod>['rows'] = [
     { label: t('financialsRowTotalAssets'),          key: 'total_assets',                fmt: (v) => fmtNum(v as number), highlight: true },
@@ -265,10 +277,10 @@ function BalanceTable({ data, columns }: { data: BalanceSheetPeriod[]; columns: 
     { label: t('financialsRowStockholdersEquity'),  key: 'total_stockholders_equity',   fmt: (v) => fmtNum(v as number), highlight: true },
     { label: t('financialsRowRetainedEarnings'),     key: 'retained_earnings',           fmt: (v) => fmtNum(v as number) },
   ];
-  return <FinancialTable rows={rows} data={data} columns={columns} />;
+  return <FinancialTable rows={rows} data={data} columns={columns} pending={pending} />;
 }
 
-function CashFlowTable({ data, columns }: { data: CashFlowPeriod[]; columns: PeriodColumn[] }) {
+function CashFlowTable({ data, columns, pending }: StatementTableProps<CashFlowPeriod>) {
   const { t } = useTranslation('stock');
   const rows: TableProps<CashFlowPeriod>['rows'] = [
     { label: t('financialsRowOperatingCashFlow'), key: 'operating_cash_flow',           fmt: (v) => fmtNum(v as number), highlight: true },
@@ -280,7 +292,7 @@ function CashFlowTable({ data, columns }: { data: CashFlowPeriod[]; columns: Per
     { label: t('financialsRowFinancingActivities'),key: 'financing_activities_cash_flow',fmt: (v) => fmtNum(v as number) },
     { label: t('financialsRowDividendsPaid'),      key: 'dividends_paid',                fmt: (v) => fmtNum(v as number) },
   ];
-  return <FinancialTable rows={rows} data={data} columns={columns} />;
+  return <FinancialTable rows={rows} data={data} columns={columns} pending={pending} />;
 }
 
 function DividendsTable({ data }: { data: DividendItem[] }) {
@@ -519,6 +531,11 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
   }));
   const periodLabels = periodColumns.map((c) => c.label);
   const pendingReportNote = pendingReport(earningsData, statementRows[0], annual);
+  const pendingColumn: PeriodColumn | null = pendingReportNote && {
+    label: fiscalLabel(t, pendingReportNote),
+    reported: pendingReportNote.date,
+    title: t('financialsReportPending', { period: fiscalLabel(t, pendingReportNote), date: fmtShortDate(pendingReportNote.date) }),
+  };
 
   // ── Chart-first lead per statement tab ─────────────────────────────────
   let chart: React.ReactNode = null;
@@ -748,9 +765,9 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
                     {t('financialsShowKeyTakeaways')}
                   </button>
                 )}
-                {activeTab === 'income' && <IncomeTable data={data.data as IncomeStatementPeriod[]} columns={periodColumns} />}
-                {activeTab === 'balance' && <BalanceTable data={data.data as BalanceSheetPeriod[]} columns={periodColumns} />}
-                {activeTab === 'cashflow' && <CashFlowTable data={data.data as CashFlowPeriod[]} columns={periodColumns} />}
+                {activeTab === 'income' && <IncomeTable data={data.data as IncomeStatementPeriod[]} columns={periodColumns} pending={pendingColumn} />}
+                {activeTab === 'balance' && <BalanceTable data={data.data as BalanceSheetPeriod[]} columns={periodColumns} pending={pendingColumn} />}
+                {activeTab === 'cashflow' && <CashFlowTable data={data.data as CashFlowPeriod[]} columns={periodColumns} pending={pendingColumn} />}
                 {activeTab === 'dividends' && <DividendsTable data={data.data as DividendItem[]} />}
                 {activeTab === 'splits' && <SplitsTable data={data.data as SplitItem[]} />}
               </>

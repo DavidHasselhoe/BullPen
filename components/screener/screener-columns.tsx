@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import type { HeatmapPriceEntry } from '@/hooks/use-heatmap-stream';
 import { HealthScoreDrillIn } from './HealthScoreDrillIn';
+import { PriceFlash } from '@/components/ui/price-flash';
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -187,7 +188,8 @@ export function getScreenerColumns(t: TFunction): ScreenerColumn[] {
     width: 92,
     getValue: (row, live) => live?.price ?? row.last_price ?? null,
     render: (row, live) => {
-      if (live) return fmtPrice(live.price);
+      // Flashes on each live tick. The first one mounts it, so the switch from last close to live doesn't flash.
+      if (live) return <PriceFlash value={live.price}>{fmtPrice(live.price)}</PriceFlash>;
       if (row.last_price != null) {
         return (
           <span className="text-muted-foreground" title={t('screenerColLastCloseTitle')}>

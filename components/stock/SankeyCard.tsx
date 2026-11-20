@@ -680,6 +680,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
   const [chartWidth, setChartWidth] = useState(0);
   const [tip, setTip]               = useState<Tip | null>(null);
   const containerRef                = useRef<HTMLDivElement>(null);
+  const pickerRef                   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -712,6 +713,16 @@ export function SankeyCard({ ticker }: { ticker: string }) {
   const labelOf = (r: IncomeStatementPeriod) => statementLabel(t, r, period === 'annual');
   const { data: earningsData } = useEarningsHistory(ticker);
   const pending = pendingReport(earningsData, rows[0], period === 'annual');
+  const pendingNote = pending
+    ? t('financialsReportPending', { period: fiscalLabel(t, pending), date: shortPeriodDate(pending.date) })
+    : null;
+
+  // The picker reads oldest to newest like the Earnings card, so on a narrow
+  // screen it starts scrolled to the newest end.
+  useEffect(() => {
+    const el = pickerRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [rows, pendingNote]);
 
   // Where the revenue came from, from the company's SEC filing. Absent on the
   // first view of a stock (the endpoint fills its cache in the background) and
@@ -807,14 +818,17 @@ export function SankeyCard({ ticker }: { ticker: string }) {
             </div>
 
             {/* Period picker */}
-            {rows.length > 1 && !isPlanRestricted && (
+            {(rows.length > 1 || (rows.length > 0 && pending)) && !isPlanRestricted && (
               // Scrolls rather than wrapping: five period buttons on a phone
               // used to break onto a second line and push the chart down.
-              <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-border bg-muted/50 p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {rows.map((r, i) => (
+              // Oldest on the left, newest on the right, like the Earnings card
+              // and the Financials table (rows arrive newest first).
+              <div ref={pickerRef} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border border-border bg-muted/50 p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {rows.map((r, i) => ({ r, i })).reverse().map(({ r, i }) => (
                   <button
                     key={r.fiscal_date}
                     onClick={() => setPeriodIdx(i)}
+                    aria-pressed={periodIdx === i}
                     title={t(period === 'annual' ? 'financialsYearEndTitle' : 'financialsPeriodEndTitle', { date: longPeriodDate(r.fiscal?.periodEnd ?? r.fiscal_date) })}
                     className={cn('shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-all', {
                       'bg-background text-foreground shadow-sm': periodIdx === i,
@@ -824,6 +838,16 @@ export function SankeyCard({ ticker }: { ticker: string }) {
                     {labelOf(r)}
                   </button>
                 ))}
+                {/* Reported, statements not in yet: a slot so the newest quarter
+                    isn't simply missing from the list. Not selectable. */}
+                {pending && pendingNote && (
+                  <span
+                    title={pendingNote}
+                    className="shrink-0 cursor-default rounded-md border border-dashed border-muted-foreground/40 px-2.5 py-[3px] text-xs font-medium text-muted-foreground/70"
+                  >
+                    {fiscalLabel(t, pending)}
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -884,13 +908,8 @@ export function SankeyCard({ ticker }: { ticker: string }) {
 
         {/* ── Newest results announced, statements not filed yet (same note as Financials).
             Shown over an empty period too: that is when it explains the most. ── */}
-        {!isLoading && !isPlanRestricted && pending && (
-          <p className="px-6 pb-1 text-xs text-muted-foreground">
-            {t('financialsReportPending', {
-              period: fiscalLabel(t, pending),
-              date: shortPeriodDate(pending.date),
-            })}
-          </p>
+        {!isLoading && !isPlanRestricted && pendingNote && (
+          <p className="px-6 pb-1 text-xs text-muted-foreground">{pendingNote}</p>
         )}
 
         {!isLoading && !noData && !isPlanRestricted && data?.fx && (
