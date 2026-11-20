@@ -140,7 +140,7 @@
   "sectorPerfTimeframeAriaLabel": "Zeitraum",
   "sectorRowLoadError": "Die Unternehmen dieses Sektors konnten gerade nicht geladen werden.",
   "sectorRowTaglineSuffix": "{{tagline}} · größte Bewegungen zuerst",
-  "starterAskBull": "Ask Bull anything",
+  "starterAskBull": "Frag Bull, was du willst",
   "starterDoneEmpty": "Wähle mindestens eine aus",
   "starterDone_one": "Weiter mit {{count}} Aktie",
   "starterDone_other": "Weiter mit {{count}} Aktien",

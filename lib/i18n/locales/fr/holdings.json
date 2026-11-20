@@ -240,7 +240,7 @@
   "riskAnalysisAnalyzingGeneric": "Notation du portefeuille. Généralement moins d'une minute.",
   "riskAnalysisAnalyzingSubtext_one": "Analyse de {{count}} position. Généralement moins d'une minute.",
   "riskAnalysisAnalyzingSubtext_other": "Analyse de {{count}} positions. Généralement moins d'une minute.",
-  "riskAnalysisAskBullAboutThis": "Ask Bull à ce sujet",
+  "riskAnalysisAskBullAboutThis": "Interrogez Bull à ce sujet",
   "riskAnalysisAskBullContextLabel": "Votre portefeuille",
   "riskAnalysisEmptyDescription_one": "Concentration, exposition sectorielle, corrélation, liquidité et scénarios de stress sur votre {{count}} titre.",
   "riskAnalysisEmptyDescription_other": "Concentration, exposition sectorielle, corrélation, liquidité et scénarios de stress sur vos {{count}} titres.",

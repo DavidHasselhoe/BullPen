@@ -244,7 +244,7 @@
   "riskAnalysisAnalyzingGeneric": "Vurderer porteføljen. Tar vanligvis mindre enn ett minutt.",
   "riskAnalysisAnalyzingSubtext_one": "Analyserer {{count}} beholdning. Vanligvis under ett minutt.",
   "riskAnalysisAnalyzingSubtext_other": "Analyserer {{count}} beholdninger. Vanligvis under ett minutt.",
-  "riskAnalysisAskBullAboutThis": "Ask Bull om dette",
+  "riskAnalysisAskBullAboutThis": "Spør Bull om dette",
   "riskAnalysisAskBullContextLabel": "Din portefølje",
   "riskAnalysisEmptyDescription_one": "Konsentrasjon, sektoreksponering, korrelasjon, likviditet og stressscenarier på tvers av din {{count}} beholdning.",
   "riskAnalysisEmptyDescription_other": "Konsentrasjon, sektoreksponering, korrelasjon, likviditet og stressscenarier på tvers av dine {{count}} beholdninger.",

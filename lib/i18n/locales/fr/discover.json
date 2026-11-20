@@ -666,7 +666,7 @@
   "briefSourceCount_one": "{{count}} source",
   "briefSourceCount_other": "{{count}} sources",
   "briefTocSectionsAriaLabel": "Sections",
-  "starterAskBull": "Ask Bull anything",
+  "starterAskBull": "Posez toutes vos questions à Bull",
   "instConcentrationLabel": "Concentration",
   "instMetricPositions_one": "<0>{{formatted}}</0> position",
   "instMetricPositions_other": "<0>{{formatted}}</0> positions",

@@ -653,7 +653,7 @@
   "commodityReturnsPeriod_one": "{{count}}年",
   "commodityReturnsPeriod_other": "{{count}}年",
   "commodityReturnsSp500": "S&P 500",
-  "commodityReturnsNote": "The S&P 500 column is the SPY fund's price change, before dividends.",
+  "commodityReturnsNote": "标普500一栏为SPY基金的价格变动，不含股息。",
   "commodityRatioLabel": "金银比",
   "commodityRatioInsight": "一盎司黄金可以购买{{ratio}}盎司白银。10年平均值为{{avg}}。",
   "commoditySpreadLabel": "布伦特与WTI价差",
@@ -760,6 +760,6 @@
   "dividendsAnswerNotYet": "暂时没有。",
   "healthMethodologyMarketRisk": "数值越高越稳健：低贝塔系数（波动性）且季度盈利持续稳定",
   "dividendsMetaTitle": "{{name}}（{{ticker}}）股息：股息率、派息与历史记录",
-  "commodityReturnsTitle": "Price change vs the S&P 500",
+  "commodityReturnsTitle": "与标普500的价格变动对比",
   "earningsEmailPlaceholder": "you@email.com"
 }

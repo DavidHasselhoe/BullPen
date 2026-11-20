@@ -140,7 +140,7 @@
   "sectorPerfTimeframeAriaLabel": "時間枠",
   "sectorRowLoadError": "現在、このセクターの企業を読み込めません。",
   "sectorRowTaglineSuffix": "{{tagline}} · 値動きが大きい順",
-  "starterAskBull": "Ask Bullに何でも質問できます",
+  "starterAskBull": "Bullに何でも質問",
   "starterDoneEmpty": "少なくとも1つ選んでください",
   "starterDone_one": "{{count}}銘柄で続行",
   "starterDone_other": "{{count}}銘柄で続行",

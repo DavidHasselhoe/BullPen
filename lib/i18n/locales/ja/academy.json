@@ -32,7 +32,7 @@
   "scenarioLessonContinue": "続ける",
   "completionCelebrationXpEarned": "獲得 XP",
   "readLessonAskAiQuery": "{{term}} をもっと詳しく、簡単な例で説明してもらえますか？既に知っている簡単な定義：{{definition}}",
-  "readLessonAskAiForMore": "Ask Bull でさらに詳しく知る",
+  "readLessonAskAiForMore": "Bullにもっと聞く",
   "readLessonFunFact": "豆知識",
   "quizLessonProgress": "{{current}}/{{total}}",
   "quizLessonCorrect": "その通り、正解です",

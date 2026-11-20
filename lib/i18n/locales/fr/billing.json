@@ -149,7 +149,7 @@
   "upgradeBeatWhyDesc": "Appuyez sur Pourquoi ? sur un mouvement important et Bull lit les informations pour l'expliquer en une ou deux phrases.",
   "upgradeBeatWhyAlt": "Une page d'action dans BullPen avec l'explication Pourquoi ? sous le prix",
   "upgradeBeatAskTime": "À tout moment",
-  "upgradeBeatAskTitle": "Posez n'importe quelle question à Ask Bull",
+  "upgradeBeatAskTitle": "Posez toutes vos questions à Bull",
   "upgradeBeatAskDesc": "Jusqu'à {{limit}} questions par jour, des bases jusqu'à votre propre portefeuille.",
   "upgradeBeatAskExample1": "Qu'est-ce qu'un P/E ?",
   "upgradeBeatAskExample2": "Suis-je bien diversifié ?",

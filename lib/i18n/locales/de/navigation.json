@@ -140,7 +140,7 @@
   "notifDailyBriefTitle": "Dein Tagesbriefing ist bereit",
   "notifDividendOneTitle": "{{symbol}} wird am {{date}} ex-Dividende gehandelt",
   "notifDividendOneMessage": "Aktien, die vor dem {{date}} gekauft werden, erhalten die nächste Ausschüttung.",
-  "notifDividendManyTitle_one": "{{count}} of your stocks goes ex-dividend soon",
+  "notifDividendManyTitle_one": "{{count}} deiner Aktien wird bald ex-Dividende gehandelt",
   "notifDividendManyTitle_other": "{{count}} deiner Aktien werden bald ex-Dividende gehandelt",
   "notifStreakTitle": "Halte deine Serie am Laufen",
   "notifStreakMessage": "Die heutige Challenge in der Academy wartet noch auf dich. Sie dauert etwa eine Minute.",

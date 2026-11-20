@@ -246,7 +246,7 @@
   "riskAnalysisAnalyzingGeneric": "ポートフォリオをスコアリング中です。通常は1分以内で完了します。",
   "riskAnalysisAnalyzingSubtext_one": "{{count}}件の保有銘柄を分析中。通常1分以内で完了します。",
   "riskAnalysisAnalyzingSubtext_other": "{{count}}件の保有銘柄を分析中。通常1分以内で完了します。",
-  "riskAnalysisAskBullAboutThis": "Ask Bullについて聞く",
+  "riskAnalysisAskBullAboutThis": "これについてBullに聞く",
   "riskAnalysisAskBullContextLabel": "ポートフォリオ",
   "riskAnalysisEmptyDescription_one": "集中度、セクター暴露、相関性、流動性、ストレステスト結果を{{count}}個の保有銘柄全体で分析します。",
   "riskAnalysisEmptyDescription_other": "集中度、セクター暴露、相関性、流動性、ストレステスト結果を{{count}}個の保有銘柄全体で分析します。",

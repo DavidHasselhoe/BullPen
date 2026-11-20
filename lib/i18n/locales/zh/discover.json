@@ -140,7 +140,7 @@
   "sectorPerfTimeframeAriaLabel": "时间范围",
   "sectorRowLoadError": "暂时无法加载该行业的公司。",
   "sectorRowTaglineSuffix": "{{tagline}} · 涨跌幅最大的优先",
-  "starterAskBull": "问 Ask Bull 任何问题",
+  "starterAskBull": "有问题尽管问 Bull",
   "starterDoneEmpty": "至少选择一个",
   "starterDone_one": "继续查看 {{count}} 只股票",
   "starterDone_other": "继续查看 {{count}} 只股票",
@@ -683,6 +683,6 @@
   "fundChangesPitch": "Pro 显示自上次申报以来的每一笔买入、卖出和新建仓位，以及以往季度。",
   "fundChangesUnlock": "查看变化",
   "fundLockedTitle": "早期季度数据是 Pro 功能",
-  "indexColWeightTip_sp500": "How much of SPY, a fund that tracks the S&P 500, is in this company, as of {{date}}. Bigger companies count for more.",
+  "indexColWeightTip_sp500": "截至{{date}}，该公司在跟踪标普500指数的基金SPY中所占的比例。公司规模越大，权重越大。",
   "spotlightMemberTrades_one": "近 12 个月 {{count}} 笔交易"
 }

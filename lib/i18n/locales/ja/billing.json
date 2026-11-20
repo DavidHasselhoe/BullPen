@@ -150,7 +150,7 @@
   "upgradeBeatWhyDesc": "大きな動きで「なぜ？」をタップすると、Bull がニュースを読んで 1 〜 2 文で説明します。",
   "upgradeBeatWhyAlt": "BullPen の銘柄ページ、価格の下に理由の説明が表示されている",
   "upgradeBeatAskTime": "いつでも",
-  "upgradeBeatAskTitle": "Ask Bull に何でも質問",
+  "upgradeBeatAskTitle": "Bullに何でも質問",
   "upgradeBeatAskDesc": "1日最大{{limit}}件の質問に対応します。基本的な内容から、ご自身のポートフォリオに関するものまで。",
   "upgradeBeatAskExample1": "P/E はいくつですか？",
   "upgradeBeatAskExample2": "私はどのくらい分散投資されていますか？",

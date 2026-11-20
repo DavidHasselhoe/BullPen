@@ -150,7 +150,7 @@
   "upgradeBeatWhyDesc": "Tippe auf Warum? bei einer großen Bewegung und Bull liest die Nachrichten, um es dir in ein oder zwei Sätzen zu erklären.",
   "upgradeBeatWhyAlt": "Eine Aktiendetailseite in BullPen mit der Erklärung Warum? unter dem Kurs",
   "upgradeBeatAskTime": "Jederzeit",
-  "upgradeBeatAskTitle": "Ask Bull anything",
+  "upgradeBeatAskTitle": "Frag Bull, was du willst",
   "upgradeBeatAskDesc": "Bis zu {{limit}} Fragen pro Tag, von den Grundlagen bis zu deinem eigenen Portfolio.",
   "upgradeBeatAskExample1": "Was ist ein P/E-Verhältnis?",
   "upgradeBeatAskExample2": "Wie diversifiziert bin ich?",

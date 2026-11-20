@@ -14,7 +14,7 @@
   "tellMeAboutQuery": "{{ticker}} について教えてください",
   "deepDiveLabel": "Deep Dive",
   "compareLabel": "比較",
-  "askBullAboutLabel": "Ask Bull で質問",
+  "askBullAboutLabel": "Bullに質問：",
   "setPriceAlertForLabel": "価格アラートを設定",
   "askBullLabel": "Ask Bull",
   "aboutMutedLabel": "について",

@@ -142,7 +142,7 @@
   "notifDailyBriefTitle": "Votre Résumé quotidien est prêt",
   "notifDividendOneTitle": "{{symbol}} détache son dividende le {{date}}",
   "notifDividendOneMessage": "Les actions achetées avant le {{date}} touchent le prochain versement.",
-  "notifDividendManyTitle_one": "{{count}} of your stocks goes ex-dividend soon",
+  "notifDividendManyTitle_one": "{{count}} de vos actions détache bientôt son dividende",
   "notifDividendManyTitle_other": "{{count}} de vos actions détachent bientôt leur dividende",
   "notifStreakTitle": "Gardez votre série active",
   "notifStreakMessage": "Le défi Académie du jour vous attend encore. Il ne prend qu'une minute environ.",

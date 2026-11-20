@@ -32,7 +32,7 @@
   "scenarioLessonContinue": "Continuer",
   "completionCelebrationXpEarned": "XP gagnée",
   "readLessonAskAiQuery": "Pouvez-vous expliquer {{term}} plus en détail, avec un exemple simple ? Définition rapide que j'ai déjà : {{definition}}",
-  "readLessonAskAiForMore": "Ask Bull pour plus",
+  "readLessonAskAiForMore": "Demandez-en plus à Bull",
   "readLessonFunFact": "Fait amusant",
   "quizLessonProgress": "{{current}}/{{total}}",
   "quizLessonCorrect": "Bravo, c'est juste",
