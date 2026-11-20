@@ -98,7 +98,7 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
         how = 'Found the Reel you posted';
       } else {
         result = await publishReel({ videoUrl: post.video_url!, caption: post.caption, thumbOffsetMs: REEL_THUMB_OFFSET_MS });
-        if (post.handoff_at) how = 'Nobody posted the Reel in time, so it went out automatically with no music';
+        if (post.handoff_at) how = 'Nobody posted the Reel in time, so the version with our music and no voice went out automatically';
       }
     } else {
       result = await publishCarousel({ imageUrls, altTexts, caption: post.caption });
