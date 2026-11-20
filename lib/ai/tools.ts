@@ -37,7 +37,6 @@ import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-ca
 import { statementsInUsd } from '@/lib/currency/latest-rates';
 import { pendingReport } from '@/lib/finance/fiscal-label';
 import { getSymbolEarnings, epsSurprisePct } from '@/lib/market-data/symbol-earnings';
-import type { EarningsCalendar } from '@/lib/finnhub/finnhub-client';
 import { coalesce } from '@/lib/cache/request-coalesce';
 import { STATEMENTS_TTL_SECONDS } from '@/lib/cache/fundamentals-freshness';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
@@ -263,9 +262,10 @@ type PendingFields = { pendingReport?: { quarter: string; reportedOn: string } }
  * Aug 12, in TwelveData Sep 14), and Bull called the quarter before "the latest".
  */
 async function pendingStatements(ticker: string, newestRow: { fiscal_date: string } | undefined, period: 'annual' | 'quarterly'): Promise<PendingFields> {
-  // ponytail: only stocks whose page has cached its earnings rows; also read the market calendar if Bull misses one.
-  const history = await getCachedStale<EarningsCalendar[]>(`earnings-calendar:${ticker}`);
-  const p = pendingReport(history ?? undefined, newestRow, period === 'annual');
+  // The card's merged, fiscal-labelled rows: raw TwelveData history lags exactly
+  // the reports this is for. Cache-only for TwelveData; Nasdaq is free.
+  const rows = await getSymbolEarnings(ticker, { allowFetch: false }).catch(() => []);
+  const p = pendingReport(rows, newestRow, period === 'annual');
   return p ? { pendingReport: { quarter: `Q${p.quarter} ${p.year}`, reportedOn: p.date } } : {};
 }
 
@@ -1618,7 +1618,7 @@ const getCompanyFinancials = tool({
     // decide between this and the 1-credit single-metric tool.
     'Expensive: about 100 API credits per call, against 1 credit for getCompanyMetrics. ' +
     'Prefer getCompanyMetrics when a single line item over time would answer the question; ' +
-    'use this when the user wants a whole statement. Results are cached server-side for 24h. ' +
+    'use this when the user wants a whole statement. Results are cached server-side for up to 30 days and refreshed early after a new report. ' +
     CONVERTED_STATEMENTS_NOTE + ' ' + PENDING_REPORT_NOTE,
   inputSchema: jsonSchema<{ ticker: string; type: 'income' | 'balance' | 'cashflow'; period: 'annual' | 'quarterly' }>({
     type: 'object',
@@ -1771,7 +1771,10 @@ const getEarningsData = tool({
             epsEstimate: estimate?.toFixed(2) ?? 'N/A',
             epsActualRaw: actual ?? null,
             epsEstimateRaw: estimate ?? null,
-            result: actual != null && estimate != null ? (actual >= estimate ? 'Beat' : 'Missed') : 'N/A',
+            // Same cent threshold as the card's DeltaBar, which shows an exact match as met.
+            result: actual != null && estimate != null
+              ? Math.abs(actual - estimate) < 0.005 ? 'Met' : actual > estimate ? 'Beat' : 'Missed'
+              : 'N/A',
             surprise: pct != null ? `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%` : 'N/A',
           };
         }),

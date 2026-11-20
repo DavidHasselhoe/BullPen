@@ -35,13 +35,13 @@ async function getNasdaqEps(ticker: string): Promise<NasdaqEpsReport[]> {
  * Per-symbol /earnings history, cached. It ignores from/to (TD returns the
  * latest 8 rows), so one entry per ticker serves every caller.
  */
-async function getHistory(ticker: string): Promise<EarningsCalendar[]> {
+async function getHistory(ticker: string, allowFetch: boolean): Promise<EarningsCalendar[]> {
   // TwelveData's history for this symbol is another company's (ticker-overrides.ts).
   if (getTickerOverride(ticker)?.unavailable) return [];
   const cacheKey = `earnings-calendar:${ticker}`;
   const cached = await getCached<EarningsCalendar[]>(cacheKey);
   if (cached) return cached;
-  if (!(await tryReserveOrganicCredits(HISTORY_CREDITS))) {
+  if (!allowFetch || !(await tryReserveOrganicCredits(HISTORY_CREDITS))) {
     return (await getCachedStale<EarningsCalendar[]>(cacheKey)) ?? [];
   }
   const history = await getEarningsCalendar('', '', ticker);
@@ -56,7 +56,7 @@ async function getHistory(ticker: string): Promise<EarningsCalendar[]> {
  * getEarningsData reads this too, so it can't quote a different beat than the
  * card (NBIS Q3 2026: card +149% from Nasdaq, Bull -89.5% from TwelveData).
  */
-export async function getSymbolEarnings(ticker: string): Promise<EarningsCalendar[]> {
+export async function getSymbolEarnings(ticker: string, { allowFetch = true } = {}): Promise<EarningsCalendar[]> {
   // The market calendar's own rows for this company, from cache only (no
   // credits). Nasdaq-confirmed ones fill in what the history feed lags on.
   const today = todayET();
@@ -71,7 +71,7 @@ export async function getSymbolEarnings(ticker: string): Promise<EarningsCalenda
 
   let history: EarningsCalendar[] = [];
   try {
-    history = await getHistory(ticker);
+    history = await getHistory(ticker, allowFetch);
   } catch (error) {
     // Rate limit or provider failure: the calendar rows below can still show something.
     logger.warn(`[earnings-calendar] Failed for ${ticker}`, { error });
