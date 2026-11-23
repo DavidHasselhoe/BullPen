@@ -4,6 +4,11 @@
     "entries": [
       {
         "type": "improved",
+        "text": "BullPen now runs on a bigger database server, so holdings, watchlists and stock pages get their data faster and long waits are much rarer",
+        "highlight": true
+      },
+      {
+        "type": "improved",
         "text": "Navigation is simpler. The Feed from the funds, politicians and investors you follow now lives in Notifications under Following, and the Tools menu shows the six research tools, with the rest one tap away under View all tools",
         "highlight": true
       },
