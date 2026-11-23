@@ -553,6 +553,7 @@
   "dividendsFindPayers": "Trouver des actions qui versent un dividende",
   "dividendsYearSoFar": "{{year}} jusqu'à présent",
   "dividendsNext": "Projeter 10 actions de {{name}} sur 10 ans",
+  "stockBuyHereLink": "Ce qu'aurait rapporté {{ticker}}",
   "congressMetaTitle": "Transactions de {{name}} ({{ticker}}) par les membres du Congrès",
   "congressMetaDescription": "Quels membres du Congrès ont acheté ou vendu des actions {{name}} ({{ticker}}), combien, et quand ils l'ont signalé.",
   "congressH1": "Transactions de {{name}} par les membres du Congrès",

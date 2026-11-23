@@ -555,6 +555,7 @@
   "dividendsFindPayers": "Aktien finden, die eine Dividende zahlen",
   "dividendsYearSoFar": "{{year}} bisher",
   "dividendsNext": "10 Aktien von {{name}} über 10 Jahre hochrechnen",
+  "stockBuyHereLink": "Was {{ticker}} eingebracht hätte",
   "congressMetaTitle": "{{name}} ({{ticker}}) Aktiengeschäfte von Kongressmitgliedern",
   "congressMetaDescription": "Welche Kongressmitglieder haben {{name}} ({{ticker}}) Aktien gekauft oder verkauft, wie viel und wann haben sie es gemeldet.",
   "congressH1": "{{name}} Geschäfte von Kongressmitgliedern",

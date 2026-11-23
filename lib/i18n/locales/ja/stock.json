@@ -564,6 +564,7 @@
   "dividendsFindPayers": "配当を支払う銘柄を探す",
   "dividendsYearSoFar": "{{year}}年の今年これまで",
   "dividendsNext": "{{name}}の10株を10年間で試算する",
+  "stockBuyHereLink": "{{ticker}}に投資していたら",
   "congressMetaTitle": "{{name}} ({{ticker}}) 議会議員の株取引",
   "congressMetaDescription": "{{name}} ({{ticker}}) 株を購入または売却した議会議員、金額、および報告時期。",
   "congressH1": "{{name}} の議会議員による取引",

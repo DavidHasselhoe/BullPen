@@ -258,11 +258,13 @@ function BuyHereChart({
   );
 }
 
-export default function BuyHereClientPage() {
+export default function BuyHereClientPage({ initialStock }: { initialStock?: { ticker: string; name: string } }) {
   const { t } = useTranslation('tools');
   const { user } = useAuth();
   const { roundNumbers } = useUserSettings();
-  const [selectedStock, setSelectedStock] = useState<SearchResult | null>(null);
+  const [selectedStock, setSelectedStock] = useState<SearchResult | null>(
+    initialStock ? { ...initialStock, cik: '', has_data: true } : null
+  );
   const [amount, setAmount] = useState('10,000');
   const [timeIndex, setTimeIndex] = useState<number | null>(2);
   const [customDate, setCustomDate] = useState('');
@@ -291,7 +293,9 @@ export default function BuyHereClientPage() {
     return (usdValue: number) => fmt(convertCurrency(usdValue, 'USD', currency, rates ?? null));
   }, [currency, rates]);
 
+  // The last ticker comes back on a plain visit; a ?ticker= link wins.
   useEffect(() => {
+    if (initialStock) return;
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -301,7 +305,7 @@ export default function BuyHereClientPage() {
     } catch {
       // ignore
     }
-  }, []);
+  }, [initialStock]);
 
   const persistTicker = useCallback((stock: SearchResult | null) => {
     if (stock) {

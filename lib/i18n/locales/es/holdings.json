@@ -425,6 +425,7 @@
   "dividendHubUnknownShares": "Añade el número de acciones de {{list}} para incluirlo en el total.",
   "dividendHubMenu": "Opciones de dividendos",
   "dividendHubHide": "Ocultar de Mis posiciones",
+  "dividendHubCalculator": "Proyectar estos ingresos en la calculadora de dividendos",
   "dividendHubHidden": "Dividendos ocultos. Puedes volver a activarlos en Ajustes.",
   "dividendHubUndo": "Deshacer",
   "dividendHubSaveError": "No se pudo guardar. Inténtalo de nuevo.",

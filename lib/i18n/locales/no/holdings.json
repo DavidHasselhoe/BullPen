@@ -425,6 +425,7 @@
   "dividendHubUnknownShares": "Legg inn antall aksjer for {{list}} for å ta det med i summen.",
   "dividendHubMenu": "Valg for utbytte",
   "dividendHubHide": "Skjul fra Min beholdning",
+  "dividendHubCalculator": "Regn fram inntekten i utbyttekalkulatoren",
   "dividendHubHidden": "Utbytte er skjult. Du kan slå det på igjen i Innstillinger.",
   "dividendHubUndo": "Angre",
   "dividendHubSaveError": "Kunne ikke lagre. Prøv igjen.",

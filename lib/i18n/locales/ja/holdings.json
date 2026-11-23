@@ -424,6 +424,7 @@
   "dividendHubUnknownShares": "{{list}} の株数を入力すると合計に含まれます。",
   "dividendHubMenu": "配当のオプション",
   "dividendHubHide": "保有銘柄から非表示",
+  "dividendHubCalculator": "配当計算機でこの収入を予測",
   "dividendHubHidden": "配当を非表示にしました。設定から再表示できます。",
   "dividendHubUndo": "元に戻す",
   "dividendHubSaveError": "保存できませんでした。もう一度お試しください。",

@@ -425,6 +425,7 @@
   "dividendHubUnknownShares": "Gib für {{list}} eine Stückzahl an, um sie in die Summe aufzunehmen.",
   "dividendHubMenu": "Dividenden-Optionen",
   "dividendHubHide": "Aus Meine Positionen ausblenden",
+  "dividendHubCalculator": "Dieses Einkommen im Dividendenrechner hochrechnen",
   "dividendHubHidden": "Dividenden ausgeblendet. Du kannst sie in den Einstellungen wieder einschalten.",
   "dividendHubUndo": "Rückgängig",
   "dividendHubSaveError": "Speichern fehlgeschlagen. Versuche es erneut.",

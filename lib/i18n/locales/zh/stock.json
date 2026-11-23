@@ -564,6 +564,7 @@
   "dividendsFindPayers": "查找派息股票",
   "dividendsYearSoFar": "{{year}} 年至今",
   "dividendsNext": "预测未来10年持有10股{{name}}的收益",
+  "stockBuyHereLink": "当初投资 {{ticker}} 的回报",
   "congressMetaTitle": "{{name}} ({{ticker}}) 国会成员股票交易",
   "congressMetaDescription": "国会成员买卖 {{name}} ({{ticker}}) 股票的情况、金额和报告日期。",
   "congressH1": "{{name}} 国会成员交易记录",

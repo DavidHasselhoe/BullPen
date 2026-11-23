@@ -424,6 +424,7 @@
   "dividendHubUnknownShares": "为 {{list}} 填写股数后即可计入总额。",
   "dividendHubMenu": "股息选项",
   "dividendHubHide": "从我的持仓中隐藏",
+  "dividendHubCalculator": "在股息计算器中预测这笔收入",
   "dividendHubHidden": "股息已隐藏。您可以在设置中重新开启。",
   "dividendHubUndo": "撤销",
   "dividendHubSaveError": "无法保存，请重试。",

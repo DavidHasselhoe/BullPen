@@ -555,6 +555,7 @@
   "dividendsFindPayers": "Finn aksjer som betaler utbytte",
   "dividendsYearSoFar": "{{year}} så langt",
   "dividendsNext": "Beregn 10 aksjer i {{name}} over 10 år",
+  "stockBuyHereLink": "Hva {{ticker}} ville gitt",
   "congressMetaTitle": "{{name}} ({{ticker}}) aksjehandler av medlemmer i Kongressen",
   "congressMetaDescription": "Hvilke medlemmer av Kongressen kjøpte eller solgte {{name}} ({{ticker}}) aksjer, hvor mye, og når de rapporterte det.",
   "congressH1": "{{name}} handler av medlemmer i Kongressen",

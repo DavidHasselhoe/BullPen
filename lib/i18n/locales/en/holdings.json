@@ -425,6 +425,7 @@
   "dividendHubUnknownShares": "Add a share count to {{list}} to include it in the total.",
   "dividendHubMenu": "Dividends options",
   "dividendHubHide": "Hide from My Holdings",
+  "dividendHubCalculator": "Project this income in the Dividend Calculator",
   "dividendHubHidden": "Dividends hidden. You can turn them back on in Settings.",
   "dividendHubUndo": "Undo",
   "dividendHubSaveError": "Couldn't save that. Try again.",

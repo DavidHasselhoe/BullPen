@@ -15,7 +15,7 @@ import type { IndexBadgeFact } from '@/lib/market-data/index-events';
 import { heldIndexFunds, type IndexId } from '@/lib/market-data/index-membership';
 import { isOpenPosition } from '@/lib/holdings/open-position';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MoreHorizontal, Telescope } from 'lucide-react';
+import { ArrowLeft, Calculator, MoreHorizontal, Telescope } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog } from '@/components/alerts/AlertDialog';
 import Link from 'next/link';
@@ -451,7 +451,15 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
                               <p className="text-xs font-medium text-muted-foreground">{t('stockViewMode')}</p>
                               <ExperienceLevelToggle className="w-fit" />
                             </div>
-                            <PinToggleButton symbol={ticker} />
+                            <div className="flex flex-col items-start gap-2">
+                              <PinToggleButton symbol={ticker} />
+                              <Button asChild variant="outline" size="sm" className="gap-2">
+                                <Link href={`/tools/buy-here?ticker=${encodeURIComponent(ticker)}&name=${encodeURIComponent(displayName)}`}>
+                                  <Calculator className="h-4 w-4" aria-hidden />
+                                  {t('stockBuyHereLink', { ticker })}
+                                </Link>
+                              </Button>
+                            </div>
                           </PopoverContent>
                         </Popover>
                       </div>

@@ -566,6 +566,7 @@
   "dividendsFindPayers": "Find stocks that pay one",
   "dividendsYearSoFar": "{{year}} so far",
   "dividendsNext": "Project 10 shares of {{name}} over 10 years",
+  "stockBuyHereLink": "What {{ticker}} would have returned",
   "congressMetaTitle": "{{name}} ({{ticker}}) Stock Trades by Members of Congress",
   "congressMetaDescription": "Which members of Congress bought or sold {{name}} ({{ticker}}) stock, how much, and when they reported it.",
   "congressH1": "{{name}} trades by members of Congress",

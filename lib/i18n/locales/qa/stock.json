@@ -566,6 +566,7 @@
   "dividendsFindPayers": "«Fiind stoocks thaat paay oonee»",
   "dividendsYearSoFar": "«{{year}} soo faar»",
   "dividendsNext": "«Proojeect 10 shaarees oof {{name}} ooveer 10 yeeaars»",
+  "stockBuyHereLink": "«Whaat {{ticker}} woouuld haavee reetuurneed»",
   "congressMetaTitle": "«{{name}} ({{ticker}}) Stoock Traadees by Meembeers oof Coongreess»",
   "congressMetaDescription": "«Whiich meembeers oof Coongreess boouught oor soold {{name}} ({{ticker}}) stoock, hoow muuch, aand wheen theey reepoorteed iit.»",
   "congressH1": "«{{name}} traadees by meembeers oof Coongreess»",

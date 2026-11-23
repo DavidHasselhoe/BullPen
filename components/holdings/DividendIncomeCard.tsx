@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Trans, useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Coins, EyeOff, Maximize2, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { ArrowRight, Coins, EyeOff, Maximize2, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -230,6 +230,9 @@ export function DividendIncomeCard({ symbols }: { symbols: string[] }) {
     .filter((h) => !h.next && !tiles.some((e) => e.symbol === h.symbol))
     .slice(0, PREVIEW_TILES - tiles.length);
   const yearTotal = upcoming.reduce((s, e) => s + (e.total ?? 0), 0);
+  // The calculator projects these same holdings forward. Seeding never touches a saved calculator portfolio.
+  const seed = data.holdings.flatMap((h) => (h.shares ? [{ ticker: h.symbol, name: h.name, mode: 'shares', value: String(h.shares) }] : []));
+  const calculatorHref = seed.length > 0 ? `/tools/dividend?seed=${encodeURIComponent(JSON.stringify(seed))}` : '/tools/dividend';
 
   return (
     <Card id="dividends" className="scroll-mt-24 gap-3 py-5">
@@ -257,6 +260,13 @@ export function DividendIncomeCard({ symbols }: { symbols: string[] }) {
             />
           ))}
         </ul>
+        <Link
+          href={calculatorHref}
+          className="mt-3 inline-flex items-center gap-1 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {t('dividendHubCalculator')}
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
         {saveError}
       </CardContent>
 
