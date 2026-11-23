@@ -55,7 +55,7 @@ const ICON_BY_SLUG = new Map(THEME_DISPLAY_ORDER.map((t) => [t.slug, t.icon]));
  * and show one at a time, each with its one-sentence reason in plain text
  * under the chips (it was a "?" tooltip a phone user had to discover).
  */
-export function IdeasSection({ collections }: { collections: DiscoverFeed['collections'] }) {
+export function IdeasSection({ collections }: { collections?: DiscoverFeed['collections'] }) {
   const { t } = useTranslation('discover');
   const ownedSymbols = useOwnedSymbols();
   const [picked, setPicked] = useState<ListKey | null>(null);
@@ -87,6 +87,8 @@ export function IdeasSection({ collections }: { collections: DiscoverFeed['colle
   }, [data?.themes, ownedSymbols, t]);
 
   const lists = useMemo(() => {
+    // No feed (it failed): Themes come from their own query and still show.
+    if (!collections) return [];
     const { trending, qualityDiscount, near52High, near52Low } = collections;
     const personalized = trending.mode === 'personalized';
     // No name a reasoned list already carries: HD sat in "Because of what you

@@ -97,7 +97,7 @@ export function DiscoverClient() {
       )}
       <MarketMovers />
       {feed ? <SectorPerformance sectors={feed.sectors} /> : isLoading && <SectorSkeleton />}
-      {feed ? <IdeasSection collections={feed.collections} /> : isLoading && <IdeasSkeleton />}
+      {feed || !isLoading ? <IdeasSection collections={feed?.collections} /> : <IdeasSkeleton />}
       <InstitutionalHoldingsSection preview />
       <CongressSection preview />
     </LivePriceContext.Provider>

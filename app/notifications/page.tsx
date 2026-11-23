@@ -107,7 +107,8 @@ export default function NotificationsPage({ searchParams }: { searchParams: Prom
           </div>
         </div>
 
-        {!isLoading && !authLoading && !isError && (
+        {/* Shown on a notifications error too: the Following chip's feed is a separate request. */}
+        {!isLoading && !authLoading && (
           <div className="scrollbar-hide -mx-1 mb-4 flex items-center gap-1.5 overflow-x-auto px-1 py-1.5">
             <FilterChip label={t('notifFilterAll')} active={filter === 'all'} onClick={() => setFilter('all')} />
             {categories.map((c) => (
