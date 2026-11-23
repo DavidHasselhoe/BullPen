@@ -16,7 +16,6 @@ import {
   Shield,
   Calendar,
   Globe,
-  ChevronLeft,
 } from 'lucide-react';
 import type { PublicUser } from '@/app/api/users/search/route';
 
@@ -110,8 +109,8 @@ export default function UserProfilePage() {
       <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-3">
         <User className="h-12 w-12 text-muted-foreground mx-auto" />
         <p className="text-base font-medium text-foreground">{state.error}</p>
-        <Link href="/users" className="text-sm text-primary underline">
-          Back to member search
+        <Link href="/discover" className="text-sm text-primary underline">
+          Go to Discover
         </Link>
       </div>
     );
@@ -126,15 +125,6 @@ export default function UserProfilePage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
-
-        {/* Back */}
-        <Link
-          href="/users"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Members
-        </Link>
 
         {/* Profile header */}
         <div className="flex items-start gap-5">

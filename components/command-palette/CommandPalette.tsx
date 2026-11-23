@@ -23,7 +23,7 @@ import { useInstantSearch } from '@/hooks/use-symbol-index';
 import { useRecentlyViewed } from '@/hooks/use-recently-viewed';
 import { fetchWithTimeout } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics/track';
-import { Briefcase, Filter, TrendingUp, Scale, Users, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
+import { Briefcase, Filter, TrendingUp, Scale, Loader2, CornerDownLeft, Microscope, Bell } from 'lucide-react';
 import { slugToAssetPath, inferAssetType, fundLabel, COMMODITY_TYPES } from '@/lib/assets/asset-type';
 import type { PublicUser } from '@/app/api/users/search/route';
 
@@ -59,7 +59,6 @@ function getQuickActions(t: TFunction) {
     { id: 'holdings', label: t('quickActionHoldings'), href: '/holdings', icon: Briefcase },
     { id: 'screener', label: t('quickActionScreener'), href: '/tools/screener', icon: Filter },
     { id: 'discover', label: t('quickActionDiscover'), href: '/', icon: TrendingUp },
-    { id: 'members', label: t('quickActionMembers'), href: '/users', icon: Users },
   ];
 }
 
@@ -453,22 +452,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                         </CommandItem>
                       );
                     })}
-                    <CommandItem
-                      value="browse-all-people"
-                      onSelect={() => {
-                        trackPick('people_search');
-                        onOpenChange(false);
-                        setSearchQuery('');
-                        router.push(`/users?q=${encodeURIComponent(debouncedQuery)}`);
-                      }}
-                      className={itemClass}
-                    >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-foreground">
-                        <Users className="h-4 w-4" />
-                      </span>
-                      <span className="flex-1 truncate">{t('browseAllMembersMatching')} &ldquo;{debouncedQuery}&rdquo;</span>
-                      <ReturnHint />
-                    </CommandItem>
                   </CommandGroup>
                 )}
                 {(!searchResults || searchResults.length === 0) && (
