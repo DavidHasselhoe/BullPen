@@ -388,6 +388,17 @@ const FILTER_LABEL_KEYS = {
   bear: 'thesisSentimentBear',
 } as const;
 
+/** Theses on a stock. Signed-in only: the route needs a session. Key: ['theses', symbol, filter]. */
+export async function fetchTheses(symbol: string, filter: 'all' | 'bull' | 'bear' | 'neutral' = 'all'): Promise<Thesis[]> {
+  const url = filter === 'all'
+    ? `/api/social/thesis/${encodeURIComponent(symbol)}`
+    : `/api/social/thesis/${encodeURIComponent(symbol)}?sentiment=${filter}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const d = await res.json();
+  return d.theses ?? [];
+}
+
 export function ThesisSection({ symbol }: { symbol: string }) {
   const { t } = useTranslation('stock');
   const { isAuthenticated } = useAuth();
@@ -405,15 +416,7 @@ export function ThesisSection({ symbol }: { symbol: string }) {
 
   const { data: theses, isLoading } = useQuery({
     queryKey,
-    queryFn: async (): Promise<Thesis[]> => {
-      const url = filter === 'all'
-        ? `/api/social/thesis/${encodeURIComponent(symbol)}`
-        : `/api/social/thesis/${encodeURIComponent(symbol)}?sentiment=${filter}`;
-      const res = await fetch(url);
-      if (!res.ok) return [];
-      const d = await res.json();
-      return d.theses ?? [];
-    },
+    queryFn: () => fetchTheses(symbol, filter),
     enabled: isAuthenticated,
     staleTime: 60_000,
   });

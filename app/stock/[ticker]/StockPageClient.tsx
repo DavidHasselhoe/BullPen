@@ -29,7 +29,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useBackground } from '@/hooks/use-background';
 import { AddToListPicker } from '@/components/watchlist/AddToListPicker';
 import { PinToggleButton } from '@/components/navigation/PinToggleButton';
-import { ThesisSection } from '@/components/social/ThesisSection';
+import { ThesisSection, fetchTheses } from '@/components/social/ThesisSection';
+import { useAuth } from '@/hooks/use-auth';
 import { useStockSnapshot } from '@/hooks/use-stock-snapshot';
 import { useHoldings } from '@/hooks/use-holdings';
 import { YourPositionCard } from '@/components/stock/YourPositionCard';
@@ -271,6 +272,18 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
     void postStockVisit(ticker).catch(() => { /* a missed visit only skews Trending slightly */ });
   }, [ticker, confirmedReal]);
 
+  // Member theses show only where someone wrote one: an empty "Be the first" on
+  // every stock page read as a community nobody is in (1 thesis ever, Nov 2026).
+  // Same key as ThesisSection's default view, so it reads this cache.
+  const { isAuthenticated } = useAuth();
+  const { data: theses } = useQuery({
+    queryKey: ['theses', ticker, 'all'],
+    queryFn: () => fetchTheses(ticker),
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+  });
+  const showTheses = (theses?.length ?? 0) > 0;
+
   // Visuals lead: data sections come first, prose (Profile) trails just
   // before Community — see PRODUCT.md "visual, not text-and-numbers" goal.
   // Memoized so StockNavSidebar's scroll-spy effect (IntersectionObserver +
@@ -288,8 +301,8 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
       { id: 'nav-insiders',   label: t('stockNavInsiders') },
     ] : []),
     { id: 'nav-profile',    label: t('stockNavProfile') },
-    { id: 'nav-community', label: t('stockNavCommunity') },
-  ], [showFundamentals, t]);
+    ...(showTheses ? [{ id: 'nav-community', label: t('stockNavCommunity') }] : []),
+  ], [showFundamentals, showTheses, t]);
   // Not memoized: the sidebar's scroll-spy effect keys on `sections` only.
   const subpageLinks = [
     ...(subpages?.dividends ? [{ href: `/stock/${ticker}/dividends`, label: t('subnavDividends') }] : []),
@@ -536,6 +549,7 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
             </div>
 
             {/* Community theses */}
+            {showTheses && (
             <div id="nav-community" className="scroll-mt-20">
               <LazySection key={`community-${ticker}`} minHeight={200}>
                 <StockSectionBoundary>
@@ -547,6 +561,7 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
                 </StockSectionBoundary>
               </LazySection>
             </div>
+            )}
 
           </div>
         </div>
