@@ -71,6 +71,8 @@ export function intradayAxis(points: Pt[], range: '1D' | '1W', clock: Clock): { 
     };
   }
   // One session (extended hours hidden) or no sessions (crypto): evenly spaced times.
-  const even = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(f * (n - 1)));
+  // Deduped: early in pre-market there are only a few bars, and 2 bars gave
+  // indices [0, 0, 1, 1, 1], the same tick three times.
+  const even = [...new Set([0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(f * (n - 1))))];
   return { ticks: even.map((i) => ({ date: at(i), label: time(i) })), dividers: [] };
 }
