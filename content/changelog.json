@@ -1,5 +1,41 @@
 [
   {
+    "date": "2026-11-23",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Navigation is simpler. The Feed from the funds, politicians and investors you follow now lives in Notifications under Following, and the Tools menu shows the six research tools, with the rest one tap away under View all tools",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Discover's theme baskets and stock lists are now one Ideas section. Each list is a tap away, with a short line saying why its stocks are there",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Quality at a discount no longer lists stocks that only looked cheap because of broken forecast data",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "The Dividends card in My Holdings links to the Dividend Calculator, already filled in with your dividend stocks and share counts"
+      },
+      {
+        "type": "new",
+        "text": "A stock page's menu now opens If You Bought Here with that stock picked, to see what it would have returned"
+      },
+      {
+        "type": "improved",
+        "text": "Stock pages no longer end with an empty Community section when nobody has written about the stock"
+      },
+      {
+        "type": "fixed",
+        "text": "Early in pre-market, the one-day chart no longer draws the same time label more than once"
+      }
+    ]
+  },
+  {
     "date": "2026-11-20",
     "entries": [
       {
