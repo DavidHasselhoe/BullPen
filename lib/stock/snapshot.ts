@@ -8,7 +8,7 @@
  * hydration and then asking for it over HTTP. The route is now a thin wrapper.
  */
 
-import { batchFetch, getStockQuote, withRateLimitRetry, TwelveDataInvalidSymbolError, reportDateToFiscalQuarter, sanitizeDividendYield, plausibleProfitMargin } from '@/lib/twelvedata/twelvedata-client';
+import { batchFetch, getStockQuote, withRateLimitRetry, TwelveDataInvalidSymbolError, reportDateToFiscalQuarter, sanitizeDividendYield, plausibleProfitMargin, plausibleForwardPe } from '@/lib/twelvedata/twelvedata-client';
 import { getIndexedKind, instrumentTypeForKind } from '@/lib/search/refresh-index';
 import { getCached, getCachedWithMeta, getCachedStale, getCachedStaleWithMeta, setCached } from '@/lib/cache/market-data-cache';
 import { rget, rset, candleTtlSeconds } from '@/lib/cache/redis-cache';
@@ -218,7 +218,7 @@ export async function buildSnapshot(tickerParam: string): Promise<StockSnapshot>
           marketCap: v.market_capitalization ?? null,
           enterpriseValue: v.enterprise_value ?? null,
           peRatioTTM: v.trailing_pe ?? null,
-          peRatioForward: v.forward_pe ?? null,
+          peRatioForward: plausibleForwardPe(v.forward_pe),
           pbRatio: v.price_to_book_mrq ?? null,
           evToEbitda: v.enterprise_to_ebitda ?? null,
           psRatio: v.price_to_sales_ttm ?? null,

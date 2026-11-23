@@ -1137,6 +1137,23 @@ export function plausiblePriceToBook(pb: number | null | undefined): number | nu
 }
 
 /**
+ * TwelveData's forward_pe, or null when it can't be real. Under 1 means next
+ * year's earnings exceed the whole share price, which no listed company
+ * trades at: on 2026-11-23, 46 rows did, led by ADRs priced in dollars against
+ * estimates in local currency (KSPI 0.012 vs trailing 7.4, ENIC 0.018 vs 9.7,
+ * KYIV 0.17 vs 7.0). Discover's "Quality at a discount" ranked them first and
+ * the Weekly Pick factor screen read ENIC as a 5,000% earnings yield.
+ * fixForeignValuation can't rebuild this one from statements (it needs analyst
+ * estimates), so the floor is the guard.
+ * ponytail: catches big-FX currencies only; a BRL or EUR mismatch lands above 1
+ * and passes. Compare against trailing_pe per reporting currency if one surfaces.
+ */
+export function plausibleForwardPe(fpe: number | null | undefined): number | null {
+  if (fpe == null || !Number.isFinite(fpe)) return null;
+  return fpe > 0 && fpe < 1 ? null : fpe;
+}
+
+/**
  * TwelveData's profit_margin is garbage for deep loss-makers: SMR (2026-11-20)
  * read +36.3% while the same response had net_income_to_common_ttm -$186M on
  * revenue_ttm $2.7M (-6,817%, our statements say -6,485%). ROIV, QBTS, MSTR,
@@ -1204,7 +1221,7 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
     marketCap: v.market_capitalization ?? null,
     enterpriseValue: v.enterprise_value ?? null,
     peRatioTTM: v.trailing_pe ?? null,
-    peRatioForward: v.forward_pe ?? null,
+    peRatioForward: plausibleForwardPe(v.forward_pe),
     pbRatio: plausiblePriceToBook(v.price_to_book_mrq),
     evToEbitda: v.enterprise_to_ebitda ?? null,
     psRatio: v.price_to_sales_ttm ?? null,
