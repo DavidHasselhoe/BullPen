@@ -32,7 +32,7 @@ export function ThemeCard({ theme, icon: Icon, companiesLabel }: Props) {
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-foreground leading-tight">{theme.title}</h3>
+          <h4 className="text-sm font-semibold text-foreground leading-tight">{theme.title}</h4>
           <p className="mt-1 text-[12px] leading-tight text-muted-foreground line-clamp-2">{theme.tagline}</p>
         </div>
         <Icon className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />

@@ -11,8 +11,7 @@ import { DiscoverHeader } from './DiscoverHeader';
 import { MarketPulse } from './MarketPulse';
 import { MarketMovers } from './MarketMovers';
 import { SectorPerformance } from './SectorPerformance';
-import { ThemeGrid } from './ThemeGrid';
-import { IdeaCollections } from './IdeaCollections';
+import { IdeasSection, IdeasSkeleton } from './IdeasSection';
 import { WeeklyPickHero, CURRENT_PICK_QUERY } from '@/components/picks/WeeklyPickHero';
 import { InstitutionalHoldingsSection } from '@/components/institutions/InstitutionalHoldingsSection';
 import { CongressSection } from '@/components/congress/CongressSection';
@@ -98,8 +97,7 @@ export function DiscoverClient() {
       )}
       <MarketMovers />
       {feed ? <SectorPerformance sectors={feed.sectors} /> : isLoading && <SectorSkeleton />}
-      <ThemeGrid />
-      {feed ? <IdeaCollections collections={feed.collections} /> : isLoading && <CollectionsSkeleton />}
+      {feed ? <IdeasSection collections={feed.collections} /> : isLoading && <IdeasSkeleton />}
       <InstitutionalHoldingsSection preview />
       <CongressSection preview />
     </LivePriceContext.Provider>
@@ -136,26 +134,6 @@ function SectorSkeleton() {
   );
 }
 
-function CollectionsSkeleton() {
-  return (
-    <div aria-hidden className="mb-10">
-      <div className="mb-4 h-3.5 w-28 rounded animate-shimmer" />
-      <div className="space-y-8">
-        {Array.from({ length: 2 }, (_, i) => (
-          <div key={i}>
-            <div className="mb-3 h-3.5 w-44 rounded animate-shimmer" />
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-              {Array.from({ length: 6 }, (_, j) => (
-                <div key={j} className="h-[100px] rounded-xl border border-border/20 animate-shimmer" />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function DiscoverSkeleton() {
   return (
     <div aria-hidden>
@@ -165,7 +143,7 @@ export function DiscoverSkeleton() {
       </div>
       <PulseSkeleton />
       <SectorSkeleton />
-      <CollectionsSkeleton />
+      <IdeasSkeleton />
     </div>
   );
 }
