@@ -47,7 +47,8 @@ export function namespacesForPath(pathname: string): Namespace[] {
   if (pathname.startsWith('/tools')) return ['tools'];
   if (pathname.startsWith('/stock') || pathname.startsWith('/asset')) return ['stock'];
   if (pathname.startsWith('/holdings')) return ['holdings'];
-  if (pathname.startsWith('/users') || pathname.startsWith('/social')) return ['user'];
+  // /notifications: the Following chip renders Feed rows, whose copy lives in 'user'.
+  if (pathname.startsWith('/users') || pathname.startsWith('/notifications')) return ['user'];
   // Theme drill-down reuses the screener table, whose column labels live in
   // 'tools' (screener-columns.tsx) — checked before the general /discover
   // match below so it gets both, not just 'discover'.

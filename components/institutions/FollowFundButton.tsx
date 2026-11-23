@@ -64,7 +64,7 @@ export function FollowFundButton({ slug, displayName, compact, className, kind =
     <span className={cn('inline-flex shrink-0 items-center gap-3', className)}>
       {following && !compact && !inList && (
         <Link
-          href="/social"
+          href="/notifications?filter=following"
           className="hidden py-1.5 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline sm:inline"
         >
           {t('followSeeInFeed')}

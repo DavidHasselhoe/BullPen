@@ -25,7 +25,7 @@ export function FromFollows() {
       title={t('homeFollowsTitle')}
       aside={
         <Link
-          href="/social"
+          href="/notifications?filter=following"
           className="inline-flex items-center gap-1 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           {t('homeFollowsSeeAll')}

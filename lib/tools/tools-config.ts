@@ -114,6 +114,15 @@ export const TOOLS: ToolConfig[] = [
 ];
 
 /**
+ * The Tools menu (header dropdown, mobile More sheet): the research tools only.
+ * The rest stay on /tools: Ask Bull has its own button on every page, Price
+ * Alerts sits on every stock page and the bell, and the calculators and
+ * Economy each had one visitor in 60 days (Nov 2026).
+ */
+const MENU_TOOL_IDS = ['screener', 'deep-dive', 'portfolio-builder', 'compare', 'calendar', 'heatmap'];
+export const MENU_TOOLS: ToolConfig[] = MENU_TOOL_IDS.map((id) => TOOLS.find((t) => t.id === id)!);
+
+/**
  * Page metadata for a tool's route, sourced from this same canonical
  * name/description every other surface (nav dropdown, tools grid, homepage
  * picker) already uses — one source instead of hand-duplicated copy in each

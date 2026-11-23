@@ -4,15 +4,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Home, Compass, Briefcase, Bookmark, Menu, GraduationCap, Settings, ChevronRight } from 'lucide-react';
+import { Home, Compass, Briefcase, Bookmark, Menu, GraduationCap, Settings, ChevronRight, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { COMMUNITY_LINKS } from '@/lib/navigation/nav-items';
-import { TOOLS } from '@/lib/tools/tools-config';
+import { MENU_TOOLS } from '@/lib/tools/tools-config';
 import { PinnedTickersPanel } from './PinnedTickersPanel';
 import { useAIPanel } from '@/components/ai/AIPanelProvider';
 
-const MORE_PREFIXES = ['/academy', '/tools', '/social', '/users'];
+const MORE_PREFIXES = ['/academy', '/tools'];
 
 export function MobileTabBar() {
   const { t } = useTranslation('navigation');
@@ -103,15 +102,10 @@ export function MobileTabBar() {
             <MoreRow href="/academy" name={t('navAcademyRowName')} description={t('navAcademyRowDescription')} icon={GraduationCap} onClick={close} />
 
             <MoreSection title={t('navSectionTools')}>
-              {TOOLS.filter((tool) => tool.status !== 'coming-soon').map((tool) => (
+              {MENU_TOOLS.map((tool) => (
                 <MoreRow key={tool.id} href={tool.href} name={tool.name} icon={tool.icon} onClick={close} compact />
               ))}
-            </MoreSection>
-
-            <MoreSection title={t('navSectionCommunity')}>
-              {COMMUNITY_LINKS.map((link) => (
-                <MoreRow key={link.id} href={link.href} name={link.name} description={link.description} icon={link.icon} onClick={close} />
-              ))}
+              <MoreRow href="/tools" name={t('navViewAllTools')} icon={LayoutGrid} onClick={close} compact />
             </MoreSection>
 
             <MoreSection title={t('navSectionAccount')}>

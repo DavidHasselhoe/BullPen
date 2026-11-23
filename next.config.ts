@@ -91,6 +91,8 @@ const nextConfig: NextConfig = {
       { source: '/leaderboard', destination: '/academy/leaderboard', permanent: true },
       // The Health Score pillar was renamed Market Risk -> Stability (2026-11-17).
       { source: '/glossary/market-risk', destination: '/glossary/stability', permanent: true },
+      // The Feed moved into Notifications' Following chip when the Community nav went (2026-11-23).
+      { source: '/social', destination: '/notifications?filter=following', permanent: true },
     ];
   },
   // Security headers (OWASP recommended). Here rather than in middleware:

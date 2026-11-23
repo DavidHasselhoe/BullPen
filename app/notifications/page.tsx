@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bell, Check, Settings } from 'lucide-react';
@@ -15,8 +15,11 @@ import { NotificationsError } from '@/components/notifications/NotificationsErro
 import { NOTIFICATION_CATEGORIES, categoryOf, groupByRecency, type NotificationCategory } from '@/components/notifications/notification-groups';
 import { AuthGate } from '@/components/ui/AuthGate';
 import { NotificationsPreview } from '@/components/billing/GatePreviews';
+import { FeedList, FeedSkeleton, useSocialFeed } from '@/components/social/FeedList';
 
-export default function NotificationsPage() {
+export default function NotificationsPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
+  // ?filter=following opens the Following feed: /social redirects here.
+  const initialFilter = NOTIFICATION_CATEGORIES.find((c) => c.id === use(searchParams).filter)?.id ?? 'all';
   const { t } = useTranslation('navigation');
   const { hasAnimatedBackground } = useBackground();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -25,7 +28,7 @@ export default function NotificationsPage() {
   const markAllRead = useMarkAllNotificationsRead();
   const markAllSeen = useMarkAllNotificationsSeen();
 
-  const [filter, setFilter] = useState<NotificationCategory | 'all'>('all');
+  const [filter, setFilter] = useState<NotificationCategory | 'all'>(initialFilter);
   const [unreadOnly, setUnreadOnly] = useState(false);
 
   const all = useMemo(() => notifications ?? [], [notifications]);
@@ -39,10 +42,10 @@ export default function NotificationsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unseenCount]);
 
-  // Only chips that would show something.
+  // Only chips that would show something. Following always shows: it is the feed, not a filter.
   const categories = useMemo(() => {
     const present = new Set(all.map(categoryOf));
-    return NOTIFICATION_CATEGORIES.filter((c) => present.has(c.id));
+    return NOTIFICATION_CATEGORIES.filter((c) => c.id === 'following' || present.has(c.id));
   }, [all]);
 
   const filtered = useMemo(
@@ -104,14 +107,19 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        {all.length > 0 && (
+        {!isLoading && !authLoading && !isError && (
           <div className="scrollbar-hide -mx-1 mb-4 flex items-center gap-1.5 overflow-x-auto px-1 py-1.5">
             <FilterChip label={t('notifFilterAll')} active={filter === 'all'} onClick={() => setFilter('all')} />
             {categories.map((c) => (
               <FilterChip key={c.id} label={t(c.labelKey)} active={filter === c.id} onClick={() => setFilter(c.id)} />
             ))}
-            <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-border" />
-            <FilterChip label={t('notifFilterUnread')} active={unreadOnly} onClick={() => setUnreadOnly((v) => !v)} />
+            {/* The feed has no read state. */}
+            {filter !== 'following' && (
+              <>
+                <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-border" />
+                <FilterChip label={t('notifFilterUnread')} active={unreadOnly} onClick={() => setUnreadOnly((v) => !v)} />
+              </>
+            )}
           </div>
         )}
 
@@ -127,6 +135,8 @@ export default function NotificationsPage() {
               </div>
             ))}
           </div>
+        ) : filter === 'following' ? (
+          <FollowingFeed />
         ) : isError ? (
           <div className="rounded-xl border">
             <NotificationsError onRetry={() => refetch()} retrying={isRefetching} />
@@ -161,6 +171,43 @@ export default function NotificationsPage() {
       </main>
     </div>
   );
+}
+
+/** What the funds, politicians and members you follow did: the old /social page. */
+function FollowingFeed() {
+  const { t } = useTranslation('user');
+  const { feedQuery, quotes } = useSocialFeed();
+  const feed = feedQuery.data;
+
+  if (feedQuery.isPending) return <FeedSkeleton />;
+  if (feedQuery.isError) {
+    return (
+      <div className="rounded-xl border px-6 py-10 text-center" role="alert">
+        <p className="font-semibold text-foreground">{t('feedErrorTitle')}</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">{t('feedErrorBody')}</p>
+        <Button variant="outline" className="mt-5" onClick={() => feedQuery.refetch()} disabled={feedQuery.isFetching}>
+          {t('feedTryAgain')}
+        </Button>
+      </div>
+    );
+  }
+  if (!feed || feed.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed px-6 py-12 text-center">
+        <p className="font-semibold text-foreground">{t('feedEmptyTitle')}</p>
+        <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">{t('feedEmptyBody')}</p>
+        <div className="mt-5 flex flex-col items-center justify-center gap-2 sm:flex-row">
+          <Button asChild variant="outline">
+            <Link href="/discover/institutions">{t('feedBrowseFunds')}</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/discover/politicians">{t('feedBrowseCongress')}</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  return <FeedList items={feed} quotes={quotes} />;
 }
 
 function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
