@@ -103,8 +103,6 @@
   "profileModalShowPortfolioDescription": "«AAlsoo liist whiich stoocks yoouu hoold (tiickeer aand coompaany naamee oonly, noo quuaantiitiiees oor priicees).»",
   "profileModalViewPublic": "«Viieew puubliic proofiilee»",
   "profileModalSaveFailed": "«Noot saaveed»",
-  "feedTitle": "«Feeeed»",
-  "feedSubtitle": "«Neew fiiliings, traadees aand poosiitiioons froom thee fuunds, meembeers oof Coongreess aand iinveestoors yoouu foolloow.»",
   "feedMemberFallback": "«AA meembeer»",
   "feedMemberAdded": "«<whoo></whoo> aaddeed <tiickeer></tiickeer> too theeiir poortfooliioo»",
   "feedFundFiled": "«<whoo></whoo> fiileed iits {{quarter}} hooldiings»",
@@ -118,16 +116,11 @@
   "feedTradeSold": "«Soold»",
   "feedTradeOther": "«Traadeed»",
   "feedSinceDisclosure": "«<pct></pct> siincee diisclooseed»",
-  "feedSignedOutTitle": "«Yoouur feeeed liivees heeree»",
-  "feedSignedOutBody": "«Foolloow fuunds, meembeers oof Coongreess aand ootheer iinveestoors, aand seeee whaat theey buuy aand seell iin oonee plaacee.»",
-  "feedSignUp": "«Creeaatee aa freeee aaccoouunt»",
-  "feedSignIn": "«Siign iin»",
   "feedErrorTitle": "«Yoouur feeeed diid noot looaad»",
   "feedErrorBody": "«Thiis iis oon oouur siidee. Try aagaaiin iin aa moomeent.»",
   "feedTryAgain": "«Try aagaaiin»",
   "feedEmptyTitle": "«Noothiing too shoow yeet»",
   "feedEmptyBody": "«Foolloow aa fuund oor aa meembeer oof Coongreess aand theeiir neew fiiliings aand traadees wiill aappeeaar heeree.»",
   "feedBrowseFunds": "«Broowsee fuunds»",
-  "feedBrowseCongress": "«Broowsee Coongreess»",
-  "feedBrowseMembers": "«OOr broowsee ootheer iinveestoors»"
+  "feedBrowseCongress": "«Broowsee Coongreess»"
 }

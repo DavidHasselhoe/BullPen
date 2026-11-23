@@ -274,13 +274,13 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
 
   // Member theses show only where someone wrote one: an empty "Be the first" on
   // every stock page read as a community nobody is in (1 thesis ever, Nov 2026).
-  // Same key as ThesisSection's default view, so it reads this cache.
+  // ThesesIfAny fetches them lazily near the bottom of the page; this only
+  // reads that cache entry, so the sidebar entry appears once they're in.
   const { isAuthenticated } = useAuth();
   const { data: theses } = useQuery({
     queryKey: ['theses', ticker, 'all'],
     queryFn: () => fetchTheses(ticker),
-    enabled: isAuthenticated,
-    staleTime: 60_000,
+    enabled: false,
   });
   const showTheses = (theses?.length ?? 0) > 0;
 
@@ -557,16 +557,10 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
             </div>
 
             {/* Community theses */}
-            {showTheses && (
+            {isAuthenticated && (
             <div id="nav-community" className="scroll-mt-20">
-              <LazySection key={`community-${ticker}`} minHeight={200}>
-                <StockSectionBoundary>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <ThesisSection symbol={ticker} />
-                    </CardContent>
-                  </Card>
-                </StockSectionBoundary>
+              <LazySection key={`community-${ticker}`} minHeight={1}>
+                <ThesesIfAny symbol={ticker} />
               </LazySection>
             </div>
             )}
@@ -575,5 +569,24 @@ export default function StockPageClient({ initialName, indices = [], indexFacts,
         </div>
       </div>
     </div>
+  );
+}
+
+/** The Community card: fetched only once a reader scrolls near it, shown only if the stock has a visible thesis. */
+function ThesesIfAny({ symbol }: { symbol: string }) {
+  const { data: theses } = useQuery({
+    queryKey: ['theses', symbol, 'all'],
+    queryFn: () => fetchTheses(symbol),
+    staleTime: 60_000,
+  });
+  if (!theses?.length) return null;
+  return (
+    <StockSectionBoundary>
+      <Card>
+        <CardContent className="pt-6">
+          <ThesisSection symbol={symbol} />
+        </CardContent>
+      </Card>
+    </StockSectionBoundary>
   );
 }

@@ -1,7 +1,6 @@
 {
   "quickActionAskBull": "Ask Bull に質問",
   "quickActionHoldings": "保有銘柄",
-  "quickActionMembers": "メンバーを検索",
   "searchPlaceholder": "企業を検索するか、Bullに何でも質問してください",
   "dialogTitle": "コマンドパレット",
   "dialogDescription": "企業を検索、AIに質問、またはナビゲート",
@@ -20,7 +19,6 @@
   "aboutMutedLabel": "について",
   "peopleHeading": "ユーザー",
   "anonymousFallback": "匿名",
-  "browseAllMembersMatching": "一致するすべてのメンバーを検索",
   "searchingLabel": "検索中…",
   "searchFailedLabel": "検索に失敗しました。もう一度お試しください。",
   "noCompaniesFoundPrefix": "企業が見つかりません。",

@@ -19,7 +19,7 @@ import { FeedList, FeedSkeleton, useSocialFeed } from '@/components/social/FeedL
 
 export default function NotificationsPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   // ?filter=following opens the Following feed: /social redirects here.
-  const initialFilter = NOTIFICATION_CATEGORIES.find((c) => c.id === use(searchParams).filter)?.id ?? 'all';
+  const urlFilter = NOTIFICATION_CATEGORIES.find((c) => c.id === use(searchParams).filter)?.id ?? 'all';
   const { t } = useTranslation('navigation');
   const { hasAnimatedBackground } = useBackground();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -28,7 +28,13 @@ export default function NotificationsPage({ searchParams }: { searchParams: Prom
   const markAllRead = useMarkAllNotificationsRead();
   const markAllSeen = useMarkAllNotificationsSeen();
 
-  const [filter, setFilter] = useState<NotificationCategory | 'all'>(initialFilter);
+  const [filter, setFilter] = useState<NotificationCategory | 'all'>(urlFilter);
+  // A link to ?filter= while already here doesn't remount the page: follow the URL when it changes.
+  const [seenUrlFilter, setSeenUrlFilter] = useState(urlFilter);
+  if (seenUrlFilter !== urlFilter) {
+    setSeenUrlFilter(urlFilter);
+    setFilter(urlFilter);
+  }
   const [unreadOnly, setUnreadOnly] = useState(false);
 
   const all = useMemo(() => notifications ?? [], [notifications]);

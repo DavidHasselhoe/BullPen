@@ -103,8 +103,6 @@
   "profileModalSaveFailed": "Ikke lagret",
   "profileModalUsernamePlaceholder": "johndoe",
   "profileModalPlanLabel": "Plan",
-  "feedTitle": "Feed",
-  "feedSubtitle": "Nye registreringer, handler og beholdninger fra fondene, medlemmene av Kongressen og investorene du følger.",
   "feedMemberFallback": "Et medlem",
   "feedMemberAdded": "<who></who> la til <ticker></ticker> i porteføljen sin",
   "feedFundFiled": "<who></who> rapporterte beholdningen for {{quarter}}",
@@ -118,16 +116,11 @@
   "feedTradeSold": "Solgt",
   "feedTradeOther": "Handlet",
   "feedSinceDisclosure": "<pct></pct> siden offentliggjøring",
-  "feedSignedOutTitle": "Din feed er her",
-  "feedSignedOutBody": "Følg fond, medlemmer av Kongressen og andre investorer, og se hva de kjøper og selger på ett sted.",
-  "feedSignUp": "Opprett en gratis konto",
-  "feedSignIn": "Logg inn",
   "feedErrorTitle": "Feeden din ble ikke lastet",
   "feedErrorBody": "Dette er på vår side. Prøv igjen om et øyeblikk.",
   "feedTryAgain": "Prøv igjen",
   "feedEmptyTitle": "Ingenting å vise ennå",
   "feedEmptyBody": "Følg et fond eller et medlem av Kongressen og deres nye registreringer og handler vil vises her.",
   "feedBrowseFunds": "Bla gjennom fond",
-  "feedBrowseCongress": "Bla gjennom Kongressen",
-  "feedBrowseMembers": "Eller bla gjennom andre investorer"
+  "feedBrowseCongress": "Bla gjennom Kongressen"
 }
