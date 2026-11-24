@@ -80,7 +80,7 @@ const ORGANIZATION_JSON_LD = {
   // resolve to us rather than an unrelated same-name result.
   sameAs: [
     "https://www.instagram.com/bullpeninvest/",
-    "https://discord.gg/RkTFXyjZSY",
+    "https://discord.gg/whDqmFvEdF",
   ],
 };
 

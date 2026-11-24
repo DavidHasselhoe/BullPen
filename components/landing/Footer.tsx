@@ -49,7 +49,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
 ];
 
 const SOCIALS: { icon: IconName; label: string; href: string }[] = [
-  { icon: 'discord', label: 'Discord', href: 'https://discord.gg/RkTFXyjZSY' },
+  { icon: 'discord', label: 'Discord', href: 'https://discord.gg/whDqmFvEdF' },
   { icon: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/bullpeninvest/' },
 ];
 
