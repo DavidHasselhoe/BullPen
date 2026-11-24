@@ -38,9 +38,9 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
   }
 
   const dryRun = request.nextUrl.searchParams.get('dryRun') === '1';
-  const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
+  const webhookUrl = process.env.DISCORD_INSIGHTS_WEBHOOK_URL;
   if (!dryRun && !webhookUrl) {
-    return NextResponse.json({ success: false, error: 'DISCORD_INSTAGRAM_WEBHOOK_URL not set' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'DISCORD_INSIGHTS_WEBHOOK_URL not set' }, { status: 500 });
   }
 
   const now = new Date();

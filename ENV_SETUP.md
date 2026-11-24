@@ -73,6 +73,7 @@ DISCORD_CHANGELOG_WEBHOOK_URL=https://discord.com/api/webhooks/your-changelog-we
 # earnings results). Separate webhook/channel from the changelog one above.
 # See docs/instagram-setup.md.
 DISCORD_INSTAGRAM_WEBHOOK_URL=https://discord.com/api/webhooks/your-instagram-webhook
+DISCORD_INSIGHTS_WEBHOOK_URL=https://discord.com/api/webhooks/your-insights-webhook
 
 # Discord bot (optional, currently unused by the Instagram pipeline — every cron
 # auto-publishes immediately now, so there's nothing left for a "Publish Now" button
