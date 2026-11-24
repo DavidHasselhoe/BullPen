@@ -1,10 +1,10 @@
 # Congress trade refresh: stop losing the tail of big filings
 
-Plan, 2026-11-24. **Parts 1 and 2 built the same day** (part 2 is a script that has not been run). Part 3 and the bonds option are not built; every paid run needs David's go-ahead.
+Plan, 2026-11-24. **Parts 1 and 2 built and part 2 run the same day: Trump's 251 missing trades are filled.** Part 3 and the bonds option are not built; every paid run needs David's go-ahead.
 
 ## What we know (measured, not assumed)
 
-- **The refresh cut Trump's Nov 24 filing.** `refresh-congress-trades` (Vercel cron, Tuesdays 14:00 UTC) fetches 20 rows per member. When all 20 are new it re-fetches once at `BURST_TRADE_LIMIT = 500` and stops there (`ingestPolitician`, `lib/congress/ingest-trades.ts`). Both Trump batches are exactly 500 rows. One read-only call for `limit=50&offset=500` returned 50 rows, none stored, all dated 2026-09-02, the oldest day we hold. Trades dated Aug 1 to Sep 1 are absent entirely. The size of the gap is unknown.
+- **The refresh cut Trump's Nov 24 filing.** `refresh-congress-trades` (Vercel cron, Tuesdays 14:00 UTC) fetches 20 rows per member. When all 20 are new it re-fetches once at `BURST_TRADE_LIMIT = 500` and stops there (`ingestPolitician`, `lib/congress/ingest-trades.ts`). Both Trump batches are exactly 500 rows. One read-only call for `limit=50&offset=500` returned 50 rows, none stored, all dated 2026-09-02, the oldest day we hold. The size of the gap was unknown at the time. **Resolved the same day:** the dry run found 251 missing rows (vendor rows 500 to 750, trades dated Sep 1 and 2) for 220 credits, and the fill stored all 251 for 1,365 credits into the Nov 24 filing. There was no August gap: the vendor has no Trump trades between Jul 31 and Sep 1.
 - **Pricing, from the vendor's OpenAPI spec** (`https://api.disclosedcapitol.com/openapi.json`, free to read): endpoint base + 1 credit per row returned, **5 per executive-branch row** (`source = oge.gov`). Our check billed 265 = 15 + 50 × 5. So **offset rows are not billed**, and the code comments are wrong for Trump: his 500-row burst cost ~2,515 credits, not 515, and his quiet weekly refresh costs ~115, not 35.
 - **Vendor trade ids grow over time.** Our max stored ids: House 295823, Senate 295719, Executive 296599. Useful for a cursor later.
 - **Executive rows carry no disclosure date at the vendor either**, so nothing here fixes the Trump scorecard.
@@ -34,7 +34,7 @@ Because offset is free, the cost is exactly the rows we needed, plus 15 per page
 
 1. **Size the gap first, cheaply.** Binary-search the offset where our stored rows begin again, with `limit=1` probes at ~20 credits each. About 8 probes, ~160 credits, gives the exact number of missing rows. `--dry-run` stops here and prints the count and the cost of step 2.
 2. **Fetch the gap** in 200-row pages from offset 500 up to that point, then insert through the same path as the cron.
-3. **Backdate `created_at`** of the inserted rows to the filing they belong to (2026-11-24 14:01 UTC, the existing batch's timestamp). Otherwise the page's "Latest filing" would show a fake "arrived today" filing of August trades.
+3. **Backdate `created_at`** of the inserted rows to the filing they belong to (2026-11-24 14:01 UTC, the existing batch's timestamp). Otherwise the page's "Latest filing" would show a fake "arrived today" filing of older trades.
 4. **Send no notifications.** These are part of a filing users were already told about.
 5. Flush `congress:` cache keys afterwards (`invalidateCachedPrefix('congress:')`), as the cron does.
 
