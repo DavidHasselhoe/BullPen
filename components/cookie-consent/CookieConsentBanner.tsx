@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { getStoredConsent, setStoredConsent, type CookieConsentValue } from '@/lib/cookie-consent/storage';
@@ -11,12 +12,21 @@ const SHOW_DELAY_MS = 500;
 export function CookieConsentBanner() {
   const { t } = useTranslation('common');
   const [visible, setVisible] = useState(false);
+  const pathname = usePathname();
+  // The landing page sets its own theme on its root (light by default,
+  // ?theme=dark flips it), independent of <html>'s app theme, which is what
+  // this banner otherwise follows; it showed light on the dark landing.
+  const [landing, setLanding] = useState<'light' | 'dark' | null>(null);
 
   useEffect(() => {
     if (getStoredConsent()) return;
-    const timer = setTimeout(() => setVisible(true), SHOW_DELAY_MS);
+    const timer = setTimeout(() => {
+      const root = pathname === '/' ? document.querySelector('.bullpen-landing-root') : null;
+      setLanding(root ? (root.classList.contains('dark') ? 'dark' : 'light') : null);
+      setVisible(true);
+    }, SHOW_DELAY_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [pathname]);
 
   const dismiss = (value: CookieConsentValue) => {
     setStoredConsent(value);
@@ -44,7 +54,10 @@ export function CookieConsentBanner() {
           // but untappable, and on a phone it sat on the signup form's submit
           // (a tap on "Accept all" pressed "Create account"). It comes back
           // when the dialog closes.
-          className="animate-in fade-in zoom-in-95 slide-in-from-bottom-5 duration-300 ease-out motion-reduce:zoom-in-100 motion-reduce:slide-in-from-bottom-0 fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg max-sm:p-3 [body[style*='pointer-events:_none']_&]:hidden"
+          // The landing page (/) has no mobile tab bar, so there the banner sits
+          // at the bottom edge: lifted for a tab bar that isn't there, it
+          // covered the hero's stock chips (2026-11-24 critique).
+          className={`animate-in fade-in zoom-in-95 slide-in-from-bottom-5 duration-300 ease-out motion-reduce:zoom-in-100 motion-reduce:slide-in-from-bottom-0 fixed bottom-5 left-4 ${landing ? 'max-md:[bottom:calc(0.75rem+env(safe-area-inset-bottom))]' : 'max-md:[bottom:calc(3.5rem+0.5rem+env(safe-area-inset-bottom))]'} z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg max-sm:p-3 [body[style*='pointer-events:_none']_&]:hidden ${landing === 'dark' ? 'dark text-foreground' : landing === 'light' ? 'landing-force-light text-foreground' : ''}`}
         >
           <p className="text-sm text-foreground max-sm:text-xs">
             {t('cookieBannerText')}{' '}

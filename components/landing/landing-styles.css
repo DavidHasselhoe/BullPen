@@ -816,7 +816,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 18px;
   background: var(--surface);
   border: 1px solid var(--border);
   transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
@@ -831,9 +831,9 @@
 }
 .bullpen-landing-root .benefit-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 26px; /* DESIGN.md marketing ramp: feature title */
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   line-height: 1.2;
   color: var(--fg);
 }
@@ -865,7 +865,7 @@
   .bullpen-landing-root .benefits-grid { grid-template-columns: 1fr; }
   .bullpen-landing-root .benefit-copy,
   .bullpen-landing-root .is-wide .benefit-copy { padding: 22px 20px 18px; }
-  .bullpen-landing-root .benefit-title { font-size: 20px; }
+  .bullpen-landing-root .benefit-title { font-size: 22px; }
   .bullpen-landing-root .benefit-card.is-wide { flex-direction: column; }
   .bullpen-landing-root .is-wide .benefit-copy { flex: none; align-self: auto; }
 }
@@ -1147,7 +1147,7 @@
 
 /* Watchlist scorecard: the app's four tiles. */
 .bullpen-landing-root .wdemo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.bullpen-landing-root .wdemo-tile { display: grid; align-content: start; gap: 6px; padding: 14px; border-radius: 12px; background: var(--surface); }
+.bullpen-landing-root .wdemo-tile { display: grid; align-content: start; gap: 6px; padding: 14px; border-radius: 10px; background: var(--surface); }
 .bullpen-landing-root .wdemo-label { font-size: 13px; color: var(--fg-muted); }
 .bullpen-landing-root .wdemo-big { font-size: 24px; font-weight: 600; line-height: 1.1; }
 .bullpen-landing-root .wdemo-row { font-size: 16px; font-weight: 600; }
@@ -1156,7 +1156,7 @@
 
 /* Economy: three result cards. */
 .bullpen-landing-root .edemo-list { display: grid; gap: 10px; margin-block: auto; padding: 0; list-style: none; }
-.bullpen-landing-root .edemo-card { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; }
+.bullpen-landing-root .edemo-card { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
 .bullpen-landing-root .edemo-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--fg); }
 .bullpen-landing-root .edemo-title svg { color: var(--fg-dim); }
 .bullpen-landing-root .edemo-sub { font-size: 13px; color: var(--fg-muted); }
@@ -1180,7 +1180,7 @@
   min-height: 44px;
   padding: 10px 14px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--bg);
   font: inherit;
   font-size: 14px;
@@ -1199,7 +1199,7 @@
 .bullpen-landing-root .ademo-option.is-wrong { border-color: var(--warn); background: var(--warn-soft); }
 .bullpen-landing-root .ademo-option.is-wrong svg { color: var(--warn); }
 .bullpen-landing-root .ademo-option.is-dim { opacity: 0.5; }
-.bullpen-landing-root .ademo-result { margin-top: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; animation: demo-fade-in 260ms ease-out both; }
+.bullpen-landing-root .ademo-result { margin-top: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; animation: demo-fade-in 260ms ease-out both; }
 .bullpen-landing-root .ademo-verdict { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; font-weight: 600; }
 .bullpen-landing-root .ademo-verdict.warn { color: var(--warn); }
 .bullpen-landing-root .ademo-why { font-size: 13px; line-height: 1.55; color: var(--fg-muted); }
@@ -1405,7 +1405,7 @@
   text-align: left;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 18px;
   box-shadow: 0 24px 60px -36px oklch(0 0 0 / 0.3);
 }
 .bullpen-landing-root .why-demo-head {
@@ -1477,7 +1477,7 @@
   50% { opacity: 1; }
 }
 @media (max-width: 560px) {
-  .bullpen-landing-root .why-demo { margin-top: 40px; padding: 18px 16px; border-radius: 16px; }
+  .bullpen-landing-root .why-demo { margin-top: 40px; padding: 18px 16px; border-radius: 14px; }
 }
 
 /* ── Explore: the real app, one click away ─────────────────────────────── */
