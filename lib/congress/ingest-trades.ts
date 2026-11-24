@@ -362,7 +362,18 @@ const FORMER_NAMES: Record<string, string[]> = {
 
 // No listed security is a municipal bond or a Treasury, so a ticker on one is
 // always a guess (every one in the data was: MUNI, BOND, HII for Honolulu).
-const NEVER_TICKERED = new Set(['Municipal Bond', 'Municipal Security', 'Treasury', 'Bond/Note']);
+// A corporate bond or note is not its issuer's stock either: the vendor's
+// ticker on 'ORACLE CORPORATION 4.9% 02/06/2033' is ORCL, which the page then
+// showed as "Bought Oracle", and 'New York NY Municipal Bond' filed as type
+// Bond arrived as NYT. Name checks pass the first and can't be trusted for the
+// rest, so the type decides. A ticker written in the filing itself ('iShares
+// US Treasury Bond ETF (GOVT)', a real listed fund) never reaches this check.
+const NEVER_TICKERED = new Set(['Municipal Bond', 'Municipal Security', 'Treasury', 'Bond/Note', 'Bond', 'Structured Note']);
+
+/** A filing type whose vendor ticker is always the wrong security (see NEVER_TICKERED). */
+export function isNeverTickered(assetType: string | null | undefined): boolean {
+  return !!assetType && NEVER_TICKERED.has(assetType);
+}
 
 type VerifiableRow = {
   symbol: string | null;
@@ -424,7 +435,7 @@ export async function verifyVendorSymbols<T extends VerifiableRow>(
   const verdict = new Map<T, 'wrong' | 'unknown'>();
   for (const r of check) {
     const sym = r.symbol as string;
-    if (r.asset_type && NEVER_TICKERED.has(r.asset_type)) { verdict.set(r, 'wrong'); continue; }
+    if (isNeverTickered(r.asset_type)) { verdict.set(r, 'wrong'); continue; }
     // A preferred ticker carries its series ('PSA-T', 'MS.PRQ'); a plain one on a preferred or LLC filing is wrong.
     if (isNonCommonFiling(r.asset_description) && !/[-.]/.test(sym)) { verdict.set(r, 'wrong'); continue; }
     const names = [...(symbolKeys.get(sym) ?? []), ...(FORMER_NAMES[sym] ?? [])];

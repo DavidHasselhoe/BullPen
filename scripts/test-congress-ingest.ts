@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cleanFiledName, namesAgree, isNonCommonFiling, nextPageVerdict } from '../lib/congress/ingest-trades';
+import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cleanFiledName, namesAgree, isNonCommonFiling, nextPageVerdict, isNeverTickered } from '../lib/congress/ingest-trades';
 import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } from '../lib/congress/types';
 import { groupOverlap, isNewTrade, overlapVisit } from '../lib/congress/overlap-groups';
 import type { ActivityTrade } from '../lib/congress/insights';
@@ -58,6 +58,15 @@ assert.equal(tradeDirection('  BUY  '), 'buy', 'padding and case must not matter
 assert.equal(isFiledLate(45), false, '45 days is on time');
 assert.equal(isFiledLate(46), true);
 assert.equal(isFiledLate(null), false, 'unknown lag is not an accusation');
+
+// A bond is never its issuer's stock: the vendor's ORCL on an Oracle 2033 note,
+// or NYT on a New York City muni, must not reach a page as a stock trade.
+for (const type of ['Bond', 'Municipal Bond', 'Municipal Security', 'Treasury', 'Bond/Note', 'Structured Note']) {
+  assert.equal(isNeverTickered(type), true, `${type} keeps no vendor ticker`);
+}
+for (const type of ['Stock', 'ETF', 'Other', 'Option', null]) {
+  assert.equal(isNeverTickered(type), false, `${type} keeps its ticker`);
+}
 
 // The vendor returns the literal string 'N/A' for an asset it could not
 // resolve. Storing that verbatim renders a fake ticker on a real
