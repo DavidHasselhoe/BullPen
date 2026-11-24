@@ -10,7 +10,14 @@
  * response header rather than trusted from docs:
  *   /politicians            -> 15 flat
  *   /trades/recent          -> 15 flat (caps at 50 rows regardless of limit)
- *   /politicians/{id}/trades -> 15 + 1 per row returned
+ *   /politicians/{id}/trades -> 15 + 1 per row returned, 5 per executive-branch
+ *                               row (source oge.gov: Trump, cabinet). Rows
+ *                               skipped by `offset` are not billed.
+ *
+ * The executive rate and the free offset come from the vendor's OpenAPI spec
+ * (api.disclosedcapitol.com/openapi.json) and were confirmed 2026-11-24: Trump
+ * at limit=50&offset=500 billed 265 = 15 + 50 x 5. So a 500-row Trump filing
+ * costs ~2,515 credits, and his quiet weekly 20-row refresh ~115.
  *
  * That per-row term is the whole cost model. Ro Khanna alone has 41,071
  * disclosed trades, so a full-history backfill of one member would cost
@@ -40,21 +47,55 @@ const TRADE_LIMIT = 100;
 /**
  * Rows to request on an incremental refresh, as opposed to a first backfill.
  *
- * This is the whole running-cost lever. At 29 tracked members, refreshing at
- * the full TRADE_LIMIT twice a week costs ~26,700 credits/month; at this limit
- * it is ~8,100. PTRs arrive 30-46 days after the trade and a member files in
- * bursts, so 20 rows is ample headroom between two runs a few days apart --
- * and a member who somehow files more than that is caught by the next run,
- * since nothing here depends on a cursor.
+ * This is the whole running-cost lever: a quiet member costs 15 + 20 rows a
+ * run (115 for an executive one) however much history they have. A member who
+ * files more than 20 since the last run is paged back until the refresh
+ * reaches a stored trade (ingestPolitician, nextPageVerdict), so a big filing
+ * costs what it holds and nothing is skipped.
  */
 const REFRESH_TRADE_LIMIT = 20;
 
 /**
- * Wider re-fetch when a refresh window comes back entirely new (see
- * ingestPolitician). 515 credits, paid only when a member has actually filed
- * a batch bigger than the window, which is rare for everyone except Trump.
+ * Page size once a refresh outgrows its first window (see ingestPolitician).
+ * Offset rows are not billed, so this only decides how many calls a big
+ * filing takes, not what it costs: that is 15 per call plus the rows.
  */
-const BURST_TRADE_LIMIT = 500;
+const REFRESH_PAGE = 200;
+
+/** Fixed part of a /politicians/{id}/trades call, before its per-row charge. */
+const TRADES_CALL_BASE = 15;
+
+/**
+ * Most one member's trade refresh may spend. Paging stops here even if the
+ * filing goes on, and says so in the run's errors. Trump's 2026-11-24 filing
+ * outgrew the old single 500-row re-fetch (rows 501+ were silently dropped);
+ * at 5 credits per executive row this allows ~800 of his rows per run, or
+ * ~4,000 of a congressional member's.
+ */
+const MEMBER_CREDIT_CEILING = 4000;
+
+export type PageVerdict = 'more' | 'caught-up' | 'end' | 'ceiling';
+
+/**
+ * Whether a refresh fetches another page after the one it just read.
+ * Pure, so scripts/test-congress-ingest.ts pins it.
+ *  - caught-up: the page holds a trade we already store, so everything older is stored too
+ *  - end: a short page, the member's whole history is in hand
+ *  - ceiling: the next page would cross the budget; stop and report it
+ */
+export function nextPageVerdict(p: {
+  rows: number;
+  requested: number;
+  knownInPage: number;
+  spent: number;
+  nextCost: number;
+  budget: number;
+}): PageVerdict {
+  if (p.knownInPage > 0) return 'caught-up';
+  if (p.rows < p.requested) return 'end';
+  if (p.spent + p.nextCost > p.budget) return 'ceiling';
+  return 'more';
+}
 
 /**
  * Skip a positions snapshot above this many open positions.
@@ -546,9 +587,10 @@ function apiKey(): string {
 async function fetchTrades(
   dcPoliticianId: number,
   limit: number,
+  offset = 0,
 ): Promise<{ trades: VendorTrade[]; creditsCharged: number }> {
   const res = await fetch(
-    `${API_BASE}/politicians/${dcPoliticianId}/trades?limit=${limit}`,
+    `${API_BASE}/politicians/${dcPoliticianId}/trades?limit=${limit}${offset ? `&offset=${offset}` : ''}`,
     { headers: { 'DC-API-Key': apiKey() }, cache: 'no-store' },
   );
 
@@ -576,7 +618,7 @@ async function fetchTrades(
 export async function ingestPolitician(
   supabase: ReturnType<typeof createServerClient>,
   politician: CongressPolitician,
-  opts: { limit?: number } = {},
+  opts: { limit?: number; /** Credits this member may spend; defaults to MEMBER_CREDIT_CEILING. */ creditBudget?: number } = {},
 ): Promise<IngestResult> {
   const base: IngestResult = {
     slug: politician.slug,
@@ -594,18 +636,48 @@ export async function ingestPolitician(
     base.creditsCharged = out.creditsCharged;
 
     // A full page of rows we have never seen means the member filed more than
-    // the window since the last run (Trump files 60+ trades on a single day),
-    // so the overflow would be silently skipped. Re-fetch wider, once.
-    // Refresh runs only: a first backfill is all-new by definition.
-    if (limit === REFRESH_TRADE_LIMIT && trades.length === limit) {
-      const { data: known } = await supabase
-        .from('congress_trades')
-        .select('dc_trade_id')
-        .in('dc_trade_id', trades.map((t) => t.id));
-      if ((known ?? []).length === 0) {
-        const wide = await fetchTrades(politician.dc_politician_id, BURST_TRADE_LIMIT);
-        trades = wide.trades;
-        base.creditsCharged += wide.creditsCharged;
+    // the window since the last run (Trump filed 500+ trades in one go on
+    // 2026-11-24), so keep paging back until a page reaches a trade we already
+    // store. A single wider re-fetch used to stop at 500 and drop the rest
+    // without a word. Refresh runs only: a first backfill is all-new by definition.
+    if (limit === REFRESH_TRADE_LIMIT) {
+      const budget = Math.min(opts.creditBudget ?? MEMBER_CREDIT_CEILING, MEMBER_CREDIT_CEILING);
+      let page = out.trades;
+      let requested = limit;
+      let lastCharge = out.creditsCharged;
+      for (;;) {
+        const { data: known } = page.length
+          ? await supabase.from('congress_trades').select('dc_trade_id').in('dc_trade_id', page.map((t) => t.id))
+          : { data: [] };
+        // What a row of this member actually bills: 1 credit, or 5 for an
+        // executive-branch (oge.gov) row. Read from the last call, never assumed.
+        const perRow = page.length ? Math.max(1, (lastCharge - TRADES_CALL_BASE) / page.length) : 1;
+        const verdict = nextPageVerdict({
+          rows: page.length,
+          requested,
+          knownInPage: (known ?? []).length,
+          spent: base.creditsCharged,
+          nextCost: TRADES_CALL_BASE + REFRESH_PAGE * perRow,
+          budget,
+        });
+        if (verdict === 'ceiling') {
+          base.error = `Partial: stopped at the ${budget}-credit budget after ${trades.length} trades; older trades in this filing were not fetched`;
+          break;
+        }
+        if (verdict !== 'more') break;
+        let next;
+        try {
+          next = await fetchTrades(politician.dc_politician_id, REFRESH_PAGE, trades.length);
+        } catch (err) {
+          // Keep the pages already paid for; the older rest is reported, not lost silently.
+          base.error = `Partial: page at offset ${trades.length} failed (${err instanceof Error ? err.message : String(err)}); older trades in this filing were not fetched`;
+          break;
+        }
+        base.creditsCharged += next.creditsCharged;
+        lastCharge = next.creditsCharged;
+        page = next.trades;
+        requested = REFRESH_PAGE;
+        trades = [...trades, ...page];
       }
     }
   } catch (err) {
@@ -995,6 +1067,8 @@ export async function ingestAllPoliticians(
       ? { slug: p.slug, fetched: 0, inserted: 0, skipped: 0, creditsCharged: 0 }
       : await ingestPolitician(supabase, p, {
           limit: opts.refresh ? REFRESH_TRADE_LIMIT : TRADE_LIMIT,
+          // Paging must not carry one member past the run's own ceiling.
+          creditBudget: MAX_CREDITS_PER_RUN - totalCredits,
         });
     totalCredits += result.creditsCharged;
 

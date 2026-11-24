@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cleanFiledName, namesAgree, isNonCommonFiling } from '../lib/congress/ingest-trades';
+import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cleanFiledName, namesAgree, isNonCommonFiling, nextPageVerdict } from '../lib/congress/ingest-trades';
 import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } from '../lib/congress/types';
 import { groupOverlap, isNewTrade, overlapVisit } from '../lib/congress/overlap-groups';
 import type { ActivityTrade } from '../lib/congress/insights';
@@ -269,6 +269,18 @@ assert.equal(isNonCommonFiling('AllianceBernstein Holding L.P. Units'), false, '
   const next = overlapVisit('2026-10-14T10:20:00.000Z', '2026-10-07T08:00:00.000Z', at('2026-10-14T15:00:00Z'));
   assert.equal(next.newSince, '2026-10-14T10:20:00.000Z', 'after a gap, the last load becomes the line');
   assert.equal(next.store.congress_overlap_seen_at, '2026-10-14T15:00:00.000Z');
+}
+
+// ─── Refresh paging: when to fetch another page (nextPageVerdict) ───────────
+{
+  const p = { rows: 200, requested: 200, knownInPage: 0, spent: 100, nextCost: 1015, budget: 4000 };
+  assert.equal(nextPageVerdict(p), 'more', 'a full page of new trades means the filing goes on');
+  assert.equal(nextPageVerdict({ ...p, knownInPage: 1 }), 'caught-up', 'one stored trade: everything older is stored');
+  assert.equal(nextPageVerdict({ ...p, knownInPage: 1, rows: 3 }), 'caught-up', 'caught up wins over a short page');
+  assert.equal(nextPageVerdict({ ...p, rows: 120 }), 'end', 'a short page is the end of their history');
+  assert.equal(nextPageVerdict({ ...p, spent: 3000 }), 'ceiling', 'the next page would cross the budget');
+  assert.equal(nextPageVerdict({ ...p, spent: 2985 }), 'more', 'exactly at the budget is still allowed');
+  assert.equal(nextPageVerdict({ ...p, rows: 0, requested: 20 }), 'end', 'an empty page never loops');
 }
 
 // ─── Latest filing, grouped per stock (lib/congress/filing.ts) ──────────────
