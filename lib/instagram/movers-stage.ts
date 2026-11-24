@@ -9,7 +9,6 @@ import { createServerClient } from '@/lib/supabase/client';
 import { totalSlideCount } from '@/lib/instagram/render/slides';
 import { contentVersion } from '@/lib/instagram/render/cache-bust';
 import { postToDiscord } from '@/lib/discord/post-message';
-import { instagramBioLink } from '@/lib/instagram/utm-link';
 import { publishStagedPost } from '@/lib/instagram/publish';
 import type { InstagramPostSlides, MarketMoversSlides } from '@/lib/instagram/content/schema';
 
@@ -90,7 +89,6 @@ export async function stageAndPublishPost(opts: {
             title: discordTitle,
             description: `${discordSummary} ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
             color: 0x34d399,
-            fields: [{ name: 'Bio link', value: instagramBioLink(contentType, periodKey) }],
             timestamp: new Date().toISOString(),
           },
         ],

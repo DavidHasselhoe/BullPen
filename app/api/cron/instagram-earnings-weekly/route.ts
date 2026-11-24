@@ -10,10 +10,6 @@
  * anymore (a stage-then-wait window doesn't buy anything once nothing reads
  * it before publishing happens anyway).
  *
- * Note the bio-link UTM field in the Discord message now needs to be updated
- * proactively (before this runs), not reactively off the notification — by
- * the time anyone reads it, the post claiming that link is already live.
- *
  * Idempotent per ISO week (period_key): skips if a row already exists.
  *
  * Claude cost: one short, non-web-search call (~$0.01/run) — see
@@ -28,7 +24,6 @@ import { generateEarningsCalendarContent } from '@/lib/instagram/content/earning
 import { totalSlideCount } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { isoWeekKey } from '@/lib/instagram/period-key';
-import { instagramBioLink } from '@/lib/instagram/utm-link';
 import { publishStagedPost } from '@/lib/instagram/publish';
 import { formatWeekLabel } from '@/lib/instagram/content/shared';
 import { postSkipNotice, tooFewCompaniesMessage, type TooFewCompanies } from '@/lib/instagram/content/earnings-minimum';
@@ -137,8 +132,6 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     `[Slide ${i + 1}](${appUrl}/api/instagram/render/${postId}/${i})`
   ).join(' · ');
 
-  const bioLink = instagramBioLink(CONTENT_TYPE, periodKey);
-
   const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
   if (webhookUrl) {
     try {
@@ -148,7 +141,6 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
             title: `Earnings calendar auto-publishing — week of ${content.weekLabel}`,
             description: `${content.companies.length} companies, ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
             color: 0x34d399,
-            fields: [{ name: 'Bio link', value: bioLink }],
             timestamp: new Date().toISOString(),
           },
         ],

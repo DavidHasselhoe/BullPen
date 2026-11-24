@@ -23,7 +23,6 @@ import { generateEarningsResultsContent } from '@/lib/instagram/content/earnings
 import { totalSlideCount } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
 import { isoWeekKey, lastTradingWeek } from '@/lib/instagram/period-key';
-import { instagramBioLink } from '@/lib/instagram/utm-link';
 import { publishStagedPost } from '@/lib/instagram/publish';
 import { formatWeekLabel } from '@/lib/instagram/content/shared';
 import { postSkipNotice, tooFewCompaniesMessage, type TooFewCompanies } from '@/lib/instagram/content/earnings-minimum';
@@ -112,8 +111,6 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
     `[Slide ${i + 1}](${appUrl}/api/instagram/render/${postId}/${i})`
   ).join(' · ');
 
-  const bioLink = instagramBioLink(CONTENT_TYPE, periodKey);
-
   const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
   if (webhookUrl) {
     try {
@@ -123,7 +120,6 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
             title: `Earnings results auto-publishing — week of ${content.weekLabel}`,
             description: `${content.beatCount} beat, ${content.missedCount} missed (${content.companies.length} companies), ${slideCount} slides.\n\n${previewLinks}\n\n**Caption:**\n${content.caption}`,
             color: 0x34d399,
-            fields: [{ name: 'Bio link', value: bioLink }],
             timestamp: new Date().toISOString(),
           },
         ],

@@ -10,7 +10,6 @@ import { publishCarousel, publishReel, findReelPostedSince, isInstagramConfigure
 import { REEL_THUMB_OFFSET_MS } from '@/lib/instagram/render/reel';
 import { totalSlideCount, altTextForSlide } from '@/lib/instagram/render/slides';
 import { postToDiscord } from '@/lib/discord/post-message';
-import { instagramBioLink } from '@/lib/instagram/utm-link';
 import { checkPublishable } from '@/lib/instagram/content/publish-guard';
 import type { InstagramPostSlides } from '@/lib/instagram/content/schema';
 
@@ -116,9 +115,8 @@ export async function publishStagedPost(id: string): Promise<PublishStagedPostRe
 
     const webhookUrl = process.env.DISCORD_INSTAGRAM_WEBHOOK_URL;
     if (webhookUrl) {
-      const bioLink = instagramBioLink(post.content_type, post.period_key);
       await postToDiscord(webhookUrl, {
-        content: `✅ ${how}: ${result.permalink ?? result.mediaId}\nBio link should be: ${bioLink}`,
+        content: `✅ ${how}: ${result.permalink ?? result.mediaId}`,
       }).catch((err) => console.error('Discord confirmation failed (post still published):', err));
     }
 
