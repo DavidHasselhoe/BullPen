@@ -102,7 +102,6 @@
   "profileModalShowPortfolioDescription": "Affichez également les actions que vous détenez (symbole boursier et nom de l'entreprise uniquement, sans quantités ni prix).",
   "profileModalViewPublic": "Afficher le profil public",
   "profileModalSaveFailed": "Non enregistré",
-  "profileAvatarTierNormal": "Normal",
   "feedMemberFallback": "Un membre",
   "feedMemberAdded": "<who></who> a ajouté <ticker></ticker> à son portefeuille",
   "feedFundFiled": "<who></who> a déposé ses avoirs pour {{quarter}}",
@@ -122,5 +121,6 @@
   "feedEmptyTitle": "Rien à afficher pour le moment",
   "feedEmptyBody": "Suivez un fonds ou un membre du Congrès et ses nouveaux dépôts et transactions apparaîtront ici.",
   "feedBrowseFunds": "Parcourir les fonds",
-  "feedBrowseCongress": "Parcourir le Congrès"
+  "feedBrowseCongress": "Parcourir le Congrès",
+  "profileAvatarTierNormal": "Normal"
 }

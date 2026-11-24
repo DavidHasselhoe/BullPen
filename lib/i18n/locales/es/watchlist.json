@@ -9,6 +9,8 @@
   "createListCancel": "Cancelar",
   "createListCreating": "Creando…",
   "createListCreate": "Crear",
+  "createListError": "No se pudo guardar la lista de seguimiento. Inténtalo de nuevo.",
+  "createListLimitReached": "Las cuentas gratuitas pueden tener {{count}} listas de seguimiento. Actualiza a Pro para tener listas ilimitadas.",
   "editListTitle": "Editar lista",
   "editListSave": "Guardar",
   "editListSaving": "Guardando…",
@@ -160,10 +162,6 @@
   "shareStop": "Dejar de compartir",
   "shareStopHint": "El enlace dejará de funcionar. Si vuelves a compartir, se crea uno nuevo.",
   "shareError": "No se pudo actualizar. Inténtalo de nuevo en un momento.",
-  "createListError": "No se pudo guardar la lista de seguimiento. Inténtalo de nuevo.",
-  "createListLimitReached": "Las cuentas gratuitas pueden tener {{count}} listas de seguimiento. Actualiza a Pro para tener listas ilimitadas.",
-  "watchlistTableEarningsInDays": "{{days}}d",
-  "watchlistThesisNeutral": "Neutral",
   "aiPicksTitle": "Describe un tema",
   "aiPicksHint": "Cuéntanos qué te interesa y elegiremos hasta 5 acciones que encajen de nuestra base de datos. Son ideas para investigar, no consejos, y puedes quitar cualquiera antes de guardar.",
   "aiPicksPlaceholder": "p. ej. infraestructura eléctrica para IA",
@@ -185,5 +183,7 @@
   "aiPicksOrTemplates": "O empieza con una lista ya hecha",
   "aiPicksUnitOne": "búsqueda por tema",
   "aiPicksUnitOther": "búsquedas por tema",
-  "aiPicksResultsLabel": "Sugerencias para {{theme}}"
+  "aiPicksResultsLabel": "Sugerencias para {{theme}}",
+  "watchlistTableEarningsInDays": "{{days}}d",
+  "watchlistThesisNeutral": "Neutral"
 }

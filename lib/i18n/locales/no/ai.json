@@ -128,6 +128,7 @@
   "whyTodayGuestContext": "Why Today forklarer en kursbevegelse på enkel norsk. Det er en del av Pro: opprett en gratis konto, og prøv Pro gratis i {{trialDays}} dager.",
   "toolStatus_default": "Arbeider…",
   "toolStatus_getHealthScore": "Sjekker økonomisk helse…",
+  "toolStatus_getHealthScoreHistory": "Sjekker historikken for helsescore…",
   "toolStatus_getKeyStatistics": "Henter verdsettelsesmål…",
   "toolStatus_getCompanyFinancials": "Leser finansiell rapporter…",
   "toolStatus_getLiveQuote": "Henter direkte pris…",
@@ -138,6 +139,7 @@
   "toolStatus_getLiveCompanyProfile": "Slår opp selskapsprofil…",
   "toolStatus_getCompanyMetrics": "Henter historiske mål…",
   "toolStatus_getInsiderActivity": "Sjekker insider-aktivitet…",
+  "toolStatus_getWhyToday": "Sjekker dagens nyheter…",
   "toolStatus_searchCompanies": "Søker i selskaper…",
   "toolStatus_compareCompanies": "Sammenligner selskaper…",
   "toolStatus_navigateTo": "Åpner den siden…",
@@ -199,7 +201,5 @@
   "holdingsAccessError": "Kunne ikke skru det på. Prøv igjen, eller bruk Innstillinger > Ask Bull.",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta",
-  "toolStatus_getHealthScoreHistory": "Sjekker historikken for helsescore…",
-  "toolStatus_getWhyToday": "Sjekker dagens nyheter…"
+  "termsGateBeta": "Beta"
 }

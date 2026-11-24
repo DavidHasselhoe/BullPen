@@ -770,6 +770,7 @@
   "deepDiveConfidenceLow": "低置信度",
   "deepDiveConfidenceMedium": "中等置信度",
   "deepDiveDelayed": "延迟 {{minutes}} 分钟",
+  "deepDiveDisclaimer": "仅供研究参考，不构成投资建议。",
   "deepDiveLegacyCatalyst": "需要关注的催化剂",
   "deepDiveLegacyKeyRisk": "关键风险",
   "deepDiveMetaGenerated": "AI 深度分析 · 生成于 {{when}}",
@@ -848,12 +849,6 @@
   "toolGateSignIn": "登录",
   "screenerGuestWatchlistContext_one": "创建免费账户以将此股票保存到您的关注列表，并在其波动时收到提醒。",
   "screenerGuestWatchlistContext_other": "创建免费账户以将这 {{count}} 只股票保存到您的关注列表，并在它们波动时收到提醒。",
-  "economicShort_cpi": "CPI",
-  "economicShort_ppi": "PPI",
-  "economicShort_jolts": "JOLTS",
-  "economicShort_gdp": "GDP",
-  "economicShort_pce": "PCE",
-  "deepDiveDisclaimer": "仅供研究参考，不构成投资建议。",
   "screenerSavedScreensHeading": "已保存的筛选",
   "screenerSaveScreen": "保存此筛选",
   "screenerSaveScreenNameLabel": "筛选名称",
@@ -871,5 +866,10 @@
   "screenerSavedScreensFreeNote": "免费可保存 1 个筛选。Pro 可保存任意数量，并在有新股票符合条件时通知你。",
   "screenerSavedScreensSeePro": "查看 Pro",
   "screenerScopeAllStocks": "所有股票",
-  "screenerDeleteSavedScreenConfirm": "删除此筛选？"
+  "screenerDeleteSavedScreenConfirm": "删除此筛选？",
+  "economicShort_cpi": "消费者物价",
+  "economicShort_ppi": "生产者物价",
+  "economicShort_jolts": "职位空缺",
+  "economicShort_gdp": "国内生产总值",
+  "economicShort_pce": "个人消费支出"
 }

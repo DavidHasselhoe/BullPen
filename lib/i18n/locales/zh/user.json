@@ -102,7 +102,6 @@
   "profileModalShowPortfolioDescription": "还会列出您持有的股票（仅显示代码和公司名称，不显示数量或价格）。",
   "profileModalViewPublic": "查看公开资料",
   "profileModalSaveFailed": "未保存",
-  "profileModalUsernamePlaceholder": "johndoe",
   "feedMemberFallback": "一位成员",
   "feedMemberAdded": "<who></who> 将 <ticker></ticker> 加入投资组合",
   "feedFundFiled": "<who></who> 提交了 {{quarter}} 持仓申报",
@@ -122,5 +121,6 @@
   "feedEmptyTitle": "暂无内容",
   "feedEmptyBody": "关注一个基金或国会议员，他们的新申报和交易就会出现在这里。",
   "feedBrowseFunds": "浏览基金",
-  "feedBrowseCongress": "浏览国会"
+  "feedBrowseCongress": "浏览国会",
+  "profileModalUsernamePlaceholder": "johndoe"
 }

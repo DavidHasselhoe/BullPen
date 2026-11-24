@@ -149,6 +149,7 @@
   "planProDescription": "Acceso completo a la suite de IA y seguimiento ilimitado.",
   "planProLabel": "Pro",
   "planSeeComparison": "Ver la comparación completa",
+  "planUnlockAiChat": "Más chat con IA y Análisis a fondo, además de Portfolio Builder sin límite",
   "planUnlockAlerts": "Alertas de precio y listas de seguimiento ilimitadas",
   "planUnlockDailyBrief": "Daily Brief y explicaciones de Why Today",
   "planUnlockExports": "Exportaciones CSV/PDF y transacciones de iniciados",
@@ -255,12 +256,11 @@
   "homeWidget_from_follows": "De quienes sigues",
   "notifReleaseNotesLabel": "Novedades",
   "notifReleaseNotesDescription": "Una breve nota cada lunes con las mejoras más importantes de BullPen",
-  "planUnlockAiChat": "Más chat con IA y Análisis a fondo, además de Portfolio Builder sin límite",
-  "sectionPlanLabel": "Plan",
   "notifSavedScreenLabel": "Coincidencias de filtros guardados",
   "notifSavedScreenDescription": "Cuando una acción nueva cumple un filtro guardado con la campana activada",
   "customizeHoldingsHeading": "Mis posiciones",
   "customizeShowDividendsLabel": "Mostrar dividendos",
   "customizeShowDividendsDescription": "Próximos pagos de tus inversiones en Mis posiciones.",
-  "homeWidget_your_stock": "Tu acción de cerca"
+  "homeWidget_your_stock": "Tu acción de cerca",
+  "sectionPlanLabel": "Plan"
 }

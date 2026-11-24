@@ -101,8 +101,6 @@
   "profileModalShowPortfolioDescription": "Zeige auch, welche Aktien du hältst (nur Tickersymbol und Unternehmensname, keine Mengen oder Preise).",
   "profileModalViewPublic": "Öffentliches Profil anzeigen",
   "profileModalSaveFailed": "Nicht gespeichert",
-  "profileAvatarTierGold": "Gold",
-  "profileAvatarTierNormal": "Normal",
   "feedMemberFallback": "Ein Mitglied",
   "feedMemberAdded": "<who></who> hat <ticker></ticker> zum Portfolio hinzugefügt",
   "feedFundFiled": "<who></who> hat die Bestände für {{quarter}} gemeldet",
@@ -122,5 +120,7 @@
   "feedEmptyTitle": "Noch nichts zu sehen",
   "feedEmptyBody": "Folge einem Fonds oder einem Kongressmitglied und ihre neuen Meldungen und Trades werden hier angezeigt.",
   "feedBrowseFunds": "Fonds durchsuchen",
-  "feedBrowseCongress": "Kongress durchsuchen"
+  "feedBrowseCongress": "Kongress durchsuchen",
+  "profileAvatarTierGold": "Gold",
+  "profileAvatarTierNormal": "Normal"
 }

@@ -388,8 +388,6 @@
   "portfolioHealthExplainUnscored": "Krypto, de fleste fond og selskaper uten publiserte regnskaper har ingen helsescore, så de holdes utenfor gjennomsnittet.",
   "portfolioDashboardPricedOf": "{{count}} av {{total}} posisjoner priset så langt",
   "holdingsPreviewValue": "Porteføljeverdi",
-  "analysisHistoryTrendLabel": "Trend",
-  "importReviewColumnType": "Type",
   "importReviewModeTitle": "Legg til i porteføljen, eller start på nytt?",
   "importReviewModeDescription": "Du har allerede beholdninger du la til manuelt. Velg hvordan denne filen skal lagres.",
   "importReviewModeReplaceAllTitle": "Start på nytt",
@@ -455,5 +453,7 @@
   "dividendHubEstimated": "Anslått",
   "dividendHubHowTitle": "Slik fungerer det",
   "dividendHubUsdNote": "Beløpene er i amerikanske dollar, valutaen disse selskapene betaler i.",
-  "dividendHubExcluded": "Ikke medregnet: {{list}}. Bare amerikanske noteringer er med."
+  "dividendHubExcluded": "Ikke medregnet: {{list}}. Bare amerikanske noteringer er med.",
+  "analysisHistoryTrendLabel": "Trend",
+  "importReviewColumnType": "Type"
 }

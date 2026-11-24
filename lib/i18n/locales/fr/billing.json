@@ -10,6 +10,9 @@
   "whyTodayPreviewTeaserDown": "a baissé de {{pct}}% aujourd'hui",
   "whyTodayPreviewBecause": "parce que—",
   "portfolioBuilderPreviewHeading": "Allocation suggérée",
+  "deepDiveSampleLabel": "Exemple de rapport sur {{company}}, rédigé le {{date}}",
+  "deepDiveSampleInside": "Également dans le rapport",
+  "deepDiveSampleYours": "Votre rapport sur {{ticker}} couvre les mêmes points, avec ses propres chiffres.",
   "riskAnalysisPreviewTechConcentration": "Concentration technologique",
   "riskAnalysisPreviewSectorDiversification": "Diversification sectorielle",
   "riskAnalysisPreviewLiquidity": "Liquidité",
@@ -207,6 +210,7 @@
   "plan_row_saved_screener_screens": "Filtres du screener enregistrés",
   "plan_row_alerts_when_a_stock_newly_matches_your_screen": "Alertes quand une action commence à correspondre à votre filtre",
   "plan_hint_ring_the_bell_on_a_saved_screen_and_hear_each_weekday_morning_which_stocks_just_started_to_match_it": "Activez la cloche sur un filtre enregistré et découvrez chaque matin de semaine quelles actions viennent de commencer à y correspondre.",
+  "plan_value_1": "1",
   "plan_row_dividend_income_calendar_payday_alerts": "Calendrier des dividendes et alertes de versement",
   "plan_value_next_payment": "Prochain versement",
   "plan_value_12_month_calendar": "Calendrier sur 12 mois",
@@ -219,9 +223,5 @@
   "plan_row_politician_scorecards": "Fiches des politiciens",
   "paywallBenefitFundChanges": "Ce que plus de 15 investisseurs légendaires ont acheté et vendu chaque trimestre, plus chaque déclaration précédente",
   "fundPreviewChanges": "Ce que {{fund}} a changé ce trimestre",
-  "deepDiveSampleLabel": "Exemple de rapport sur {{company}}, rédigé le {{date}}",
-  "deepDiveSampleInside": "Également dans le rapport",
-  "deepDiveSampleYours": "Votre rapport sur {{ticker}} couvre les mêmes points, avec ses propres chiffres.",
-  "upgradeQuestionsHeading": "Questions",
-  "plan_value_1": "1"
+  "upgradeQuestionsHeading": "Questions"
 }

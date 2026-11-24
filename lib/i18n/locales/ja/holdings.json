@@ -454,5 +454,6 @@
   "dividendHubEstimated": "推定",
   "dividendHubHowTitle": "仕組み",
   "dividendHubUsdNote": "金額は、これらの企業が支払いに使う米ドルで表示しています。",
-  "dividendHubExcluded": "対象外：{{list}}。米国上場分のみ含まれます。"
+  "dividendHubExcluded": "対象外：{{list}}。米国上場分のみ含まれます。",
+  "dividendHubLockedTitle_one": "保有銘柄が今後12か月で{{count}}回の配当を支払う可能性があります"
 }

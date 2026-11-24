@@ -386,10 +386,6 @@
   "portfolioHealthExplainUnscored": "Krypto, die meisten Fonds und Unternehmen ohne veröffentlichte Finanzberichte haben keinen Health Score und fließen daher nicht in den Durchschnitt ein.",
   "portfolioDashboardPricedOf": "{{count}} von {{total}} Positionen bislang bewertet",
   "holdingsPreviewValue": "Portfoliowert",
-  "analysisHistoryTrendLabel": "Trend",
-  "holdingsTableColSymbol": "Symbol",
-  "portfolioChartTooltipPortfolio": "Portfolio",
-  "holdingsBadgeLive": "Live",
   "importReviewModeTitle": "Zu deinem Portfolio hinzufügen oder neu starten?",
   "importReviewModeDescription": "Du hast bereits Positionen, die du manuell hinzugefügt hast. Wähle, wie diese Datei gespeichert werden soll.",
   "importReviewModeReplaceAllTitle": "Neu starten",
@@ -455,5 +451,9 @@
   "dividendHubEstimated": "Geschätzt",
   "dividendHubHowTitle": "So funktioniert es",
   "dividendHubUsdNote": "Beträge in US-Dollar, der Währung, in der diese Unternehmen zahlen.",
-  "dividendHubExcluded": "Nicht berücksichtigt: {{list}}. Nur US-Notierungen sind enthalten."
+  "dividendHubExcluded": "Nicht berücksichtigt: {{list}}. Nur US-Notierungen sind enthalten.",
+  "analysisHistoryTrendLabel": "Trend",
+  "holdingsTableColSymbol": "Symbol",
+  "portfolioChartTooltipPortfolio": "Portfolio",
+  "holdingsBadgeLive": "Live"
 }

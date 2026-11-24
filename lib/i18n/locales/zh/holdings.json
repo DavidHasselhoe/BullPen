@@ -454,5 +454,6 @@
   "dividendHubEstimated": "预估",
   "dividendHubHowTitle": "工作原理",
   "dividendHubUsdNote": "金额以美元计，这是这些公司的付款货币。",
-  "dividendHubExcluded": "未计入：{{list}}。仅包含美国上市证券。"
+  "dividendHubExcluded": "未计入：{{list}}。仅包含美国上市证券。",
+  "dividendHubLockedTitle_one": "你的股票在未来12个月内可能会为你支付{{count}}次股息"
 }

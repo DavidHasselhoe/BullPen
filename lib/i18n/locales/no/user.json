@@ -101,8 +101,6 @@
   "profileModalShowPortfolioDescription": "Vis også hvilke aksjer du eier (ticker og selskapsnavn bare, ingen mengder eller priser).",
   "profileModalViewPublic": "Vis offentlig profil",
   "profileModalSaveFailed": "Ikke lagret",
-  "profileModalUsernamePlaceholder": "johndoe",
-  "profileModalPlanLabel": "Plan",
   "feedMemberFallback": "Et medlem",
   "feedMemberAdded": "<who></who> la til <ticker></ticker> i porteføljen sin",
   "feedFundFiled": "<who></who> rapporterte beholdningen for {{quarter}}",
@@ -122,5 +120,7 @@
   "feedEmptyTitle": "Ingenting å vise ennå",
   "feedEmptyBody": "Følg et fond eller et medlem av Kongressen og deres nye registreringer og handler vil vises her.",
   "feedBrowseFunds": "Bla gjennom fond",
-  "feedBrowseCongress": "Bla gjennom Kongressen"
+  "feedBrowseCongress": "Bla gjennom Kongressen",
+  "profileModalUsernamePlaceholder": "johndoe",
+  "profileModalPlanLabel": "Abonnement"
 }

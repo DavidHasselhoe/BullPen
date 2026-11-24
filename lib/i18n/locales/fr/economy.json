@@ -114,10 +114,10 @@
   "weekTimesLocal": "Heures dans votre fuseau horaire",
   "awaitingNumbers": "Le rapport d'aujourd'hui est sorti. Ses chiffres apparaîtront ici bientôt",
   "yearAverage": "Moyenne sur un an : {{value}}",
-  "historyGapNote": "Un tiret indique qu'il n'existe aucun chiffre pour cette période. Certaines données d'octobre 2025 n'ont jamais été collectées pendant la fermeture du gouvernement.",
-  "force_inflation": "Inflation",
   "sparkYears_one": "{{count}} an",
   "sparkYears_other": "{{count}} ans",
   "sparkMonths_one": "{{count}} mois",
-  "sparkMonths_other": "{{count}} mois"
+  "sparkMonths_other": "{{count}} mois",
+  "historyGapNote": "Un tiret indique qu'il n'existe aucun chiffre pour cette période. Certaines données d'octobre 2025 n'ont jamais été collectées pendant la fermeture du gouvernement.",
+  "force_inflation": "Inflation"
 }

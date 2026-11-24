@@ -9,6 +9,8 @@
   "createListCancel": "Abbrechen",
   "createListCreating": "Wird erstellt…",
   "createListCreate": "Erstellen",
+  "createListError": "Die Watchlist konnte nicht gespeichert werden. Bitte versuch es noch einmal.",
+  "createListLimitReached": "Kostenlose Konten können {{count}} Watchlists haben. Upgrade auf Pro für unbegrenzte Listen.",
   "editListTitle": "Liste bearbeiten",
   "editListSave": "Speichern",
   "editListSaving": "Wird gespeichert…",
@@ -159,11 +161,6 @@
   "shareStop": "Teilen beenden",
   "shareStopHint": "Danach funktioniert dieser Link nicht mehr. Erneutes Teilen erstellt einen neuen.",
   "shareError": "Teilen konnte nicht geändert werden. Versuch es gleich noch einmal.",
-  "createListError": "Die Watchlist konnte nicht gespeichert werden. Bitte versuch es noch einmal.",
-  "createListLimitReached": "Kostenlose Konten können {{count}} Watchlists haben. Upgrade auf Pro für unbegrenzte Listen.",
-  "watchlistColSymbol": "Symbol",
-  "watchlistLiveLabel": "Live",
-  "watchlistThesisNeutral": "Neutral",
   "aiPicksTitle": "Thema beschreiben",
   "aiPicksHint": "Sag uns, was dich interessiert, und wir wählen bis zu 5 passende Aktien aus unserer Datenbank. Das sind Ideen zum Recherchieren, keine Beratung, und du kannst jede vor dem Speichern entfernen.",
   "aiPicksPlaceholder": "z. B. Strominfrastruktur für KI",
@@ -185,5 +182,8 @@
   "aiPicksOrTemplates": "Oder mit einer fertigen Liste starten",
   "aiPicksUnitOne": "Themensuche",
   "aiPicksUnitOther": "Themensuchen",
-  "aiPicksResultsLabel": "Vorschläge für {{theme}}"
+  "aiPicksResultsLabel": "Vorschläge für {{theme}}",
+  "watchlistColSymbol": "Symbol",
+  "watchlistLiveLabel": "Live",
+  "watchlistThesisNeutral": "Neutral"
 }

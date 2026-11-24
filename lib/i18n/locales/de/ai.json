@@ -127,6 +127,7 @@
   "whyTodayGuestContext": "Why Today erklärt dir eine Kursbewegung in verständlichen Worten. Das ist Teil von Pro: Erstelle ein kostenloses Konto und probiere Pro dann {{trialDays}} Tage kostenlos aus.",
   "toolStatus_default": "Funktioniert…",
   "toolStatus_getHealthScore": "Finanzielle Gesundheit wird überprüft…",
+  "toolStatus_getHealthScoreHistory": "Verlauf des Gesundheitsscores wird geprüft…",
   "toolStatus_getKeyStatistics": "Bewertungskennzahlen werden abgerufen…",
   "toolStatus_getCompanyFinancials": "Finanzielle Abschlüsse werden gelesen…",
   "toolStatus_getLiveQuote": "Live-Kurs wird abgerufen…",
@@ -137,6 +138,7 @@
   "toolStatus_getLiveCompanyProfile": "Unternehmensprofil wird nachgeschlagen…",
   "toolStatus_getCompanyMetrics": "Historische Kennzahlen werden abgerufen…",
   "toolStatus_getInsiderActivity": "Insider-Aktivitäten werden überprüft…",
+  "toolStatus_getWhyToday": "Heutige Nachrichten werden geprüft…",
   "toolStatus_searchCompanies": "Unternehmen werden durchsucht…",
   "toolStatus_compareCompanies": "Unternehmen werden verglichen…",
   "toolStatus_navigateTo": "Diese Seite wird geöffnet…",
@@ -199,7 +201,5 @@
   "financialsCapex": "CapEx",
   "statisticsBeta": "Beta",
   "statisticsEvEbitda": "EV/EBITDA",
-  "termsGateBeta": "Beta",
-  "toolStatus_getHealthScoreHistory": "Verlauf des Gesundheitsscores wird geprüft…",
-  "toolStatus_getWhyToday": "Heutige Nachrichten werden geprüft…"
+  "termsGateBeta": "Beta"
 }

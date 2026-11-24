@@ -9,6 +9,8 @@
   "createListCancel": "Avbryt",
   "createListCreating": "Oppretter…",
   "createListCreate": "Opprett",
+  "createListError": "Kunne ikke lagre favorittlisten. Prøv igjen.",
+  "createListLimitReached": "Gratiskontoer kan ha {{count}} favorittlister. Oppgrader til Pro for ubegrenset antall lister.",
   "editListTitle": "Rediger liste",
   "editListSave": "Lagre",
   "editListSaving": "Lagrer…",
@@ -160,10 +162,6 @@
   "shareStop": "Slutt å dele",
   "shareStopHint": "Da slutter lenken å virke. Deler du igjen, lages en ny.",
   "shareError": "Kunne ikke oppdatere delingen. Prøv igjen om litt.",
-  "createListError": "Kunne ikke lagre favorittlisten. Prøv igjen.",
-  "createListLimitReached": "Gratiskontoer kan ha {{count}} favorittlister. Oppgrader til Pro for ubegrenset antall lister.",
-  "watchlistColSymbol": "Symbol",
-  "watchlistTableEarningsInDays": "{{days}}d",
   "aiPicksTitle": "Beskriv et tema",
   "aiPicksHint": "Fortell hva du er nysgjerrig på, så velger vi opptil 5 aksjer som passer fra databasen vår. Det er ideer å undersøke, ikke råd, og du kan fjerne hvilken som helst før du lagrer.",
   "aiPicksPlaceholder": "f.eks. strøm til AI-datasentre",
@@ -185,5 +183,7 @@
   "aiPicksOrTemplates": "Eller start fra en ferdig liste",
   "aiPicksUnitOne": "temasøk",
   "aiPicksUnitOther": "temasøk",
-  "aiPicksResultsLabel": "Forslag for {{theme}}"
+  "aiPicksResultsLabel": "Forslag for {{theme}}",
+  "watchlistColSymbol": "Symbol",
+  "watchlistTableEarningsInDays": "{{days}}d"
 }

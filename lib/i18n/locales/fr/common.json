@@ -38,8 +38,6 @@
   "cookieBannerAcceptAll": "Tout accepter",
   "feedbackTitle": "Signaler un bug ou une idée",
   "feedbackSubtitle": "Dites-nous ce qui ne va pas ou ce que vous aimeriez voir. La page sur laquelle vous êtes est transmise automatiquement.",
-  "feedbackTypeLabel": "Type",
-  "feedbackTypeBug": "Bug",
   "feedbackTypeIdea": "Idée",
   "feedbackTitleLabel": "Titre",
   "feedbackTitlePlaceholderBug": "ex. L’infobulle du graphique affiche le mauvais cours",
@@ -59,5 +57,7 @@
   "feedbackThanksTitle": "Merci pour votre signalement",
   "feedbackThanksBug": "Nous allons examiner le problème. Inutile de le renvoyer.",
   "feedbackThanksIdea": "Nous lisons chaque idée reçue, même celles que nous ne pouvons pas traiter tout de suite.",
-  "feedbackClose": "Fermer"
+  "feedbackClose": "Fermer",
+  "feedbackTypeLabel": "Type",
+  "feedbackTypeBug": "Bug"
 }

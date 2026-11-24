@@ -114,10 +114,10 @@
   "weekTimesLocal": "Zeiten in deiner Zeitzone",
   "awaitingNumbers": "Der Bericht von heute ist raus. Die Zahlen werden hier bald angezeigt",
   "yearAverage": "Durchschnitt im letzten Jahr {{value}}",
-  "historyGapNote": "Ein Strich bedeutet, dass für diesen Zeitraum keine Zahl vorliegt. Einige Daten von Oktober 2025 wurden während des Regierungsstillstands nie erhoben.",
-  "force_inflation": "Inflation",
   "sparkYears_one": "{{count}} Jahr",
   "sparkYears_other": "{{count}} Jahre",
   "sparkMonths_one": "{{count}} Monat",
-  "sparkMonths_other": "{{count}} Monate"
+  "sparkMonths_other": "{{count}} Monate",
+  "historyGapNote": "Ein Strich bedeutet, dass für diesen Zeitraum keine Zahl vorliegt. Einige Daten von Oktober 2025 wurden während des Regierungsstillstands nie erhoben.",
+  "force_inflation": "Inflation"
 }

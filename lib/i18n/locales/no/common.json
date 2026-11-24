@@ -35,10 +35,8 @@
   "cookieBannerLearnMore": "Les mer",
   "cookieBannerNecessaryOnly": "Bare nødvendige",
   "cookieBannerAcceptAll": "Godta alle",
-  "filter": "Filter",
   "feedbackTitle": "Rapporter en feil eller en idé",
   "feedbackSubtitle": "Fortell oss hva som er galt, eller hva du gjerne skulle sett. Siden du er på, følger med automatisk.",
-  "feedbackTypeLabel": "Type",
   "feedbackTypeBug": "Feil",
   "feedbackTypeIdea": "Idé",
   "feedbackTitleLabel": "Tittel",
@@ -54,10 +52,12 @@
   "feedbackNeedsDescription": "Legg til en setning eller to for å sende.",
   "feedbackSendFailed": "Det ble ikke sendt. Sjekk tilkoblingen og prøv igjen. Teksten din er fortsatt her.",
   "feedbackCancel": "Avbryt",
-  "feedbackSend": "Send",
   "feedbackSending": "Sender…",
   "feedbackThanksTitle": "Takk for rapporten",
   "feedbackThanksBug": "Vi ser nærmere på det. Du trenger ikke sende den på nytt.",
   "feedbackThanksIdea": "Vi leser alle ideer som kommer inn, også de vi ikke rekker å jobbe med med en gang.",
-  "feedbackClose": "Lukk"
+  "feedbackClose": "Lukk",
+  "filter": "Filter",
+  "feedbackTypeLabel": "Type",
+  "feedbackSend": "Send"
 }

@@ -35,12 +35,10 @@
   "cookieBannerLearnMore": "Más información",
   "cookieBannerNecessaryOnly": "Solo las necesarias",
   "cookieBannerAcceptAll": "Aceptar todas",
-  "error": "Error",
   "feedbackTitle": "Informar de un error o una idea",
   "feedbackSubtitle": "Cuéntanos qué no funciona o qué te gustaría ver. La página en la que estás se incluye automáticamente.",
   "feedbackTypeLabel": "Tipo",
   "feedbackTypeBug": "Error",
-  "feedbackTypeIdea": "Idea",
   "feedbackTitleLabel": "Título",
   "feedbackTitlePlaceholderBug": "p. ej. La información emergente del gráfico muestra un precio incorrecto",
   "feedbackTitlePlaceholderIdea": "p. ej. Modo oscuro para el calendario",
@@ -59,5 +57,7 @@
   "feedbackThanksTitle": "Gracias por informar",
   "feedbackThanksBug": "Lo revisaremos. No hace falta que lo vuelvas a enviar.",
   "feedbackThanksIdea": "Leemos todas las ideas que llegan, incluso las que no podemos abordar de inmediato.",
-  "feedbackClose": "Cerrar"
+  "feedbackClose": "Cerrar",
+  "error": "Error",
+  "feedbackTypeIdea": "Idea"
 }

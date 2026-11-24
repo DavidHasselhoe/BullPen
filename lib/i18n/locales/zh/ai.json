@@ -130,6 +130,7 @@
   "whyTodayGuestContext": "Why Today 用通俗易懂的方式解释价格的涨跌。这是 Pro 功能：创建免费账户，然后免费试用 Pro {{trialDays}} 天。",
   "toolStatus_default": "正在处理…",
   "toolStatus_getHealthScore": "正在检查财务健康状况…",
+  "toolStatus_getHealthScoreHistory": "正在查询健康评分历史…",
   "toolStatus_getKeyStatistics": "正在提取估值指标…",
   "toolStatus_getCompanyFinancials": "正在阅读财务报表…",
   "toolStatus_getLiveQuote": "正在获取实时价格…",
@@ -140,6 +141,7 @@
   "toolStatus_getLiveCompanyProfile": "正在查找公司信息…",
   "toolStatus_getCompanyMetrics": "正在提取历史指标…",
   "toolStatus_getInsiderActivity": "正在检查内部人士活动…",
+  "toolStatus_getWhyToday": "正在查看今日新闻…",
   "toolStatus_searchCompanies": "正在搜索公司…",
   "toolStatus_compareCompanies": "正在比较公司…",
   "toolStatus_navigateTo": "正在打开该页面…",
@@ -199,7 +201,5 @@
   "holdingsAccessTurnOn": "让 Bull 查看我的持仓",
   "holdingsAccessOn": "已开启。Bull 现在可以查看你的持仓和关注列表。",
   "holdingsAccessError": "无法开启。请重试，或前往设置 > Ask Bull。",
-  "statisticsEvEbitda": "EV/EBITDA",
-  "toolStatus_getHealthScoreHistory": "正在查询健康评分历史…",
-  "toolStatus_getWhyToday": "正在查看今日新闻…"
+  "statisticsEvEbitda": "EV/EBITDA"
 }

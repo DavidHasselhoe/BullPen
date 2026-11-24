@@ -99,10 +99,6 @@
   "profileModalShowPortfolioDescription": "También lista las acciones que tienes (solo símbolo y nombre de la empresa, sin cantidades ni precios).",
   "profileModalViewPublic": "Ver perfil público",
   "profileModalSaveFailed": "No guardado",
-  "activityReplyFallbackTarget": "a",
-  "profileAvatarTierNormal": "Normal",
-  "profileModalUsernamePlaceholder": "johndoe",
-  "profileModalPlanLabel": "Plan",
   "feedMemberFallback": "Un miembro",
   "feedMemberAdded": "<who></who> añadió <ticker></ticker> a su cartera",
   "feedFundFiled": "<who></who> presentó sus posiciones del {{quarter}}",
@@ -122,5 +118,9 @@
   "feedEmptyTitle": "Nada que mostrar aún",
   "feedEmptyBody": "Sigue un fondo o un miembro del Congreso y sus nuevas presentaciones y operaciones aparecerán aquí.",
   "feedBrowseFunds": "Explorar fondos",
-  "feedBrowseCongress": "Explorar Congreso"
+  "feedBrowseCongress": "Explorar Congreso",
+  "activityReplyFallbackTarget": "a",
+  "profileAvatarTierNormal": "Normal",
+  "profileModalUsernamePlaceholder": "juanperez",
+  "profileModalPlanLabel": "Plan"
 }

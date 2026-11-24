@@ -126,6 +126,7 @@
   "whyTodayGuestContext": "Why Today explique un mouvement de prix en langage simple. C'est inclus dans Pro : créez un compte gratuit, puis essayez Pro gratuitement pendant {{trialDays}} jours.",
   "toolStatus_default": "En cours…",
   "toolStatus_getHealthScore": "Vérification de la santé financière…",
+  "toolStatus_getHealthScoreHistory": "Vérification de l’historique du score…",
   "toolStatus_getKeyStatistics": "Extraction des métriques de valorisation…",
   "toolStatus_getCompanyFinancials": "Lecture des états financiers…",
   "toolStatus_getLiveQuote": "Récupération du prix en direct…",
@@ -136,6 +137,7 @@
   "toolStatus_getLiveCompanyProfile": "Recherche du profil de l'entreprise…",
   "toolStatus_getCompanyMetrics": "Extraction des métriques historiques…",
   "toolStatus_getInsiderActivity": "Vérification de l'activité des initiés…",
+  "toolStatus_getWhyToday": "Vérification des actualités du jour…",
   "toolStatus_searchCompanies": "Recherche d'entreprises…",
   "toolStatus_compareCompanies": "Comparaison d'entreprises…",
   "toolStatus_navigateTo": "Ouverture de cette page…",
@@ -199,7 +201,5 @@
   "chatUnitMessages": "messages",
   "financialsCapex": "CapEx",
   "insiderNet": "Net {{value}}",
-  "statisticsEvEbitda": "EV/EBITDA",
-  "toolStatus_getHealthScoreHistory": "Vérification de l’historique du score…",
-  "toolStatus_getWhyToday": "Vérification des actualités du jour…"
+  "statisticsEvEbitda": "EV/EBITDA"
 }
