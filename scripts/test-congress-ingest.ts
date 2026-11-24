@@ -14,6 +14,7 @@ import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } 
 import { groupOverlap, isNewTrade, overlapVisit } from '../lib/congress/overlap-groups';
 import type { ActivityTrade } from '../lib/congress/insights';
 import { biggestRuns, buildFiling, earlierFilingDays, latestFilingDay, sizeLevel } from '../lib/congress/filing';
+import { findGap } from '../lib/congress/gap-search';
 
 // Both ends always survive. Nothing here may ever average them into one
 // figure: a filing discloses a bracket, so a midpoint is a number nobody filed.
@@ -337,4 +338,39 @@ assert.equal(isNonCommonFiling('AllianceBernstein Holding L.P. Units'), false, '
   assert.equal(runs[1].direction, 'buy');
 }
 
-console.log('congress ingest checks passed');
+// ─── Finding a hole in stored trades (lib/congress/gap-search.ts) ───────────
+async function gapChecks() {
+  // A vendor list of `total` rows where rows in [holeStart, holeEnd) are missing.
+  const list = (total: number, holeStart: number, holeEnd: number) => {
+    const seen: number[] = [];
+    const probe = async (o: number) => { seen.push(o); return o >= total ? null : !(o >= holeStart && o < holeEnd); };
+    return { probe, seen };
+  };
+
+  // Trump's shape: 500 stored, a hole, then the earlier 500-row batch.
+  const a = list(2000, 500, 1137);
+  assert.deepEqual(await findGap(a.probe, { upperBound: 1000 }), { start: 500, end: 1137, toHistoryEnd: false });
+  assert.ok(a.seen.length < 30, `found in ${a.seen.length} probes, each one billed`);
+  assert.equal(new Set(a.seen).size, a.seen.length, 'no row is probed twice');
+  const known = list(2000, 500, 1137);
+  await findGap(known.probe, { start: 500, upperBound: 1000 });
+  assert.ok(known.seen.length <= 15, `a known start sizes in ${known.seen.length} probes`);
+
+  // A dry run's start is checked, not trusted.
+  assert.deepEqual(await findGap(list(2000, 500, 1137).probe, { start: 500, upperBound: 1000 }), { start: 500, end: 1137, toHistoryEnd: false });
+  await assert.rejects(findGap(list(2000, 520, 1137).probe, { start: 500, upperBound: 1000 }), /not missing/, 'the list moved down');
+  await assert.rejects(findGap(list(2000, 480, 1137).probe, { start: 500, upperBound: 1000 }), /not stored/, 'the list moved up');
+
+  // A hole running to the end of history, and no hole at all.
+  assert.deepEqual(await findGap(list(900, 500, 900).probe, { upperBound: 1000 }), { start: 500, end: 900, toHistoryEnd: true });
+  assert.equal(await findGap(list(600, 600, 600).probe, { upperBound: 1000 }), null, 'stored to the end: nothing to fill');
+  assert.equal(await findGap(list(2000, 0, 0).probe, { upperBound: 1000 }), null, 'stored past the bound: nothing to fill');
+  assert.equal(await findGap(list(2000, 0, 40).probe, { upperBound: 1000 }), null, 'a fresh filing on top is the refresh\'s job');
+  // A hole exactly one step long still lands on its end.
+  assert.deepEqual(await findGap(list(2000, 500, 700).probe, { upperBound: 1000 }), { start: 500, end: 700, toHistoryEnd: false });
+}
+
+gapChecks().then(
+  () => console.log('congress ingest checks passed'),
+  (err) => { console.error(err); process.exit(1); },
+);

@@ -101,6 +101,7 @@
     "test-holdings-context": "tsx scripts/test-holdings-context-gate.ts",
     "ingest-congress": "tsx scripts/ingest-congress-trades.ts",
     "test-congress-ingest": "tsx scripts/test-congress-ingest.ts",
+    "backfill-congress-gap": "tsx scripts/backfill-congress-gap.ts",
     "recheck-congress-symbols": "tsx scripts/recheck-congress-symbols.ts",
     "test-weekly-pick": "tsx scripts/test-weekly-pick.ts",
     "test-email-verification": "tsx scripts/test-email-verification.ts",

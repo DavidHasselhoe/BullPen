@@ -27,6 +27,7 @@
  */
 
 import { createServerClient } from '@/lib/supabase/client';
+import { selectInChunks } from '@/lib/supabase/paging';
 import { tradeDirection } from '@/lib/congress/types';
 
 const API_BASE = 'https://api.disclosedcapitol.com';
@@ -135,7 +136,7 @@ export interface CongressPolitician {
   display_name: string;
 }
 
-interface VendorTrade {
+export interface VendorTrade {
   id: number;
   ticker: string | null;
   // Member metadata rides along on trade rows; used by backfillMemberMeta.
@@ -563,12 +564,12 @@ async function fillMissingPrices(
 ): Promise<void> {
   const priced = rows.filter((r) => r.price_at_trade != null || r.price_at_disclosure != null);
   if (priced.length === 0) return;
-  const { data: missing } = await supabase
-    .from('congress_trades')
-    .select('dc_trade_id')
-    .in('dc_trade_id', priced.map((r) => r.dc_trade_id))
-    .or('price_at_trade.is.null,price_at_disclosure.is.null');
-  const ids = new Set(((missing ?? []) as { dc_trade_id: number }[]).map((m) => m.dc_trade_id));
+  // In slices: a paged refresh can now bring hundreds of ids, past the GET URL limit.
+  const { rows: missing } = await selectInChunks<{ dc_trade_id: number }, number>(
+    priced.map((r) => r.dc_trade_id),
+    (ids) => supabase.from('congress_trades').select('dc_trade_id').in('dc_trade_id', ids).or('price_at_trade.is.null,price_at_disclosure.is.null'),
+  );
+  const ids = new Set(missing.map((m) => m.dc_trade_id));
   for (const r of priced) {
     if (!ids.has(r.dc_trade_id)) continue;
     const patch: Record<string, number> = {};
@@ -584,7 +585,7 @@ function apiKey(): string {
   return key;
 }
 
-async function fetchTrades(
+export async function fetchTrades(
   dcPoliticianId: number,
   limit: number,
   offset = 0,
@@ -691,11 +692,30 @@ export async function ingestPolitician(
 
   base.fetched = trades.length;
 
+  const stored = await storeTrades(supabase, politician, trades);
+  // A partial fetch's note (base.error) survives unless storing itself failed.
+  return { ...base, ...stored, error: stored.error ?? base.error };
+}
+
+/**
+ * Verify, resolve, de-duplicate and insert vendor trades for one member: the
+ * write half of a refresh, shared with scripts/backfill-congress-gap.ts.
+ * `createdAt` stamps the arrival time, so rows filled in later can join the
+ * filing they belong to instead of reading as a new one (lib/congress/filing.ts
+ * groups filings by created_at day).
+ */
+export async function storeTrades(
+  supabase: ReturnType<typeof createServerClient>,
+  politician: Pick<CongressPolitician, 'id'>,
+  trades: VendorTrade[],
+  opts: { createdAt?: string } = {},
+): Promise<{ inserted: number; skipped: number; newTrades: NewTrade[]; error?: string }> {
+  const none = { inserted: 0, skipped: 0, newTrades: [] as NewTrade[] };
   let verified;
   try {
     verified = await verifyVendorSymbols(supabase, buildRows(trades, politician.id));
   } catch (err) {
-    return { ...base, error: err instanceof Error ? err.message : String(err) };
+    return { ...none, error: err instanceof Error ? err.message : String(err) };
   }
   const resolved = await resolveMissingSymbols(supabase, verified);
   const symbols = [...new Set(resolved.map((r) => r.symbol).filter((s): s is string => !!s))];
@@ -708,9 +728,10 @@ export async function ingestPolitician(
         .in('symbol', symbols)
         .gte('transaction_date', earliest)
     : { data: [] };
-  const rows = dropVendorDuplicates(resolved, (stored ?? []) as DedupeRow[]);
-  base.skipped = trades.length - rows.length;
-  if (rows.length === 0) return base;
+  const deduped = dropVendorDuplicates(resolved, (stored ?? []) as DedupeRow[]);
+  const skipped = trades.length - deduped.length;
+  if (deduped.length === 0) return { ...none, skipped };
+  const rows = opts.createdAt ? deduped.map((r) => ({ ...r, created_at: opts.createdAt })) : deduped;
 
   // dc_trade_id is the vendor's stable per-trade id and is UNIQUE, so
   // re-running is a no-op rather than a duplicate. ignoreDuplicates keeps
@@ -722,13 +743,11 @@ export async function ingestPolitician(
     .upsert(rows, { onConflict: 'dc_trade_id', ignoreDuplicates: true })
     .select('dc_trade_id, symbol, asset_description, trade_type, amount_range, amount_low, amount_high, transaction_date');
 
-  if (error) return { ...base, error: error.message };
+  if (error) return { ...none, skipped, error: error.message };
 
   await fillMissingPrices(supabase, rows);
 
-  base.inserted = data?.length ?? 0;
-  base.newTrades = (data ?? []) as NewTrade[];
-  return base;
+  return { inserted: data?.length ?? 0, skipped, newTrades: (data ?? []) as NewTrade[] };
 }
 
 /**

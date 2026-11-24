@@ -1,6 +1,6 @@
 # Congress trade refresh: stop losing the tail of big filings
 
-Plan, 2026-11-24. **Part 1 built the same day.** Parts 2 and 3 and the bonds option are not built; each needs David's go-ahead before any paid call.
+Plan, 2026-11-24. **Parts 1 and 2 built the same day** (part 2 is a script that has not been run). Part 3 and the bonds option are not built; every paid run needs David's go-ahead.
 
 ## What we know (measured, not assumed)
 
@@ -38,7 +38,7 @@ Because offset is free, the cost is exactly the rows we needed, plus 15 per page
 4. **Send no notifications.** These are part of a filing users were already told about.
 5. Flush `congress:` cache keys afterwards (`invalidateCachedPrefix('congress:')`), as the cron does.
 
-Cost: about 160 credits to size, then 5 credits × missing rows. If August looks like September (~500 rows in three weeks), that's ~2,500 credits (~$2.50). The dry run states the real figure before anything is spent.
+Cost: sizing with a known start (`--start 500`) is ~2 edge probes + one per 200 rows of hole + ~8 to pin the end, at ~20 credits each for Trump: ~250 to 350 credits for a 400 to 800-row hole. Then 5 credits × missing rows + 15 per 200-row call. The real run re-checks only the four edge rows (~80 credits). If August looks like September (~500 rows in three weeks), that's ~2,500 credits (~$2.50). The dry run states the real figure before anything is spent.
 
 ### 3. Optional, later: a cursor instead of a window
 
