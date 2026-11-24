@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpRight, BarChart2, Briefcase, Check, CircleHelp, Flame, Landmark, ShoppingCart, Sparkles, X, Zap } from 'lucide-react';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
+import { GLOSSARY } from '@/lib/finance/glossary';
+import type { LandingEconomy } from '@/lib/landing/economy-snapshot';
 import { arcPath } from '@/components/finance/HealthRing';
 
 /**
@@ -73,6 +75,7 @@ export function PlainEnglishDemo() {
   const ref = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<Phase>('rest');
   const [simple, setSimple] = useState(true);
+  const [help, setHelp] = useState(false);
   const [n, setN] = useState(EV);
   const stop = useRef<() => void>(() => {});
 
@@ -123,8 +126,18 @@ export function PlainEnglishDemo() {
 
       <p className="mdemo-label">
         <span key={label} className="mdemo-label-text">{label}</span>
-        <CircleHelp size={15} aria-hidden className={simple ? 'mdemo-help' : 'mdemo-help is-hidden'} />
+        {/* A real button, as in the app: the card's copy says "tap the ? for more". */}
+        <button
+          type="button"
+          className={simple ? 'mdemo-help' : 'mdemo-help is-hidden'}
+          aria-expanded={help}
+          aria-label="What does this mean?"
+          onClick={() => setHelp((h) => !h)}
+        >
+          <CircleHelp size={15} aria-hidden />
+        </button>
       </p>
+      {help && simple && <p className="mdemo-def">{GLOSSARY['EV/EBITDA'].description}</p>}
       <p className="mdemo-value">
         <span aria-hidden>{n.toFixed(2)}</span>
         <span className="sr-only">{EV.toFixed(2)}</span>
@@ -301,7 +314,7 @@ export function WatchlistDemo() {
   const phase = usePhase(ref);
   return (
     <div ref={ref} className="demo" data-phase={phase}>
-      <DemoHead title="Your watchlist" when="Nov 2" />
+      <DemoHead title="Your watchlist" when="Example from Nov 2" />
       <div className="demo-body wdemo-grid" role="group" aria-label="List summary">
         <div className="wdemo-tile">
           <p className="wdemo-label">Average move today</p>
@@ -322,6 +335,7 @@ export function WatchlistDemo() {
         <div className="wdemo-tile">
           <p className="wdemo-label">Health Scores</p>
           <p className="wdemo-grades mono demo-rise" style={d(450)}>4 A · 3 B · 1 C</p>
+          <p className="wdemo-sub demo-rise" style={d(550)}>8 of the 11 have a score</p>
         </div>
       </div>
     </div>
@@ -329,36 +343,63 @@ export function WatchlistDemo() {
 }
 
 // ── The economy, in plain numbers ────────────────────────────────────────────
-// Three /tools/economy result cards as captured on 2026-11-02. Each carries its
-// own data period; the "next release" dates are left out because they pass.
+// Three /tools/economy result cards with the latest numbers (getLandingEconomy,
+// read on the server). FALLBACK is the 2026-11-02 capture, shown only if that
+// read fails, with its own date in the head. The "next release" dates are left
+// out because they pass.
+const FALLBACK: LandingEconomy = {
+  asOf: '2026-11-02',
+  fed: { lower: 3.75, upper: 4 },
+  cpi: { period: '2026-09-01', basis: 'year', actual: 3.7, previous: 3.4 },
+  jobs: { period: '2026-09-01', actual: 29, previous: 133 },
+};
 const pct = (digits: number) => (v: number) => `${v.toFixed(digits)}%`;
-const plusInt = (v: number) => `+${Math.round(v).toLocaleString('en-US')}`;
+/** Jobs counts: the sign comes from the final value, so a count to a loss never shows "+". */
+const signedInt = (to: number) => (v: number) => `${to < 0 ? '−' : '+'}${Math.abs(Math.round(v)).toLocaleString('en-US')}`;
+const monthOf = (period: string) =>
+  new Date(`${period.slice(0, 7)}-15T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const dayOf = (date: string) =>
+  new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-export function EconomyDemo() {
+function Change({ now, before, fmt, delay }: { now: number; before: number | null; fmt: (v: number) => string; delay: number }) {
+  if (before == null) return null;
+  const word = now > before ? 'Up' : now < before ? 'Down' : 'Same as';
+  return (
+    <p className="edemo-change demo-rise" style={d(delay)}>
+      {now > before ? <ArrowUp size={14} aria-hidden /> : now < before ? <ArrowDown size={14} aria-hidden /> : null}
+      {word} {now === before ? 'last time' : `from ${fmt(before)}`}
+    </p>
+  );
+}
+
+export function EconomyDemo({ economy }: { economy?: LandingEconomy | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const phase = usePhase(ref);
+  const e = economy ?? FALLBACK;
+  const jobs = e.jobs.actual * 1000;
+  const jobsBefore = e.jobs.previous == null ? null : e.jobs.previous * 1000;
   return (
     <div ref={ref} className="demo" data-phase={phase}>
-      <DemoHead title="BullPen Economy" when="Nov 2" />
+      <DemoHead title="BullPen Economy" when={economy ? `Latest, ${dayOf(e.asOf)}` : `Example from ${dayOf(e.asOf)}`} />
       <ul className="demo-body edemo-list">
         <li className="edemo-card">
           <p className="edemo-title"><Landmark size={16} aria-hidden />Fed interest rate</p>
           <p className="edemo-sub">Federal funds target range</p>
           <p className="edemo-value mono">
-            <Count phase={phase} to={3.75} fmt={pct(2)} /> to <Count phase={phase} to={4} fmt={pct(2)} />
+            <Count phase={phase} to={e.fed.lower} fmt={pct(2)} /> to <Count phase={phase} to={e.fed.upper} fmt={pct(2)} />
           </p>
         </li>
         <li className="edemo-card">
           <p className="edemo-title"><ShoppingCart size={16} aria-hidden />CPI inflation</p>
-          <p className="edemo-sub">Inflation, past year · September 2026</p>
-          <p className="edemo-value mono"><Count phase={phase} to={3.7} fmt={pct(1)} delay={150} /></p>
-          <p className="edemo-change demo-rise" style={d(900)}><ArrowUp size={14} aria-hidden />Up from 3.4%</p>
+          <p className="edemo-sub">Inflation, past {e.cpi.basis} · {monthOf(e.cpi.period)}</p>
+          <p className="edemo-value mono"><Count phase={phase} to={e.cpi.actual} fmt={pct(1)} delay={150} /></p>
+          <Change now={e.cpi.actual} before={e.cpi.previous} fmt={pct(1)} delay={900} />
         </li>
         <li className="edemo-card">
           <p className="edemo-title"><Briefcase size={16} aria-hidden />Jobs report</p>
-          <p className="edemo-sub">Jobs added · September 2026</p>
-          <p className="edemo-value mono"><Count phase={phase} to={29000} fmt={plusInt} delay={300} /></p>
-          <p className="edemo-change demo-rise" style={d(1050)}><ArrowDown size={14} aria-hidden />Down from +133,000</p>
+          <p className="edemo-sub">Jobs added · {monthOf(e.jobs.period)}</p>
+          <p className="edemo-value mono"><Count phase={phase} to={jobs} fmt={signedInt(jobs)} delay={300} /></p>
+          <Change now={jobs} before={jobsBefore} fmt={(v) => signedInt(v)(v)} delay={1050} />
         </li>
       </ul>
     </div>
@@ -366,20 +407,23 @@ export function EconomyDemo() {
 }
 
 // ── Learn the basics as you go ───────────────────────────────────────────────
-// DailyChallengeCard with the real 2026-11-02 challenge (academy_daily_challenges),
-// options in the order the app shuffles them to. The options rise in when the
-// card plays; answering is real, checked against the stored answer.
+// DailyChallengeCard with the real 2026-11-06 challenge (academy_daily_challenges),
+// in its stored order. Chosen over the 11-02 one, whose right answer was the
+// first option and three times longer than the rest, so length alone gave it
+// away; here all four are 52 to 58 characters and only one can be right. The
+// options rise in when the card plays; answering is real, checked against the
+// stored answer.
 const CHALLENGE = {
-  question: 'Which of the following is the strongest example of a good investment thesis?',
+  question: 'On a stock price chart, what does a candlestick usually represent for a single time period?',
   options: [
-    "Company X's margins have expanded for three straight years because of a new cost-cutting program, and I expect that trend to continue if the program keeps delivering savings, which I can check in each quarterly report.",
-    'The price dropped 20 percent this week, so it has to bounce back soon.',
-    "Tech stocks always go up over time, so I'll buy the biggest tech company I can find.",
-    'I have a good feeling about this stock because everyone on my favorite forum is excited about it.',
+    'The total number of shares traded during that period',
+    'The opening, high, low, and closing prices for that period',
+    "The company's earnings per share reported that quarter",
+    'The average price the stock has held since it first listed',
   ],
-  correct: 0,
+  correct: 1,
   explanation:
-    'A strong thesis names a specific reason, explains how it leads to a return, and states what would prove it right or wrong. The margin-expansion thesis does all three, while the others rely on vague beliefs, hype, or price momentum with no testable reasoning.',
+    'A candlestick packs four prices into one shape: the open, high, low, and close for a set period, such as one day. The body shows the open and close, while the thin wicks show the high and low, which is why it is so useful for spotting price movement at a glance.',
   xp: 15,
 };
 
@@ -441,7 +485,7 @@ export function DailyBriefDemo() {
   const phase = usePhase(ref);
   return (
     <div ref={ref} className="demo" data-phase={phase}>
-      <DemoHead title="Daily Brief" when="Nov 2" />
+      <DemoHead title="Daily Brief" when="Example from Nov 2" />
       <div className="demo-body">
         <p className="bdemo-title">
           Earnings Misery Spreads: <Tk s="RDDT" />, <Tk s="TWLO" />, <Tk s="ILMN" /> Beat and Still Burn

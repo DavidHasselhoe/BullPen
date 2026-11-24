@@ -402,6 +402,14 @@
   .bullpen-landing-root .footer-grid { grid-template-columns: 1fr !important; }
 }
 
+/* Touch: a footer link was 17px tall with 8px between (a thumb hits two),
+   the social squares 36px. Phones and coarse pointers get 44px rows. */
+@media (max-width: 768px), (pointer: coarse) {
+  .bullpen-landing-root .footer-link { display: flex; align-items: center; min-height: 44px; }
+  .bullpen-landing-root .footer-grid ul { gap: 0 !important; }
+  .bullpen-landing-root .footer-social { width: 44px !important; height: 44px !important; }
+}
+
 /* Subtle grain overlay — SVG feTurbulence data-URI, extremely low opacity */
 .bullpen-landing-root .page-noise {
   position: fixed;
@@ -834,9 +842,11 @@
   padding: 2px 8px;
   border-radius: 99px;
   vertical-align: 3px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 11px;
+  /* Ink on page, not emerald on emerald-soft: that measured 3.8:1 at 11px
+     on the strip's surface-2, under AA. Pro is a plan, not a gain. */
+  background: var(--fg);
+  color: var(--bg);
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -941,14 +951,34 @@
   color: var(--fg-muted);
 }
 .bullpen-landing-root .mdemo-label-text { animation: demo-fade-in 300ms ease-out both; }
+/* A button now (it opens the glossary line below), with a 32px hit area
+   around the 15px icon; the negative margin keeps the label's line height. */
 .bullpen-landing-root .mdemo-help {
-  display: inline-block;
-  margin-left: 6px;
-  vertical-align: -0.15em;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: -8px 0 -8px 0;
+  padding: 0;
+  vertical-align: middle;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
   color: var(--fg-dim);
-  transition: opacity 300ms;
+  cursor: pointer;
+  transition: opacity 300ms, color 150ms, background 150ms;
 }
-.bullpen-landing-root .mdemo-help.is-hidden { opacity: 0; }
+.bullpen-landing-root .mdemo-help:hover,
+.bullpen-landing-root .mdemo-help[aria-expanded='true'] { color: var(--fg); background: var(--surface-2); }
+.bullpen-landing-root .mdemo-help:focus-visible { outline: 2px solid var(--fg); outline-offset: 1px; }
+.bullpen-landing-root .mdemo-help.is-hidden { opacity: 0; pointer-events: none; }
+.bullpen-landing-root .mdemo-def {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--fg-muted);
+  text-wrap: pretty;
+}
 .bullpen-landing-root .mdemo-value {
   margin: 8px 0 18px;
   font-size: 44px;
@@ -1135,7 +1165,7 @@
 
 /* Academy: DailyChallengeCard. Answering is real; the wrong-answer amber is the app's. */
 .bullpen-landing-root .ademo-title { display: inline-flex; align-items: center; gap: 10px; }
-.bullpen-landing-root .ademo-flame { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--surface); color: oklch(0.7 0.18 50); }
+.bullpen-landing-root .ademo-flame { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--surface); color: var(--warn); }
 .bullpen-landing-root .ademo-name { display: block; font-size: 15px; font-weight: 600; color: var(--fg); }
 .bullpen-landing-root .ademo-tag { display: block; font-size: 12px; color: var(--fg-dim); }
 .bullpen-landing-root .ademo-xp,

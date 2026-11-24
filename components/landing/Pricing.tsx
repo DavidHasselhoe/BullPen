@@ -22,7 +22,9 @@ interface Plan {
   cta: string;
   ctaStyle: 'primary' | 'ghost';
   highlight?: boolean;
+  /** The first `lead` rows are what a beginner compares on; the rest open with "See everything". */
   features: string[];
+  lead: number;
 }
 
 /**
@@ -37,6 +39,10 @@ interface Plan {
  * isn't capped at all, and promised "SEC filing alerts & summaries", which is
  * not an entitlement that exists. Reading the real values means those three
  * classes of error can't recur.
+ *
+ * 2026-11-24 critique: 19 bullets at once was a wall a beginner can't compare.
+ * Each plan now leads with the rows that differ (`lead`) and the rest wait
+ * behind one "See everything" toggle; the trial is stated once, at the button.
  */
 const PLANS: Plan[] = [
   {
@@ -46,13 +52,14 @@ const PLANS: Plan[] = [
     annualMo: 0,
     cta: 'Start for free',
     ctaStyle: 'ghost',
+    lead: 4,
     features: [
-      'Unlimited stock, ETF & crypto pages, each with a health grade',
-      'Full stock screener & company compare',
+      'Unlimited stock, ETF, crypto & commodity pages, with a health grade for every stock',
       '“Why Today?” for your biggest mover each day',
       `${QUOTAS.chat.count} questions to Bull, the AI assistant, a day`,
-      `${QUOTAS.deep_dive.count} AI research report & ${QUOTAS.portfolio_builder.count} portfolio plans a month`,
       `Holdings tracking, ${FREE_WATCHLISTS} watchlists with scorecards, alerts on ${FREE_ALERT_STOCKS} stocks`,
+      'Full stock screener & company compare',
+      `${QUOTAS.deep_dive.count} AI research report & ${QUOTAS.portfolio_builder.count} portfolio plans a month`,
       'Economy results, market calendar & Congress trades',
       "Bull's Weekly Pick and its full track record",
       'Academy beginner courses & daily challenge',
@@ -66,26 +73,74 @@ const PLANS: Plan[] = [
     cta: `Start free ${PRICING.trialDays}-day trial`,
     ctaStyle: 'primary',
     highlight: true,
+    lead: 5,
     features: [
       'Everything in Free',
       'Daily Brief: a short market read every morning',
       '“Why Today?” for any stock, any day',
       `${QUOTAS.chat.proCap} questions to Bull a day, unlimited portfolio plans & checkups`,
+      'Automatic sync with Robinhood, Schwab, Fidelity & more',
       "The full thesis behind Bull's Weekly Pick",
       'Full holdings of famous funds like Berkshire',
       'Your watchlist charted against the S&P 500',
-      'Automatic sync with Robinhood, Schwab, Fidelity & more',
       'Unlimited watchlists & price alerts',
       'Insider trades, exports & advanced Academy courses',
     ],
   },
 ];
 
+const SAVE_PCT = Math.round(100 * (1 - PRICING.proAnnualPerMonth / PRICING.proMonthly));
+
 export function Pricing({ onSignUp, onSubscribe }: Props) {
   const [annual, setAnnual] = useState(true);
+  const [showAll, setShowAll] = useState(false);
   // A signed-in invitee gets a longer trial, and checkout starts straight from
   // this section, so its disclosure has to state their real length.
   const { days: trialDays } = useTrialDays();
+
+  const cycleButton = (isAnnual: boolean) => {
+    const on = annual === isAnnual;
+    return (
+      <button
+        type="button"
+        aria-pressed={on}
+        onClick={() => setAnnual(isAnnual)}
+        style={{
+          minHeight: 44,
+          padding: '10px 18px',
+          borderRadius: 99,
+          border: 'none',
+          // Ink, not emerald: the selected cycle is a UI state, not a gain (One Signal Rule).
+          background: on ? 'var(--fg)' : 'transparent',
+          color: on ? 'var(--bg)' : 'var(--fg-muted)',
+          fontSize: 15,
+          fontWeight: 600,
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          transition: 'background 200ms, color 200ms',
+        }}
+      >
+        {isAnnual ? 'Annual' : 'Monthly'}
+        {isAnnual && (
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '2px 8px',
+              borderRadius: 99,
+              border: '1px solid currentColor',
+            }}
+          >
+            {/* Same wording as /upgrade and the paywall. "3 months free" was the same
+                maths, but beside the 7-day trial it read as a second free offer. */}
+            Save {SAVE_PCT}%
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <section id="pricing" className="landing-section">
@@ -98,74 +153,26 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
               when you&apos;re ready.
             </>
           }
-          sub="No card to sign up. Cancel anytime. Upgrade only when the daily brief becomes your most-opened tab."
+          sub="No card to sign up. Upgrade when you want a brief every morning and “Why Today?” for any stock."
         />
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
-            <div
-              style={{
-                display: 'inline-flex',
-                gap: 2,
-                padding: 4,
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: 99,
-                alignItems: 'center',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setAnnual(false)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 99,
-                  border: 'none',
-                  background: !annual ? 'var(--accent)' : 'transparent',
-                  color: !annual ? 'var(--accent-ink)' : 'var(--fg-muted)',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 200ms',
-                }}
-              >
-                Monthly
-              </button>
-              <button
-                type="button"
-                onClick={() => setAnnual(true)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 99,
-                  border: 'none',
-                  background: annual ? 'var(--accent)' : 'transparent',
-                  color: annual ? 'var(--accent-ink)' : 'var(--fg-muted)',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  transition: 'all 200ms',
-                }}
-              >
-                Annual
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: '2px 6px',
-                    borderRadius: 99,
-                    background: annual ? 'var(--accent-ink)' : 'var(--accent-soft)',
-                    color: 'var(--accent)',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  {/* Same wording as /upgrade and the paywall. "3 months free" was the same
-                      maths, but beside the 7-day trial it read as a second free offer. */}
-                  Save {Math.round(100 * (1 - PRICING.proAnnualPerMonth / PRICING.proMonthly))}%
-                </span>
-              </button>
-            </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
+          <div
+            role="group"
+            aria-label="Billing"
+            style={{
+              display: 'inline-flex',
+              gap: 2,
+              padding: 4,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 99,
+              alignItems: 'center',
+            }}
+          >
+            {cycleButton(false)}
+            {cycleButton(true)}
           </div>
+        </div>
 
         <div
           className="pricing-grid"
@@ -173,163 +180,152 @@ export function Pricing({ onSignUp, onSubscribe }: Props) {
         >
           {PLANS.map((p) => {
             const price = annual ? p.annualMo : p.monthly;
+            const rows = showAll ? p.features : p.features.slice(0, p.lead);
             return (
-                <div
-                  key={p.name}
-                  style={{
-                    position: 'relative',
-                    background: p.highlight
-                      ? 'linear-gradient(160deg, var(--accent-soft), transparent 60%), var(--surface)'
-                      : 'var(--surface)',
-                    border: p.highlight ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    borderRadius: 22,
-                    padding: 32,
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: p.highlight ? '0 30px 80px -30px var(--accent-glow), 0 0 0 1px var(--accent)' : 'none',
-                  }}
-                >
-                  {p.highlight && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: -12,
-                        right: 24,
-                        padding: '4px 12px',
-                        borderRadius: 99,
-                        background: 'var(--accent)',
-                        color: 'var(--accent-ink)',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        boxShadow: '0 8px 20px -6px var(--accent-glow)',
-                      }}
-                    >
-                      {/* Was "Most popular": not true (almost every account is free). */}
-                      {trialDays} days free
-                    </div>
-                  )}
+              <div
+                key={p.name}
+                style={{
+                  background: 'var(--surface)',
+                  // A firmer border marks Pro; no gradient or resting glow
+                  // (Earned-Depth Rule: only the CTA glows at rest).
+                  border: p.highlight ? '2px solid var(--accent)' : '1px solid var(--border)',
+                  borderRadius: 18,
+                  padding: p.highlight ? 31 : 32,
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <div style={{ marginBottom: 8 }}>
+                  <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--fg)' }}>{p.name}</span>
+                </div>
+                <p style={{ margin: '0 0 24px', fontSize: 15, color: 'var(--fg-muted)', textWrap: 'pretty' }}>{p.tagline}</p>
 
-                  <div style={{ marginBottom: 8 }}>
-                    <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--fg)' }}>{p.name}</span>
-                  </div>
-                  <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--fg-muted)', textWrap: 'pretty' }}>{p.tagline}</p>
-
-                  <div style={{ marginBottom: 24, display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                    <span className="mono" style={{ fontSize: 48, fontWeight: 700, letterSpacing: '-0.04em', color: 'var(--fg)' }}>
-                      ${price}
+                <div style={{ marginBottom: 24, display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
+                  <span className="mono" style={{ fontSize: 48, fontWeight: 700, letterSpacing: '-0.04em', color: 'var(--fg)' }}>
+                    ${price}
+                  </span>
+                  <span style={{ fontSize: 15, color: 'var(--fg-muted)' }}>/ month</span>
+                  {annual && price > 0 && (
+                    <span style={{ fontSize: 13, color: 'var(--fg-dim)', fontFamily: 'var(--font-mono)', marginLeft: 'auto' }}>
+                      billed ${price * 12}/yr
                     </span>
-                    <span style={{ fontSize: 14, color: 'var(--fg-muted)' }}>/ month</span>
-                    {annual && price > 0 && (
-                      <span style={{ fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--font-mono)', marginLeft: 'auto' }}>
-                        billed ${price * 12}/yr
-                      </span>
-                    )}
-                  </div>
+                  )}
+                </div>
 
-                  <button
-                    type="button"
-                    onClick={
-                      p.highlight && onSubscribe
-                        ? () => onSubscribe(annual ? 'annual' : 'monthly')
-                        : onSignUp
-                    }
-                    className={`btn btn-${p.ctaStyle}`}
-                    style={{ justifyContent: 'center', padding: '14px', fontSize: 14, marginBottom: 24 }}
+                <button
+                  type="button"
+                  onClick={
+                    p.highlight && onSubscribe
+                      ? () => onSubscribe(annual ? 'annual' : 'monthly')
+                      : onSignUp
+                  }
+                  className={`btn btn-${p.ctaStyle}`}
+                  style={{ justifyContent: 'center', padding: '14px', fontSize: 15, marginBottom: 24 }}
+                >
+                  {p.name === 'Pro' ? `Start free ${trialDays}-day trial` : p.cta}
+                  <Icon name="arrowRight" size={14} />
+                </button>
+
+                {/* Renewal terms belong with the button that starts the
+                    purchase, not only in the FAQ or the terms of service. */}
+                {p.highlight && onSubscribe && (
+                  <div
+                    style={{
+                      margin: '-12px 0 24px',
+                      fontSize: 13,
+                      lineHeight: 1.55,
+                      color: 'var(--fg-dim)',
+                      textWrap: 'pretty',
+                    }}
                   >
-                    {p.name === 'Pro' ? `Start free ${trialDays}-day trial` : p.cta}
-                    <Icon name="arrowRight" size={14} />
-                  </button>
+                    <p style={{ margin: 0, color: 'var(--fg-muted)' }}>
+                      {renewalTerms(annual ? 'annual' : 'monthly', { days: trialDays }).chargeLine}
+                    </p>
+                    <p style={{ margin: '2px 0 0' }}>
+                      {renewalTerms(annual ? 'annual' : 'monthly', { days: trialDays }).cancelLine}
+                    </p>
+                  </div>
+                )}
 
-                  {/* Renewal terms belong with the button that starts the
-                      purchase, not only in the FAQ or the terms of service. */}
-                  {p.highlight && onSubscribe && (
-                    <div
+                <ul
+                  id={`plan-${p.name.toLowerCase()}-features`}
+                  style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12 }}
+                >
+                  {rows.map((f) => (
+                    <li
+                      key={f}
                       style={{
-                        margin: '-12px 0 24px',
-                        fontSize: 11.5,
-                        lineHeight: 1.55,
-                        color: 'var(--fg-dim)',
-                        textWrap: 'pretty',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        fontSize: 15,
+                        color: 'var(--fg)',
+                        lineHeight: 1.5,
                       }}
                     >
-                      <p style={{ margin: 0, color: 'var(--fg-muted)' }}>
-                        {renewalTerms(annual ? 'annual' : 'monthly', { days: trialDays }).chargeLine}
-                      </p>
-                      <p style={{ margin: '2px 0 0' }}>
-                        {renewalTerms(annual ? 'annual' : 'monthly', { days: trialDays }).cancelLine}
-                      </p>
-                    </div>
-                  )}
-
-                  <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {p.features.map((f) => (
-                      <li
-                        key={f}
+                      <span
                         style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: 10,
-                          fontSize: 13.5,
+                          flexShrink: 0,
+                          width: 18,
+                          height: 18,
+                          borderRadius: 99,
+                          background: 'var(--surface-2)',
                           color: 'var(--fg)',
-                          lineHeight: 1.45,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginTop: 3,
                         }}
                       >
-                        <span
-                          style={{
-                            flexShrink: 0,
-                            width: 18,
-                            height: 18,
-                            borderRadius: 99,
-                            background: p.highlight ? 'var(--accent)' : 'var(--surface-2)',
-                            color: p.highlight ? 'var(--accent-ink)' : 'var(--fg)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginTop: 1,
-                          }}
-                        >
-                          <Icon name="check" size={11} stroke={2.4} />
-                        </span>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                        <Icon name="check" size={11} stroke={2.4} />
+                      </span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             );
           })}
         </div>
-          <div
-            style={{
-              marginTop: 36,
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 16,
-              fontSize: 13,
-              color: 'var(--fg-dim)',
-            }}
+
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            aria-expanded={showAll}
+            aria-controls={PLANS.map((p) => `plan-${p.name.toLowerCase()}-features`).join(' ')}
+            onClick={() => setShowAll((s) => !s)}
+            style={{ fontSize: 15, padding: '11px 18px', minHeight: 44 }}
           >
-            {/* Both facts come from PRICING in entitlements.ts. The money-back
-                window was previously not mentioned anywhere on this page. */}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
-              {trialDays}-day free trial
-            </span>
-            <span style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
-              {PRICING.moneyBackDays}-day money-back guarantee
-            </span>
-            <span style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Icon name="check" size={14} style={{ color: 'var(--accent)' }} />
-              Cancel anytime
-            </span>
-          </div>
+            {showAll ? 'Show less' : 'See everything in each plan'}
+          </button>
+        </div>
+
+        <div
+          style={{
+            marginTop: 28,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+            fontSize: 14,
+            color: 'var(--fg-dim)',
+          }}
+        >
+          {/* From PRICING in entitlements.ts. The trial is not repeated here:
+              the Pro button already says it, next to its renewal terms. */}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="check" size={14} />
+            {PRICING.moneyBackDays}-day money-back guarantee
+          </span>
+          <span aria-hidden style={{ width: 3, height: 3, background: 'var(--fg-dim)', borderRadius: 99, opacity: 0.5 }} />
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="check" size={14} />
+            Cancel anytime
+          </span>
+        </div>
       </div>
     </section>
   );

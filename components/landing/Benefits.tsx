@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { LandingEconomy } from '@/lib/landing/economy-snapshot';
 import { SectionHeading } from './Atoms';
 import { AcademyDemo, DailyBriefDemo, EconomyDemo, HealthDemo, PlainEnglishDemo, WatchlistDemo } from './Demos';
 
@@ -13,7 +14,7 @@ interface Benefit {
   id: string;
   title: string;
   body: string;
-  demo: ComponentType;
+  demo: ComponentType<{ economy?: LandingEconomy | null }>;
   /** wide: full row, copy beside the demo on desktop. strip: wide, one tone darker. */
   span?: 'wide' | 'strip';
   pro?: boolean;
@@ -23,7 +24,7 @@ const BENEFITS: Benefit[] = [
   {
     id: 'plain-english',
     title: 'Every number, in plain English.',
-    body: 'Beginner mode turns "EV/EBITDA" into "Company value vs operating profit" and says what it means for this company. Tap any label for more.',
+    body: 'Simple mode turns "EV/EBITDA" into "Company value vs operating profit" and says it in a sentence. Tap the ? for the full explanation.',
     demo: PlainEnglishDemo,
     span: 'wide',
   },
@@ -61,13 +62,13 @@ const BENEFITS: Benefit[] = [
   },
 ];
 
-export function Benefits() {
+export function Benefits({ economy = null }: { economy?: LandingEconomy | null }) {
   return (
     <section id="features" className="landing-section">
       <div className="wrap">
         <SectionHeading
           title="Built for people who aren't finance people."
-          sub="The free plan covers the essentials. Pro adds a morning brief, an answer for any stock, and no limits."
+          sub="The free plan covers the essentials. Pro adds a morning brief, “Why Today?” for any stock, and much higher limits."
         />
         <div className="benefits-grid">
           {BENEFITS.map((b) => (
@@ -79,7 +80,7 @@ export function Benefits() {
                 </h3>
                 <p className="benefit-body">{b.body}</p>
               </div>
-              <div className="benefit-demo"><b.demo /></div>
+              <div className="benefit-demo"><b.demo economy={economy} /></div>
             </article>
           ))}
         </div>

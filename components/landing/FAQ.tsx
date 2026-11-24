@@ -33,8 +33,8 @@ function FAQItem({ q, a, open, onToggle }: { q: string; a: string; open: boolean
             width: 32,
             height: 32,
             borderRadius: 99,
-            background: open ? 'var(--accent)' : 'var(--surface)',
-            color: open ? 'var(--accent-ink)' : 'var(--fg-muted)',
+            background: open ? 'var(--fg)' : 'var(--surface)', // ink, not emerald: an open row isn't a gain
+            color: open ? 'var(--bg)' : 'var(--fg-muted)',
             border: open ? 'none' : '1px solid var(--border)',
             display: 'inline-flex',
             alignItems: 'center',
@@ -54,7 +54,7 @@ function FAQItem({ q, a, open, onToggle }: { q: string; a: string; open: boolean
         }}
       >
         <div style={{ overflow: 'hidden' }}>
-          <p style={{ margin: '0 60px 22px 0', fontSize: 15, lineHeight: 1.6, color: 'var(--fg-muted)', textWrap: 'pretty' }}>{a}</p>
+          <p style={{ margin: '0 60px 22px 0', maxWidth: '68ch', fontSize: 15, lineHeight: 1.6, color: 'var(--fg-muted)', textWrap: 'pretty' }}>{a}</p>
         </div>
       </div>
     </div>

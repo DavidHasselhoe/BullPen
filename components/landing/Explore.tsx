@@ -35,7 +35,7 @@ const PLACES = [
   {
     href: '/picks',
     title: "Bull's Weekly Pick",
-    body: 'One AI stock pick every Monday, tracked against the S&P 500, the losers included. The full thesis is Pro.',
+    body: 'Bull, BullPen\'s AI assistant, picks one stock every Monday, tracked against the S&P 500, the losers included. The full thesis is Pro.',
   },
   {
     href: '/tools/calendar',

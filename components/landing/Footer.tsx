@@ -83,10 +83,12 @@ export function Footer() {
                     justifyContent: 'center',
                     transition: 'all 200ms',
                   }}
+                  className="footer-social"
+                  // Ink on hover, not emerald: a link isn't a gain (One Signal Rule).
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--accent-soft)';
-                    e.currentTarget.style.color = 'var(--accent)';
-                    e.currentTarget.style.borderColor = 'var(--accent)';
+                    e.currentTarget.style.background = 'var(--surface-2)';
+                    e.currentTarget.style.color = 'var(--fg)';
+                    e.currentTarget.style.borderColor = 'var(--border-strong)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = 'var(--surface)';
@@ -102,13 +104,12 @@ export function Footer() {
 
           {COLUMNS.map((col) => (
             <div key={col.title}>
+              {/* Sentence case: DESIGN.md keeps uppercase tracking for status pills only. */}
               <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 700,
+                  fontSize: 14,
+                  fontWeight: 600,
                   color: 'var(--fg)',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
                   marginBottom: 14,
                 }}
               >
@@ -119,7 +120,8 @@ export function Footer() {
                   <li key={l.label}>
                     <a
                       href={l.href}
-                      style={{ fontSize: 13, color: 'var(--fg-muted)', transition: 'color 150ms' }}
+                      className="footer-link"
+                      style={{ fontSize: 14, color: 'var(--fg-muted)', transition: 'color 150ms' }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.color = 'var(--fg)';
                       }}

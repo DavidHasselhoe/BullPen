@@ -234,8 +234,8 @@ function WhyDemo() {
           <div className="why-demo-body" aria-live="polite">
             <p className="why-demo-move">
               {current.name} {current.changePct >= 0 ? 'rose' : 'fell'}{' '}
+              {/* No +/− here: "rose"/"fell" already carries the direction in words. */}
               <span className={`mono ${current.changePct >= 0 ? 'up' : 'down'}`}>
-                {current.changePct >= 0 ? '+' : '−'}
                 <span aria-hidden>{(shownPct ?? Math.abs(current.changePct)).toFixed(2)}</span>
                 <span className="sr-only">{Math.abs(current.changePct).toFixed(2)}</span>%
               </span>
@@ -250,13 +250,13 @@ function WhyDemo() {
       ) : (
         <div className="why-demo-body">
           <p className="why-demo-text">
-            When a stock you follow moves {WHY_TODAY_MIN_MOVE}% or more, BullPen reads the day&apos;s news and filings and tells you why in a sentence or two, with sources.
+            When a stock you follow moves {WHY_TODAY_MIN_MOVE}% or more, BullPen reads the day&apos;s news and filings and tells you why in a sentence or two.
           </p>
         </div>
       )}
 
       <p className="why-demo-foot">
-        Free accounts get this for their biggest mover each day. Pro explains any stock.
+        This is “Why Today?”. Free accounts get it for their biggest mover each day. Pro explains any stock.
       </p>
     </figure>
   );

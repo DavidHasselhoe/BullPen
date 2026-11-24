@@ -47,7 +47,7 @@ export function CookieConsentBanner() {
           className="animate-in fade-in zoom-in-95 slide-in-from-bottom-5 duration-300 ease-out motion-reduce:zoom-in-100 motion-reduce:slide-in-from-bottom-0 fixed bottom-5 left-4 max-md:[bottom:calc(3.5rem+0.5rem+env(safe-area-inset-bottom))] z-[51] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border bg-background p-4 shadow-lg max-sm:p-3 [body[style*='pointer-events:_none']_&]:hidden"
         >
           <p className="text-sm text-foreground max-sm:text-xs">
-            {'🍪'} {t('cookieBannerText')}{' '}
+            {t('cookieBannerText')}{' '}
             <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
               {t('cookieBannerLearnMore')}
             </Link>

@@ -7,7 +7,7 @@ export const FAQ_ITEMS = [
     // hand — this answer previously claimed "20 AI chat messages a month"
     // against a real limit of 15 per day.
     q: 'Is BullPen actually free?',
-    a: `Yes. The Free plan stays free forever: quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day, plus an explanation for your biggest mover each day. Pro adds the Daily Brief, "Why Today?" for any stock, up to ${QUOTAS.chat.proCap} Bull messages a day, full fund holdings and automatic brokerage sync.`,
+    a: `Yes. The Free plan stays free forever: quotes, charts, unlimited stock pages, the full screener, holdings tracking, ${FREE_WATCHLISTS} watchlists and ${QUOTAS.chat.count} AI chat messages a day, plus "Why Today?" for your biggest mover each day. Pro adds the Daily Brief, "Why Today?" for any stock, up to ${QUOTAS.chat.proCap} Bull messages a day, full fund holdings and automatic brokerage sync.`,
   },
   {
     q: 'Do I have to connect a brokerage?',
@@ -21,7 +21,7 @@ export const FAQ_ITEMS = [
     // Deliberately no tool count: the previous "15-tool agent" was accurate when
     // written and silently wrong the next time a tool was added or removed.
     q: 'Is the AI just summarizing news?',
-    a: 'No. Bull is a tool-using agent that calls live market data, reads SEC filings, runs screeners, and can reference your own holdings if you let it. "Why Today?" uses Claude with web search to explain price moves, and every answer cites its sources.',
+    a: 'No. Bull is a tool-using agent that calls live market data, reads SEC filings, runs screeners, and can reference your own holdings if you let it. "Why Today?" uses Claude with web search to read the day\'s news and filings before it explains a price move.',
   },
   {
     q: 'Is my financial data safe?',
@@ -33,13 +33,17 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'Can I cancel anytime?',
-    a: `Yes. Cancel from your account settings in two clicks. You keep Pro access until the end of your billing period, then revert to Free with no data loss. Pro also starts with a ${PRICING.trialDays}-day free trial and is covered by a ${PRICING.moneyBackDays}-day money-back guarantee.`,
+    // Same path as renewalTerms().cancelLine (lib/billing/trial-copy.ts), which
+    // names the real account-menu item; this said "account settings" before.
+    a: `Yes. Cancel from the account menu, under Manage subscription. You keep Pro access until the end of your billing period, then revert to Free with no data loss. Pro also starts with a ${PRICING.trialDays}-day free trial and is covered by a ${PRICING.moneyBackDays}-day money-back guarantee.`,
   },
   {
     // Was "International equity coverage is coming in 2026" — a dated promise
     // that has now arrived without the feature, which is worse than no promise.
     // Replaced with what is true today.
     q: 'Which markets do you cover?',
-    a: 'US equities (NYSE, NASDAQ, AMEX) and major ETFs in real time, plus crypto, commodities and forex. Global equities are covered at end-of-day rather than live.',
+    // Freshness wording matches "How fresh is the market data?" above: this one
+    // said all US equities were real time while that one said only the S&P 500.
+    a: 'US stocks and ETFs (NYSE, NASDAQ, AMEX), plus crypto, commodities and forex. S&P 500 stocks update in real time and other US stocks can be up to 15 minutes behind. Stocks listed outside the US are covered at end of day.',
   },
 ];

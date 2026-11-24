@@ -18,9 +18,10 @@ import { Pricing } from './Pricing';
 import { FAQ } from './FAQ';
 import { FinalCTA } from './FinalCTA';
 import { Footer } from './Footer';
+import type { LandingEconomy } from '@/lib/landing/economy-snapshot';
 import './landing-styles.css';
 
-export function LandingClient() {
+export function LandingClient({ economy = null }: { economy?: LandingEconomy | null } = {}) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   // Light is the default for now (David evaluating it live, 2026-09) — see
@@ -92,7 +93,7 @@ export function LandingClient() {
       <div className="content-layer">
         <Nav onSignIn={() => openSignIn('nav')} onSignUp={() => openSignUp('nav')} isDarkLanding={isDarkLanding} />
         <Hero onSignUp={() => openSignUp('hero')} />
-        <Benefits />
+        <Benefits economy={economy} />
         <Explore />
         <Pricing onSignUp={() => openSignUp('pricing')} onSubscribe={openSubscribe} />
         <FAQ />

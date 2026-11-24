@@ -214,6 +214,8 @@ One entrance animation, applied once, at page level. `<PageTransition>` (`compon
 Everything else that moves is a response to something the user did (hover lift, press scale, accordion expand, a results panel replacing a loading screen) or a live state change (streaming text, a price tick). 150-300ms, transform and opacity only, ease-out on enter.
 
 ### Named Rules
+**The landing demo exception (decided 2026-11-24).** The landing bento's live demos (`components/landing/Demos.tsx`) play once when each card first scrolls half into view: numbers count up and parts rise in. A critique flagged this against the rule below; David kept it on purpose. It is limited to those demo cards on the marketing page, it plays once, the server HTML and reduced motion show the final state, and it never rewinds a card already on screen. It is not a licence for section reveals anywhere else.
+
 **The One-Entrance Rule.** A page animates in once, as a whole. If two animations are running on first paint — a container fading while its children slide in behind it — that is one too many, and it reads as slow no matter how each one is tuned individually. Staggered section reveals are the specific thing this rule exists to prevent: on data pages the content arrives asynchronously anyway, so a stagger animates skeletons, not information.
 
 ## 7. Do's and Don'ts

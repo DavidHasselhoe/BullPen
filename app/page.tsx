@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { LandingClient } from '@/components/landing/LandingClient';
 import { getCurrentUserId } from '@/lib/auth/server-session';
+import { getLandingEconomy } from '@/lib/landing/economy-snapshot';
 
 export const metadata: Metadata = {
   title: 'BullPen: investing, explained for you',
@@ -34,5 +35,5 @@ export default async function LandingPage({
     if (userId) redirect('/dashboard');
   }
 
-  return <LandingClient />;
+  return <LandingClient economy={await getLandingEconomy()} />;
 }
