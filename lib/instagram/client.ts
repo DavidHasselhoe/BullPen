@@ -76,6 +76,16 @@ async function graphGet(path: string, accessToken: string): Promise<Record<strin
   return json;
 }
 
+/** Read-only Graph call as the configured account (`/me/...`). Throws when unconfigured. */
+export async function instagramGet(path: string): Promise<Record<string, unknown>> {
+  return graphGet(path, getConfig().accessToken);
+}
+
+/** Meta's timestamps end in "+0000", which Date.parse doesn't accept everywhere. */
+export function parseMetaTime(ts: string): number {
+  return Date.parse(ts.replace(/([+-]\d\d)(\d\d)$/, '$1:$2'));
+}
+
 /**
  * Meta processes a media container asynchronously after creation. Polls
  * every 2s up to maxWaitMs — a pacing/bound, not a promise it always
@@ -233,8 +243,6 @@ export async function findReelPostedSince(sinceIso: string): Promise<{ mediaId: 
   // A minute of slack for the gap between this machine's clock and Meta's.
   const since = Date.parse(sinceIso) - 60_000;
   const items = (res.data ?? []) as { id: string; media_product_type?: string; timestamp?: string; permalink?: string }[];
-  // Meta's timestamps end in "+0000", which Date.parse doesn't accept everywhere.
-  const at = (ts: string) => Date.parse(ts.replace(/([+-]\d\d)(\d\d)$/, '$1:$2'));
-  const hit = items.find((m) => m.media_product_type === 'REELS' && m.timestamp && at(m.timestamp) >= since);
+  const hit = items.find((m) => m.media_product_type === 'REELS' && m.timestamp && parseMetaTime(m.timestamp) >= since);
   return hit ? { mediaId: hit.id, permalink: hit.permalink ?? null } : null;
 }
