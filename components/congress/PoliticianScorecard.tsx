@@ -36,7 +36,17 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'up
   );
 }
 
-export function PoliticianScorecard({ slug, displayName }: { slug: string; displayName: string }) {
+export function PoliticianScorecard({
+  slug,
+  displayName,
+  unscorable = false,
+}: {
+  slug: string;
+  displayName: string;
+  /** No disclosure dates at all: the score can never fill, so neither tier is
+   *  told "yet" or offered an upgrade for it. */
+  unscorable?: boolean;
+}) {
   const { t } = useTranslation('discover');
   const { isPro } = useEntitlements();
 
@@ -47,11 +57,27 @@ export function PoliticianScorecard({ slug, displayName }: { slug: string; displ
       if (!res.ok) return null;
       return (await res.json()).scorecard ?? null;
     },
-    enabled: isPro,
+    enabled: isPro && !unscorable,
     staleTime: 60 * 60 * 1000,
     gcTime: 2 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  if (unscorable) {
+    return (
+      <section aria-labelledby="congress-scorecard-heading" className="mb-10 flex items-start gap-2.5">
+        <LineChart className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <div className="min-w-0">
+          <h2 id="congress-scorecard-heading" className="text-sm font-medium text-foreground">
+            {t('scoreTitle')}
+          </h2>
+          <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
+            {t('scoreNoDates', { name: displayName })}
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   if (!isPro) {
     return (

@@ -28,6 +28,10 @@ export interface CongressTradeRow {
   /** Real closes on the trade date and the disclosure date (migration 156). */
   priceAtTrade: number | null;
   priceAtDisclosure: number | null;
+  /** When BullPen ingested the row: the day a filing arrived. The only
+   *  "when it became public" signal for filings with no disclosure date
+   *  (every executive-branch row we hold). */
+  addedAt?: string | null;
 }
 
 /**
@@ -83,6 +87,13 @@ export function formatAmountRange(
   if (hi == null) return `${compactAmount(lo!)}+`;
   if (lo == null) return `up to ${compactAmount(hi)}`;
   return `${compactAmount(lo)} - ${compactAmount(hi)}`;
+}
+
+/** A trade's bracket ends, falling back to the filed string when the vendor
+ *  dropped a numeric end (same rule as formatAmountRange). */
+export function amountBounds(low: number | null, high: number | null, raw: string): { low: number | null; high: number | null } {
+  const parsed = low == null || high == null ? parseRange(raw) : null;
+  return { low: low ?? parsed?.low ?? null, high: high ?? parsed?.high ?? null };
 }
 
 /** Pull both ends out of a filed bracket string like '$1,000,001 - $5,000,000'. */

@@ -63,7 +63,10 @@ async function handleGET(request: NextRequest): Promise<NextResponse> {
       notifiedHolders = await notifyHoldersOfPoliticianTrades(
         results
           .filter((r) => r.newTrades?.length && bySlug.has(r.slug))
-          .map((r) => ({ displayName: bySlug.get(r.slug)!.display_name, trades: r.newTrades! })),
+          .map((r) => {
+            const m = bySlug.get(r.slug)!;
+            return { politicianId: m.id, slug: m.slug, displayName: m.display_name, trades: r.newTrades! };
+          }),
       );
     } catch (err) {
       console.error('[refresh-congress-trades] holder notify failed', err);

@@ -13,6 +13,7 @@ import { normalizeSymbol, buildRows, isNameResolvable, dropVendorDuplicates, cle
 import { tradeDirection, isFiledLate, formatAmountRange, moveBeforeDisclosure } from '../lib/congress/types';
 import { groupOverlap, isNewTrade, overlapVisit } from '../lib/congress/overlap-groups';
 import type { ActivityTrade } from '../lib/congress/insights';
+import { biggestRuns, buildFiling, earlierFilingDays, latestFilingDay, sizeLevel } from '../lib/congress/filing';
 
 // Both ends always survive. Nothing here may ever average them into one
 // figure: a filing discloses a bracket, so a midpoint is a number nobody filed.
@@ -268,6 +269,60 @@ assert.equal(isNonCommonFiling('AllianceBernstein Holding L.P. Units'), false, '
   const next = overlapVisit('2026-10-14T10:20:00.000Z', '2026-10-07T08:00:00.000Z', at('2026-10-14T15:00:00Z'));
   assert.equal(next.newSince, '2026-10-14T10:20:00.000Z', 'after a gap, the last load becomes the line');
   assert.equal(next.store.congress_overlap_seen_at, '2026-10-14T15:00:00.000Z');
+}
+
+// ─── Latest filing, grouped per stock (lib/congress/filing.ts) ──────────────
+{
+  let n = 0;
+  const row = (symbol: string, tradeType: string, range: string, date: string, addedAt: string) => ({
+    id: String(++n), symbol, assetDescription: symbol, companyName: `${symbol} Inc`, assetType: 'Stock', tradeType,
+    amountRange: range, amountLow: null, amountHigh: null, transactionDate: date, disclosureDate: null,
+    daysToDisclose: null, sector: null, priceAtTrade: null, priceAtDisclosure: null, addedAt,
+  });
+  const backfill = '2026-09-25T10:00:00Z';
+  const today = '2026-11-24T14:01:00Z';
+  const trades = [
+    row('OLD', 'Buy', '$1,001 - $15,000', '2026-07-24', backfill),
+    row('NVDA', 'Sell', '$1,001 - $15,000', '2026-09-24', today),
+    row('NVDA', 'Buy', '$1,001 - $15,000', '2026-09-09', today),
+    row('NVDA', 'Buy', '$1,001 - $15,000', '2026-09-10', today),
+    row('CMCSA', 'Sell', '$1,000,001 - $5,000,000', '2026-09-23', today),
+    row('MCD', 'Sell', '$1,001 - $15,000', '2026-09-24', today),
+    row('MCD', 'Sell', '$1,000,001 - $5,000,000', '2026-09-23', today),
+    row('TJX', 'Buy', '$250,001 - $500,000', '2026-09-15', today),
+    row('TJX', 'Buy', '$250,001 - $500,000', '2026-09-16', today),
+    row('D', 'Buy', '$15,001 - $50,000', '2026-09-10', today),
+  ];
+
+  assert.equal(sizeLevel(trades[0]), 0);
+  assert.equal(sizeLevel(trades[9]), 1);
+  assert.equal(sizeLevel(trades[7]), 2);
+  assert.equal(sizeLevel(trades[4]), 3);
+  assert.equal(sizeLevel({ amountLow: null, amountHigh: null, amountRange: 'Undisclosed' }), null);
+
+  assert.equal(latestFilingDay(trades), '2026-11-24', 'the newest arrival day');
+  assert.equal(latestFilingDay(trades.slice(0, 1)), null, 'a backfill alone is not a filing');
+  assert.deepEqual(earlierFilingDays(trades, '2026-11-24'), [], 'only the backfill came before');
+  const mid = row('MID', 'Buy', '$1,001 - $15,000', '2026-10-01', '2026-10-13T09:00:00Z');
+  assert.deepEqual(earlierFilingDays([...trades, mid], '2026-11-24'), ['2026-10-13'], 'between the backfill and the latest');
+
+  const f = buildFiling(trades, '2026-11-24', new Set(['NVDA']), new Set(['D']))!;
+  assert.equal(f.count, 9, 'the backfill row is not in the filing');
+  assert.equal(f.small, 4);
+  assert.equal(f.firstDate, '2026-09-09');
+  assert.equal(f.lastDate, '2026-09-24');
+  assert.deepEqual(f.stocks.map((s) => s.symbol), ['NVDA', 'D', 'MCD', 'CMCSA', 'TJX'], 'owned, watched, then biggest, then newest');
+  const nvda = f.stocks[0];
+  assert.equal(nvda.relation, 'owned');
+  assert.equal(nvda.buys, 2);
+  assert.equal(nvda.sells, 1);
+  assert.deepEqual(nvda.trades.map((t) => t.transactionDate), ['2026-09-09', '2026-09-10', '2026-09-24'], 'oldest first');
+  assert.equal(f.stocks.find((s) => s.symbol === 'MCD')!.biggest.amountRange, '$1,000,001 - $5,000,000', "a stock's biggest trade, not its first");
+  assert.deepEqual(f.biggest.map((t) => t.symbol), ['CMCSA', 'MCD', 'TJX'], 'one per stock, largest first');
+  const runs = biggestRuns(f.biggest);
+  assert.equal(runs.length, 2);
+  assert.deepEqual(runs[0].trades.map((t) => t.symbol), ['CMCSA', 'MCD'], 'same direction and bracket fold together');
+  assert.equal(runs[1].direction, 'buy');
 }
 
 console.log('congress ingest checks passed');

@@ -8,14 +8,11 @@
 import { cache } from 'react';
 import { createServerClient } from '@/lib/supabase/client';
 import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { fetchAllPages } from '@/lib/supabase/paging';
 import { isPlausibleTradeDate, type CongressTradeRow } from '@/lib/congress/types';
 
 const LIST_CACHE_KEY = 'congress:member-list:v4';
 const LIST_CACHE_TTL_SECONDS = 60 * 60;
-
-/** Trades shown on a member page. Deep history lives behind the vendor, not
- *  here — we only store the most recent 100 per member (see ingest-trades). */
-const TRADE_LIMIT = 100;
 
 /**
  * A member page with fewer disclosed trades than this is thin: it stays
@@ -180,15 +177,26 @@ export const loadCongressMember = cache(async (slug: string): Promise<CongressMe
       )
       .eq('politician_id', member.id)
       .order('current_value', { ascending: false, nullsFirst: false }),
-    supabase
-      .from('congress_trades')
-      .select(
-        'id, symbol, asset_description, asset_type, trade_type, amount_range, amount_low, amount_high, transaction_date, disclosure_date, days_to_disclose, sector, price_at_trade, price_at_disclosure',
-      )
-      .eq('politician_id', member.id)
-      .not('symbol', 'is', null)
-      .order('transaction_date', { ascending: false })
-      .limit(TRADE_LIMIT),
+    // Every ticker trade we hold, not the newest N. A cap of 100 hid most of a
+    // filing: Trump's of 2026-11-24 alone was 363 trades, and its $1M to $5M
+    // Home Depot and McDonald's sales sat past the cut. Paged, because an
+    // unbounded select stops at 1000 rows without saying so.
+    // ponytail: whole history in one payload (Khanna 720 rows today); page by
+    // filing server-side if a member passes a few thousand.
+    fetchAllPages(() =>
+      supabase
+        .from('congress_trades')
+        .select(
+          'id, symbol, asset_description, asset_type, trade_type, amount_range, amount_low, amount_high, transaction_date, disclosure_date, days_to_disclose, sector, price_at_trade, price_at_disclosure, created_at',
+        )
+        .eq('politician_id', member.id)
+        .not('symbol', 'is', null)
+        .order('transaction_date', { ascending: false })
+        .order('id'),
+    ).then(({ rows, error }) => {
+      if (error) throw new Error(error);
+      return { data: rows };
+    }),
   ]);
 
   // Readable names from our own catalogue, by ticker. The filed wording is
@@ -253,6 +261,7 @@ export const loadCongressMember = cache(async (slug: string): Promise<CongressMe
         sector: (t.sector as unknown as string) ?? null,
         priceAtTrade: plausible ? num(t.price_at_trade) : null,
         priceAtDisclosure: num(t.price_at_disclosure),
+        addedAt: (t.created_at as unknown as string) ?? null,
       };
     }),
   };

@@ -15,7 +15,7 @@ import i18next from 'i18next';
 import enNavigation from '@/lib/i18n/locales/en/navigation.json';
 import { createServerClient } from '@/lib/supabase/client';
 import type { NewTrade } from '@/lib/congress/ingest-trades';
-import { formatAmountRange, tradeDirection } from '@/lib/congress/types';
+import { amountBounds, formatAmountRange, tradeDirection } from '@/lib/congress/types';
 import { isPro, tierFromUser } from '@/lib/billing/tier';
 import { ECONOMIC_KINDS, type EconomicKind } from '@/lib/market-data/economic-kinds';
 import { economicResultText, RESULT_KINDS_NOTIFIED, type EconomicResultEvent } from '@/lib/market-data/economic-verdict';
@@ -786,12 +786,94 @@ export interface PoliticianTradesNotice {
   trades: NewTrade[];
 }
 
+/** Bracket floor for ranking, from the numbers or the filed string. */
+const tradeFloor = (t: NewTrade) => amountBounds(t.amount_low, t.amount_high, t.amount_range).low ?? -1;
+
+/** One trade as "bought MSFT ($100K - $250K)", lower case for mid-sentence. */
+function tradeItem(t: NewTrade): NotifMsg {
+  const dir = tradeDirection(t.trade_type);
+  const amount = formatAmountRange(t.amount_low, t.amount_high, t.amount_range);
+  return dir === 'buy' ? msg('notifPolItemBought', { symbol: t.symbol!, amount })
+    : dir === 'sell' ? msg('notifPolItemSold', { symbol: t.symbol!, amount })
+    : msg('notifPolItemOther', { type: t.trade_type.toLowerCase(), symbol: t.symbol!, amount });
+}
+
+/** The largest trade per stock, biggest first. Vendor order put a $15K sale ahead of a $1M one. */
+function biggestTrades(trades: NewTrade[], n: number): NewTrade[] {
+  const best = new Map<string, NewTrade>();
+  for (const t of trades) {
+    const cur = best.get(t.symbol!);
+    if (!cur || tradeFloor(t) > tradeFloor(cur)) best.set(t.symbol!, t);
+  }
+  return [...best.values()].sort((a, b) => tradeFloor(b) - tradeFloor(a)).slice(0, n);
+}
+
+/** "Made between Sep 2 and Sep 24." from the trades' own dates. */
+function madeWhen(trades: NewTrade[]): NotifMsg | null {
+  const dates = trades.map((t) => t.transaction_date).filter(Boolean).sort();
+  if (dates.length === 0) return null;
+  const from = dates[0];
+  const to = dates[dates.length - 1];
+  return from === to ? msg('notifPolMadeOn', { date: { date: from } }) : msg('notifPolMadeBetween', { from: { date: from }, to: { date: to } });
+}
+
 /**
- * Tells everyone following a politician that new trades were disclosed.
- * Same shape as notifyInstitutionFilingChange. Only trades with a resolved
- * ticker are announced: the rest are treasuries and munis, noise in a
- * notification. Idempotent on the newest trade id, so a re-run of the refresh
- * cron can never announce the same batch twice.
+ * The follow notice's body: when the trades were made, which of the reader's
+ * stocks are in it (`yours`, owned first; empty for anyone not shown that line),
+ * then the biggest three. Pure, so a dry run can word a real filing without sending.
+ */
+export function politicianFilingMessage(trades: NewTrade[], yours: string[]): NotifMsg {
+  const when = madeWhen(trades);
+  // Three trades or fewer: every one of them. More: the biggest trade in each
+  // of the three biggest stocks, labelled as such, since "Trades: sold NVDA"
+  // would hide the two NVDA buys in the same filing.
+  const many = trades.length > 3;
+  const shown = many ? biggestTrades(trades, 3) : [...trades].sort((a, b) => tradeFloor(b) - tradeFloor(a));
+  return msg('notifSentences', {
+    sentences: [
+      ...(when ? [when] : []),
+      ...(yours.length > 0 ? [msg('notifPolInYours', { count: yours.length, symbols: capped(yours) })] : []),
+      msg(many ? 'notifPolTradesBiggest' : 'notifPolTradesList', { items: shown.map(tradeItem) }),
+    ],
+  });
+}
+
+type HolderRow = { user_id: string; symbol: string };
+
+/** Which of `symbols` each of `userIds` owns (open positions) or watches. */
+async function heldOrWatched(supabase: ReturnType<typeof createServerClient>, symbols: string[], userIds?: string[]) {
+  const [held, watched] = await Promise.all([
+    fetchAllPages<HolderRow>(() => {
+      const q = supabase.from('user_holdings').select('user_id, symbol').in('symbol', symbols).or(OPEN_POSITION_FILTER);
+      return (userIds ? q.in('user_id', userIds) : q).order('id');
+    }),
+    fetchAllPages<HolderRow>(() => {
+      const q = supabase.from('user_watchlist').select('user_id, symbol').in('symbol', symbols);
+      return (userIds ? q.in('user_id', userIds) : q).order('id');
+    }),
+  ]);
+  const owned = new Map<string, Set<string>>();
+  const any = new Map<string, Set<string>>();
+  for (const r of held.rows) {
+    owned.set(r.user_id, (owned.get(r.user_id) ?? new Set()).add(r.symbol.toUpperCase()));
+    any.set(r.user_id, (any.get(r.user_id) ?? new Set()).add(r.symbol.toUpperCase()));
+  }
+  for (const r of watched.rows) any.set(r.user_id, (any.get(r.user_id) ?? new Set()).add(r.symbol.toUpperCase()));
+  return { owned, any };
+}
+
+/** A user's symbols, the ones they own first. */
+const ownedFirst = (mine: string[], owned: Set<string> | undefined) =>
+  [...mine.filter((s) => owned?.has(s)), ...mine.filter((s) => !owned?.has(s))];
+
+/**
+ * Tells everyone following a politician that a filing arrived: when the trades
+ * were made, the biggest ones, and (Pro) which of the follower's own stocks are
+ * in it. Pro followers get their stocks here, so the holdings digest below
+ * leaves this politician out for them: one filing, one notification.
+ * Only trades with a resolved ticker are announced: the rest are treasuries
+ * and munis, noise in a notification. Idempotent on the newest trade id, so a
+ * re-run of the refresh cron can never announce the same batch twice.
  */
 export async function notifyPoliticianTrades(notice: PoliticianTradesNotice): Promise<number> {
   const trades = notice.trades.filter((t) => t.symbol);
@@ -804,56 +886,46 @@ export async function notifyPoliticianTrades(notice: PoliticianTradesNotice): Pr
   const followerIds = follows.map((f) => f.user_id);
   if (followerIds.length === 0) return 0;
 
-  const { rows: users } = await selectInChunks<{ id: string; settings: { notifications?: Record<string, boolean> } | null }, string>(
-    followerIds, (ids) => supabase.from('users').select('id, settings').in('id', ids),
-  );
-  const enabled = users
-    .filter((u) => u.settings?.notifications?.politician_trades !== false)
-    .map((u) => u.id);
+  const { rows: users } = await selectInChunks<
+    { id: string; settings: { notifications?: Record<string, boolean> } | null; account_tier: number | null; role: string | null; pro_bonus_until: string | null },
+    string
+  >(followerIds, (ids) => supabase.from('users').select('id, settings, account_tier, role, pro_bonus_until').in('id', ids));
+  const enabled = users.filter((u) => u.settings?.notifications?.politician_trades !== false);
   if (enabled.length === 0) return 0;
+
+  const symbols = [...new Set(trades.map((t) => t.symbol!))];
+  // Your-stocks line: Pro, with the holdings alert on (the same gate as the digest it replaces).
+  const proIds = enabled
+    .filter((u) => isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until)) && u.settings?.notifications?.politician_trades_holdings !== false)
+    .map((u) => u.id);
+  const mine = proIds.length > 0 ? await heldOrWatched(supabase, symbols, proIds) : null;
 
   const newest = Math.max(...trades.map((t) => t.dc_trade_id));
   const entityId = `politician:${notice.slug}:${newest}`;
-  const shown = trades.slice(0, 3).map((t) => {
-    const dir = tradeDirection(t.trade_type);
-    const amount = formatAmountRange(t.amount_low, t.amount_high, t.amount_range);
-    const verb = dir === 'buy' ? 'Bought' : dir === 'sell' ? 'Sold' : t.trade_type;
-    return {
-      text: `${verb} ${t.symbol} (${amount})`,
-      msg: dir === 'buy' ? msg('notifPolBought', { symbol: t.symbol!, amount })
-        : dir === 'sell' ? msg('notifPolSold', { symbol: t.symbol!, amount })
-        : msg('notifPolOther', { type: t.trade_type, symbol: t.symbol!, amount }),
-    };
-  });
-  const more = trades.length - shown.length;
-  const message = shown.map((s) => s.text).join(', ') + (more > 0 ? ` and ${more} more.` : '.');
-  const title = `${notice.displayName} disclosed ${trades.length} new trade${trades.length === 1 ? '' : 's'}`;
-  const params = i18n(
-    msg('notifPolTradesTitle', { name: notice.displayName, count: trades.length }),
-    msg('notifPolTradesMessage', { items: [...shown.map((s) => s.msg), ...(more > 0 ? [msg('notifEarningsMore', { n: more })] : [])] }),
-  );
+  const title = msg('notifPolTradesTitle', { name: notice.displayName, count: trades.length });
 
   let sent = 0;
-  for (const userId of enabled) {
+  for (const u of enabled) {
     const { data: existing } = await supabase
       .from('notifications')
       .select('id')
-      .eq('user_id', userId)
+      .eq('user_id', u.id)
       .eq('type', 'politician_trade')
       .eq('entity_id', entityId)
       .limit(1)
       .maybeSingle<{ id: string }>();
     if (existing) continue;
 
+    const message = politicianFilingMessage(trades, ownedFirst([...(mine?.any.get(u.id) ?? [])], mine?.owned.get(u.id)));
     const result = await createNotification({
-      user_id: userId,
+      user_id: u.id,
       type: 'politician_trade',
-      title,
-      message,
+      title: enText(title),
+      message: enText(message),
       entity_type: 'politician',
       entity_id: entityId,
       severity: 'info',
-      params,
+      params: i18n(title, message),
     });
     if (result.success) sent++;
   }
@@ -863,84 +935,100 @@ export async function notifyPoliticianTrades(notice: PoliticianTradesNotice): Pr
 /**
  * Pro: tells users when tracked politicians disclosed trades in stocks they
  * hold or watch, whether or not they follow those politicians. One summary
- * per user per refresh run, idempotent on the run's newest trade id.
+ * per user per refresh run, idempotent on the run's newest trade id. A
+ * politician the user follows is left out: notifyPoliticianTrades already
+ * named that filing's trades in the user's stocks.
  */
 export async function notifyHoldersOfPoliticianTrades(
-  batch: { displayName: string; trades: NewTrade[] }[],
+  batch: { politicianId: string; slug: string; displayName: string; trades: NewTrade[] }[],
 ): Promise<number> {
-  // symbol -> who did what in it, as English text and as a worded message.
-  const bySymbol = new Map<string, Array<{ text: string; msg: NotifMsg }>>();
+  // symbol -> politician id -> what they did in it, in filing order.
+  const bySymbol = new Map<string, Map<string, { name: string; slug: string; dirs: Set<string> }>>();
   let newest = 0;
   for (const m of batch) {
     for (const t of m.trades) {
       if (!t.symbol) continue;
       newest = Math.max(newest, t.dc_trade_id);
+      const people = bySymbol.get(t.symbol) ?? new Map();
+      const p = people.get(m.politicianId) ?? { name: m.displayName, slug: m.slug, dirs: new Set<string>() };
       const dir = tradeDirection(t.trade_type);
-      const text = `${m.displayName} ${dir === 'buy' ? 'bought' : dir === 'sell' ? 'sold' : t.trade_type.toLowerCase()}`;
-      const lines = bySymbol.get(t.symbol) ?? [];
-      if (lines.some((l) => l.text === text)) continue;
-      bySymbol.set(t.symbol, [...lines, {
-        text,
-        msg: dir === 'buy' ? msg('notifPolActorBought', { name: m.displayName })
-          : dir === 'sell' ? msg('notifPolActorSold', { name: m.displayName })
-          : msg('notifPolActorOther', { name: m.displayName, type: t.trade_type.toLowerCase() }),
-      }]);
+      p.dirs.add(dir === 'other' ? t.trade_type.toLowerCase() : dir);
+      people.set(m.politicianId, p);
+      bySymbol.set(t.symbol, people);
     }
   }
   if (bySymbol.size === 0) return 0;
-  const symbols = [...bySymbol.keys()];
   const supabase = createServerClient();
 
-  type Row = { user_id: string; symbol: string };
-  const [held, watched] = await Promise.all([
-    fetchAllPages<Row>(() => supabase.from('user_holdings').select('user_id, symbol').in('symbol', symbols).or(OPEN_POSITION_FILTER).order('id')),
-    fetchAllPages<Row>(() => supabase.from('user_watchlist').select('user_id, symbol').in('symbol', symbols).order('id')),
+  const { owned, any } = await heldOrWatched(supabase, [...bySymbol.keys()]);
+  if (any.size === 0) return 0;
+
+  const [{ rows: users }, { rows: follows }] = await Promise.all([
+    selectInChunks<
+      { id: string; settings: { notifications?: Record<string, boolean> } | null; account_tier: number | null; role: string | null; pro_bonus_until: string | null },
+      string
+    >([...any.keys()], (ids) => supabase.from('users').select('id, settings, account_tier, role, pro_bonus_until').in('id', ids)),
+    fetchAllPages<{ user_id: string; politician_id: string }>(() =>
+      supabase.from('user_politician_follows').select('user_id, politician_id').in('politician_id', batch.map((m) => m.politicianId)).order('user_id').order('politician_id'),
+    ),
   ]);
-  const userSymbols = new Map<string, Set<string>>();
-  for (const r of [...held.rows, ...watched.rows]) {
-    userSymbols.set(r.user_id, (userSymbols.get(r.user_id) ?? new Set()).add(r.symbol.toUpperCase()));
-  }
-  if (userSymbols.size === 0) return 0;
+  const followed = new Map<string, Set<string>>();
+  for (const f of follows) followed.set(f.user_id, (followed.get(f.user_id) ?? new Set()).add(f.politician_id));
 
-  const { rows: users } = await selectInChunks<
-    { id: string; settings: { notifications?: Record<string, boolean> } | null; account_tier: number | null; role: string | null; pro_bonus_until: string | null },
-    string
-  >([...userSymbols.keys()], (ids) => supabase.from('users').select('id, settings, account_tier, role, pro_bonus_until').in('id', ids));
+  /** "Trump bought and sold" for one person in one stock; "bought and sold" when the title already names them. */
+  const actor = (p: { name: string; dirs: Set<string> }, named: boolean): NotifMsg => {
+    const buy = p.dirs.has('buy');
+    const sell = p.dirs.has('sell');
+    const key = buy && sell ? 'notifPolActorBoughtSold' : buy ? 'notifPolActorBought' : sell ? 'notifPolActorSold' : 'notifPolActorOther';
+    return msg(named ? `${key}Short` : key, { name: p.name, type: [...p.dirs][0] });
+  };
 
-  const entityId = `politician-holdings:${newest}`;
+  // Every id this run can write, so a re-run finds it whichever shape it took.
+  const runIds = [`politician-holdings:${newest}`, ...batch.map((m) => `politician-holdings:${newest}:${m.slug}`)];
+
   let sent = 0;
   for (const u of users) {
     if (!isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until))) continue;
     if (u.settings?.notifications?.politician_trades_holdings === false) continue;
-    const mine = [...(userSymbols.get(u.id) ?? [])].filter((s) => bySymbol.has(s));
-    if (mine.length === 0) continue;
+    const skip = followed.get(u.id);
+    // Each of the user's stocks with the people they don't follow who traded it.
+    const lines = ownedFirst([...(any.get(u.id) ?? [])].filter((s) => bySymbol.has(s)), owned.get(u.id))
+      .map((s) => ({ symbol: s, people: [...bySymbol.get(s)!].filter(([id]) => !skip?.has(id)).map(([, p]) => p) }))
+      .filter((l) => l.people.length > 0);
+    if (lines.length === 0) continue;
+
+    const slugs = new Set(lines.flatMap((l) => l.people.map((p) => p.slug)));
+    const solo = slugs.size === 1 ? lines[0].people[0] : null;
+    // A single politician's filing links straight to it; several go to the overview.
+    const entityId = solo ? `politician-holdings:${newest}:${solo.slug}` : `politician-holdings:${newest}`;
 
     const { data: existing } = await supabase
       .from('notifications').select('id')
-      .eq('user_id', u.id).eq('type', 'politician_trade').eq('entity_id', entityId)
+      .eq('user_id', u.id).eq('type', 'politician_trade').in('entity_id', runIds)
       .limit(1).maybeSingle<{ id: string }>();
     if (existing) continue;
 
-    const top = mine.slice(0, 3);
-    const parts = top.map((s) => `${s}: ${bySymbol.get(s)!.map((l) => l.text).join(', ')}`);
-    const more = mine.length - parts.length;
+    const top = lines.slice(0, 3);
+    const more = lines.length - top.length;
+    const title = solo
+      ? msg('notifPolHoldersTitleOne', { name: solo.name, count: lines.length })
+      : msg('notifPolHoldersTitle', { count: lines.length });
+    const message = msg('notifSentences', {
+      sentences: [
+        // One person: named once in the title, then each line just says what they did.
+        ...top.map((l) => msg('notifPolHoldingLine', { symbol: l.symbol, actors: l.people.map((p) => actor(p, !!solo)) })),
+        ...(more > 0 ? [msg('notifAndMore', { n: more })] : []),
+      ],
+    });
     const result = await createNotification({
       user_id: u.id,
       type: 'politician_trade',
-      title: `Politicians traded ${mine.length === 1 ? '1 of your stocks' : `${mine.length} of your stocks`}`,
-      message: parts.join('. ') + (more > 0 ? `. And ${more} more.` : '.'),
+      title: enText(title),
+      message: enText(message),
       entity_type: 'politician',
       entity_id: entityId,
       severity: 'info',
-      params: i18n(
-        msg('notifPolHoldersTitle', { count: mine.length }),
-        msg('notifSentences', {
-          sentences: [
-            ...top.map((s) => msg('notifPolHoldingLine', { symbol: s, actors: bySymbol.get(s)!.map((l) => l.msg) })),
-            ...(more > 0 ? [msg('notifAndMore', { n: more })] : []),
-          ],
-        }),
-      ),
+      params: i18n(title, message),
     });
     if (result.success) sent++;
   }
@@ -1028,8 +1116,16 @@ export async function notifyEconomicEventsToday(date: string, events: EconomicRe
 // The stored English fallback, rendered from the same keys the panel translates.
 const enNotif = i18next.createInstance();
 enNotif.init({ lng: 'en', resources: { en: { navigation: enNavigation } }, defaultNS: 'navigation', interpolation: { escapeValue: false }, initAsync: false });
-export const enText = (m: NotifMsg): string => enNotif.t(m.key, Object.fromEntries(Object.entries(m.vars ?? {}).map(([k, v]) =>
-  [k, Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : enText(x))).join(' ') : v])));
+// Same rules as the panel's renderMsg: `sentences` join with spaces, other
+// lists read "A, B, and C", `{ date }` is a short date.
+const enList = new Intl.ListFormat('en-US', { type: 'conjunction' });
+export const enText = (m: NotifMsg): string => enNotif.t(m.key, Object.fromEntries(Object.entries(m.vars ?? {}).map(([k, v]) => {
+  if (Array.isArray(v)) {
+    const parts = v.map((x) => (typeof x === 'string' ? x : enText(x)));
+    return [k, k === 'sentences' ? parts.join(' ') : enList.format(parts)];
+  }
+  return [k, v !== null && typeof v === 'object' ? shortDate(v.date) : v];
+})));
 
 /**
  * A release's result just landed (lib/market-data/economic-results.ts): tell

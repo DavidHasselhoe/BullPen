@@ -55,14 +55,16 @@ export function notificationSource(n: Notification, t: (key: string) => string):
     const slug = n.entity_id.split(':')[1];
     if (slug) return { label: t('notifSource13f'), href: `/discover/institutions/${slug}` };
   }
-  // Pro holdings/watchlist summary, not tied to one member.
+  // Pro holdings/watchlist summary: "politician-holdings:<newest>[:<slug>]".
+  // With one politician in it, straight to their latest filing.
   if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician-holdings:')) {
-    return { label: t('notifSourceWashington'), href: '/discover/politicians' };
+    const slug = n.entity_id.split(':')[2];
+    return { label: t('notifSourceWashington'), href: slug ? `/discover/politicians/${slug}#latest-filing` : '/discover/politicians' };
   }
   // entity_id is "politician:<slug>:<newest dc_trade_id>".
   if (n.type === 'politician_trade' && n.entity_id?.startsWith('politician:')) {
     const slug = n.entity_id.split(':')[1];
-    if (slug) return { label: t('notifSourceWashington'), href: `/discover/politicians/${slug}` };
+    if (slug) return { label: t('notifSourceWashington'), href: `/discover/politicians/${slug}#latest-filing` };
   }
 
   // entity_id is "index-fund:<index>:<detected_on>": what a fund the user holds now owns.

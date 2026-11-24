@@ -14,6 +14,8 @@ import { ControlSelect } from '@/components/ui/ControlSelect';
 import { DisclosureNote } from './DisclosureNote';
 import { FollowFundButton } from '@/components/institutions/FollowFundButton';
 import { PoliticianScorecard } from './PoliticianScorecard';
+import { LatestFiling, isRecentFiling } from './LatestFiling';
+import { arrivalDay, latestFilingDay } from '@/lib/congress/filing';
 import { ListSearch } from './ListSearch';
 import { PoliticianAvatar } from './PoliticianAvatar';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
@@ -92,7 +94,7 @@ function toDiffable(h: CongressHoldingRow) {
   };
 }
 
-function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
+function TradeRow({ t, isNew = false }: { t: CongressTradeRow & { symbol: string }; isNew?: boolean }) {
   const { t: tr, i18n } = useTranslation('discover');
   const dir = tradeDirection(t.tradeType);
   const isBuy = dir === 'buy';
@@ -132,6 +134,11 @@ function TradeRow({ t }: { t: CongressTradeRow & { symbol: string } }) {
             >
               {t.symbol}
             </Link>
+            {isNew && (
+              <span className="shrink-0 rounded-full bg-foreground px-1.5 py-px text-[11px] font-medium text-background">
+                {tr('filingNew')}
+              </span>
+            )}
             {/* clamp-ok: company name beside its ticker; hidden on phones
                 where there is no width for it to be legible */}
             {/* The catalogue's name reads cleanly; the filing's own wording,
@@ -289,6 +296,15 @@ export function CongressMemberDetailClient({ slug, initialMember }: { slug: stri
     return { median, count: moves.length };
   }, [tradesWithTicker]);
 
+  /** The latest filing (not the first backfill), and the same day when it is
+   *  recent enough that its rows below wear a New label. */
+  const filingDay = useMemo(() => latestFilingDay(tradesWithTicker), [tradesWithTicker]);
+  const newDay = filingDay && isRecentFiling(filingDay) ? filingDay : null;
+
+  /** No row carries a disclosure date (every executive-branch filing we
+   *  hold), so the scorecard, which starts from that date, can never fill. */
+  const unscorable = tradesWithTicker.length > 0 && tradesWithTicker.every((t) => !t.disclosureDate);
+
   const tradeFiltersActive = year !== ALL_YEARS || tradeQuery.trim() !== '' || filter !== 'all';
 
   if (isLoading) {
@@ -338,7 +354,9 @@ export function CongressMemberDetailClient({ slug, initialMember }: { slug: stri
         <FollowFundButton kind="politician" slug={member.slug} displayName={member.displayName} />
       </header>
 
-      <PoliticianScorecard slug={member.slug} displayName={member.displayName} />
+      {filingDay && <LatestFiling trades={tradesWithTicker} day={filingDay} displayName={member.displayName} />}
+
+      <PoliticianScorecard slug={member.slug} displayName={member.displayName} unscorable={unscorable} />
 
       {/* ---------------- Estimated portfolio ---------------- */}
       <section aria-labelledby="congress-holdings-heading" className={cn("mb-10", !allocation && "order-last")}>
@@ -602,7 +620,7 @@ export function CongressMemberDetailClient({ slug, initialMember }: { slug: stri
         ) : (
           <ul className="rounded-xl border border-border/60 px-4">
             {(tradeQuery ? visibleTrades : visibleTrades.slice(0, tradesShown)).map((t) => (
-              <TradeRow key={t.id} t={t} />
+              <TradeRow key={t.id} t={t} isNew={!!newDay && arrivalDay(t) === newDay} />
             ))}
           </ul>
         )}
