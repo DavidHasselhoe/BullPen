@@ -1,5 +1,28 @@
 [
   {
+    "date": "2026-11-24",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Politician pages now open on their latest filing: when it arrived, when the trades were made, the biggest ones in plain words, and one row per stock with yours first",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Notifications about a politician's trades say when the trades were made, lead with the biggest ones, and open straight on the new filing. One filing now sends you one notification",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Very large filings now show every trade. Some of Donald Trump's September trades were missing"
+      },
+      {
+        "type": "fixed",
+        "text": "Bonds no longer show up as stock trades on politician pages, for example an Oracle bond listed as buying Oracle stock"
+      }
+    ]
+  },
+  {
     "date": "2026-11-23",
     "entries": [
       {
