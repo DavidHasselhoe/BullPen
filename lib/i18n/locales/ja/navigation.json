@@ -257,7 +257,7 @@
   "sidePanelClose": "AIパネルを閉じる",
   "navHelpCenter": "ヘルプセンター",
   "notifCategoryFollowing": "フォロー中",
-  "notifPolTradesTitle_one": "{{name}} reported {{count}} new trade",
+  "notifPolTradesTitle_one": "{{name}}が新しい取引を{{count}}件報告しました",
   "notifPolTradesTitle_other": "{{name}} が新しい取引を{{count}}件報告しました",
   "notifPolMadeBetween": "{{from}}から{{to}}の間に行われました。",
   "notifPolMadeOn": "{{date}}に行われました。",
