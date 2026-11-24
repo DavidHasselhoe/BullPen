@@ -673,7 +673,7 @@ export async function ingestPolitician(
           budget,
         });
         if (verdict === 'ceiling') {
-          base.error = `Partial: stopped at the ${budget}-credit budget after ${trades.length} trades; older trades in this filing were not fetched`;
+          base.error = `Partial: stopped at the ${budget}-credit budget after ${trades.length} trades; older trades in this filing were not fetched and the next refresh will not reach them: run scripts/backfill-congress-gap.ts`;
           break;
         }
         if (verdict !== 'more') break;
@@ -682,7 +682,7 @@ export async function ingestPolitician(
           next = await fetchTrades(politician.dc_politician_id, REFRESH_PAGE, trades.length);
         } catch (err) {
           // Keep the pages already paid for; the older rest is reported, not lost silently.
-          base.error = `Partial: page at offset ${trades.length} failed (${err instanceof Error ? err.message : String(err)}); older trades in this filing were not fetched`;
+          base.error = `Partial: page at offset ${trades.length} failed (${err instanceof Error ? err.message : String(err)}); older trades in this filing were not fetched and the next refresh will not reach them: run scripts/backfill-congress-gap.ts`;
           break;
         }
         base.creditsCharged += next.creditsCharged;

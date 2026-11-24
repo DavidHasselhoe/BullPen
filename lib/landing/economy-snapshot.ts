@@ -55,10 +55,12 @@ async function build(): Promise<LandingEconomy | null> {
 /** Never throws: the card falls back to its stored example when this is null. */
 export async function getLandingEconomy(): Promise<LandingEconomy | null> {
   try {
-    const cached = await rget<LandingEconomy>(KEY);
-    if (cached) return cached;
+    const cached = await rget<LandingEconomy | { none: true }>(KEY);
+    if (cached) return 'none' in cached ? null : cached;
     const fresh = await build();
-    if (fresh) void rset(KEY, fresh, TTL_SECONDS);
+    // A missing metric is cached too, briefly, so it costs one rebuild per
+    // 10 minutes instead of three reads on every landing visit.
+    void rset(KEY, fresh ?? { none: true }, fresh ? TTL_SECONDS : 600);
     return fresh;
   } catch (err) {
     console.error('[landing-economy] failed:', err);

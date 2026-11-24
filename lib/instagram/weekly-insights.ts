@@ -172,9 +172,13 @@ export function buildWeeklySummary(input: {
   const best = posts.filter((p) => p.isReel && watchSeconds(p) > 0).sort((a, b) => watchSeconds(b) - watchSeconds(a))[0];
   if (best) sections.push(`**Best watch time:** [${dayLabel(best.postedAt)} Reel](${best.permalink}), ${watchSeconds(best).toFixed(1)} s on average`);
 
+  // Discord rejects the whole embed past 4,096 characters: drop whole lines from the end.
+  let description = sections.join('\n\n');
+  while (description.length > 4096) description = description.slice(0, description.lastIndexOf('\n', 4090)) + '\n…';
+
   return {
     title: `Instagram week ${weekNo}: ${formatWeekLabel(iso(week.start), iso(new Date(week.end.getTime() - DAY)))}`,
-    description: sections.join('\n\n'),
+    description,
     color: 0x34d399,
     footer: { text: 'Post numbers are totals so far, so posts from late in the week have had less time to collect them.' },
     timestamp: new Date().toISOString(),

@@ -990,7 +990,9 @@ export async function notifyHoldersOfPoliticianTrades(
   for (const u of users) {
     if (!isPro(tierFromUser(u.account_tier, u.role, u.pro_bonus_until))) continue;
     if (u.settings?.notifications?.politician_trades_holdings === false) continue;
-    const skip = followed.get(u.id);
+    // Only a follow whose notice actually reached them: with follow alerts
+    // off, notifyPoliticianTrades sent nothing, so this digest still covers it.
+    const skip = u.settings?.notifications?.politician_trades === false ? undefined : followed.get(u.id);
     // Each of the user's stocks with the people they don't follow who traded it.
     const lines = ownedFirst([...(any.get(u.id) ?? [])].filter((s) => bySymbol.has(s)), owned.get(u.id))
       .map((s) => ({ symbol: s, people: [...bySymbol.get(s)!].filter(([id]) => !skip?.has(id)).map(([, p]) => p) }))
