@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -73,6 +73,8 @@ interface ScreenerResultsProps {
   initialSortDir?: SortDir;
   /** Reports the rows on the current page in display order, and the sort behind them. Feeds Bull's page context. */
   onVisibleRowsChange?: (view: { tickers: string[]; sortKey: string; sortDir: SortDir }) => void;
+  /** Shown under "No matches": a way out, e.g. "Remove Dividend 4%+ to see 12 stocks". */
+  emptyAction?: ReactNode;
 }
 
 export function ScreenerResults({
@@ -86,6 +88,7 @@ export function ScreenerResults({
   initialSortKey = 'market_cap',
   initialSortDir = 'desc',
   onVisibleRowsChange,
+  emptyAction,
 }: ScreenerResultsProps) {
   const { t } = useTranslation('tools');
   const router = useRouter();
@@ -119,7 +122,7 @@ export function ScreenerResults({
   const sorted = useMemo(() => {
     // Visible columns first: a page can pass its own (the index pages' fund weight), which isn't in the static list.
     const col = columns.find((c) => c.key === sortKey) ?? SCREENER_COLUMNS.find((c) => c.key === sortKey);
-    return [...data].sort((a, b) => {
+    const primary = (a: ScreenerRow, b: ScreenerRow): number => {
       if (sortKey === 'ticker') {
         return sortDir === 'asc'
           ? a.ticker.localeCompare(b.ticker)
@@ -131,7 +134,14 @@ export function ScreenerResults({
       if (av == null) return 1;   // nulls sort last regardless of direction
       if (bv == null) return -1;
       return sortDir === 'asc' ? av - bv : bv - av;
-    });
+    };
+    // Ties (Health Score is an integer, ~65 stocks can share one) go largest
+    // market cap first whatever the direction, then ticker. The tooltip says so.
+    // A missing cap is -Infinity; two of them subtract to NaN, which falls through.
+    return [...data].sort((a, b) =>
+      primary(a, b)
+      || (b.market_cap ?? -Infinity) - (a.market_cap ?? -Infinity)
+      || a.ticker.localeCompare(b.ticker));
   }, [data, columns, sortKey, sortDir, livePrices]);
 
   const totalPages = Math.ceil(sorted.length / pageSize);
@@ -341,7 +351,9 @@ export function ScreenerResults({
           title={t('screenerNoMatchesTitle')}
           description={t('screenerNoMatchesDescription')}
           imageSize={140}
-        />
+        >
+          {emptyAction}
+        </EmptyState>
       </div>
     );
   }
@@ -561,6 +573,7 @@ export function ScreenerResults({
                           : sortDir === 'desc'
                             ? t('screenerSortedDescHint')
                             : t('screenerSortedAscHint')}
+                        {col.key !== 'market_cap' && ` ${t('screenerSortTiebreakHint')}`}
                       </p>
                     </TooltipContent>
                   </Tooltip>

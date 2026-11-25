@@ -4,7 +4,7 @@ import { withRateLimit } from '@/lib/security/api-security';
 import { fetchAndUpsertScreenerStats } from '@/lib/market-data/screener-stats';
 import { TwelveDataRateLimitError, getStockQuotes, withRateLimitRetry } from '@/lib/twelvedata/twelvedata-client';
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
-import { screenerStaleCutoffIso, isIndexScope, loadScreenerUniverse, matchesScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
+import { screenerStaleCutoffIso, isIndexScope, loadScreenerUniverse, matchesScreenerFilters, relaxScreenerFilters, type ScreenerFilterParams } from '@/lib/screener/screener-query';
 import { getLastPrices, cacheLastPrice, type LastPriceSeed } from '@/lib/market-data/last-price-cache';
 import { tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
@@ -234,7 +234,10 @@ async function handler(request: NextRequest) {
     profitMarginMin, profitMarginMax, revenueGrowthMin, revenueGrowthMax,
     week52ChangeMin, week52ChangeMax,
   };
+  const pool = results;
   results = results.filter((r) => matchesScreenerFilters(r, filters));
+  // Nothing matched: say which single filter is in the way, not just "No matches".
+  const relax = results.length === 0 ? relaxScreenerFilters(pool, filters) : [];
 
   // Collect unique sectors and industries for filter dropdowns
   // (include any rows fetched on-demand so their sectors appear).
@@ -272,6 +275,7 @@ async function handler(request: NextRequest) {
     stale: baseRows.length === 0,
     ...(onDemandRows.length > 0 ? { onDemandFetched: onDemandRows.length } : {}),
     ...(onDemandPartial ? { partial: true } : {}),
+    ...(relax.length > 0 ? { relax } : {}),
   });
   response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
   return response;

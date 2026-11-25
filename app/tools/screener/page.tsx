@@ -10,11 +10,12 @@ import { trackEvent } from '@/lib/analytics/track';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Filter, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Filter, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   ScreenerFilters,
   EMPTY_FILTERS,
+  describeActiveFilters,
   type ScreenerFilterValues,
   type PresetView,
 } from '@/components/screener/ScreenerFilters';
@@ -23,6 +24,7 @@ import { ScreenerViewBar, type ActiveView } from '@/components/screener/Screener
 import { ScreenerSearchBar } from '@/components/screener/ScreenerSearchBar';
 import { ScreenerViewStockPicker } from '@/components/screener/ScreenerViewStockPicker';
 import { ColumnChooser } from '@/components/screener/ColumnChooser';
+import { getColumnTabs } from '@/components/screener/screener-columns';
 import { useScreenerColumns } from '@/hooks/use-screener-columns';
 import { useHeatmapStream } from '@/hooks/use-heatmap-stream';
 import { useWatchlist, useWatchlistItems } from '@/hooks/use-watchlist';
@@ -240,6 +242,8 @@ function ScreenerContent() {
     financialsLoaded: number;
     stale: boolean;
     view: string;
+    /** Only when nothing matched: what dropping one filter would bring back. */
+    relax?: { keys: (keyof ScreenerFilterValues)[]; count: number }[];
   }>({
     queryKey: ['screener', viewParam, qs],
     queryFn: async () => {
@@ -407,6 +411,24 @@ function ScreenerContent() {
   const sectors = data?.sectors ?? [];
   const industries = data?.industries ?? [];
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const activeFilters = useMemo(() => describeActiveFilters(t, filters), [t, filters]);
+  const clearFilterKeys = (keys: (keyof ScreenerFilterValues)[]) =>
+    handleFilterChange({ ...filters, ...Object.fromEntries(keys.map((k) => [k, ''])) });
+  const columnTabs = getColumnTabs(t);
+  const activeTab = columnTabs.find((tab) => (tab.keys?.join() ?? null) === (screenerColumns.tabKeys?.join() ?? null))?.id;
+  // The "No matches" way out: one button per filter whose removal brings stocks back.
+  const relaxAction = data?.relax?.length ? (
+    <div className="flex flex-col items-center gap-2">
+      {data.relax.map((r) => {
+        const chip = activeFilters.find((f) => f.keys[0] === r.keys[0]);
+        return chip ? (
+          <Button key={chip.label} variant="outline" size="sm" onClick={() => clearFilterKeys(r.keys)}>
+            {t('screenerRelaxAction', { label: chip.label, count: r.count })}
+          </Button>
+        ) : null;
+      })}
+    </div>
+  ) : undefined;
 
   // Filter sidebar hide/show, remembered in this browser. Read through
   // useSyncExternalStore so the server HTML (sidebar open) hydrates cleanly.
@@ -638,6 +660,46 @@ function ScreenerContent() {
             </Card>
           ) : (
             <div className={isFetching ? 'opacity-60 transition-opacity duration-150' : 'transition-opacity duration-150'}>
+              {/* What's on: every filter as a chip that removes itself. */}
+              {activeFilters.length > 0 && (
+                <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                  <span className="mr-0.5 text-xs text-muted-foreground">{t('screenerFilteredBy')}</span>
+                  {activeFilters.map((f) => (
+                    <button
+                      key={f.label}
+                      type="button"
+                      onClick={() => clearFilterKeys(f.keys)}
+                      aria-label={t('screenerChipRemove', { label: f.label })}
+                      className="inline-flex min-h-8 md:min-h-7 items-center gap-1 rounded-md border border-border bg-muted/40 px-2 text-xs font-medium text-foreground transition-colors hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {f.label}
+                      <X className="h-3 w-3 text-muted-foreground" aria-hidden />
+                    </button>
+                  ))}
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleReset}>
+                    {t('screenerClearAll')}
+                  </Button>
+                </div>
+              )}
+              {/* Column sets, one click each. Phones show cards, so the table's columns don't apply. */}
+              {results.length > 0 && (
+                <div role="group" aria-label={t('screenerTabsLabel')} className="mb-3 hidden flex-wrap gap-1 md:flex">
+                  {columnTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      aria-pressed={activeTab === tab.id}
+                      onClick={() => screenerColumns.setTabColumns(tab.keys)}
+                      className={cn(
+                        'min-h-8 rounded-md px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        activeTab === tab.id ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <ScreenerResults
                 data={results}
                 livePrices={livePrices}
@@ -650,6 +712,7 @@ function ScreenerContent() {
                 key={presetSort?.n}
                 initialSortKey={presetSort?.key}
                 initialSortDir={presetSort?.dir}
+                emptyAction={relaxAction}
               />
               {/* Inline add row — only for custom views with stocks */}
               {isCustomView && (

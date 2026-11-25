@@ -165,3 +165,33 @@ export function matchesScreenerFilters(r: ScreenerRow, f: ScreenerFilterParams):
 
   return true;
 }
+
+/** One entry per sidebar control, turned off together. Sector takes its industry with it. */
+const RELAX_GROUPS: (keyof ScreenerFilterParams)[][] = [
+  ['sector', 'industry'], ['industry'],
+  ['healthScoreMin', 'healthScoreMax'], ['marketCapMin', 'marketCapMax'],
+  ['peMin', 'peMax'], ['pbMin', 'pbMax'], ['betaMin', 'betaMax'],
+  ['divYieldMin', 'divYieldMax'], ['profitMarginMin', 'profitMarginMax'],
+  ['revenueGrowthMin', 'revenueGrowthMax'], ['week52ChangeMin', 'week52ChangeMax'],
+];
+
+export interface RelaxOption { keys: (keyof ScreenerFilterParams)[]; count: number }
+
+/**
+ * For a screen with no matches: how many stocks dropping each single filter
+ * would bring back, most first. Powers "Remove Dividend 4%+ to see 12 stocks"
+ * instead of a dead end.
+ */
+export function relaxScreenerFilters(rows: ScreenerRow[], f: ScreenerFilterParams, limit = 2): RelaxOption[] {
+  const on = (keys: (keyof ScreenerFilterParams)[]) =>
+    keys[0] === 'sector' ? f.sector != null : keys.some((k) => f[k] != null);
+  return RELAX_GROUPS.filter(on)
+    .map((keys) => {
+      const loosened = { ...f };
+      for (const k of keys) delete loosened[k];
+      return { keys, count: rows.filter((r) => matchesScreenerFilters(r, loosened)).length };
+    })
+    .filter((o) => o.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}

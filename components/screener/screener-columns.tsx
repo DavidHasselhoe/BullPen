@@ -527,3 +527,19 @@ export const SCREENER_COLUMNS: ScreenerColumn[] = getScreenerColumns(((k: string
 export const COLUMN_BY_KEY: Record<string, ScreenerColumn> = Object.fromEntries(
   SCREENER_COLUMNS.map((c) => [c.key, c]),
 );
+
+/**
+ * Ready-made column sets, one click each, like Finviz's tabs: most people
+ * never open the column chooser. Overview (keys null) is the saved layout.
+ * Health leads every set because it is BullPen's own read on the company.
+ */
+export function getColumnTabs(t: TFunction): { id: string; label: string; keys: string[] | null }[] {
+  return [
+    { id: 'overview', label: t('screenerTabOverview'), keys: null },
+    { id: 'valuation', label: t('screenerTabValuation'), keys: ['health_score', 'price', 'change_pct', 'market_cap', 'pe_ratio', 'forward_pe', 'pb_ratio', 'ps_ratio', 'ev_to_ebitda'] },
+    { id: 'growth', label: t('screenerTabGrowth'), keys: ['health_score', 'price', 'change_pct', 'revenue_growth_yoy', 'earnings_growth_yoy', 'profit_margin', 'revenue_ttm', 'eps_ttm'] },
+    { id: 'dividends', label: t('screenerTabDividends'), keys: ['health_score', 'price', 'change_pct', 'dividend_yield', 'annual_dividend', 'payout_ratio'] },
+    { id: 'health', label: t('screenerTabHealth'), keys: ['health_score', 'health_profitability', 'health_financial_strength', 'health_cash_flow', 'health_growth', 'health_market_risk', 'health_valuation'] },
+    { id: 'price', label: t('screenerTabPrice'), keys: ['health_score', 'price', 'change_pct', 'from_52w_high', 'vs_200d_ma', 'week52_high', 'week52_low', 'volume', 'avg_volume', 'beta'] },
+  ];
+}

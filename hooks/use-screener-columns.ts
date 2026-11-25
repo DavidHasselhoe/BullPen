@@ -74,6 +74,9 @@ export interface UseScreenerColumns {
   reorder: (keys: string[]) => void;
   /** Shows these columns right after % Chg without saving them; [] goes back to the saved layout. */
   setPresetColumns: (keys: string[]) => void;
+  /** A column tab (Valuation, Dividends...) shows exactly these columns, unsaved; null is the saved layout. */
+  tabKeys: string[] | null;
+  setTabColumns: (keys: string[] | null) => void;
   reset: () => void;
 }
 
@@ -128,11 +131,15 @@ export function useScreenerColumns(): UseScreenerColumns {
   // that preset is the one picked. Never saved: switching from Dividend to
   // Growth swaps the dividend columns for growth ones, and All drops the layer.
   const [presetKeys, setPresetKeys] = useState<string[]>([]);
+  // A column tab replaces the visible set outright, never saved. Any manual
+  // edit or preset goes back to the saved layout, which the chooser edits.
+  const [tabKeys, setTabKeys] = useState<string[] | null>(null);
 
   // Any manual edit adopts what's on screen: the preset columns become part of
   // the saved layout, and the layer is gone.
   const update = useCallback((next: StoredPrefs) => {
     setPresetKeys([]);
+    setTabKeys(null);
     setUserEdited(true);
     setLocalPrefs(next);
     saveLocal(next);
@@ -147,7 +154,9 @@ export function useScreenerColumns(): UseScreenerColumns {
   );
   const hidden = new Set(hiddenKeys);
   const orderedColumns = orderedKeys.map((k) => translatedColumnByKey[k]).filter(Boolean);
-  const visibleColumns = orderedColumns.filter((c) => !hidden.has(c.key));
+  const visibleColumns = tabKeys
+    ? tabKeys.map((k) => translatedColumnByKey[k]).filter(Boolean)
+    : orderedColumns.filter((c) => !hidden.has(c.key));
 
   const isHidden = useCallback((key: string) => hiddenKeys.includes(key), [hiddenKeys]);
 
@@ -169,8 +178,14 @@ export function useScreenerColumns(): UseScreenerColumns {
     update({ order: keys, hidden: hiddenKeys });
   }, [hiddenKeys, update]);
 
+  const setPresetColumns = useCallback((keys: string[]) => {
+    setTabKeys(null);
+    setPresetKeys(keys);
+  }, []);
+
   const reset = useCallback(() => {
     setPresetKeys([]);
+    setTabKeys(null);
     setUserEdited(false); // let remote prefs win again on next render if available
     const def = defaultPrefs();
     setLocalPrefs(def);
@@ -181,5 +196,5 @@ export function useScreenerColumns(): UseScreenerColumns {
     }
   }, [saveToSupabase]);
 
-  return { orderedColumns, visibleColumns, isHidden, toggle, showAll, hideAll, reorder, setPresetColumns: setPresetKeys, reset };
+  return { orderedColumns, visibleColumns, isHidden, toggle, showAll, hideAll, reorder, setPresetColumns, tabKeys, setTabColumns: setTabKeys, reset };
 }
