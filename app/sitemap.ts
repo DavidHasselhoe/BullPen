@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase/client';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
 import { COMMODITIES, symbolToSlug } from '@/lib/assets/asset-type';
 import { SITE_URL } from '@/lib/site';
+import { POPULAR_PAIRS, pairSlug } from '@/lib/compare/popular-pairs';
 import { getSignificantSubpageCoverage, MIN_CONGRESS_TRADES, MIN_FUND_HOLDERS } from '@/lib/stock/subpage-data';
 import { loadCongressMembers, MIN_MEMBER_TRADES } from '@/lib/congress/member-data';
 import { loadFundSummaries } from '@/lib/institutions/fund-summaries';
@@ -44,6 +45,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/discover/indexes/dow30', priority: 0.6, changeFrequency: 'weekly' },
     { path: '/tools/economy', priority: 0.6, changeFrequency: 'weekly' },
     ...['fed-rate', 'cpi', 'jobs', 'pce', 'gdp', 'jobless-claims'].map((slug) => ({ path: `/tools/economy/${slug}`, priority: 0.6, changeFrequency: 'weekly' as const })),
+    // Curated head-to-heads, server-rendered from cache only (app/tools/compare/[pair]).
+    ...POPULAR_PAIRS.map(([a, b]) => ({ path: `/tools/compare/${pairSlug(a, b)}`, priority: 0.5, changeFrequency: 'weekly' as const })),
     { path: '/changelog', priority: 0.5, changeFrequency: 'weekly' },
     { path: '/roadmap', priority: 0.5, changeFrequency: 'weekly' },
     { path: '/contact', priority: 0.5, changeFrequency: 'yearly' },

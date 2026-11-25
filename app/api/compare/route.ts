@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const results = await Promise.all(tickers.map(fetchCompareCompany));
+    const results = await Promise.all(tickers.map((t) => fetchCompareCompany(t)));
     const successfulResults = results.filter((r): r is CompareCompany => r !== null);
 
     if (successfulResults.length === 0) {

@@ -1,54 +1,25 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { useInstantSearch } from '@/hooks/use-symbol-index';
 import Link from 'next/link';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
-import { Scale, Building2, BarChart3, TrendingUp, Plus, X, Info, ArrowUpDown, ChevronDown, ChevronRight, Sparkles, MessageSquare } from 'lucide-react';
-import type { CompareCompany } from '@/app/api/compare/route';
-import { useAIPanel } from '@/components/ai/AIPanelProvider';
-import { useRecentlyCompared } from '@/hooks/use-recently-compared';
+import { Scale, Plus, X } from 'lucide-react';
+import type { CompareCompany } from '@/lib/compare/fetch-compare-company';
+import { pairSlug } from '@/lib/compare/popular-pairs';
 import { RecentlyComparedCard } from '@/components/tools/compare/RecentlyComparedCard';
+import { CompareResults } from '@/components/tools/compare/CompareResults';
 import { ToolPage, ToolHeader, ToolBackLink, ToolSectionTitle } from '@/components/tools/ToolHeader';
 import { ProcessingScreen } from '@/components/ui/ProcessingScreen';
-import { cn } from '@/lib/utils';
-import { fmtShortDate } from '@/lib/dates/calendar-format';
-import { Suspense, Fragment } from 'react';
 
 interface SearchResult {
   ticker: string;
@@ -60,341 +31,47 @@ interface SearchResult {
   logo_url?: string | null;
 }
 
-function fmt(n: number | null, na: string): string {
-  if (n == null) return na;
-  const abs = Math.abs(n);
-  const sign = n < 0 ? '-' : '';
-  if (abs >= 1e12) return `${sign}$${(abs / 1e12).toFixed(2)}T`;
-  if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(2)}B`;
-  if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(2)}M`;
-  return `${sign}$${n.toFixed(2)}`;
-}
-
-function fmtPct(n: number | null, na: string): string {
-  if (n == null) return na;
-  return `${n.toFixed(1)}%`;
-}
-
-function formatFiscalYearEnd(fye: string | null, na: string): string {
-  if (!fye) return na;
-  const [month, day] = fye.split('-');
-  if (!month || !day) return fye;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const m = parseInt(month, 10) - 1;
-  return m >= 0 && m < 12 ? `${months[m]} ${parseInt(day, 10)}` : fye;
-}
-
-function fmtEps(n: number | null, na: string): string {
-  if (n == null) return na;
-  return `$${n.toFixed(2)}`;
-}
-
 const MIN_SLOTS = 2;
 const MAX_SLOTS = 5;
-
-type MetricDef = { key: string; label: string; fmt: (n: number | null) => string; isPct: boolean };
-type MetricGroup = { name: string; metrics: MetricDef[] };
-
-/** Metric tooltips for less familiar users */
-function getMetricTooltips(t: TFunction): Record<string, string> {
-  return {
-    grossMargin: t('compareMetricGrossMarginTooltip'),
-    operatingMargin: t('compareMetricOperatingMarginTooltip'),
-    netMargin: t('compareMetricNetMarginTooltip'),
-    revenueGrowth: t('compareMetricRevenueGrowthTooltip'),
-    revenue: t('compareMetricRevenueTooltip'),
-    netIncome: t('compareMetricNetIncomeTooltip'),
-    totalAssets: t('compareMetricTotalAssetsTooltip'),
-    shareholdersEquity: t('compareMetricShareholdersEquityTooltip'),
-    freeCashFlow: t('compareMetricFreeCashFlowTooltip'),
-    epsDiluted: t('compareMetricEpsDilutedTooltip'),
-  };
-}
-
-/** Metric definitions for expandable details */
-function getMetricDefinitions(t: TFunction): Record<string, string> {
-  return {
-    grossMargin: t('compareMetricGrossMarginDefinition'),
-    operatingMargin: t('compareMetricOperatingMarginDefinition'),
-    netMargin: t('compareMetricNetMarginDefinition'),
-    revenueGrowth: t('compareMetricRevenueGrowthDefinition'),
-    revenue: t('compareMetricRevenueDefinition'),
-    netIncome: t('compareMetricNetIncomeDefinition'),
-    totalAssets: t('compareMetricTotalAssetsDefinition'),
-    shareholdersEquity: t('compareMetricShareholdersEquityDefinition'),
-    freeCashFlow: t('compareMetricFreeCashFlowDefinition'),
-    epsDiluted: t('compareMetricEpsDilutedDefinition'),
-  };
-}
-
-/** Why each metric matters for investment analysis */
-function getMetricWhyItMatters(t: TFunction): Record<string, string> {
-  return {
-    grossMargin: t('compareMetricGrossMarginWhyMatters'),
-    operatingMargin: t('compareMetricOperatingMarginWhyMatters'),
-    netMargin: t('compareMetricNetMarginWhyMatters'),
-    revenueGrowth: t('compareMetricRevenueGrowthWhyMatters'),
-    revenue: t('compareMetricRevenueWhyMatters'),
-    netIncome: t('compareMetricNetIncomeWhyMatters'),
-    totalAssets: t('compareMetricTotalAssetsWhyMatters'),
-    shareholdersEquity: t('compareMetricShareholdersEquityWhyMatters'),
-    freeCashFlow: t('compareMetricFreeCashFlowWhyMatters'),
-    epsDiluted: t('compareMetricEpsDilutedWhyMatters'),
-  };
-}
-
-/** Metric groups for scanability. Higher is better for all listed metrics. */
-function getMetricGroups(t: TFunction, na: string): MetricGroup[] {
-  return [
-    {
-      name: t('compareGroupProfitability'),
-      metrics: [
-        { key: 'grossMargin', label: t('compareMetricGrossMarginLabel'), fmt: (n: number | null) => fmtPct(n, na), isPct: true },
-        { key: 'operatingMargin', label: t('compareMetricOperatingMarginLabel'), fmt: (n: number | null) => fmtPct(n, na), isPct: true },
-        { key: 'netMargin', label: t('compareMetricNetMarginLabel'), fmt: (n: number | null) => fmtPct(n, na), isPct: true },
-      ],
-    },
-    {
-      name: t('compareGroupGrowth'),
-      metrics: [
-        { key: 'revenueGrowth', label: t('compareMetricRevenueGrowthLabel'), fmt: (n: number | null) => fmtPct(n, na), isPct: true },
-      ],
-    },
-    {
-      name: t('compareGroupScale'),
-      metrics: [
-        { key: 'revenue', label: t('compareMetricRevenueLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
-        { key: 'netIncome', label: t('compareMetricNetIncomeLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
-        { key: 'totalAssets', label: t('compareMetricTotalAssetsLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
-        { key: 'shareholdersEquity', label: t('compareMetricShareholdersEquityLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
-      ],
-    },
-    {
-      name: t('compareGroupCashFlow'),
-      metrics: [
-        { key: 'freeCashFlow', label: t('compareMetricFreeCashFlowLabel'), fmt: (n: number | null) => fmt(n, na), isPct: false },
-        { key: 'epsDiluted', label: t('compareMetricEpsDilutedLabel'), fmt: (n: number | null) => fmtEps(n, na), isPct: false },
-      ],
-    },
-  ];
-}
-
-function computeBetterIndex<V>(values: (V | null)[], higherIsBetter: boolean): number | null {
-  const valid = values
-    .map((v, i) => ({ v, i }))
-    .filter((x): x is { v: number; i: number } => x.v != null && typeof x.v === 'number');
-  if (valid.length === 0) return null;
-  const sorted = [...valid].sort((a, b) => (higherIsBetter ? b.v - a.v : a.v - b.v));
-  return sorted[0].i;
-}
-
-function computeDiff(
-  a: number | null,
-  b: number | null,
-  isPct: boolean
-): { str: string; isPositive: boolean; absValue: number } | null {
-  if (a == null || b == null) return null;
-  const diff = a - b;
-  const isPositive = diff >= 0;
-  const sign = isPositive ? '+' : '';
-  let str: string;
-  if (isPct) {
-    str = `${sign}${diff.toFixed(1)}pp`;
-  } else {
-    const abs = Math.abs(diff);
-    const signChar = isPositive ? '+' : '-';
-    if (abs >= 1e12) str = `${signChar}$${(abs / 1e12).toFixed(1)}T`;
-    else if (abs >= 1e9) str = `${signChar}$${(abs / 1e9).toFixed(1)}B`;
-    else if (abs >= 1e6) str = `${signChar}$${(abs / 1e6).toFixed(1)}M`;
-    else str = `${signChar}$${diff.toFixed(2)}`;
-  }
-  return { str, isPositive, absValue: Math.abs(diff) };
-}
-
-/** Generate comparison summary bullets (scale, profitability, growth) */
-function buildComparisonSummaryBullets(
-  companies: CompareCompany[],
-  t: TFunction
-): Array<{ label: string; text: string }> {
-  const bullets: Array<{ label: string; text: string }> = [];
-  if (companies.length < 2) return bullets;
-
-  const revA = companies[0]?.metrics?.revenue ?? null;
-  const revB = companies[1]?.metrics?.revenue ?? null;
-  const gmA = companies[0]?.metrics?.grossMargin ?? null;
-  const gmB = companies[1]?.metrics?.grossMargin ?? null;
-  const grA = companies[0]?.metrics?.revenueGrowth ?? null;
-  const grB = companies[1]?.metrics?.revenueGrowth ?? null;
-
-  if (revA != null && revB != null && revB > 0) {
-    const ratio = revA / revB;
-    const larger = ratio >= 1 ? companies[0] : companies[1];
-    const smaller = ratio >= 1 ? companies[1] : companies[0];
-    const r = ratio >= 1 ? ratio : 1 / ratio;
-    if (r >= 1.5) {
-      const mult = r >= 10 ? Math.round(r) : r.toFixed(1);
-      bullets.push({
-        label: t('compareGroupScale'),
-        text: t('compareSummaryScaleText', { larger: larger.name, smaller: smaller.name, mult }),
-      });
-    }
-  }
-
-  if (gmA != null && gmB != null) {
-    const diff = gmA - gmB;
-    const leader = diff >= 0 ? companies[0] : companies[1];
-    const other = diff >= 0 ? companies[1] : companies[0];
-    const absDiff = Math.abs(diff);
-    if (absDiff >= 5) {
-      bullets.push({
-        label: t('compareGroupProfitability'),
-        text: t('compareSummaryProfitabilityText', { leader: leader.name, other: other.name, diff: Math.round(absDiff) }),
-      });
-    }
-  }
-
-  if (grA != null && grB != null) {
-    const higher = grA >= grB ? companies[0] : companies[1];
-    const lower = grA >= grB ? companies[1] : companies[0];
-    const diff = Math.abs(grA - grB);
-    if (diff >= 10) {
-      bullets.push({
-        label: t('compareGroupGrowth'),
-        text: t('compareSummaryGrowthText', { higher: higher.name, lower: lower.name }),
-      });
-    }
-  }
-
-  return bullets;
-}
-
-/** Top metric differences for 2-company comparison, sorted by largest absolute diff */
-function buildBiggestDifferences(
-  companies: CompareCompany[],
-  flattened: Array<{ key: string; label: string; isPct: boolean }>
-): Array<{ label: string; str: string; isPositive: boolean }> {
-  if (companies.length !== 2) return [];
-  const withDiffs = flattened
-    .map((m) => {
-      const k = m.key as keyof (typeof companies)[0]['metrics'];
-      const v0 = companies[0]?.metrics[k] as number | null;
-      const v1 = companies[1]?.metrics[k] as number | null;
-      const d = computeDiff(v0, v1, m.isPct);
-      return d ? { label: m.label, ...d } : null;
-    })
-    .filter((x): x is NonNullable<typeof x> => x != null)
-    .sort((a, b) => b.absValue - a.absValue)
-    .slice(0, 5);
-  return withDiffs.map(({ label, str, isPositive }) => ({ label, str, isPositive }));
-}
-
-/** Which company leads each category (by wins per metric in that category) */
-function buildCategoryLeaders(
-  companies: CompareCompany[],
-  metricGroups: MetricGroup[]
-): Array<{ category: string; leader: string }> {
-  return metricGroups.map((g) => {
-    const wins = new Array(companies.length).fill(0);
-    for (const m of g.metrics) {
-      const k = m.key as keyof (typeof companies)[0]['metrics'];
-      const values = companies.map((c) => c.metrics[k] as number | null);
-      const bestIdx = computeBetterIndex(values, true);
-      if (bestIdx != null) wins[bestIdx]++;
-    }
-    const maxWins = Math.max(...wins);
-    const leaderIdx = wins.findIndex((w) => w === maxWins);
-    return { category: g.name, leader: companies[leaderIdx]?.name ?? '—' };
-  });
-}
-
-/** Short trend summary from financial history */
-function buildTrendSummary(companies: CompareCompany[], t: TFunction): string[] {
-  const lines: string[] = [];
-  for (const c of companies) {
-    const hist = c.history.slice(0, 4).sort((a, b) => b.fiscalYear - a.fiscalYear);
-    const revs = hist.map((h) => h.revenue).filter((v): v is number => v != null);
-    if (revs.length >= 2) {
-      const growth = ((revs[0] - revs[revs.length - 1]) / revs[revs.length - 1]) * 100;
-      const trend =
-        growth > 30
-          ? t('compareTrendGrewDramatically')
-          : growth > 10
-            ? t('compareTrendGrewSteadily')
-            : growth > 0
-              ? t('compareTrendGrewModerately')
-              : t('compareTrendDeclined');
-      lines.push(
-        t('compareTrendSentence', {
-          name: c.name,
-          trend,
-          startYear: hist[hist.length - 1]?.fiscalYear,
-          endYear: hist[0]?.fiscalYear,
-        })
-      );
-    }
-  }
-  return lines;
-}
 
 /** Friendly copy for known /api/compare error codes. Transient vs. permanent framing matters:
  *  rate_limited means try again shortly, plan_restricted means the data provider (not the
  *  user's BullPen plan) doesn't have this data available. */
 function getCompareErrorCopy(t: TFunction): Record<string, { message: string; transient: boolean }> {
   return {
-    rate_limited: {
-      message: t('compareErrorRateLimited'),
-      transient: true,
-    },
-    plan_restricted: {
-      message: t('compareErrorPlanRestricted'),
-      transient: false,
-    },
+    rate_limited: { message: t('compareErrorRateLimited'), transient: true },
+    plan_restricted: { message: t('compareErrorPlanRestricted'), transient: false },
   };
 }
 
-type MetricSort = 'default' | 'diff' | string;
-
 function CompareContent() {
   const { t } = useTranslation('tools');
-  const na = t('compareDataUnavailable');
-  const metricTooltips = getMetricTooltips(t);
-  const metricDefinitions = getMetricDefinitions(t);
-  const metricWhyItMatters = getMetricWhyItMatters(t);
-  const metricGroups = getMetricGroups(t, na);
   const compareErrorCopy = getCompareErrorCopy(t);
   const router = useRouter();
   const searchParams = useSearchParams();
   const tickersParam = searchParams.get('tickers');
-  const tickersFromUrl = useMemo(
+  const tickers = useMemo(
     () => (tickersParam ? tickersParam.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean) : []),
     [tickersParam]
   );
-  const tickers = tickersFromUrl;
 
   const [selectedCompanies, setSelectedCompanies] = useState<SearchResult[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerSlot, setPickerSlot] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  // All hooks must be at top level (before any conditional returns) to avoid React #310
-  const [metricSort, setMetricSort] = useState<MetricSort>('default');
-  const [expandedMetricKey, setExpandedMetricKey] = useState<string | null>(null);
-  const [aiExplainLoading, setAiExplainLoading] = useState(false);
-  const [aiExplainError, setAiExplainError] = useState<string | null>(null);
-  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
 
   // When arriving with tickers in URL (e.g. from Compare quick action), fetch company info and prefill slots.
-  // Also runs for the 2+ ticker comparison view (not just the <2 prefill case) — it's a cheap
-  // Supabase-only lookup that gives the loading state real company names to show while the
-  // (much slower) per-company financial data is still in flight below.
+  // Also runs for the 2+ ticker comparison view: a cheap Supabase-only lookup that gives the
+  // loading state real company names while the slower per-company data is still in flight.
   const { data: urlCompaniesData } = useQuery({
-    queryKey: ['companies-batch', tickersFromUrl.join(',')],
+    queryKey: ['companies-batch', tickers.join(',')],
     queryFn: async (): Promise<SearchResult[]> => {
-      if (tickersFromUrl.length === 0) return [];
+      if (tickers.length === 0) return [];
       const res = await fetch('/api/companies/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tickers: tickersFromUrl }),
+        body: JSON.stringify({ tickers }),
       });
       const json = await res.json();
       if (!json.success || !json.data) return [];
@@ -406,7 +83,7 @@ function CompareContent() {
         logo_url: c.logo_url ?? null,
       }));
     },
-    enabled: tickersFromUrl.length >= 1,
+    enabled: tickers.length >= 1,
     staleTime: 60_000,
   });
   const nameByTicker = useMemo(
@@ -416,20 +93,14 @@ function CompareContent() {
 
   const hasInitializedFromUrl = useRef(false);
   useEffect(() => {
-    if (
-      urlCompaniesData &&
-      urlCompaniesData.length > 0 &&
-      tickersFromUrl.length >= 1 &&
-      tickersFromUrl.length < 2 &&
-      !hasInitializedFromUrl.current
-    ) {
+    if (urlCompaniesData && urlCompaniesData.length > 0 && tickers.length === 1 && !hasInitializedFromUrl.current) {
       setSelectedCompanies(urlCompaniesData);
       hasInitializedFromUrl.current = true;
     }
-  }, [urlCompaniesData, tickersFromUrl.length]);
+  }, [urlCompaniesData, tickers.length]);
   useEffect(() => {
     hasInitializedFromUrl.current = false;
-  }, [tickersFromUrl]);
+  }, [tickers]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
@@ -464,36 +135,26 @@ function CompareContent() {
     }
   }, [selectedCompanies, router]);
 
-  const { open: openAIPanel, setAIContext } = useAIPanel();
-  const { add: addRecentComparison } = useRecentlyCompared();
-
-  // One query per company instead of one batched request — lets the loading
-  // state show real per-company progress (which ticker is still in flight)
-  // instead of an all-or-nothing wait on the slowest one. See
-  // ProcessingScreen and /api/compare/company.
+  // One query per company instead of one batched request, so the loading
+  // state shows real per-company progress. See ProcessingScreen and /api/compare/company.
   const compareQueries = useQueries({
     queries: tickers.map((ticker) => ({
       queryKey: ['compare-company', ticker],
       queryFn: async (): Promise<CompareCompany | null> => {
-        const res = await fetch(`/api/compare/company?ticker=${ticker}`);
+        const res = await fetch(`/api/compare/company?ticker=${encodeURIComponent(ticker)}`);
         const json = await res.json();
         if (!json.success) throw new Error(json.error || 'Failed to fetch');
         return json.company as CompareCompany | null;
       },
       enabled: tickers.length >= 2,
+      staleTime: 5 * 60_000,
     })),
   });
 
   const allSettled = compareQueries.every((q) => !q.isLoading);
-  // Hold on the loading screen briefly after everything actually finishes,
-  // showing a distinct "done" state, instead of cutting straight to the
-  // table the instant the last query settles. `holding` is entered as a
-  // state adjustment during render (React's supported pattern for reacting
-  // to a derived value changing) rather than inside a useEffect — an effect
-  // fires one render *after* allSettled flips true, so the real table would
-  // render (and paint) for one frame before the hold screen appeared. Doing
-  // it during render means isLoading is already correct on the same render
-  // allSettled changes, so there's no flash.
+  // Hold on the loading screen briefly after everything finishes, showing a
+  // distinct "done" state. Entered as a state adjustment during render (not in
+  // an effect, which would paint the table for one frame before the hold).
   const [prevAllSettled, setPrevAllSettled] = useState(false);
   const [holding, setHolding] = useState(false);
   if (allSettled !== prevAllSettled) {
@@ -507,9 +168,6 @@ function CompareContent() {
     return () => clearTimeout(t);
   }, [holding]);
   const isLoading = tickers.length >= 2 && (!allSettled || holding);
-  // Not memoized: useQueries returns a fresh result array each render, so a
-  // useMemo keyed on it would recompute (and produce a new array) every
-  // render anyway — memoizing bought nothing but false confidence.
   const companies = compareQueries.map((q) => q.data).filter((c): c is CompareCompany => c != null);
   const firstQueryError = compareQueries.find((q) => q.error)?.error as Error | undefined;
   const refetchAll = useCallback(() => {
@@ -521,30 +179,6 @@ function CompareContent() {
     done: !compareQueries[i]?.isLoading,
   }));
 
-  useEffect(() => {
-    if (tickers.length >= 2) {
-      setAIContext({ tickers, label: `${tickers.join(' vs ')}` });
-    }
-    return () => setAIContext(null);
-  }, [tickers, setAIContext]);
-
-  // Record a successful comparison as a "recently compared" quick action —
-  // only once every per-company fetch has settled, not on every ticker-param
-  // change. Depends on primitives (not `companies`, a fresh array every
-  // render from useQueries) — an array/object dependency here re-fires the
-  // effect on every render once the condition is true, since it never
-  // reference-equals the previous render's array. That looped with
-  // addRecentComparison's own state update: "Maximum update depth exceeded",
-  // confirmed live before this fix.
-  useEffect(() => {
-    if (allSettled && companies.length >= 2) {
-      addRecentComparison(
-        companies.map((c) => ({ ticker: c.ticker, name: c.name, logo_url: c.logo_url }))
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSettled, companies.length, tickers.join(',')]);
-
   if (tickers.length < 2) {
     const slots = Math.min(MAX_SLOTS, Math.max(MIN_SLOTS, selectedCompanies.length + 1));
     const canCompare = selectedCompanies.length >= 2;
@@ -552,7 +186,6 @@ function CompareContent() {
     return (
       <ToolPage width="wide">
         <ToolHeader icon={<Scale />} title={t('compareTitle')} description={t('compareSubtitle')} />
-        <RecentlyComparedCard />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-5">
           {Array.from({ length: slots }).map((_, i) => (
             <div key={i}>
@@ -567,15 +200,16 @@ function CompareContent() {
                         size={32}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{selectedCompanies[i].name}</p>
+                        {/* clamp-ok: a company name in a narrow slot */}
+                        <p className="font-medium text-sm truncate" title={selectedCompanies[i].name}>{selectedCompanies[i].name}</p>
                         <p className="text-xs text-muted-foreground font-mono">{selectedCompanies[i].ticker}</p>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 shrink-0"
+                        className="h-11 w-11 shrink-0"
                         onClick={() => handleRemove(i)}
-                        title={t('compareRemoveButton')}
+                        aria-label={t('compareRemoveButton')}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -595,6 +229,13 @@ function CompareContent() {
             </div>
           ))}
         </div>
+        {canCompare && (
+          <div className="mt-6">
+            <Button onClick={handleCompare} size="lg">
+              {t('compareButtonCount', { count: selectedCompanies.length })}
+            </Button>
+          </div>
+        )}
         {/* One-tap starting points: an empty two-slot grid gave a beginner no idea what a useful comparison looks like. */}
         {selectedCompanies.length === 0 && (
           <div className="mt-8">
@@ -603,7 +244,7 @@ function CompareContent() {
               {POPULAR_COMPARISONS.map((pair) => (
                 <Link
                   key={pair.tickers.join(',')}
-                  href={`/tools/compare?tickers=${pair.tickers.join(',')}`}
+                  href={`/tools/compare/${pairSlug(pair.tickers[0], pair.tickers[1])}`}
                   className="flex min-h-11 items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 text-sm font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span className="flex -space-x-2">
@@ -617,29 +258,20 @@ function CompareContent() {
             </div>
           </div>
         )}
-        {canCompare && (
-          <div className="mt-6">
-            <Button onClick={handleCompare} size="lg">
-              {t('compareButtonCount', { count: selectedCompanies.length })}
-            </Button>
-          </div>
-        )}
+        {/* History after the main action, not above it. */}
+        <div className="mt-8">
+          <RecentlyComparedCard />
+        </div>
         <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>{t('compareSelectCompanyTitle')}</DialogTitle>
-              <DialogDescription>
-                {t('compareSelectCompanyDescription')}
-              </DialogDescription>
+              <DialogDescription>{t('compareSelectCompanyDescription')}</DialogDescription>
             </DialogHeader>
             {/* shouldFilter={false}: results arrive already ranked (useInstantSearch);
                 cmdk's own fuzzy re-sort buried NVIDIA under NVIDIA ETFs. */}
             <Command shouldFilter={false} className="rounded-lg border">
-              <CommandInput
-                placeholder={t('compareSearchPlaceholder')}
-                value={searchQuery}
-                onValueChange={setSearchQuery}
-              />
+              <CommandInput placeholder={t('compareSearchPlaceholder')} value={searchQuery} onValueChange={setSearchQuery} />
               <CommandList>
                 {isSearching && (
                   <div className="p-4 text-center text-sm text-muted-foreground">{t('compareSearching')}</div>
@@ -655,12 +287,7 @@ function CompareContent() {
                           onSelect={() => handleSelect(result)}
                           className="flex items-center gap-3"
                         >
-                          <CompanyLogo
-                            name={result.name}
-                            ticker={result.ticker}
-                            logoUrl={result.logo_url ?? null}
-                            size={36}
-                          />
+                          <CompanyLogo name={result.name} ticker={result.ticker} logoUrl={result.logo_url ?? null} size={36} />
                           <div className="flex-1 text-left">
                             <div className="font-medium">{result.name}</div>
                             <div className="text-xs text-muted-foreground">{result.ticker}</div>
@@ -669,9 +296,7 @@ function CompareContent() {
                       ))}
                     </CommandGroup>
                   ) : (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                      {t('compareAllSelected')}
-                    </div>
+                    <div className="p-4 text-center text-sm text-muted-foreground">{t('compareAllSelected')}</div>
                   );
                 })()}
                 {!isSearching && debouncedQuery.trim().length >= 2 && searchResults?.length === 0 && (
@@ -685,7 +310,7 @@ function CompareContent() {
     );
   }
 
-  if (allSettled && tickers.length >= 2 && companies.length === 0) {
+  if (allSettled && companies.length === 0) {
     const code = firstQueryError?.message;
     const known = code ? compareErrorCopy[code] : undefined;
     const message = known?.message ?? t('compareLoadError');
@@ -695,7 +320,7 @@ function CompareContent() {
         <ToolBackLink />
         <Card className={known?.transient ? undefined : 'border-destructive/50'}>
           <CardContent className="py-8 flex flex-col items-center gap-4 text-center">
-            <p className={known?.transient ? 'text-muted-foreground' : 'text-destructive'}>{message}</p>
+            <p role="alert" className={known?.transient ? 'text-muted-foreground' : 'text-destructive'}>{message}</p>
             <Button variant="outline" size="sm" onClick={refetchAll}>
               {t('tryAgainButton')}
             </Button>
@@ -705,45 +330,9 @@ function CompareContent() {
     );
   }
 
-  const sortOptions: { value: MetricSort; label: string }[] = [
-    { value: 'default', label: t('compareSortByCategory') },
-    ...(companies.length === 2 ? [{ value: 'diff', label: t('compareSortLargestDifferenceOption') }] : []),
-    ...companies.map((c, i) => ({ value: `company${i}`, label: t('compareSortByTickerValue', { ticker: c.ticker }) })),
-  ];
-
-  const flattened = metricGroups.flatMap((g) => g.metrics.map((m) => ({ ...m, groupName: g.name })));
-
-  const metricsDisplayGroups =
-    metricSort === 'default'
-      ? metricGroups.map((g) => ({ groupName: g.name, metrics: g.metrics }))
-      : (() => {
-          const withSort = flattened.map((m) => {
-            const k = m.key as keyof typeof companies[0]['metrics'];
-            const v0 = companies[0]?.metrics[k] as number | null;
-            const v1 = companies[1]?.metrics[k] as number | null;
-            const sortVal =
-              metricSort === 'diff' && v0 != null && v1 != null
-                ? Math.abs(v0 - v1)
-                : metricSort.startsWith('company')
-                  ? (companies[parseInt(metricSort.replace('company', ''), 10)]?.metrics[k] as number | null) ?? -Infinity
-                  : 0;
-            return { ...m, sortVal };
-          });
-          withSort.sort((a, b) => (b.sortVal as number) - (a.sortVal as number));
-          const sortLabel =
-            metricSort === 'diff'
-              ? t('compareSortedGroupLargestDifferences')
-              : metricSort.startsWith('company')
-                ? t('compareSortByTickerValue', { ticker: companies[parseInt(metricSort.replace('company', ''), 10)]?.ticker ?? '' })
-                : t('compareSortedFallback');
-          return [{ groupName: sortLabel, metrics: withSort }];
-        })();
-
   return (
-    // Wider than ToolPage's `wide`: up to five companies side by side need it.
-    <ToolPage width="wide" className="max-w-[1600px]">
+    <ToolPage width="wide">
       <ToolBackLink />
-
       {isLoading ? (
         <ProcessingScreen
           items={progressItems}
@@ -753,502 +342,14 @@ function CompareContent() {
         />
       ) : (
         <div className="page-enter">
-          <div className="mb-8">
-            <div className="flex items-center justify-between gap-4 mb-1">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex shrink-0 -space-x-2" aria-hidden>
-                  {companies.map((c) => (
-                    <CompanyLogo key={c.ticker} name={c.name} ticker={c.ticker} logoUrl={c.logo_url} size={36} className="rounded-full ring-2 ring-background" />
-                  ))}
-                </span>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground text-balance">
-                  {companies.map((c) => c.ticker).join(' vs ')}
-                </h1>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => openAIPanel()}
-                className="shrink-0 gap-2"
-              >
-                <MessageSquare className="h-4 w-4" />
-                {t('compareAskAiButton')}
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6">
-              {t('compareDescription')}
-            </p>
-
-            {/* Comparison Summary — highlights most important differences */}
-            {companies.length >= 2 && (() => {
-              const summaryBullets = buildComparisonSummaryBullets(companies, t);
-              if (summaryBullets.length === 0) return null;
-              return (
-                <Card className="mb-6 border-primary/20 bg-primary/5">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-semibold">{t('compareSummaryTitle')}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {t('compareSummarySubtitle')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-1.5 text-sm">
-                      {summaryBullets.map((b, i) => (
-                        <li key={i} className="flex gap-2">
-                          <span className="text-primary font-medium shrink-0">{b.label}:</span>
-                          <span className="text-muted-foreground">{b.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              );
-            })()}
-          </div>
-
-          <div className="space-y-12">
-            {/* Company overview cards — mirrored layout with ticker, sector, FY end, key metric */}
-            <section>
-              <h2 className="flex items-center gap-2 text-xl font-semibold mb-2">
-                <Building2 className="h-5 w-5 text-primary" />
-                {t('compareOverviewHeading')}
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">{t('compareOverviewSubtitle')}</p>
-              <div
-                className="grid gap-4"
-                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}
-              >
-                {companies.map((c) => (
-                  <Link key={c.ticker} href={`/stock/${c.ticker}`}>
-                    <Card className="h-full hover:border-primary/50 transition-colors">
-                      <CardHeader className="pb-2 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <CompanyLogo
-                            name={c.name}
-                            ticker={c.ticker}
-                            logoUrl={c.logo_url}
-                            size={48}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <CardTitle className="text-base truncate">{c.name}</CardTitle>
-                            <Badge variant="outline" className="font-mono text-xs mt-1">
-                              {c.ticker}
-                            </Badge>
-                          </div>
-                        </div>
-                        {(c.sector || c.industry) && (
-                          <p className="text-xs text-muted-foreground">
-                            {[c.sector, c.industry].filter(Boolean).join(' • ')}
-                          </p>
-                        )}
-                        {c.fiscal_year_end && (
-                          <p className="text-xs text-muted-foreground">
-                            {t('compareFiscalYearEnds', { date: formatFiscalYearEnd(c.fiscal_year_end, na) })}
-                          </p>
-                        )}
-                        <div className="pt-2 border-t border-border/50">
-                          <p className="text-xs text-muted-foreground mb-0.5">{t('compareRevenueLatest')}</p>
-                          <p className="font-mono text-sm font-medium tabular-nums">
-                            {fmt(c.metrics.revenue, na)}
-                          </p>
-                          {c.fx && (
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              {t('compareConvertedNote', { from: c.fx.from, rate: c.fx.rate.toFixed(2), date: fmtShortDate(c.fx.date) })}
-                            </p>
-                          )}
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            </section>
-
-            {/* Business description — hide section if all lack descriptions */}
-            {companies.some((c) => c.description?.trim()) && (
-              <section>
-                <h2 className="flex items-center gap-2 text-xl font-semibold mb-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  {t('compareBusinessHeading')}
-                </h2>
-                <div
-                  className="grid gap-4"
-                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}
-                >
-                  {companies.map((c) => (
-                    <Card key={c.ticker} className="overflow-hidden">
-                      <CardContent className="pt-4">
-                        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-6">
-                          {c.description?.trim() || t('compareBusinessDescriptionUnavailable')}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Biggest Differences + Category Leaders — above metrics table */}
-            {companies.length >= 2 && (() => {
-              const biggestDiffs = buildBiggestDifferences(companies, flattened);
-              const leaders = buildCategoryLeaders(companies, metricGroups);
-              return (
-                <div className={`grid gap-4 mb-6 ${biggestDiffs.length > 0 ? 'grid-cols-1 md:grid-cols-2' : ''}`}>
-                  {biggestDiffs.length > 0 && (
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold">{t('compareBiggestDifferencesTitle')}</CardTitle>
-                        <p className="text-xs text-muted-foreground">{t('compareSortedByLargestGap')}</p>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="space-y-2 text-sm font-mono tabular-nums">
-                          {biggestDiffs.map((d, i) => (
-                            <li key={i} className="flex justify-between items-center">
-                              <span className="text-muted-foreground">{d.label}</span>
-                              <span className={d.isPositive ? 'text-emerald-400' : 'text-muted-foreground'}>
-                                {d.str}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
-                  <Card className={biggestDiffs.length > 0 ? undefined : 'md:max-w-md'}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-semibold">{t('compareCategoryLeadersTitle')}</CardTitle>
-                      <p className="text-xs text-muted-foreground">{t('compareCategoryLeadersSubtitle')}</p>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2 text-sm">
-                        {leaders.map(({ category, leader }, i) => (
-                          <li key={i} className="flex justify-between items-center gap-4">
-                            <span className="text-muted-foreground">{category}</span>
-                            <span className="font-medium truncate">{leader}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </div>
-              );
-            })()}
-
-            {/* Key metrics table — grouped, highlighted, sortable, with difference column */}
-            <section>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <div>
-                  <h2 className="flex items-center gap-2 text-xl font-semibold mb-1">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    {t('compareKeyMetricsHeading')}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">{t('compareLatestAnnualComparison')}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      setAiExplainLoading(true);
-                      setAiExplainError(null);
-                      setAiExplanation(null);
-                      try {
-                        const context = JSON.stringify({
-                          companies: companies.map((c) => ({
-                            ticker: c.ticker,
-                            name: c.name,
-                            metrics: c.metrics,
-                            historySummary: c.history.slice(0, 4).map((h) => ({
-                              year: h.fiscalYear,
-                              revenue: h.revenue,
-                              epsDiluted: h.epsDiluted,
-                            })),
-                          })),
-                        });
-                        const res = await fetch('/api/ai/compare-explain', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ context }),
-                        });
-                        const json = await res.json();
-                        if (json.success) setAiExplanation(json.explanation);
-                        else setAiExplainError(json.error || t('compareExplainFailed'));
-                      } catch (e) {
-                        setAiExplainError(e instanceof Error ? e.message : t('compareExplainFailed'));
-                      } finally {
-                        setAiExplainLoading(false);
-                      }
-                    }}
-                    disabled={aiExplainLoading}
-                    className="shrink-0 rounded-full animate-ai-pill-shine"
-                  >
-                    <Sparkles className={cn('h-4 w-4 mr-2', aiExplainLoading && 'animate-pulse')} />
-                    {aiExplainLoading ? t('compareGeneratingButton') : t('compareExplainDifferencesButton')}
-                  </Button>
-                  <Select value={metricSort} onValueChange={setMetricSort}>
-                    <SelectTrigger className="w-[200px]">
-                      <ArrowUpDown className="h-4 w-4 mr-2 shrink-0" />
-                      <SelectValue placeholder={t('compareSortByPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sortOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              {aiExplainError && (
-                <p className="text-sm text-destructive mb-2">{aiExplainError}</p>
-              )}
-              {aiExplanation && (
-                <Card className="mb-4 border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-1 duration-500">
-                  <CardContent className="pt-4">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{aiExplanation}</p>
-                  </CardContent>
-                </Card>
-              )}
-              <Card>
-                <div className="overflow-auto max-h-[70vh] overscroll-contain">
-                  <table className="w-full text-sm border-collapse">
-                    <thead className="sticky top-0 z-10 bg-muted/95 dark:bg-muted/90 backdrop-blur supports-[backdrop-filter]:bg-muted/90 border-b shadow-sm">
-                      <tr>
-                        <th className="text-left py-3.5 px-5 font-semibold min-w-[11rem]">{t('compareMetricColumnHeader')}</th>
-                        {companies.map((c) => (
-                          <th key={c.ticker} className="text-right py-3.5 px-5 font-semibold min-w-[7rem] tabular-nums">
-                            <Link href={`/stock/${c.ticker}`} className="hover:underline font-mono">
-                              {c.ticker}
-                            </Link>
-                          </th>
-                        ))}
-                        {companies.length === 2 && (
-                          <th className="text-right py-3 px-4 font-medium w-32 text-muted-foreground tabular-nums">
-                            {t('compareDifferenceColumnHeader')}
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {metricsDisplayGroups.map((group, groupIndex) => (
-                        <Fragment key={`group-${groupIndex}`}>
-                          {metricSort === 'default' && (
-                            <tr className="bg-muted/30">
-                              <td
-                                colSpan={companies.length + (companies.length === 2 ? 1 : 0)}
-                                className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-                              >
-                                {group.groupName}
-                              </td>
-                            </tr>
-                          )}
-                          {group.metrics.map(({ key, label, fmt: formatter, isPct }) => {
-                            const m = key as keyof typeof companies[0]['metrics'];
-                            const values = companies.map((c) => c.metrics[m] as number | null);
-                            const betterIdx = computeBetterIndex(values, true);
-                            const worseIdx = computeBetterIndex(values, false);
-                            // Only a real winner/loser when they're different companies —
-                            // a single data point (everyone else null) or a full tie across
-                            // every company would otherwise mark the same cell as both.
-                            const hasSpread = betterIdx !== null && worseIdx !== null && betterIdx !== worseIdx;
-                            const diffRes =
-                              companies.length === 2
-                                ? computeDiff(values[0], values[1], isPct)
-                                : null;
-                            const definition = metricDefinitions[key];
-                            const whyMatters = metricWhyItMatters[key];
-                            const expandable = definition || whyMatters;
-                            const isExpanded = expandedMetricKey === key;
-                            return (
-                              <Fragment key={`${groupIndex}-${key}`}>
-                                <tr
-                                  className={`border-b border-border/50 transition-colors ${
-                                    expandable ? 'hover:bg-muted/30 cursor-pointer' : 'hover:bg-muted/20'
-                                  }`}
-                                  onClick={expandable ? () => setExpandedMetricKey(isExpanded ? null : key) : undefined}
-                                >
-                                  <td className="py-3 px-4 text-muted-foreground align-middle">
-                                    <span className="inline-flex items-center gap-2">
-                                      {expandable && (
-                                        <span className="text-muted-foreground shrink-0">
-                                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                                        </span>
-                                      )}
-                                      <span>{label}</span>
-                                      {!expandable && metricTooltips[key] && (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <button
-                                              type="button"
-                                              className="inline-flex text-muted-foreground hover:text-muted-foreground focus:outline-none"
-                                              aria-label={t('compareMetricInfoAriaLabel', { label })}
-                                              onClick={(e) => e.stopPropagation()}
-                                            >
-                                              <Info className="h-3.5 w-3.5" />
-                                            </button>
-                                          </TooltipTrigger>
-                                          <TooltipContent side="right" className="max-w-xs">
-                                            {metricTooltips[key]}
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      )}
-                                    </span>
-                                  </td>
-                                {companies.map((c, i) => {
-                                  const val = c.metrics[m];
-                                  const isBetter = hasSpread && betterIdx === i && val != null;
-                                  const isWorse = hasSpread && worseIdx === i && val != null;
-                                  return (
-                                    <td
-                                      key={c.ticker}
-                                      className={`text-right py-3 px-4 font-mono tabular-nums align-middle ${
-                                        isBetter
-                                          ? 'border-l-2 border-l-emerald-400/50 bg-emerald-400/5 dark:bg-emerald-400/10'
-                                          : isWorse
-                                            ? 'border-l-2 border-l-red-400/50 bg-red-400/5 dark:bg-red-400/10'
-                                            : ''
-                                      }`}
-                                    >
-                                      {formatter(val as number | null)}
-                                    </td>
-                                  );
-                                })}
-                                {companies.length === 2 && (
-                                  <td
-                                    className={`text-right py-3 px-4 font-mono tabular-nums align-middle ${
-                                      diffRes?.isPositive ? 'text-emerald-400' : 'text-muted-foreground'
-                                    }`}
-                                  >
-                                    {diffRes?.str ?? na}
-                                  </td>
-                                )}
-                              </tr>
-                              {isExpanded && expandable && (
-                                <tr className="border-b border-border/50 bg-muted/10">
-                                  <td colSpan={companies.length + (companies.length === 2 ? 1 : 0)} className="py-3 px-4 pl-12 text-sm">
-                                    <div className="space-y-2 text-muted-foreground">
-                                      {definition && (
-                                        <p>
-                                          <span className="font-medium text-foreground/80">{t('compareDefinitionLabel')}</span>{' '}
-                                          {definition}
-                                        </p>
-                                      )}
-                                      {whyMatters && (
-                                        <p>
-                                          <span className="font-medium text-foreground/80">{t('compareWhyItMattersLabel')}</span>{' '}
-                                          {whyMatters}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </Fragment>
-                            );
-                          })}
-                        </Fragment>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </section>
-
-            {/* Financial history — unified comparison table */}
-            <section>
-              <h2 className="flex items-center gap-2 text-xl font-semibold mb-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                {t('compareFinancialHistoryHeading')}
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">{t('compareFinancialHistorySubtitle')}</p>
-              {(() => {
-                const trendLines = buildTrendSummary(companies, t);
-                if (trendLines.length === 0) return null;
-                return (
-                  <Card className="mb-4 border-muted">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold">{t('compareTrendSummaryTitle')}</CardTitle>
-                      <p className="text-xs text-muted-foreground">{t('compareTrendSummarySubtitle')}</p>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-1.5 text-sm text-muted-foreground">
-                        {trendLines.map((line, i) => (
-                          <li key={i}>{line}</li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                );
-              })()}
-              <Card>
-                <div className="overflow-auto max-h-[50vh] overscroll-contain">
-                  <table className="w-full text-sm border-collapse">
-                    <thead className="sticky top-0 z-10 bg-muted/95 dark:bg-muted/90 backdrop-blur supports-[backdrop-filter]:bg-muted/90 border-b shadow-sm">
-                      <tr className="border-b">
-                        <th className="text-left py-3.5 px-5 font-semibold w-24">{t('compareYearColumnHeader')}</th>
-                        {companies.flatMap((c) => [
-                          <th key={`${c.ticker}-rev`} className="text-right py-3 px-4 font-medium w-24">
-                            <Link href={`/stock/${c.ticker}`} className="hover:underline font-mono text-xs">
-                              {t('compareTickerRevHeader', { ticker: c.ticker })}
-                            </Link>
-                          </th>,
-                          <th key={`${c.ticker}-eps`} className="text-right py-3.5 px-5 font-semibold min-w-[4rem]">
-                            <Link href={`/stock/${c.ticker}`} className="hover:underline font-mono text-xs">
-                              {t('compareTickerEpsHeader', { ticker: c.ticker })}
-                            </Link>
-                          </th>,
-                        ])}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from(
-                        new Set(companies.flatMap((c) => c.history.map((h) => h.fiscalYear)))
-                      )
-                        .sort((a, b) => b - a)
-                        .slice(0, 6)
-                        .map((year) => {
-                          const period = `FY${year}`;
-                          return (
-                            <tr
-                              key={year}
-                              className="border-b border-border/50 hover:bg-muted/20 transition-colors"
-                            >
-                              <td className="py-2.5 px-4 font-mono text-muted-foreground">
-                                {period}
-                              </td>
-                              {companies.flatMap((c) => {
-                                const h = c.history.find((x) => x.fiscalYear === year);
-                                return [
-                                  <td
-                                    key={`${c.ticker}-rev`}
-                                    className={`text-right py-3 px-5 font-mono tabular-nums ${h?.revenue == null ? 'text-muted-foreground' : ''}`}
-                                  >
-                                    {h?.revenue != null ? fmt(h.revenue, na) : na}
-                                  </td>,
-                                  <td
-                                    key={`${c.ticker}-eps`}
-                                    className={`text-right py-3 px-5 font-mono tabular-nums ${h?.epsDiluted == null ? 'text-muted-foreground' : ''}`}
-                                  >
-                                    {h?.epsDiluted != null ? fmtEps(h.epsDiluted, na) : na}
-                                  </td>,
-                                ];
-                              })}
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </section>
-          </div>
+          <CompareResults companies={companies} />
         </div>
       )}
     </ToolPage>
   );
 }
 
-/** Well-known head-to-heads for the empty state: same industry, household names, clear contrasts. */
+/** Well-known head-to-heads for the empty state: same industry, household names, clear contrasts. Each has its own page. */
 const POPULAR_COMPARISONS: Array<{ tickers: [string, string]; names: [string, string] }> = [
   { tickers: ['KO', 'PEP'], names: ['Coca-Cola', 'PepsiCo'] },
   { tickers: ['AAPL', 'MSFT'], names: ['Apple', 'Microsoft'] },

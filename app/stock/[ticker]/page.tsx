@@ -27,6 +27,7 @@ import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 import { getTickerCoverage } from '@/lib/stock/subpage-data';
 import { indexMemberships } from '@/lib/market-data/index-membership';
 import { getIndexBadgeFacts } from '@/lib/market-data/index-events';
+import { pairsFor, pairSlug } from '@/lib/compare/popular-pairs';
 import Link from 'next/link';
 import StockPageClient from './StockPageClient';
 
@@ -55,6 +56,10 @@ export default async function StockPage({
   const indices = indexMemberships(ticker);
   // "Joined in the week of" and fund weight for the index badges' tooltips.
   const indexFactsPromise = indices.length > 0 ? getIndexBadgeFacts(ticker).catch(() => ({})) : Promise.resolve({});
+  // Head-to-heads with their own indexable page (/tools/compare/aapl-vs-msft). Linked from
+  // here, the most crawled pages on the site, so search engines find them.
+  const pairs = pairsFor(ticker);
+  const pairNamesPromise = pairs.length > 0 ? getDisplayNames(pairs.flat()).catch(() => new Map<string, string>()) : Promise.resolve(new Map<string, string>());
   try {
     await queryClient.prefetchQuery({
       queryKey: ['stock-snapshot', ticker],
@@ -66,9 +71,9 @@ export default async function StockPage({
     // itself, exactly as it did before this existed.
   }
 
-  const [peers, name, locale, coverage, indexFacts] = await Promise.all([peersPromise, namePromise, localePromise, coveragePromise, indexFactsPromise]);
+  const [peers, name, locale, coverage, indexFacts, pairNames] = await Promise.all([peersPromise, namePromise, localePromise, coveragePromise, indexFactsPromise, pairNamesPromise]);
   const snapshot = queryClient.getQueryData<StockSnapshot>(['stock-snapshot', ticker]);
-  const t = snapshot || coverage ? await getServerT(locale, `/stock/${ticker}`) : null;
+  const t = snapshot || coverage || pairs.length > 0 ? await getServerT(locale, `/stock/${ticker}`) : null;
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
@@ -97,6 +102,23 @@ export default async function StockPage({
                     <Link href={l.href} className="block rounded-xl border bg-card/50 px-4 py-3 transition-colors hover:border-foreground/20 hover:bg-card">
                       <span className="block text-sm font-medium text-foreground">{l.label}</span>
                       <span className="block text-xs text-muted-foreground">{l.desc}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {t && pairs.length > 0 && (
+            <section aria-labelledby="stock-compare-heading" className="mt-12 border-t border-border/50 pt-8">
+              <h2 id="stock-compare-heading" className="text-lg font-semibold tracking-tight text-foreground">{t('stock:compareWithHeading', { name: name ?? ticker })}</h2>
+              <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {pairs.map(([a, b]) => (
+                  <li key={`${a}-${b}`}>
+                    <Link href={`/tools/compare/${pairSlug(a, b)}`} className="block rounded-xl border bg-card/50 px-4 py-3 transition-colors hover:border-foreground/20 hover:bg-card">
+                      <span className="block text-sm font-medium text-foreground">
+                        {t('stock:compareWithPair', { a: pairNames.get(a) ?? a, b: pairNames.get(b) ?? b })}
+                      </span>
+                      <span className="block font-mono text-xs text-muted-foreground">{t('stock:compareWithTickers', { a, b })}</span>
                     </Link>
                   </li>
                 ))}

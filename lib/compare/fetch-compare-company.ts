@@ -13,6 +13,7 @@ import {
 import { tryReserveCredits } from '@/lib/twelvedata/credit-budget';
 import { statementsInUsd } from '@/lib/currency/latest-rates';
 import type { StatementFx } from '@/lib/currency/statement-fx';
+import { getDisplayNames } from '@/lib/market-data/display-names';
 
 const FINANCIALS_CACHE_TTL_SECONDS = 24 * 60 * 60;
 /** Real measured cost per statement (income/balance/cashflow), not the ~1
@@ -41,11 +42,14 @@ const BUDGET_WAIT_MS = 8_000;
 async function getCachedFinancial<T>(
   ticker: string,
   type: 'income' | 'balance' | 'cashflow',
-  fetcher: () => Promise<T>
+  fetcher: () => Promise<T>,
+  cacheOnly: boolean
 ): Promise<T> {
   const cacheKey = `financials:${ticker}:${type}:annual`;
   const cached = await getCached<T>(cacheKey);
   if (cached) return cached;
+  // Crawled pages never spend credits: an expired entry or nothing at all.
+  if (cacheOnly) return (await getCachedStale<T>(cacheKey)) ?? ([] as unknown as T);
 
   // Never fetch without a granted reservation. Falling back to an expired
   // entry shows a comparison built on slightly older annual statements, which
@@ -83,12 +87,13 @@ async function getCachedFinancial<T>(
  * across periods, and the latest quarter-end is a fresher number than the
  * latest annual filing anyway.
  *
- * revenueGrowth is deliberately left null here rather than approximated: a
- * clean YoY figure needs 8 quarters (this cache only ever holds 4), and
- * comparing a TTM revenue base against an annual period's prior-year figure
- * would mix two different bases into one number. It's populated by the
- * annual-fetch fallback below instead, which has real distinct fiscal years
- * to compare.
+ * revenueGrowth is left null here: a clean TTM-over-TTM figure needs 8
+ * quarters (this cache only ever holds 4). The caller fills it from the
+ * annual history, labelled as the latest fiscal year.
+ *
+ * A TTM sum is only a sum when all 4 quarters have the value. Skipping a
+ * missing quarter once showed AAPL's EPS as $6.87 (3 quarters) beside a
+ * fiscal-year $8.98, so any gap makes that metric null instead.
  *
  * Returns null if any statement has fewer periods than expected — that's
  * either a genuinely cold cache or a company too newly public to have 4
@@ -104,10 +109,11 @@ function buildTtmMetrics(
     return null;
   }
 
-  const sum = (values: Array<number | null>): number | null => {
-    const present = values.filter((v): v is number => v != null);
-    return present.length > 0 ? present.reduce((a, b) => a + b, 0) : null;
-  };
+  // Newest four only: the cache is written newest first and could hold more.
+  income = income.slice(0, 4);
+  cashflow = cashflow.slice(0, 4);
+  const sum = (values: Array<number | null>): number | null =>
+    values.every((v): v is number => v != null) ? values.reduce((a, b) => a + b, 0) : null;
 
   const rev = sum(income.map((p) => p.revenue));
   const grossProfit = sum(income.map((p) => p.gross_profit));
@@ -146,6 +152,21 @@ export interface CompareCompany {
   incorporation_location: string | null;
   /** Set when the statements were converted to USD from the company's own currency (TSM's TWD). */
   fx: StatementFx | null;
+  /** Which period `metrics` covers, so the page can say so: the 12 months to a
+   *  quarter-end date, or one fiscal year. Balance-sheet items are the latest
+   *  period-end either way. */
+  metricsBasis: { kind: 'ttm'; through: string } | { kind: 'fy'; year: number } | null;
+  /** Fiscal year `metrics.revenueGrowth` measures, against the year before. */
+  growthYear: number | null;
+  /** Price-side figures from screener_stats (refreshed daily, no TwelveData call here). */
+  market: {
+    healthScore: number | null;
+    healthGrade: string | null;
+    peRatio: number | null;
+    /** Fraction: 0.0075 is 0.75%. */
+    dividendYield: number | null;
+    marketCap: number | null;
+  } | null;
   metrics: {
     revenue: number | null;
     grossProfit: number | null;
@@ -191,10 +212,16 @@ interface CompanyRow {
  * Returns null when there's no financial data available at all (a company
  * BullPen doesn't cover), which callers treat as "omit from the comparison."
  */
-export async function fetchCompareCompany(ticker: string): Promise<CompareCompany | null> {
+export async function fetchCompareCompany(
+  ticker: string,
+  { cacheOnly = false }: { cacheOnly?: boolean } = {}
+): Promise<CompareCompany | null> {
   const supabase = createServerClient();
+  // cacheOnly (the crawlable /tools/compare/[pair] pages) also accepts expired
+  // quarterly entries, since it will never fetch a fresh one.
+  const readQuarterly = cacheOnly ? getCachedStale : getCached;
 
-  const [{ data: companyRow }, quarterlyIncome, quarterlyBalance, quarterlyCashflow, logoManifest] = await Promise.all([
+  const [{ data: companyRow }, quarterlyIncome, quarterlyBalance, quarterlyCashflow, logoManifest, displayNames, { data: marketRow }, { data: descriptionRow }] = await Promise.all([
     supabase
       .from('companies')
       .select('ticker, name, sector, industry, description, logo_url, employee_count, fiscal_year_end, sic_code, incorporation_location')
@@ -202,11 +229,20 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
       .maybeSingle<CompanyRow>(),
     // Prefer the nightly-cron-warmed quarterly cache for "current" metrics —
     // a pure Supabase read, zero TwelveData cost. See buildTtmMetrics above.
-    getCached<IncomeStatementPeriod[]>(`financials:${ticker}:income:quarterly`),
-    getCached<BalanceSheetPeriod[]>(`financials:${ticker}:balance:quarterly`),
-    getCached<CashFlowPeriod[]>(`financials:${ticker}:cashflow:quarterly`),
+    readQuarterly<IncomeStatementPeriod[]>(`financials:${ticker}:income:quarterly`),
+    readQuarterly<BalanceSheetPeriod[]>(`financials:${ticker}:balance:quarterly`),
+    readQuarterly<CashFlowPeriod[]>(`financials:${ticker}:cashflow:quarterly`),
     // Cached/memoized (see logo-manifest.ts) — not a per-request Supabase hit.
     getLogoManifest(),
+    // companies.name is SEC style ("MICROSOFT CORP"); this gives "Microsoft".
+    getDisplayNames([ticker]),
+    supabase
+      .from('screener_stats')
+      .select('health_score, health_score_grade, pe_ratio, dividend_yield, market_cap')
+      .eq('ticker', ticker)
+      .maybeSingle<{ health_score: number | null; health_score_grade: string | null; pe_ratio: number | null; dividend_yield: number | null; market_cap: number | null }>(),
+    // companies.description is empty for most large caps; the profile text lives here (mig 199).
+    supabase.from('company_descriptions').select('description').eq('ticker', ticker).maybeSingle<{ description: string | null }>(),
   ]);
 
   // The cache keeps rows in the filer's currency and everything here is shown
@@ -218,20 +254,25 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
     return out.rows;
   };
 
-  const ttmMetrics = buildTtmMetrics(
-    quarterlyIncome && (await inUsd(quarterlyIncome)),
-    quarterlyBalance && (await inUsd(quarterlyBalance)),
-    quarterlyCashflow && (await inUsd(quarterlyCashflow)),
-  );
+  const qIncome = quarterlyIncome && (await inUsd(quarterlyIncome));
+  const qBalance = quarterlyBalance && (await inUsd(quarterlyBalance));
+  const qCashflow = quarterlyCashflow && (await inUsd(quarterlyCashflow));
 
   // Financial History always needs real annual periods — a quarterly cache
   // only ever holds the last 4 quarters, not a multi-year trend. Balance
   // sheet was never used in history, only in metrics, so this is 2 guarded
   // statements instead of 3 regardless of which path metrics took below.
   const [income, cashflow] = await Promise.all([
-    getCachedFinancial(ticker, 'income', () => getIncomeStatement(ticker, 'annual', 4)).then(inUsd),
-    getCachedFinancial(ticker, 'cashflow', () => getCashFlow(ticker, 'annual', 4)).then(inUsd),
+    getCachedFinancial(ticker, 'income', () => getIncomeStatement(ticker, 'annual', 4), cacheOnly).then(inUsd),
+    getCachedFinancial(ticker, 'cashflow', () => getCashFlow(ticker, 'annual', 4), cacheOnly).then(inUsd),
   ]);
+
+  // When the last 4 quarters end on the fiscal year-end (AAPL in November),
+  // the last 12 months ARE the latest fiscal year: use the filed annual
+  // figures, so the metrics match the history table exactly and a quarter
+  // missing from the cache cannot blank a metric.
+  const ttmIsLatestYear = !!qIncome?.[0] && qIncome[0].fiscal_date === income[0]?.fiscal_date;
+  const ttmMetrics = ttmIsLatestYear ? null : buildTtmMetrics(qIncome, qBalance, qCashflow);
 
   if (income.length === 0 && !ttmMetrics) return null;
 
@@ -248,24 +289,34 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
     };
   });
 
+  // Latest fiscal year vs the year before, from the annual history both paths
+  // have (the TTM path has no prior-year TTM to compare against).
+  const latestRev = income[0]?.revenue ?? null;
+  const prevRev = income[1]?.revenue ?? null;
+  const revenueGrowth =
+    latestRev != null && prevRev != null && prevRev !== 0
+      ? ((latestRev - prevRev) / Math.abs(prevRev)) * 100
+      : null;
+  const growthYear = revenueGrowth != null ? history[0].fiscalYear : null;
+
   let metrics: CompareCompany['metrics'];
+  let metricsBasis: CompareCompany['metricsBasis'];
   if (ttmMetrics) {
-    metrics = ttmMetrics;
+    metrics = { ...ttmMetrics, revenueGrowth };
+    metricsBasis = { kind: 'ttm', through: qIncome![0].fiscal_date };
   } else {
     // Quarterly cache was cold (a ticker outside the ~1,400-ticker
     // cron-covered universe) — same guarded annual fetch as before, only
-    // reached for that minority of tickers.
-    const balance = await getCachedFinancial(ticker, 'balance', () => getBalanceSheet(ticker, 'annual', 4)).then(inUsd);
+    // reached for that minority of tickers. When the latest quarter IS the
+    // fiscal year-end, its cached balance sheet is the year-end one: no fetch.
+    const balance = ttmIsLatestYear && qBalance?.[0]?.fiscal_date === income[0].fiscal_date
+      ? qBalance
+      : await getCachedFinancial(ticker, 'balance', () => getBalanceSheet(ticker, 'annual', 4), cacheOnly).then(inUsd);
     const latest = income[0];
-    const prev = income[1];
     const latestBalance = balance[0];
     const latestCashflow = cashflow[0];
     const rev = latest?.revenue ?? null;
-    const prevRev = prev?.revenue ?? null;
-    const revenueGrowth =
-      rev != null && prevRev != null && prevRev !== 0
-        ? ((rev - prevRev) / Math.abs(prevRev)) * 100
-        : null;
+    metricsBasis = history[0] ? { kind: 'fy', year: history[0].fiscalYear } : null;
 
     metrics = {
       revenue: rev,
@@ -285,10 +336,10 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
 
   return {
     ticker,
-    name: companyRow?.name ?? ticker,
+    name: displayNames.get(ticker) ?? companyRow?.name ?? ticker,
     sector: companyRow?.sector ?? null,
     industry: companyRow?.industry ?? null,
-    description: companyRow?.description ?? null,
+    description: descriptionRow?.description || companyRow?.description || null,
     // getStorageLogoUrl always guessed a .jpg URL regardless of the real
     // stored extension (png/svg get uploaded too — see uploadLogoToStorage),
     // so any ticker whose logo isn't a jpg 404'd here and fell through to
@@ -302,6 +353,17 @@ export async function fetchCompareCompany(ticker: string): Promise<CompareCompan
     sic_code: companyRow?.sic_code ?? null,
     incorporation_location: companyRow?.incorporation_location ?? null,
     fx,
+    metricsBasis,
+    growthYear,
+    market: marketRow
+      ? {
+          healthScore: marketRow.health_score,
+          healthGrade: marketRow.health_score_grade,
+          peRatio: marketRow.pe_ratio,
+          dividendYield: marketRow.dividend_yield,
+          marketCap: marketRow.market_cap,
+        }
+      : null,
     metrics,
     history,
   };
