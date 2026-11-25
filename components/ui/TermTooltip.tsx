@@ -32,7 +32,8 @@ export function TermTooltip({ term, className, ticker, onAskAI }: TermTooltipPro
   const { isSimplified } = useExperienceLevel();
   const entry = getGlossaryEntry(term);
 
-  const displayLabel = isSimplified && entry ? entry.plainLabel : term;
+  const plainShown = isSimplified && !!entry && !entry.keepTerm;
+  const displayLabel = plainShown ? entry.plainLabel : term;
   const hasTooltip = !!entry;
 
   if (!hasTooltip) {
@@ -63,7 +64,7 @@ export function TermTooltip({ term, className, ticker, onAskAI }: TermTooltipPro
         side="top"
         className="max-w-[240px] text-center leading-snug bg-popover text-popover-foreground border border-border shadow-lg"
       >
-        {!isSimplified && entry && (
+        {!plainShown && entry && (
           <p className="font-medium text-xs mb-1 text-foreground/70">{entry.plainLabel}</p>
         )}
         <p className="text-xs">{entry.description}</p>

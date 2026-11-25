@@ -11,6 +11,10 @@
 export interface GlossaryEntry {
   plainLabel: string;
   description: string;
+  /** Simple mode still shows the term itself, with plainLabel heading the tooltip. For words beginners
+   *  meet everywhere else in the app (Health Score pillars appear in the screener, Home, notifications
+   *  and Bull under their short names), so the stock page teaches the same word. */
+  keepTerm?: true;
 }
 
 export const GLOSSARY: Record<string, GlossaryEntry> = {
@@ -374,26 +378,32 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   // ── Health-score categories ─────────────────────────────────────────────────
 
   'Profitability': {
+    keepTerm: true,
     plainLabel: 'How Well It Makes Money',
     description: 'Whether the company turns sales into profit: profitable over the past year, profit margin, and profit earned on everything it owns. The single biggest driver of the health score.',
   },
   'Financial Strength': {
+    keepTerm: true,
     plainLabel: 'How Sturdy Its Finances Are',
     description: 'Whether the company can carry its debt: how easily profits cover interest, how many years of earnings the debt would take to repay, and whether it can pay the next year\'s bills.',
   },
   'Cash Flow': {
+    keepTerm: true,
     plainLabel: 'Whether Profits Turn Into Cash',
     description: 'Whether the business brings in real cash, not just accounting profit: cash from operations, cash left after investment, and how much of each sale ends up as spare cash.',
   },
   'Valuation': {
+    keepTerm: true,
     plainLabel: 'Whether the Price Is Fair',
     description: 'Whether the stock looks cheap or expensive for what you get, based on P/E, P/B, and EV/EBITDA. A great company can still be a pricey stock.',
   },
   'Growth': {
+    keepTerm: true,
     plainLabel: 'How Fast It\'s Growing',
     description: 'How quickly sales and earnings are expanding year over year. Faster growth can justify a higher price.',
   },
   'Stability': {
+    keepTerm: true,
     plainLabel: 'How Smooth the Ride Is',
     description: 'Higher means calmer: the stock swings no more than the market (beta) and stays profitable quarter after quarter. A low score means a bumpy share price, even when the finances are sound.',
   },
