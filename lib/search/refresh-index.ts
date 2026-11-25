@@ -13,6 +13,7 @@ import { getUsStocksList, getUsEtfList, getUsFundsList, type StockReference } fr
 import { rankFromMarketCap, rankFromEtfName, INDEX_MEMBER_RANK, INDEX_FUND_RANK } from '@/lib/search/index-rank';
 import { SP500_TICKERS } from '@/lib/market-data/sp500';
 import { NASDAQ100_TICKERS } from '@/lib/market-data/nasdaq100';
+import { NAME_FIXES } from '@/lib/market-data/ticker-overrides';
 import { chunk } from '@/lib/utils';
 
 /** Exchanges a retail user can actually trade on. OTC is deliberately excluded:
@@ -193,7 +194,7 @@ export async function refreshSearchIndex(
       seen.add(ticker);
       rows.push({
         ticker,
-        name: s.name || ticker,
+        name: NAME_FIXES[ticker] ?? (s.name || ticker),
         kind: 's',
         exchange: s.exchange || null,
         rank:

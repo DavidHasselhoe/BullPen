@@ -231,12 +231,36 @@ interface Fundamentals {
 
 const HEAVY_ASSET_SECTORS = new Set(['Utilities', 'Real Estate']);
 
+const DAY_MS = 86_400_000;
+/** Newer than this, a statement still describes the company today (a quarter plus filing lag, with room). */
+const STALE_AFTER_DAYS = 400;
+
+const isRecent = (r: { fiscal_date: string }, now: number) => now - Date.parse(r.fiscal_date) < STALE_AFTER_DAYS * DAY_MS;
+
+/**
+ * The periods that make up the trailing year: the newest one, if it is recent,
+ * and those ending within 11 months before it. TwelveData gives some foreign
+ * filers "quarterly" rows from 2015-2018 (Gold Fields scored 20/20 on Cash
+ * Flow from 2015's quarters), and a twice-a-year filer's last four halves are
+ * two years, which ttm() would have summed as one.
+ * ponytail: half-year filers end up with no TTM (under 3 rows); summing two halves is the upgrade.
+ */
+function trailingYear<T extends { fiscal_date: string }>(rows: T[], now: number): T[] {
+  const newest = Math.max(...rows.map((r) => Date.parse(r.fiscal_date)).filter(Number.isFinite));
+  if (!(now - newest < STALE_AFTER_DAYS * DAY_MS)) return [];
+  return rows.filter((r) => newest - Date.parse(r.fiscal_date) < 335 * DAY_MS);
+}
+
 function fundamentals(
-  income: IncomeStatementPeriod[],
-  balance: BalanceSheetPeriod[],
-  cashflow: CashFlowPeriod[],
+  allIncome: IncomeStatementPeriod[],
+  allBalance: BalanceSheetPeriod[],
+  allCashflow: CashFlowPeriod[],
   sector: string | null,
+  now: number,
 ): Fundamentals {
+  const income = trailingYear(allIncome, now);
+  const cashflow = trailingYear(allCashflow, now);
+  const balance = allBalance.filter((r) => isRecent(r, now));
   const b = balance.find((r) => r.total_assets != null) ?? balance[0];
   const liabilitiesShare =
     b?.total_assets != null && b.total_liabilities != null && b.total_assets > 0
@@ -473,11 +497,12 @@ function buildSummary(score: number, cats: CategoryScore[]): string {
   const cash = ratio('Cash Flow');
   const growth = ratio('Growth');
 
-  if (score >= 85) return 'Highly profitable, cash generative and financially secure.';
+  // Banks and stale filers have no Cash Flow pillar: don't call them cash generative.
+  if (score >= 85) return cash == null ? 'Highly profitable and financially secure.' : 'Highly profitable, cash generative and financially secure.';
   if (score >= 70) {
     if (growth != null && growth < 0.4) return 'A sound, profitable business. Growth has slowed, which is the main thing to watch.';
-    if (strength != null && strength < 0.6) return 'Profitable and cash generative, with more debt than the strongest companies carry.';
-    return 'Healthy fundamentals: profitable, cash generative and on solid footing.';
+    if (strength != null && strength < 0.6) return cash == null ? 'Profitable, with more debt than the strongest companies carry.' : 'Profitable and cash generative, with more debt than the strongest companies carry.';
+    return cash == null ? 'Healthy fundamentals: profitable and on solid footing.' : 'Healthy fundamentals: profitable, cash generative and on solid footing.';
   }
   if (score >= 55) {
     if (prof != null && prof < 0.5 && growth != null && growth >= 0.6) return 'Growing quickly, but profits have not caught up yet.';
@@ -541,9 +566,9 @@ export function computeHealthScore(
   income: IncomeStatementPeriod[],
   balance: BalanceSheetPeriod[],
   cashflow: CashFlowPeriod[],
-  opts: { sector?: string | null } = {},
+  opts: { sector?: string | null; now?: number } = {},
 ): HealthScore {
-  const f = fundamentals(income, balance, cashflow, opts.sector ?? null);
+  const f = fundamentals(income, balance, cashflow, opts.sector ?? null, opts.now ?? Date.now());
   const signals: Signals = {};
 
   const pillars: [string, number, Tally][] = [

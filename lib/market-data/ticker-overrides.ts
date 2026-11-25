@@ -27,6 +27,8 @@
  *    TwelveData has no US listing under these symbols. BLD resolves to British
  *    Land (UK REIT, GBP statements), NDX to the Nordex SE ADR (EUR statements),
  *    ETF to Eastfield Resources (TSXV, zero revenue).
+ *  - THR (Thermon Group, NYSE), checked 2026-11-25 (/stocks): only Thor Energy
+ *    Plc (LSE) and its ASX/CXA CDIs.
  *
  * If a future check finds TwelveData *does* have the correct listing behind
  * a country/exchange/mic_code filter, replace `unavailable` with a
@@ -46,6 +48,28 @@ export const TICKER_OVERRIDES: Record<string, TickerOverride> = {
   BLD: { collidesWith: 'British Land Company PLC (UK REIT; Frankfurt listing, EUR)', unavailable: true },
   NDX: { collidesWith: 'Nordex SE - Unsponsored ADR (Frankfurt, Germany, EUR)', unavailable: true },
   ETF: { collidesWith: 'Eastfield Resources Ltd. (TSXV, Canada)', unavailable: true },
+  THR: { collidesWith: 'Thor Energy Plc (LSE, United Kingdom)', unavailable: true },
+};
+
+/**
+ * Tickers whose TwelveData listing is the right company (prices, statements,
+ * website, CEO, industry all check out) but whose reference data carries
+ * ANOTHER company's name: in /stocks, which feeds search_index and so every
+ * display name, and in /profile, whose description is that other company's
+ * too. Bull then called Huntington Bancshares "HubSpot, a software company"
+ * and the AI peer list for KKR was RNA biotechs. Checked 2026-11-25.
+ *
+ * Found by comparing cached profile names to SEC names:
+ *   select p.ticker, p.payload->'profile'->>'name', ci.name
+ *   from market_data_cache p join company_index ci using (ticker)
+ *   where p.cache_key = 'profile:' || p.ticker  -- then eyeball the mismatches
+ * Most mismatches there are just "The X Company" vs "X CO"; rerun it now and then.
+ */
+export const NAME_FIXES: Record<string, string> = {
+  A: 'Agilent Technologies, Inc.',        // TD: AgileThought, Inc.
+  HBAN: 'Huntington Bancshares Incorporated', // TD: HubSpot Inc.
+  KKR: 'KKR & Co. Inc.',                  // TD: Korro Bio, Inc.
+  MTB: 'M&T Bank Corporation',            // TD /profile: CareCloud, Inc.
 };
 
 export function getTickerOverride(symbol: string): TickerOverride | undefined {

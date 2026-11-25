@@ -706,7 +706,15 @@ export function SankeyCard({ ticker }: { ticker: string }) {
     retry: false,
   });
 
-  const rows    = useMemo(() => (data?.data ?? []).slice(0, 5), [data]);
+  // Periods from years ago are left out, as in Financials: some foreign filers'
+  // "quarterly" rows from TwelveData end in 2015-2018 (Gold Fields).
+  const [now] = useState(() => Date.now());
+  const rows    = useMemo(
+    () => (data?.data ?? [])
+      .filter((r) => now - Date.parse(r.fiscal_date) <= (period === 'annual' ? 800 : 400) * 86_400_000)
+      .slice(0, 5),
+    [data, now, period],
+  );
   const row     = rows[periodIdx] ?? null;
   // Named exactly as Earnings and Financials name them ("Q3 FY26", not the
   // calendar quarter its period end falls in).

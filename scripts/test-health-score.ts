@@ -10,23 +10,26 @@ import { computeHealthScore, crossedGradeWithBuffer, healthColumns } from '../li
 import { quarterDriver, comparablePillars } from '../lib/finance/health-score-history';
 import type { CompanyStatistics, IncomeStatementPeriod, BalanceSheetPeriod, CashFlowPeriod } from '../lib/twelvedata/twelvedata-client';
 
+// Statements must be recent to count (health-score.ts trailingYear), so fixtures sit two months back.
+const RECENT = new Date(Date.now() - 60 * 86_400_000).toISOString().slice(0, 10);
+const monthsAgo = (m: number) => new Date(Date.now() - m * 30.5 * 86_400_000).toISOString().slice(0, 10);
 const stats = (o: Partial<CompanyStatistics> = {}): CompanyStatistics => ({
   symbol: 'T', marketCap: null, enterpriseValue: null, peRatioTTM: null, peRatioForward: null, pbRatio: null,
   evToEbitda: null, psRatio: null, beta: 0.8, week52High: null, week52Low: null, avgVolume: null, sharesFloat: null,
   shortRatio: null, dividendYield: null, profitMargin: null, revenueGrowthTTM: 0.06, epsGrowthTTM: 0.06, ...o,
 });
 const q = (o: Partial<IncomeStatementPeriod> = {}): IncomeStatementPeriod => ({
-  fiscal_date: '2026-06-30', fiscal_quarter: null, fiscal_year: null, revenue: 100, gross_profit: 60,
+  fiscal_date: RECENT, fiscal_quarter: null, fiscal_year: null, revenue: 100, gross_profit: 60,
   operating_income: 30, net_income: 22, ebitda: 35, eps_basic: null, eps_diluted: null, r_and_d_expenses: null,
   selling_general_administrative_expenses: null, interest_expense: 2, income_tax_expense: 5, ...o,
 } as IncomeStatementPeriod);
 const bs = (o: Partial<BalanceSheetPeriod> = {}): BalanceSheetPeriod => ({
-  fiscal_date: '2026-06-30', total_assets: 1000, total_current_assets: 300, cash_and_equivalents: 100,
+  fiscal_date: RECENT, total_assets: 1000, total_current_assets: 300, cash_and_equivalents: 100,
   total_liabilities: 500, total_current_liabilities: 200, long_term_debt: 150, total_stockholders_equity: 500,
   retained_earnings: null, goodwill_and_intangible_assets: null, ...o,
 });
 const cf = (o: Partial<CashFlowPeriod> = {}): CashFlowPeriod =>
-  ({ fiscal_date: '2026-06-30', operating_cash_flow: 28, capital_expenditures: -6, free_cash_flow: 22, ...o } as CashFlowPeriod);
+  ({ fiscal_date: RECENT, operating_cash_flow: 28, capital_expenditures: -6, free_cash_flow: 22, ...o } as CashFlowPeriod);
 const four = <T>(f: () => T) => [f(), f(), f(), f()];
 const cat = (hs: ReturnType<typeof computeHealthScore>, name: string) => hs.categories.find((c) => c.name === name)!;
 
@@ -73,6 +76,26 @@ assert.ok(cat(asUtility, 'Financial Strength').score > cat(asOther, 'Financial S
 const bare = computeHealthScore(stats({ profitMargin: 0.2 }), [], [], []);
 assert.equal(bare.insufficientData, true);
 assert.equal(healthColumns(bare).health_score, null, 'insufficient data stores a null score');
+
+// Gold Fields: TwelveData's "quarterly" income and cash flow rows were from 2015-2018,
+// and its Cash Flow pillar scored 20/20 on them. Old statements count for nothing.
+const old = (y: number) => `${y}-06-30`;
+const stale = computeHealthScore(
+  stats({ profitMargin: 0.39 }),
+  [2018, 2017, 2016, 2015].map((y) => q({ fiscal_date: old(y) })),
+  [bs()],
+  [2015, 2015, 2015, 2015].map((y) => cf({ fiscal_date: old(y) })),
+);
+assert.equal(cat(stale, 'Cash Flow').dataAvailable, false, 'decade-old cash flows are not scored');
+assert.equal(cat(stale, 'Profitability').inputs?.netMargin, 0.39, 'margin falls back to the current TTM figure');
+assert.ok(!stale.summary.includes('cash'), `no Cash Flow data, so the summary makes no cash claim: "${stale.summary}"`);
+const staleBalance = computeHealthScore(stats(), four(() => q()), [bs({ fiscal_date: old(2015) })], four(() => cf()));
+assert.equal(cat(staleBalance, 'Financial Strength').dataAvailable, false, 'a 2015 balance sheet is not today\'s');
+
+// A twice-a-year filer's last four halves are two years, not a trailing year.
+const halves = [0, 6, 12, 18].map((m) => cf({ fiscal_date: monthsAgo(m + 2), operating_cash_flow: 50, free_cash_flow: 40 }));
+const semi = computeHealthScore(stats(), [], [bs()], halves);
+assert.equal(cat(semi, 'Cash Flow').dataAvailable, false, 'half-year rows are not summed as four quarters');
 
 // Losing money, burning cash and heavily indebted is an F.
 const weak = computeHealthScore(

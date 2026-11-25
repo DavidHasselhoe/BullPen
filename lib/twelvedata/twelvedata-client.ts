@@ -5,7 +5,7 @@
  */
 
 import { isDuplicateShareClass } from '@/lib/market-data/dual-class-shares';
-import { assertNoTickerCollision } from '@/lib/market-data/ticker-overrides';
+import { assertNoTickerCollision, NAME_FIXES } from '@/lib/market-data/ticker-overrides';
 import { fetchNasdaqEarningsDay } from '@/lib/market-data/nasdaq-earnings-calendar';
 import { sessionDateET, tradingMinutesET } from '@/lib/market-data/trading-day';
 import { classifyTradingSession, strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
@@ -1663,13 +1663,15 @@ export async function getCompanyProfile(symbol: string): Promise<CompanyProfile>
     throw new Error(msg);
   }
 
+  // TwelveData names some tickers after another company and describes that company too.
+  const fixedName = NAME_FIXES[symbol.toUpperCase()];
   return {
     symbol: data.symbol ?? symbol,
-    name: data.name ?? symbol,
+    name: fixedName ?? data.name ?? symbol,
     exchange: data.exchange ?? '',
     sector: data.sector ?? null,
     industry: data.industry ?? null,
-    description: data.description ?? null,
+    description: fixedName ? null : data.description ?? null,
     ceo: data.CEO ?? null,
     website: data.website ?? null,
     address: data.address ?? null,

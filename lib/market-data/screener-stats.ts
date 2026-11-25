@@ -64,7 +64,7 @@ import { normalizeSector } from '@/lib/finance/sector-benchmarks';
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
 import { waitForCronCreditBudget } from '@/lib/twelvedata/credit-budget';
 import { MARKET_CAP_PROMOTION_FLOOR, dropDelistedTickers } from '@/lib/market-data/screener-universe';
-import { getTickerOverride } from '@/lib/market-data/ticker-overrides';
+import { getTickerOverride, NAME_FIXES } from '@/lib/market-data/ticker-overrides';
 import { notifyHealthScoreChanges, notifyQuarterlyHealthChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import { chunk } from '@/lib/utils';
@@ -390,7 +390,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
         // so it costs nothing and covers every ticker with no companies row. It
         // also wins over a `companies` name in SEC filing caps ("NVIDIA CORP"),
         // which sat beside "Apple Inc." in the screener.
-        name: ((!isAllCaps(company?.name) && company?.name) || statsRaw.meta?.name || company?.name || sym).replace(/ Common Stock$/, ''),
+        name: (NAME_FIXES[sym] || (!isAllCaps(company?.name) && company?.name) || statsRaw.meta?.name || company?.name || sym).replace(/ Common Stock$/, ''),
         sector,
         // Nothing but `companies` knows industries, so at least never erase one.
         industry: priorMetaMap.get(sym)?.industry || company?.industry || null,
@@ -427,6 +427,7 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
     );
 
     const gradeChanges: HealthScoreChange[] = [];
+    const PILLAR_COLUMNS = ['health_profitability', 'health_financial_strength', 'health_cash_flow', 'health_growth', 'health_market_risk'] as const;
 
     for (const row of rows) {
       const prior = priorMap.get(row.ticker);
@@ -471,9 +472,9 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
         prior?.health_score_version !== HEALTH_SCORE_METHOD ||
         baseline == null ||
         // A pillar gaining or losing its data (a new listing's beta arriving,
-        // or the 2026-11-17 change that leaves Stability out without one)
-        // re-weights the total. Not news about the company either.
-        (prior.health_market_risk == null) !== (row.health_market_risk == null)
+        // a company's statements going stale) re-weights the total. Not news
+        // about the company either.
+        PILLAR_COLUMNS.some((c) => (prior[c] == null) !== (row[c] == null))
       ) {
         row.health_alert_score = score;
       } else if (crossedGradeWithBuffer(baseline, score)) {

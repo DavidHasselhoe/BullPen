@@ -493,6 +493,7 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
   const [activeTab, setActiveTab] = useState<Tab>('income');
   const [period, setPeriod] = useState<Period>('quarterly');
   const [showFullBreakdown, setShowFullBreakdown] = useState(false);
+  const [now] = useState(() => Date.now());
   const { isSimplified } = useExperienceLevel();
   const { open: openAIPanel } = useAIPanel();
   const handleAskAI = useCallback((q: string) => openAIPanel({ query: q }), [openAIPanel]);
@@ -530,6 +531,11 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
     title: t(annual ? 'financialsYearEndTitle' : 'financialsPeriodEndTitle', { date: longPeriodDate(row.fiscal?.periodEnd ?? row.fiscal_date) }),
   }));
   const periodLabels = periodColumns.map((c) => c.label);
+  // TwelveData's "quarterly" rows for some foreign filers end in 2015-2018 (Gold
+  // Fields reports twice a year): a table of decade-old quarters reads as today's.
+  // Same line as the Health Score, which no longer counts them (health-score.ts).
+  const newestStatement = statementRows[0]?.fiscal_date;
+  const staleStatements = !!newestStatement && now - Date.parse(newestStatement) > (annual ? 800 : 400) * 86_400_000;
   const pendingReportNote = pendingReport(earningsData, statementRows[0], annual);
   const pendingColumn: PeriodColumn | null = pendingReportNote && {
     label: fiscalLabel(t, pendingReportNote),
@@ -674,7 +680,23 @@ export function FinancialsSection({ ticker }: { ticker: string }) {
           </div>
         )}
 
-        {!isLoading && data?.success && inUsd && data.data && (
+        {!isLoading && staleStatements && (
+          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+            <p className="max-w-sm text-sm text-muted-foreground">
+              {t(annual ? 'financialsStaleAnnual' : 'financialsStaleQuarterly', { year: newestStatement!.slice(0, 4) })}
+            </p>
+            {!annual && (
+              <button
+                onClick={() => setPeriod('annual')}
+                className="min-h-11 rounded-full border border-border px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                {t('financialsSeeAnnual')}
+              </button>
+            )}
+          </div>
+        )}
+
+        {!isLoading && data?.success && inUsd && data.data && !staleStatements && (
           <>
             {pendingReportNote && (
               <p className="-mt-1 mb-4 text-xs text-muted-foreground">
