@@ -116,7 +116,10 @@ export function buildVerdict(companies: CompareCompany[], t: TFunction): Verdict
           ticker: c.ticker,
           name: c.name,
           text: hit?.text ?? t('compareVerdictNoData'),
-          unit: hit && d.unit?.(hit.v) ? t(d.unit(hit.v)!, { grade: c.market?.healthGrade ?? '?' }) : null,
+          // A score without a stored grade drops the unit rather than printing "grade ?".
+          unit: hit && d.unit?.(hit.v) && (d.key !== 'health' || c.market?.healthGrade)
+            ? t(d.unit(hit.v)!, { grade: c.market?.healthGrade })
+            : null,
           leads: !tie && !noneAhead && hit?.c === ranked[0].c,
         };
       }),
