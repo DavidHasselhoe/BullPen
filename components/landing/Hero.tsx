@@ -24,8 +24,8 @@ interface Props {
 // moves when its width eases to the next word. One pass, then it rests on the
 // first word: a loop would never stop moving (WCAG 2.2.2), and reduced motion
 // never starts. The visible word is real text, so crawlers and screen readers
-// get "Finally understand the market" rather than every word at once.
-const TOPICS = ['the market', 'your stocks', 'earnings day', 'the Fed', 'P/E ratios', 'the market'];
+// get "Finally understand your stocks" rather than every word at once.
+const TOPICS = ['your stocks', 'the market', 'earnings day', 'the Fed', 'P/E ratios', 'your stocks'];
 const TOPIC_MS = 2200;
 
 function RotatingTopic() {
@@ -274,7 +274,7 @@ export function Hero({ onSignUp }: Props) {
             <RotatingTopic />
           </h1>
           <p className="hero-sub">
-            Every stock in plain English, and the reason behind the big moves. Made for people who aren&apos;t finance people.
+            Follow your stocks and see why they move, in plain English. Made for people who aren&apos;t finance people.
           </p>
           <div className="hero-actions">
             <button type="button" onClick={onSignUp} className="btn btn-primary hero-cta">

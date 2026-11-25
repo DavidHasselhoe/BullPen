@@ -93,7 +93,7 @@ export function LandingClient({ economy = null }: { economy?: LandingEconomy | n
       <div className="content-layer">
         <Nav onSignIn={() => openSignIn('nav')} onSignUp={() => openSignUp('nav')} isDarkLanding={isDarkLanding} />
         <Hero onSignUp={() => openSignUp('hero')} />
-        <Benefits economy={economy} />
+        <Benefits economy={economy} onSignUp={() => openSignUp('bull_demo')} />
         <Explore />
         <Pricing onSignUp={() => openSignUp('pricing')} onSubscribe={openSubscribe} />
         <FAQ />

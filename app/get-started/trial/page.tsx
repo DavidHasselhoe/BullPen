@@ -99,7 +99,8 @@ export default function TrialOfferPage() {
   const benefits = [
     lead ? `Why Today? explains what moved ${lead}, the day it moves` : 'Why Today? explains what moved a stock, the day it moves',
     'Deep Dive reports on any company, in plain language',
-    'A Daily Brief every morning covering your stocks',
+    // One shared brief for everyone, not per user: never say it covers "your stocks".
+    'A Daily Brief every morning: what moved and what to watch today',
     'Unlimited alerts and AI research with Ask Bull',
   ];
 

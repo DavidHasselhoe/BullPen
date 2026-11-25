@@ -1223,6 +1223,213 @@
 }
 .bullpen-landing-root .bdemo-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .bullpen-landing-root .bdemo-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+/* Ask Bull: the chat panel in miniature. A header, a scrolling log (ink
+   bubble for the question, Bull's reply unbubbled at full width, as in
+   BullpenChat) and the input bar. The panel has a fixed height and its own
+   scroll, like the real one, so the whole reply fits without a cut. */
+.bullpen-landing-root .cdemo { margin: -22px; }
+.bullpen-landing-root .cdemo-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.bullpen-landing-root .cdemo-title { font-size: 15px; font-weight: 600; color: var(--fg); }
+.bullpen-landing-root .cdemo-head .demo-when { margin-left: auto; }
+/* BullAiIcon inverts under <html class="dark">; the landing sets its own theme. */
+.bullpen-landing-root.landing-light-preview :is(.cdemo, .benefit-mark) img { filter: none; }
+.bullpen-landing-root:not(.landing-light-preview) :is(.cdemo, .benefit-mark) img { filter: invert(1); }
+/* The Ask Bull launcher's circle (AIPanelToggle), without its shadow: here it
+   is a picture of the button, not one to press (Earned-Depth Rule). */
+.bullpen-landing-root .benefit-mark {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+}
+@media (max-width: 900px) {
+  .bullpen-landing-root .benefit-mark { width: 64px; height: 64px; margin-bottom: 16px; }
+  .bullpen-landing-root .benefit-mark img { width: 58px !important; height: 58px !important; }
+}
+.bullpen-landing-root .cdemo-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: 460px;
+  padding: 18px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.bullpen-landing-root .cdemo-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+:where(.bullpen-landing-root .cdemo) p { margin: 0; }
+.bullpen-landing-root .cdemo-q {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 18px 18px 6px 18px;
+  background: var(--fg);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--bg);
+}
+.bullpen-landing-root .cdemo-status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-muted); transition: opacity 260ms ease-in; }
+.bullpen-landing-root .cdemo-status.is-leaving { opacity: 0; }
+.bullpen-landing-root .cdemo-status span { animation: cdemo-pulse 1.6s ease-in-out infinite; }
+.bullpen-landing-root .cdemo-reply { display: grid; gap: 12px; }
+.bullpen-landing-root .cdemo-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.bullpen-landing-root .cdemo-card { display: grid; gap: 7px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 12.5px; }
+.bullpen-landing-root .cdemo-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; font-weight: 600; color: var(--fg); }
+.bullpen-landing-root .cdemo-badge { flex-shrink: 0; padding: 2px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bullpen-landing-root .cdemo-badge.up { background: color-mix(in oklch, var(--up) 12%, transparent); color: var(--up); }
+.bullpen-landing-root .cdemo-badge.warn { background: var(--warn-soft); color: var(--warn); }
+.bullpen-landing-root .cdemo-row p { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 3px; color: var(--fg-muted); }
+.bullpen-landing-root .cdemo-track { display: block; height: 4px; overflow: hidden; border-radius: 99px; background: var(--surface-2); }
+.bullpen-landing-root .cdemo-bar { display: block; height: 100%; border-radius: 99px; }
+.bullpen-landing-root .cdemo-bar.up { background: var(--up); }
+.bullpen-landing-root .cdemo-bar.warn { background: var(--warn); }
+.bullpen-landing-root .cdemo-bar.down { background: var(--down); }
+/* BullpenChat's MARKDOWN_CLS, at the landing's reading size. */
+.bullpen-landing-root .cdemo-answer { font-size: 15px; line-height: 1.6; color: var(--fg); overflow-wrap: break-word; }
+.bullpen-landing-root .cdemo-answer > * + * { margin-top: 10px; }
+.bullpen-landing-root .cdemo-answer b { font-weight: 600; }
+.bullpen-landing-root .cdemo-answer ul { display: grid; gap: 4px; margin: 0; padding-left: 18px; list-style: disc; }
+.bullpen-landing-root .cdemo-table { overflow-x: auto; }
+.bullpen-landing-root .cdemo-answer table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.bullpen-landing-root .cdemo-answer th,
+.bullpen-landing-root .cdemo-answer td { padding: 5px 8px; text-align: left; vertical-align: top; }
+.bullpen-landing-root .cdemo-answer th { font-weight: 600; white-space: nowrap; border-bottom: 1px solid var(--border-strong); }
+.bullpen-landing-root .cdemo-answer td { border-bottom: 1px solid var(--border); }
+/* The input's typing caret. */
+.bullpen-landing-root .cdemo-caret {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  vertical-align: middle;
+  animation: cdemo-blink 1.1s steps(1) infinite;
+}
+.bullpen-landing-root .cdemo-confirm { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.bullpen-landing-root .cdemo-what { font-size: 14px; font-weight: 500; color: var(--fg); }
+.bullpen-landing-root .cdemo-hint { margin-top: 2px; font-size: 13px; color: var(--fg-muted); }
+.bullpen-landing-root .cdemo-btns { display: flex; gap: 8px; margin-top: 12px; }
+.bullpen-landing-root .cdemo-btns button,
+.bullpen-landing-root .cdemo-receipt button {
+  min-height: 40px;
+  min-width: 88px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  cursor: pointer;
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+.bullpen-landing-root .cdemo-btns button.is-primary { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+.bullpen-landing-root .cdemo-btns button:hover,
+.bullpen-landing-root .cdemo-receipt button:hover { border-color: var(--border-strong); }
+.bullpen-landing-root .cdemo-btns button:active { transform: scale(0.98); }
+.bullpen-landing-root .cdemo-btns button:focus-visible,
+.bullpen-landing-root .cdemo-receipt button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bullpen-landing-root .cdemo-receipt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--fg);
+}
+.bullpen-landing-root .cdemo-receipt s { color: var(--fg-muted); }
+.bullpen-landing-root .cdemo-receipt button { margin-left: auto; min-width: 0; min-height: 36px; padding: 0 12px; }
+/* Input bar: types the question during the replay, opens sign-up otherwise. */
+.bullpen-landing-root .cdemo-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: text;
+}
+.bullpen-landing-root .cdemo-input > span:first-child {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.4;
+  transition: border-color 150ms ease;
+}
+.bullpen-landing-root .cdemo-input:hover > span:first-child { border-color: var(--border-strong); }
+.bullpen-landing-root .cdemo-input:focus-visible { outline: none; }
+.bullpen-landing-root .cdemo-input:focus-visible > span:first-child { outline: 2px solid var(--accent); outline-offset: 1px; }
+.bullpen-landing-root .cdemo-placeholder { color: var(--fg-dim); }
+.bullpen-landing-root .cdemo-typed { color: var(--fg); }
+.bullpen-landing-root .cdemo-send {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--fg);
+  color: var(--bg);
+  opacity: 0.4;
+  transition: opacity 150ms ease;
+}
+.bullpen-landing-root .cdemo-send.is-ready { opacity: 1; }
+/* The replay. Only while it plays: at rest (server HTML, reduced motion, a
+   card already on screen) everything simply is. Each part arrives out of a
+   soft blur on one long ease-out, so nothing in the chat pops. The reply
+   itself is painted line by line by useBrushReveal (a mask set from JS). */
+.bullpen-landing-root .cdemo[data-phase="play"] :is(.cdemo-q, .cdemo-card, .cdemo-action) {
+  animation: cdemo-in 520ms cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms) both;
+}
+.bullpen-landing-root .cdemo[data-phase="play"] .cdemo-q { transform-origin: 100% 100%; }
+.bullpen-landing-root .cdemo[data-phase="play"] .cdemo-bar {
+  transform-origin: 0 50%;
+  animation: cdemo-grow 700ms cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms) both;
+}
+.bullpen-landing-root .cdemo[data-phase="play"] .cdemo-status > span {
+  animation: cdemo-fade 300ms ease-out both, cdemo-pulse 1.6s ease-in-out 300ms infinite;
+}
+@keyframes cdemo-in { from { opacity: 0; transform: translateY(10px) scale(0.985); filter: blur(4px); } }
+@keyframes cdemo-grow { from { transform: scaleX(0); } }
+@keyframes cdemo-fade { from { opacity: 0; } }
+@keyframes cdemo-pulse { 50% { opacity: 0.55; } }
+@keyframes cdemo-blink { 50% { opacity: 0; } }
+@media (max-width: 900px) {
+  .bullpen-landing-root .cdemo { margin: -18px; }
+  .bullpen-landing-root .cdemo-scroll { height: 420px; padding: 14px; }
+}
+@media (max-width: 560px) {
+  .bullpen-landing-root .cdemo-cards { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bullpen-landing-root .cdemo *,
+  .bullpen-landing-root .cdemo *::after { animation: none !important; }
+}
+
 /* Two tiles across a phone split "GNRC −0.20%" and the grade counts mid-value. */
 @media (max-width: 420px) {
   .bullpen-landing-root .wdemo-grid { grid-template-columns: minmax(0, 1fr); }

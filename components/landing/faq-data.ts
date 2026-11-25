@@ -20,8 +20,8 @@ export const FAQ_ITEMS = [
   {
     // Deliberately no tool count: the previous "15-tool agent" was accurate when
     // written and silently wrong the next time a tool was added or removed.
-    q: 'Is the AI just summarizing news?',
-    a: 'No. Bull is a tool-using agent that calls live market data, reads SEC filings, runs screeners, and can reference your own holdings if you let it. "Why Today?" uses Claude with web search to read the day\'s news and filings before it explains a price move.',
+    q: 'What can Bull, your research assistant, do?',
+    a: 'Bull answers questions about stocks from real data, not headlines. Before it replies it looks up live prices, financial statements, health scores, earnings dates and what the big funds hold, and it can look at your own holdings if you turn that on. It can also run the screener, set an alert or update your holdings, and it asks you to confirm before anything changes. It explains and compares, but it won\'t tell you what to buy or sell. "Why Today?" is separate: it reads the day\'s news and filings with web search before it explains a price move.',
   },
   {
     q: 'Is my financial data safe?',
