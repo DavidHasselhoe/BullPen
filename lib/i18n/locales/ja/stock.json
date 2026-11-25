@@ -112,6 +112,8 @@
   "earningsStoryGrowthUp": "売上高は前年から{{pct}}増加しました",
   "earningsStoryGrowthDown": "売上高は前年から{{pct}}減少しました",
   "earningsStoryGrowthNote": "売上高とは、費用を差し引く前に顧客が会社に支払った金額の合計です。",
+  "earningsStoryOutlookTitle": "次の四半期、同社は売上高を約{{amount}}と見込んでいます",
+  "earningsStoryOutlookVsNow": "今四半期との比較",
   "earningsStoryOutlookOwn": "これは会社自身の見通しで、アナリストの予想ではありません。",
   "earningsStoryWatchTitle": "注目点",
   "earningsStoryLockedTitle": "四半期を動かしたものと、この先の見通し",
@@ -187,6 +189,9 @@
   "financialsNoDataAvailable": "利用可能なデータがありません",
   "financialsNoDividendHistory": "配当履歴がありません",
   "financialsNoFinancialData": "財務データがありません",
+  "financialsStaleQuarterly": "この企業の最新の四半期財務諸表は{{year}}年のものです。最新とはいえないため、現在の情報として表示していません。米国以外の企業の多くは、年2回のみ報告しています。",
+  "financialsStaleAnnual": "この企業の最新の年次財務諸表は{{year}}年のものです。最新とはいえないため、現在の情報として表示していません。",
+  "financialsSeeAnnual": "年次財務諸表を見る",
   "financialsNoSplitHistory": "分割履歴がありません",
   "financialsPlanRestricted": "財務諸表にはエンタープライズプランが必要です。",
   "financialsPlanRestrictedDividendsHint": "配当が利用可能な場合があります。配当タブをお試しください。",
@@ -760,7 +765,8 @@
   "dividendsAnswerYes": "はい。",
   "dividendsAnswerNo": "いいえ。",
   "dividendsAnswerNotYet": "まだです。",
-  "earningsStoryOutlookTitle": "次の四半期、同社は売上高を約{{amount}}と見込んでいます",
-  "earningsStoryOutlookVsNow": "今四半期との比較",
-  "earningsEmailPlaceholder": "you@email.com"
+  "earningsEmailPlaceholder": "you@email.com",
+  "compareWithHeading": "{{name}}を比較",
+  "compareWithPair": "{{a}} vs {{b}}",
+  "compareWithTickers": "{{a}} vs {{b}}"
 }

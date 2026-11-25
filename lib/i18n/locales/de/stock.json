@@ -112,6 +112,8 @@
   "earningsStoryGrowthUp": "Der Umsatz stieg um {{pct}} gegenüber dem Vorjahr",
   "earningsStoryGrowthDown": "Der Umsatz sank um {{pct}} gegenüber dem Vorjahr",
   "earningsStoryGrowthNote": "Umsatz ist alles, was Kunden dem Unternehmen gezahlt haben, vor allen Kosten.",
+  "earningsStoryOutlookTitle": "Im nächsten Quartal erwartet das Unternehmen etwa {{amount}} Umsatz",
+  "earningsStoryOutlookVsNow": "vs. dieses Quartal",
   "earningsStoryOutlookOwn": "Das ist die eigene Prognose des Unternehmens, nicht die eines Analysten.",
   "earningsStoryWatchTitle": "Worauf man achten sollte",
   "earningsStoryLockedTitle": "Was das Quartal getragen hat und was als Nächstes kommt",
@@ -186,6 +188,9 @@
   "financialsNoDataAvailable": "Keine Daten verfügbar",
   "financialsNoDividendHistory": "Keine Dividendenverlauf verfügbar",
   "financialsNoFinancialData": "Keine Finanzdaten verfügbar",
+  "financialsStaleQuarterly": "Die neuesten Quartalsberichte, die wir für dieses Unternehmen haben, stammen aus {{year}} und sind zu alt, um als aktuell angezeigt zu werden. Viele Unternehmen außerhalb der USA veröffentlichen nur zweimal im Jahr Berichte.",
+  "financialsStaleAnnual": "Die neuesten Jahresabschlüsse, die wir für dieses Unternehmen haben, stammen aus {{year}} und sind zu alt, um als aktuell angezeigt zu werden.",
+  "financialsSeeAnnual": "Jahresabschlüsse ansehen",
   "financialsNoSplitHistory": "Kein Split-Verlauf verfügbar",
   "financialsPlanRestricted": "Finanzielle Aussagen erfordern einen Enterprise-Plan.",
   "financialsPlanRestrictedDividendsHint": "Dividenden können dennoch verfügbar sein. Versuche den Dividenden-Tab.",
@@ -750,8 +755,6 @@
   "dividendsAnswerYes": "Ja.",
   "dividendsAnswerNo": "Nein.",
   "dividendsAnswerNotYet": "Noch nicht.",
-  "earningsStoryOutlookTitle": "Im nächsten Quartal erwartet das Unternehmen etwa {{amount}} Umsatz",
-  "earningsStoryOutlookVsNow": "vs. dieses Quartal",
   "earningsQuarterYear": "Q{{quarter}} {{year}}",
   "insiderColumnInsider": "Insider",
   "statisticsGridBandMega": "Mega",
@@ -762,5 +765,8 @@
   "stockNavCommunity": "Community",
   "glanceFactBeta": "Beta",
   "commodityName_xau": "Gold",
-  "commodityName_xpd": "Palladium"
+  "commodityName_xpd": "Palladium",
+  "compareWithHeading": "{{name}} vergleichen",
+  "compareWithPair": "{{a}} vs. {{b}}",
+  "compareWithTickers": "{{a}} vs. {{b}}"
 }

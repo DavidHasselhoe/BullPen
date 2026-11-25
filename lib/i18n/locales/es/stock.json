@@ -111,6 +111,8 @@
   "earningsStoryGrowthUp": "Los ingresos crecieron un {{pct}} respecto a hace un año",
   "earningsStoryGrowthDown": "Los ingresos cayeron un {{pct}} respecto a hace un año",
   "earningsStoryGrowthNote": "Los ingresos son todo lo que los clientes pagaron a la empresa, antes de cualquier coste.",
+  "earningsStoryOutlookTitle": "El próximo trimestre, la empresa espera unos {{amount}} en ingresos",
+  "earningsStoryOutlookVsNow": "frente a este trimestre",
   "earningsStoryOutlookOwn": "Es la previsión de la propia empresa, no la de un analista.",
   "earningsStoryWatchTitle": "Qué vigilar",
   "earningsStoryLockedTitle": "Qué impulsó el trimestre y qué viene después",
@@ -185,6 +187,9 @@
   "financialsNoDataAvailable": "No hay datos disponibles",
   "financialsNoDividendHistory": "No hay historial de dividendos disponible",
   "financialsNoFinancialData": "No hay datos financieros disponibles",
+  "financialsStaleQuarterly": "Los estados trimestrales más recientes que tenemos de esta empresa son de {{year}}, demasiado antiguos para mostrarse como actuales. Muchas empresas fuera de EE. UU. solo publican informes dos veces al año.",
+  "financialsStaleAnnual": "Los estados anuales más recientes que tenemos de esta empresa son de {{year}}, demasiado antiguos para mostrarse como actuales.",
+  "financialsSeeAnnual": "Ver estados anuales",
   "financialsNoSplitHistory": "No hay historial de splits disponible",
   "financialsPlanRestricted": "Los estados financieros requieren un plan Enterprise.",
   "financialsPlanRestrictedDividendsHint": "Los dividendos aún podrían estar disponibles. Prueba la pestaña de Dividendos.",
@@ -752,8 +757,6 @@
   "dividendsAnswerYes": "Sí.",
   "dividendsAnswerNotYet": "Todavía no.",
   "healthMethodologyPoints": "({{count}} pts)",
-  "earningsStoryOutlookTitle": "El próximo trimestre, la empresa espera unos {{amount}} en ingresos",
-  "earningsStoryOutlookVsNow": "frente a este trimestre",
   "earningsEpsEst": "EPS Est.",
   "sankeyNodeSgA": "SG&A",
   "statisticsGridBandMega": "Mega",
@@ -762,5 +765,8 @@
   "indexBadgeNasdaq100": "Nasdaq-100",
   "indexBadgeDow30": "Dow 30",
   "glanceFactBeta": "Beta",
-  "dividendsAnswerNo": "No."
+  "dividendsAnswerNo": "No.",
+  "compareWithHeading": "Comparar {{name}}",
+  "compareWithPair": "{{a}} vs {{b}}",
+  "compareWithTickers": "{{a}} vs {{b}}"
 }

@@ -112,6 +112,8 @@
   "earningsStoryGrowthUp": "Inntektene økte {{pct}} fra i fjor",
   "earningsStoryGrowthDown": "Inntektene falt {{pct}} fra i fjor",
   "earningsStoryGrowthNote": "Inntekter er alt kundene betalte selskapet, før noen kostnader.",
+  "earningsStoryOutlookTitle": "Neste kvartal forventer selskapet omtrent {{amount}} i omsetning",
+  "earningsStoryOutlookVsNow": "sammenlignet med dette kvartalet",
   "earningsStoryOutlookOwn": "Dette er selskapets egen prognose, ikke en analytikers.",
   "earningsStoryWatchTitle": "Hva du bør følge med på",
   "earningsStoryLockedTitle": "Hva som drev kvartalet, og hva som kommer",
@@ -186,6 +188,9 @@
   "financialsNoDataAvailable": "Ingen data tilgjengelig",
   "financialsNoDividendHistory": "Ingen utbytte­historie tilgjengelig",
   "financialsNoFinancialData": "Ingen finansielle data tilgjengelig",
+  "financialsStaleQuarterly": "De nyeste kvartalsregnskapene vi har for dette selskapet er fra {{year}}, for gamle til å vises som aktuelle. Mange selskaper utenfor USA rapporterer bare to ganger i året.",
+  "financialsStaleAnnual": "De nyeste årsregnskapene vi har for dette selskapet er fra {{year}}, for gamle til å vises som aktuelle.",
+  "financialsSeeAnnual": "Se årsregnskap",
   "financialsNoSplitHistory": "Ingen delt­historie tilgjengelig",
   "financialsPlanRestricted": "Finansielle rapporter krever en Enterprise-plan.",
   "financialsPlanRestrictedDividendsHint": "Utbytte kan fremdeles være tilgjengelig. Prøv Utbytte-fanen.",
@@ -747,8 +752,6 @@
   "dividendsAnswerYes": "Ja.",
   "dividendsAnswerNo": "Nei.",
   "dividendsAnswerNotYet": "Ikke ennå.",
-  "earningsStoryOutlookTitle": "Neste kvartal forventer selskapet omtrent {{amount}} i omsetning",
-  "earningsStoryOutlookVsNow": "sammenlignet med dette kvartalet",
   "financialsColumnTrend": "Trend",
   "insiderColumnType": "Type",
   "sankeyNodeSgA": "SG&A",
@@ -762,5 +765,8 @@
   "commoditySpreadLabel": "Brent vs WTI",
   "commodityNoun_xpd": "palladium",
   "commodityPerGram": "Per gram",
-  "commodityPerKilo": "Per kilo"
+  "commodityPerKilo": "Per kilo",
+  "compareWithHeading": "Sammenlign {{name}}",
+  "compareWithPair": "{{a}} mot {{b}}",
+  "compareWithTickers": "{{a}} mot {{b}}"
 }

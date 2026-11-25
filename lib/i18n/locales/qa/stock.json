@@ -189,6 +189,9 @@
   "financialsNoDataAvailable": "«Noo daataa aavaaiilaablee»",
   "financialsNoDividendHistory": "«Noo diiviideend hiistoory aavaaiilaablee»",
   "financialsNoFinancialData": "«Noo fiinaanciiaal daataa aavaaiilaablee»",
+  "financialsStaleQuarterly": "«Thee neeweest quuaarteerly staateemeents wee haavee foor thiis coompaany aaree froom {{year}}, toooo oold too shoow aas cuurreent. Maany coompaaniiees oouutsiidee thee UUS reepoort oonly twiicee aa yeeaar.»",
+  "financialsStaleAnnual": "«Thee neeweest yeeaarly staateemeents wee haavee foor thiis coompaany aaree froom {{year}}, toooo oold too shoow aas cuurreent.»",
+  "financialsSeeAnnual": "«Seeee yeeaarly staateemeents»",
   "financialsNoSplitHistory": "«Noo spliit hiistoory aavaaiilaablee»",
   "financialsPlanRestricted": "«Fiinaanciiaal staateemeents reequuiiree aan EEnteerpriisee plaan.»",
   "financialsPlanRestrictedDividendsHint": "«Diiviideends maay stiill bee aavaaiilaablee. Try thee Diiviideends taab.»",
@@ -762,5 +765,8 @@
   "dividendsQuestion": "«Dooees {{name}} paay aa diiviideend?»",
   "dividendsAnswerYes": "«Yees.»",
   "dividendsAnswerNo": "«Noo.»",
-  "dividendsAnswerNotYet": "«Noot yeet.»"
+  "dividendsAnswerNotYet": "«Noot yeet.»",
+  "compareWithHeading": "«Coompaaree {{name}}»",
+  "compareWithPair": "«{{a}} vs {{b}}»",
+  "compareWithTickers": "«{{a}} vs {{b}}»"
 }

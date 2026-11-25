@@ -112,6 +112,8 @@
   "earningsStoryGrowthUp": "营收较去年增长 {{pct}}",
   "earningsStoryGrowthDown": "营收较去年下降 {{pct}}",
   "earningsStoryGrowthNote": "营收是客户支付给公司的全部金额，未扣除任何成本。",
+  "earningsStoryOutlookTitle": "公司预计下一季度营收约为 {{amount}}",
+  "earningsStoryOutlookVsNow": "对比本季度",
   "earningsStoryOutlookOwn": "这是公司自己的预测，不是分析师的预测。",
   "earningsStoryWatchTitle": "值得关注",
   "earningsStoryLockedTitle": "本季度的驱动因素与接下来的展望",
@@ -187,6 +189,9 @@
   "financialsNoDataAvailable": "暂无数据",
   "financialsNoDividendHistory": "暂无股息历史",
   "financialsNoFinancialData": "暂无财务数据",
+  "financialsStaleQuarterly": "我们目前掌握的该公司最新季度财务报表来自{{year}}年，时间较久，无法作为最新数据展示。许多美国以外的公司只按半年报告一次。",
+  "financialsStaleAnnual": "我们目前掌握的该公司最新年度财务报表来自{{year}}年，时间较久，无法作为最新数据展示。",
+  "financialsSeeAnnual": "查看年度财务报表",
   "financialsNoSplitHistory": "暂无拆股历史",
   "financialsPlanRestricted": "财务报表需要企业版订阅。",
   "financialsPlanRestrictedDividendsHint": "股息信息可能仍然可用，请查看股息标签页。",
@@ -760,7 +765,8 @@
   "dividendsAnswerYes": "是的。",
   "dividendsAnswerNo": "不。",
   "dividendsAnswerNotYet": "暂时没有。",
-  "earningsStoryOutlookTitle": "公司预计下一季度营收约为 {{amount}}",
-  "earningsStoryOutlookVsNow": "对比本季度",
-  "earningsEmailPlaceholder": "you@email.com"
+  "earningsEmailPlaceholder": "you@email.com",
+  "compareWithHeading": "对比 {{name}}",
+  "compareWithPair": "{{a}} 对比 {{b}}",
+  "compareWithTickers": "{{a}} 对比 {{b}}"
 }

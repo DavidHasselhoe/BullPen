@@ -189,6 +189,9 @@
   "financialsNoDataAvailable": "No data available",
   "financialsNoDividendHistory": "No dividend history available",
   "financialsNoFinancialData": "No financial data available",
+  "financialsStaleQuarterly": "The newest quarterly statements we have for this company are from {{year}}, too old to show as current. Many companies outside the US report only twice a year.",
+  "financialsStaleAnnual": "The newest yearly statements we have for this company are from {{year}}, too old to show as current.",
+  "financialsSeeAnnual": "See yearly statements",
   "financialsNoSplitHistory": "No split history available",
   "financialsPlanRestricted": "Financial statements require an Enterprise plan.",
   "financialsPlanRestrictedDividendsHint": "Dividends may still be available. Try the Dividends tab.",
@@ -762,5 +765,8 @@
   "dividendsQuestion": "Does {{name}} pay a dividend?",
   "dividendsAnswerYes": "Yes.",
   "dividendsAnswerNo": "No.",
-  "dividendsAnswerNotYet": "Not yet."
+  "dividendsAnswerNotYet": "Not yet.",
+  "compareWithHeading": "Compare {{name}}",
+  "compareWithPair": "{{a}} vs {{b}}",
+  "compareWithTickers": "{{a}} vs {{b}}"
 }
