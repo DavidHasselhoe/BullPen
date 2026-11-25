@@ -1,5 +1,44 @@
 [
   {
+    "date": "2026-11-25",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Compare now opens with a plain answer for each question you would ask: which company is healthier, bigger, more profitable, growing faster, cheaper for its profits, and which pays you more. Popular matchups like Apple vs Microsoft also have their own page, linked from each stock page",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "Bull's replies now appear smoothly, line by line, instead of letter by letter, so text no longer jumps as it wraps",
+        "highlight": true
+      },
+      {
+        "type": "new",
+        "text": "When no stock matches your screener filters, it now tells you which filter to remove and how many stocks that brings back"
+      },
+      {
+        "type": "new",
+        "text": "A Describe the stocks you want button in the screener lets you tell Bull what you are looking for, and it sets the filters for you"
+      },
+      {
+        "type": "improved",
+        "text": "The screener has column tabs for quick views like valuation and dividends, and stocks that tie on a column are ordered by size"
+      },
+      {
+        "type": "fixed",
+        "text": "Agilent, Huntington Bancshares, KKR and M&T Bank showed another company's name and description. They now show their own"
+      },
+      {
+        "type": "fixed",
+        "text": "Some companies outside the US showed financial statements from years ago as if they were current, and their Health Score counted them. Old statements are now left out, with a note saying so"
+      },
+      {
+        "type": "improved",
+        "text": "In Simple mode, Health Score categories keep their short names like Profitability and Growth on stock pages, matching the rest of the app, with the plain explanation in the tooltip"
+      }
+    ]
+  },
+  {
     "date": "2026-11-24",
     "entries": [
       {
