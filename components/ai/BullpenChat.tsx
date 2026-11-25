@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics/track';
 import type { AuthUser } from '@/lib/auth/auth';
 import { useStickToBottom } from '@/hooks/use-stick-to-bottom';
-import { useSmoothText } from '@/hooks/use-smooth-text';
+import { useBrushReveal } from '@/hooks/use-brush-reveal';
 import { quotaDecision, type QuotaState } from '@/lib/billing/quotas';
 import { useAddOrUpdateHolding, useUpdateHoldingBySymbol, useRemoveHoldingBySymbol } from '@/hooks/use-holdings';
 import { useMyStockNames } from '@/hooks/use-my-stock-names';
@@ -171,6 +171,8 @@ const MARKDOWN_COMPONENTS: Components = {
   li: ({ node: _node, children, ...props }) => <li {...props}><WithTickers>{children}</WithTickers></li>,
   td: ({ node: _node, children, ...props }) => <td {...props}><WithTickers>{children}</WithTickers></td>,
   strong: ({ node: _node, children, ...props }) => <strong {...props}><WithTickers>{children}</WithTickers></strong>,
+  // A streaming reply's words (rehypeWords): tickers sit inside them.
+  span: ({ node: _node, children, ...props }) => <span {...props}><WithTickers>{children}</WithTickers></span>,
   table: ({ node: _node, ...props }) => (
     <div className="my-2 -mx-1 overflow-x-auto">
       <table {...props} />
@@ -198,10 +200,43 @@ function messageText(message: UIMessage): string {
 }
 
 /**
+ * Wraps each word of a streaming reply in a span carrying its offset in the
+ * markdown (`data-o`), so useBrushReveal can measure the reply's lines.
+ * Code is left alone, and so are whitespace-only nodes: they sit between
+ * table rows, where a span is invalid.
+ */
+type HastNode = { type: string; tagName?: string; value?: string; position?: { start: { offset?: number } }; children?: HastNode[] };
+function rehypeWords() {
+  const walk = (n: HastNode) => {
+    if (!n.children || n.tagName === 'code' || n.tagName === 'pre') return;
+    n.children = n.children.flatMap((c): HastNode[] => {
+      const o = c.position?.start.offset;
+      if (c.type !== 'text' || !c.value?.trim() || o == null) {
+        walk(c);
+        return [c];
+      }
+      let at = o;
+      return (c.value.match(/\s*\S+\s*|\s+/g) ?? []).map((w) => {
+        const span = { type: 'element', tagName: 'span', properties: { dataO: at }, children: [{ type: 'text', value: w }] };
+        at += w.length;
+        return span;
+      });
+    });
+  };
+  return (tree: HastNode) => walk(tree);
+}
+const REHYPE_WORDS: PluggableList = [rehypeWords];
+
+/**
  * Markdown renders while streaming too, so bold, lists and headings format as
  * they arrive instead of showing raw syntax until the stream ends. Partial
  * syntax (an unclosed `**`) stays literal until its closer arrives.
  * Memoized so completed messages skip re-renders on every incoming token.
+ *
+ * The reply is painted line by line at a reading pace (useBrushReveal), from
+ * the word spans rehypeWords adds. A reply keeps those spans after the
+ * stream ends, so the brush finishes on the same tree. Past messages render
+ * plain.
  */
 const AssistantMessageContent = memo(function AssistantMessageContent({
   text,
@@ -213,30 +248,17 @@ const AssistantMessageContent = memo(function AssistantMessageContent({
   /** Shown only once the text has fully appeared, e.g. Yes/No buttons answering its last question. */
   after?: ReactNode;
 }) {
-  // Released at a steady writing pace rather than in the bursts the model
-  // streams in; keeps going briefly after the stream ends to finish the backlog.
-  const { visible, catchingUp } = useSmoothText(text, isStreaming);
-  if (isStreaming || catchingUp) {
-    return (
-      // `[&>p:last-child]:inline` keeps the caret on the same line as the last
-      // paragraph instead of dropping it onto a line of its own.
-      <div className={cn(MARKDOWN_CLS, '[&>p:last-child]:inline')}>
-        <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>{visible}</ReactMarkdown>
-        {/* CSS, not framer: the global reduced-motion rule stops it. */}
-        <span
-          className="ml-0.5 inline-block h-[1em] w-[2px] rounded-full bg-current align-middle [animation:blink_1.1s_steps(1)_infinite]"
-          aria-hidden
-        />
-      </div>
-    );
-  }
-
+  const box = useRef<HTMLDivElement>(null);
+  const { shown, painting } = useBrushReveal(box, text, isStreaming);
+  const [streamed] = useState(isStreaming);
   return (
     <>
-      <div className={MARKDOWN_CLS}>
-        <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
+      <div ref={box} className={MARKDOWN_CLS}>
+        <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={streamed ? REHYPE_WORDS : undefined} components={MARKDOWN_COMPONENTS}>
+          {shown}
+        </ReactMarkdown>
       </div>
-      {after}
+      {!isStreaming && !painting && after}
     </>
   );
 });
