@@ -19,9 +19,11 @@
  * It also leaves the layout unable to see the path, so the stock namespace it
  * would have preloaded is added here by NamespaceBundle.
  *
- * Prices in the cached HTML are up to 5 minutes old. The client refetches the
+ * Prices in the cached HTML are up to 30 minutes old. The client refetches the
  * snapshot once it is stale and the live price stream takes over within
- * seconds, so what a visitor watches is current.
+ * seconds, so what a visitor watches is current. 30 minutes, not 5 (2026-11-26):
+ * each regeneration is an ~820KB ISR write plus a function run, and crawlers
+ * re-requested hot tickers often enough to make ISR Writes a top Vercel line.
  */
 
 import StockPage from '@/app/stock/[ticker]/page';
@@ -33,7 +35,7 @@ import watchlistEn from '@/lib/i18n/locales/en/watchlist.json';
 export { generateMetadata } from '@/app/stock/[ticker]/layout';
 
 export const dynamic = 'force-static';
-export const revalidate = 300;
+export const revalidate = 1800;
 
 /** Empty: nothing is built at deploy time (that would buy ~600 snapshots), every ticker renders on first visit. */
 export function generateStaticParams() {
