@@ -681,9 +681,11 @@ function ScreenerContent() {
                   </Button>
                 </div>
               )}
-              {/* Column sets, one click each. Phones show cards, so the table's columns don't apply. */}
+              {/* Column sets, one click each. Phones show cards, so the table's columns don't apply.
+                  The visible "Columns" label tells them apart from the sidebar Presets, which share names (Growth, Dividends) but filter rows. */}
               {results.length > 0 && (
-                <div role="group" aria-label={t('screenerTabsLabel')} className="mb-3 hidden flex-wrap gap-1 md:flex">
+                <div role="group" aria-labelledby="screener-column-tabs-label" className="mb-3 hidden flex-wrap items-center gap-1 md:flex">
+                  <span id="screener-column-tabs-label" className="mr-1 text-xs text-muted-foreground">{t('screenerTabsLabel')}</span>
                   {columnTabs.map((tab) => (
                     <button
                       key={tab.id}

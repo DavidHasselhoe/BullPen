@@ -121,7 +121,7 @@ function getRanges(t: TFunction): Record<RangeId, RangeDef> {
       ] },
     marketCap: { label: t('screenerMarketCapLabel'), unit: '$B', hint: t('screenerMarketCapHint'), minKey: 'marketCapMin', maxKey: 'marketCapMax', step: '10',
       choices: [
-        { label: t('screenerChoiceCapHuge'), min: '200' },
+        { label: t('screenerChoiceCapMega'), min: '200' },
         { label: t('screenerChoiceCapLarge'), min: '10', max: '200' },
         { label: t('screenerChoiceCapMid'), min: '2', max: '10' },
         { label: t('screenerChoiceCapSmall'), max: '2' },
