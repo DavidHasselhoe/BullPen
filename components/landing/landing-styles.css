@@ -909,6 +909,24 @@
   color: var(--fg);
 }
 .bullpen-landing-root .demo-when { font-size: 12px; font-weight: 400; color: var(--fg-dim); }
+/* Demo links (DemoLink in Demos.tsx): parts of a card that open the real page.
+   Dead while the card still plays; then the ↗ fades in at rest (phones have
+   no hover) and desktop hover sharpens it. No lift: the bento card around it
+   already lifts, and a lift inside a lift reads as jitter. */
+.bullpen-landing-root .dlink { color: inherit; text-decoration: none; }
+.bullpen-landing-root .dlink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bullpen-landing-root .dlink-text { text-decoration: underline 1px transparent; text-underline-offset: 3px; transition: text-decoration-color 200ms ease; }
+.bullpen-landing-root .dlink-arrow { flex-shrink: 0; color: var(--fg-dim); transition: opacity 260ms ease-out, transform 200ms ease, color 200ms ease; }
+.bullpen-landing-root .demo:not([data-settled]) .dlink,
+.bullpen-landing-root .demo:not([data-settled]) .dlink * { pointer-events: none; }
+.bullpen-landing-root .demo:not([data-settled]) .dlink-arrow { opacity: 0; transition: none; }
+@media (hover: hover) {
+  .bullpen-landing-root .dlink:hover .dlink-arrow { color: var(--fg); transform: translate(2px, -2px); }
+  .bullpen-landing-root .dlink:hover .dlink-text { text-decoration-color: currentColor; }
+}
+.bullpen-landing-root .demo-co-link { display: inline-flex; align-items: center; gap: 8px; border-radius: 6px; }
+.bullpen-landing-root .wdemo-link { display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; }
+.bullpen-landing-root .wdemo-link .dlink-arrow { margin-left: -2px; }
 .bullpen-landing-root .demo-toggle {
   display: inline-flex;
   gap: 2px;
@@ -1156,53 +1174,69 @@
 
 /* Economy: three result cards. */
 .bullpen-landing-root .edemo-list { display: grid; gap: 10px; margin-block: auto; padding: 0; list-style: none; }
-.bullpen-landing-root .edemo-card { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; }
+.bullpen-landing-root .edemo-card { position: relative; display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; transition: border-color 200ms ease, background-color 200ms ease; }
+.bullpen-landing-root .edemo-card .dlink-arrow { position: absolute; top: 14px; right: 14px; }
+@media (hover: hover) {
+  /* Ink-tinted, not --border-strong: on the light page that only moved the border from L 0.92 to 0.85, too faint to read as clickable. */
+  .bullpen-landing-root .edemo-card:hover { border-color: color-mix(in oklch, var(--fg) 40%, transparent); background: color-mix(in oklch, var(--fg) 4%, transparent); }
+}
 .bullpen-landing-root .edemo-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--fg); }
 .bullpen-landing-root .edemo-title svg { color: var(--fg-dim); }
 .bullpen-landing-root .edemo-sub { font-size: 13px; color: var(--fg-muted); }
 .bullpen-landing-root .edemo-value { margin-top: 2px; font-size: 26px; font-weight: 700; line-height: 1.15; color: var(--fg); }
 .bullpen-landing-root .edemo-change { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--fg-muted); }
 
-/* Academy: DailyChallengeCard. Answering is real; the wrong-answer amber is the app's. */
+/* Academy: the /academy path as a new member sees it. Nodes rise one by one
+   down the zigzag while the connector draws behind them; ink, not colour,
+   marks the open course, as in the app's PathNode. Positions come from --x
+   (left/right, never transform) so .demo-rise keeps transform to itself. */
 .bullpen-landing-root .ademo-title { display: inline-flex; align-items: center; gap: 10px; }
-.bullpen-landing-root .ademo-flame { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--surface); color: var(--warn); }
+.bullpen-landing-root .ademo-badge { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--surface); color: var(--fg-muted); }
 .bullpen-landing-root .ademo-name { display: block; font-size: 15px; font-weight: 600; color: var(--fg); }
-.bullpen-landing-root .ademo-tag { display: block; font-size: 12px; color: var(--fg-dim); }
-.bullpen-landing-root .ademo-xp,
-.bullpen-landing-root .ademo-earned { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--fg-dim); }
-.bullpen-landing-root .ademo-earned { color: var(--up); }
-.bullpen-landing-root .ademo-q { margin-bottom: 12px; font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--fg); }
-.bullpen-landing-root .ademo-options { display: grid; gap: 8px; }
-.bullpen-landing-root .ademo-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
-  font: inherit;
-  font-size: 14px;
-  line-height: 1.45;
-  text-align: left;
-  color: var(--fg);
-  cursor: pointer;
+.bullpen-landing-root .ademo-tag { display: block; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--fg-dim); }
+.bullpen-landing-root .ademo-unit { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--fg); }
+.bullpen-landing-root .ademo-unit span { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--fg-dim); }
+.bullpen-landing-root .ademo-path { position: relative; margin-top: 4px; }
+.bullpen-landing-root .ademo-path ol { margin: 0; padding: 0; list-style: none; }
+.bullpen-landing-root .ademo-line { position: absolute; top: 0; left: 50%; overflow: visible; }
+.bullpen-landing-root .ademo-line path {
+  fill: none; stroke: var(--border-strong); stroke-width: 2.5; stroke-linecap: round;
+  stroke-dasharray: 1; stroke-dashoffset: 0;
+  transition: stroke-dashoffset 700ms ease-out var(--d, 0ms);
 }
-.bullpen-landing-root .ademo-option > span { flex: 1; }
-.bullpen-landing-root .ademo-option svg { flex-shrink: 0; }
-.bullpen-landing-root .ademo-option:hover:not(:disabled) { border-color: var(--border-strong); }
-.bullpen-landing-root .ademo-option:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.bullpen-landing-root .ademo-option:disabled { cursor: default; }
-.bullpen-landing-root .ademo-option.is-right { border-color: var(--up); background: color-mix(in oklch, var(--up) 8%, var(--bg)); }
-.bullpen-landing-root .ademo-option.is-right svg { color: var(--up); }
-.bullpen-landing-root .ademo-option.is-wrong { border-color: var(--warn); background: var(--warn-soft); }
-.bullpen-landing-root .ademo-option.is-wrong svg { color: var(--warn); }
-.bullpen-landing-root .ademo-option.is-dim { opacity: 0.5; }
-.bullpen-landing-root .ademo-result { margin-top: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; animation: demo-fade-in 260ms ease-out both; }
-.bullpen-landing-root .ademo-verdict { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; font-weight: 600; }
-.bullpen-landing-root .ademo-verdict.warn { color: var(--warn); }
-.bullpen-landing-root .ademo-why { font-size: 13px; line-height: 1.55; color: var(--fg-muted); }
+.bullpen-landing-root .demo[data-phase="armed"] .ademo-line path { stroke-dashoffset: 1; transition: none; }
+.bullpen-landing-root .ademo-node { position: absolute; inset-inline: 0; }
+.bullpen-landing-root .ademo-hit { position: absolute; inset: 0; pointer-events: none; }
+.bullpen-landing-root .demo[data-settled] .ademo-hit > * { pointer-events: auto; }
+.bullpen-landing-root .ademo-hit:focus-visible { outline: none; }
+.bullpen-landing-root .ademo-hit:focus-visible .ademo-dot { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bullpen-landing-root .ademo-hit:focus-visible .ademo-course { text-decoration-color: currentColor; }
+.bullpen-landing-root .ademo-meta .dlink-arrow { display: inline; margin-left: 3px; vertical-align: -1px; }
+@media (hover: hover) {
+  .bullpen-landing-root .ademo-hit:hover .ademo-dot { border-color: var(--fg); color: var(--fg); }
+  .bullpen-landing-root .ademo-hit:hover .ademo-course { color: var(--fg); }
+}
+.bullpen-landing-root .ademo-dot {
+  position: absolute; top: 50%; left: calc(50% + var(--x) - 20px); margin-top: -20px;
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 999px;
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--fg-dim);
+  transition: border-color 200ms ease, color 200ms ease;
+}
+.bullpen-landing-root .ademo-node.is-current .ademo-dot { border: 2px solid var(--fg); background: var(--bg); color: var(--fg); }
+.bullpen-landing-root .ademo-label { position: absolute; top: 50%; transform: translateY(-50%); display: grid; gap: 2px; }
+.bullpen-landing-root .ademo-label.is-left { left: 0; right: calc(50% - var(--x) + 30px); text-align: right; }
+.bullpen-landing-root .ademo-label.is-right { left: calc(50% + var(--x) + 30px); right: 0; }
+.bullpen-landing-root .ademo-course { font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--fg); text-wrap: balance; }
+.bullpen-landing-root .ademo-node:not(.is-current) .ademo-course { color: var(--fg-muted); }
+.bullpen-landing-root .ademo-meta { white-space: nowrap; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--fg-dim); }
+.bullpen-landing-root .is-current .ademo-meta { font-weight: 600; color: var(--fg); }
+.bullpen-landing-root .ademo-play { display: inline; margin-right: 4px; vertical-align: -1px; fill: currentColor; }
+.bullpen-landing-root .ademo-next { margin-top: 10px; }
+.bullpen-landing-root .ademo-next ul { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.bullpen-landing-root .ademo-then { font-size: 13px; color: var(--fg-dim); }
+.bullpen-landing-root .ademo-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--fg-muted); }
+/* Ink, not amber: amber on the light page measured ~2:1. Pro is a plan, not a status (as .benefit-pro). */
+.bullpen-landing-root .ademo-pro { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: var(--fg); }
 
 /* Daily Brief: title and TL;DR, sentence by sentence. */
 .bullpen-landing-root .bdemo-title { margin-bottom: 10px; font-size: 17px; font-weight: 700; line-height: 1.35; color: var(--fg); text-wrap: balance; }

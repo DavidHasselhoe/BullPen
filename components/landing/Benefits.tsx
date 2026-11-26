@@ -62,8 +62,8 @@ const BENEFITS: Benefit[] = [
   },
   {
     id: 'academy',
-    title: 'Learn the basics as you go.',
-    body: 'Short lessons and one question a day, starting from "What is a stock?". Free, with a streak to keep you coming back.',
+    title: 'Your own path, from the basics up.',
+    body: 'Short courses in order, starting from "What is a stock?", plus one question a day to keep your streak going. The first 14 courses are free.',
     demo: AcademyDemo,
   },
   {

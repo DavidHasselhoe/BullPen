@@ -1,13 +1,18 @@
 'use client';
 
 import { Fragment, memo, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { ArrowDown, ArrowUp, ArrowUpRight, BarChart2, Briefcase, Check, CircleHelp, Flame, Landmark, Send, ShoppingCart, Sparkles, X, Zap } from 'lucide-react';
+import { Activity, ArrowDown, ArrowUp, ArrowUpRight, BarChart2, Briefcase, ChartCandlestick, ChartColumn, ChartLine, Check, CircleHelp, GraduationCap, Landmark, Play, Send, ShoppingCart, Sparkles, TrendingUp } from 'lucide-react';
+import Link from 'next/link';
 import { BullAiIcon } from '@/components/ai/BullAiIcon';
 import { CompanyLogo } from '@/components/company/CompanyLogo';
 import { GLOSSARY } from '@/lib/finance/glossary';
 import type { LandingEconomy } from '@/lib/landing/economy-snapshot';
 import { arcPath } from '@/components/finance/HealthRing';
 import { useBrushReveal } from '@/hooks/use-brush-reveal';
+import { nodeOffset } from '@/lib/academy/path-chapters';
+import { trackEvent } from '@/lib/analytics/track';
+import { slugToAssetPath } from '@/lib/assets/asset-type';
+import { economyHref } from '@/lib/market-data/economic-kinds';
 
 /**
  * Live versions of the bento cards, built from the same parts and the same
@@ -48,6 +53,36 @@ function usePlayOnView(ref: RefObject<HTMLElement | null>, arm: () => void, play
     io.observe(el);
     return () => io.disconnect();
   }, [ref]);
+}
+
+/**
+ * True once a card has played out (or never had to: server HTML, reduced
+ * motion, already on screen). Its links wait for this, so nothing is clickable
+ * while it still moves under the pointer. `ms` is the card's own play length.
+ */
+function useSettled(phase: Phase, ms: number): boolean {
+  const [played, setPlayed] = useState(false);
+  useEffect(() => {
+    if (phase !== 'play') return;
+    const t = setTimeout(() => setPlayed(true), ms);
+    return () => clearTimeout(t);
+  }, [phase, ms]);
+  return phase === 'rest' || (phase === 'play' && played);
+}
+
+/**
+ * A part of a demo that opens the real page, public to signed-out visitors.
+ * The ↗ shows at rest once the card has settled, because phones have no
+ * hover; desktop adds the hover on top. Clicks are counted so we can tell
+ * whether they lead to signups or only away from the CTA.
+ */
+function DemoLink({ href, card, className, arrow = true, children }: { href: string; card: string; className?: string; arrow?: boolean; children: ReactNode }) {
+  return (
+    <Link href={href} className={className ? `dlink ${className}` : 'dlink'} onClick={() => trackEvent('landing_demo_click', { card, href })}>
+      {children}
+      {arrow && <ArrowUpRight size={14} className="dlink-arrow" aria-hidden />}
+    </Link>
+  );
 }
 
 /** Ease-out count from 0 to `to`; returns a cancel. */
@@ -107,13 +142,17 @@ export function PlainEnglishDemo() {
 
   const armed = phase === 'armed';
   const label = simple ? 'Company Value vs Operating Profit' : 'EV/EBITDA';
+  // The count, the flip to Simple at COUNT_MS + 700, then the insight's fade.
+  const settled = useSettled(phase, COUNT_MS + 700 + 1100);
 
   return (
-    <div ref={ref} className="demo" data-phase={phase}>
+    <div ref={ref} className="demo" data-phase={phase} data-settled={settled || undefined}>
       <div className="demo-head">
         <span className="demo-co">
-          <CompanyLogo ticker="NVDA" name="NVIDIA" size={22} />
-          NVIDIA
+          <DemoLink href={slugToAssetPath('NVDA')} card="plain-english" className="demo-co-link">
+            <CompanyLogo ticker="NVDA" name="NVIDIA" size={22} />
+            <span className="dlink-text">NVIDIA</span>
+          </DemoLink>
           <span className="demo-when mono">Nov 1</span>
         </span>
         <div role="radiogroup" aria-label="Terminology" className="demo-toggle">
@@ -202,13 +241,17 @@ export function HealthDemo() {
     },
   );
   useEffect(() => () => stop.current(), []);
+  // The pillars draw one STEP_MS apart, the last bar taking ~700ms to fill.
+  const settled = useSettled(phase, STEP_MS * PILLARS.length + 700);
 
   return (
-    <div ref={ref} className="demo" data-phase={phase}>
+    <div ref={ref} className="demo" data-phase={phase} data-settled={settled || undefined}>
       <div className="demo-head">
         <span className="demo-co">
-          <CompanyLogo ticker="NVDA" name="NVIDIA" size={22} />
-          NVIDIA
+          <DemoLink href={slugToAssetPath('NVDA')} card="health" className="demo-co-link">
+            <CompanyLogo ticker="NVDA" name="NVIDIA" size={22} />
+            <span className="dlink-text">NVIDIA</span>
+          </DemoLink>
           <span className="demo-when mono">Nov 18</span>
         </span>
         <span className="hdemo-badge">Strong</span>
@@ -314,8 +357,9 @@ function DemoHead({ title, when, children }: { title: string; when: string; chil
 export function WatchlistDemo() {
   const ref = useRef<HTMLDivElement>(null);
   const phase = usePhase(ref);
+  const settled = useSettled(phase, 1300);
   return (
-    <div ref={ref} className="demo" data-phase={phase}>
+    <div ref={ref} className="demo" data-phase={phase} data-settled={settled || undefined}>
       <DemoHead title="Your watchlist" when="Example from Nov 2" />
       <div className="demo-body wdemo-grid" role="group" aria-label="List summary">
         <div className="wdemo-tile">
@@ -325,8 +369,12 @@ export function WatchlistDemo() {
         </div>
         <div className="wdemo-tile">
           <p className="wdemo-label">Best and worst today</p>
-          <p className="wdemo-row mono up demo-rise" style={d(150)}>AMD <Count phase={phase} to={1.27} fmt={signedPct(1.27)} delay={150} /></p>
-          <p className="wdemo-row mono down demo-rise" style={d(300)}>GNRC <Count phase={phase} to={-0.2} fmt={signedPct(-0.2)} delay={300} /></p>
+          <p className="wdemo-row mono up demo-rise" style={d(150)}>
+            <DemoLink href={slugToAssetPath('AMD')} card="watchlist" className="wdemo-link"><span className="dlink-text">AMD</span> <Count phase={phase} to={1.27} fmt={signedPct(1.27)} delay={150} /></DemoLink>
+          </p>
+          <p className="wdemo-row mono down demo-rise" style={d(300)}>
+            <DemoLink href={slugToAssetPath('GNRC')} card="watchlist" className="wdemo-link"><span className="dlink-text">GNRC</span> <Count phase={phase} to={-0.2} fmt={signedPct(-0.2)} delay={300} /></DemoLink>
+          </p>
         </div>
         <div className="wdemo-tile">
           <p className="wdemo-label">Since you added them</p>
@@ -380,97 +428,130 @@ export function EconomyDemo({ economy }: { economy?: LandingEconomy | null }) {
   const e = economy ?? FALLBACK;
   const jobs = e.jobs.actual * 1000;
   const jobsBefore = e.jobs.previous == null ? null : e.jobs.previous * 1000;
+  // The last "Up/Down from" line rises at 1050ms.
+  const settled = useSettled(phase, 1500);
   return (
-    <div ref={ref} className="demo" data-phase={phase}>
+    <div ref={ref} className="demo" data-phase={phase} data-settled={settled || undefined}>
       <DemoHead title="BullPen Economy" when={economy ? `Latest, ${dayOf(e.asOf)}` : `Example from ${dayOf(e.asOf)}`} />
       <ul className="demo-body edemo-list">
-        <li className="edemo-card">
+        <li>
+          <DemoLink href={economyHref('fomc') ?? '/tools/economy'} card="economy" className="edemo-card">
           <p className="edemo-title"><Landmark size={16} aria-hidden />Fed interest rate</p>
           <p className="edemo-sub">Federal funds target range</p>
           <p className="edemo-value mono">
             <Count phase={phase} to={e.fed.lower} fmt={pct(2)} /> to <Count phase={phase} to={e.fed.upper} fmt={pct(2)} />
           </p>
+          </DemoLink>
         </li>
-        <li className="edemo-card">
+        <li>
+          <DemoLink href={economyHref('cpi') ?? '/tools/economy'} card="economy" className="edemo-card">
           <p className="edemo-title"><ShoppingCart size={16} aria-hidden />CPI inflation</p>
           <p className="edemo-sub">Inflation, past {e.cpi.basis} · {monthOf(e.cpi.period)}</p>
           <p className="edemo-value mono"><Count phase={phase} to={e.cpi.actual} fmt={pct(1)} delay={150} /></p>
           <Change now={e.cpi.actual} before={e.cpi.previous} fmt={pct(1)} delay={900} />
+          </DemoLink>
         </li>
-        <li className="edemo-card">
+        <li>
+          <DemoLink href={economyHref('jobs') ?? '/tools/economy'} card="economy" className="edemo-card">
           <p className="edemo-title"><Briefcase size={16} aria-hidden />Jobs report</p>
           <p className="edemo-sub">Jobs added · {monthOf(e.jobs.period)}</p>
           <p className="edemo-value mono"><Count phase={phase} to={jobs} fmt={signedInt(jobs)} delay={300} /></p>
           <Change now={jobs} before={jobsBefore} fmt={(v) => signedInt(v)(v)} delay={1050} />
+          </DemoLink>
         </li>
       </ul>
     </div>
   );
 }
 
-// ── Learn the basics as you go ───────────────────────────────────────────────
-// DailyChallengeCard with the real 2026-11-06 challenge (academy_daily_challenges),
-// in its stored order. Chosen over the 11-02 one, whose right answer was the
-// first option and three times longer than the rest, so length alone gave it
-// away; here all four are 52 to 58 characters and only one can be right. The
-// options rise in when the card plays; answering is real, checked against the
-// stored answer.
-const CHALLENGE = {
-  question: 'On a stock price chart, what does a candlestick usually represent for a single time period?',
-  options: [
-    'The total number of shares traded during that period',
-    'The opening, high, low, and closing prices for that period',
-    "The company's earnings per share reported that quarter",
-    'The average price the stock has held since it first listed',
-  ],
-  correct: 1,
-  explanation:
-    'A candlestick packs four prices into one shape: the open, high, low, and close for a set period, such as one day. The body shows the open and close, while the thin wicks show the high and low, which is why it is so useful for spotting price movement at a glance.',
-  xp: 15,
-};
+// ── Your path from the basics up ─────────────────────────────────────────────
+// The /academy map (components/academy/path/AcademyPath.tsx) as a new member
+// sees it: the real first five courses of Foundations, the first one open, the
+// rest of the course list summed up by unit. Same zigzag (nodeOffset) as the
+// app, drawn at a fixed row height so the connector needs no measuring. Titles,
+// icons, lesson counts and units are academy_courses as of 2026-11-26.
+const PATH_COURSES = [
+  { slug: 'what-is-a-stock', title: 'What is a Stock?', lessons: 5, Icon: TrendingUp },
+  { slug: 'reading-a-stock-price', title: 'Why Stocks Move', lessons: 5, Icon: Activity },
+  { slug: 'reading-a-stock-quote', title: 'Reading a Stock Quote', lessons: 7, Icon: ChartLine },
+  { slug: 'reading-charts', title: 'Reading Charts', lessons: 3, Icon: ChartCandlestick },
+  { slug: 'company-fundamentals', title: 'Company Fundamentals', lessons: 8, Icon: ChartColumn },
+];
+const PATH_UNITS = [
+  { label: 'Foundations', courses: 8, pro: false },
+  { label: 'Money & Mindset', courses: 6, pro: false },
+  { label: 'Research a Company', courses: 4, pro: true },
+  { label: 'Strategies', courses: 2, pro: true },
+  { label: 'Advanced', courses: 5, pro: true },
+];
+const PATH_TOTAL = PATH_UNITS.reduce((n, u) => n + u.courses, 0);
+const PATH_ROW = 56;
+const PATH_STEP = 130; // ms between nodes
 
 export function AcademyDemo() {
   const ref = useRef<HTMLDivElement>(null);
   const phase = usePhase(ref);
-  const [picked, setPicked] = useState<number | null>(null);
-  const done = picked !== null;
-  const right = picked === CHALLENGE.correct;
+  const settled = useSettled(phase, PATH_COURSES.length * PATH_STEP + 400);
+  const line = PATH_COURSES.map((_, i) => {
+    if (i === 0) return '';
+    const ax = nodeOffset(i - 1), ay = (i - 1) * PATH_ROW + PATH_ROW / 2;
+    const bx = nodeOffset(i), by = i * PATH_ROW + PATH_ROW / 2;
+    const midY = (ay + by) / 2;
+    return `M ${ax} ${ay} C ${ax} ${midY}, ${bx} ${midY}, ${bx} ${by}`;
+  }).join(' ');
+  const laterUnits = PATH_UNITS.slice(1);
   return (
-    <div ref={ref} className="demo" data-phase={phase}>
+    <div ref={ref} className="demo" data-phase={phase} data-settled={settled || undefined}>
       <div className="demo-head">
         <span className="ademo-title">
-          <span className="ademo-flame"><Flame size={16} aria-hidden /></span>
+          <span className="ademo-badge"><GraduationCap size={16} aria-hidden /></span>
           <span>
-            <span className="ademo-name">Daily Challenge</span>
-            <span className="ademo-tag">Keep your streak alive</span>
+            <span className="ademo-name">Your path</span>
+            <span className="ademo-tag">{PATH_TOTAL} courses in {PATH_UNITS.length} units</span>
           </span>
         </span>
-        <span className="ademo-xp"><Zap size={13} aria-hidden />+{CHALLENGE.xp} XP</span>
       </div>
       <div className="demo-body">
-        <p className="ademo-q">{CHALLENGE.question}</p>
-        <div className="ademo-options">
-          {CHALLENGE.options.map((o, i) => {
-            const state = !done ? '' : i === CHALLENGE.correct ? ' is-right' : i === picked ? ' is-wrong' : ' is-dim';
-            return (
-              <button key={i} type="button" disabled={done} onClick={() => setPicked(i)} className={`ademo-option demo-rise${state}`} style={d(i * 90)}>
-                <span>{o}</span>
-                {done && i === CHALLENGE.correct && <Check size={16} aria-label="Right answer" />}
-                {done && i === picked && !right && <X size={16} aria-label="Your answer" />}
-              </button>
-            );
-          })}
+        <p className="ademo-unit demo-rise">{PATH_UNITS[0].label}<span>{PATH_UNITS[0].courses} courses</span></p>
+        <div className="ademo-path" style={{ height: PATH_COURSES.length * PATH_ROW }}>
+          <svg className="ademo-line" width="1" height={PATH_COURSES.length * PATH_ROW} aria-hidden>
+            <path d={line} pathLength={1} style={d(PATH_STEP)} />
+          </svg>
+          <ol>
+            {PATH_COURSES.map((c, i) => {
+              const x = nodeOffset(i);
+              const first = i === 0;
+              // The label sits on the side away from the offset, where there is room.
+              const side = x > 0 ? 'is-left' : 'is-right';
+              return (
+                <li key={c.title} className={`ademo-node demo-rise${first ? ' is-current' : ''}`} style={{ ...d(i * PATH_STEP), top: i * PATH_ROW, height: PATH_ROW, '--x': `${x}px` } as CSSProperties}>
+                  {/* Every course page is open to visitors; only "Start here" carries the ↗, so five arrows don't crowd the path. */}
+                  <DemoLink href={`/academy/${c.slug}`} card="academy" className="ademo-hit" arrow={false}>
+                    <span className="ademo-dot"><c.Icon size={18} aria-hidden /></span>
+                    <span className={`ademo-label ${side}`}>
+                      <span className="ademo-course dlink-text">{c.title}</span>
+                      <span className="ademo-meta">
+                        {first ? <><Play size={10} aria-hidden className="ademo-play" />Start here · </> : null}{c.lessons} lessons
+                        {first && <ArrowUpRight size={12} className="dlink-arrow" aria-hidden />}
+                      </span>
+                    </span>
+                  </DemoLink>
+                </li>
+              );
+            })}
+          </ol>
         </div>
-        <div role="status" aria-live="polite">
-          {done && (
-            <div className="ademo-result">
-              <p className={right ? 'ademo-verdict up' : 'ademo-verdict warn'}>
-                <span>{right ? 'Correct!' : 'Not quite'}</span>
-                {right && <span className="ademo-earned"><Zap size={13} aria-hidden />+{CHALLENGE.xp} XP</span>}
-              </p>
-              <p className="ademo-why">{CHALLENGE.explanation}</p>
-            </div>
-          )}
+        <div className="ademo-next demo-rise" style={d(PATH_COURSES.length * PATH_STEP)}>
+          {/* One wrapping row: the label is the list's first item, hidden from screen readers, which get it as the list's name. */}
+          <ul aria-label="Then">
+            <li className="ademo-then" aria-hidden>Then</li>
+            {laterUnits.map((u) => (
+              <li key={u.label} className="ademo-chip">
+                {u.label}
+                {u.pro && <span className="ademo-pro">Pro</span>}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
