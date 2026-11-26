@@ -1,6 +1,6 @@
 {
   "regions": ["fra1"],
-  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" = main ] && exit 1; case \"$VERCEL_GIT_COMMIT_REF\" in dependabot/*) exit 0;; esac; echo \"$VERCEL_GIT_COMMIT_MESSAGE\" | grep -q '^docs(changelog)' && exit 0; P=\"$VERCEL_GIT_PREVIOUS_SHA\"; [ -n \"$P\" ] && git cat-file -e \"$P^{commit}\" 2>/dev/null && git diff --quiet \"$P\" HEAD -- . ':(exclude)docs' ':(exclude)scripts' ':(exclude)lib/i18n/locales' ':(exclude,glob)*.md' && exit 0; exit 1",
+  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" = main ] && exit 1; case \"$VERCEL_GIT_COMMIT_REF\" in dependabot/*) exit 0;; esac; echo \"$VERCEL_GIT_COMMIT_MESSAGE\" | grep -q '^docs(changelog)' && exit 0; P=\"$VERCEL_GIT_PREVIOUS_SHA\"; [ -n \"$P\" ] && git cat-file -e \"$P^{commit}\" 2>/dev/null && git diff --quiet \"$P\" HEAD -- . ':(exclude)docs' ':(exclude)scripts' ':(exclude)lib/i18n/locales/de' ':(exclude)lib/i18n/locales/es' ':(exclude)lib/i18n/locales/fr' ':(exclude)lib/i18n/locales/ja' ':(exclude)lib/i18n/locales/no' ':(exclude)lib/i18n/locales/qa' ':(exclude)lib/i18n/locales/zh' ':(exclude,glob)*.md' && exit 0; exit 1",
   "crons": [
     {
       "path": "/api/cron/generate-daily-brief",
