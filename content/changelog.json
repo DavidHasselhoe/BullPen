@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-11-26",
+    "entries": [
+      {
+        "type": "improved",
+        "text": "Each stock page's at-a-glance section now includes the company's Health Score with its five parts, and a short description of what the company does",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "The Academy course list and the short version on the economy page now appear as soon as the page opens, instead of loading in afterwards"
+      },
+      {
+        "type": "improved",
+        "text": "The screener calls its largest company size Mega, the same word stock pages use, and the column tabs are labelled Columns so they are not mistaken for filter presets"
+      }
+    ]
+  },
+  {
     "date": "2026-11-25",
     "entries": [
       {
