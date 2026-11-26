@@ -4753,5 +4753,9 @@
   "tools.compareMetricPeRatioLabel": "fbfcda004d59c6b33dfc93079c7be2a552fbc04c0cd760ac3654dbdafc96e682",
   "tools.compareMetricPeRatioDefinition": "364d92a3f55538edb257468a01fc76d319648cfd75e5b4042730c3cceb1802a3",
   "tools.compareMetricPeRatioWhyMatters": "676dd7bfffbcf1d517c991b37f03f922ed0ae9a7f7438ec2d30aad950de8e457",
-  "tools.compareMetricEpsDilutedWhyMatters": "d4eeb3577e6f850663c01fc748eb99fdf631108e907aeff09db2eab108b0fc76"
+  "tools.compareMetricEpsDilutedWhyMatters": "d4eeb3577e6f850663c01fc748eb99fdf631108e907aeff09db2eab108b0fc76",
+  "stock.glanceHealthHeading": "8263ae7714bb81e84892fb2990b79d4114b1f1ed1f1b47d8cf76887d0dde40ee",
+  "stock.glanceHealthScoreGrade": "c6b00a1ec0e2148fd626095b445db4725b0e4af885b33445c5347a8712dd6f3f",
+  "stock.glanceHealthScore": "f3b84d12efb296076584edaf3284f8b5074afaa61f8cf5b673bc7b0a7a834e36",
+  "stock.glanceAboutHeading": "e960506af753d6b63b30229700297899f1219a10077d143ed5d382ca7886ba7a"
 }

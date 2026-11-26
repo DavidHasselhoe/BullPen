@@ -4671,5 +4671,9 @@
   "tools.compareVerdictUnit_profit": "cf6a2d0eb895984a603f6323661022ec57677084d7e7a430a1352e78d3f14616",
   "tools.compareVerdictUnit_price": "6761a05a00fed10d56dfb5d3f2384a2e891b4aeaaa4b54fd03fb174234f45566",
   "tools.compareVerdictUnit_health": "9822d780381d3770d8566bbd4ec2826f14276c2d565b6383787cc45f6d0ce1ea",
-  "stock.compareWithHeading": "1f200ccf0f0a7f54c0792780806923da372cb6bedc57b6b9f97e7daabc915947"
+  "stock.compareWithHeading": "1f200ccf0f0a7f54c0792780806923da372cb6bedc57b6b9f97e7daabc915947",
+  "stock.glanceHealthHeading": "8263ae7714bb81e84892fb2990b79d4114b1f1ed1f1b47d8cf76887d0dde40ee",
+  "stock.glanceHealthScoreGrade": "c6b00a1ec0e2148fd626095b445db4725b0e4af885b33445c5347a8712dd6f3f",
+  "stock.glanceHealthScore": "f3b84d12efb296076584edaf3284f8b5074afaa61f8cf5b673bc7b0a7a834e36",
+  "stock.glanceAboutHeading": "e960506af753d6b63b30229700297899f1219a10077d143ed5d382ca7886ba7a"
 }
