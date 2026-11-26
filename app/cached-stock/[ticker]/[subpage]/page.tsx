@@ -17,6 +17,8 @@ import { notFound } from 'next/navigation';
 import Dividends, { generateMetadata as dividendsMeta } from '@/app/stock/[ticker]/dividends/page';
 import CongressTrades, { generateMetadata as congressMeta } from '@/app/stock/[ticker]/congress-trades/page';
 import FundHolders, { generateMetadata as fundsMeta } from '@/app/stock/[ticker]/fund-holders/page';
+import { NamespaceBundle } from '@/components/i18n/NamespaceBundle';
+import watchlistEn from '@/lib/i18n/locales/en/watchlist.json';
 
 export const dynamic = 'force-static';
 export const revalidate = 21600;
@@ -44,5 +46,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function CachedStockSubpage({ params }: { params: Params }) {
   const p = await params;
   const Page = pick(p.subpage)[0];
-  return <Page params={Promise.resolve(p)} requireData />;
+  // The Watch button renders on first paint; force-static leaves the layout unable to preload 'watchlist'.
+  return (
+    <NamespaceBundle locale="en" ns="watchlist" resources={watchlistEn}>
+      <Page params={Promise.resolve(p)} requireData />
+    </NamespaceBundle>
+  );
 }

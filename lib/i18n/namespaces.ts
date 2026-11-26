@@ -45,7 +45,10 @@ export const ALWAYS_LOADED: readonly Namespace[] = ['common', 'languages', 'navi
 export function namespacesForPath(pathname: string): Namespace[] {
   if (pathname.startsWith('/tools/economy')) return ['tools', 'economy'];
   if (pathname.startsWith('/tools')) return ['tools'];
-  if (pathname.startsWith('/stock') || pathname.startsWith('/asset')) return ['stock'];
+  // The header's Alert and Watch buttons render on first paint: without these
+  // two the server HTML said "triggerButtonLabel" and "watchlistWatch". The
+  // CDN-cached copy (app/cached-stock) bundles the same set by hand.
+  if (pathname.startsWith('/stock') || pathname.startsWith('/asset')) return ['stock', 'alerts', 'watchlist'];
   if (pathname.startsWith('/holdings')) return ['holdings'];
   // /notifications: the Following chip renders Feed rows, whose copy lives in 'user'.
   if (pathname.startsWith('/users') || pathname.startsWith('/notifications')) return ['user'];
@@ -55,6 +58,9 @@ export function namespacesForPath(pathname: string): Namespace[] {
   if (pathname.startsWith('/discover/ideas') || pathname.startsWith('/discover/indexes')) return ['discover', 'tools'];
   // Home's "From who you follow" renders Feed rows, whose copy lives in 'user'.
   if (pathname.startsWith('/dashboard')) return ['discover', 'user'];
+  // Discover's header shows the command palette's search placeholder on first
+  // paint (DiscoverHeader); without it the server HTML said "searchPlaceholder".
+  if (pathname === '/discover') return ['discover', 'command-palette'];
   // Bull's Weekly Pick lives in Discover's catalog: the same card renders there.
   if (pathname.startsWith('/discover') || pathname.startsWith('/picks')) return ['discover'];
   if (pathname.startsWith('/academy')) return ['academy'];

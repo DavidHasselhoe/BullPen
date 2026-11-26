@@ -19,7 +19,10 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
   // (a lesson, quiz, leaderboard, completion screen) stays fully gated.
   const isPublicCatalog = pathname === '/academy';
 
-  if (isLoading) {
+  // The catalog renders its signed-out shape while auth resolves. On the server
+  // a signed-out visitor is always "loading", and this blank div was the whole
+  // page a search engine got for /academy.
+  if (isLoading && !isPublicCatalog) {
     return <div className="min-h-screen" />;
   }
 

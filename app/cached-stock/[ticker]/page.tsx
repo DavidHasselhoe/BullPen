@@ -27,6 +27,8 @@
 import StockPage from '@/app/stock/[ticker]/page';
 import { NamespaceBundle } from '@/components/i18n/NamespaceBundle';
 import stockEn from '@/lib/i18n/locales/en/stock.json';
+import alertsEn from '@/lib/i18n/locales/en/alerts.json';
+import watchlistEn from '@/lib/i18n/locales/en/watchlist.json';
 
 export { generateMetadata } from '@/app/stock/[ticker]/layout';
 
@@ -40,12 +42,18 @@ export function generateStaticParams() {
 
 export default function CachedStockPage({ params }: { params: Promise<{ ticker: string }> }) {
   return (
+    // The same namespaces namespacesForPath gives /stock: the header's Alert
+    // and Watch buttons need 'alerts' and 'watchlist' on first paint.
     <NamespaceBundle locale="en" ns="stock" resources={stockEn}>
-      {/* requireSnapshot: a failed snapshot throws, so a background regeneration
-          keeps serving the last good copy instead of caching one with no price
-          for every guest and crawler. buildSnapshot already falls back to stale
-          cached data, so this only fires when there is no quote at all. */}
-      <StockPage params={params} requireSnapshot />
+      <NamespaceBundle locale="en" ns="alerts" resources={alertsEn}>
+        <NamespaceBundle locale="en" ns="watchlist" resources={watchlistEn}>
+          {/* requireSnapshot: a failed snapshot throws, so a background regeneration
+              keeps serving the last good copy instead of caching one with no price
+              for every guest and crawler. buildSnapshot already falls back to stale
+              cached data, so this only fires when there is no quote at all. */}
+          <StockPage params={params} requireSnapshot />
+        </NamespaceBundle>
+      </NamespaceBundle>
     </NamespaceBundle>
   );
 }

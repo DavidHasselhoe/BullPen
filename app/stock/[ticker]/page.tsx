@@ -22,6 +22,7 @@ import { slugToSymbol } from '@/lib/assets/asset-type';
 import { getSectorPeers } from '@/lib/market-data/stock-directory';
 import { SectorPeers } from '@/components/stock/SectorPeers';
 import { StockGlance } from '@/components/stock/StockGlance';
+import { getGlanceExtras } from '@/lib/stock/glance-extras';
 import { getDisplayNames } from '@/lib/market-data/display-names';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 import { getTickerCoverage } from '@/lib/stock/subpage-data';
@@ -60,6 +61,8 @@ export default async function StockPage({
   // here, the most crawled pages on the site, so search engines find them.
   const pairs = pairsFor(ticker);
   const pairNamesPromise = pairs.length > 0 ? getDisplayNames(pairs.flat()).catch(() => new Map<string, string>()) : Promise.resolve(new Map<string, string>());
+  // Health Score and company description for the glance: cache reads only.
+  const extrasPromise = localePromise.then((l) => getGlanceExtras(ticker, l)).catch(() => null);
   try {
     await queryClient.prefetchQuery({
       queryKey: ['stock-snapshot', ticker],
@@ -71,7 +74,7 @@ export default async function StockPage({
     // itself, exactly as it did before this existed.
   }
 
-  const [peers, name, locale, coverage, indexFacts, pairNames] = await Promise.all([peersPromise, namePromise, localePromise, coveragePromise, indexFactsPromise, pairNamesPromise]);
+  const [peers, name, locale, coverage, indexFacts, pairNames, extras] = await Promise.all([peersPromise, namePromise, localePromise, coveragePromise, indexFactsPromise, pairNamesPromise, extrasPromise]);
   const snapshot = queryClient.getQueryData<StockSnapshot>(['stock-snapshot', ticker]);
   const t = snapshot || coverage || pairs.length > 0 ? await getServerT(locale, `/stock/${ticker}`) : null;
 
@@ -88,7 +91,7 @@ export default async function StockPage({
       {(peers || t) && (
         // Lines up with the main column: lg:px-8 plus the 160px nav and 32px gap at xl.
         <div className="mx-auto max-w-[1520px] px-4 pb-12 sm:px-6 lg:px-8 xl:pl-[224px]">
-          {snapshot && t && <StockGlance ticker={ticker} name={name ?? ticker} snapshot={snapshot} locale={locale} t={t} />}
+          {snapshot && t && <StockGlance ticker={ticker} name={name ?? ticker} snapshot={snapshot} locale={locale} t={t} extras={extras} />}
           {t && coverage && (coverage.dividends.has(ticker) || coverage.congress.has(ticker) || coverage.funds.has(ticker)) && (
             <section aria-labelledby="stock-more-heading" className="mt-12 border-t border-border/50 pt-8">
               <h2 id="stock-more-heading" className="text-lg font-semibold tracking-tight text-foreground">{t('stock:subpagesHeading', { name: name ?? ticker })}</h2>

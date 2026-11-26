@@ -11,7 +11,9 @@ export function ProBadge({ className }: { className?: string }) {
         className
       )}
     >
-      {t('proBadge')}
+      {/* "Pro" in every locale. The default covers routes that don't preload
+          'billing' (the index pages), where the server HTML said "proBadge". */}
+      {t('proBadge', { defaultValue: 'Pro' })}
     </span>
   );
 }

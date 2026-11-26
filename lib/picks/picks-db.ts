@@ -140,7 +140,11 @@ export async function getLatestPickRow(): Promise<PickDetailRow | null> {
   return coerceRowNumerics(data);
 }
 
-/** One pick by its publication date (the canonical URL key). */
+/**
+ * One pick by its publication date (the canonical URL key). null means no pick
+ * that day; a database error throws, so /picks/[date] can tell a missing pick
+ * (404) from an outage.
+ */
 export async function getPickRowByDate(pickDate: string): Promise<PickDetailRow | null> {
   const supabase = createServerClient();
   const { data, error } = await supabase
@@ -149,6 +153,7 @@ export async function getPickRowByDate(pickDate: string): Promise<PickDetailRow 
     .eq('pick_date', pickDate)
     .maybeSingle<PickDetailRow>();
 
-  if (error || !data) return null;
+  if (error) throw new Error(`ai_stock_picks read failed: ${error.message}`);
+  if (!data) return null;
   return coerceRowNumerics(data);
 }

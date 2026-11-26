@@ -38,7 +38,9 @@ const CommoditySections = dynamic(
       );
     },
   })),
-  { ssr: false }
+  // Server-rendered: "what moves gold" and the ways to own it are copy, and
+  // with ssr: false the commodity pages in the sitemap sent search engines an
+  // empty body. The live numbers inside still load in the browser.
 );
 
 const CommodityStatusChip = dynamic(
@@ -135,7 +137,8 @@ export default function AssetPage() {
         </div>
 
         {/* Asset header */}
-        {profileLoading && !profile ? (
+        {/* A commodity's header needs nothing from the profile, so it renders on the server too. */}
+        {profileLoading && !profile && !commodity ? (
           <Card className="mb-8">
             <CardHeader>
               <div className="flex items-center gap-3">

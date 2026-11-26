@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { TFunction } from 'i18next';
 import type { StockSnapshot } from '@/lib/stock/snapshot';
+import type { GlanceExtras } from '@/lib/stock/glance-extras';
+import { glossarySlug, resolveGlossaryTermFromSlug } from '@/lib/finance/glossary';
 
 /**
  * "{Company} at a glance": a short plain-English read of the key numbers,
@@ -14,6 +16,10 @@ import type { StockSnapshot } from '@/lib/stock/snapshot';
  * a sentence with a link to what each one means.
  *
  * Every figure is the snapshot's own; a missing one is left out, never filled.
+ *
+ * extras (lib/stock/glance-extras.ts) adds the Health Score and what the
+ * company does: the browser-only cards carry both, and search engines never
+ * saw either.
  */
 interface Props {
   ticker: string;
@@ -21,6 +27,7 @@ interface Props {
   snapshot: StockSnapshot;
   locale: string;
   t: TFunction;
+  extras?: GlanceExtras | null;
 }
 
 function num(v: unknown): number | null {
@@ -28,7 +35,7 @@ function num(v: unknown): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
 }
 
-export function StockGlance({ ticker, name, snapshot, locale, t }: Props) {
+export function StockGlance({ ticker, name, snapshot, locale, t, extras }: Props) {
   const s = (snapshot.statistics ?? {}) as Record<string, unknown>;
   const price = snapshot.quote?.price ?? null;
   const marketCap = num(s.marketCap);
@@ -100,6 +107,48 @@ export function StockGlance({ ticker, name, snapshot, locale, t }: Props) {
             </div>
           ))}
         </dl>
+      )}
+      {extras?.health && (
+        <>
+          <h3 className="mt-8 text-sm font-semibold text-foreground">
+            <Link href="/glossary/health" className="underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground">
+              {t('stock:glanceHealthHeading')}
+            </Link>
+          </h3>
+          <p className="mt-2 max-w-3xl text-pretty text-sm leading-relaxed text-muted-foreground">
+            {extras.health.grade
+              ? t('stock:glanceHealthScoreGrade', { name, score: extras.health.score, grade: extras.health.grade })
+              : t('stock:glanceHealthScore', { name, score: extras.health.score })}{' '}
+            {t('stock:healthMethodologyIntro')}
+          </p>
+          {extras.health.pillars.length > 0 && (
+            <dl className="mt-4 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-5">
+              {extras.health.pillars.map((p) => {
+                const slug = glossarySlug(p.label);
+                return (
+                  <div key={p.label}>
+                    <dt className="text-xs text-muted-foreground">
+                      {resolveGlossaryTermFromSlug(slug) ? (
+                        <Link href={`/glossary/${slug}`} className="underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground">
+                          {p.label}
+                        </Link>
+                      ) : (
+                        p.label
+                      )}
+                    </dt>
+                    <dd className="mt-0.5 font-mono text-sm tabular-nums text-foreground">{p.score}/{p.max}</dd>
+                  </div>
+                );
+              })}
+            </dl>
+          )}
+        </>
+      )}
+      {extras?.description && (
+        <>
+          <h3 className="mt-8 text-sm font-semibold text-foreground">{t('stock:glanceAboutHeading', { name })}</h3>
+          <p className="mt-2 max-w-3xl text-pretty text-sm leading-relaxed text-muted-foreground">{extras.description}</p>
+        </>
       )}
       <p className="mt-4 text-xs text-muted-foreground">
         {asOf ? t('stock:glanceAsOf', { date: asOf }) : null} {t('stock:glanceNotAdvice')}

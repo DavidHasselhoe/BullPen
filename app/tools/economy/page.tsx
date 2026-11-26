@@ -3,7 +3,9 @@ import { getEconomyPage, RESULT_KINDS, type EconomyPageData, type HistoryRow } f
 import { etDateOf, getEconomicEvents } from '@/lib/market-data/economic-calendar';
 import { EXTREME_MIN_BACK, extremeSince } from '@/lib/market-data/economy-hub';
 import type { EconomicEvent } from '@/lib/market-data/economic-kinds';
-import { economyFacts, factsHash } from '@/lib/ai/economy-summary';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+import { economyFacts, factsHash, peekEconomySummary } from '@/lib/ai/economy-summary';
+import { getRequestLocale } from '@/lib/i18n/server';
 import { EconomyHubClient, type HubKind } from '@/components/economy/EconomyHubClient';
 import { SITE_URL } from '@/lib/site';
 
@@ -49,16 +51,27 @@ function toHub(p: EconomyPageData, today: string): HubKind {
 
 export default async function EconomyPage() {
   const today = etDateOf(new Date().toISOString());
-  const [pages, week] = await Promise.all([
+  const [pages, week, locale] = await Promise.all([
     Promise.all(RESULT_KINDS.map((kind) => getEconomyPage(kind, today))),
     getEconomicEvents(today, addDays(today, 6)),
+    getRequestLocale(),
   ]);
+  const hash = factsHash(economyFacts(pages));
+  // The AI summary from cache, so "The short version" is in the HTML. The
+  // client fetched it from /api/economy/summary, which robots.txt disallows:
+  // search engines only ever saw "Writing the short version". The key matches
+  // EconomyHubClient's query (its lang is the locale the server rendered in).
+  const queryClient = new QueryClient();
+  const summary = await peekEconomySummary(hash, locale).catch(() => null);
+  if (summary) queryClient.setQueryData(['economy-summary', locale, hash], summary);
   return (
-    <EconomyHubClient
-      kinds={pages.map((p) => toHub(p, today))}
-      week={week.map(({ source: _s, ...e }) => e as EconomicEvent)}
-      today={today}
-      factsHash={factsHash(economyFacts(pages))}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <EconomyHubClient
+        kinds={pages.map((p) => toHub(p, today))}
+        week={week.map(({ source: _s, ...e }) => e as EconomicEvent)}
+        today={today}
+        factsHash={hash}
+      />
+    </HydrationBoundary>
   );
 }

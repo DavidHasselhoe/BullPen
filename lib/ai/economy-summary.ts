@@ -143,6 +143,19 @@ async function generate(facts: string, lang: string, today: string) {
 }
 
 /**
+ * Read-only, for the server render of /tools/economy: the cached summary for
+ * these numbers, else the last one as `pending` (which the client then polls,
+ * writing the new one through resolveEconomySummary). null when there is none.
+ * Never writes or generates, so a crawl costs nothing.
+ */
+export async function peekEconomySummary(hash: string, lang: string): Promise<EconomySummaryResponse | null> {
+  const hit = await rget<EconomySummaryResponse & { status: 'ready' }>(key(hash, lang));
+  if (hit) return hit;
+  const previous = await rget<EconomySummaryResponse & { status: 'ready' }>(latestKey(lang));
+  return previous ? { status: 'pending', previous } : null;
+}
+
+/**
  * The summary for these numbers in `lang`: cached, or written now when this
  * request wins the lock. Losers get the previous summary (or none) and poll.
  */

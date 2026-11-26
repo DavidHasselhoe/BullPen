@@ -1,6 +1,12 @@
 import type { Metadata } from 'next';
 import { createServerClient } from '@/lib/supabase/client';
 
+// Signed out, every course, lesson and quiz page is an empty body (the
+// sign-in gate renders in the browser), and /academy now links to them from
+// server HTML. noindex keeps Google from filing them as empty duplicates;
+// follow lets it keep walking the links. Lesson layouts inherit it.
+const NOINDEX: Metadata['robots'] = { index: false, follow: true };
+
 /**
  * page.tsx is a client component (progress tracking, interactive lesson
  * state), so this sibling server layout carries the metadata.
@@ -32,9 +38,10 @@ export async function generateMetadata({
     .eq('is_published', true)
     .maybeSingle<{ title: string; description: string | null }>();
 
-  if (!data) return {};
+  if (!data) return { robots: NOINDEX };
 
   return {
+    robots: NOINDEX,
     title: data.title,
     description:
       data.description ||
