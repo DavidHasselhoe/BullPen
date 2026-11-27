@@ -16,6 +16,7 @@ assert.equal(aiSource('https://claude.ai/chat/1', null), 'claude');
 
 // Not AI: search, social, our own pages, nothing, junk.
 assert.equal(aiSource('https://www.google.com/', null), null);
+assert.equal(aiSource('https://www.bing.com/search?q=bullpen', null), null);
 assert.equal(aiSource('https://l.instagram.com/', 'ig'), null);
 assert.equal(aiSource('https://bullpeninvest.com/stocks', null), null);
 assert.equal(aiSource('', null), null);
