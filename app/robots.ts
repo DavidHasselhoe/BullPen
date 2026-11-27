@@ -54,10 +54,13 @@ export default function robots(): MetadataRoute.Robots {
       allow: ['/', '/api/instagram/render/', ...allowedStockPaths, ...allowedCommodityPaths],
       // /users: member profiles carry real names. Opt-in visibility (lib/social/visibility.ts)
       // decides who can see them in the app; it is not consent to be indexed.
-      // /login, /register: every stock subpage links /register?redirect=<page>, and the two
+      // /login?, /register?: every stock subpage links /register?redirect=<page>, and the two
       // cross-link, so crawlers met two sign-in URLs per subpage (Search Console 11-05:
       // 60 "duplicate without canonical", all of them these) and spent crawl on them.
-      disallow: ['/api/', '/stock/', '/asset/', '/etf/', '/tools/deep-dive/', '/admin/', '/users', '/invite/', '/lists/', '/login', '/register'],
+      // The bare paths stay crawlable and carry noindex instead: bullpen.no/robots.txt
+      // redirects here, and a redirected robots.txt applies to the old host too, so blocking
+      // bare /login froze bullpen.no/login in Google as the brand result (2026-11-27).
+      disallow: ['/api/', '/stock/', '/asset/', '/etf/', '/tools/deep-dive/', '/admin/', '/users', '/invite/', '/lists/', '/login?', '/register?'],
     },
     host: SITE_URL,
     // Search Console reported "no referring sitemap" for /stock/TXN although

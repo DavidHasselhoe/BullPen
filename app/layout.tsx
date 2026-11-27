@@ -88,6 +88,8 @@ const WEBSITE_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "BullPen",
+  // "bullpen" alone is shared with baseball and other products; the unique name helps Google's site-name pick.
+  alternateName: ["BullPen Invest", "bullpeninvest.com"],
   url: SITE_URL,
 };
 
