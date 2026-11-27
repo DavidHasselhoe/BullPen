@@ -9,7 +9,7 @@
  */
 
 import { createServerClient } from '@/lib/supabase/client';
-import { getCached, setCached } from '@/lib/cache/market-data-cache';
+import { getCached, getCachedStale, setCached } from '@/lib/cache/market-data-cache';
 import { getDividends, withRateLimitRetry, type DividendItem } from '@/lib/twelvedata/twelvedata-client';
 import { rget, rset } from '@/lib/cache/redis-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
@@ -128,7 +128,17 @@ export async function getDividendHistory(symbol: string): Promise<{ items: Divid
   const cacheKey = `financials:${sym}:dividends:quarterly`;
   const cached = await getCached<DividendItem[]>(cacheKey);
   if (cached) return { items: cached, yieldPct };
-  const items = await withRateLimitRetry(() => getDividends(sym));
+  // An expired copy beats an error page: a refetch that hits the per-minute
+  // credit cap (GOOGL, 2026-11-27 16:55, 664/610 used) still has yesterday's
+  // history, which is a day stale at most. Only a ticker never cached throws.
+  let items: DividendItem[];
+  try {
+    items = await withRateLimitRetry(() => getDividends(sym));
+  } catch (err) {
+    const stale = await getCachedStale<DividendItem[]>(cacheKey);
+    if (stale?.length) return { items: stale, yieldPct };
+    throw err;
+  }
   // Only non-empty results are cached, as in the financials route: an empty
   // array can be a transient partial response.
   if (items.length > 0) void setCached(cacheKey, sym, 'financials', items, 24 * 60 * 60);
