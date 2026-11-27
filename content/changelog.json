@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-11-27",
+    "entries": [
+      {
+        "type": "new",
+        "text": "Home and the Market Calendar now show US market holidays and half days. Home tells you when the market reopens and why, and the calendar marks closed days and early closes",
+        "highlight": true
+      },
+      {
+        "type": "improved",
+        "text": "On Compare, Pro members see the explanation of the differences right away, without pressing a button. An explanation stays put when you refresh or come back later",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Dividend yields no longer count one-time special dividends, which made some stocks look like far bigger payers than they are. The stock page mentions the special payment instead",
+        "highlight": true
+      },
+      {
+        "type": "fixed",
+        "text": "Revenue Flow opens on the newest quarter with full numbers, and a quarter a company has announced but not yet filed is called by its proper name"
+      }
+    ]
+  },
+  {
     "date": "2026-11-26",
     "entries": [
       {
