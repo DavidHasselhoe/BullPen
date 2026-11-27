@@ -161,12 +161,13 @@ export function CompareResults({
   const { isPro } = useEntitlements();
   const { isAuthenticated } = useAuth();
   const openGate = useSignupGate();
-  const [explainRequested, setExplainRequested] = useState(false);
+  // The pair the button was pressed for: a click on one pair must not generate (and spend quota) for the next.
+  const [requestedFor, setRequestedFor] = useState<string | null>(null);
   const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
 
   // Everyone signed in asks for a saved explanation on load, so a refresh keeps
   // it; only Pro, or a click, generates one.
-  const generate = isPro || explainRequested;
+  const generate = isPro || requestedFor === tickersKey;
   const explain = useQuery<string | null, Error>({
     queryKey: ['compare-explain', tickersKey, generate],
     queryFn: async () => {
@@ -216,13 +217,13 @@ export function CompareResults({
     }
     trackEvent('compare_explain_clicked', { tickers: tickersKey, pro: isPro });
     if (generate) void explain.refetch();
-    else setExplainRequested(true);
+    else setRequestedFor(tickersKey);
   }
 
   // Back from signing up: finish the explanation they asked for.
   useResumeAction('compare-explain', (value) => {
     if (value !== tickersKey) return false;
-    setExplainRequested(true);
+    setRequestedFor(tickersKey);
     return true;
   });
 
