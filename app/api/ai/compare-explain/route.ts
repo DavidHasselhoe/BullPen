@@ -13,6 +13,7 @@ import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { classifyAiError } from '@/lib/ai/provider-error';
 import { rget, rset } from '@/lib/cache/redis-cache';
+import { createHash } from 'crypto';
 
 /**
  * Saved per user and pair, so a refresh or a return visit shows the same
@@ -22,8 +23,9 @@ import { rget, rset } from '@/lib/cache/redis-cache';
  */
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TICKER_RE = /^[A-Z0-9.\-/]{1,12}$/;
-const cacheKey = (userId: string, tickers: string[]) =>
-  `compare-explain:v1:${userId}:${[...tickers].sort().join(',')}`;
+// The context's hash is in the key: new numbers for either company make a new explanation, not a stale one.
+const cacheKey = (userId: string, tickers: string[], context: string) =>
+  `compare-explain:v2:${userId}:${[...tickers].sort().join(',')}:${createHash('sha256').update(context).digest('hex').slice(0, 16)}`;
 
 const MODEL = 'claude-haiku-5-5';
 
@@ -39,7 +41,7 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
     const tickers = Array.isArray(rawTickers)
       ? rawTickers.filter((x): x is string => typeof x === 'string' && TICKER_RE.test(x)).slice(0, 5)
       : [];
-    const key = tickers.length >= 2 ? cacheKey(session.userId, tickers) : null;
+    const key = tickers.length >= 2 && typeof context === 'string' ? cacheKey(session.userId, tickers, context) : null;
 
     // A saved explanation costs nothing: no quota, no model call.
     const saved = key ? await rget<string>(key) : null;
