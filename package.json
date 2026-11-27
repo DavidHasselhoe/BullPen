@@ -153,7 +153,7 @@
     "d3-shape": "^3.2.0",
     "discord-interactions": "^4.4.0",
     "framer-motion": "^12.25.0",
-    "i18next": "^25.7.4",
+    "i18next": "^26.7.2",
     "i18next-resources-to-backend": "^1.2.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
