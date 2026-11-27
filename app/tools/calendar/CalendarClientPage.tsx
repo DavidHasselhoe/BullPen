@@ -12,6 +12,7 @@ import { useHoldings } from '@/hooks/use-holdings';
 import { isOpenPosition } from '@/lib/holdings/open-position';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useAuth } from '@/hooks/use-auth';
+import { useExchanges } from '@/hooks/use-market-status';
 import {
   todayET,
   addDays,
@@ -34,7 +35,7 @@ import { MonthCalendarGrid, MonthCalendarSkeleton } from '@/components/tools/cal
 import { ListCalendar } from '@/components/tools/calendar/ListCalendar';
 import { DayDetailDialog } from '@/components/tools/calendar/DayDetailDialog';
 import { CalendarViewToggle, CalendarDateNav, type CalendarView } from '@/components/tools/calendar/CalendarControls';
-import type { EventType } from '@/components/tools/calendar/types';
+import type { EventType, MarketDayNote } from '@/components/tools/calendar/types';
 import { ControlSelect } from '@/components/ui/ControlSelect';
 import { useCalendarPrefs } from '@/hooks/use-calendar-prefs';
 import type { CalendarScope } from '@/lib/market-data/calendar-prefs';
@@ -124,12 +125,25 @@ export function CalendarClientPage() {
     [economicEvents, prefs.economicKinds],
   );
 
+  // US market holidays and half days (NYSE; Nasdaq shares the schedule), so a
+  // closed Thanksgiving reads as closed rather than as a quiet day.
+  const { data: exchangeData } = useExchanges();
+  const marketDays = useMemo(() => {
+    const map = new Map<string, MarketDayNote>();
+    for (const h of exchangeData?.holidays ?? []) {
+      if (h.exchange_code !== 'NYSE') continue;
+      map.set(h.date, { name: h.description ?? '', closed: h.type === 'closed', earlyCloseET: h.type === 'closed' ? null : h.early_close_time });
+    }
+    return map;
+  }, [exchangeData]);
+
   const cellLimit = view === 'month' ? MONTH_CELL_LIMIT : WEEK_CELL_LIMIT;
   const days = useMemo(
     // Server day totals count every company, so they only apply to the "all" scope;
     // scoped, "+N more" counts what is actually left.
-    () => buildDayModel(scopedEvents, rangeDates, mySymbols, typeFilter, cellLimit, scope === 'all' ? dayTotals : undefined, scopedEconomic),
-    [scopedEvents, rangeDates, mySymbols, typeFilter, cellLimit, scope, dayTotals, scopedEconomic],
+    () => buildDayModel(scopedEvents, rangeDates, mySymbols, typeFilter, cellLimit, scope === 'all' ? dayTotals : undefined, scopedEconomic)
+      .map((d) => ({ ...d, market: marketDays.get(d.date) ?? null })),
+    [scopedEvents, rangeDates, mySymbols, typeFilter, cellLimit, scope, dayTotals, scopedEconomic, marketDays],
   );
 
   const openModel = days.find((d) => d.date === openDate) ?? null;

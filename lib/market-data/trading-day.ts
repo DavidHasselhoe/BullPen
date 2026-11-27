@@ -80,7 +80,7 @@ export function sessionDateET(now = new Date(), allDay = false): string {
 }
 
 /** New York wall-clock time on a given date, as unix seconds (handles EST/EDT). */
-function etWallToUnix(y: number, m: number, d: number, hh: number, mm: number): number {
+export function etWallToUnix(y: number, m: number, d: number, hh: number, mm: number): number {
   const guess = Date.UTC(y, m - 1, d, hh, mm);
   const at = new Date(guess);
   const etWall = new Date(at.toLocaleString('en-US', { timeZone: 'America/New_York' })).getTime();

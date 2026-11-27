@@ -6,7 +6,10 @@ import { LogoTile, LOGO_PX, TYPE_ICONS } from './LogoTile';
 import { compactMetric } from './EventRows';
 import { EconomicChip } from './EconomicEvents';
 import { fmtDayHeader, fmtFullDate } from '@/lib/dates/calendar-format';
-import type { DayModel, EventType } from './types';
+import { useClock } from '@/hooks/use-clock';
+import { fmtClockTime } from '@/lib/dates/clock';
+import { etWallToUnix } from '@/lib/market-data/trading-day';
+import type { DayModel, EventType, MarketDayNote } from './types';
 
 interface DayCellProps {
   model: DayModel;
@@ -50,6 +53,36 @@ function TypeCountStrip({ counts }: { counts: Record<EventType, number> }) {
   );
 }
 
+/**
+ * "Market closed · Thanksgiving" or "Closes 7:00 PM · Day after Thanksgiving".
+ * Neutral, not a warning: nothing is wrong, the exchange is just shut. In a
+ * month cell it shrinks to one word (the name is in the title tooltip), and on
+ * a phone-width month column to nothing: the muted cell carries it there.
+ */
+export function MarketDayChip({ note, date, compact }: { note: MarketDayNote; date: string; compact?: boolean }) {
+  const { t } = useTranslation('tools');
+  useClock(); // re-render when the time zone or 12/24h clock changes
+  let label = t('calendarMarketClosed');
+  if (!note.closed && note.earlyCloseET) {
+    const [y, m, d] = date.split('-').map(Number);
+    const [hh, mm] = note.earlyCloseET.split(':').map(Number);
+    label = t('calendarMarketClosesAt', { time: fmtClockTime(new Date(etWallToUnix(y, m, d, hh, mm) * 1000)) });
+  }
+  if (compact) {
+    return (
+      <span title={note.name ? `${label} · ${note.name}` : label} className="hidden text-xs font-medium leading-tight text-muted-foreground sm:block">
+        {note.closed ? t('calendarMarketClosedShort') : t('calendarMarketHalfDayShort')}
+      </span>
+    );
+  }
+  return (
+    <span className="flex flex-col rounded-md border border-border/70 bg-foreground/[0.04] px-1.5 py-0.5 text-xs leading-tight">
+      <span className="font-medium text-foreground">{label}</span>
+      {note.name && <span className="text-muted-foreground">{note.name}</span>}
+    </span>
+  );
+}
+
 export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex }: DayCellProps) {
   const { t } = useTranslation('tools');
   const isToday = model.date === today;
@@ -65,14 +98,18 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
     isToday ? 'text-primary' : 'text-muted-foreground',
   );
 
+  const closedAllDay = model.market?.closed === true;
+  const marketChip = model.market && <MarketDayChip note={model.market} date={model.date} compact={compact} />;
+
   if (model.total === 0 && model.economic.length === 0) {
     return (
       <div
         data-cal-cell
         data-date={model.date}
-        className={cn('flex flex-col gap-1 rounded-lg', paddingClass, heightClass)}
+        className={cn('flex flex-col gap-1 rounded-lg', paddingClass, heightClass, closedAllDay && 'bg-muted/50')}
       >
         <span className={headerClass}>{dayLabel}</span>
+        {marketChip}
       </div>
     );
   }
@@ -93,6 +130,7 @@ export function DayCell({ model, today, mySymbols, onOpenDay, compact, tabIndex 
       )}
     >
       <span className={headerClass}>{dayLabel}</span>
+      {marketChip}
 
       {/* Market-wide releases pinned above company events: a CPI print moves
           everything that day, so it outranks the day's 40th earnings report. */}

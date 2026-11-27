@@ -67,4 +67,16 @@ export interface DayModel {
    * by, and they are pinned above company events rather than competing with them.
    */
   economic: EconomicEvent[];
+  /** Set when the US market is closed or closes early that day. */
+  market?: MarketDayNote | null;
+}
+
+/** A US market holiday or half day, from `exchange_holidays` (NYSE). */
+export interface MarketDayNote {
+  /** e.g. "Thanksgiving", "Day after Thanksgiving" */
+  name: string;
+  /** True for a full closure; false for an early close. */
+  closed: boolean;
+  /** Early close as New York wall time "13:00:00"; null when closed all day. */
+  earlyCloseET: string | null;
 }

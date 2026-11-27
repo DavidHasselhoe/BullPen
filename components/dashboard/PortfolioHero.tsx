@@ -22,6 +22,7 @@ import { useUserSettings } from '@/hooks/use-user-settings';
 import { useWhyTodayGate } from '@/hooks/use-why-today-gate';
 import { formatCurrency } from '@/lib/currency/currency-conversion';
 import { cn } from '@/lib/utils';
+import { fmtTradingDate } from '@/lib/dates/clock';
 import type { UserHolding } from '@/lib/types/database';
 
 type CandleData = { t: number[]; c: number[]; session?: MarketSession[] };
@@ -177,8 +178,10 @@ export function PortfolioHero() {
     s === 'pre' ? t('homeSessionPre') : s === 'post' ? t('homeSessionPost') : t('homeSessionRegular');
   const chartUp = (series.changePct ?? 0) >= 0;
   const chartColor = chartUp ? '#10b981' : '#ef4444';
+  const lastPoint = range === '1D' ? chartData[chartData.length - 1] : undefined;
   const rangeLabel: Record<SeriesRange, string> = {
-    '1D': t('homeRangeToday'),
+    // Closed (a night, weekend or holiday) the 1D line is the last session, not today: name its day.
+    '1D': last && lastPoint ? t('homeRangeLastSession', { date: fmtTradingDate(lastPoint.date, { weekday: 'short', month: 'short', day: 'numeric' }) }) : t('homeRangeToday'),
     '1W': t('homePastWeek'),
     '1M': t('homePastMonth'),
     '1Y': t('homePastYear'),

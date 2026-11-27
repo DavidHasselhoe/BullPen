@@ -357,6 +357,9 @@ export interface MarketStatus {
   timeUntilClose: number | null; // milliseconds
   currentTime: Date;
   isHoliday: boolean;
+  /** Why the market keeps unusual hours: today's early-close name, or the
+   *  full-closure holiday the wait for `nextOpenTime` spans ("Thanksgiving"). */
+  holidayName: string | null;
   isEarlyClose: boolean;
   earlyCloseTime: Date | null;
 }

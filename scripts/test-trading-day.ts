@@ -6,6 +6,9 @@
  */
 import assert from 'node:assert/strict';
 import { usMarketHolidays, sessionDateET, isPreMarketET, secondsUntilNextOpenET, tradingMinutesET } from '../lib/market-data/trading-day';
+import { getSessionState } from '../hooks/use-trading-session';
+import { calculateMarketStatus } from '../lib/market/market-status';
+import type { Exchange, ExchangeHoliday } from '../lib/types/database';
 
 // SELECT date FROM exchange_holidays WHERE exchange_code='NYSE' AND type='closed', 2026-10-07.
 const VERIFIED = '2026-01-01,2026-01-19,2026-02-16,2026-04-03,2026-05-25,2026-06-19,2026-07-03,2026-09-07,2026-11-26,2026-12-25,2027-01-01,2027-01-18,2027-02-15,2027-03-26,2027-05-31,2027-06-18,2027-07-05,2027-09-06,2027-11-25,2027-12-24,2028-01-17,2028-02-21,2028-04-14,2028-05-29,2028-06-19,2028-07-04,2028-09-04,2028-11-23,2028-12-25';
@@ -50,5 +53,50 @@ assert.equal(tradingMinutesET(at('2026-11-26T15:00:00Z')), null);
 assert.equal(tradingMinutesET(at('2026-11-07T15:00:00Z')), null);
 // Summer: 9:35 EDT is 13:35Z.
 assert.equal(tradingMinutesET(at('2026-07-15T13:35:00Z')), 575);
+
+// Client session state: Thanksgiving at 11:00 EST is closed, not 'regular'.
+assert.equal(getSessionState(at('2026-11-26T16:00:00Z')), 'closed');
+assert.equal(getSessionState(at('2026-11-25T16:00:00Z')), 'regular');
+
+// Market-status next open skips holidays (the Home "opens in" line).
+const NYSE = { code: 'NYSE', name: 'NYSE', country: 'US', timezone: 'America/New_York', open_time: '09:30:00', close_time: '16:00:00', midday_close_time: null, midday_open_time: null } as unknown as Exchange;
+const HOLIDAYS = [
+  { id: '1', exchange_code: 'NYSE', date: '2026-11-26', type: 'closed', early_close_time: null, description: 'Thanksgiving' },
+  { id: '2', exchange_code: 'NYSE', date: '2026-11-27', type: 'early_close', early_close_time: '13:00:00', description: 'Day after Thanksgiving' },
+  { id: '3', exchange_code: 'NYSE', date: '2026-09-07', type: 'closed', early_close_time: null, description: 'Labor Day' },
+] as unknown as ExchangeHoliday[];
+const fri930 = at('2026-11-27T14:30:00Z');
+// Wed evening: opens Fri, and says why.
+let s = calculateMarketStatus(NYSE, HOLIDAYS, at('2026-11-25T22:00:00Z'));
+assert.equal(s.nextOpenTime?.toISOString(), fri930.toISOString());
+assert.equal(s.holidayName, 'Thanksgiving');
+// On the holiday itself.
+s = calculateMarketStatus(NYSE, HOLIDAYS, at('2026-11-26T16:00:00Z'));
+assert.equal(s.isOpen, false);
+assert.equal(s.isHoliday, true);
+assert.equal(s.holidayName, 'Thanksgiving');
+assert.equal(s.nextOpenTime?.toISOString(), fri930.toISOString());
+// Half day: open, named, closes at 13:00 EST.
+s = calculateMarketStatus(NYSE, HOLIDAYS, at('2026-11-27T16:00:00Z'));
+assert.equal(s.isOpen, true);
+assert.equal(s.isEarlyClose, true);
+assert.equal(s.holidayName, 'Day after Thanksgiving');
+assert.equal(s.nextCloseTime?.toISOString(), '2026-11-27T18:00:00.000Z');
+// Half day before the open: not "closed for" anything, just opening soon.
+s = calculateMarketStatus(NYSE, HOLIDAYS, at('2026-11-27T12:40:00Z'));
+assert.equal(s.isOpen, false);
+assert.equal(s.holidayName, null);
+assert.equal(s.nextOpenTime?.toISOString(), fri930.toISOString());
+// Sunday before Labor Day: opens Tuesday 9:30 EDT.
+s = calculateMarketStatus(NYSE, HOLIDAYS, at('2026-09-06T16:00:00Z'));
+assert.equal(s.nextOpenTime?.toISOString(), '2026-09-08T13:30:00.000Z');
+assert.equal(s.holidayName, 'Labor Day');
+// A plain weeknight: no holiday name, opens tomorrow.
+s = calculateMarketStatus(NYSE, HOLIDAYS, at('2026-11-24T22:00:00Z'));
+assert.equal(s.holidayName, null);
+assert.equal(s.nextOpenTime?.toISOString(), '2026-11-25T14:30:00.000Z');
+// Before the open on a trading day: today's open.
+s = calculateMarketStatus(NYSE, HOLIDAYS, at('2026-11-24T12:00:00Z'));
+assert.equal(s.nextOpenTime?.toISOString(), '2026-11-24T14:30:00.000Z');
 
 console.log('trading day: ok');

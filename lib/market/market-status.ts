@@ -80,22 +80,22 @@ function isWeekend(date: Date, timezone: string): boolean {
 }
 
 /**
- * Calculates the next Monday at the exchange's open time
+ * The next regular open after `currentTime`: walks the exchange's local days
+ * forward, skipping weekends and full-closure holidays. "Opens in 16h" the
+ * evening before Thanksgiving pointed at the holiday; Sunday before Labor Day
+ * pointed at the Monday it is closed.
  */
-function getNextMondayOpen(currentTime: Date, exchange: Exchange): Date {
-  const exchangeTime = getTimeInTimezone(currentTime, exchange.timezone);
-  
-  // Find next Monday
-  const nextMonday = new Date(currentTime);
-  // If Sunday (0), Monday is tomorrow (1 day). If Saturday (6), Monday is in 2 days.
-  const daysUntilMonday = exchangeTime.weekday === 0 ? 1 : 2;
-  
-  nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
-  
-  // Create date at open time in exchange timezone
-  const openDate = createDateInTimezone(nextMonday, exchange.open_time, exchange.timezone);
-  
-  return openDate;
+export function nextOpenAfter(currentTime: Date, exchange: Exchange, holidays: ExchangeHoliday[]): Date {
+  const closed = new Set(holidays.filter((h) => h.type === 'closed').map((h) => h.date));
+  const day = new Date(`${getDateInTimezone(currentTime, exchange.timezone)}T12:00:00Z`);
+  for (let i = 0; i < 14; i++, day.setUTCDate(day.getUTCDate() + 1)) {
+    const dow = day.getUTCDay();
+    if (dow === 0 || dow === 6 || closed.has(day.toISOString().slice(0, 10))) continue;
+    // createDateInTimezone reads the day from the Date's UTC date, which is the local day here.
+    const open = createDateInTimezone(day, exchange.open_time, exchange.timezone);
+    if (open > currentTime) return open;
+  }
+  return createDateInTimezone(day, exchange.open_time, exchange.timezone);
 }
 
 /**
@@ -193,37 +193,10 @@ export function calculateMarketStatus(
   // Get current time in exchange timezone
   const exchangeTime = getTimeInTimezone(currentTime, exchange.timezone);
   
-  // Check if it's a weekend - if so, market is closed until Monday
-  if (isWeekend(currentTime, exchange.timezone)) {
-    const nextMondayOpen = getNextMondayOpen(currentTime, exchange);
-    
-    return {
-      exchange,
-      isOpen: false,
-      nextOpenTime: nextMondayOpen,
-      nextCloseTime: null,
-      timeUntilOpen: Math.max(0, nextMondayOpen.getTime() - currentTime.getTime()),
-      timeUntilClose: null,
-      currentTime,
-      isHoliday: false,
-      isEarlyClose: false,
-      earlyCloseTime: null,
-    };
-  }
-  
-  // Check if it's an early close day
-  const isEarlyClose = holiday?.type === 'early_close';
-  const closeTime = isEarlyClose && holiday?.early_close_time
-    ? holiday.early_close_time
-    : exchange.close_time;
-  
-  // If it's a holiday (full closure), market is closed
-  if (isHolidayToday && holiday?.type === 'closed') {
-    // Calculate next open time (tomorrow at open_time in exchange timezone)
-    const tomorrow = new Date(currentTime);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const nextOpen = createDateInTimezone(tomorrow, exchange.open_time, exchange.timezone);
-    
+  // Weekend or full-closure holiday: closed all day, until the next trading day's open.
+  const closedToday = isHolidayToday && holiday?.type === 'closed';
+  if (closedToday || isWeekend(currentTime, exchange.timezone)) {
+    const nextOpen = nextOpenAfter(currentTime, exchange, holidays);
     return {
       exchange,
       isOpen: false,
@@ -232,11 +205,18 @@ export function calculateMarketStatus(
       timeUntilOpen: Math.max(0, nextOpen.getTime() - currentTime.getTime()),
       timeUntilClose: null,
       currentTime,
-      isHoliday: true,
+      isHoliday: closedToday,
+      holidayName: closureBefore(currentTime, nextOpen, exchange, holidays),
       isEarlyClose: false,
       earlyCloseTime: null,
     };
   }
+
+  // Check if it's an early close day
+  const isEarlyClose = holiday?.type === 'early_close';
+  const closeTime = isEarlyClose && holiday?.early_close_time
+    ? holiday.early_close_time
+    : exchange.close_time;
   
   // Compare current time against each trading session — exchanges with a
   // midday halt (Tokyo, Shanghai) get two sessions, so a lunch break reads
@@ -294,13 +274,8 @@ export function calculateMarketStatus(
     nextOpenTime = openDate;
     timeUntilOpen = Math.max(0, openDate.getTime() - currentTime.getTime());
   } else {
-    // Market is closed, calculate time until open (use exchange timezone, not local)
-    let openDate = createDateInTimezone(currentTime, exchange.open_time, exchange.timezone);
-    if (openDate <= currentTime) {
-      const tomorrow = new Date(currentTime);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      openDate = createDateInTimezone(tomorrow, exchange.open_time, exchange.timezone);
-    }
+    // Before today's open or after today's close: the next trading day's open.
+    const openDate = nextOpenAfter(currentTime, exchange, holidays);
     nextOpenTime = openDate;
     timeUntilOpen = Math.max(0, openDate.getTime() - currentTime.getTime());
   }
@@ -325,10 +300,25 @@ export function calculateMarketStatus(
     timeUntilOpen,
     timeUntilClose,
     currentTime,
-    isHoliday: isHolidayToday && holiday?.type === 'closed',
+    isHoliday: false,
+    holidayName: !isOpen && nextOpenTime
+      ? closureBefore(currentTime, nextOpenTime, exchange, holidays)
+      : isEarlyClose ? holiday?.description ?? null : null,
     isEarlyClose,
     earlyCloseTime,
   };
+}
+
+/**
+ * The name of a full-closure holiday from today up to (not including) the day
+ * of `nextOpen`: why the wait is longer than usual. Null for a plain night or
+ * weekend.
+ */
+function closureBefore(currentTime: Date, nextOpen: Date, exchange: Exchange, holidays: ExchangeHoliday[]): string | null {
+  const from = getDateInTimezone(currentTime, exchange.timezone);
+  const until = getDateInTimezone(nextOpen, exchange.timezone);
+  const hit = holidays.find((h) => h.type === 'closed' && h.date >= from && h.date < until);
+  return hit ? hit.description ?? null : null;
 }
 
 /**

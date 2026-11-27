@@ -20,7 +20,7 @@ interface MonthCalendarGridProps {
 
 const EMPTY_DAY = (date: string): DayModel => ({
   date, mine: [], others: [], shown: [], moreCount: 0, total: 0,
-  typeCounts: { earnings: 0, dividends: 0, splits: 0, ipo: 0 },
+  typeCounts: { earnings: 0, dividends: 0, splits: 0, ipo: 0 }, economic: [],
 });
 
 /**

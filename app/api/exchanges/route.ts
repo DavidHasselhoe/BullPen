@@ -7,11 +7,11 @@ import { createServerClient } from '@/lib/supabase/client';
  * Response is cached for 1 hour — exchange schedules change at most annually.
  */
 export async function GET(_request: NextRequest) {
-  // Include a 10-day look-back (not just upcoming) so consumers like the market-
-  // movers date label can resolve the last trading day even on the weekend after
-  // a Friday holiday. Market-status matches holidays by exact date, so extra past
-  // rows are harmless.
-  const from = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // Include a year of look-back (not just upcoming): the market-movers date label
+  // resolves the last trading day after a Friday holiday, and the Market Calendar
+  // marks past holidays when you page back. Market-status matches holidays by
+  // exact date, so extra past rows are harmless (~50 a year across exchanges).
+  const from = new Date(Date.now() - 400 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   try {
     const supabase = createServerClient();

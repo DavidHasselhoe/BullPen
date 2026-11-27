@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { WelcomeMessage } from '@/components/ui/WelcomeMessage';
 import { useMarketStatus } from '@/hooks/use-market-status';
@@ -8,6 +9,9 @@ import { useHomePortfolio } from '@/hooks/use-home-portfolio';
 import { useTradingSession } from '@/hooks/use-trading-session';
 import { useAuth } from '@/hooks/use-auth';
 import { formatTimeUntilShort } from '@/lib/market/market-status';
+import { useClock } from '@/hooks/use-clock';
+import { fmtClockDate, type Clock } from '@/lib/dates/clock';
+import type { MarketStatus } from '@/lib/types/database';
 import { cn } from '@/lib/utils';
 import type { InitialWelcome } from '@/lib/dashboard/greeting';
 import type { IndexQuote } from '@/lib/discover/discover-config';
@@ -50,6 +54,31 @@ function useStatusSentence(spyPct: number | null): string | null {
   return null;
 }
 
+/**
+ * "US market opens in 9h", plus why when the hours are unusual: closed for a
+ * holiday, or a short day. Past a day away the countdown turns into a weekday
+ * and time ("opens Mon 3:30 PM"), since "opens in 62h 30m" makes you do maths.
+ */
+function marketStatusLine(nyse: MarketStatus, open: boolean, clock: Clock, t: TFunction): string {
+  if (open) {
+    const time = formatTimeUntilShort(nyse.timeUntilClose ?? 0);
+    return nyse.isEarlyClose ? t('homeMarketClosesEarlyIn', { time }) : t('homeMarketClosesIn', { time });
+  }
+  const ms = nyse.timeUntilOpen ?? 0;
+  const at = ms > DAY_MS && nyse.nextOpenTime
+    ? fmtClockDate(nyse.nextOpenTime, { weekday: 'short', hour: 'numeric', minute: '2-digit' }, clock)
+    : null;
+  const time = formatTimeUntilShort(ms);
+  if (nyse.holidayName) {
+    return at
+      ? t('homeMarketClosedForOpensAt', { holiday: nyse.holidayName, at })
+      : t('homeMarketClosedForOpensIn', { holiday: nyse.holidayName, time });
+  }
+  return at ? t('homeMarketOpensAt', { at }) : t('homeMarketOpensIn', { time });
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export function HomeHeader({
   initialWelcome,
   showWelcome,
@@ -72,12 +101,9 @@ export function HomeHeader({
   // session's move, and sat unlabelled under "up 0.72% today" before the open.
   const lastClose = useTradingSession() !== 'regular';
 
+  const clock = useClock();
   const marketOpen = !!nyse && !nyse.isHoliday && nyse.isOpen;
-  const marketLine = nyse
-    ? marketOpen
-      ? t('homeMarketClosesIn', { time: formatTimeUntilShort(nyse.timeUntilClose ?? 0) })
-      : t('homeMarketOpensIn', { time: formatTimeUntilShort(nyse.timeUntilOpen ?? 0) })
-    : null;
+  const marketLine = nyse ? marketStatusLine(nyse, marketOpen, clock, t) : null;
 
   return (
     <header className="space-y-3">

@@ -11,6 +11,7 @@ import { fmtFullDate } from '@/lib/dates/calendar-format';
 import type { DayModel, UnifiedEvent } from './types';
 import { dayHasEvents } from './day-model';
 import { EconomicDetailRow } from './EconomicEvents';
+import { MarketDayChip } from './DayCell';
 
 interface ListCalendarProps {
   days: DayModel[];
@@ -87,7 +88,8 @@ function EventListRow({ event, isMine, isOwned }: { event: UnifiedEvent; isMine:
  */
 export function ListCalendar({ days, today, mySymbols, holdingSymbols, onOpenDay }: ListCalendarProps) {
   const { t } = useTranslation('tools');
-  const withEvents = days.filter(dayHasEvents);
+  // A market holiday stays in the agenda even with nothing else on it.
+  const withEvents = days.filter((d) => dayHasEvents(d) || d.market);
 
   if (withEvents.length === 0) return null;
 
@@ -111,10 +113,15 @@ export function ListCalendar({ days, today, mySymbols, holdingSymbols, onOpenDay
                 {fmtFullDate(day.date)}
                 {isToday && <span className="ml-1.5 normal-case tracking-normal">{t('calendarTodaySuffix')}</span>}
               </span>
-              <span className="font-mono tabular-nums text-muted-foreground">{day.total + day.economic.length}</span>
+              {dayHasEvents(day) && <span className="font-mono tabular-nums text-muted-foreground">{day.total + day.economic.length}</span>}
             </h3>
 
             <div className="flex flex-col pb-2">
+              {day.market && (
+                <div className="mb-1 self-start">
+                  <MarketDayChip note={day.market} date={day.date} />
+                </div>
+              )}
               {day.economic.length > 0 && (
                 <div className="divide-y divide-border/40 border-b border-border/40">
                   {day.economic.map((e) => <EconomicDetailRow key={e.id} event={e} />)}
