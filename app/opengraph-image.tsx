@@ -20,9 +20,9 @@ export default async function OpengraphImage() {
   const muted = '#a1a1a1';
   const accent = '#34d399';
 
-  const [monoFont, serifFont] = await Promise.all([
+  const [monoFont, sansFont] = await Promise.all([
     loadOgFont('Geist Mono', 600),
-    loadOgFont('Instrument Serif', 400, true),
+    loadOgFont('Geist', 700),
   ]);
 
   return new ImageResponse(
@@ -40,11 +40,10 @@ export default async function OpengraphImage() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', maxWidth: 980 }}>
-          <div style={{ display: 'flex', fontSize: 76, fontWeight: 600, lineHeight: 1.08, color: fg }}>
-            Investing, explained
-          </div>
-          <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 92, lineHeight: 1.08, color: accent }}>
-            for you.
+          {/* One face, one weight, one color: DESIGN.md's No Serif Accent Rule. */}
+          <div style={{ display: 'flex', flexDirection: 'column', fontFamily: 'Geist', fontSize: 84, fontWeight: 700, lineHeight: 1.08, letterSpacing: -2, color: fg }}>
+            <div style={{ display: 'flex' }}>Investing, explained</div>
+            <div style={{ display: 'flex' }}>for you.</div>
           </div>
         </div>
 
@@ -57,7 +56,7 @@ export default async function OpengraphImage() {
       ...size,
       fonts: [
         { name: 'Geist Mono', data: monoFont, weight: 600, style: 'normal' },
-        { name: 'Instrument Serif', data: serifFont, weight: 400, style: 'italic' },
+        { name: 'Geist', data: sansFont, weight: 700, style: 'normal' },
       ],
     }
   );

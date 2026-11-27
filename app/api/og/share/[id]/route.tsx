@@ -10,12 +10,9 @@ const WIDTH = 1200;
 const HEIGHT = 630;
 
 /**
- * Both fonts used on this card are already this project's real brand fonts —
- * Geist Mono for numerals (app/layout.tsx imports both via next/font/google),
- * Instrument Serif for the italic lead-in (DESIGN.md: reserved for marketing
- * headlines, which is exactly what a share card is — external-facing content
- * meant to drive a signup, not in-app product UI). See lib/render/google-fonts.ts
- * for why fonts must be fetched as raw bytes here rather than referenced normally.
+ * Both fonts are the app's own: Geist Mono for numerals, Geist Sans for the
+ * lead-in. No italic serif (DESIGN.md: The No Serif Accent Rule). See
+ * lib/render/og-fonts.ts for why fonts are read as raw bytes here.
  */
 
 function sparklinePoints(values: number[], width: number, height: number): string {
@@ -69,9 +66,9 @@ export async function GET(
   const muted = '#a1a1a1';
   const mutedDim = 'rgba(161, 161, 161, 0.7)';
 
-  const [monoFont, serifFont] = await Promise.all([
+  const [monoFont, sansFont] = await Promise.all([
     loadOgFont('Geist Mono', 600),
-    loadOgFont('Instrument Serif', 400, true),
+    loadOgFont('Geist', 400),
   ]);
 
   return new ImageResponse(
@@ -86,7 +83,7 @@ export async function GET(
         <div style={{ display: 'flex', position: 'absolute', top: 32, left: 48, fontSize: 20, letterSpacing: 4, color: muted }}>
           BULLPEN
         </div>
-        <div style={{ display: 'flex', fontFamily: 'Instrument Serif', fontStyle: 'italic', fontSize: 30, color: muted }}>
+        <div style={{ display: 'flex', fontFamily: 'Geist', fontSize: 30, color: muted }}>
           {handle} is {directionWord}
         </div>
         <div style={{ display: 'flex', fontSize: 118, fontWeight: 600, color, lineHeight: 1.05 }}>
@@ -112,7 +109,7 @@ export async function GET(
       height: HEIGHT,
       fonts: [
         { name: 'Geist Mono', data: monoFont, weight: 600, style: 'normal' },
-        { name: 'Instrument Serif', data: serifFont, weight: 400, style: 'italic' },
+        { name: 'Geist', data: sansFont, weight: 400, style: 'normal' },
       ],
       headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
     }
