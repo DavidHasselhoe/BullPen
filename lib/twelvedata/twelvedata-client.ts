@@ -13,6 +13,7 @@ import { classifyTradingSession, strayExtendedPrints } from '@/lib/market-data/e
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
 import { trailingYearSpecials, type DividendEvent } from '@/lib/dividends/dividend-income';
 import { withSecQuarters } from '@/lib/edgar/sec-statements';
+import { captureServerEvent } from '@/lib/analytics/server-capture';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
 
@@ -29,8 +30,39 @@ const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
  */
 const TD_FETCH_TIMEOUT_MS = 15_000;
 
-function tdFetch(url: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(url, { ...init, signal: init.signal ?? AbortSignal.timeout(TD_FETCH_TIMEOUT_MS) });
+async function tdFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const res = await fetch(url, { ...init, signal: init.signal ?? AbortSignal.timeout(TD_FETCH_TIMEOUT_MS) });
+  reportHotMinute(url, res);
+  return res;
+}
+
+/**
+ * Above this many credits used in the current minute, every call is sent to
+ * PostHog as `twelvedata_hot_call`. Cron work alone tops out at 400
+ * (CRON_CREDIT_SHARE), so a minute past 450 has organic traffic in it.
+ * Bursts on 2026-11-27 ran the minute to 970/610 and the Vercel log only
+ * keeps an hour, so the endpoint mix behind a spike is recorded here,
+ * where it lasts. Quiet minutes cost nothing: the header is already on
+ * the response.
+ */
+const HOT_MINUTE_CREDITS = 450;
+
+function reportHotMinute(url: string, res: Response): void {
+  const header = (name: string) => {
+    const v = res.headers.get(name);
+    return v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
+  };
+  const used = header('api-credits-used');
+  if ((used ?? 0) < HOT_MINUTE_CREDITS && res.status !== 429) return;
+  // Path and symbol only: the query string carries the API key.
+  const u = new URL(url);
+  void captureServerEvent('twelvedata_hot_call', {
+    endpoint: u.pathname,
+    symbol: u.searchParams.get('symbol'),
+    credits_used: used,
+    credits_left: header('api-credits-left'),
+    status: res.status,
+  });
 }
 
 /** Thrown when the Twelve Data API rate limit (610 credits/min on the current Venture plan) is exceeded */
