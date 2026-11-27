@@ -8,6 +8,7 @@ import { getCurrentUserId } from '@/lib/auth/server-session';
 import { getRequestLocale, getServerT } from '@/lib/i18n/server';
 import { NotReported, StockSubpageShell, SubpageLoadError, subpageFormat } from '@/components/stock/StockSubpageShell';
 import { ExpandableTable } from '@/components/stock/SubpageIslands';
+import { regularPayments, specialPayments, trailingYearSpecials, type DividendEvent } from '@/lib/dividends/dividend-income';
 
 /**
  * /stock/[ticker]/dividends: every dividend in the last ~6 years, totals by
@@ -31,6 +32,13 @@ const load = cache(async (ticker: string) => {
 });
 
 const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+
+const asEvents = (items: DividendItem[]): DividendEvent[] => items.map((d) => ({ exDate: d.ex_dividend_date, payDate: d.payment_date, amount: d.amount }));
+/** Payments without specials, newest first, in the page's own item shape. */
+function regularItems(items: DividendItem[]): DividendItem[] {
+  const keep = new Set(regularPayments(asEvents(items)).map((e) => e.exDate));
+  return items.filter((d) => keep.has(d.ex_dividend_date)).sort((a, b) => b.ex_dividend_date.localeCompare(a.ex_dividend_date));
+}
 
 /**
  * The most recent change to the regular dividend, or null when it can't be
@@ -69,7 +77,7 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
   // snippet answers the question with this stock's own numbers.
   const f = subpageFormat(locale);
   const chrono = [...items].sort((a, b) => a.ex_dividend_date.localeCompare(b.ex_dividend_date));
-  const latest = chrono.at(-1);
+  const latest = regularItems(items)[0] ?? chrono.at(-1);
   const vars = latest && {
     name,
     ticker,
@@ -102,12 +110,19 @@ export default async function StockDividendsPage({ params, requireData = false }
   const f = subpageFormat(locale);
 
   const sorted = [...items].sort((a, b) => b.ex_dividend_date.localeCompare(a.ex_dividend_date));
-  const latest = sorted[0];
-  const byYear = new Map<string, { total: number; count: number }>();
+  // A special dividend is real cash and stays in the tables, tagged. The
+  // sentences describe the regular dividend, the one a holder can expect again:
+  // COST's $30 special (2026-11-24) read as "the most recent payment was $30.00".
+  const regular = regularItems(items);
+  const specialDates = new Set(specialPayments(asEvents(items)).map((e) => e.exDate));
+  const recentSpecial = trailingYearSpecials(asEvents(items), new Date().toISOString().slice(0, 10)).latest;
+  const latest = regular[0] ?? sorted[0];
+  const byYear = new Map<string, { total: number; count: number; regularCount: number; special: number }>();
   for (const d of sorted) {
     const y = d.ex_dividend_date.slice(0, 4);
-    const prev = byYear.get(y) ?? { total: 0, count: 0 };
-    byYear.set(y, { total: prev.total + d.amount, count: prev.count + 1 });
+    const prev = byYear.get(y) ?? { total: 0, count: 0, regularCount: 0, special: 0 };
+    const isSpecial = specialDates.has(d.ex_dividend_date);
+    byYear.set(y, { total: prev.total + d.amount, count: prev.count + 1, regularCount: prev.regularCount + (isSpecial ? 0 : 1), special: prev.special + (isSpecial ? d.amount : 0) });
   }
   // The ~6-year window usually opens mid-year, so its oldest year has fewer
   // payments than the one after and its total reads as a cut. It is left out
@@ -126,14 +141,16 @@ export default async function StockDividendsPage({ params, requireData = false }
   const last = byYear.get(lastYear);
   const prior = yearBefore !== partialOldest ? byYear.get(yearBefore) : undefined;
   const facts: string[] = [];
-  const freqKey = last ? FREQUENCY_KEY[last.count] : undefined;
+  const freqKey = last ? FREQUENCY_KEY[last.regularCount] : undefined;
   if (freqKey) facts.push(t(freqKey, { name }));
   if (last && prior) {
-    const change = (last.total - prior.total) / prior.total;
-    const vars = { year: lastYear, prev: yearBefore, amount: f.perShare(last.total), change: f.pct(Math.abs(change), 0) };
+    // Regular payments only: a special would read as a huge raise, then a cut.
+    const [lastRegular, priorRegular] = [last.total - last.special, prior.total - prior.special];
+    const change = (lastRegular - priorRegular) / priorRegular;
+    const vars = { year: lastYear, prev: yearBefore, amount: f.perShare(lastRegular), change: f.pct(Math.abs(change), 0) };
     facts.push(Math.abs(change) < 0.005 ? t('stock:dividendsYearSame', vars) : t(change > 0 ? 'stock:dividendsYearUp' : 'stock:dividendsYearDown', vars));
   }
-  const lastChange = lastRegularChange([...sorted].reverse());
+  const lastChange = lastRegularChange([...regular].reverse());
   if (lastChange) {
     const vars = { from: f.perShare(lastChange.from), to: f.perShare(lastChange.to), date: f.monthYear(lastChange.date) };
     facts.push(t(lastChange.to > lastChange.from ? 'stock:dividendsLastRaise' : 'stock:dividendsLastCut', vars));
@@ -177,8 +194,11 @@ export default async function StockDividendsPage({ params, requireData = false }
               ? t('stock:dividendsSummaryYield', { name, yield: f.pct(yieldPct) })
               : null}{' '}
             {t('stock:dividendsSummaryLatest', { amount: f.perShare(latest.amount), date: f.longDate(latest.ex_dividend_date) })}{' '}
+            {recentSpecial && <>{t('stock:specialDividendNote', { amount: f.perShare(recentSpecial.amount), date: f.monthYear(recentSpecial.exDate) })}{' '}</>}
             {/* The beginner's question, answered on the page instead of in the calculator. */}
-            {last && lastYear !== partialOldest && <>{t('stock:dividendsTenShares', { amount: f.usd(last.total * 10), year: lastYear })}{' '}</>}
+            {last && lastYear !== partialOldest && <>{last.special > 0
+              ? t('stock:dividendsTenSharesWithSpecial', { amount: f.usd(last.total * 10), year: lastYear, special: f.usd(last.special * 10) })
+              : t('stock:dividendsTenShares', { amount: f.usd(last.total * 10), year: lastYear })}{' '}</>}
             <Link href="/glossary/dividend-yield" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">{t('stock:dividendsWhatIsYield')}</Link>
           </p>
           {facts.length > 0 && (
@@ -229,7 +249,10 @@ export default async function StockDividendsPage({ params, requireData = false }
                 rows={sorted.map((d) => (
                   <tr key={d.ex_dividend_date} className="border-b border-border/50">
                     <th scope="row" className="py-2 font-normal text-foreground">{f.date(d.ex_dividend_date)}</th>
-                    <td className="py-2 text-right font-mono tabular-nums">{f.perShare(d.amount)}</td>
+                    <td className="py-2 text-right font-mono tabular-nums">
+                      {specialDates.has(d.ex_dividend_date) && <span className="mr-2 font-sans text-xs text-muted-foreground">{t('stock:dividendsSpecialTag')}</span>}
+                      {f.perShare(d.amount)}
+                    </td>
                     {hasPaid && <td className="py-2 text-right text-muted-foreground">{d.payment_date ? f.date(d.payment_date) : <NotReported t={t} />}</td>}
                   </tr>
                 ))}

@@ -161,7 +161,7 @@ export function StatisticsGrid({
   industry?: string | null;
   forceFull?: boolean;
 }) {
-  const { t } = useTranslation('stock');
+  const { t, i18n } = useTranslation('stock');
   const clock = useClock();
   const { isSimplified: rawSimplified } = useExperienceLevel();
   // Local, non-destructive "show everything" toggle. Expanding the full stats
@@ -416,7 +416,12 @@ export function StatisticsGrid({
       key="div"
       label="Dividend Yield"
       value={s.dividendYield != null && s.dividendYield > 0 ? fmt(s.dividendYield, 'percent') : t('statisticsGridDividendNone')}
-      insight={dividendInsight(s.dividendYield)}
+      insight={s.specialDividend
+        ? `${dividendInsight(s.dividendYield)}. ${t('statisticsGridDividendSpecial', {
+            amount: fmt(s.specialDividend.amount, 'currency'),
+            date: new Date(`${s.specialDividend.exDate}T00:00:00Z`).toLocaleDateString(i18n.language, { month: 'short', year: 'numeric', timeZone: 'UTC' }),
+          })}`
+        : dividendInsight(s.dividendYield)}
       context={s.dividendYield != null && s.dividendYield > 0 ? sectorContext(s.dividendYield, dist('dividend_yield'), 'yield', benchmarkLabel) : ''}
       tourId="stat-dividend-yield"
       ticker={ticker}

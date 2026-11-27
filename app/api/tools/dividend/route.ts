@@ -7,6 +7,7 @@ import {
   type DividendItem,
 } from '@/lib/twelvedata/twelvedata-client';
 import { withRateLimit } from '@/lib/security/api-security';
+import { regularPayments } from '@/lib/dividends/dividend-income';
 
 const MAX_HOLDINGS = 15;
 
@@ -66,18 +67,11 @@ interface DividendResult {
  * the yield (e.g. KO showing ~3.1% instead of ~2.5%).
  */
 function computeAnnualDividendPerShare(dividends: DividendItem[]): number {
-  const all = dividends
-    .filter((d) => d.amount > 0 && d.ex_dividend_date)
-    .map((d) => ({ t: new Date(d.ex_dividend_date).getTime(), a: d.amount }))
-    .filter((d) => !Number.isNaN(d.t))
-    .sort((a, b) => b.t - a.t);
-
-  // Drop one-off payments far above the typical one: TD books spin-offs as cash
-  // dividends (HON's $115.89 on 2026-06-29 vs. ~$1.19 quarterly), and a
-  // special shouldn't be projected as recurring income either.
-  const amounts = all.map((d) => d.a).sort((a, b) => a - b);
-  const typical = amounts[Math.floor(amounts.length / 2)];
-  const valid = all.filter((d) => d.a <= typical * 5);
+  // Specials and spin-offs booked as cash (HON's $115.89, COST's $30) aren't
+  // recurring income. regularPayments judges them against their neighbours: the
+  // median this used to compare with dropped NVDA's real raise ($0.01 to $0.25).
+  const valid = regularPayments(dividends.map((d) => ({ exDate: d.ex_dividend_date, payDate: null, amount: d.amount })))
+    .map((e) => ({ t: new Date(e.exDate).getTime(), a: e.amount }));
 
   if (valid.length === 0) return 0;
   if (valid.length === 1) return valid[0].a * 4; // single record — assume quarterly

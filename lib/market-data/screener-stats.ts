@@ -68,6 +68,8 @@ import { getTickerOverride, NAME_FIXES } from '@/lib/market-data/ticker-override
 import { notifyHealthScoreChanges, notifyQuarterlyHealthChanges, type HealthScoreChange } from '@/lib/notifications/notification-creators';
 import type { ScreenerRow } from '@/app/api/screener/route';
 import { chunk } from '@/lib/utils';
+import { payerSchedules } from '@/lib/dividends/dividend-schedule';
+import type { DividendEvent } from '@/lib/dividends/dividend-income';
 
 /** /statistics costs ~53 credits/symbol (matches app/api/screener/refresh/
  *  route.ts's CREDITS_PER_SYMBOL) — reserved against the same shared budget
@@ -141,8 +143,8 @@ function isAllCaps(name: string | null | undefined): boolean {
   return !!name && /[A-Z]/.test(name) && name === name.toUpperCase();
 }
 
-/** Map a raw TwelveData /statistics payload to the screener_stats column shape. */
-export function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
+/** Map a raw TwelveData /statistics payload to the screener_stats column shape. `dividends` (payerSchedules) takes a special dividend out of the yield. */
+export function parseStats(raw: TwelveDataStatisticsRaw, sym: string, dividends?: DividendEvent[]) {
   const s = raw.statistics ?? {};
   const v = s.valuations_metrics ?? {};
   const sp = s.stock_price_summary ?? {};
@@ -164,7 +166,7 @@ export function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
     week52_low: sp.fifty_two_week_low ?? null,
     day50_ma: sp.day_50_ma ?? null,
     day200_ma: sp.day_200_ma ?? null,
-    dividend_yield: sanitizeDividendYield(d),
+    dividend_yield: sanitizeDividendYield(d, dividends),
     payout_ratio: d.payout_ratio ?? null,
     profit_margin: plausibleProfitMargin(f),
     revenue_ttm: fi.revenue_ttm ? Math.round(fi.revenue_ttm) : null,
@@ -176,7 +178,7 @@ export function parseStats(raw: TwelveDataStatisticsRaw, sym: string) {
 }
 
 /** Build a CompanyStatistics object from the raw TwelveData batch payload. */
-function rawToCompanyStats(raw: TwelveDataStatisticsRaw, sym: string): CompanyStatistics {
+function rawToCompanyStats(raw: TwelveDataStatisticsRaw, sym: string, dividends?: DividendEvent[]): CompanyStatistics {
   const s = raw.statistics ?? {};
   const v = s.valuations_metrics ?? {};
   const sp = s.stock_price_summary ?? {};
@@ -199,7 +201,7 @@ function rawToCompanyStats(raw: TwelveDataStatisticsRaw, sym: string): CompanySt
     avgVolume: ss.avg_90_volume ?? null,
     sharesFloat: ss.float_shares ?? null,
     shortRatio: ss.short_ratio ?? null,
-    dividendYield: sanitizeDividendYield(d),
+    dividendYield: sanitizeDividendYield(d, dividends),
     profitMargin: plausibleProfitMargin(f),
     revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
     epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
@@ -342,6 +344,12 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
       )
     );
 
+    // 1 credit per paying symbol on a miss, cached 2 days and shared with the holdings dividend hub.
+    const dividends = await payerSchedules(
+      Object.fromEntries(group.map((sym) => [sym, raw[sym]?.statistics?.dividends_and_splits])),
+      'cron',
+    );
+
     for (const sym of group) {
       const statsRaw = raw[sym];
       if (!statsRaw) continue;
@@ -362,11 +370,11 @@ export async function fetchAndUpsertScreenerStats(symbols: string[]): Promise<Sc
 
       const { income, balance, cashflow, degraded } = financialsMap.get(sym) ?? { income: [], balance: [], cashflow: [], degraded: false };
       await fixForeignValuation(sym, statsRaw.statistics?.valuations_metrics, { income, balance });
-      const stats = parseStats(statsRaw, sym);
+      const stats = parseStats(statsRaw, sym, dividends.get(sym));
       const company = companyMap.get(sym);
 
       // Compute health score from the full CompanyStatistics shape + financials
-      const companyStats = rawToCompanyStats(statsRaw, sym);
+      const companyStats = rawToCompanyStats(statsRaw, sym, dividends.get(sym));
       if (degraded) degradedSymbols.add(sym);
       const sector =
         normalizeSector(cachedSectorMap.get(sym)) ??

@@ -57,9 +57,11 @@ import {
   withRateLimitRetry,
   TwelveDataRateLimitError,
   reportDateToFiscalQuarter,
-  sanitizeDividendYield,
+  dividendFields,
   plausibleProfitMargin,
 } from '@/lib/twelvedata/twelvedata-client';
+import { payerSchedules } from '@/lib/dividends/dividend-schedule';
+import type { DividendEvent } from '@/lib/dividends/dividend-income';
 import { getCached, setCached, COMPANY_PROFILE_TTL_SECONDS } from '@/lib/cache/market-data-cache';
 import { rmget, rset } from '@/lib/cache/redis-cache';
 import { SIGNIFICANT_TICKERS } from '@/lib/market-data/significant-tickers';
@@ -150,7 +152,7 @@ type RawEarnings = {
   status?: string;
 };
 
-function parseStats(sym: string, raw: RawStats | undefined) {
+function parseStats(sym: string, raw: RawStats | undefined, dividends?: DividendEvent[]) {
   if (!raw || raw.code || raw.status === 'error' || !raw.statistics) return null;
   const s = raw.statistics;
   const v = (s.valuations_metrics as Record<string, number>) ?? {};
@@ -174,7 +176,7 @@ function parseStats(sym: string, raw: RawStats | undefined) {
     avgVolume: ss.avg_90_volume ?? null,
     sharesFloat: ss.float_shares ?? null,
     shortRatio: ss.short_ratio ?? null,
-    dividendYield: sanitizeDividendYield(d),
+    ...dividendFields(d, dividends),
     profitMargin: plausibleProfitMargin(f as Parameters<typeof plausibleProfitMargin>[0]),
     revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
     epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,
@@ -192,9 +194,9 @@ function parseStats(sym: string, raw: RawStats | undefined) {
  * itself doesn't touch those, they're bolted on only by the other writer
  * (fetchAndUpsertScreenerStats), and PostgREST upsert leaves absent keys alone.
  */
-function buildScreenerRow(sym: string, raw: RawStats | undefined) {
+function buildScreenerRow(sym: string, raw: RawStats | undefined, dividends?: DividendEvent[]) {
   if (!raw || raw.code || raw.status === 'error' || !raw.statistics) return null;
-  return parseScreenerStatsRow(raw as unknown as TwelveDataStatisticsRaw, sym);
+  return parseScreenerStatsRow(raw as unknown as TwelveDataStatisticsRaw, sym, dividends);
 }
 
 /**
@@ -319,6 +321,11 @@ async function handleStatsBatch(
     await Promise.all(needsStats.map((sym) =>
       fixForeignValuation(sym, (raw[`${sym}_s`] as RawStats | undefined)?.statistics?.valuations_metrics as Record<string, number> | undefined)));
 
+    const dividends = await payerSchedules(
+      Object.fromEntries(needsStats.map((sym) => [sym, (raw[`${sym}_s`] as RawStats | undefined)?.statistics?.dividends_and_splits as Parameters<typeof dividendFields>[0]])),
+      'cron',
+    );
+
     let statsRefreshed = 0;
     let earningsRefreshed = 0;
     const screenerRowsBatch: Array<Record<string, unknown>> = [];
@@ -338,7 +345,7 @@ async function handleStatsBatch(
 
       const writes: Promise<void>[] = [];
 
-      const stats = parseStats(sym, statsRaw);
+      const stats = parseStats(sym, statsRaw, dividends.get(sym));
       if (stats) {
         writes.push(
           setCached(`stats:${sym}`, sym, 'statistics', stats, STATS_TTL),
@@ -357,7 +364,7 @@ async function handleStatsBatch(
 
       await Promise.all(writes);
 
-      const screenerRow = buildScreenerRow(sym, statsRaw);
+      const screenerRow = buildScreenerRow(sym, statsRaw, dividends.get(sym));
       if (screenerRow) {
         const profile = profileMap.get(sym);
         // This upsert leaves the health columns alone, so nulling beta here

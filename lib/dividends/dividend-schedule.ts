@@ -14,7 +14,7 @@
  * Server only.
  */
 
-import { getDividends } from '@/lib/twelvedata/twelvedata-client';
+import { getDividends, sanitizeDividendYield } from '@/lib/twelvedata/twelvedata-client';
 import { rmget, rset } from '@/lib/cache/redis-cache';
 import { getCachedMany, setCached } from '@/lib/cache/market-data-cache';
 import { tryReserveCredits, tryReserveOrganicCredits } from '@/lib/twelvedata/credit-budget';
@@ -81,7 +81,7 @@ async function fetchSchedule(sym: string): Promise<DividendEvent[]> {
  */
 export async function getDividendSchedules(
   symbols: string[],
-  budget: 'organic' | 'cron',
+  budget: 'organic' | 'cron' | 'cache-only',
 ): Promise<{ schedules: Map<string, DividendEvent[]>; missing: string[] }> {
   const syms = [...new Set(symbols.map((s) => s.toUpperCase()))].filter((s) => /^[A-Z0-9.\-]{1,10}$/.test(s));
   const schedules = new Map<string, DividendEvent[]>();
@@ -96,6 +96,7 @@ export async function getDividendSchedules(
   }
   const toFetch = syms.filter((s) => !schedules.has(s));
   const missing: string[] = [];
+  if (budget === 'cache-only') return { schedules, missing: toFetch };
   if (toFetch.length) {
     const admitted = budget === 'cron' ? await tryReserveCredits(toFetch.length) : await tryReserveOrganicCredits(toFetch.length);
     if (!admitted) return { schedules, missing: toFetch };
@@ -115,4 +116,29 @@ export async function getDividendSchedules(
     }
   }
   return { schedules, missing };
+}
+
+/**
+ * Schedules for the symbols whose TwelveData /statistics dividend block says
+ * they pay, keyed by symbol, for sanitizeDividendYield / dividendFields to
+ * take a special dividend out of the yield. A non-payer costs nothing; a payer
+ * over budget is absent, and its yield stays TwelveData's.
+ * 'cache-only' is for a page render: a miss fetches in the background for next
+ * time instead of holding the page on Nasdaq's 6 s timeout. The nightly crons
+ * warm every screener symbol, so a miss is a stock outside that universe.
+ */
+export async function payerSchedules(
+  dividendBlocks: Record<string, Parameters<typeof sanitizeDividendYield>[0]>,
+  budget: 'organic' | 'cron' | 'cache-only',
+): Promise<Map<string, DividendEvent[]>> {
+  const payers = Object.entries(dividendBlocks).filter(([, d]) => (sanitizeDividendYield(d) ?? 0) > 0).map(([s]) => s);
+  if (payers.length === 0) return new Map();
+  try {
+    const { schedules, missing } = await getDividendSchedules(payers, budget);
+    if (budget === 'cache-only' && missing.length) void getDividendSchedules(missing, 'organic').catch(() => {});
+    return schedules;
+  } catch (err) {
+    console.error('[dividend-schedule] payerSchedules:', err);
+    return new Map();
+  }
 }

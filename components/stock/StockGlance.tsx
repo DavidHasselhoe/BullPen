@@ -72,6 +72,11 @@ export function StockGlance({ ticker, name, snapshot, locale, t, extras }: Props
   if (dividendYield != null) {
     sentences.push(dividendYield > 0 ? t('stock:glanceDividend', { yield: pct(dividendYield) }) : t('stock:glanceNoDividend'));
   }
+  const special = s.specialDividend as { amount: number; exDate: string } | null | undefined;
+  if (special && dividendYield != null && dividendYield > 0) {
+    const date = new Date(`${special.exDate}T00:00:00Z`).toLocaleDateString(locale, { year: 'numeric', month: 'long', timeZone: 'UTC' });
+    sentences.push(t('stock:specialDividendNote', { amount: usd(special.amount), date }));
+  }
 
   // Each label links to the glossary term that explains it.
   const facts: Array<{ label: string; slug: string; value: string }> = [];

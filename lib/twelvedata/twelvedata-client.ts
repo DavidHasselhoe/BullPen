@@ -11,6 +11,7 @@ import { sessionDateET, tradingMinutesET } from '@/lib/market-data/trading-day';
 import { classifyTradingSession, strayExtendedPrints } from '@/lib/market-data/extended-hours-spikes';
 // Circular (latest-rates quotes FX through this file); both sides only call each other at runtime.
 import { fixForeignValuation } from '@/lib/currency/latest-rates';
+import { trailingYearSpecials, type DividendEvent } from '@/lib/dividends/dividend-income';
 import { withSecQuarters } from '@/lib/edgar/sec-statements';
 
 const TWELVE_DATA_BASE_URL = 'https://api.twelvedata.com';
@@ -1053,6 +1054,8 @@ export interface CompanyStatistics {
   sharesFloat: number | null;
   shortRatio: number | null;
   dividendYield: number | null;
+  /** The past year's newest special dividend, left out of dividendYield. Absent in stats cached before 2026-11-27. */
+  specialDividend?: SpecialDividend | null;
   profitMargin: number | null;
   revenueGrowthTTM: number | null;
   epsGrowthTTM: number | null;
@@ -1178,18 +1181,43 @@ export function plausibleProfitMargin(
   return typeof eps === 'number' && eps !== 0 && m !== 0 && eps > 0 !== m > 0 ? null : m;
 }
 
+/**
+ * Neither figure survives a special dividend that is also the newest payment:
+ * COST's $30 on 2026-11-24 sat in the trailing year (3.2%) and was the payment
+ * forward multiplied by 4 (~11%), against a real ~0.5% regular rate. So given
+ * the payment history (`events`), the trailing yield keeps only its regular
+ * share (trailingYearSpecials). Without it, TwelveData's figures as before.
+ * ponytail: scales TD's trailing by our own year's split, so for a day or so
+ * around a special's ex-date the two windows can disagree. Store a price with
+ * the stats and divide our own regular sum by it if that ever shows.
+ */
 export function sanitizeDividendYield(d: {
   trailing_annual_dividend_yield?: number | null;
   forward_annual_dividend_yield?: number | null;
   dividend_date?: string | null;
-} | undefined): number | null {
+} | undefined, events?: DividendEvent[] | null): number | null {
   if (!d?.dividend_date) return null;
   const monthsSinceLastDividend = (Date.now() - new Date(d.dividend_date).getTime()) / (1000 * 60 * 60 * 24 * 30.44);
   if (monthsSinceLastDividend > STALE_DIVIDEND_MONTHS) return 0;
-  const trailing = d.trailing_annual_dividend_yield ?? null;
+  const share = events?.length ? trailingYearSpecials(events, new Date().toISOString().slice(0, 10)).regularShare : 1;
+  const trailing = d.trailing_annual_dividend_yield != null ? d.trailing_annual_dividend_yield * share : null;
   const forward = d.forward_annual_dividend_yield ?? null;
   if (trailing == null) return forward;
   return forward != null && forward > 0 ? Math.min(trailing, forward) : trailing;
+}
+
+export interface SpecialDividend { amount: number; exDate: string }
+
+/** dividendYield plus the past year's newest special dividend, for the stats shapes that show both. */
+export function dividendFields(
+  d: Parameters<typeof sanitizeDividendYield>[0],
+  events?: DividendEvent[] | null,
+): { dividendYield: number | null; specialDividend: SpecialDividend | null } {
+  const latest = events?.length ? trailingYearSpecials(events, new Date().toISOString().slice(0, 10)).latest : null;
+  return {
+    dividendYield: sanitizeDividendYield(d, events),
+    specialDividend: latest ? { amount: latest.amount, exDate: latest.exDate } : null,
+  };
 }
 
 export async function getStatistics(symbol: string): Promise<CompanyStatistics> {
@@ -1215,6 +1243,9 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
   const d = stats.dividends_and_splits ?? {};
   const f = stats.financials ?? {};
   const fi = f.income_statement ?? {};
+  // Dynamic: dividend-schedule imports this module.
+  const { payerSchedules } = await import('@/lib/dividends/dividend-schedule');
+  const events = (await payerSchedules({ [symbol.toUpperCase()]: d }, 'organic')).get(symbol.toUpperCase());
 
   return {
     symbol,
@@ -1231,7 +1262,7 @@ export async function getStatistics(symbol: string): Promise<CompanyStatistics> 
     avgVolume: s.avg_90_volume ?? null,
     sharesFloat: s.float_shares ?? null,
     shortRatio: s.short_ratio ?? null,
-    dividendYield: sanitizeDividendYield(d),
+    ...dividendFields(d, events),
     profitMargin: plausibleProfitMargin(f),
     revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
     epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,

@@ -8,7 +8,8 @@
  * hydration and then asking for it over HTTP. The route is now a thin wrapper.
  */
 
-import { batchFetch, getStockQuote, withRateLimitRetry, TwelveDataInvalidSymbolError, reportDateToFiscalQuarter, sanitizeDividendYield, plausibleProfitMargin, plausibleForwardPe } from '@/lib/twelvedata/twelvedata-client';
+import { batchFetch, getStockQuote, withRateLimitRetry, TwelveDataInvalidSymbolError, reportDateToFiscalQuarter, dividendFields, plausibleProfitMargin, plausibleForwardPe } from '@/lib/twelvedata/twelvedata-client';
+import { payerSchedules } from '@/lib/dividends/dividend-schedule';
 import { getIndexedKind, instrumentTypeForKind } from '@/lib/search/refresh-index';
 import { getCached, getCachedWithMeta, getCachedStale, getCachedStaleWithMeta, setCached } from '@/lib/cache/market-data-cache';
 import { rget, rset, candleTtlSeconds } from '@/lib/cache/redis-cache';
@@ -214,6 +215,7 @@ export async function buildSnapshot(tickerParam: string): Promise<StockSnapshot>
         const f = (s.financials as Record<string, unknown>) ?? {};
         const fi = (f.income_statement as Record<string, number>) ?? {};
         const d = (s.dividends_and_splits as { trailing_annual_dividend_yield?: number; forward_annual_dividend_yield?: number; dividend_date?: string }) ?? {};
+        const dividends = (await payerSchedules({ [sym]: d }, 'cache-only')).get(sym);
         statistics = {
           marketCap: v.market_capitalization ?? null,
           enterpriseValue: v.enterprise_value ?? null,
@@ -228,7 +230,7 @@ export async function buildSnapshot(tickerParam: string): Promise<StockSnapshot>
           avgVolume: ss.avg_90_volume ?? null,
           sharesFloat: ss.float_shares ?? null,
           shortRatio: ss.short_ratio ?? null,
-          dividendYield: sanitizeDividendYield(d),
+          ...dividendFields(d, dividends),
           profitMargin: plausibleProfitMargin(f as Parameters<typeof plausibleProfitMargin>[0]),
           revenueGrowthTTM: fi.quarterly_revenue_growth ?? null,
           epsGrowthTTM: fi.quarterly_earnings_growth_yoy ?? null,

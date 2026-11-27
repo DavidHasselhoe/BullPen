@@ -47,25 +47,72 @@ function monthStartPlus(d: string, n: number): string {
   return dt.toISOString().slice(0, 10);
 }
 
-/**
- * Valid, de-duplicated payments, newest first, without one-offs. TwelveData
- * books spin-offs as cash dividends (HON's $115.89 against ~$1.19 quarterly),
- * and a special isn't recurring income, so a payment over 5x the ones on both
- * sides of it goes. Against neighbours, not the median: years of small payments
- * made NVDA's real raise ($0.01 to $0.25, June 2026) look like a special. A
- * raise that is still the newest payment has only one neighbour and counts
- * from its second payment, since projecting a special forward is the worse error.
- */
-export function regularPayments(events: DividendEvent[]): DividendEvent[] {
+function validPayments(events: DividendEvent[]): DividendEvent[] {
   const seen = new Set<string>();
-  const valid = events
+  return events
     .filter((e) => e.amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(e.exDate))
     .filter((e) => (seen.has(e.exDate) ? false : (seen.add(e.exDate), true)))
     .sort((a, b) => b.exDate.localeCompare(a.exDate));
-  return valid.filter((e, i) => {
-    const neighbours = [valid[i - 1], valid[i + 1]].filter(Boolean);
-    return neighbours.length === 0 || neighbours.some((n) => e.amount <= n.amount * 5);
-  });
+}
+
+/**
+ * Whether valid[i] (newest first) is a one-off: a special dividend, or a
+ * spin-off TwelveData booked as cash (HON's $115.89 against ~$1.19 quarterly).
+ * Judged against neighbours, not the median: years of small payments made
+ * NVDA's real raise ($0.01 to $0.25, June 2026) look like a special.
+ * - Between two payments: over 2x both. A raise holds at the next payment, a
+ *   special drops back (HST's $0.92 between $0.20s, COST's $15 in Dec 2023).
+ * - Newest: over 5x the one before, or over 2x and off the usual cadence, an
+ *   extra payment squeezed in (COST's $30 on 2026-11-24, 25 days after a
+ *   regular $1.47 on a ~91-day rhythm). A big raise on schedule counts from its
+ *   second payment, since projecting a special forward is the worse error.
+ * - Oldest: over 5x the one after.
+ * ponytail: an extra payment no bigger than 2x a regular one passes as regular.
+ * Add a cadence check for middle payments if one turns up.
+ */
+function isOneOff(valid: DividendEvent[], i: number, medianGap: number | null): boolean {
+  const e = valid[i];
+  const [newer, older] = [valid[i - 1], valid[i + 1]];
+  if (newer && older) return e.amount > newer.amount * 2 && e.amount > older.amount * 2;
+  const n = newer ?? older;
+  if (!n) return false;
+  if (e.amount > n.amount * 5) return true;
+  return !newer && medianGap != null && e.amount > n.amount * 2 && daysBetween(n.exDate, e.exDate) < medianGap / 2;
+}
+
+function medianGapDays(valid: DividendEvent[]): number | null {
+  if (valid.length < 3) return null;
+  const gaps = valid.slice(1).map((e, i) => daysBetween(e.exDate, valid[i].exDate)).sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)];
+}
+
+/** Valid, de-duplicated payments, newest first, without one-offs (see isOneOff). */
+export function regularPayments(events: DividendEvent[]): DividendEvent[] {
+  const valid = validPayments(events);
+  const gap = medianGapDays(valid);
+  return valid.filter((_, i) => !isOneOff(valid, i, gap));
+}
+
+/** The one-offs regularPayments leaves out, newest first. */
+export function specialPayments(events: DividendEvent[]): DividendEvent[] {
+  const valid = validPayments(events);
+  const gap = medianGapDays(valid);
+  return valid.filter((_, i) => isOneOff(valid, i, gap));
+}
+
+/**
+ * Over the year to `today` (ex-dates after today are declared, not paid):
+ * the share of the cash that was regular, 1 when nothing was special, and the
+ * newest special. A trailing yield times regularShare is the yield a holder
+ * can expect to keep getting.
+ */
+export function trailingYearSpecials(events: DividendEvent[], today: string): { regularShare: number; latest: DividendEvent | null } {
+  const inYear = (e: DividendEvent) => e.exDate <= today && daysBetween(e.exDate, today) < 365;
+  const specials = specialPayments(events).filter(inYear);
+  if (specials.length === 0) return { regularShare: 1, latest: null };
+  const special = specials.reduce((s, e) => s + e.amount, 0);
+  const regular = regularPayments(events).filter(inYear).reduce((s, e) => s + e.amount, 0);
+  return { regularShare: regular / (regular + special), latest: specials[0] };
 }
 
 /** The next payment a holder gets: the earliest one whose money hasn't arrived yet. */
@@ -204,6 +251,28 @@ if (process.argv[1]?.endsWith('dividend-income.ts')) {
   assert(holdingYear('NVDA', nvda, 10, '2026-11-09').every((e) => e.perShare === 0.25), 'projections use the raised amount');
   assert(regularPayments(nvda.slice(2).concat()).length === 3, 'small steady payments all stay');
   assert(regularPayments([{ exDate: '2026-09-10', payDate: null, amount: 3 }, ...nvda.slice(2)])[0].amount === 0.01, 'a lone newest jump waits for a second payment');
+
+  // COST as cached on 2026-11-27: a $30 special 25 days after a regular $1.47.
+  const cost: DividendEvent[] = [
+    { exDate: '2026-11-24', payDate: null, amount: 30 },
+    ...['2026-10-30', '2026-07-24', '2026-05-01'].map((exDate) => ({ exDate, payDate: null, amount: 1.47 })),
+    ...['2026-01-30', '2025-10-31', '2025-08-01', '2025-05-02'].map((exDate) => ({ exDate, payDate: null, amount: 1.3 })),
+    ...['2025-02-07', '2024-11-01', '2024-07-26', '2024-04-25'].map((exDate) => ({ exDate, payDate: null, amount: 1.16 })),
+    { exDate: '2024-02-01', payDate: null, amount: 1.02 },
+    { exDate: '2023-12-27', payDate: null, amount: 15 },
+    { exDate: '2023-11-02', payDate: null, amount: 1.02 },
+  ];
+  assert(specialPayments(cost).map((e) => e.amount).join() === '30,15', 'both COST specials found, no regular one');
+  const costYear = trailingYearSpecials(cost, '2026-11-27');
+  assert(close(costYear.regularShare, 5.71 / 35.71) && costYear.latest?.amount === 30, 'COST regular share of the past year');
+  assert(trailingYearSpecials(cost, '2026-11-20').regularShare === 1, 'a declared special is not counted before its ex-date');
+  assert(trailingYearSpecials(ko, today).regularShare === 1, 'no special, yield untouched');
+  // HST: a special under 5x, between two regular payments.
+  const hst = [0.2, 0.92, 0.2, 0.2].map((amount, i) => ({ exDate: `2026-0${9 - i * 2}-15`, payDate: null, amount }));
+  assert(specialPayments(hst).length === 1 && specialPayments(hst)[0].amount === 0.92, 'HST special under 5x found');
+  // A 3x raise on schedule is not a special, even as the newest payment.
+  const raise = [0.6, 0.2, 0.2, 0.2].map((amount, i) => ({ exDate: `2026-${String(10 - i * 3).padStart(2, '0')}-01`, payDate: null, amount }));
+  assert(specialPayments(raise).length === 0, 'on-schedule raise stays regular');
 
   // Stopped paying: nothing projected.
   const stopped = [{ exDate: '2025-03-01', payDate: null, amount: 0.5 }, { exDate: '2024-12-01', payDate: null, amount: 0.5 }];

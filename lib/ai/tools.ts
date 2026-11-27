@@ -1563,6 +1563,8 @@ const getKeyStatistics = tool({
     'Fetch key valuation and financial statistics for a stock: P/E ratio (TTM and forward), ' +
     'P/B ratio, EV/EBITDA, beta, market cap, dividend yield, profit margin, short ratio, and growth rates. ' +
     'Use when the user asks whether a stock is expensive, its valuation multiples, or general financial health. ' +
+    'dividendYield is the regular dividend only; a one-time special dividend paid in the past year comes as ' +
+    'specialDividend, and should be described as one-time, never as yearly income. ' +
     // Said ~200 until 2026-10-26; /statistics is ~53 (screener/refresh measures
     // 5 x 53), and the overstatement made Bull ask permission instead of fetching.
     'Costs about 50 API credits, cached for a day. For a set of stocks, screenStocks has nightly P/E, forward ' +
@@ -1590,6 +1592,9 @@ const getKeyStatistics = tool({
         evToEbitda: s.evToEbitda?.toFixed(2) ?? 'N/A',
         beta: s.beta?.toFixed(2) ?? 'N/A',
         dividendYield: fmtPct(s.dividendYield),
+        ...(s.specialDividend && {
+          specialDividend: `$${s.specialDividend.amount.toFixed(2)} per share, one time, ex-dividend ${s.specialDividend.exDate}`,
+        }),
         profitMargin: fmtPct(s.profitMargin),
         shortRatio: s.shortRatio?.toFixed(2) ?? 'N/A',
         week52High: s.week52High != null ? `$${s.week52High.toFixed(2)}` : 'N/A',
