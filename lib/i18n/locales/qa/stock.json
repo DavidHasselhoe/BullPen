@@ -312,7 +312,6 @@
   "sankeyDetailTooltip": "«Hoow muuch oof thee iincoomee staateemeent thiis fiiliing brookee oouut. AA paartiiaal chaart meeaans thee coompaany diid noot reepoort thoosee liinees seepaaraateely.»",
   "sankeyExplainButton": "«EExplaaiin»",
   "sankeyNoData": "«Fiinaanciiaal floow daataa noot aavaaiilaablee foor thiis peeriiood»",
-  "sankeyStatementIncomplete": "«OOuur daataa prooviideer oonly haas paartiiaal fiiguurees foor {{period}} soo faar, wiith noo reeveenuuee too breeaak doown. Thee chaart fiills iin ooncee thee fuull iincoomee staateemeent aarriivees.»",
   "sankeyNodeCostOfRevenue": "«Coost oof Reeveenuuee»",
   "sankeyNodeCostsAndTax": "«Coosts & Taax»",
   "sankeyNodeGrossProfit": "«Grooss Proofiit»",

@@ -306,7 +306,6 @@
   "sankeyDetailTooltip": "Niveau de détail du compte de résultats dans ce document. Un graphique partiel signifie que la société n'a pas communiqué ces lignes séparément.",
   "sankeyExplainButton": "Expliquer",
   "sankeyNoData": "Les données de flux financiers ne sont pas disponibles pour cette période",
-  "sankeyStatementIncomplete": "Notre fournisseur de données n'a pour l'instant que des chiffres partiels pour {{period}}, sans chiffre d'affaires à détailler. Le graphique s'affichera dès que le compte de résultat complet sera disponible.",
   "sankeyNodeCostOfRevenue": "Coût des Ventes",
   "sankeyNodeCostsAndTax": "Coûts et Impôts",
   "sankeyNodeGrossProfit": "Bénéfice Brut",
@@ -761,6 +760,7 @@
   "dividendsAnswerYes": "Oui.",
   "dividendsAnswerNo": "Non.",
   "dividendsAnswerNotYet": "Pas encore.",
+  "compareWithHeading": "Comparer {{name}}",
   "chartPresetVolume": "Volume",
   "healthMethodologyPoints": "({{count}} pts)",
   "financialsColumnDate": "Date",
@@ -774,7 +774,6 @@
   "indexBadgeDow30": "Dow 30",
   "commodityName_xpd": "Palladium",
   "commodityNoun_xpd": "palladium",
-  "compareWithHeading": "Comparer {{name}}",
   "compareWithPair": "{{a}} vs {{b}}",
   "compareWithTickers": "{{a}} vs {{b}}"
 }

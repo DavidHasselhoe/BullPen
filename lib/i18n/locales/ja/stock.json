@@ -312,7 +312,6 @@
   "sankeyDetailTooltip": "この申告書が損益計算書をどの程度細分化したか。部分的なチャートは、その会社がこれらの行項目を個別に報告しなかったことを意味します。",
   "sankeyExplainButton": "説明",
   "sankeyNoData": "この期間の財務フロー データは利用できません",
-  "sankeyStatementIncomplete": "{{period}}について、データ提供元にはまだ一部の数値しかなく、内訳を示す売上高がありません。完全な損益計算書が届き次第、チャートが表示されます。",
   "sankeyNodeCostOfRevenue": "売上原価",
   "sankeyNodeCostsAndTax": "コスト & 税金",
   "sankeyNodeGrossProfit": "粗利益",
@@ -773,8 +772,8 @@
   "dividendsAnswerYes": "はい。",
   "dividendsAnswerNo": "いいえ。",
   "dividendsAnswerNotYet": "まだです。",
-  "earningsEmailPlaceholder": "you@email.com",
   "compareWithHeading": "{{name}}を比較",
+  "earningsEmailPlaceholder": "you@email.com",
   "compareWithPair": "{{a}} vs {{b}}",
   "compareWithTickers": "{{a}} vs {{b}}"
 }

@@ -312,7 +312,6 @@
   "sankeyDetailTooltip": "How much of the income statement this filing broke out. A partial chart means the company did not report those lines separately.",
   "sankeyExplainButton": "Explain",
   "sankeyNoData": "Financial flow data not available for this period",
-  "sankeyStatementIncomplete": "Our data provider only has partial figures for {{period}} so far, with no revenue to break down. The chart fills in once the full income statement arrives.",
   "sankeyNodeCostOfRevenue": "Cost of Revenue",
   "sankeyNodeCostsAndTax": "Costs & Tax",
   "sankeyNodeGrossProfit": "Gross Profit",

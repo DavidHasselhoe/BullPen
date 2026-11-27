@@ -61,6 +61,7 @@
   "profileModalUploadHint": "JPEG, PNG o WebP, hasta 5 MB",
   "profileModalUploadPicture": "Subir foto",
   "profileModalUsernameLabel": "Nombre de usuario",
+  "profileModalUsernamePlaceholder": "juanperez",
   "publicHoldingsEmpty": "Sin posiciones públicas.",
   "publicProfileAnonymous": "Anónimo",
   "publicProfileExperienceAdvanced": "Avanzado",
@@ -119,8 +120,7 @@
   "feedEmptyBody": "Sigue un fondo o un miembro del Congreso y sus nuevas presentaciones y operaciones aparecerán aquí.",
   "feedBrowseFunds": "Explorar fondos",
   "feedBrowseCongress": "Explorar Congreso",
-  "activityReplyFallbackTarget": "a",
+  "activityReplyFallbackTarget": "alguien",
   "profileAvatarTierNormal": "Normal",
-  "profileModalUsernamePlaceholder": "juanperez",
   "profileModalPlanLabel": "Plan"
 }

@@ -9,7 +9,7 @@
   "activityMinsAgo": "vor {{m}}m",
   "activityOpened": "Hat eine neue Position in <symbolLink></symbolLink> eröffnet",
   "activityReplied": "Hat auf {{target}}s These zu <symbolLink></symbolLink> geantwortet: \"{{content}}\"",
-  "activityReplyFallbackTarget": "einer",
+  "activityReplyFallbackTarget": "jemand",
   "activityThesisTake": "Hat eine <badge></badge> These zu <symbolLink></symbolLink> gepostet: \"{{content}}\"",
   "activityTrimmed": "Position in <symbolLink></symbolLink> um {{pct}}% reduziert",
   "followButtonFollowState": "Folgen",

@@ -310,7 +310,6 @@
   "sankeyDetailTooltip": "Cuánto del estado de resultados este documento desglosó. Un gráfico parcial significa que la empresa no reportó esas líneas por separado.",
   "sankeyExplainButton": "Explicar",
   "sankeyNoData": "Datos de flujo financiero no disponibles para este período",
-  "sankeyStatementIncomplete": "Nuestro proveedor de datos solo tiene cifras parciales de {{period}} por ahora, sin ingresos que desglosar. El gráfico aparecerá cuando llegue el estado de resultados completo.",
   "sankeyNodeCostOfRevenue": "Costo de Ingresos",
   "sankeyNodeCostsAndTax": "Costos e Impuestos",
   "sankeyNodeGrossProfit": "Ganancia Bruta",
@@ -764,6 +763,9 @@
   "dividendsQuestion": "¿{{name}} paga dividendo?",
   "dividendsAnswerYes": "Sí.",
   "dividendsAnswerNotYet": "Todavía no.",
+  "compareWithHeading": "Comparar {{name}}",
+  "compareWithPair": "{{a}} vs {{b}}",
+  "compareWithTickers": "{{a}} vs {{b}}",
   "healthMethodologyPoints": "({{count}} pts)",
   "earningsEpsEst": "EPS Est.",
   "sankeyNodeSgA": "SG&A",
@@ -773,8 +775,5 @@
   "indexBadgeNasdaq100": "Nasdaq-100",
   "indexBadgeDow30": "Dow 30",
   "glanceFactBeta": "Beta",
-  "dividendsAnswerNo": "No.",
-  "compareWithHeading": "Comparar {{name}}",
-  "compareWithPair": "{{a}} vs {{b}}",
-  "compareWithTickers": "{{a}} vs {{b}}"
+  "dividendsAnswerNo": "No."
 }

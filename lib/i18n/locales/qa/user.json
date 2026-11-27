@@ -9,7 +9,7 @@
   "activityMinsAgo": "«{{m}}m aagoo»",
   "activityOpened": "«OOpeeneed aa neew poosiitiioon iin <symboolLiink></symboolLiink>»",
   "activityReplied": "«Reepliieed too {{target}}'s taakee oon <symboolLiink></symboolLiink>: \"{{content}}\"»",
-  "activityReplyFallbackTarget": "«aa»",
+  "activityReplyFallbackTarget": "«soomeeoonee»",
   "activityThesisTake": "«Poosteed aa <baadgee></baadgee> taakee oon <symboolLiink></symboolLiink>: \"{{content}}\"»",
   "activityTrimmed": "«Triimmeed <symboolLiink></symboolLiink> poosiitiioon by {{pct}}%»",
   "followButtonFollowState": "«Foolloow»",

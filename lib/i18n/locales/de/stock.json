@@ -310,7 +310,6 @@
   "sankeyDetailTooltip": "Wie detailliert diese Einreichung die Einkommensrechnung aufgeschlüsselt hat. Ein Teildiagramm bedeutet, dass das Unternehmen diese Positionen nicht separat ausgewiesen hat.",
   "sankeyExplainButton": "Erklären",
   "sankeyNoData": "Finanzfluss-Daten sind für diesen Zeitraum nicht verfügbar",
-  "sankeyStatementIncomplete": "Unser Datenanbieter hat für {{period}} bisher nur Teilzahlen, ohne Umsatz zum Aufschlüsseln. Das Diagramm erscheint, sobald die vollständige Gewinn- und Verlustrechnung vorliegt.",
   "sankeyNodeCostOfRevenue": "Umsatzkosten",
   "sankeyNodeCostsAndTax": "Kosten & Steuern",
   "sankeyNodeGrossProfit": "Bruttogewinn",
@@ -763,6 +762,9 @@
   "dividendsAnswerYes": "Ja.",
   "dividendsAnswerNo": "Nein.",
   "dividendsAnswerNotYet": "Noch nicht.",
+  "compareWithHeading": "{{name}} vergleichen",
+  "compareWithPair": "{{a}} vs. {{b}}",
+  "compareWithTickers": "{{a}} vs. {{b}}",
   "earningsQuarterYear": "Q{{quarter}} {{year}}",
   "insiderColumnInsider": "Insider",
   "statisticsGridBandMega": "Mega",
@@ -773,8 +775,5 @@
   "stockNavCommunity": "Community",
   "glanceFactBeta": "Beta",
   "commodityName_xau": "Gold",
-  "commodityName_xpd": "Palladium",
-  "compareWithHeading": "{{name}} vergleichen",
-  "compareWithPair": "{{a}} vs. {{b}}",
-  "compareWithTickers": "{{a}} vs. {{b}}"
+  "commodityName_xpd": "Palladium"
 }

@@ -9,7 +9,7 @@
   "activityMinsAgo": "{{m}}m siden",
   "activityOpened": "Åpnet en ny posisjon i <symbolLink></symbolLink>",
   "activityReplied": "Svarte på {{target}}s analyse av <symbolLink></symbolLink>: \"{{content}}\"",
-  "activityReplyFallbackTarget": "en",
+  "activityReplyFallbackTarget": "noen",
   "activityThesisTake": "Postet en <badge></badge> analyse av <symbolLink></symbolLink>: \"{{content}}\"",
   "activityTrimmed": "Redusert <symbolLink></symbolLink> posisjonen med {{pct}}%",
   "followButtonFollowState": "Følg",
@@ -91,6 +91,7 @@
   "publicProfileFollowerCount_one": "{{count}} følger",
   "publicProfileFollowerCount_other": "{{count}} følgere",
   "profileModalBadgesSettingsLink": "Endre i Innstillinger",
+  "profileModalPlanLabel": "Abonnement",
   "profileModalPlanFree": "Gratis",
   "profileModalPlanPro": "Pro",
   "profileModalManagePlan": "Administrer plan",
@@ -121,6 +122,5 @@
   "feedEmptyBody": "Følg et fond eller et medlem av Kongressen og deres nye registreringer og handler vil vises her.",
   "feedBrowseFunds": "Bla gjennom fond",
   "feedBrowseCongress": "Bla gjennom Kongressen",
-  "profileModalUsernamePlaceholder": "johndoe",
-  "profileModalPlanLabel": "Abonnement"
+  "profileModalUsernamePlaceholder": "olanordmann"
 }

@@ -9,7 +9,7 @@
   "activityMinsAgo": "{{m}}m ago",
   "activityOpened": "Opened a new position in <symbolLink></symbolLink>",
   "activityReplied": "Replied to {{target}}'s take on <symbolLink></symbolLink>: \"{{content}}\"",
-  "activityReplyFallbackTarget": "a",
+  "activityReplyFallbackTarget": "someone",
   "activityThesisTake": "Posted a <badge></badge> take on <symbolLink></symbolLink>: \"{{content}}\"",
   "activityTrimmed": "Trimmed <symbolLink></symbolLink> position by {{pct}}%",
   "followButtonFollowState": "Follow",

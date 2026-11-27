@@ -312,7 +312,6 @@
   "sankeyDetailTooltip": "此报告披露了多少收入表的明细。部分图表意味着公司没有单独报告这些行项目。",
   "sankeyExplainButton": "解释",
   "sankeyNoData": "该期间的财务流向数据不可用",
-  "sankeyStatementIncomplete": "我们的数据提供商目前只有 {{period}} 的部分数据，没有可拆分的营收。完整的利润表到位后，图表会自动显示。",
   "sankeyNodeCostOfRevenue": "销售成本",
   "sankeyNodeCostsAndTax": "成本与税费",
   "sankeyNodeGrossProfit": "毛利",
@@ -773,8 +772,8 @@
   "dividendsAnswerYes": "是的。",
   "dividendsAnswerNo": "不。",
   "dividendsAnswerNotYet": "暂时没有。",
-  "earningsEmailPlaceholder": "you@email.com",
   "compareWithHeading": "对比 {{name}}",
   "compareWithPair": "{{a}} 对比 {{b}}",
-  "compareWithTickers": "{{a}} 对比 {{b}}"
+  "compareWithTickers": "{{a}} 对比 {{b}}",
+  "earningsEmailPlaceholder": "you@email.com"
 }

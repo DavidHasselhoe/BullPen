@@ -310,7 +310,6 @@
   "sankeyDetailTooltip": "Hvor mye av resultatregnskapet selskapet spesifiserte i denne rapporten. Et delvis diagram betyr at selskapet ikke rapporterte disse linjene separat.",
   "sankeyExplainButton": "Forklar",
   "sankeyNoData": "Finansielle strømningsdata er ikke tilgjengelige for denne perioden",
-  "sankeyStatementIncomplete": "Dataleverandøren vår har foreløpig bare delvise tall for {{period}}, uten inntekter å bryte ned. Diagrammet vises når hele resultatregnskapet er på plass.",
   "sankeyNodeCostOfRevenue": "Kostnad for inntekt",
   "sankeyNodeCostsAndTax": "Kostnader og skatt",
   "sankeyNodeGrossProfit": "Brutto resultat",
@@ -661,6 +660,7 @@
   "commodityReturnsNote": "Kolonnen for S&P 500 viser kursendringen i fondet SPY, før utbytte.",
   "commodityRatioLabel": "Gull/sølv-forholdet",
   "commodityRatioInsight": "En unse gull kjøper {{ratio}} unser sølv. Gjennomsnittet de siste 10 årene er {{avg}}.",
+  "commoditySpreadLabel": "Brent vs WTI",
   "commoditySpreadAbove": "Brent koster {{amount}} mer per fat. Det er vanligvis slik, fordi den sendes med skip til kjøpere over hele verden.",
   "commoditySpreadBelow": "Brent koster {{amount}} mindre per fat enn WTI akkurat nå, noe som er uvanlig.",
   "commodityRelated_metal": "Andre metaller",
@@ -760,6 +760,9 @@
   "dividendsAnswerYes": "Ja.",
   "dividendsAnswerNo": "Nei.",
   "dividendsAnswerNotYet": "Ikke ennå.",
+  "compareWithHeading": "Sammenlign {{name}}",
+  "compareWithPair": "{{a}} mot {{b}}",
+  "compareWithTickers": "{{a}} mot {{b}}",
   "financialsColumnTrend": "Trend",
   "insiderColumnType": "Type",
   "sankeyNodeSgA": "SG&A",
@@ -770,11 +773,7 @@
   "fiscalYearLabel": "FY{{year}}",
   "glanceFactBeta": "Beta",
   "commodityName_xpd": "Palladium",
-  "commoditySpreadLabel": "Brent vs WTI",
   "commodityNoun_xpd": "palladium",
   "commodityPerGram": "Per gram",
-  "commodityPerKilo": "Per kilo",
-  "compareWithHeading": "Sammenlign {{name}}",
-  "compareWithPair": "{{a}} mot {{b}}",
-  "compareWithTickers": "{{a}} mot {{b}}"
+  "commodityPerKilo": "Per kilo"
 }
