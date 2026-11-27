@@ -12,6 +12,18 @@ import { withAuth, withRateLimit, rejectIfTooLarge } from '@/lib/security/api-se
 import { checkQuota } from '@/lib/billing/quotas';
 import { logAiCall } from '@/lib/billing/log-ai-call';
 import { classifyAiError } from '@/lib/ai/provider-error';
+import { rget, rset } from '@/lib/cache/redis-cache';
+
+/**
+ * Saved per user and pair, so a refresh or a return visit shows the same
+ * explanation instead of a blank space and another quota run. Per user, not
+ * shared: the prompt is built from client-sent context, and one person's
+ * request must never become the text another person reads.
+ */
+const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
+const TICKER_RE = /^[A-Z0-9.\-/]{1,12}$/;
+const cacheKey = (userId: string, tickers: string[]) =>
+  `compare-explain:v1:${userId}:${[...tickers].sort().join(',')}`;
 
 const MODEL = 'claude-haiku-5-5';
 
@@ -21,15 +33,25 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
   const tooLarge = rejectIfTooLarge(req, 50 * 1024);
   if (tooLarge) return tooLarge;
 
-  // Daily quota (5/day free, unlimited Pro)
-  const quota = await checkQuota(session.userId, 'compare_explain');
-  if (!quota.allowed) {
-    return NextResponse.json({ error: 'quota_exceeded', quota }, { status: 402 });
-  }
-
   try {
     const body = await req.json();
-    const { context } = body as { context: string };
+    const { context, tickers: rawTickers, cachedOnly } = body as { context?: string; tickers?: unknown; cachedOnly?: boolean };
+    const tickers = Array.isArray(rawTickers)
+      ? rawTickers.filter((x): x is string => typeof x === 'string' && TICKER_RE.test(x)).slice(0, 5)
+      : [];
+    const key = tickers.length >= 2 ? cacheKey(session.userId, tickers) : null;
+
+    // A saved explanation costs nothing: no quota, no model call.
+    const saved = key ? await rget<string>(key) : null;
+    if (saved) return NextResponse.json({ success: true, explanation: saved });
+    // Page load asking only for a saved one (free users who haven't clicked).
+    if (cachedOnly) return NextResponse.json({ success: true, explanation: null });
+
+    // Daily quota (5/day free, unlimited Pro)
+    const quota = await checkQuota(session.userId, 'compare_explain');
+    if (!quota.allowed) {
+      return NextResponse.json({ error: 'quota_exceeded', quota }, { status: 402 });
+    }
 
     if (!context || typeof context !== 'string') {
       return NextResponse.json(
@@ -55,6 +77,7 @@ async function handler(req: NextRequest, _context: unknown, session: { userId: s
       outputTokens: result.usage.outputTokens,
     });
 
+    if (key && result.text) void rset(key, result.text, CACHE_TTL_SECONDS);
     return NextResponse.json({ success: true, explanation: result.text });
   } catch (err) {
     logger.error('[compare-explain]', err);

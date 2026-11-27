@@ -15,6 +15,14 @@ import { useAIPanel } from '@/components/ai/AIPanelProvider';
 import { useRecentlyCompared } from '@/hooks/use-recently-compared';
 import { fmtShortDate, fmtMonthLabel, monthKeyOf } from '@/lib/dates/calendar-format';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { useAuth } from '@/hooks/use-auth';
+import { useSignupGate, useResumeAction } from '@/components/auth/SignupGate';
+import { AiPaywallDialog } from '@/components/billing/AiPaywallDialog';
+import { InkReveal, InkBullets } from '@/components/ai/InkText';
+import { trackEvent } from '@/lib/analytics/track';
+import type { QuotaState } from '@/lib/billing/quotas';
 
 /**
  * Compare's results, shared by the interactive tool (/tools/compare?tickers=)
@@ -147,7 +155,76 @@ export function CompareResults({
   const tickersKey = companies.map((c) => c.ticker).join(',');
 
   const [openRow, setOpenRow] = useState<string | null>(null);
-  const [explain, setExplain] = useState<{ loading: boolean; text: string | null; error: string | null }>({ loading: false, text: null, error: null });
+  // Pro gets the explanation as soon as the comparison is on screen: they are
+  // paying for it, and making them wait for the compare and then again for
+  // the words was two waits. Free and guests ask for it with the button.
+  const { isPro } = useEntitlements();
+  const { isAuthenticated } = useAuth();
+  const openGate = useSignupGate();
+  const [explainRequested, setExplainRequested] = useState(false);
+  const [paywallQuota, setPaywallQuota] = useState<QuotaState | null>(null);
+
+  // Everyone signed in asks for a saved explanation on load, so a refresh keeps
+  // it; only Pro, or a click, generates one.
+  const generate = isPro || explainRequested;
+  const explain = useQuery<string | null, Error>({
+    queryKey: ['compare-explain', tickersKey, generate],
+    queryFn: async () => {
+      const context = JSON.stringify({
+        companies: companies.map((c) => ({
+          ticker: c.ticker,
+          name: c.name,
+          metricsPeriod: basisLabel(c, t),
+          revenueGrowthFiscalYear: c.growthYear,
+          metrics: c.metrics,
+          today: c.market,
+          historySummary: c.history.slice(0, 4).map((h) => ({ year: h.fiscalYear, revenue: h.revenue, epsDiluted: h.epsDiluted })),
+        })),
+      });
+      const res = await fetch('/api/ai/compare-explain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context, tickers: companies.map((c) => c.ticker), cachedOnly: !generate }),
+      });
+      const json = await res.json().catch(() => ({}));
+      // Today's free explanations are used up: the paywall says so, not an error line.
+      if (res.status === 402 && json.quota) {
+        setPaywallQuota(json.quota as QuotaState);
+        throw new Error('quota_exceeded');
+      }
+      if (!json.success) throw new Error(json.error || t('compareExplainFailed'));
+      if (!generate) return (json.explanation as string | null) ?? null;
+      if (!json.explanation) throw new Error(t('compareExplainFailed'));
+      return json.explanation as string;
+    },
+    // The server keeps it for a week; this just saves the round trip within a visit.
+    staleTime: 60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: false,
+    enabled: isAuthenticated && companies.length >= 2,
+  });
+  // Only a real generation shows progress; the quick saved-copy check on load stays silent.
+  const generating = generate && explain.isFetching;
+  const explainText = explain.data ?? null;
+  // A failed saved-copy check on load is silent: the button is still there.
+  const explainError = generate && explain.error && explain.error.message !== 'quota_exceeded' ? explain.error.message : null;
+
+  function runExplain() {
+    if (!isAuthenticated) {
+      openGate({ source: 'compare_explain', context: t('compareExplainGuestContext'), resume: `compare-explain:${tickersKey}` });
+      return;
+    }
+    trackEvent('compare_explain_clicked', { tickers: tickersKey, pro: isPro });
+    if (generate) void explain.refetch();
+    else setExplainRequested(true);
+  }
+
+  // Back from signing up: finish the explanation they asked for.
+  useResumeAction('compare-explain', (value) => {
+    if (value !== tickersKey) return false;
+    setExplainRequested(true);
+    return true;
+  });
 
   const { open: openAIPanel, setAIContext } = useAIPanel();
   const { add: addRecentComparison } = useRecentlyCompared();
@@ -164,34 +241,6 @@ export function CompareResults({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickersKey]);
-
-  async function runExplain() {
-    setExplain({ loading: true, text: null, error: null });
-    try {
-      const context = JSON.stringify({
-        companies: companies.map((c) => ({
-          ticker: c.ticker,
-          name: c.name,
-          metricsPeriod: basisLabel(c, t),
-          revenueGrowthFiscalYear: c.growthYear,
-          metrics: c.metrics,
-          today: c.market,
-          historySummary: c.history.slice(0, 4).map((h) => ({ year: h.fiscalYear, revenue: h.revenue, epsDiluted: h.epsDiluted })),
-        })),
-      });
-      const res = await fetch('/api/ai/compare-explain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context }),
-      });
-      const json = await res.json();
-      setExplain(json.success
-        ? { loading: false, text: json.explanation, error: null }
-        : { loading: false, text: null, error: json.error || t('compareExplainFailed') });
-    } catch (e) {
-      setExplain({ loading: false, text: null, error: e instanceof Error ? e.message : t('compareExplainFailed') });
-    }
-  }
 
   const years = Array.from(new Set(companies.flatMap((c) => c.history.map((h) => h.fiscalYear)))).sort((a, b) => b - a).slice(0, 6);
   const colCount = 1 + companies.length + (two ? 1 : 0);
@@ -262,21 +311,40 @@ export function CompareResults({
           </dl>
           <div className="flex flex-col gap-3 border-t border-border/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p className="text-xs text-muted-foreground">{t('compareVerdictFootnote')}</p>
-            <div className="flex shrink-0 items-center gap-3">
-              <span className="hidden text-xs text-muted-foreground md:inline">{t('compareExplainPrompt')}</span>
-              <Button size="sm" onClick={runExplain} disabled={explain.loading} className="shrink-0 rounded-full animate-ai-pill-shine">
-                <Sparkles className={cn('mr-2 h-4 w-4', explain.loading && 'animate-pulse')} aria-hidden />
-                {explain.loading ? t('compareGeneratingButton') : t('compareExplainDifferencesButton')}
-              </Button>
-            </div>
+            {/* Pro never sees the button: their explanation is already on its way below. */}
+            {!(isPro && isAuthenticated) && !explainText && (
+              <div className="flex shrink-0 items-center gap-3">
+                <span className="hidden text-xs text-muted-foreground md:inline">{t('compareExplainPrompt')}</span>
+                <Button size="sm" onClick={runExplain} disabled={generating} className="shrink-0 rounded-full animate-ai-pill-shine">
+                  <Sparkles className={cn('mr-2 h-4 w-4', generating && 'animate-pulse')} aria-hidden />
+                  {generating ? t('compareGeneratingButton') : t('compareExplainDifferencesButton')}
+                </Button>
+              </div>
+            )}
           </div>
-          {explain.error && (
-            <p role="alert" className="border-t border-border/60 px-5 py-3 text-sm text-destructive sm:px-6">{explain.error}</p>
+          {generating && !explainText && (
+            <div className="space-y-2 border-t border-border/60 px-5 py-4 sm:px-6" role="status">
+              <span className="sr-only">{t('compareGeneratingButton')}</span>
+              {['w-full', 'w-11/12', 'w-4/5'].map((w) => <div key={w} aria-hidden className={cn('h-3.5 animate-shimmer rounded', w)} />)}
+            </div>
           )}
-          {explain.text && (
-            <p className="whitespace-pre-wrap border-t border-border/60 px-5 py-4 text-sm leading-relaxed text-foreground sm:px-6">
-              {explain.text}
-            </p>
+          {explainError && !generating && (
+            <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 px-5 py-3 text-sm text-destructive sm:px-6">
+              <p>{explainError}</p>
+              <button type="button" onClick={runExplain} className="rounded font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                {t('compareExplainRetry')}
+              </button>
+            </div>
+          )}
+          {explainText && (
+            <InkReveal>
+              <div className="border-t border-border/60 px-5 py-4 text-sm leading-relaxed text-foreground sm:px-6">
+                <InkBullets
+                  bullets={explainText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)}
+                  bulletClassName={(i) => (i > 0 ? 'mt-3' : undefined)}
+                />
+              </div>
+            </InkReveal>
           )}
         </section>
       )}
@@ -497,6 +565,14 @@ export function CompareResults({
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
       </nav>
+
+      <AiPaywallDialog
+        open={paywallQuota !== null}
+        onOpenChange={(open) => { if (!open) setPaywallQuota(null); }}
+        featureName={t('compareExplainFeatureName')}
+        preview="Ask Bull"
+        quota={paywallQuota ?? undefined}
+      />
     </article>
   );
 }
