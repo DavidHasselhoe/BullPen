@@ -3,7 +3,7 @@
  * GET /api/cron/check-sec-filings[?dryRun=1]
  *
  * QStash, every 15 minutes. For Nasdaq-100 companies that reported in the
- * last 10 days and whose stored statements (TwelveData or SEC) don't include
+ * last 40 days and whose stored statements (TwelveData or SEC) don't include
  * the reported quarter yet, looks for the 10-Q/10-K on EDGAR and, once it is
  * there, stores the quarter from SEC's XBRL API and lays it into the cached
  * statements (lib/edgar/sec-statements.ts). A 10-Q reached EDGAR a median
@@ -36,7 +36,13 @@ import { runEarningsRecaps } from '@/lib/earnings/recap-run';
 export const maxDuration = 180;
 const RECAP_DEADLINE_MS = 150_000;
 
-const LOOKBACK_DAYS = 10;
+/**
+ * The 10-Q is due 40 days after quarter end and lands at most that long after
+ * the release. Usually it is hours (median 4.1h), but NVIDIA released Q3 FY27
+ * on Nov 17 2026 and was still unfiled on the 27th, the day a 10-day window
+ * would have stopped watching. A company already covered costs nothing.
+ */
+const LOOKBACK_DAYS = 40;
 /** A quarter ending this close before a report is the one it reported; the quarter before ends 100+ days back. */
 const REPORTED_WITHIN_DAYS = 100;
 const BUDGET_MS = 45_000;

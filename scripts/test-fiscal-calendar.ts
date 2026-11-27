@@ -39,6 +39,17 @@ async function main() {
   assert.equal(label(periodForStatement(nvda, '2026-07-31', false), true), 'Q2 FY27');
   assert.equal(label(periodForStatement(nvda, '2026-01-31', false), true), 'Q4 FY26');
   assert.equal(periodForRelease(nvda, '2026-08-26')?.periodEnd, '2026-07-26');
+  // Released Nov 17 2026 with the 10-Q still unfiled for days: TwelveData's
+  // EPS-only row read "Q4 2026". Filed or not, it is Q3 FY27.
+  assert.equal(label(periodForStatement(nvda, '2026-10-31', false), true), 'Q3 FY27');
+  // A pending quarter only names a row that ends before its release.
+  const pendingCal = { offCalendar: true, periods: [
+    { periodEnd: null, fiscalYear: 2027, fiscalQuarter: 3, reportedOn: '2026-11-17' },
+    { periodEnd: '2026-07-26', fiscalYear: 2027, fiscalQuarter: 2, reportedOn: '2026-08-26' },
+  ] };
+  assert.equal(label(periodForStatement(pendingCal, '2026-10-31', false), true), 'Q3 FY27');
+  assert.equal(periodForStatement(pendingCal, '2027-01-31', false), null);
+  assert.equal(periodForStatement(pendingCal, '2026-10-31', true), null);
 
   // Home Depot names a year by its START: the year ending Feb 1 2026 is fiscal 2025.
   // A "year it ends in" rule would say 2026.

@@ -708,10 +708,14 @@ export function SankeyCard({ ticker }: { ticker: string }) {
 
   // Periods from years ago are left out, as in Financials: some foreign filers'
   // "quarterly" rows from TwelveData end in 2015-2018 (Gold Fields).
+  // A row with EPS and no revenue is TwelveData's stub for a quarter released
+  // but not yet in the statements (NVIDIA's Q3 FY27, AMZN's Q2 2026): there is
+  // nothing to draw, so the chart opens on the newest full quarter and the
+  // pending slot below names the released one.
   const [now] = useState(() => Date.now());
   const rows    = useMemo(
     () => (data?.data ?? [])
-      .filter((r) => now - Date.parse(r.fiscal_date) <= (period === 'annual' ? 800 : 400) * 86_400_000)
+      .filter((r) => r.revenue && now - Date.parse(r.fiscal_date) <= (period === 'annual' ? 800 : 400) * 86_400_000)
       .slice(0, 5),
     [data, now, period],
   );
@@ -891,12 +895,7 @@ export function SankeyCard({ ticker }: { ticker: string }) {
               className="flex items-center justify-center rounded-xl border border-border/40 bg-muted/20 px-6 text-center text-sm text-muted-foreground text-balance"
               style={{ height: PLACEHOLDER_H }}
             >
-              {/* A row with EPS and nothing else is the provider's stub, not
-                  a missing period: AMZN's Q2 2026 sat like this for three
-                  months after its 10-Q was on EDGAR. */}
-              {row && !row.revenue
-                ? t('sankeyStatementIncomplete', { period: labelOf(row) })
-                : t('sankeyNoData')}
+              {t('sankeyNoData')}
             </div>
           )}
 

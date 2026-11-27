@@ -149,7 +149,17 @@ export function periodForStatement(calendar: FiscalCalendar, fiscalDate: string,
     const gap = Math.abs(days(p.periodEnd, fiscalDate));
     if (gap <= 31 && (!best || gap < Math.abs(days(best.periodEnd!, fiscalDate)))) best = p;
   }
-  return best;
+  if (best) return best;
+  // Released, not filed yet: TwelveData already has an EPS-only row for it
+  // (NVIDIA's Q3 FY27, released Nov 17 2026, read "Q4 2026" for want of a
+  // filed period end). The row's end must come before the release, within a
+  // quarter of it; TwelveData's month rounding can put it a few days after.
+  const pending = calendar.periods[0];
+  if (pending && !pending.periodEnd && pending.reportedOn && (!annual || pending.fiscalQuarter === 4)) {
+    const lead = days(pending.reportedOn, fiscalDate);
+    if (lead >= -7 && lead <= 100) return pending;
+  }
+  return null;
 }
 
 /**
